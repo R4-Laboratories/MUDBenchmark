@@ -1,0 +1,14 @@
+# Rust
+/target/
+**/target/
+
+# Prism build output — holos are content-addressed artifacts, not source
+prism/.prism/build/
+*.holo
+
+# Node (harness, router)
+node_modules/
+
+# Local scratch
+/local/
+.DS_Store
