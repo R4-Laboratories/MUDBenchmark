@@ -14,6 +14,8 @@ import { step, initialState, digestState, phaseAt, upgradeState, releaseHeldObje
 import { loadWorld } from "./worlddata.mjs";
 import { describe as renderRoom } from "./view.mjs";
 import { loadVerbs, render, resolve } from "./verbs.mjs";
+import { loadChannels, resolveChannel } from "./channels.mjs";
+import { loadSocials, resolveSocial } from "./socials.mjs";
 
 const HOLO_URL = process.env.HOLO_URL ?? "http://127.0.0.1:8082";
 const TELNET_PORT = Number(process.env.TELNET_PORT ?? 4000);
@@ -37,6 +39,18 @@ const WORLD_START = loaded.start ?? 1;
 const VERB_TABLE = loadVerbs();
 if (VERB_TABLE.errors.length > 0) {
   for (const problem of VERB_TABLE.errors) console.error(`verbs: ${problem}`);
+  process.exit(1);
+}
+
+const CHANNELS = loadChannels();
+if (CHANNELS.errors.length > 0) {
+  for (const problem of CHANNELS.errors) console.error(`channels: ${problem}`);
+  process.exit(1);
+}
+
+const SOCIALS = loadSocials();
+if (SOCIALS.errors.length > 0) {
+  for (const problem of SOCIALS.errors) console.error(`socials: ${problem}`);
   process.exit(1);
 }
 
@@ -78,7 +92,7 @@ function allowCommand(id) {
 function loadState() {
   try {
     const saved = JSON.parse(readFileSync(STATE_FILE, "utf8"));
-    const base = initialState(ROOMS, loaded.npcs, loaded.objects, loaded.start, loaded.climate);
+    const base = initialState(ROOMS, loaded.npcs, loaded.objects, loaded.start, loaded.climate, CHANNELS.channels);
     const upgraded = upgradeState(saved, base);
     // Players are saved for the trace but not restored: without an identity
     // there is nothing to reconnect them to, and a restored actor with no
@@ -87,7 +101,7 @@ function loadState() {
     releaseHeldObjects(upgraded, saved.actors ?? []);
     return { ...upgraded, actors: [] };
   } catch {
-    return initialState(ROOMS, loaded.npcs, loaded.objects, loaded.start, loaded.climate);
+    return initialState(ROOMS, loaded.npcs, loaded.objects, loaded.start, loaded.climate, CHANNELS.channels);
   }
 }
 
@@ -202,9 +216,14 @@ const DIRECTIONS = { n: "north", s: "south", e: "east", w: "west",
   north: "north", south: "south", east: "east", west: "west" };
 
 async function handleCommand(id, line) {
-  const text = line.trim();
-  if (!text) return;
-  const [verb, ...rest] = text.toLowerCase().split(/\s+/);
+  const raw = line.trim();
+  if (!raw) return;
+  // Commands are case-insensitive; what a player says is not. Keep the words
+  // as typed and lowercase only the parts used for matching.
+  const parts = raw.split(/\s+/);
+  const verb = parts[0].toLowerCase();
+  const restRaw = parts.slice(1);
+  const rest = restRaw.map((part) => part.toLowerCase());
   const actor = actorById(id);
 
   if (verb === "quit") {
@@ -285,6 +304,150 @@ async function handleCommand(id, line) {
 
   const named = resolve(VERB_TABLE, verb);
   const words = rest.join(" ");
+  // An exact name wins over a prefix: "b" should not reach bob when barbara is
+  // also awake, and the other way round.
+  const findActor = (needle, where = () => true) => {
+    const want = needle.toLowerCase();
+    const pool = state.actors.filter(where);
+    return pool.find((candidate) => candidate.name.toLowerCase() === want)
+      ?? pool.find((candidate) => candidate.name.toLowerCase().includes(want));
+  };
+  const findIdentity = (needle) => {
+    const want = needle.toLowerCase();
+    const entries = Object.entries(state.identities);
+    return entries.find(([, identity]) => identity.name.toLowerCase() === want)
+      ?? entries.find(([, identity]) => identity.name.toLowerCase().includes(want));
+  };
+
+  const channel = named === null ? resolveChannel(CHANNELS, verb) : null;
+  if (channel) {
+    const said = restRaw.join(" ");
+    if (!said) return sendTo(id, "Say what?\r\n");
+    if ((actor.role ?? 0) < channel.minRole) {
+      return sendTo(id, `The ${channel.name} channel is not open to you.\r\n`);
+    }
+    const messages = {
+      actor: render(channel.messages.actor, { actor: actor.name, words: said }),
+      others: render(channel.messages.others, { actor: actor.name, words: said }),
+    };
+    pending.push({ kind: "channel", actorId: id, channelId: channel.id, messages });
+    recordSpan("world.channel", {
+      "actor.id": id,
+      "channel.id": channel.id,
+      "text": said.slice(0, 500),
+      "text.length": said.length,
+      "recipients": state.actors.length,
+      "world.tick": state.tick,
+    }, 0);
+    return;
+  }
+
+  const social = named === null ? resolveSocial(SOCIALS, verb) : null;
+  if (social) {
+    const asked = restRaw.join(" ");
+    const targetName = asked.replace(/^at\s+/i, "").trim();
+    if (targetName && typeof social.messages.target !== "string") {
+      return sendTo(id, `You cannot ${verb} at anyone.\r\n`);
+    }
+    const target = targetName ? findActor(targetName, (candidate) => candidate.room === actor.room) : null;
+    if (targetName && !target) return sendTo(id, `There is no ${targetName} here.\r\n`);
+    const messages = {
+      actor: render(social.messages.actor, { actor: actor.name, target: target?.name }),
+      others: render(social.messages.others, { actor: actor.name }),
+      target: render(social.messages.target, { actor: actor.name, target: target?.name }),
+      targeted: render(social.messages.targeted, { actor: actor.name, target: actor.name }),
+      targetOthers: render(social.messages.targetOthers, { actor: actor.name, target: target?.name }),
+      self: social.messages.self,
+      selfOthers: social.messages.selfOthers,
+    };
+    pending.push({ kind: "social", actorId: id, targetId: target?.id ?? null, messages });
+    recordSpan("world.social", {
+      "actor.id": id,
+      "social.id": social.id ?? verb,
+      "target.id": target?.id ?? null,
+      "room.id": actor.room,
+      "world.tick": state.tick,
+    }, 0);
+    return;
+  }
+
+  if (named === "say") {
+    const messages = VERB_TABLE.verbs.say.messages;
+    const said = restRaw.join(" ");
+    if (!said) return sendTo(id, `${messages.empty}\r\n`);
+    pending.push({ kind: "say", actorId: id, text: said, messages: {
+      actor: render(messages.actor, { words: said }),
+      others: render(messages.others, { actor: actor.name, words: said }),
+    } });
+    recordSpan("world.say", {
+      "actor.id": id,
+      "room.id": actor.room,
+      "text": said.slice(0, 500),
+      "text.length": said.length,
+      "world.tick": state.tick,
+    }, 0);
+    return;
+  }
+
+  if (named === "tell") {
+    const messages = VERB_TABLE.verbs.tell.messages;
+    const targetName = rest[0];
+    const said = restRaw.slice(1).join(" ");
+    if (!targetName || !said) return sendTo(id, `${messages.empty}\r\n`);
+    const target = findActor(targetName);
+    if (target && target.id === id) return sendTo(id, `${messages.self}\r\n`);
+    if (!target) return sendTo(id, `${render(messages.missing, { words: targetName })}\r\n`);
+    pending.push({ kind: "tell", actorId: id, targetId: target.id, messages: {
+      actor: render(messages.actor, { target: target.name, words: said }),
+      target: render(messages.target, { actor: actor.name, words: said }),
+    } });
+    recordSpan("world.tell", {
+      "actor.id": id,
+      "target.id": target.id,
+      "text": said.slice(0, 500),
+      "text.length": said.length,
+      "world.tick": state.tick,
+    }, 0);
+    return;
+  }
+
+  if (named === "mail") {
+    const messages = VERB_TABLE.verbs.mail.messages;
+    if (!actor.key) return sendTo(id, "Sign in before you send letters.\r\n");
+    const targetName = rest[0];
+    const said = restRaw.slice(1).join(" ");
+    if (!targetName || !said) return sendTo(id, `${messages.empty}\r\n`);
+    const known = findIdentity(targetName);
+    if (!known) return sendTo(id, `${render(messages.missing, { words: targetName })}\r\n`);
+    const [toKey] = known;
+    if (toKey === actor.key) return sendTo(id, `${messages.self}\r\n`);
+    const online = state.actors.some((candidate) => candidate.key === toKey && candidate.id !== id);
+    pending.push({ kind: "mail", actorId: id, toKey, text: said, messages: {
+      actor: render(messages.actor, { target: known[1].name }),
+      target: render(messages.target, { actor: actor.name, words: said }),
+    } });
+    recordSpan("world.mail", {
+      "actor.id": id,
+      "target.key": toKey,
+      "text": said.slice(0, 500),
+      "text.length": said.length,
+      "delivered": online,
+      "world.tick": state.tick,
+    }, 0);
+    return;
+  }
+
+  if (named === "channels") {
+    const messages = VERB_TABLE.verbs.channels.messages;
+    const open = CHANNELS.channels.filter((entry) => (actor.role ?? 0) >= entry.minRole).map((entry) => entry.name);
+    return sendTo(id, `${open.length ? render(messages.list, { words: open.join(", ") }) : messages.none}\r\n`);
+  }
+
+  if (named === "awake") {
+    const messages = VERB_TABLE.verbs.awake.messages;
+    const names = state.actors.map((a) => a.name);
+    return sendTo(id, `${names.length === 1 ? messages.alone : render(messages.list, { words: names.join(", ") })}\r\n`);
+  }
 
   if (named === "attack") {
     const messages = VERB_TABLE.verbs.attack.messages;
@@ -554,11 +717,6 @@ async function handleCommand(id, line) {
     return sendTo(id, "That is not what is carved there.\r\n");
   }
 
-  if (verb === "say") {
-    pending.push({ kind: "say", actorId: id, text: rest.join(" ") });
-    return;
-  }
-
   const dir = DIRECTIONS[verb];
   if (dir) {
     const target = ROOMS[actor.room].exits[dir];
@@ -626,8 +784,11 @@ function onTick() {
         "world.tick": state.tick,
       }, 0);
     }
-    if (event.onlyId !== undefined) sendTo(event.onlyId, event.text);
-    else broadcast(event.room, event.text, event.exceptId);
+    // Every event is a line. Some are already framed (a login refusal), most
+    // are not; without this, "bob leaves north.You say: hello" ran together.
+    const asLine = (text) => (text.endsWith("\r\n") ? text : `${text}\r\n`);
+    if (event.onlyId !== undefined) sendTo(event.onlyId, asLine(event.text));
+    else broadcast(event.room, asLine(event.text), event.exceptId);
   }
 
   // Anyone newly in the world gets welcomed once the tick has placed them.

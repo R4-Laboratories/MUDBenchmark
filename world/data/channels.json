@@ -1,0 +1,36 @@
+{
+  "schema": "mudbenchmark/channels/1",
+  "note": "A channel is a room that is not a place: everyone tuned to it hears, wherever they stand. Role is the only lock.",
+  "channels": [
+    {
+      "id": "gossip",
+      "name": "gossip",
+      "aliases": ["gossip", "chat"],
+      "minRole": 0,
+      "messages": {
+        "actor": "You say on gossip: %s",
+        "others": "[gossip] %a: %s"
+      }
+    },
+    {
+      "id": "trade",
+      "name": "trade",
+      "aliases": ["trade", "market"],
+      "minRole": 0,
+      "messages": {
+        "actor": "You say on trade: %s",
+        "others": "[trade] %a: %s"
+      }
+    },
+    {
+      "id": "wizards",
+      "name": "wizards",
+      "aliases": ["wiz", "wizards"],
+      "minRole": 3,
+      "messages": {
+        "actor": "You say on wizards: %s",
+        "others": "[wizards] %a: %s"
+      }
+    }
+  ]
+}

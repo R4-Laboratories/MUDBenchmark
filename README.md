@@ -33,7 +33,7 @@ shown can be detected by construction.
 |---|---|---|
 | Rules | The world's semantics: `(state, tick) → (state', events)`, every autonomous process included | LexLean model, proved in Lean, built by Prism |
 | World | Rooms, exits, objects, roles, scenarios | Authored data, validated against the rules |
-| Runtime | Holds state, batches real-time input into ticks, persists | Ordinary Rust |
+| Runtime | Holds state, batches real-time input into ticks, persists | Ordinary JavaScript (Node.js) |
 | Gateway | The wire people and agents both use | Telnet-compatible text, plus a structured channel |
 | Harness | The agent client: connects as a player, wraps model calls | Separate small process |
 | Router | Geometric prompt engine: layered context, routed per turn | Its own service, benchmarked against flat prompting |
@@ -55,8 +55,12 @@ limits.
 
 ## Status
 
-Founding scaffold. Nothing runs yet. The next milestones are the tick contract
-and a single playable room.
+The world runs. Telnet and WebSocket share one authority; the rules are modelled
+in LexLean and proved in Lean; the gate re-proves the model, replays the
+acceptance vectors, and ratchets rule debt. Phases A–F of
+[the MUD baseline](docs/MUD-BASELINE.md) are done: data-driven verbs, mobiles
+with behaviours, combat, item properties, a clock and weather, a shop, and
+communication. Character persistence (Phase G) is next.
 
 ## Provenance
 
@@ -72,5 +76,5 @@ the upstream corpus, is authoritative here.
 docs/           founding documents — reconciliation, hosting, safety model
 prism/          the Prism admission app (prism MCP), not the world model
 world/          the PrismPM project: LexLean model of the world and hosting
-runtime/        the server (not yet started)
+runtime/        the Node.js world server, telnet and WebSocket
 ```

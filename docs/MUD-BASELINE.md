@@ -47,8 +47,8 @@ silences the speaker, so time changes behaviour rather than only description.
 The shop is data too: a keeper, stock marked for sale, prices in coin objects.
 The shop keeps the change; it pays half value; the reset puts the stock back.
 
-**F. Communication.** Channels, tells, mail, and the social verbs that made MUDs
-social places rather than adventure parsers.
+**F. Communication.** *Done.* Channels with role locks, cross-room tells, mail
+that waits for an identity, and data-driven socials. See `docs/COMMUNICATION.md`.
 
 **G. Accounts and persistence.** Characters that survive a restart, with
 inventory, position and progress — the MuOxi/Diesel concern, which we currently

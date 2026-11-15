@@ -135,6 +135,34 @@ for (const file of inputs) {
       continue;
     }
 
+    if (span.name === "world.say" || span.name === "world.channel" || span.name === "world.tell" || span.name === "world.mail") {
+      rows.push({
+        ...common,
+        event: span.name.slice("world.".length),
+        actor: span["actor.id"] ?? null,
+        target: span["target.id"] ?? span["target.key"] ?? null,
+        channel: span["channel.id"] ?? null,
+        recipients: num(span.recipients),
+        delivered: span.delivered === "true" || span.delivered === true,
+        text: span.text ?? null,
+        text_length: num(span["text.length"]),
+        room_from: num(span["room.id"]),
+      });
+      continue;
+    }
+
+    if (span.name === "world.social") {
+      rows.push({
+        ...common,
+        event: "social",
+        actor: span["actor.id"] ?? null,
+        target: span["target.id"] ?? null,
+        action: span["social.id"] ?? null,
+        room_from: num(span["room.id"]),
+      });
+      continue;
+    }
+
     if (span.name === "world.claim" || span.name === "world.answer") {
       rows.push({
         ...common,

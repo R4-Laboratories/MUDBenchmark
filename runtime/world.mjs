@@ -53,13 +53,15 @@ export function phaseAt(tick, climate = DEFAULT_CLIMATE) {
   return (climate.phases.find((phase) => hour >= phase.from && hour <= phase.to) ?? { id: "day" }).id;
 }
 
-export function initialState(rooms, npcs = [], objects = [], start = 1, climate = DEFAULT_CLIMATE) {
+export function initialState(rooms, npcs = [], objects = [], start = 1, climate = DEFAULT_CLIMATE, channels = []) {
   return {
     tick: 0,
     cycle: 0,
     start,
     climate,
     weather: 0,
+    channels,
+    mail: [],
     engagements: [],
     npcs: npcs
       .filter((npc) => rooms[npc.room] !== undefined)
@@ -111,6 +113,8 @@ export function digestState(state) {
     start: state.start ?? 1,
     climate: state.climate,
     weather: state.weather,
+    channels: state.channels ?? [],
+    mail: (state.mail ?? []).map((letter) => ({ ...letter })),
     engagements: (state.engagements ?? []).map((e) => ({ ...e })),
     objects: [...state.objects].sort((a, b) => a.id.localeCompare(b.id)),
     npcs: [...state.npcs].sort((a, b) => a.id.localeCompare(b.id)),
@@ -179,6 +183,8 @@ export function upgradeState(saved, base) {
     start: saved.start ?? base.start,
     cycle: saved.cycle ?? base.cycle,
     engagements: Array.isArray(saved.engagements) ? saved.engagements : [],
+    channels: base.channels,
+    mail: Array.isArray(saved.mail) ? saved.mail : [],
     pulses,
     npcs,
     objects,
@@ -215,6 +221,8 @@ export function step({ state, rooms, intents }) {
     start: state.start ?? 1,
     climate: state.climate,
     weather: state.weather,
+    channels: state.channels ?? [],
+    mail: (state.mail ?? []).map((letter) => ({ ...letter })),
     engagements: (state.engagements ?? []).map((e) => ({ ...e })),
     npcs: state.npcs.map((n) => ({ ...n, clock: { ...n.clock } })),
     actors: state.actors.map((a) => ({ ...a, visited: [...a.visited] })),
@@ -293,6 +301,11 @@ export function step({ state, rooms, intents }) {
           tokenHash: hash,
         };
         actor.role = intent.role ?? 0;
+      }
+      for (const letter of next.mail) {
+        if (letter.toKey !== actor.key || letter.read) continue;
+        letter.read = true;
+        events.push({ onlyId: actor.id, text: `A letter from ${letter.from}, sent at tick ${letter.tick}: ${letter.text}` });
       }
       continue;
     }
@@ -515,8 +528,71 @@ export function step({ state, rooms, intents }) {
     }
 
     if (intent.kind === "say") {
-      events.push({ room: actor.room, text: `${actor.name} says: ${intent.text}`, exceptId: actor.id });
-      events.push({ onlyId: actor.id, text: `You say: ${intent.text}` });
+      events.push({ room: actor.room, text: intent.messages?.others ?? `${actor.name} says: ${intent.text}`, exceptId: actor.id });
+      events.push({ onlyId: actor.id, text: intent.messages?.actor ?? `You say: ${intent.text}` });
+      continue;
+    }
+
+    // Channels cross rooms; a role is the only lock. Everyone awake is tuned
+    // in, and the speaker reads a different line from the listeners.
+    if (intent.kind === "channel") {
+      const channel = (next.channels ?? []).find((c) => c.id === intent.channelId);
+      if (!channel) continue;
+      if ((actor.role ?? 0) < channel.minRole) continue;
+      for (const listener of next.actors) {
+        if (listener.id === actor.id) {
+          events.push({ onlyId: listener.id, text: intent.messages.actor });
+        } else {
+          events.push({ onlyId: listener.id, text: intent.messages.others });
+        }
+      }
+      continue;
+    }
+
+    if (intent.kind === "tell") {
+      const target = next.actors.find((a) => a.id === intent.targetId);
+      if (!target || target.id === actor.id) continue;
+      events.push({ onlyId: actor.id, text: intent.messages.actor });
+      events.push({ onlyId: target.id, text: intent.messages.target });
+      continue;
+    }
+
+    // Mail is a tell that waits. It is stored against the identity key, not the
+    // actor, so a letter reaches someone who was not there when it was written.
+    if (intent.kind === "mail") {
+      const online = next.actors.find((a) => a.key === intent.toKey && a.id !== actor.id);
+      const letter = {
+        id: `mail-${next.tick}-${intent.actorId}-${next.mail.length}`,
+        from: actor.name,
+        fromKey: actor.key,
+        toKey: intent.toKey,
+        text: intent.text,
+        tick: next.tick,
+        read: Boolean(online),
+      };
+      next.mail.push(letter);
+      while (next.mail.length > 100) next.mail.shift();
+      if (online) events.push({ onlyId: online.id, text: intent.messages.target });
+      events.push({ onlyId: actor.id, text: intent.messages.actor });
+      continue;
+    }
+
+    // Socials have no state change: only the room's account of a gesture. Each
+    // listener gets exactly one line, so the target does not hear the room's
+    // third-person line and a private one at the same time.
+    if (intent.kind === "social") {
+      const target = intent.targetId === null ? null : next.actors.find((a) => a.id === intent.targetId);
+      if (intent.targetId !== null && !target) continue;
+      for (const listener of next.actors) {
+        if (listener.room !== actor.room) continue;
+        let line;
+        if (target === null) line = listener.id === actor.id ? intent.messages.actor : intent.messages.others;
+        else if (listener.id === actor.id) line = target.id === actor.id ? intent.messages.self : intent.messages.target;
+        else if (listener.id === target.id) line = intent.messages.targeted;
+        else line = target.id === actor.id ? intent.messages.selfOthers : intent.messages.targetOthers;
+        events.push({ onlyId: listener.id, text: line });
+      }
+      continue;
     }
   }
 

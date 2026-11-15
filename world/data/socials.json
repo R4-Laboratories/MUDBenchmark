@@ -1,0 +1,100 @@
+{
+  "schema": "mudbenchmark/socials/1",
+  "note": "A social is a verb with no state change and a message per audience. Target messages are optional; a social without them is untargeted.",
+  "socials": {
+    "wave": {
+      "aliases": [
+        "wave"
+      ],
+      "messages": {
+        "actor": "You wave.",
+        "others": "%a waves.",
+        "target": "You wave at %t.",
+        "targetOthers": "%a waves at %t.",
+        "self": "You wave at yourself. The room looks away.",
+        "targeted": "%a waves at you.",
+        "selfOthers": "%a waves at themselves."
+      }
+    },
+    "nod": {
+      "aliases": [
+        "nod"
+      ],
+      "messages": {
+        "actor": "You nod.",
+        "others": "%a nods.",
+        "target": "You nod at %t.",
+        "targetOthers": "%a nods at %t.",
+        "self": "You nod at yourself.",
+        "targeted": "%a nods at you.",
+        "selfOthers": "%a nods at themselves."
+      }
+    },
+    "bow": {
+      "aliases": [
+        "bow"
+      ],
+      "messages": {
+        "actor": "You bow.",
+        "others": "%a bows.",
+        "target": "You bow to %t.",
+        "targetOthers": "%a bows to %t.",
+        "self": "You bow to yourself.",
+        "targeted": "%a bows to you.",
+        "selfOthers": "%a bows to themselves."
+      }
+    },
+    "laugh": {
+      "aliases": [
+        "laugh",
+        "lol"
+      ],
+      "messages": {
+        "actor": "You laugh.",
+        "others": "%a laughs.",
+        "target": "You laugh at %t.",
+        "targetOthers": "%a laughs at %t.",
+        "self": "You laugh at yourself.",
+        "targeted": "%a laughs at you.",
+        "selfOthers": "%a laughs at themselves."
+      }
+    },
+    "sigh": {
+      "aliases": [
+        "sigh"
+      ],
+      "messages": {
+        "actor": "You sigh.",
+        "others": "%a sighs.",
+        "target": "You sigh at %t.",
+        "targetOthers": "%a sighs at %t.",
+        "self": "You sigh at yourself.",
+        "targeted": "%a sighs at you.",
+        "selfOthers": "%a sighs at themselves."
+      }
+    },
+    "shrug": {
+      "aliases": [
+        "shrug"
+      ],
+      "messages": {
+        "actor": "You shrug.",
+        "others": "%a shrugs.",
+        "target": "You shrug at %t.",
+        "targetOthers": "%a shrugs at %t.",
+        "self": "You shrug at yourself.",
+        "targeted": "%a shrugs at you.",
+        "selfOthers": "%a shrugs at themselves."
+      }
+    },
+    "dance": {
+      "aliases": [
+        "dance"
+      ],
+      "messages": {
+        "actor": "You dance.",
+        "others": "%a dances."
+      }
+    }
+  }
+}

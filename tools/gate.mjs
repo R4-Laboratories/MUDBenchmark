@@ -20,6 +20,8 @@ import { spawnSync } from "node:child_process";
 import { loadWorld } from "../runtime/worlddata.mjs";
 import { describe as renderRoom } from "../runtime/view.mjs";
 import { loadVerbs } from "../runtime/verbs.mjs";
+import { loadChannels } from "../runtime/channels.mjs";
+import { loadSocials } from "../runtime/socials.mjs";
 import { initialState, nextFrom, phaseAt, releaseHeldObjects, step, upgradeState } from "../runtime/world.mjs";
 import { join } from "node:path";
 
@@ -80,6 +82,19 @@ if (hidden.includes("SECRET-NOTICE")) failures.push("the room renderer shows a n
 // The verb table must resolve its own aliases and use only known codes.
 const verbTable = loadVerbs();
 if (verbTable.errors.length > 0) failures.push(`verbs are invalid: ${verbTable.errors[0]}`);
+
+// Channels and socials must resolve, and none may shadow a verb or each other.
+const channelTable = loadChannels();
+const socialTable = loadSocials();
+if (channelTable.errors.length > 0) failures.push(`channels are invalid: ${channelTable.errors[0]}`);
+if (socialTable.errors.length > 0) failures.push(`socials are invalid: ${socialTable.errors[0]}`);
+for (const alias of channelTable.byAlias.keys()) {
+  if (verbTable.byAlias.has(alias)) failures.push(`channel alias "${alias}" shadows a verb`);
+  if (socialTable.byAlias.has(alias)) failures.push(`channel alias "${alias}" shadows a social`);
+}
+for (const alias of socialTable.byAlias.keys()) {
+  if (verbTable.byAlias.has(alias)) failures.push(`social alias "${alias}" shadows a verb`);
+}
 
 // Combat must actually resolve: an attack on a 12 hp guard kills it, round by
 // round, and the damage reported sums to exactly its hit points. A duplicated
@@ -249,7 +264,7 @@ let climate = { ok: true, why: [], changes: 0, nightTalk: 0, dayTalk: 0 };
 let resume = { ok: true, why: [] };
 {
   const world = loadWorld({ mode: "single" });
-  const base = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate);
+  const base = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels);
   const saved = JSON.parse(JSON.stringify(base));
   saved.tick = 12345;
   delete saved.pulses.violence;
@@ -258,6 +273,7 @@ let resume = { ok: true, why: [] };
   delete saved.engagements;
   delete saved.cycle;
   saved.objects = saved.objects.filter((o) => o.id !== "chest");
+  saved.mail = [{ id: "mail-old", from: "alice", fromKey: "alice", toKey: "bob", text: "old letter", tick: 7, read: false }];
   const savedCoin = saved.objects.find((o) => o.id === "coin");
   savedCoin.flags = ["takeable"];
   const cloak = saved.objects.find((o) => o.id === "cloak");
@@ -269,6 +285,8 @@ let resume = { ok: true, why: [] };
   if (upgraded.tick !== 12345) { resume.ok = false; resume.why.push("the tick was not preserved"); }
   if (!upgraded.pulses.violence) { resume.ok = false; resume.why.push("the violence pulse was not restored"); }
   if (!upgraded.climate?.weather?.length) { resume.ok = false; resume.why.push("the climate was not restored"); }
+  if (!upgraded.mail?.some((letter) => letter.id === "mail-old")) { resume.ok = false; resume.why.push("mail was lost on resume"); }
+  if (!Array.isArray(upgraded.channels) || upgraded.channels.length === 0) { resume.ok = false; resume.why.push("channels were not restored"); }
   if (!Array.isArray(upgraded.engagements)) { resume.ok = false; resume.why.push("engagements were not restored"); }
   const chest = upgraded.objects.find((o) => o.id === "chest");
   if (!chest || chest.home === undefined) { resume.ok = false; resume.why.push("a newly added object is missing after resume"); }
@@ -349,6 +367,78 @@ let shop = { ok: true, why: [] };
   if (!shop.ok) failures.push(`the shop is broken: ${shop.why[0]}`);
 }
 
+// Communication must cross the right boundaries: a say stays in the room, a
+// tell reaches one person, a channel reaches everyone, mail waits for an
+// absent identity, and a social gives each listener exactly one line.
+let comms = { ok: true, why: [], said: 0, told: 0, mailed: 0, gestured: 0 };
+{
+  const world = loadWorld({ mode: "single" });
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels);
+  const run = (intents) => {
+    const result = step({ state, rooms: world.rooms, intents });
+    state = result.state;
+    return result.events;
+  };
+  const check = (condition, why) => { if (!condition) { comms.ok = false; comms.why.push(why); } };
+  const lines = (events) => events.filter((event) => event.onlyId !== undefined);
+
+  run([
+    { kind: "join", actorId: "a", name: "alice" },
+    { kind: "join", actorId: "b", name: "bob" },
+    { kind: "join", actorId: "c", name: "carol" },
+  ]);
+  run([
+    { kind: "login", actorId: "a", key: "alice", token: null, role: 3 },
+    { kind: "login", actorId: "b", key: "bob", token: null, role: 0 },
+    { kind: "login", actorId: "c", key: "carol", token: null, role: 0 },
+  ]);
+  run([{ kind: "move", actorId: "b", dir: "north", to: 2 }]);
+
+  comms.said = lines(run([{ kind: "say", actorId: "a", text: "hello", messages: { actor: "A", others: "O" } }])).length;
+  check(comms.said === 1, "a say did not stay in its room");
+
+  const gossip = lines(run([{ kind: "channel", actorId: "a", channelId: "gossip", messages: { actor: "CA", others: "CO" } }]));
+  check(gossip.length === 3, `gossip reached ${gossip.length} of 3 awake actors`);
+
+  const wizard = lines(run([{ kind: "channel", actorId: "a", channelId: "wizards", messages: { actor: "WA", others: "WO" } }]));
+  check(wizard.length === 3, "a role-3 actor could not use the wizards channel");
+  const refused = lines(run([{ kind: "channel", actorId: "c", channelId: "wizards", messages: { actor: "WA", others: "WO" } }]));
+  check(refused.length === 0, "a role-0 actor spoke on the wizards channel");
+
+  const told = lines(run([{ kind: "tell", actorId: "a", targetId: "b", messages: { actor: "TA", target: "TB" } }]));
+  comms.told = told.length;
+  check(told.length === 2 && told.some((e) => e.text === "TB"), "a tell did not reach exactly its target");
+
+  const mailed = lines(run([{ kind: "mail", actorId: "a", toKey: "bob", text: "first", messages: { actor: "MA", target: "MB" } }]));
+  comms.mailed = mailed.length;
+  check(mailed.length === 2, "mail to someone online did not reach them");
+  check(state.mail.filter((l) => l.read).length === 1, "mail delivered online was not marked read");
+
+  run([{ kind: "leave", actorId: "b" }]);
+  const queued = lines(run([{ kind: "mail", actorId: "a", toKey: "bob", text: "second", messages: { actor: "MA", target: "MB" } }]));
+  check(queued.length === 1, "mail to an absent identity was delivered to nobody or to the room");
+  check(state.mail.some((l) => l.text === "second" && !l.read), "mail to an absent identity was not stored");
+
+  run([{ kind: "join", actorId: "b2", name: "bob" }]);
+  const delivered = lines(run([{ kind: "login", actorId: "b2", key: "bob", token: null }]));
+  check(delivered.some((e) => e.text.includes("second")), "a letter did not arrive on login");
+
+  run([{ kind: "move", actorId: "a", dir: "north", to: 2 }]);
+  const wave = lines(run([{ kind: "social", actorId: "a", targetId: "b2", messages: {
+    actor: "WA", others: "WO", target: "WT", targeted: "WYOU", targetOthers: "WTO", self: "WS", selfOthers: "WSO",
+  } }]));
+  comms.gestured = wave.length;
+  check(wave.length === 2, `a targeted social produced ${wave.length} lines for two people`);
+  check(wave.some((e) => e.text === "WYOU") && wave.some((e) => e.text === "WT"), "the target and the actor did not get different lines");
+
+  const shrug = lines(run([{ kind: "social", actorId: "a", targetId: null, messages: {
+    actor: "UA", others: "UO", target: "UT", targeted: "UYOU", targetOthers: "UTO", self: "US", selfOthers: "USO",
+  } }]));
+  check(shrug.length === 2 && shrug.some((e) => e.text === "UO"), "an untargeted social did not reach the room once");
+
+  if (!comms.ok) failures.push(`communication is broken: ${comms.why[0]}`);
+}
+
 // Generated code must match the model it claims to come from.
 const drift = spawnSync(process.execPath, ["tools/mechanize.mjs", "--check"], { encoding: "utf8" });
 const driftOk = drift.status === 0;
@@ -376,6 +466,8 @@ if (process.argv.includes("--json")) {
   console.log(`${"combat".padEnd(26)}  ${(combat.outcome === "killed" ? `${combat.rounds} rounds` : "BROKEN").padStart(5)}   == kills`);
   console.log(`${"resume".padEnd(26)}  ${(resume.ok ? "1 save" : "BROKEN").padStart(5)}   == old checkpoint loads`);
   console.log(`${"climate".padEnd(26)}  ${(climate.ok ? `${climate.changes} changes` : "BROKEN").padStart(5)}   == day, night, weather`);
+  console.log(`${"commsTable".padEnd(26)}  ${(verbTable.errors.length + channelTable.errors.length + socialTable.errors.length === 0 ? `${channelTable.byAlias.size + socialTable.byAlias.size} keys` : "BROKEN").padStart(5)}   == resolves`);
+  console.log(`${"comms".padEnd(26)}  ${(comms.ok ? `${comms.said}/${comms.told}/${comms.mailed}/${comms.gestured} ok` : "BROKEN").padStart(5)}   == say, tell, mail, social`);
   console.log(`${"shop".padEnd(26)}  ${(shop.ok ? "buy, sell, reset" : "BROKEN").padStart(5)}   == honest trade`);
   console.log(`${"items".padEnd(26)}  ${(items.ok ? "5 ok" : "BROKEN").padStart(5)}   == containers, wear, food, reset`);
   console.log(`${"generator@500k".padEnd(26)}  ${(oldDirs.size >= 2 ? `${oldDirs.size} dirs` : "BROKEN").padStart(5)}   == still varies`);

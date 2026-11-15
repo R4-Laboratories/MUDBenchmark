@@ -221,6 +221,61 @@
         "buys": "The shop buys at half value.",
         "noShop": "There is no shop here."
       }
+    },
+    "say": {
+      "aliases": [],
+      "argument": "text",
+      "messages": {
+        "actor": "You say: %s",
+        "others": "%a says: %s",
+        "empty": "You say nothing."
+      }
+    },
+    "tell": {
+      "aliases": [
+        "whisper"
+      ],
+      "argument": "actor text",
+      "messages": {
+        "actor": "You tell %t: %s",
+        "target": "%a tells you: %s",
+        "missing": "No one named %s is online. Try mail.",
+        "self": "Talking to yourself is a start.",
+        "empty": "Tell whom what? tell <name> <words>."
+      }
+    },
+    "mail": {
+      "aliases": [
+        "letter"
+      ],
+      "argument": "actor text",
+      "messages": {
+        "actor": "You send %t a letter.",
+        "target": "A letter arrives from %a: %s",
+        "missing": "No one named %s has ever been here.",
+        "self": "Writing to yourself is a diary.",
+        "empty": "Mail whom what? mail <name> <words>."
+      }
+    },
+    "channels": {
+      "aliases": [
+        "chan"
+      ],
+      "argument": "none",
+      "messages": {
+        "list": "Channels: %s.",
+        "none": "No channels are open to you."
+      }
+    },
+    "awake": {
+      "aliases": [
+        "online"
+      ],
+      "argument": "none",
+      "messages": {
+        "list": "Awake: %s.",
+        "alone": "You are the only one awake."
+      }
     }
   }
 }
