@@ -106,7 +106,10 @@ const record = (entry) => appendFileSync(LOG, `${JSON.stringify(entry)}\n`);
 
 socket.on("open", () => {
   console.log(`harness connected as ${NAME} with the ${BRAIN} brain`);
-  record({ event: "connect", url: WS_URL, brain: BRAIN });
+  record({ event: "connect", url: WS_URL, brain: BRAIN, name: NAME });
+  // Claim an identity so a later run with the same name resumes where this one
+  // stopped. A claim, not an authentication: anyone may use any name.
+  socket.send(`login ${NAME}\n`);
 });
 
 socket.on("message", (data) => { observed += data.toString("utf8"); });

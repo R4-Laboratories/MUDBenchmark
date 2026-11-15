@@ -46,6 +46,7 @@ function loadState() {
       // there is nothing to reconnect them to, and a restored actor with no
       // transport would sit in a room forever as a ghost.
       actors: [],
+      identities: saved.identities ?? {},
     };
   } catch {
     return initialState(ROOMS);
@@ -121,6 +122,15 @@ async function handle(id, line) {
     sendTo(id, "Goodbye.\r\n");
     pending.push({ kind: "leave", actorId: id });
     return;
+  }
+
+  if (verb === "login") {
+    const key = rest.join(" ").trim();
+    if (!/^[a-z0-9_-]{1,24}$/i.test(key)) {
+      return sendTo(id, "Names are 1-24 letters, digits, - or _.\r\n");
+    }
+    pending.push({ kind: "login", actorId: id, key });
+    return sendTo(id, `You are known as ${key}. Your room and history return on your next visit.\r\n`);
   }
 
   if (!actor) return sendTo(id, "You are still arriving. Try again in a moment.\r\n");
@@ -212,6 +222,13 @@ function onTick() {
     if (intent.kind !== "move") continue;
     const actor = actorById(intent.actorId);
     if (actor && actor.room === intent.to) sendTo(actor.id, describe(actor.room, actor.id));
+  }
+
+  // Someone who just claimed an identity is placed at their saved room.
+  for (const intent of intents) {
+    if (intent.kind !== "login") continue;
+    const actor = actorById(intent.actorId);
+    if (actor) sendTo(actor.id, describe(actor.room, actor.id));
   }
 
   if (result.checkpoint) saveState();

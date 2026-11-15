@@ -29,6 +29,7 @@ export function initialState(rooms) {
       { id: "moth", name: "a moth", room: 5, home: 5 },
     ].filter((npc) => rooms[npc.room] !== undefined),
     actors: [],
+    identities: {},
   };
 }
 
@@ -46,6 +47,9 @@ export function digestState(state) {
     tick: state.tick,
     npcs: [...state.npcs].sort((a, b) => a.id.localeCompare(b.id)),
     actors: [...state.actors].sort((a, b) => a.id - b.id),
+    identities: Object.fromEntries(
+      Object.keys(state.identities ?? {}).sort().map((k) => [k, state.identities[k]]),
+    ),
   });
   return createHash("sha256").update(canonical, "utf8").digest("hex");
 }
@@ -62,6 +66,7 @@ export function step({ state, rooms, intents }) {
     tick: state.tick + 1,
     npcs: state.npcs.map((n) => ({ ...n })),
     actors: state.actors.map((a) => ({ ...a, visited: [...a.visited] })),
+    identities: { ...state.identities },
   };
   const pulses = due(next.tick);
   const find = (id) => next.actors.find((a) => a.id === id);
@@ -69,7 +74,24 @@ export function step({ state, rooms, intents }) {
   for (const intent of intents) {
     if (intent.kind === "join") {
       if (!find(intent.actorId)) {
-        next.actors.push({ id: intent.actorId, name: intent.name, room: 1, visited: [1] });
+        next.actors.push({ id: intent.actorId, name: intent.name, room: 1, visited: [1], key: null });
+      }
+      continue;
+    }
+
+    if (intent.kind === "login") {
+      const actor = find(intent.actorId);
+      if (!actor) continue;
+      const known = next.identities[intent.key];
+      actor.key = intent.key;
+      if (known) {
+        actor.room = known.room;
+        actor.visited = [...known.visited];
+        actor.name = known.name;
+        if (!actor.visited.includes(actor.room)) actor.visited.push(actor.room);
+      } else {
+        actor.name = intent.key;
+        next.identities[intent.key] = { name: actor.name, room: actor.room, visited: [...actor.visited] };
       }
       continue;
     }
@@ -77,6 +99,9 @@ export function step({ state, rooms, intents }) {
     if (intent.kind === "leave") {
       const actor = find(intent.actorId);
       if (!actor) continue;
+      if (actor.key) {
+        next.identities[actor.key] = { name: actor.name, room: actor.room, visited: [...actor.visited] };
+      }
       events.push({ room: actor.room, text: `${actor.name} vanishes.`, exceptId: actor.id });
       next.actors = next.actors.filter((a) => a.id !== intent.actorId);
       continue;
