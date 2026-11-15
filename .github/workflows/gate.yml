@@ -101,6 +101,7 @@ jobs:
           HOLO=$(find artifact -name 'MUDBench.holo' | head -1)
           MANIFEST=$(find artifact -name 'manifest.json' | head -1)
           gh release create "$TAG" "$HOLO" "$MANIFEST" \
+            --repo "$GITHUB_REPOSITORY" \
             --title "$TAG" \
             --notes "Built, proved and replayed by the gate before publication." \
             --verify-tag
