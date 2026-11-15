@@ -133,17 +133,33 @@ function describe(room, selfId) {
 const CLEARANCE = [];
 
 async function loadClearance() {
-  for (let role = 0; role < 4; role += 1) {
-    CLEARANCE[role] = [];
-    for (let level = 0; level < 4; level += 1) {
-      try {
-        const verdict = await admit({ kind: 6, room: role, origin: level });
-        CLEARANCE[role][level] = verdict === "cleared";
-      } catch {
-        CLEARANCE[role][level] = false; // fail closed: a notice is hidden if unsure
+  // Retry: the world is started by the same deploy that restarts the holo, so
+  // the first queries can arrive before it is listening. Fail-closed is right —
+  // but it must not fail *stuck*, leaving every notice hidden until someone
+  // notices and restarts by hand.
+  for (let attempt = 1; attempt <= 20; attempt += 1) {
+    try {
+      const next = [];
+      for (let role = 0; role < 4; role += 1) {
+        next[role] = [];
+        for (let level = 0; level < 4; level += 1) {
+          const verdict = await admit({ kind: 6, room: role, origin: level });
+          next[role][level] = verdict === "cleared";
+        }
       }
+      // An all-false grid means the guest answered nothing sensible.
+      if (next.flat().some(Boolean)) {
+        CLEARANCE.length = 0;
+        CLEARANCE.push(...next);
+        console.log(`clearance grid loaded: ${JSON.stringify(CLEARANCE)}`);
+        return;
+      }
+    } catch {
+      // fall through to the retry
     }
+    await new Promise((resolve) => setTimeout(resolve, 2000));
   }
+  console.error("clearance unavailable after 40s: notices stay hidden");
 }
 
 const isCleared = (role, level) => CLEARANCE[role]?.[level] ?? false;
@@ -449,9 +465,7 @@ server.listen(TELNET_PORT, "127.0.0.1", () => {
 
 // Loopback only. The tunnel reaches it from localhost, so nothing needs to
 // listen on an interface a scanner can see.
-loadClearance().then(() => {
-  console.log(`clearance grid loaded: ${JSON.stringify(CLEARANCE)}`);
-});
+loadClearance();
 
 web.listen(WEB_PORT, "127.0.0.1", () => {
   console.log(`world on http://127.0.0.1:${WEB_PORT}/ (page and websocket, loopback only)`);
