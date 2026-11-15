@@ -1,28 +1,24 @@
-// The pulse substrate.
+// The world as data: tick, NPCs, actors.
 //
-// A classic MUD is not request/response: the world advances on a fixed clock and
-// most of what happens was never asked for by a player. From SMAUG's notes:
-// "Everything which happens without players issuing orders for it to happen,
-// happens here."
+// `step` is the whole world: state + intents + rooms in, next state and events
+// out. It performs no I/O and reads no clock, so a recorded intent trace replays
+// to the same state — which is the only thing that makes a run auditable.
 //
-// This module is the pure part of that: `step` takes the state, the intents
-// gathered since the last tick and the room table, and returns the next state and
-// the events to deliver. It performs no I/O, so a tick can be replayed.
-//
-// Periods are counted in ticks and are part of the state's meaning, not of the
-// wall clock. The runtime decides when to call `step`; it never decides what is
-// due.
+// Actors live here, not in the server. The server keeps transports and nothing
+// else; if a player's room were in the server's Map, the engine's state and the
+// world's state would be two different objects and no replay could be trusted.
+
+import { createHash } from "node:crypto";
 
 export const TICK_MS = 250;
 
 export const PULSES = {
-  mobile: 4, // NPC movement, about once a second
-  area: 240, // area reset, about a minute
+  mobile: 4,
+  area: 240,
 };
 
 export const CHECKPOINT = 240;
 
-/** Deterministic, so a replay of the same ticks wanders the same way. */
 const nextFrom = (seed, bound) => ((seed * 1103515245 + 12345) % 2147483648) % bound;
 
 export function initialState(rooms) {
@@ -32,6 +28,7 @@ export function initialState(rooms) {
       { id: "rat", name: "a rat", room: 2, home: 2 },
       { id: "moth", name: "a moth", room: 5, home: 5 },
     ].filter((npc) => rooms[npc.room] !== undefined),
+    actors: [],
   };
 }
 
@@ -43,37 +40,64 @@ export function due(tick) {
   };
 }
 
+/** A stable digest of the whole world, for comparing a replay against a trace. */
+export function digestState(state) {
+  const canonical = JSON.stringify({
+    tick: state.tick,
+    npcs: [...state.npcs].sort((a, b) => a.id.localeCompare(b.id)),
+    actors: [...state.actors].sort((a, b) => a.id - b.id),
+  });
+  return createHash("sha256").update(canonical, "utf8").digest("hex");
+}
+
 /**
  * Advance one tick.
  *
- * @param {{ state: object, rooms: object, intents: Array, actors: Map }} input
- * @returns {{ state: object, events: Array<{room: number, text: string, except?: object}> }}
+ * Intents: {kind:"join"|"leave"|"move"|"say"}. Events are room broadcasts
+ * ({room, text, exceptId}) or personal ({onlyId, text}).
  */
-export function step({ state, rooms, intents, actors }) {
+export function step({ state, rooms, intents }) {
   const events = [];
   const next = {
     tick: state.tick + 1,
-    npcs: state.npcs.map((npc) => ({ ...npc })),
+    npcs: state.npcs.map((n) => ({ ...n })),
+    actors: state.actors.map((a) => ({ ...a, visited: [...a.visited] })),
   };
   const pulses = due(next.tick);
+  const find = (id) => next.actors.find((a) => a.id === id);
 
-  // Intents first: a player who typed a command this tick acts this tick.
   for (const intent of intents) {
-    const actor = actors.get(intent.actorId);
+    if (intent.kind === "join") {
+      if (!find(intent.actorId)) {
+        next.actors.push({ id: intent.actorId, name: intent.name, room: 1, visited: [1] });
+      }
+      continue;
+    }
+
+    if (intent.kind === "leave") {
+      const actor = find(intent.actorId);
+      if (!actor) continue;
+      events.push({ room: actor.room, text: `${actor.name} vanishes.`, exceptId: actor.id });
+      next.actors = next.actors.filter((a) => a.id !== intent.actorId);
+      continue;
+    }
+
+    const actor = find(intent.actorId);
     if (!actor) continue;
 
     if (intent.kind === "move") {
+      if (rooms[actor.room]?.exits?.[intent.dir] !== intent.to) continue;
       const from = actor.room;
-      if (rooms[from]?.exits?.[intent.dir] !== intent.to) continue; // topology moved
-      events.push({ room: from, text: `${actor.name} leaves ${intent.dir}.`, except: actor });
+      events.push({ room: from, text: `${actor.name} leaves ${intent.dir}.`, exceptId: actor.id });
       actor.room = intent.to;
-      events.push({ room: intent.to, text: `${actor.name} arrives.`, except: actor });
+      if (!actor.visited.includes(actor.room)) actor.visited.push(actor.room);
+      events.push({ room: intent.to, text: `${actor.name} arrives.`, exceptId: actor.id });
       continue;
     }
 
     if (intent.kind === "say") {
-      events.push({ room: actor.room, text: `${actor.name} says: ${intent.text}`, except: actor });
-      events.push({ room: actor.room, text: `You say: ${intent.text}`, only: actor });
+      events.push({ room: actor.room, text: `${actor.name} says: ${intent.text}`, exceptId: actor.id });
+      events.push({ onlyId: actor.id, text: `You say: ${intent.text}` });
     }
   }
 
