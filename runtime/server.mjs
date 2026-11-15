@@ -55,6 +55,23 @@ const pending = [];
 const deferred = new Map(); // id -> lines typed before the actor existed
 let nextId = 1;
 
+// Guards that must exist before this is reachable by anyone but us.
+const MAX_CLIENTS = Number(process.env.MAX_CLIENTS ?? 40);
+const RATE_WINDOW_MS = 5000;
+const RATE_MAX = 12;
+const buckets = new Map();
+
+function allowCommand(id) {
+  const now = Date.now();
+  let bucket = buckets.get(id);
+  if (!bucket || now > bucket.resetAt) {
+    bucket = { count: 0, resetAt: now + RATE_WINDOW_MS };
+    buckets.set(id, bucket);
+  }
+  bucket.count += 1;
+  return bucket.count <= RATE_MAX;
+}
+
 // --- persistence ---------------------------------------------------------
 
 function loadState() {
@@ -134,7 +151,7 @@ async function admit({ kind, room, origin = 0, destination = 0 }) {
 const DIRECTIONS = { n: "north", s: "south", e: "east", w: "west",
   north: "north", south: "south", east: "east", west: "west" };
 
-async function handle(id, line) {
+async function handleCommand(id, line) {
   const text = line.trim();
   if (!text) return;
   const [verb, ...rest] = text.toLowerCase().split(/\s+/);
@@ -233,6 +250,14 @@ async function handle(id, line) {
   sendTo(id, `I do not know "${verb}". Try look, who, say, answer, n/s/e/w, quit.\r\n`);
 }
 
+// The limiter is charged once per non-empty line, when it arrives. Replays of
+// lines that were deferred before the actor existed are not charged again.
+async function handle(id, line) {
+  if (!line.trim()) return;
+  if (!allowCommand(id)) return sendTo(id, "Slow down.\r\n");
+  return handleCommand(id, line);
+}
+
 // --- the clock -----------------------------------------------------------
 
 function onTick() {
@@ -273,7 +298,7 @@ function onTick() {
   for (const [id, lines] of deferred) {
     if (!actorById(id)) continue;
     deferred.delete(id);
-    for (const line of lines) handle(id, line).catch(() => {});
+    for (const line of lines) handleCommand(id, line).catch(() => {});
   }
 
   if (result.checkpoint) saveState();
@@ -309,6 +334,10 @@ function join(name) {
 }
 
 const server = net.createServer((socket) => {
+  if (transports.size >= MAX_CLIENTS) {
+    socket.end("The world is full.\r\n");
+    return;
+  }
   const id = join(`guest-${nextId}`);
   let buffer = "";
   transports.set(id, {
@@ -328,6 +357,7 @@ const server = net.createServer((socket) => {
   });
   socket.on("close", () => {
     transports.delete(id);
+    buckets.delete(id);
     pending.push({ kind: "leave", actorId: id });
   });
 });
@@ -357,6 +387,11 @@ const web = http.createServer((req, res) => {
 
 const wss = new WebSocketServer({ server: web });
 wss.on("connection", (ws) => {
+  if (transports.size >= MAX_CLIENTS) {
+    ws.send("The world is full.\n");
+    ws.close();
+    return;
+  }
   const id = join(`agent-${nextId}`);
   transports.set(id, {
     send: (t) => { if (ws.readyState === 1) ws.send(t.replace(/\r\n/g, "\n")); },
@@ -371,6 +406,7 @@ wss.on("connection", (ws) => {
   });
   ws.on("close", () => {
     transports.delete(id);
+    buckets.delete(id);
     pending.push({ kind: "leave", actorId: id });
   });
 });
