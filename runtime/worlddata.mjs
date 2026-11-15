@@ -70,6 +70,15 @@ export function loadWorld({ mode = "single", path = DEFAULT_PATH } = {}) {
     }
   }
 
+  // NPCs must stand somewhere real, and their clocks must be sane.
+  const npcs = [];
+  for (const npc of raw.npcs ?? []) {
+    if (!rooms[npc.room]) errors.push(`npc ${npc.id} is in room ${npc.room}, which does not exist`);
+    if (!Number.isInteger(npc.period) || npc.period < 1) errors.push(`npc ${npc.id} has a period below 1`);
+    if (!Number.isInteger(npc.jitter) || npc.jitter < 0) errors.push(`npc ${npc.id} has a negative jitter`);
+    npcs.push({ ...npc });
+  }
+
   // Every room must be reachable from the start, or nobody will ever see it.
   const start = raw.start ?? 1;
   const seen = new Set([start]);
@@ -92,5 +101,5 @@ export function loadWorld({ mode = "single", path = DEFAULT_PATH } = {}) {
     if (!rooms[task[key]]) errors.push(`task.${key} names room ${task[key]}, which does not exist`);
   }
 
-  return { rooms, start, task, errors };
+  return { rooms, start, task, npcs, errors };
 }

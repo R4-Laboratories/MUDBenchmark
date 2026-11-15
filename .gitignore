@@ -16,3 +16,6 @@ node_modules/
 # PrismPM / LexLean build output
 **/.prism/build/
 **/.lexlean/
+
+# Generated observation datasets
+/dataset/

@@ -22,13 +22,16 @@ export const CHECKPOINT = 240;
 
 const nextFrom = (seed, bound) => ((seed * 1103515245 + 12345) % 2147483648) % bound;
 
-export function initialState(rooms) {
+export function initialState(rooms, npcs = []) {
   return {
     tick: 0,
-    npcs: [
-      { id: "rat", name: "a rat", room: 2, home: 2 },
-      { id: "moth", name: "a moth", room: 5, home: 5 },
-    ].filter((npc) => rooms[npc.room] !== undefined),
+    cycle: 0,
+    npcs: npcs
+      .filter((npc) => rooms[npc.room] !== undefined)
+      .map((npc) => ({
+        ...npc,
+        clock: makePulse({ period: npc.period, remaining: npc.period }),
+      })),
     actors: [],
     identities: {},
     // Countdowns, generated from Pulses.lex.tex. Starting at zero makes the
@@ -52,6 +55,7 @@ export function due(tick) {
 export function digestState(state) {
   const canonical = JSON.stringify({
     tick: state.tick,
+    cycle: state.cycle ?? 0,
     npcs: [...state.npcs].sort((a, b) => a.id.localeCompare(b.id)),
     actors: [...state.actors].sort((a, b) => a.id - b.id),
     identities: Object.fromEntries(
@@ -72,7 +76,8 @@ export function step({ state, rooms, intents }) {
   const events = [];
   const next = {
     tick: state.tick + 1,
-    npcs: state.npcs.map((n) => ({ ...n })),
+    cycle: state.cycle ?? 0,
+    npcs: state.npcs.map((n) => ({ ...n, clock: { ...n.clock } })),
     actors: state.actors.map((a) => ({ ...a, visited: [...a.visited] })),
     identities: { ...state.identities },
     pulses: { mobile: { ...state.pulses.mobile }, area: { ...state.pulses.area } },
@@ -172,20 +177,30 @@ export function step({ state, rooms, intents }) {
     }
   }
 
-  if (mobileDue) {
-    for (const npc of next.npcs) {
-      const exits = Object.keys(rooms[npc.room]?.exits ?? {});
-      if (exits.length === 0) continue;
-      const dir = exits[nextFrom(next.tick + npc.id.length, exits.length)];
-      const to = rooms[npc.room].exits[dir];
-      const from = npc.room;
-      npc.room = to;
-      events.push({ room: from, text: `${npc.name} scuttles ${dir}.` });
-      events.push({ room: to, text: `${npc.name} arrives.` });
-    }
+  // Hierarchical clocks: every NPC runs its own countdown, so a rat on a slow
+  // clock does not move when the world ticks — it moves when *its* clock does.
+  // Jitter is drawn from the tick and the id, so a replay wanders identically.
+  for (const npc of next.npcs) {
+    npc.clock = advance(npc.clock);
+    if (!pulseDue(npc.clock)) continue;
+
+    const period = npc.period + nextFrom(next.tick * 31 + npc.id.length, (npc.jitter ?? 0) + 1);
+    npc.clock = { period, remaining: period };
+
+    const exits = Object.keys(rooms[npc.room]?.exits ?? {});
+    if (exits.length === 0) continue;
+    const dir = exits[nextFrom(next.tick + npc.id.length, exits.length)];
+    const to = rooms[npc.room].exits[dir];
+    const from = npc.room;
+    npc.room = to;
+    events.push({ room: from, text: `${npc.name} scuttles ${dir}.` });
+    events.push({ room: to, text: `${npc.name} arrives.` });
   }
 
   if (areaDue) {
+    // The old MUD reset: the world returns to its starting arrangement and the
+    // cycle advances, so a long session is a series of games, not one drift.
+    next.cycle += 1;
     for (const npc of next.npcs) npc.room = npc.home;
     for (const room of Object.keys(rooms)) {
       events.push({ room: Number(room), text: "A bell rings somewhere below." });

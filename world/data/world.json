@@ -108,5 +108,23 @@
       "prompt": "who carved the plaque",
       "exists": false
     }
-  }
+  },
+  "npcs": [
+    {
+      "id": "rat",
+      "name": "a rat",
+      "room": 2,
+      "home": 2,
+      "period": 8,
+      "jitter": 6
+    },
+    {
+      "id": "moth",
+      "name": "a moth",
+      "room": 5,
+      "home": 5,
+      "period": 14,
+      "jitter": 10
+    }
+  ]
 }
