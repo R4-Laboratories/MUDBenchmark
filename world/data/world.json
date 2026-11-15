@@ -78,9 +78,17 @@
     "6": {
       "name": "Shrine",
       "exits": {
-        "south": 5
+        "south": 5,
+        "north": 7
       },
       "text": "A shrine asks you to speak the word from the Vault: answer <word>. It also asks what is carved there: claim <word>, or claim unknown. And it asks who carved the plaque: claim keeper <name>."
+    },
+    "7": {
+      "name": "Chancel",
+      "exits": {
+        "south": 6
+      },
+      "text": "A chancel behind the shrine, and nothing else in it. One question is cut into the floor: who carved the plaque? Say: claim keeper <name>, or claim keeper unknown."
     }
   },
   "task": {
