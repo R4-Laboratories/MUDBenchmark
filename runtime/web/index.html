@@ -50,7 +50,10 @@
 
   let socket;
   function connect() {
-    socket = new WebSocket(`ws://${location.host}`);
+    // Same origin, and the scheme follows the page: a page served over HTTPS
+    // cannot open a ws:// socket, so a tunnel needs wss://.
+    const scheme = location.protocol === "https:" ? "wss:" : "ws:";
+    socket = new WebSocket(`${scheme}//${location.host}`);
     socket.onopen = () => { state.textContent = "connected"; };
     socket.onclose = () => { state.textContent = "disconnected"; setTimeout(connect, 1500); };
     socket.onerror = () => { state.textContent = "error"; };
