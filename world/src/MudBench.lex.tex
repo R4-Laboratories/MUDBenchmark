@@ -11,35 +11,40 @@ definition{
   result: Nat,
   body: (match (Foundation.Bytes::byteAt value offset)
     | Option.none => 255
-    | Option.some byte => (prim to_nat byte : Nat))
+    | Option.some byte => (prim to_nat byte : Nat)),
+  axioms: [Quot.sound, propext]
 }
 
 definition{
   name: kindOf,
   parameters: [value : Bytes],
   result: Nat,
-  body: (field value 0)
+  body: (field value 0),
+  axioms: [Quot.sound, propext]
 }
 
 definition{
   name: roomOf,
   parameters: [value : Bytes],
   result: Nat,
-  body: (field value 1)
+  body: (field value 1),
+  axioms: [Quot.sound, propext]
 }
 
 definition{
   name: originOf,
   parameters: [value : Bytes],
   result: Nat,
-  body: (field value 2)
+  body: (field value 2),
+  axioms: [Quot.sound, propext]
 }
 
 definition{
   name: destinationOf,
   parameters: [value : Bytes],
   result: Nat,
-  body: (field value 3)
+  body: (field value 3),
+  axioms: [Quot.sound, propext]
 }
 
 definition{
@@ -50,14 +55,16 @@ definition{
     else (if ((kindOf value) =? 4) then true
     else (if ((kindOf value) =? 1) then ((originOf value) =? (roomOf value))
     else (if ((kindOf value) =? 3) then ((roomOf value) =? (destinationOf value))
-    else false))))
+    else false)))),
+  axioms: [Quot.sound, propext]
 }
 
 definition{
   name: verdict,
   parameters: [value : Bytes],
   result: Bytes,
-  body: (if (admits value) then (prim utf8_encode "admissible" : Bytes) else (prim utf8_encode "refused" : Bytes))
+  body: (if (admits value) then (prim utf8_encode "admissible" : Bytes) else (prim utf8_encode "refused" : Bytes)),
+  axioms: [Quot.sound, propext]
 }
 
 definition{
