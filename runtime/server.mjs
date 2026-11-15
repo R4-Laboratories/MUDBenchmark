@@ -10,7 +10,7 @@
 
 import net from "node:net";
 import http from "node:http";
-import { readFileSync, writeFileSync, renameSync } from "node:fs";
+import { readFileSync, writeFileSync, renameSync, appendFileSync } from "node:fs";
 import { WebSocketServer } from "ws";
 import { recordSpan, digest } from "./telemetry.mjs";
 import { step, initialState, TICK_MS } from "./world.mjs";
@@ -19,6 +19,7 @@ const HOLO_URL = process.env.HOLO_URL ?? "http://127.0.0.1:8082";
 const TELNET_PORT = Number(process.env.TELNET_PORT ?? 4000);
 const WS_PORT = Number(process.env.WS_PORT ?? 4001);
 const STATE_FILE = process.env.STATE_FILE ?? "/tmp/mudbench-world.json";
+const TRACE_FILE = process.env.TRACE_FILE ?? "/tmp/mudbench-trace.jsonl";
 
 const ROOMS = {
   1: { name: "Atrium", exits: { north: 2, east: 3 }, text: "A cold marble hall. A plaque reads: the Vault keeps the word." },
@@ -206,6 +207,15 @@ function onTick() {
   }
 
   if (result.checkpoint) saveState();
+
+  try {
+    appendFileSync(TRACE_FILE, `${JSON.stringify({
+      tick: state.tick,
+      npcs: state.npcs.map((n) => ({ id: n.id, room: n.room })),
+    })}\n`);
+  } catch {
+    // tracing is diagnostic; never let it stop the world
+  }
 }
 
 setInterval(onTick, TICK_MS);
@@ -266,6 +276,7 @@ wss.on("connection", (ws) => {
 });
 
 server.listen(TELNET_PORT, () => {
+  try { writeFileSync(TRACE_FILE, `${JSON.stringify({ exits: ROOMS })}\n`); } catch {}
   console.log(`telnet on :${TELNET_PORT}`);
   console.log(`websocket on :${WS_PORT}`);
   console.log(`holo at ${HOLO_URL}`);
