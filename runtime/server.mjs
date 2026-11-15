@@ -10,7 +10,7 @@ import { readFileSync, writeFileSync, renameSync, appendFileSync } from "node:fs
 import { randomBytes } from "node:crypto";
 import { WebSocketServer } from "ws";
 import { recordSpan, digest } from "./telemetry.mjs";
-import { step, initialState, digestState, phaseAt, upgradeState, TICK_MS } from "./world.mjs";
+import { step, initialState, digestState, phaseAt, upgradeState, releaseHeldObjects, TICK_MS } from "./world.mjs";
 import { loadWorld } from "./worlddata.mjs";
 import { describe as renderRoom } from "./view.mjs";
 import { loadVerbs, render, resolve } from "./verbs.mjs";
@@ -82,7 +82,9 @@ function loadState() {
     const upgraded = upgradeState(saved, base);
     // Players are saved for the trace but not restored: without an identity
     // there is nothing to reconnect them to, and a restored actor with no
-    // transport would sit in a room forever as a ghost.
+    // transport would sit in a room forever as a ghost. What they carried is
+    // released where they stood, or a deploy quietly deletes their inventory.
+    releaseHeldObjects(upgraded, saved.actors ?? []);
     return { ...upgraded, actors: [] };
   } catch {
     return initialState(ROOMS, loaded.npcs, loaded.objects, loaded.start, loaded.climate);

@@ -154,7 +154,15 @@ export function upgradeState(saved, base) {
   // Objects and mobiles are matched by id. The base supplies every field the
   // current model knows, and the save overrides only what it actually held.
   const savedObjects = new Map((saved.objects ?? []).map((o) => [o.id, o]));
-  const objects = base.objects.map((o) => ({ ...o, ...(savedObjects.get(o.id) ?? {}) }));
+  const objects = base.objects.map((o) => {
+    const old = savedObjects.get(o.id);
+    if (!old) return { ...o };
+    // Flags are additive across releases: a save written before coins existed
+    // must not erase the `coin` flag the current model gives an object. The
+    // deployment after this fix found exactly that — the shop could not see a
+    // silver coin because the save's older flag list had replaced the new one.
+    return { ...o, ...old, flags: [...new Set([...(o.flags ?? []), ...(old.flags ?? [])])] };
+  });
   const savedNpcs = new Map((saved.npcs ?? []).map((n) => [n.id, n]));
   const npcs = base.npcs.map((n) => {
     const old = savedNpcs.get(n.id);
@@ -176,6 +184,27 @@ export function upgradeState(saved, base) {
     objects,
     actors: saved.actors ?? base.actors,
   };
+}
+
+/**
+ * A restart does not restore players, so anything they were carrying would be
+ * held by an actor who no longer exists and could never be reached again. Put
+ * it on the floor of the room they logged out in, which is what the old MUDs
+ * did and what a player expects after a deploy.
+ */
+export function releaseHeldObjects(state, actors = []) {
+  const roomOf = new Map(actors.map((actor) => [actor.id, actor.room]));
+  for (const object of state.objects) {
+    if (object.holder === null || object.holder === undefined) continue;
+    // A holder with no actor record is an orphan: an older release dropped the
+    // actor but kept the object in their hand, and no one can ever reach it.
+    // It goes home rather than vanishing.
+    object.room = roomOf.has(object.holder) ? roomOf.get(object.holder) : (object.home ?? state.start);
+    object.holder = null;
+    object.inside = null;
+    object.worn = false;
+  }
+  return state;
 }
 
 export function step({ state, rooms, intents }) {

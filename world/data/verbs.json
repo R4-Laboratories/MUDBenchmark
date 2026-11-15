@@ -187,11 +187,11 @@
       ],
       "argument": "object",
       "messages": {
-        "actor": "You buy %o for %s coins.",
+        "actor": "You buy %o for %s.",
         "others": "%a buys %o.",
         "missing": "The shop does not offer that.",
         "noShop": "There is no shop here.",
-        "poor": "You cannot afford %o (%s coins).",
+        "poor": "You cannot afford %o (price %s).",
         "stolen": "The %s is not for sale."
       }
     },
@@ -201,7 +201,7 @@
       ],
       "argument": "object",
       "messages": {
-        "actor": "You sell %o for %s coins.",
+        "actor": "You sell %o for %s.",
         "others": "%a sells %o.",
         "missing": "You are not carrying a %s.",
         "noShop": "There is no shop here.",

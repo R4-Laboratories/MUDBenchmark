@@ -20,7 +20,7 @@ import { spawnSync } from "node:child_process";
 import { loadWorld } from "../runtime/worlddata.mjs";
 import { describe as renderRoom } from "../runtime/view.mjs";
 import { loadVerbs } from "../runtime/verbs.mjs";
-import { initialState, nextFrom, phaseAt, step, upgradeState } from "../runtime/world.mjs";
+import { initialState, nextFrom, phaseAt, releaseHeldObjects, step, upgradeState } from "../runtime/world.mjs";
 import { join } from "node:path";
 
 const root = process.cwd();
@@ -258,6 +258,8 @@ let resume = { ok: true, why: [] };
   delete saved.engagements;
   delete saved.cycle;
   saved.objects = saved.objects.filter((o) => o.id !== "chest");
+  const savedCoin = saved.objects.find((o) => o.id === "coin");
+  savedCoin.flags = ["takeable"];
   const cloak = saved.objects.find((o) => o.id === "cloak");
   delete cloak.inside;
   delete cloak.worn;
@@ -270,8 +272,18 @@ let resume = { ok: true, why: [] };
   if (!Array.isArray(upgraded.engagements)) { resume.ok = false; resume.why.push("engagements were not restored"); }
   const chest = upgraded.objects.find((o) => o.id === "chest");
   if (!chest || chest.home === undefined) { resume.ok = false; resume.why.push("a newly added object is missing after resume"); }
+  const restoredCoin = upgraded.objects.find((o) => o.id === "coin");
+  if (!(restoredCoin.flags ?? []).includes("coin")) { resume.ok = false; resume.why.push("an object lost a flag the new model gave it"); }
   const restoredCloak = upgraded.objects.find((o) => o.id === "cloak");
   if (restoredCloak.worn !== false || restoredCloak.inside !== null) { resume.ok = false; resume.why.push("an old object kept an undefined property"); }
+
+  const dropped = JSON.parse(JSON.stringify(upgraded));
+  dropped.actors = [{ id: "lost", room: 3, name: "lost" }];
+  const heldCoin = dropped.objects.find((o) => o.id === "coin");
+  heldCoin.holder = "lost";
+  heldCoin.room = null;
+  releaseHeldObjects(dropped, dropped.actors);
+  if (heldCoin.holder !== null || heldCoin.room !== 3) { resume.ok = false; resume.why.push("a vanished player's inventory was not released where they stood"); }
 
   try {
     let state = upgraded;
