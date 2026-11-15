@@ -1,0 +1,69 @@
+\begin{lexlean}{World}
+\useglossary{lexlean.std.bool@1.2.0}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{prism.arch@1.0.0}
+\title{Text application model}
+\begin{semanticmodule}
+structure{
+  name: Exit,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: start, type: Nat}, {name: finish, type: Nat}]
+}
+
+structure{
+  name: Actor,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: actor, type: Nat}, {name: room, type: Nat}]
+}
+
+definition{
+  name: connects,
+  parameters: [exit : Exit, room : Nat],
+  result: Bool,
+  body: ((project exit start) =? room)
+}
+
+definition{
+  name: Connects,
+  parameters: [exit : Exit, room : Nat],
+  result: Prop,
+  body: ((project exit start) = room)
+}
+
+definition{
+  name: coLocated,
+  parameters: [left : Actor, right : Actor],
+  result: Bool,
+  body: ((project left room) =? (project right room))
+}
+
+theorem{
+  name: connects_decides,
+  parameters: [exit : Exit, room : Nat],
+  statement: (((connects exit room) = true) <-> (Connects exit room)),
+  proof: simplify{
+    definitions: [
+      Connects,
+      Nat.beq_eq,
+      connects
+    ]
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: coLocated_decides,
+  parameters: [left : Actor, right : Actor],
+  statement: (((coLocated left right) = true) <-> ((project left room) = (project right room))),
+  proof: simplify{
+    definitions: [
+      Nat.beq_eq,
+      coLocated
+    ]
+  },
+  axioms: [propext]
+}
+\end{semanticmodule}
+\end{lexlean}

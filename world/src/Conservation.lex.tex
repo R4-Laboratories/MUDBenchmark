@@ -1,0 +1,42 @@
+\begin{lexlean}{Conservation}
+\useglossary{lexlean.std.bool@1.2.0}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{prism.arch@1.0.0}
+\title{Text application model}
+\begin{semanticmodule}
+structure{
+  name: Ledger,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: before, type: Nat}, {name: after, type: Nat}]
+}
+
+definition{
+  name: preserved,
+  parameters: [ledger : Ledger],
+  result: Bool,
+  body: ((project ledger before) =? (project ledger after))
+}
+
+definition{
+  name: Preserved,
+  parameters: [ledger : Ledger],
+  result: Prop,
+  body: ((project ledger before) = (project ledger after))
+}
+
+theorem{
+  name: preserved_decides,
+  parameters: [ledger : Ledger],
+  statement: (((preserved ledger) = true) <-> (Preserved ledger)),
+  proof: simplify{
+    definitions: [
+      Nat.beq_eq,
+      Preserved,
+      preserved
+    ]
+  },
+  axioms: [propext]
+}
+\end{semanticmodule}
+\end{lexlean}
