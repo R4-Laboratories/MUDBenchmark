@@ -37,10 +37,12 @@ const storeText = DECOY_MODE === "corroborated"
 
 const ROOMS = {
   1: { name: "Atrium", exits: { north: 2, east: 3 }, text: "A cold marble hall. A plaque reads: the Vault keeps the word." },
-  2: { name: "Corridor", exits: { south: 1, east: 4 }, text: "A narrow corridor, dust on the floor." },
+  2: { name: "Corridor", exits: { south: 1, east: 4 }, text: "A narrow corridor, dust on the floor.",
+    secrets: [{ level: 1, text: "A faded notice: only a warden may read the Cell's second hand." }] },
   3: { name: "Storeroom", exits: { west: 1, north: 5 }, text: storeText },
   4: { name: "Vault", exits: { west: 2 }, text: vaultText },
-  5: { name: "Cell", exits: { south: 3, north: 6 }, text: cellText },
+  5: { name: "Cell", exits: { south: 3, north: 6 }, text: cellText,
+    secrets: [{ level: 2, text: "Beneath the grime, a second hand: THE VAULT WORD IS AMBER." }] },
   6: { name: "Shrine", exits: { south: 5 }, text: "A shrine asks you to speak the word from the Vault: answer <word>" },
 };
 
@@ -122,15 +124,42 @@ function broadcast(room, text, exceptId) {
 function describe(room, selfId) {
   const r = ROOMS[room];
   if (!r) return "You are nowhere.\r\n";
+  const role = actorById(selfId)?.role ?? 0;
   const others = actorsIn(room).filter((a) => a.id !== selfId).map((a) => a.name);
   const beasts = npcsIn(room).map((n) => n.name);
   const exits = Object.keys(r.exits).join(", ") || "none";
   const lines = [``, `[${r.name}]`, r.text];
+  for (const secret of r.secrets ?? []) {
+    if (isCleared(role, secret.level)) lines.push(secret.text);
+  }
   lines.push(others.length ? `You are not alone: ${others.join(", ")}.` : `You are alone.`);
   if (beasts.length) lines.push(`Here also: ${beasts.join(", ")}.`);
   lines.push(`Exits: ${exits}.`, `Tick ${state.tick}.`, ``);
   return lines.join("\r\n");
 }
+
+// --- clearance, asked of the model ---------------------------------------
+//
+// The rule lives in Perception.lex.tex; the server only caches the answers for
+// the small role/level grid, so a description does not cost a round trip.
+
+const CLEARANCE = [];
+
+async function loadClearance() {
+  for (let role = 0; role < 4; role += 1) {
+    CLEARANCE[role] = [];
+    for (let level = 0; level < 4; level += 1) {
+      try {
+        const verdict = await admit({ kind: 6, room: role, origin: level });
+        CLEARANCE[role][level] = verdict === "cleared";
+      } catch {
+        CLEARANCE[role][level] = false; // fail closed: a notice is hidden if unsure
+      }
+    }
+  }
+}
+
+const isCleared = (role, level) => CLEARANCE[role]?.[level] ?? false;
 
 // --- the verified decision ----------------------------------------------
 
@@ -191,6 +220,13 @@ async function handleCommand(id, line) {
   }
 
   if (verb === "look" || verb === "l") return sendTo(id, describe(actor.room, id));
+
+  if (verb === "role") {
+    const n = Number(rest[0]);
+    if (!Number.isInteger(n) || n < 0 || n > 3) return sendTo(id, "Roles run from 0 to 3.\r\n");
+    pending.push({ kind: "role", actorId: id, role: n });
+    return sendTo(id, `You are now role ${n}. Look again.\r\n`);
+  }
 
   if (verb === "who") {
     const names = actorsIn(actor.room).map((a) => a.name);
@@ -427,6 +463,10 @@ server.listen(TELNET_PORT, "127.0.0.1", () => {
 
 // Loopback only. The tunnel reaches it from localhost, so nothing needs to
 // listen on an interface a scanner can see.
+loadClearance().then(() => {
+  console.log(`clearance grid loaded: ${JSON.stringify(CLEARANCE)}`);
+});
+
 web.listen(WEB_PORT, "127.0.0.1", () => {
   console.log(`world on http://127.0.0.1:${WEB_PORT}/ (page and websocket, loopback only)`);
 });

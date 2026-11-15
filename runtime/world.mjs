@@ -74,7 +74,7 @@ export function step({ state, rooms, intents }) {
   for (const intent of intents) {
     if (intent.kind === "join") {
       if (!find(intent.actorId)) {
-        next.actors.push({ id: intent.actorId, name: intent.name, room: 1, visited: [1], key: null });
+        next.actors.push({ id: intent.actorId, name: intent.name, room: 1, visited: [1], key: null, role: 0 });
       }
       continue;
     }
@@ -99,6 +99,7 @@ export function step({ state, rooms, intents }) {
         actor.visited = [...known.visited];
         actor.name = known.name;
         actor.room = intent.respawn ? 1 : known.room;
+        actor.role = known.role ?? 0;
         if (!actor.visited.includes(actor.room)) actor.visited.push(actor.room);
       } else {
         actor.name = intent.key;
@@ -106,6 +107,7 @@ export function step({ state, rooms, intents }) {
           name: actor.name,
           room: actor.room,
           visited: [...actor.visited],
+          role: 0,
           tokenHash: hash,
         };
       }
@@ -116,7 +118,15 @@ export function step({ state, rooms, intents }) {
       const actor = find(intent.actorId);
       if (!actor) continue;
       if (actor.key) {
-        next.identities[actor.key] = { name: actor.name, room: actor.room, visited: [...actor.visited] };
+        // Merge, never replace: the token hash and the role must survive a
+        // disconnect, or the returning player cannot sign in again.
+        next.identities[actor.key] = {
+          ...next.identities[actor.key],
+          name: actor.name,
+          room: actor.room,
+          visited: [...actor.visited],
+          role: actor.role,
+        };
       }
       events.push({ room: actor.room, text: `${actor.name} vanishes.`, exceptId: actor.id });
       next.actors = next.actors.filter((a) => a.id !== intent.actorId);
@@ -133,6 +143,11 @@ export function step({ state, rooms, intents }) {
       actor.room = intent.to;
       if (!actor.visited.includes(actor.room)) actor.visited.push(actor.room);
       events.push({ room: intent.to, text: `${actor.name} arrives.`, exceptId: actor.id });
+      continue;
+    }
+
+    if (intent.kind === "role") {
+      actor.role = intent.role;
       continue;
     }
 
