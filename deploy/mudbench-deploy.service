@@ -1,0 +1,8 @@
+[Unit]
+Description=MUDBench pull deployment (fetch newest release, prove it, flip, roll back on failure)
+After=network-online.target mudbench-world.service
+
+[Service]
+Type=oneshot
+ExecStart=/home/callard/.local/bin/mudbench-deploy
+Nice=10

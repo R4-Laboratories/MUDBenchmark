@@ -4,6 +4,9 @@ name: Gate
 # question: is anything worse than it was? The ratchet answers it, the model is
 # re-proved, and the vectors are replayed. A red run is a regression, not a
 # flake: nothing here is timing-dependent.
+#
+# Publishing is a separate, deliberate act: only a `v*` tag produces a release,
+# and only a release is what wick's deploy timer will pull.
 
 on:
   push:
@@ -18,6 +21,9 @@ permissions:
 concurrency:
   group: gate-${{ github.ref }}
   cancel-in-progress: true
+
+env:
+  SDK: ghcr.io/uor-foundation/prismpm-sdk@sha256:d6c263a733a6bc36e0458c3f5b9a1f5ea9c14dfbe8c257d3f650a960b5fe633c
 
 jobs:
   ratchet:
@@ -47,17 +53,47 @@ jobs:
 
       - name: Verify the model in the pinned SDK
         run: |
-          docker run --rm -v "$PWD:/w" -w /w/world \
-            ghcr.io/uor-foundation/prismpm-sdk@sha256:d6c263a733a6bc36e0458c3f5b9a1f5ea9c14dfbe8c257d3f650a960b5fe633c \
-            prismpm --project . verify
+          docker run --rm -v "$PWD:/w" -w /w/world "$SDK" prismpm --project . verify
 
       - name: Build the holo
         run: |
-          docker run --rm -v "$PWD:/w" -w /w/world \
-            ghcr.io/uor-foundation/prismpm-sdk@sha256:d6c263a733a6bc36e0458c3f5b9a1f5ea9c14dfbe8c257d3f650a960b5fe633c \
-            prismpm --project . build
+          docker run --rm -v "$PWD:/w" -w /w/world "$SDK" prismpm --project . build
 
       - name: Replay every acceptance vector through the built guest
         run: |
           HOLO=$(ls -dt world/.prism/build/*/ | head -1)MUDBench.holo
           npx -y prism-code@0.5.0 vectors "$HOLO"
+
+      - name: Keep the artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mudbench-holo
+          path: |
+            world/.prism/build/*/MUDBench.holo
+            world/.prism/build/*/manifest.json
+          retention-days: 30
+
+  release:
+    name: publish a tagged release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [model]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: mudbench-holo
+          path: artifact
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          HOLO=$(find artifact -name 'MUDBench.holo' | head -1)
+          MANIFEST=$(find artifact -name 'manifest.json' | head -1)
+          gh release create "$TAG" "$HOLO" "$MANIFEST" \
+            --title "$TAG" \
+            --notes "Built, proved and replayed by the gate before publication." \
+            --verify-tag
