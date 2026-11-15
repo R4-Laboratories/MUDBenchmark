@@ -117,7 +117,8 @@
       "home": 2,
       "period": 8,
       "jitter": 6,
-      "behaviour": "wander"
+      "behaviour": "wander",
+      "hp": 3
     },
     {
       "id": "moth",
@@ -126,7 +127,8 @@
       "home": 5,
       "period": 14,
       "jitter": 10,
-      "behaviour": "wander"
+      "behaviour": "wander",
+      "hp": 2
     },
     {
       "id": "bard",
@@ -140,7 +142,8 @@
         "The bard plucks a string.",
         "The bard hums something older than the walls.",
         "The bard says: every word here is borrowed."
-      ]
+      ],
+      "hp": 8
     },
     {
       "id": "guard",
@@ -149,7 +152,8 @@
       "home": 6,
       "period": 10,
       "jitter": 5,
-      "behaviour": "sentinel"
+      "behaviour": "sentinel",
+      "hp": 12
     }
   ],
   "zones": [

@@ -22,10 +22,12 @@ export const CHECKPOINT = 240;
 
 const nextFrom = (seed, bound) => ((seed * 1103515245 + 12345) % 2147483648) % bound;
 
-export function initialState(rooms, npcs = [], objects = []) {
+export function initialState(rooms, npcs = [], objects = [], start = 1) {
   return {
     tick: 0,
     cycle: 0,
+    start,
+    engagements: [],
     npcs: npcs
       .filter((npc) => rooms[npc.room] !== undefined)
       .map((npc) => ({
@@ -39,6 +41,7 @@ export function initialState(rooms, npcs = [], objects = []) {
     // first tick fire, then every period after it.
     pulses: {
       mobile: makePulse({ period: 4, remaining: 4 }),
+      violence: makePulse({ period: 4, remaining: 4 }),
       area: makePulse({ period: 240, remaining: 240 }),
     },
   };
@@ -57,6 +60,8 @@ export function digestState(state) {
   const canonical = JSON.stringify({
     tick: state.tick,
     cycle: state.cycle ?? 0,
+    start: state.start ?? 1,
+    engagements: (state.engagements ?? []).map((e) => ({ ...e })),
     objects: [...state.objects].sort((a, b) => a.id.localeCompare(b.id)),
     npcs: [...state.npcs].sort((a, b) => a.id.localeCompare(b.id)),
     actors: [...state.actors].sort((a, b) => a.id - b.id),
@@ -79,11 +84,15 @@ export function step({ state, rooms, intents }) {
   const next = {
     tick: state.tick + 1,
     cycle: state.cycle ?? 0,
+    start: state.start ?? 1,
+    engagements: (state.engagements ?? []).map((e) => ({ ...e })),
     npcs: state.npcs.map((n) => ({ ...n, clock: { ...n.clock } })),
     actors: state.actors.map((a) => ({ ...a, visited: [...a.visited] })),
     objects: state.objects.map((o) => ({ ...o })),
     identities: { ...state.identities },
-    pulses: { mobile: { ...state.pulses.mobile }, area: { ...state.pulses.area } },
+    // Clone every pulse generically: a hand-written list silently dropped the
+    // violence clock when it was added.
+    pulses: Object.fromEntries(Object.entries(state.pulses).map(([name, pulse]) => [name, { ...pulse }])),
   };
   // Advance first, then fire on zero and reload in the same tick. Firing before
   // advancing costs an extra tick per period; the model's `advance` is the
@@ -100,7 +109,7 @@ export function step({ state, rooms, intents }) {
   for (const intent of intents) {
     if (intent.kind === "join") {
       if (!find(intent.actorId)) {
-        next.actors.push({ id: intent.actorId, name: intent.name, room: 1, visited: [1], key: null, role: 0 });
+        next.actors.push({ id: intent.actorId, name: intent.name, room: next.start, visited: [next.start], key: null, role: 0, hp: 10, maxHp: 10 });
       }
       continue;
     }
@@ -176,6 +185,17 @@ export function step({ state, rooms, intents }) {
 
     // Objects, as the old codebases had them: a thing has a place, or a holder,
     // never both, and moving it is the only operation that changes that.
+    if (intent.kind === "attack") {
+      const target = next.npcs.find((n) => n.id === intent.targetId)
+        ?? next.actors.find((a) => a.id === intent.targetId);
+      if (!target || target.dead || target.room !== actor.room) continue;
+      if (next.engagements.some((e) => e.attackerId === actor.id && e.targetId === target.id)) continue;
+      next.engagements.push({ attackerId: actor.id, targetId: target.id });
+      events.push({ room: actor.room, text: `${actor.name} attacks ${target.name}!`, exceptId: actor.id });
+      events.push({ onlyId: actor.id, text: `You attack ${target.name}.` });
+      continue;
+    }
+
     if (intent.kind === "take" || intent.kind === "drop" || intent.kind === "give") {
       const object = next.objects.find((o) => o.id === intent.objectId);
       if (!object) continue;
@@ -218,6 +238,12 @@ export function step({ state, rooms, intents }) {
   // Hierarchical clocks: every NPC runs its own countdown, so a rat on a slow
   // clock does not move when the world ticks — it moves when *its* clock does.
   // Jitter is drawn from the tick and the id, so a replay wanders identically.
+  // Violence: one round per engagement, on its own pulse, deterministic from
+  // the tick so a replay fights identically.
+  next.pulses.violence = advance(next.pulses.violence);
+  const violenceDue = pulseDue(next.pulses.violence);
+  if (violenceDue) next.pulses.violence = advance(next.pulses.violence);
+
   for (const npc of next.npcs) {
     npc.clock = advance(npc.clock);
     if (!pulseDue(npc.clock)) continue;
@@ -249,11 +275,63 @@ export function step({ state, rooms, intents }) {
     events.push({ room: to, text: `${npc.name} arrives.`, source: npc.id });
   }
 
+  if (violenceDue) {
+    const living = next.engagements.filter((engagement) => {
+      const attacker = next.actors.find((a) => a.id === engagement.attackerId);
+      const target = next.actors.find((a) => a.id === engagement.targetId)
+        ?? next.npcs.find((n) => n.id === engagement.targetId);
+      return attacker && target && !target.dead && target.hp > 0;
+    });
+
+    for (const engagement of living) {
+      const attacker = next.actors.find((a) => a.id === engagement.attackerId);
+      const target = next.actors.find((a) => a.id === engagement.targetId)
+        ?? next.npcs.find((n) => n.id === engagement.targetId);
+
+      const damage = 1 + nextFrom(next.tick * 7 + engagement.attackerId, 4);
+      target.hp -= damage;
+      const killed = target.hp <= 0;
+      const detail = {
+        attacker: attacker.id,
+        target: target.id,
+        damage,
+        hp: Math.max(0, target.hp),
+        outcome: killed ? "killed" : "hit",
+        room: attacker.room,
+      };
+
+      // One combat event per round: the room broadcast carries the record, the
+      // actor's own line does not, or every hit is counted twice.
+      events.push({ room: attacker.room, text: `${attacker.name} strikes ${target.name} for ${damage}.`, exceptId: attacker.id, combat: detail });
+      events.push({ onlyId: attacker.id, text: `You strike ${target.name} for ${damage}.` });
+
+      if (killed) {
+        if (next.npcs.includes(target)) {
+          target.dead = true;
+          target.room = null;
+          events.push({ room: attacker.room, text: `${target.name} dies.` });
+        } else {
+          target.hp = target.maxHp ?? 10;
+          target.room = next.start;
+          if (!target.visited.includes(next.start)) target.visited.push(next.start);
+          events.push({ onlyId: target.id, text: "You die, and wake at the start." });
+        }
+        next.engagements = next.engagements.filter((e) => e !== engagement);
+      }
+    }
+  }
+
   if (areaDue) {
     // The old MUD reset: the world returns to its starting arrangement and the
     // cycle advances, so a long session is a series of games, not one drift.
     next.cycle += 1;
-    for (const npc of next.npcs) npc.room = npc.home;
+    // The old MUD reset brings the dead back as well as moving the living.
+    for (const npc of next.npcs) {
+      npc.room = npc.home;
+      npc.dead = false;
+      npc.hp = npc.maxHp;
+    }
+    next.engagements = [];
     for (const room of Object.keys(rooms)) {
       events.push({ room: Number(room), text: "A bell rings somewhere below." });
     }

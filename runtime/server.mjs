@@ -78,7 +78,7 @@ function allowCommand(id) {
 function loadState() {
   try {
     const saved = JSON.parse(readFileSync(STATE_FILE, "utf8"));
-    const base = initialState(ROOMS, loaded.npcs, loaded.objects);
+    const base = initialState(ROOMS, loaded.npcs, loaded.objects, loaded.start);
     return {
       tick: saved.tick ?? 0,
       npcs: saved.npcs ?? base.npcs,
@@ -93,7 +93,7 @@ function loadState() {
       pulses: saved.pulses ?? base.pulses,
     };
   } catch {
-    return initialState(ROOMS, loaded.npcs, loaded.objects);
+    return initialState(ROOMS, loaded.npcs, loaded.objects, loaded.start);
   }
 }
 
@@ -113,7 +113,7 @@ function saveState() {
 
 const actorById = (id) => state.actors.find((a) => a.id === id);
 const actorsIn = (room) => state.actors.filter((a) => a.room === room);
-const npcsIn = (room) => state.npcs.filter((n) => n.room === room);
+const npcsIn = (room) => state.npcs.filter((n) => n.room === room && !n.dead);
 
 function sendTo(id, text) {
   const t = transports.get(id);
@@ -283,6 +283,16 @@ async function handleCommand(id, line) {
   const named = resolve(VERB_TABLE, verb);
   const words = rest.join(" ");
 
+  if (named === "attack") {
+    const messages = VERB_TABLE.verbs.attack.messages;
+    const needle = words.toLowerCase();
+    const target = [...actorsIn(actor.room).filter((a) => a.id !== id), ...npcsIn(actor.room)]
+      .find((c) => c.name.toLowerCase().includes(needle) || c.name.toLowerCase().includes(`a ${needle}`));
+    if (!target) return sendTo(id, `${render(messages.missing, { words })}\r\n`);
+    pending.push({ kind: "attack", actorId: id, targetId: target.id });
+    return sendTo(id, `${render(messages.actor, { target: target.name })}\r\n`);
+  }
+
   if (named === "inventory") {
     const carried = state.objects.filter((o) => o.holder === actor.id).map((o) => o.name);
     const messages = VERB_TABLE.verbs.inventory.messages;
@@ -426,6 +436,17 @@ function onTick() {
 
   for (const event of result.events) {
     // An NPC's action is gameplay data, not just text delivered to a room.
+    if (event.combat) {
+      recordSpan("world.combat", {
+        "actor.id": event.combat.attacker,
+        "target.id": event.combat.target,
+        "damage": event.combat.damage,
+        "target.hp": event.combat.hp,
+        "outcome": event.combat.outcome,
+        "room.id": event.combat.room,
+        "world.tick": state.tick,
+      }, 0);
+    }
     if (event.source) {
       recordSpan("world.npc", {
         "npc.id": event.source,

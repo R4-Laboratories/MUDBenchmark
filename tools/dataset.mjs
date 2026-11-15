@@ -81,6 +81,20 @@ for (const file of inputs) {
       continue;
     }
 
+    if (span.name === "world.combat") {
+      rows.push({
+        ...common,
+        event: "combat",
+        actor: span["actor.id"] ?? null,
+        target: span["target.id"] ?? null,
+        damage: num(span.damage),
+        target_hp: num(span["target.hp"]),
+        verdict: span.outcome ?? null,
+        room_from: num(span["room.id"]),
+      });
+      continue;
+    }
+
     if (span.name === "world.object") {
       rows.push({
         ...common,

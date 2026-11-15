@@ -3,7 +3,10 @@
   "note": "A verb's effect lives in the server; its words live here. Codes: %a actor, %o object, %t target, %s the words typed.",
   "verbs": {
     "take": {
-      "aliases": ["get", "grab"],
+      "aliases": [
+        "get",
+        "grab"
+      ],
       "argument": "object",
       "messages": {
         "actor": "You take %o.",
@@ -13,7 +16,9 @@
       }
     },
     "drop": {
-      "aliases": ["discard"],
+      "aliases": [
+        "discard"
+      ],
       "argument": "object",
       "messages": {
         "actor": "You drop %o.",
@@ -34,11 +39,27 @@
       }
     },
     "inventory": {
-      "aliases": ["i", "inv"],
+      "aliases": [
+        "i",
+        "inv"
+      ],
       "argument": "none",
       "messages": {
         "carrying": "You are carrying: %s.",
         "empty": "You are carrying nothing."
+      }
+    },
+    "attack": {
+      "aliases": [
+        "kill",
+        "hit"
+      ],
+      "argument": "actor",
+      "messages": {
+        "actor": "You attack %t.",
+        "others": "%a attacks %t!",
+        "missing": "There is no %s here.",
+        "self": "Attacking yourself is not a plan."
       }
     }
   }

@@ -83,7 +83,8 @@ export function loadWorld({ mode = "single", path = DEFAULT_PATH } = {}) {
     if (behaviour === "speaker" && !(npc.phrases ?? []).length) {
       errors.push(`npc ${npc.id} speaks but has no phrases`);
     }
-    npcs.push({ ...npc, behaviour });
+    if (!Number.isInteger(npc.hp) || npc.hp < 1) errors.push(`npc ${npc.id} has no hit points`);
+    npcs.push({ ...npc, behaviour, maxHp: npc.hp });
   }
 
   // Objects must start somewhere real, and ids must be unique.
