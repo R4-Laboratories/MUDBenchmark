@@ -128,6 +128,55 @@ export function digestState(state) {
  * Intents: {kind:"join"|"leave"|"move"|"say"}. Events are room broadcasts
  * ({room, text, exceptId}) or personal ({onlyId, text}).
  */
+/**
+ * A saved world outlives the model that wrote it. When a release adds a pulse,
+ * a climate, an item property or a mobile, the checkpoint on disk is older than
+ * the code reading it. This upgrades a saved state to the shape the current
+ * world expects: every clock the base has is present, every object the base has
+ * is present, and anything new starts from its home rather than from undefined.
+ */
+export function upgradeState(saved, base) {
+  if (!saved || typeof saved !== "object") return base;
+
+  const pulses = {};
+  for (const [name, pulse] of Object.entries(base.pulses)) {
+    const old = saved.pulses?.[name];
+    const usable = old && Number.isInteger(old.period) && old.period > 0 && Number.isInteger(old.remaining);
+    pulses[name] = usable
+      ? { period: old.period, remaining: Math.min(Math.max(old.remaining, 0), old.period) }
+      : { ...pulse };
+  }
+
+  const climate = saved.climate?.weather?.length ? saved.climate : base.climate;
+  const weather = Number.isInteger(saved.weather) && climate.weather[saved.weather] ? saved.weather : 0;
+
+  // Objects and mobiles are matched by id. The base supplies every field the
+  // current model knows, and the save overrides only what it actually held.
+  const savedObjects = new Map((saved.objects ?? []).map((o) => [o.id, o]));
+  const objects = base.objects.map((o) => ({ ...o, ...(savedObjects.get(o.id) ?? {}) }));
+  const savedNpcs = new Map((saved.npcs ?? []).map((n) => [n.id, n]));
+  const npcs = base.npcs.map((n) => {
+    const old = savedNpcs.get(n.id);
+    if (!old) return { ...n };
+    const maxHp = old.maxHp ?? old.hp ?? n.maxHp;
+    return { ...n, ...old, hp: old.hp ?? maxHp, maxHp, dead: old.dead ?? false };
+  });
+
+  return {
+    ...base,
+    ...saved,
+    climate,
+    weather,
+    start: saved.start ?? base.start,
+    cycle: saved.cycle ?? base.cycle,
+    engagements: Array.isArray(saved.engagements) ? saved.engagements : [],
+    pulses,
+    npcs,
+    objects,
+    actors: saved.actors ?? base.actors,
+  };
+}
+
 export function step({ state, rooms, intents }) {
   const events = [];
   const next = {

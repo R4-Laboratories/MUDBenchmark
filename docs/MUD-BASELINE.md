@@ -60,6 +60,10 @@ approximate with one JSON snapshot.
 - **A gate check**, so the phase can fail. A subsystem nothing can break is a
   subsystem nobody will notice breaking.
 - **Data, not code**, wherever a builder would want to change it.
+- **A state upgrade**, so a checkpoint written before the phase still loads.
+  The model grows; the save on disk is older than the code reading it. v0.4.0
+  rolled back in production for exactly this reason — the violence pulse did not
+  exist when the running save was written.
 
 ## What we are not doing
 

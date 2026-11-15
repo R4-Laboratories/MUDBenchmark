@@ -20,7 +20,7 @@ import { spawnSync } from "node:child_process";
 import { loadWorld } from "../runtime/worlddata.mjs";
 import { describe as renderRoom } from "../runtime/view.mjs";
 import { loadVerbs } from "../runtime/verbs.mjs";
-import { initialState, nextFrom, phaseAt, step } from "../runtime/world.mjs";
+import { initialState, nextFrom, phaseAt, step, upgradeState } from "../runtime/world.mjs";
 import { join } from "node:path";
 
 const root = process.cwd();
@@ -243,6 +243,46 @@ let climate = { ok: true, why: [], changes: 0, nightTalk: 0, dayTalk: 0 };
   if (!climate.ok) failures.push(`climate is broken: ${climate.why[0]}`);
 }
 
+// A checkpoint written by an older release must still load. This is the exact
+// failure a real deployment found: v0.4.0 crashed on a v0.3.0 save because the
+// violence pulse did not exist when the save was written.
+let resume = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  const base = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate);
+  const saved = JSON.parse(JSON.stringify(base));
+  saved.tick = 12345;
+  delete saved.pulses.violence;
+  delete saved.climate;
+  delete saved.weather;
+  delete saved.engagements;
+  delete saved.cycle;
+  saved.objects = saved.objects.filter((o) => o.id !== "chest");
+  const cloak = saved.objects.find((o) => o.id === "cloak");
+  delete cloak.inside;
+  delete cloak.worn;
+  delete cloak.open;
+
+  const upgraded = upgradeState(saved, base);
+  if (upgraded.tick !== 12345) { resume.ok = false; resume.why.push("the tick was not preserved"); }
+  if (!upgraded.pulses.violence) { resume.ok = false; resume.why.push("the violence pulse was not restored"); }
+  if (!upgraded.climate?.weather?.length) { resume.ok = false; resume.why.push("the climate was not restored"); }
+  if (!Array.isArray(upgraded.engagements)) { resume.ok = false; resume.why.push("engagements were not restored"); }
+  const chest = upgraded.objects.find((o) => o.id === "chest");
+  if (!chest || chest.home === undefined) { resume.ok = false; resume.why.push("a newly added object is missing after resume"); }
+  const restoredCloak = upgraded.objects.find((o) => o.id === "cloak");
+  if (restoredCloak.worn !== false || restoredCloak.inside !== null) { resume.ok = false; resume.why.push("an old object kept an undefined property"); }
+
+  try {
+    let state = upgraded;
+    for (let i = 0; i < 10; i += 1) state = step({ state, rooms: world.rooms, intents: [] }).state;
+  } catch (error) {
+    resume.ok = false;
+    resume.why.push(`stepping an upgraded save threw: ${error.message}`);
+  }
+  if (!resume.ok) failures.push(`resuming an old world is broken: ${resume.why[0]}`);
+}
+
 // Generated code must match the model it claims to come from.
 const drift = spawnSync(process.execPath, ["tools/mechanize.mjs", "--check"], { encoding: "utf8" });
 const driftOk = drift.status === 0;
@@ -268,6 +308,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"worldArms".padEnd(26)}  ${(worldProblems.length === 0 ? "4 ok" : "BROKEN").padStart(5)}   == walkable`);
   console.log(`${"renderer".padEnd(26)}  ${(shown.includes("SECRET-NOTICE") && !hidden.includes("SECRET-NOTICE") ? "2 ok" : "BROKEN").padStart(5)}   == hides/shows`);
   console.log(`${"combat".padEnd(26)}  ${(combat.outcome === "killed" ? `${combat.rounds} rounds` : "BROKEN").padStart(5)}   == kills`);
+  console.log(`${"resume".padEnd(26)}  ${(resume.ok ? "1 save" : "BROKEN").padStart(5)}   == old checkpoint loads`);
   console.log(`${"climate".padEnd(26)}  ${(climate.ok ? `${climate.changes} changes` : "BROKEN").padStart(5)}   == day, night, weather`);
   console.log(`${"items".padEnd(26)}  ${(items.ok ? "5 ok" : "BROKEN").padStart(5)}   == containers, wear, food, reset`);
   console.log(`${"generator@500k".padEnd(26)}  ${(oldDirs.size >= 2 ? `${oldDirs.size} dirs` : "BROKEN").padStart(5)}   == still varies`);
