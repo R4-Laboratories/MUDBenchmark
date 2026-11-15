@@ -36,7 +36,7 @@ engagement, and the violence pulse resolving rounds — which is what
 `ARCHITECTURE.md` has claimed since the first session and the runtime has never
 done.
 
-**D. Item properties.** Containers that hold objects, things that can be worn,
+**D. Item properties.** *Done.* Containers that hold objects, things that can be worn,
 eaten, or lit. `objsys` was the largest subsystem in AberMUD for a reason: it is
 where most player verbs live.
 

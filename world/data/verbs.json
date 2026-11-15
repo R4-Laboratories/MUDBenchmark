@@ -61,6 +61,124 @@
         "missing": "There is no %s here.",
         "self": "Attacking yourself is not a plan."
       }
+    },
+    "put": {
+      "aliases": [
+        "insert"
+      ],
+      "argument": "object in object",
+      "messages": {
+        "actor": "You put %o in %t.",
+        "others": "%a puts %o in %t.",
+        "noTarget": "Put it in what? put <thing> in <container>.",
+        "missing": "You are not carrying a %s.",
+        "noContainer": "There is no %s here.",
+        "closed": "%t is closed.",
+        "full": "%t is full."
+      }
+    },
+    "takeFrom": {
+      "aliases": [],
+      "argument": "object from object",
+      "messages": {
+        "actor": "You take %o from %t.",
+        "others": "%a takes %o from %t.",
+        "noTarget": "Take what from what? get <thing> from <container>.",
+        "missing": "You are not carrying a %s.",
+        "noContainer": "There is no %s here.",
+        "closed": "%t is closed.",
+        "empty": "There is no %s in %t."
+      }
+    },
+    "open": {
+      "aliases": [],
+      "argument": "object",
+      "messages": {
+        "actor": "You open %o.",
+        "others": "%a opens %o.",
+        "missing": "There is no %s here.",
+        "notContainer": "The %s does not open.",
+        "already": "The %s is already open."
+      }
+    },
+    "close": {
+      "aliases": [
+        "shut"
+      ],
+      "argument": "object",
+      "messages": {
+        "actor": "You close %o.",
+        "others": "%a closes %o.",
+        "missing": "There is no %s here.",
+        "notContainer": "The %s does not close.",
+        "already": "The %s is already closed."
+      }
+    },
+    "wear": {
+      "aliases": [
+        "don"
+      ],
+      "argument": "object",
+      "messages": {
+        "actor": "You wear %o.",
+        "others": "%a wears %o.",
+        "missing": "You are not carrying a %s.",
+        "notWearable": "You cannot wear a %s.",
+        "already": "You are already wearing %o."
+      }
+    },
+    "remove": {
+      "aliases": [
+        "doff"
+      ],
+      "argument": "object",
+      "messages": {
+        "actor": "You remove %o.",
+        "others": "%a removes %o.",
+        "missing": "You are not wearing a %s.",
+        "notWorn": "You are not wearing a %s."
+      }
+    },
+    "eat": {
+      "aliases": [
+        "taste"
+      ],
+      "argument": "object",
+      "messages": {
+        "actor": "You eat %o.",
+        "others": "%a eats %o.",
+        "missing": "You are not carrying a %s.",
+        "notFood": "The %s is not food.",
+        "last": "You finish %o.",
+        "lastOthers": "%a finishes %o."
+      }
+    },
+    "light": {
+      "aliases": [
+        "ignite"
+      ],
+      "argument": "object",
+      "messages": {
+        "actor": "You light %o.",
+        "others": "%a lights %o.",
+        "missing": "You are not carrying a %s.",
+        "notLight": "The %s will not light.",
+        "already": "%o is already lit."
+      }
+    },
+    "extinguish": {
+      "aliases": [
+        "douse",
+        "snuff"
+      ],
+      "argument": "object",
+      "messages": {
+        "actor": "You put out %o.",
+        "others": "%a puts out %o.",
+        "missing": "There is no %s here.",
+        "notLight": "The %s is not a light.",
+        "already": "%o is not lit."
+      }
     }
   }
 }

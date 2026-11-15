@@ -102,6 +102,8 @@ for (const file of inputs) {
         actor: span["actor.id"] ?? null,
         action: span["action.kind"] ?? null,
         object: span["object.id"] ?? null,
+        container: span["container.id"] ?? null,
+        bites_left: num(span["bites.left"]),
         room_from: num(span["room.from"]),
         room_to: num(span["room.to"]),
       });

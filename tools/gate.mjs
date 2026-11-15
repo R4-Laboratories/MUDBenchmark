@@ -130,6 +130,62 @@ const oldDirs = new Set([0, 1, 2, 3].map((k) => nextFrom(oldSeed + k, 4)));
   if (combat.engagementsLeft !== 0) failures.push(`a finished engagement is still open (${combat.engagementsLeft})`);
 }
 
+// Item properties must actually change the world, and the area reset must put
+// them back. Each step here is a state change a player can reach.
+let items = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start);
+  const say = (text) => ({ actor: text, others: text });
+  const run = (intents) => {
+    const result = step({ state, rooms: world.rooms, intents });
+    state = result.state;
+    return result.events;
+  };
+  const object = (id) => state.objects.find((o) => o.id === id);
+  const check = (condition, why) => { if (!condition) { items.ok = false; items.why.push(why); } };
+
+  run([{ kind: "join", actorId: "gate", name: "gate" }]);
+  state.actors[0].room = 2;
+
+  run([{ kind: "open", actorId: "gate", objectId: "chest", messages: say("open") }]);
+  run([{ kind: "takeFrom", actorId: "gate", objectId: "copper", containerId: "chest", messages: say("takeFrom") }]);
+  check(object("copper").holder === "gate", "a coin could not be taken from an open chest");
+
+  run([{ kind: "put", actorId: "gate", objectId: "copper", containerId: "chest", messages: say("put") }]);
+  check(object("copper").inside === "chest", "a coin could not be put back in an open chest");
+
+  run([{ kind: "close", actorId: "gate", objectId: "chest", messages: say("close") }]);
+  run([{ kind: "takeFrom", actorId: "gate", objectId: "copper", containerId: "chest", messages: say("takeFrom") }]);
+  check(object("copper").inside === "chest", "a closed chest gave up its contents");
+
+  run([{ kind: "wear", actorId: "gate", objectId: "cloak", messages: say("wear") }]);
+  check(!object("cloak").worn, "a cloak in another room could be worn from a distance");
+
+  state.actors[0].room = 1;
+  run([{ kind: "take", actorId: "gate", objectId: "cloak", messages: say("take") }]);
+  run([{ kind: "wear", actorId: "gate", objectId: "cloak", messages: say("wear") }]);
+  check(object("cloak").worn, "a carried cloak could not be worn");
+  run([{ kind: "remove", actorId: "gate", objectId: "cloak", messages: say("remove") }]);
+  check(!object("cloak").worn, "a worn cloak could not be removed");
+
+  state.actors[0].room = 5;
+  run([{ kind: "take", actorId: "gate", objectId: "bread", messages: say("take") }]);
+  run([{ kind: "eat", actorId: "gate", objectId: "bread", messages: say("eat") }]);
+  check(object("bread").bites === 1 && !object("bread").eaten, "one bite finished a two-bite loaf");
+  run([{ kind: "eat", actorId: "gate", objectId: "bread", messages: say("eat") }]);
+  check(object("bread").eaten, "a finished loaf is still in the world");
+
+  // The old MUD reset: walk the clock to the area pulse and require everything
+  // to be home, including what was eaten.
+  for (let i = 0; i < 260; i += 1) run([]);
+  check(!object("bread").eaten && object("bread").room === 5, "the area reset did not restore the eaten loaf");
+  check(object("chest").inside === null && object("copper").inside === "chest", "the area reset did not return the coin to the chest");
+  check(object("chest").open === false, "the area reset left the chest open");
+  check(object("cloak").room === 1 && !object("cloak").worn, "the area reset did not return the cloak");
+  if (!items.ok) failures.push(`item properties are broken: ${items.why[0]}`);
+}
+
 // Generated code must match the model it claims to come from.
 const drift = spawnSync(process.execPath, ["tools/mechanize.mjs", "--check"], { encoding: "utf8" });
 const driftOk = drift.status === 0;
@@ -155,6 +211,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"worldArms".padEnd(26)}  ${(worldProblems.length === 0 ? "4 ok" : "BROKEN").padStart(5)}   == walkable`);
   console.log(`${"renderer".padEnd(26)}  ${(shown.includes("SECRET-NOTICE") && !hidden.includes("SECRET-NOTICE") ? "2 ok" : "BROKEN").padStart(5)}   == hides/shows`);
   console.log(`${"combat".padEnd(26)}  ${(combat.outcome === "killed" ? `${combat.rounds} rounds` : "BROKEN").padStart(5)}   == kills`);
+  console.log(`${"items".padEnd(26)}  ${(items.ok ? "5 ok" : "BROKEN").padStart(5)}   == containers, wear, food, reset`);
   console.log(`${"generator@500k".padEnd(26)}  ${(oldDirs.size >= 2 ? `${oldDirs.size} dirs` : "BROKEN").padStart(5)}   == still varies`);
   console.log(`${"verbTable".padEnd(26)}  ${(verbTable.errors.length === 0 ? `${verbTable.byAlias.size} keys` : "BROKEN").padStart(5)}   == resolvable`);
   console.log("");

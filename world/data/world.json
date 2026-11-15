@@ -179,7 +179,8 @@
       "flags": [
         "takeable",
         "light"
-      ]
+      ],
+      "lit": false
     },
     {
       "id": "coin",
@@ -196,7 +197,8 @@
       "flags": [
         "takeable",
         "readable"
-      ]
+      ],
+      "readable": true
     },
     {
       "id": "anvil",
@@ -205,6 +207,45 @@
       "flags": [
         "fixed"
       ]
+    },
+    {
+      "id": "chest",
+      "name": "an oaken chest",
+      "room": 2,
+      "flags": [
+        "fixed",
+        "container"
+      ],
+      "capacity": 4,
+      "open": false
+    },
+    {
+      "id": "copper",
+      "name": "a copper coin",
+      "inside": "chest",
+      "flags": [
+        "takeable"
+      ]
+    },
+    {
+      "id": "cloak",
+      "name": "a grey cloak",
+      "room": 1,
+      "flags": [
+        "takeable",
+        "wearable"
+      ],
+      "slot": "body"
+    },
+    {
+      "id": "bread",
+      "name": "a loaf of bread",
+      "room": 5,
+      "flags": [
+        "takeable",
+        "food"
+      ],
+      "bites": 2
     }
   ]
 }

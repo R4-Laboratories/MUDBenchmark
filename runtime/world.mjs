@@ -50,7 +50,20 @@ export function initialState(rooms, npcs = [], objects = [], start = 1) {
         clock: makePulse({ period: npc.period, remaining: npc.period }),
       })),
     actors: [],
-    objects: objects.map((object) => ({ ...object, holder: null })),
+    objects: objects.map((object) => ({
+      ...object,
+      holder: null,
+      room: object.inside ? null : object.room,
+      inside: object.inside ?? null,
+      home: object.inside ? null : object.room,
+      homeInside: object.inside ?? null,
+      worn: false,
+      open: object.open ?? false,
+      openAtStart: object.open ?? false,
+      lit: object.lit ?? false,
+      eaten: false,
+      maxBites: object.bites ?? 0,
+    })),
     identities: {},
     // Countdowns, generated from Pulses.lex.tex. Starting at zero makes the
     // first tick fire, then every period after it.
@@ -244,6 +257,87 @@ export function step({ state, rooms, intents }) {
       continue;
     }
 
+    // Containers, wear, food and light. Each verb has one state change and one
+    // place to record it; the words are the table's business.
+    if (intent.kind === "put") {
+      const object = next.objects.find((o) => o.id === intent.objectId);
+      const container = next.objects.find((o) => o.id === intent.containerId);
+      if (!object || !container || object.holder !== actor.id) continue;
+      if (!(container.flags ?? []).includes("container")) continue;
+      const reachable = container.holder === actor.id || container.room === actor.room;
+      if (!reachable || container.eaten) continue;
+      if (!container.open) continue;
+      const held = next.objects.filter((o) => o.inside === container.id && !o.eaten).length;
+      if (held >= container.capacity) continue;
+      object.inside = container.id;
+      object.holder = null;
+      object.room = null;
+      events.push({ room: actor.room, text: intent.messages.others, exceptId: actor.id });
+      events.push({ onlyId: actor.id, text: intent.messages.actor });
+      continue;
+    }
+
+    if (intent.kind === "takeFrom") {
+      const object = next.objects.find((o) => o.id === intent.objectId);
+      const container = next.objects.find((o) => o.id === intent.containerId);
+      if (!object || !container || object.inside !== container.id || object.eaten) continue;
+      const reachable = container.holder === actor.id || container.room === actor.room;
+      if (!reachable || !container.open) continue;
+      object.inside = null;
+      object.holder = actor.id;
+      object.room = null;
+      events.push({ room: actor.room, text: intent.messages.others, exceptId: actor.id });
+      events.push({ onlyId: actor.id, text: intent.messages.actor });
+      continue;
+    }
+
+    if (intent.kind === "open" || intent.kind === "close") {
+      const container = next.objects.find((o) => o.id === intent.objectId);
+      if (!container || container.eaten) continue;
+      if (!(container.flags ?? []).includes("container")) continue;
+      if (container.holder !== actor.id && container.room !== actor.room) continue;
+      container.open = intent.kind === "open";
+      events.push({ room: actor.room, text: intent.messages.others, exceptId: actor.id });
+      events.push({ onlyId: actor.id, text: intent.messages.actor });
+      continue;
+    }
+
+    if (intent.kind === "wear" || intent.kind === "remove") {
+      const object = next.objects.find((o) => o.id === intent.objectId);
+      if (!object || object.holder !== actor.id || object.eaten) continue;
+      if (!(object.flags ?? []).includes("wearable")) continue;
+      object.worn = intent.kind === "wear";
+      events.push({ room: actor.room, text: intent.messages.others, exceptId: actor.id });
+      events.push({ onlyId: actor.id, text: intent.messages.actor });
+      continue;
+    }
+
+    if (intent.kind === "eat") {
+      const object = next.objects.find((o) => o.id === intent.objectId);
+      if (!object || object.holder !== actor.id || object.eaten) continue;
+      if (!(object.flags ?? []).includes("food")) continue;
+      object.bites = (object.bites ?? 1) - 1;
+      if (object.bites <= 0) {
+        object.eaten = true;
+        object.holder = null;
+        object.room = null;
+      }
+      events.push({ room: actor.room, text: intent.messages.others, exceptId: actor.id });
+      events.push({ onlyId: actor.id, text: intent.messages.actor });
+      continue;
+    }
+
+    if (intent.kind === "light" || intent.kind === "extinguish") {
+      const object = next.objects.find((o) => o.id === intent.objectId);
+      if (!object || object.eaten) continue;
+      if (!(object.flags ?? []).includes("light")) continue;
+      if (object.holder !== actor.id && object.room !== actor.room) continue;
+      object.lit = intent.kind === "light";
+      events.push({ room: actor.room, text: intent.messages.others, exceptId: actor.id });
+      events.push({ onlyId: actor.id, text: intent.messages.actor });
+      continue;
+    }
+
     if (intent.kind === "say") {
       events.push({ room: actor.room, text: `${actor.name} says: ${intent.text}`, exceptId: actor.id });
       events.push({ onlyId: actor.id, text: `You say: ${intent.text}` });
@@ -347,6 +441,16 @@ export function step({ state, rooms, intents }) {
       npc.hp = npc.maxHp;
     }
     next.engagements = [];
+    for (const object of next.objects) {
+      object.holder = null;
+      object.room = object.home;
+      object.inside = object.homeInside;
+      object.worn = false;
+      object.open = object.openAtStart ?? object.open;
+      object.lit = false;
+      object.eaten = false;
+      object.bites = object.maxBites;
+    }
     for (const room of Object.keys(rooms)) {
       events.push({ room: Number(room), text: "A bell rings somewhere below." });
     }

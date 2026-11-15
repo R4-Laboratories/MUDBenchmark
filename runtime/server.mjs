@@ -128,7 +128,14 @@ function describe(room, selfId) {
   const r = ROOMS[room];
   if (!r) return "You are nowhere.\r\n";
   const role = actorById(selfId)?.role ?? 0;
-  const objectsHere = state.objects.filter((o) => o.room === room).map((o) => o.name);
+  const objectsHere = state.objects
+    .filter((o) => o.room === room && !o.inside && !o.eaten)
+    .map((o) => {
+      if (!(o.flags ?? []).includes("container")) return o.lit ? `${o.name} (lit)` : o.name;
+      const held = state.objects.filter((c) => c.inside === o.id && !c.eaten).map((c) => c.name);
+      const state_ = o.open ? "open" : "closed";
+      return held.length && o.open ? `${o.name} (${state_}, holding ${held.join(", ")})` : `${o.name} (${state_})`;
+    });
   return renderRoom({
     room: r,
     role,
@@ -294,17 +301,42 @@ async function handleCommand(id, line) {
   }
 
   if (named === "inventory") {
-    const carried = state.objects.filter((o) => o.holder === actor.id).map((o) => o.name);
+    const carried = state.objects.filter((o) => o.holder === actor.id && !o.eaten);
+    const names = carried.map((o) => {
+      if (o.worn) return `${o.name} (worn)`;
+      if (!(o.flags ?? []).includes("container")) return o.name;
+      const held = state.objects.filter((c) => c.inside === o.id && !c.eaten).map((c) => c.name);
+      const state_ = o.open ? "open" : "closed";
+      return held.length && o.open ? `${o.name} (${state_}, holding ${held.join(", ")})` : `${o.name} (${state_})`;
+    });
     const messages = VERB_TABLE.verbs.inventory.messages;
-    return sendTo(id, carried.length
-      ? `${render(messages.carrying, { words: carried.join(", ") })}\r\n`
+    return sendTo(id, names.length
+      ? `${render(messages.carrying, { words: names.join(", ") })}\r\n`
       : `${messages.empty}\r\n`);
+  }
+
+  if (named === "take" && /\s+from\s+/i.test(words)) {
+    const messages = VERB_TABLE.verbs.takeFrom.messages;
+    const [what, ...containerWords] = words.split(/\s+from\s+/i);
+    const container = findObject(containerWords.join(" ").trim(), (o) =>
+      (o.holder === actor.id || o.room === actor.room) && !o.eaten);
+    if (!container) return sendTo(id, `${render(messages.noContainer, { words: containerWords.join(" ") })}\r\n`);
+    if (!(container.flags ?? []).includes("container")) return sendTo(id, `${render(messages.noContainer, { words: containerWords.join(" ") })}\r\n`);
+    if (!container.open) return sendTo(id, `${render(messages.closed, { target: container.name })}\r\n`);
+    const object = findObject(what.trim(), (o) => o.inside === container.id && !o.eaten);
+    if (!object) return sendTo(id, `${render(messages.empty, { words: what.trim(), target: container.name })}\r\n`);
+    pending.push({ kind: "takeFrom", actorId: id, objectId: object.id, containerId: container.id, messages: {
+      actor: render(messages.actor, { object: object.name, target: container.name }),
+      others: render(messages.others, { actor: actor.name, object: object.name, target: container.name }),
+    } });
+    recordSpan("world.object", { "actor.id": id, "action.kind": "takeFrom", "object.id": object.id, "container.id": container.id, "world.tick": state.tick }, 0);
+    return;
   }
 
   if (named === "take") {
     const needle = words;
     const messages = VERB_TABLE.verbs.take.messages;
-    const object = findObject(needle, (o) => o.room === actor.room);
+    const object = findObject(needle, (o) => o.room === actor.room && !o.inside && !o.eaten);
     if (!object) return sendTo(id, `${render(messages.missing, { words: needle })}\r\n`);
     if ((object.flags ?? []).includes("fixed")) return sendTo(id, `${render(messages.fixed, { words: needle })}\r\n`);
     pending.push({ kind: "take", actorId: id, objectId: object.id, messages: {
@@ -325,6 +357,87 @@ async function handleCommand(id, line) {
       others: render(messages.others, { actor: actor.name, object: object.name }),
     } });
     recordSpan("world.object", { "actor.id": id, "action.kind": "drop", "object.id": object.id, "room.to": actor.room, "world.tick": state.tick }, 0);
+    return;
+  }
+
+  if (named === "put") {
+    const messages = VERB_TABLE.verbs.put.messages;
+    const parts = words.split(/\s+(?:in|into)\s+/i);
+    if (parts.length < 2) return sendTo(id, `${messages.noTarget}\r\n`);
+    const object = findObject(parts[0].trim(), (o) => o.holder === actor.id && !o.eaten);
+    if (!object) return sendTo(id, `${render(messages.missing, { words: parts[0].trim() })}\r\n`);
+    const container = findObject(parts.slice(1).join(" ").trim(), (o) =>
+      (o.holder === actor.id || o.room === actor.room) && !o.eaten);
+    if (!container) return sendTo(id, `${render(messages.noContainer, { words: parts.slice(1).join(" ").trim() })}\r\n`);
+    if (!(container.flags ?? []).includes("container")) return sendTo(id, `${render(messages.noContainer, { words: parts.slice(1).join(" ").trim() })}\r\n`);
+    if (!container.open) return sendTo(id, `${render(messages.closed, { target: container.name })}\r\n`);
+    const held = state.objects.filter((o) => o.inside === container.id && !o.eaten).length;
+    if (held >= container.capacity) return sendTo(id, `${render(messages.full, { target: container.name })}\r\n`);
+    pending.push({ kind: "put", actorId: id, objectId: object.id, containerId: container.id, messages: {
+      actor: render(messages.actor, { object: object.name, target: container.name }),
+      others: render(messages.others, { actor: actor.name, object: object.name, target: container.name }),
+    } });
+    recordSpan("world.object", { "actor.id": id, "action.kind": "put", "object.id": object.id, "container.id": container.id, "world.tick": state.tick }, 0);
+    return;
+  }
+
+  if (named === "open" || named === "close") {
+    const messages = VERB_TABLE.verbs[named].messages;
+    const container = findObject(words, (o) =>
+      (o.holder === actor.id || o.room === actor.room) && !o.eaten);
+    if (!container) return sendTo(id, `${render(messages.missing, { words })}\r\n`);
+    if (!(container.flags ?? []).includes("container")) return sendTo(id, `${render(messages.notContainer, { words })}\r\n`);
+    if (container.open === (named === "open")) return sendTo(id, `${render(messages.already, { object: container.name })}\r\n`);
+    pending.push({ kind: named, actorId: id, objectId: container.id, messages: {
+      actor: render(messages.actor, { object: container.name }),
+      others: render(messages.others, { actor: actor.name, object: container.name }),
+    } });
+    recordSpan("world.object", { "actor.id": id, "action.kind": named, "object.id": container.id, "world.tick": state.tick }, 0);
+    return;
+  }
+
+  if (named === "wear" || named === "remove") {
+    const messages = VERB_TABLE.verbs[named].messages;
+    const object = findObject(words, (o) => o.holder === actor.id && !o.eaten);
+    if (!object) return sendTo(id, `${render(named === "wear" ? messages.missing : messages.notWorn, { words })}\r\n`);
+    if (!(object.flags ?? []).includes("wearable")) {
+      return sendTo(id, `${render(named === "wear" ? messages.notWearable : messages.notWorn, { words })}\r\n`);
+    }
+    if (object.worn === (named === "wear")) return sendTo(id, `${render(named === "wear" ? messages.already : messages.notWorn, { words })}\r\n`);
+    pending.push({ kind: named, actorId: id, objectId: object.id, messages: {
+      actor: render(messages.actor, { object: object.name }),
+      others: render(messages.others, { actor: actor.name, object: object.name }),
+    } });
+    recordSpan("world.object", { "actor.id": id, "action.kind": named, "object.id": object.id, "world.tick": state.tick }, 0);
+    return;
+  }
+
+  if (named === "eat") {
+    const messages = VERB_TABLE.verbs.eat.messages;
+    const object = findObject(words, (o) => o.holder === actor.id && !o.eaten);
+    if (!object) return sendTo(id, `${render(messages.missing, { words })}\r\n`);
+    if (!(object.flags ?? []).includes("food")) return sendTo(id, `${render(messages.notFood, { words })}\r\n`);
+    const last = (object.bites ?? 1) <= 1;
+    pending.push({ kind: "eat", actorId: id, objectId: object.id, messages: {
+      actor: render(last ? messages.last : messages.actor, { object: object.name }),
+      others: render(last ? messages.lastOthers : messages.others, { actor: actor.name, object: object.name }),
+    } });
+    recordSpan("world.object", { "actor.id": id, "action.kind": "eat", "object.id": object.id, "bites.left": last ? 0 : object.bites - 1, "world.tick": state.tick }, 0);
+    return;
+  }
+
+  if (named === "light" || named === "extinguish") {
+    const messages = VERB_TABLE.verbs[named].messages;
+    const object = findObject(words, (o) =>
+      (named === "light" ? o.holder === actor.id : (o.holder === actor.id || o.room === actor.room)) && !o.eaten);
+    if (!object) return sendTo(id, `${render(messages.missing, { words })}\r\n`);
+    if (!(object.flags ?? []).includes("light")) return sendTo(id, `${render(messages.notLight, { words })}\r\n`);
+    if (object.lit === (named === "light")) return sendTo(id, `${render(messages.already, { object: object.name })}\r\n`);
+    pending.push({ kind: named, actorId: id, objectId: object.id, messages: {
+      actor: render(messages.actor, { object: object.name }),
+      others: render(messages.others, { actor: actor.name, object: object.name }),
+    } });
+    recordSpan("world.object", { "actor.id": id, "action.kind": named, "object.id": object.id, "world.tick": state.tick }, 0);
     return;
   }
 

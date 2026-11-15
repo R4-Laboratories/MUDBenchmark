@@ -87,14 +87,48 @@ export function loadWorld({ mode = "single", path = DEFAULT_PATH } = {}) {
     npcs.push({ ...npc, behaviour, maxHp: npc.hp });
   }
 
-  // Objects must start somewhere real, and ids must be unique.
+  // Objects must start somewhere real, and ids must be unique. Their properties
+  // are data too: a container holds things, a thing can be worn, eaten or lit,
+  // and a broken property is a world that will not boot rather than a verb that
+  // silently does nothing.
   const objects = [];
   const seenObject = new Set();
+  const FLAGS = new Set(["takeable", "fixed", "container", "wearable", "food", "light", "readable"]);
   for (const object of raw.objects ?? []) {
     if (seenObject.has(object.id)) errors.push(`object id "${object.id}" is used twice`);
     seenObject.add(object.id);
-    if (!rooms[object.room]) errors.push(`object ${object.id} is in room ${object.room}, which does not exist`);
-    objects.push({ ...object });
+
+    const flags = object.flags ?? [];
+    for (const flag of flags) {
+      if (!FLAGS.has(flag)) errors.push(`object ${object.id} has unknown flag "${flag}"`);
+    }
+
+    if (object.inside !== undefined) {
+      if (object.room !== undefined) errors.push(`object ${object.id} is both in a room and inside something`);
+    } else if (!rooms[object.room]) {
+      errors.push(`object ${object.id} is in room ${object.room}, which does not exist`);
+    }
+
+    if (flags.includes("container")) {
+      if (!Number.isInteger(object.capacity) || object.capacity < 1) errors.push(`container ${object.id} has no capacity`);
+    }
+    if (flags.includes("food")) {
+      if (!Number.isInteger(object.bites) || object.bites < 1) errors.push(`food ${object.id} has no bites`);
+    }
+    if (flags.includes("light") && typeof (object.lit ?? false) !== "boolean") {
+      errors.push(`light ${object.id} has a non-boolean lit`);
+    }
+    objects.push({ ...object, flags });
+  }
+
+  // A container's contents must name a container that exists, and nesting stops
+  // at one level, so a container cannot swallow itself.
+  for (const object of objects) {
+    if (object.inside === undefined) continue;
+    const container = objects.find((o) => o.id === object.inside);
+    if (!container) errors.push(`object ${object.id} is inside "${object.inside}", which does not exist`);
+    else if (!container.flags.includes("container")) errors.push(`object ${object.id} is inside ${container.id}, which is not a container`);
+    else if (container.inside !== undefined) errors.push(`container ${container.id} is itself inside something; nesting is one level`);
   }
 
   // Zones are a naming layer over rooms, as they were in the codebases this
