@@ -1,0 +1,16 @@
+[Unit]
+Description=MUDBench world server
+After=mudbench-holo.service
+Wants=mudbench-holo.service
+
+[Service]
+Type=simple
+WorkingDirectory=/home/callard/mudbenchmark/runtime
+Environment=DECOY_MODE=corroborated
+Environment=RESPAWN_AT_START=true
+ExecStart=/usr/bin/node server.mjs
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=default.target

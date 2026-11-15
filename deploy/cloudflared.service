@@ -1,0 +1,18 @@
+# A named Cloudflare tunnel. Replace __TOKEN__ with the token from
+# Zero Trust -> Networks -> Tunnels -> Create a tunnel, then in the dashboard add
+# a public hostname:  play.r4labs.org  ->  http://localhost:8090
+#
+# Nothing is opened inbound: cloudflared dials out and Cloudflare terminates TLS.
+[Unit]
+Description=Cloudflare tunnel for MUDBench
+After=network-online.target mudbench-world.service
+Wants=mudbench-world.service
+
+[Service]
+Type=simple
+ExecStart=/home/callard/.local/bin/cloudflared tunnel --no-autoupdate run --token __TOKEN__
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

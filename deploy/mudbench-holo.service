@@ -1,0 +1,13 @@
+[Unit]
+Description=MUDBench holo (the verified rules guest)
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/callard/mudbenchmark/world/.prism/build/f58f5c78933d67905a8d7a5727b2bd008466afc5e7ce66bcdb76ce2169590f2e
+ExecStart=/usr/bin/npx -y prism-code@0.5.0 run MUDBench.holo --host 127.0.0.1 --port 8082 --policy ../../../policy.dev.json
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=default.target
