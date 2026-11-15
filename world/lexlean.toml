@@ -1,7 +1,7 @@
 spec = "lexlean/project/1"
 name = "mudbenchmark-world"
 language = "1.2"
-module_prefix = "MUDBenchmarkWorld"
+module_prefix = "MUDBench"
 source_roots = ["src"]
 entrypoints = ["src/Conservation.lex.tex", "src/Fanout.lex.tex", "src/MudBench.lex.tex", "src/Session.lex.tex", "src/World.lex.tex"]
 build_root = ".lexlean"
