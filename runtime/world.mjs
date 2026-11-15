@@ -9,6 +9,7 @@
 // world's state would be two different objects and no replay could be trusted.
 
 import { createHash } from "node:crypto";
+import { advance, due as pulseDue, makePulse } from "./generated/Pulses.mjs";
 
 export const TICK_MS = 250;
 
@@ -30,6 +31,12 @@ export function initialState(rooms) {
     ].filter((npc) => rooms[npc.room] !== undefined),
     actors: [],
     identities: {},
+    // Countdowns, generated from Pulses.lex.tex. Starting at zero makes the
+    // first tick fire, then every period after it.
+    pulses: {
+      mobile: makePulse({ period: 4, remaining: 4 }),
+      area: makePulse({ period: 240, remaining: 240 }),
+    },
   };
 }
 
@@ -50,6 +57,7 @@ export function digestState(state) {
     identities: Object.fromEntries(
       Object.keys(state.identities ?? {}).sort().map((k) => [k, state.identities[k]]),
     ),
+    pulses: state.pulses,
   });
   return createHash("sha256").update(canonical, "utf8").digest("hex");
 }
@@ -67,8 +75,18 @@ export function step({ state, rooms, intents }) {
     npcs: state.npcs.map((n) => ({ ...n })),
     actors: state.actors.map((a) => ({ ...a, visited: [...a.visited] })),
     identities: { ...state.identities },
+    pulses: { mobile: { ...state.pulses.mobile }, area: { ...state.pulses.area } },
   };
-  const pulses = due(next.tick);
+  // Advance first, then fire on zero and reload in the same tick. Firing before
+  // advancing costs an extra tick per period; the model's `advance` is the
+  // countdown and the loop only decides when to read it.
+  next.pulses.mobile = advance(next.pulses.mobile);
+  const mobileDue = pulseDue(next.pulses.mobile);
+  if (mobileDue) next.pulses.mobile = advance(next.pulses.mobile);
+
+  next.pulses.area = advance(next.pulses.area);
+  const areaDue = pulseDue(next.pulses.area);
+  if (areaDue) next.pulses.area = advance(next.pulses.area);
   const find = (id) => next.actors.find((a) => a.id === id);
 
   for (const intent of intents) {
@@ -154,7 +172,7 @@ export function step({ state, rooms, intents }) {
     }
   }
 
-  if (pulses.mobile) {
+  if (mobileDue) {
     for (const npc of next.npcs) {
       const exits = Object.keys(rooms[npc.room]?.exits ?? {});
       if (exits.length === 0) continue;
@@ -167,12 +185,12 @@ export function step({ state, rooms, intents }) {
     }
   }
 
-  if (pulses.area) {
+  if (areaDue) {
     for (const npc of next.npcs) npc.room = npc.home;
     for (const room of Object.keys(rooms)) {
       events.push({ room: Number(room), text: "A bell rings somewhere below." });
     }
   }
 
-  return { state: next, events, checkpoint: pulses.checkpoint };
+  return { state: next, events, checkpoint: next.tick % CHECKPOINT === 0 };
 }

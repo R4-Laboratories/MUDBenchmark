@@ -3,7 +3,7 @@
   "baseline": "2026-11-15",
   "note": "Shrink-only. Bad numbers may fall, never rise; good numbers may rise, never fall. A change to this file is a decision, not a side effect.",
   "mustNotGrow": {
-    "ruleDebt": 4
+    "ruleDebt": 3
   },
   "mustNotFall": {
     "modelModules": 7,
@@ -27,13 +27,6 @@
       "model": "Fanout.sees",
       "runtime": "runtime/server.mjs broadcast() filters by actor room",
       "why": "the theorem is proved but the server does the filtering"
-    },
-    {
-      "id": "RD-3",
-      "rule": "pulse schedule",
-      "model": "Pulses.due / Pulses.advance",
-      "runtime": "runtime/world.mjs step() counts down in JavaScript",
-      "why": "a verified countdown and a JavaScript one can disagree unnoticed"
     },
     {
       "id": "RD-4",

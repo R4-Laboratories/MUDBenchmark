@@ -16,6 +16,7 @@
 // Usage: node tools/gate.mjs [--json]
 
 import { readFileSync, readdirSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 
 const root = process.cwd();
@@ -53,6 +54,13 @@ for (const [key, exact] of Object.entries(ratchet.mustStayZero)) {
   }
 }
 
+// Generated code must match the model it claims to come from.
+const drift = spawnSync(process.execPath, ["tools/mechanize.mjs", "--check"], { encoding: "utf8" });
+const driftOk = drift.status === 0;
+if (!driftOk) {
+  failures.push(`mechanized code drifted from the model: ${(drift.stderr || drift.stdout || "").trim().split("\n")[0]}`);
+}
+
 if (process.argv.includes("--json")) {
   process.stdout.write(`${JSON.stringify({ measured, ratchet, failures }, null, 2)}\n`);
 } else {
@@ -67,6 +75,7 @@ if (process.argv.includes("--json")) {
   for (const [key, exact] of Object.entries(ratchet.mustStayZero)) {
     console.log(`${key.padEnd(26)}  ${String(measured[key]).padStart(5)}   == ${exact}`);
   }
+  console.log(`${"mechanizedDrift".padEnd(26)}  ${(driftOk ? "clean" : "DRIFT").padStart(5)}   == clean`);
   console.log("");
   if (failures.length === 0) {
     console.log("gate: passed");

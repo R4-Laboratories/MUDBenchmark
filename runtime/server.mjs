@@ -88,6 +88,9 @@ function loadState() {
       // transport would sit in a room forever as a ghost.
       actors: [],
       identities: saved.identities ?? {},
+      // A state file written before the pulse substrate has no countdowns;
+      // fall back to a fresh schedule rather than crashing on load.
+      pulses: saved.pulses ?? base.pulses,
     };
   } catch {
     return initialState(ROOMS);
