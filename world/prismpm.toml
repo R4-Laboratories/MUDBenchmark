@@ -1,5 +1,5 @@
 spec = "prismpm/project/1"
-project = "MUDBenchmarkWorld"
+project = "MUDBench"
 lexlean_project = "lexlean.toml"
 build_root = ".prism"
 
