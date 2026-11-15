@@ -46,14 +46,17 @@ export function layersFor({ events, memory, goal }) {
 export function assemble({ events, memory = [], goal = "map the world and speak to whoever you meet.", mode = "flat", budget = 220 }) {
   const layers = layersFor({ events, memory, goal });
 
-  // Both modes are held to the same budget, so the comparison is what to keep
-  // under equal cost rather than who was allowed more context. Routed orders by
-  // value density — weight per token — so a small high-value layer can displace
-  // a large low-value one; ordering by raw weight would just keep the biggest
-  // layer first and call that routing.
+  // Cache-aware split. Some layers are the same every turn; they go first, in a
+  // fixed order, so consecutive turns share one long prompt prefix and the
+  // provider's prefix cache can reuse it. Only the volatile tail is reordered.
+  // The first run showed a router that reshuffles everything costs more than it
+  // saves, because every turn invalidates the cache.
+  const STABLE = ["objective", "resources"];
   const density = (layer) => layer.weight / Math.max(1, approxTokens(layer.text));
+  const stable = STABLE.map((name) => layers.find((l) => l.name === name)).filter(Boolean);
+  const volatile = layers.filter((l) => !STABLE.includes(l.name));
   const ordered = mode === "routed"
-    ? [...layers].sort((a, b) => density(b) - density(a) || b.weight - a.weight)
+    ? [...stable, ...volatile.sort((a, b) => density(b) - density(a) || b.weight - a.weight)]
     : layers;
 
   const kept = [];

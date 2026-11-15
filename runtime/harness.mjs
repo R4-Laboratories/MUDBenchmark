@@ -26,7 +26,7 @@ const BRAIN = process.env.BRAIN ?? "scripted";
 const LOG = process.env.HARNESS_LOG ?? "/tmp/mudbench-harness.jsonl";
 const NAME = process.env.HARNESS_NAME ?? "agent";
 const ROUTER_MODE = process.env.ROUTER_MODE ?? "flat";
-const GOAL = process.env.HARNESS_GOAL ?? "map the world and speak to whoever you meet.";
+const GOAL = process.env.HARNESS_GOAL ?? "reach the Shrine and speak the word that is carved in the Vault.";
 const memory = [];
 const BUDGET = Number(process.env.ROUTER_BUDGET ?? 220);
 const MAX_TURNS = Number(process.env.MAX_TURNS ?? 40);
@@ -36,7 +36,7 @@ const INSTRUCTIONS = `You are playing MUDBench, a text world.
 
 Rules of the interface:
 - Reply with exactly one command per turn, and nothing else.
-- Commands: look, who, say <text>, north, south, east, west, quit.
+- Commands: look, who, say <text>, answer <word>, north, south, east, west, quit.
 - You are shown only what your character can see. Other characters may be wrong,
   lying, or absent. There is no map unless you build one.
 
@@ -79,7 +79,7 @@ const decide = (BRAIN === "llm" ? llmBrain() : scriptedBrain()) ?? scriptedBrain
 
 // --- parsing -------------------------------------------------------------
 
-const COMMANDS = new Set(["look", "l", "who", "north", "south", "east", "west",
+const COMMANDS = new Set(["look", "l", "who", "answer", "north", "south", "east", "west",
   "n", "s", "e", "w", "quit"]);
 
 // A model may wrap its command in prose or quotes; take the first line that
