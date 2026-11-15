@@ -216,6 +216,15 @@ function onTick() {
 
   if (result.checkpoint) saveState();
 
+  // The trace written into the span stream, not a second file: from these a run
+  // can be reconstructed with nothing but the record.
+  recordSpan("world.tick", {
+    "world.tick": state.tick,
+    "state.hash": digestState(state),
+    "world.intents": JSON.stringify(intents),
+    "event.count": result.events.length,
+  }, 0);
+
   try {
     appendFileSync(TRACE_FILE, `${JSON.stringify({
       tick: state.tick,
@@ -285,6 +294,11 @@ server.listen(TELNET_PORT, () => {
   try {
     writeFileSync(TRACE_FILE, `${JSON.stringify({ rooms: ROOMS, baseline: state })}\n`);
   } catch {}
+  recordSpan("world.baseline", {
+    "world.tick": state.tick,
+    "world.state": JSON.stringify(state),
+    "world.rooms": JSON.stringify(ROOMS),
+  }, 0);
   console.log(`telnet on :${TELNET_PORT}`);
   console.log(`websocket on :${WS_PORT}`);
   console.log(`holo at ${HOLO_URL}`);

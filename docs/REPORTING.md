@@ -41,7 +41,8 @@ split is an artefact of observation, not a finding.
 state, tick by tick.
 
 ```
-replayed to tick 886, checked 34 ticks, 0 mismatched
+replayed to tick 1597, from spans, 210 ticks checked, 0 mismatched
+replayed to tick 1597, from trace, 210 ticks checked, 0 mismatched
 ```
 
 The trace carries its baseline state, the intents applied on each tick, and a
