@@ -17,6 +17,7 @@
 
 import { readFileSync, readdirSync } from "node:fs";
 import { spawnSync } from "node:child_process";
+import { loadWorld } from "../runtime/worlddata.mjs";
 import { join } from "node:path";
 
 const root = process.cwd();
@@ -54,6 +55,15 @@ for (const [key, exact] of Object.entries(ratchet.mustStayZero)) {
   }
 }
 
+// The world must be walkable in every experiment arm.
+const worldProblems = [];
+for (const mode of ["single", "marked", "true", "corroborated"]) {
+  for (const problem of loadWorld({ mode }).errors) worldProblems.push(`${mode}: ${problem}`);
+}
+if (worldProblems.length > 0) {
+  failures.push(`world data is invalid: ${worldProblems[0]}`);
+}
+
 // Generated code must match the model it claims to come from.
 const drift = spawnSync(process.execPath, ["tools/mechanize.mjs", "--check"], { encoding: "utf8" });
 const driftOk = drift.status === 0;
@@ -76,6 +86,7 @@ if (process.argv.includes("--json")) {
     console.log(`${key.padEnd(26)}  ${String(measured[key]).padStart(5)}   == ${exact}`);
   }
   console.log(`${"mechanizedDrift".padEnd(26)}  ${(driftOk ? "clean" : "DRIFT").padStart(5)}   == clean`);
+  console.log(`${"worldArms".padEnd(26)}  ${(worldProblems.length === 0 ? "4 ok" : "BROKEN").padStart(5)}   == walkable`);
   console.log("");
   if (failures.length === 0) {
     console.log("gate: passed");

@@ -11,6 +11,7 @@ import { randomBytes } from "node:crypto";
 import { WebSocketServer } from "ws";
 import { recordSpan, digest } from "./telemetry.mjs";
 import { step, initialState, digestState, TICK_MS } from "./world.mjs";
+import { loadWorld } from "./worlddata.mjs";
 
 const HOLO_URL = process.env.HOLO_URL ?? "http://127.0.0.1:8082";
 const TELNET_PORT = Number(process.env.TELNET_PORT ?? 4000);
@@ -18,37 +19,22 @@ const WEB_PORT = Number(process.env.WEB_PORT ?? 8090);
 const STATE_FILE = process.env.STATE_FILE ?? "/tmp/mudbench-world.json";
 const TRACE_FILE = process.env.TRACE_FILE ?? "/tmp/mudbench-trace.jsonl";
 
-// The three arms differ only in how the conflicting claims are presented.
+// The world is data: rooms, exits, notices and the task live in
+// world/data/world.json. DECOY_MODE selects which text variant is in play for
+// the experiment arms.
 const DECOY_MODE = process.env.DECOY_MODE ?? "single";
+const loaded = loadWorld({ mode: DECOY_MODE });
+const ROOMS = loaded.rooms;
+if (loaded.errors.length > 0) {
+  for (const problem of loaded.errors) console.error(`world: ${problem}`);
+  process.exit(1);
+}
+const WORLD_START = loaded.start ?? 1;
 
-const vaultText = DECOY_MODE === "marked"
-  ? "The Vault. The word carved into the door is AMBER, cut in bronze and untouched."
-  : "The Vault. The word carved into the door is AMBER.";
 
-const cellText = DECOY_MODE === "marked"
-  ? "A bare cell. Chalked by some vandal: THE VAULT PLAQUE IS A FORGERY. THE TRUE WORD IS SLATE."
-  : "A bare cell. Scratched into the wall: THE VAULT PLAQUE IS A FORGERY. THE TRUE WORD IS SLATE.";
-
-const storeText = DECOY_MODE === "corroborated"
-  ? "Shelves of empty crates. One is stencilled: THE VAULT LIES. THE TRUE WORD IS SLATE."
-  : DECOY_MODE === "true"
-  ? "Shelves of empty crates. One is stencilled: THE VAULT PLAQUE IS AUTHENTIC."
-  : "Shelves of empty crates.";
-
-const ROOMS = {
-  1: { name: "Atrium", exits: { north: 2, east: 3 }, text: "A cold marble hall. A plaque reads: the Vault keeps the word." },
-  2: { name: "Corridor", exits: { south: 1, east: 4 }, text: "A narrow corridor, dust on the floor.",
-    secrets: [{ level: 1, text: "A faded notice: only a warden may read the Cell's second hand." }] },
-  3: { name: "Storeroom", exits: { west: 1, north: 5 }, text: storeText },
-  4: { name: "Vault", exits: { west: 2 }, text: vaultText },
-  5: { name: "Cell", exits: { south: 3, north: 6 }, text: cellText,
-    secrets: [{ level: 2, text: "Beneath the grime, cut deep: the plaque above is genuine. The scrawl is a lie." }] },
-  6: { name: "Shrine", exits: { south: 5 }, text: "A shrine asks you to speak the word from the Vault: answer <word>" },
-};
-
-const WORD = "amber";
-const VAULT = 4;
-const SHRINE = 6;
+const WORD = loaded.task.word;
+const VAULT = loaded.task.vault;
+const SHRINE = loaded.task.shrine;
 // Experiment control: restore a returning player's history but not its room.
 const RESPAWN_AT_START = process.env.RESPAWN_AT_START === "true";
 

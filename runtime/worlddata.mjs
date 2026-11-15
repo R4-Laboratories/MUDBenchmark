@@ -1,0 +1,96 @@
+// Load and validate the world.
+//
+// The world is data, not code: rooms, exits and notices live in
+// world/data/world.json so an author can change the map without touching the
+// server, and so the same file can be checked by the gate.
+//
+// Validation is fail-closed. A room whose exit points nowhere, a notice at a
+// level no role can reach, or a room nobody can walk to is a broken world, and
+// a broken world should not accept a connection.
+
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+// Resolved against this module, not the process working directory: the service
+// runs with its cwd inside runtime/, and relative paths there would lie.
+const HERE = dirname(fileURLToPath(import.meta.url));
+const DEFAULT_PATH = join(HERE, "..", "world", "data", "world.json");
+
+const LEVELS = 4; // roles and notice levels are both 0..3, per Perception.lex.tex
+
+export function loadWorld({ mode = "single", path = DEFAULT_PATH } = {}) {
+  const errors = [];
+  let raw;
+
+  try {
+    raw = JSON.parse(readFileSync(path, "utf8"));
+  } catch (error) {
+    return { rooms: {}, start: 1, errors: [`cannot read ${path}: ${error.message}`] };
+  }
+
+  const rooms = {};
+  for (const [id, room] of Object.entries(raw.rooms ?? {})) {
+    const numeric = Number(id);
+    if (!Number.isInteger(numeric) || numeric < 1) {
+      errors.push(`room id "${id}" is not a positive integer`);
+      continue;
+    }
+    const text = typeof room.text === "string" ? room.text : room.text?.[mode];
+    if (typeof text !== "string") {
+      errors.push(`room ${id} has no text for mode "${mode}"`);
+      continue;
+    }
+    rooms[numeric] = {
+      name: room.name ?? `Room ${id}`,
+      exits: room.exits ?? {},
+      text,
+      notices: room.notices ?? [],
+    };
+  }
+
+  // Exits must land somewhere.
+  for (const [id, room] of Object.entries(rooms)) {
+    for (const [direction, target] of Object.entries(room.exits)) {
+      if (!rooms[target]) {
+        errors.push(`room ${id} exits ${direction} to ${target}, which does not exist`);
+      }
+    }
+  }
+
+  // Notices must be readable by at least one role.
+  for (const [id, room] of Object.entries(rooms)) {
+    for (const notice of room.notices) {
+      if (!Number.isInteger(notice.level) || notice.level < 0 || notice.level >= LEVELS) {
+        errors.push(`room ${id} has a notice at level ${notice.level}, outside 0..${LEVELS - 1}`);
+      }
+      if (typeof notice.text !== "string") {
+        errors.push(`room ${id} has a notice with no text`);
+      }
+    }
+  }
+
+  // Every room must be reachable from the start, or nobody will ever see it.
+  const start = raw.start ?? 1;
+  const seen = new Set([start]);
+  const queue = [start];
+  while (queue.length) {
+    const id = queue.shift();
+    for (const target of Object.values(rooms[id]?.exits ?? {})) {
+      if (rooms[target] && !seen.has(target)) {
+        seen.add(target);
+        queue.push(target);
+      }
+    }
+  }
+  for (const id of Object.keys(rooms)) {
+    if (!seen.has(Number(id))) errors.push(`room ${id} is unreachable from room ${start}`);
+  }
+
+  const task = raw.task ?? { vault: 4, shrine: 6, word: "amber" };
+  for (const key of ["vault", "shrine"]) {
+    if (!rooms[task[key]]) errors.push(`task.${key} names room ${task[key]}, which does not exist`);
+  }
+
+  return { rooms, start, task, errors };
+}
