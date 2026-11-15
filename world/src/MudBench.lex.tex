@@ -3,6 +3,7 @@
 \useglossary{lexlean.std.nat@1.2.0}
 \importmodule{Foundation.Bytes}
 \importmodule{Foundation.View.Text.V1.Model}
+\importmodule{Pulses}
 \title{Boolean}
 \begin{semanticmodule}
 definition{
@@ -48,6 +49,30 @@ definition{
 }
 
 definition{
+  name: heldOf,
+  parameters: [value : Bytes],
+  result: Nat,
+  body: (field value 4),
+  axioms: [Quot.sound, propext]
+}
+
+definition{
+  name: amountOf,
+  parameters: [value : Bytes],
+  result: Nat,
+  body: (field value 5),
+  axioms: [Quot.sound, propext]
+}
+
+definition{
+  name: freeOf,
+  parameters: [value : Bytes],
+  result: Nat,
+  body: (field value 6),
+  axioms: [Quot.sound, propext]
+}
+
+definition{
   name: admits,
   parameters: [value : Bytes],
   result: Bool,
@@ -55,7 +80,8 @@ definition{
     else (if ((kindOf value) =? 4) then true
     else (if ((kindOf value) =? 1) then ((originOf value) =? (roomOf value))
     else (if ((kindOf value) =? 3) then ((roomOf value) =? (destinationOf value))
-    else false)))),
+    else (if ((kindOf value) =? 2) then (((Pulses::minus (amountOf value) (heldOf value)) =? 0) && ((Pulses::minus (amountOf value) (freeOf value)) =? 0))
+    else false))))),
   axioms: [Quot.sound, propext]
 }
 
@@ -79,7 +105,7 @@ definition{
   name: application,
   parameters: [],
   result: Foundation.View.Text.V1.Model::TextApplication,
-  body: (record Foundation.View.Text.V1.Model::TextApplication {profile := "prismpm/text-application/1", name := "MUDBench", cargoName := "mudbench", cargoVersion := "0.1.0", cargoDescription := "Admits or refuses a claimed world transition.", cargoRepository := "https://github.com/R4-Laboratories/MUDBenchmark", cargoHomepage := "https://github.com/R4-Laboratories/MUDBenchmark", libraryRoots := (cons "MUDBench.MudBench.dispatch" (nil String)), acceptanceVectors := (cons (record Foundation.View.Text.V1.Model::AcceptanceVector {request := 0x00010101000000, response := 0x61646d69737369626c65}) (cons (record Foundation.View.Text.V1.Model::AcceptanceVector {request := 0x01050500000000, response := 0x61646d69737369626c65}) (cons (record Foundation.View.Text.V1.Model::AcceptanceVector {request := 0x01050400000000, response := 0x72656675736564}) (cons (record Foundation.View.Text.V1.Model::AcceptanceVector {request := 0x03030303000000, response := 0x61646d69737369626c65}) (cons (record Foundation.View.Text.V1.Model::AcceptanceVector {request := 0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000, response := 0x696e76616c69642072657175657374}) (nil Foundation.View.Text.V1.Model::AcceptanceVector)))))), entryRoot := "MUDBench.MudBench.dispatch", coreContract := "hologram:guest/core-wasm@1", requestMaximum := (7 : UInt32), responseMaximum := (32 : UInt32), guestAllocationMaximum := (512 : UInt32), capabilitiesEmpty := true, fatArchive := true, primaryLayer := (0 : UInt8), viewLayer := (1 : UInt8), view := (record Foundation.View.Text.V1.Model::TextView {title := "MUDBench", heading := "MUDBench", inputLabel := "Transition", submitLabel := "Admit", outputLabel := "Verdict", inputError := "Invalid request", responseError := "Invalid response"})})
+  body: (record Foundation.View.Text.V1.Model::TextApplication {profile := "prismpm/text-application/1", name := "MUDBench", cargoName := "mudbench", cargoVersion := "0.1.0", cargoDescription := "Admits or refuses a claimed world transition.", cargoRepository := "https://github.com/R4-Laboratories/MUDBenchmark", cargoHomepage := "https://github.com/R4-Laboratories/MUDBenchmark", libraryRoots := (cons "MUDBench.MudBench.dispatch" (nil String)), acceptanceVectors := (cons (record Foundation.View.Text.V1.Model::AcceptanceVector {request := 0x00010101000000, response := 0x61646d69737369626c65}) (cons (record Foundation.View.Text.V1.Model::AcceptanceVector {request := 0x01050500000000, response := 0x61646d69737369626c65}) (cons (record Foundation.View.Text.V1.Model::AcceptanceVector {request := 0x01050400000000, response := 0x72656675736564}) (cons (record Foundation.View.Text.V1.Model::AcceptanceVector {request := 0x03030303000000, response := 0x61646d69737369626c65}) (cons (record Foundation.View.Text.V1.Model::AcceptanceVector {request := 0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000, response := 0x696e76616c69642072657175657374}) (cons (record Foundation.View.Text.V1.Model::AcceptanceVector {request := 0x02010100050505, response := 0x61646d69737369626c65}) (cons (record Foundation.View.Text.V1.Model::AcceptanceVector {request := 0x02010100050905, response := 0x72656675736564}) (nil Foundation.View.Text.V1.Model::AcceptanceVector)))))))), entryRoot := "MUDBench.MudBench.dispatch", coreContract := "hologram:guest/core-wasm@1", requestMaximum := (7 : UInt32), responseMaximum := (32 : UInt32), guestAllocationMaximum := (512 : UInt32), capabilitiesEmpty := true, fatArchive := true, primaryLayer := (0 : UInt8), viewLayer := (1 : UInt8), view := (record Foundation.View.Text.V1.Model::TextView {title := "MUDBench", heading := "MUDBench", inputLabel := "Transition", submitLabel := "Admit", outputLabel := "Verdict", inputError := "Invalid request", responseError := "Invalid response"})})
 }
 \end{semanticmodule}
 \end{lexlean}

@@ -4,7 +4,7 @@ After=network-online.target
 
 [Service]
 Type=simple
-WorkingDirectory=/home/callard/mudbenchmark/world/.prism/build/f58f5c78933d67905a8d7a5727b2bd008466afc5e7ce66bcdb76ce2169590f2e
+WorkingDirectory=/home/callard/mudbenchmark/world/.prism/build/9911e65f81a018d2ad63f2c166550c73ddcc78f1a2fecf64bed7362ff4ac95ac
 ExecStart=/usr/bin/npx -y prism-code@0.5.0 run MUDBench.holo --host 127.0.0.1 --port 8082 --policy ../../../policy.dev.json
 Restart=always
 RestartSec=3

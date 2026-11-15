@@ -23,6 +23,8 @@ import { assemble } from "./router.mjs";
 
 const WS_URL = process.env.WS_URL ?? "ws://127.0.0.1:8090";
 const BRAIN = process.env.BRAIN ?? "scripted";
+const MODEL = process.env.MODEL_NAME ?? "deepseek-flash";
+const MODEL_BASE = process.env.MODEL_BASE_URL ?? "https://api.deepseek.com/v1";
 const LOG = process.env.HARNESS_LOG ?? "/tmp/mudbench-harness.jsonl";
 const NAME = process.env.HARNESS_NAME ?? "agent";
 const ROUTER_MODE = process.env.ROUTER_MODE ?? "flat";
@@ -94,10 +96,14 @@ function scriptedBrain() {
 }
 
 function llmBrain() {
-  const base = process.env.MODEL_BASE_URL;
-  const key = process.env.MODEL_API_KEY;
-  const model = process.env.MODEL_NAME;
-  if (!base || !key || !model) return null;
+  const base = MODEL_BASE;
+  const model = MODEL;
+  let key = process.env.MODEL_API_KEY;
+  // A file keeps the key out of the process list.
+  if (!key && process.env.MODEL_API_KEY_FILE) {
+    try { key = readFileSync(process.env.MODEL_API_KEY_FILE, "utf8").trim(); } catch { /* fall through */ }
+  }
+  if (!key) return null;
   const messages = [{ role: "system", content: INSTRUCTIONS }];
   return async (observed) => {
     messages.push({ role: "user", content: observed });
@@ -191,7 +197,7 @@ async function loop() {
       continue;
     }
     const { command, ok, raw } = parseCommand(reply);
-    record({ turn, event: "decision", seen, context: routed.context, layers: routed.layers, recall: recallText(), roomsSeen: [...recall.rooms], reply: raw ?? reply, command, parse_ok: ok, usage: lastUsage });
+    record({ turn, event: "decision", model: MODEL, seen, context: routed.context, layers: routed.layers, recall: recallText(), roomsSeen: [...recall.rooms], reply: raw ?? reply, command, parse_ok: ok, usage: lastUsage });
     saveMemory();
     if (/shrine accepts/i.test(seen)) record({ turn, event: "solved" });
     if (/shrine does not accept/i.test(seen)) record({ turn, event: "rejected" });
