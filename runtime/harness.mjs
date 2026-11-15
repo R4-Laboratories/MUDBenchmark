@@ -17,7 +17,7 @@
 //             MODEL_BASE_URL, MODEL_API_KEY, MODEL_NAME
 
 import WebSocket from "ws";
-import { appendFileSync } from "node:fs";
+import { appendFileSync, writeFileSync } from "node:fs";
 import { recordSpan, digest } from "./telemetry.mjs";
 import { assemble } from "./router.mjs";
 
@@ -105,6 +105,9 @@ let turn = 0;
 const record = (entry) => appendFileSync(LOG, `${JSON.stringify(entry)}\n`);
 
 socket.on("open", () => {
+  // A fresh file per run: appending let a killed run's turns leak into the next
+  // run's log under the same name, which silently mixed two sessions.
+  writeFileSync(LOG, "");
   console.log(`harness connected as ${NAME} with the ${BRAIN} brain`);
   record({ event: "connect", url: WS_URL, brain: BRAIN, name: NAME });
   // Claim an identity so a later run with the same name resumes where this one
