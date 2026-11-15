@@ -187,7 +187,7 @@ async function loop() {
       continue;
     }
     const { command, ok, raw } = parseCommand(reply);
-    record({ turn, event: "decision", seen, context: routed.context, layers: routed.layers, recall: recallText(), reply: raw ?? reply, command, parse_ok: ok, usage: lastUsage });
+    record({ turn, event: "decision", seen, context: routed.context, layers: routed.layers, recall: recallText(), roomsSeen: [...recall.rooms], reply: raw ?? reply, command, parse_ok: ok, usage: lastUsage });
     saveMemory();
     if (/shrine accepts/i.test(seen)) record({ turn, event: "solved" });
     if (/shrine does not accept/i.test(seen)) record({ turn, event: "rejected" });

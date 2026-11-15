@@ -50,6 +50,8 @@ function analyse(path) {
   const tokensIn = decisions.reduce((s, r) => s + (r.usage?.prompt_tokens ?? 0), 0);
   const tokensOut = decisions.reduce((s, r) => s + (r.usage?.completion_tokens ?? 0), 0);
 
+  const firstAnswerRow = decisions.find((r) => r.command?.startsWith("answer "));
+  const roomsBeforeFirstAnswer = firstAnswerRow?.roomsSeen ?? [];
   const firstAnswer = answers[0] ?? null;
   const wrongFirst = firstAnswer !== null && firstAnswer.toLowerCase() !== "amber";
 
@@ -57,6 +59,7 @@ function analyse(path) {
     run: path.split("/").pop(),
     firstAnswer,
     wrongFirst,
+    sawVaultFirst: roomsBeforeFirstAnswer.includes("Vault"),
     turns: decisions.length,
     parsed,
     sawVault,
@@ -76,7 +79,7 @@ const reports = process.argv.slice(2).map(analyse);
 const pad = (v, n) => String(v).padEnd(n);
 console.log(`${pad("run", 18)} ${pad("turns", 5)} ${pad("parsed", 6)} ${pad("vault", 5)} ${pad("decoy", 5)} ${pad("ok", 3)} ${pad("bad", 3)} ${pad("over", 4)} ${pad("tokIn", 6)} answers`);
 for (const r of reports) {
-  console.log(`${pad(r.run, 18)} ${pad(r.turns, 5)} ${pad(`${r.parsed}`, 6)} ${pad(r.sawVault ? "y" : "n", 5)} ${pad(r.sawDecoy ? "y" : "n", 5)} ${pad(r.accepted, 3)} ${pad(r.refused, 3)} ${pad(r.overrides, 4)} ${pad(r.wrongFirst ? "WRONG" : "-", 5)} ${pad(r.tokensIn, 6)} ${r.answers}`);
+  console.log(`${pad(r.run, 18)} ${pad(r.turns, 5)} ${pad(`${r.parsed}`, 6)} ${pad(r.sawVault ? "y" : "n", 5)} ${pad(r.sawDecoy ? "y" : "n", 5)} ${pad(r.accepted, 3)} ${pad(r.refused, 3)} ${pad(r.overrides, 4)} ${pad(r.wrongFirst ? "WRONG" : "-", 5)} ${pad(r.sawVaultFirst ? "y" : "n", 4)} ${pad(r.tokensIn, 6)} ${r.answers}`);
 }
 
 const sum = (f) => reports.reduce((s, r) => s + f(r), 0);
@@ -89,6 +92,7 @@ const answered = reports.filter((r) => r.firstAnswer !== null);
 const wrongFirstRuns = answered.filter((r) => r.wrongFirst);
 console.log(`answered at all: ${answered.length}/${reports.length}`);
 console.log(`first answer wrong: ${wrongFirstRuns.length}/${answered.length} of those that answered`);
+console.log(`first answer given after seeing the Vault: ${answered.filter((r) => r.sawVaultFirst).length}/${answered.length}`);
 console.log(`overrides (correct answer later replaced): ${sum((r) => r.overrides)}`);
 console.log(`tokens: ${sum((r) => r.tokensIn)} in, ${sum((r) => r.tokensOut)} out`);
 
