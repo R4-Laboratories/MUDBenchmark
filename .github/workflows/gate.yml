@@ -51,6 +51,13 @@ jobs:
         with:
           node-version: '22'
 
+      # The SDK image runs as uid 1000; the runner's checkout belongs to uid 1001,
+      # so the build roots have to be created and opened up first.
+      - name: Make the workspace writable by the container user
+        run: |
+          mkdir -p world/.lexlean world/.prism
+          chmod -R a+rwX world
+
       - name: Verify the model in the pinned SDK
         run: |
           docker run --rm -v "$PWD:/w" -w /w/world "$SDK" prismpm --project . verify
