@@ -107,7 +107,7 @@ and it caught one of its own.
 | Holo carries a proof statement | **no** — format revision `2026-10-23` has no attestation bundle (#267, #268), so the artifact is P0 |
 | A run is reconstructible from its spans | yes — `world.baseline` + `world.tick` spans replay to the same state (210 ticks, 0 mismatched) |
 | Actor state is in the modelled world | yes — server owns transports only |
-| Identity is authenticated | **no** — `login` is a claim, not authentication |
+| Identity is authenticated | yes — a key is minted on first login, only its hash is stored, and a name cannot be taken without it |
 
 The benchmark can therefore say what it measured and prove the measurement is
 faithful to the world. It cannot yet prove that the artifact computing the world

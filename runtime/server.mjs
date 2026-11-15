@@ -7,6 +7,7 @@
 import net from "node:net";
 import http from "node:http";
 import { readFileSync, writeFileSync, renameSync, appendFileSync } from "node:fs";
+import { randomBytes } from "node:crypto";
 import { WebSocketServer } from "ws";
 import { recordSpan, digest } from "./telemetry.mjs";
 import { step, initialState, digestState, TICK_MS } from "./world.mjs";
@@ -146,12 +147,21 @@ async function handle(id, line) {
   }
 
   if (verb === "login") {
-    const key = rest.join(" ").trim();
-    if (!/^[a-z0-9_-]{1,24}$/i.test(key)) {
-      return sendTo(id, "Names are 1-24 letters, digits, - or _.\r\n");
+    const [key, token] = rest;
+    if (!key || !/^[a-z0-9_-]{1,24}$/i.test(key)) {
+      return sendTo(id, "Usage: login <name> [key]. Names are 1-24 letters, digits, - or _.\r\n");
     }
-    pending.push({ kind: "login", actorId: id, key, respawn: RESPAWN_AT_START });
-    return sendTo(id, `You are known as ${key}. Your room and history return on your next visit.\r\n`);
+    const known = state.identities[key];
+    if (known && !token) {
+      return sendTo(id, "That name is taken. Sign in with: login <name> <key>\r\n");
+    }
+    // A first login mints a key; the state stores only its hash.
+    const secret = token ?? randomBytes(16).toString("hex");
+    pending.push({ kind: "login", actorId: id, key, token: secret, respawn: RESPAWN_AT_START });
+    if (!known) {
+      return sendTo(id, `New identity ${key}.\r\nYour key is: ${secret}\r\nKeep it; it cannot be recovered.\r\n`);
+    }
+    return sendTo(id, `Signing in as ${key}.\r\n`);
   }
 
   // A command typed before the join tick lands is queued, not refused: the

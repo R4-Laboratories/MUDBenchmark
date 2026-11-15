@@ -44,9 +44,9 @@ const MEMORY_FILE = process.env.HARNESS_MEMORY ?? `/tmp/mudbench-memory-${NAME}.
 function loadMemory() {
   try {
     const saved = JSON.parse(readFileSync(MEMORY_FILE, "utf8"));
-    return { rooms: saved.rooms ?? [], word: saved.word ?? null, answers: saved.answers ?? 0 };
+    return { rooms: saved.rooms ?? [], word: saved.word ?? null, answers: saved.answers ?? 0, token: saved.token ?? null };
   } catch {
-    return { rooms: [], word: null, answers: 0 };
+    return { rooms: [], word: null, answers: 0, token: null };
   }
 }
 
@@ -58,6 +58,8 @@ function observe(text) {
   }
   if (text.includes("word carved into the door is AMBER")) recall.word = "amber";
   if (text.includes("shrine accepts your answer")) recall.answers += 1;
+  const minted = text.match(/Your key is: ([a-f0-9]{32})/);
+  if (minted) recall.token = minted[1];
 }
 
 function recallText() {
@@ -153,7 +155,9 @@ socket.on("open", () => {
   record({ event: "connect", url: WS_URL, brain: BRAIN, name: NAME });
   // Claim an identity so a later run with the same name resumes where this one
   // stopped. A claim, not an authentication: anyone may use any name.
-  socket.send(`login ${NAME}\n`);
+  // Claim an identity: with its key if we have one, without if this is the
+  // first visit and the server will mint one.
+  socket.send(`login ${NAME}${recall.token ? ` ${recall.token}` : ""}\n`);
 });
 
 socket.on("message", (data) => { observed += data.toString("utf8"); });

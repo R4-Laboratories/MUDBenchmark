@@ -83,17 +83,31 @@ export function step({ state, rooms, intents }) {
       const actor = find(intent.actorId);
       if (!actor) continue;
       const known = next.identities[intent.key];
+      const hash = intent.token
+        ? createHash("sha256").update(intent.token, "utf8").digest("hex")
+        : null;
+
+      // A name belongs to whoever holds its key. Without a matching key the
+      // login is refused, so a name cannot be taken by typing it.
+      if (known && known.tokenHash !== hash) {
+        events.push({ onlyId: actor.id, text: "That name is taken, and the key does not match.\r\n" });
+        continue;
+      }
+
       actor.key = intent.key;
       if (known) {
         actor.visited = [...known.visited];
         actor.name = known.name;
-        // `respawn` starts the returning player at the beginning while keeping
-        // its history, which separates what it remembers from where it woke up.
         actor.room = intent.respawn ? 1 : known.room;
         if (!actor.visited.includes(actor.room)) actor.visited.push(actor.room);
       } else {
         actor.name = intent.key;
-        next.identities[intent.key] = { name: actor.name, room: actor.room, visited: [...actor.visited] };
+        next.identities[intent.key] = {
+          name: actor.name,
+          room: actor.room,
+          visited: [...actor.visited],
+          tokenHash: hash,
+        };
       }
       continue;
     }
