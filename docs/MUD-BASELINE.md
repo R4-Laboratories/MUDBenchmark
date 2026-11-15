@@ -50,9 +50,11 @@ The shop keeps the change; it pays half value; the reset puts the stock back.
 **F. Communication.** *Done.* Channels with role locks, cross-room tells, mail
 that waits for an identity, and data-driven socials. See `docs/COMMUNICATION.md`.
 
-**G. Accounts and persistence.** Characters that survive a restart, with
-inventory, position and progress — the MuOxi/Diesel concern, which we currently
-approximate with one JSON snapshot.
+**G. Accounts and persistence.** *Done.* Characters survive a logout and a
+restart with their room, visited set, role, inventory and worn things; a bag
+keeps its contents. Checkpoints sync online hands, duplicate sign-ins are
+refused, and the area reset no longer repossesses carried objects. See
+`docs/PERSISTENCE.md`.
 
 ## What every phase must carry
 

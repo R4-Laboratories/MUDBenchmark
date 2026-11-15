@@ -175,9 +175,16 @@ export function upgradeState(saved, base) {
     return { ...n, ...old, hp: old.hp ?? maxHp, maxHp, dead: old.dead ?? false };
   });
 
+  const identities = Object.fromEntries(Object.entries(saved.identities ?? base.identities ?? {}).map(([key, identity]) => [key, {
+    ...identity,
+    inventory: Array.isArray(identity.inventory) ? identity.inventory : [],
+    worn: Array.isArray(identity.worn) ? identity.worn : [],
+  }]));
+
   return {
     ...base,
     ...saved,
+    identities,
     climate,
     weather,
     start: saved.start ?? base.start,
@@ -200,8 +207,21 @@ export function upgradeState(saved, base) {
  */
 export function releaseHeldObjects(state, actors = []) {
   const roomOf = new Map(actors.map((actor) => [actor.id, actor.room]));
+  const claimed = new Set();
+  for (const identity of Object.values(state.identities ?? {})) {
+    for (const objectId of identity.inventory ?? []) claimed.add(objectId);
+  }
   for (const object of state.objects) {
     if (object.holder === null || object.holder === undefined) continue;
+    if (claimed.has(object.id)) {
+      // The identity saved this object; it will be restored to their hands on
+      // the next login. Do not leave a second copy on the floor.
+      object.holder = null;
+      object.room = null;
+      object.inside = null;
+      object.worn = false;
+      continue;
+    }
     // A holder with no actor record is an orphan: an older release dropped the
     // actor but kept the object in their hand, and no one can ever reach it.
     // It goes home rather than vanishing.
@@ -209,6 +229,28 @@ export function releaseHeldObjects(state, actors = []) {
     object.holder = null;
     object.inside = null;
     object.worn = false;
+  }
+  return state;
+}
+
+/**
+ * Before a checkpoint, write every online actor's hands into their identity.
+ * A crash then loses at most the ticks since the last checkpoint, and a clean
+ * logout and a hard restart restore the same inventory.
+ */
+export function checkpointIdentities(state) {
+  for (const actor of state.actors ?? []) {
+    if (!actor.key) continue;
+    const held = (state.objects ?? []).filter((object) => object.holder === actor.id && !object.eaten);
+    state.identities[actor.key] = {
+      ...(state.identities[actor.key] ?? {}),
+      name: actor.name,
+      room: actor.room,
+      visited: [...actor.visited],
+      role: actor.role ?? 0,
+      inventory: held.map((object) => object.id),
+      worn: held.filter((object) => object.worn).map((object) => object.id),
+    };
   }
   return state;
 }
@@ -271,6 +313,10 @@ export function step({ state, rooms, intents }) {
     if (intent.kind === "login") {
       const actor = find(intent.actorId);
       if (!actor) continue;
+      if (next.actors.some((other) => other.id !== actor.id && other.key === intent.key)) {
+        events.push({ onlyId: actor.id, text: "That name is already signed in.\r\n" });
+        continue;
+      }
       const known = next.identities[intent.key];
       const hash = intent.token
         ? createHash("sha256").update(intent.token, "utf8").digest("hex")
@@ -285,11 +331,29 @@ export function step({ state, rooms, intents }) {
 
       actor.key = intent.key;
       if (known) {
-        actor.visited = [...known.visited];
-        actor.name = known.name;
-        actor.room = intent.respawn ? 1 : known.room;
+        actor.visited = Array.isArray(known.visited) ? [...known.visited] : [next.start];
+        actor.name = known.name ?? intent.key;
+        actor.room = intent.respawn ? next.start : (rooms[known.room] ? known.room : next.start);
         actor.role = known.role ?? 0;
         if (!actor.visited.includes(actor.room)) actor.visited.push(actor.room);
+        // What the character was carrying comes back to their hands, including
+        // a container and whatever is still inside it.
+        for (const objectId of known.inventory ?? []) {
+          const object = next.objects.find((o) => o.id === objectId);
+          if (!object || object.eaten || object.inside !== null) continue;
+          if (object.holder !== null || object.room !== null) continue;
+          object.holder = actor.id;
+          object.worn = (known.worn ?? []).includes(objectId);
+        }
+        next.identities[intent.key] = {
+          ...known,
+          name: actor.name,
+          room: actor.room,
+          visited: [...actor.visited],
+          role: actor.role,
+          inventory: Array.isArray(known.inventory) ? known.inventory : [],
+          worn: Array.isArray(known.worn) ? known.worn : [],
+        };
       } else {
         actor.name = intent.key;
         next.identities[intent.key] = {
@@ -299,6 +363,8 @@ export function step({ state, rooms, intents }) {
           // A role is granted once, at creation, and travels with the identity.
           role: intent.role ?? 0,
           tokenHash: hash,
+          inventory: [],
+          worn: [],
         };
         actor.role = intent.role ?? 0;
       }
@@ -314,6 +380,17 @@ export function step({ state, rooms, intents }) {
       const actor = find(intent.actorId);
       if (!actor) continue;
       if (actor.key) {
+        const inventory = [];
+        const worn = [];
+        for (const object of next.objects) {
+          if (object.holder !== actor.id) continue;
+          inventory.push(object.id);
+          if (object.worn) worn.push(object.id);
+          object.holder = null;
+          object.room = null;
+          object.inside = null;
+          object.worn = false;
+        }
         // Merge, never replace: the token hash and the role must survive a
         // disconnect, or the returning player cannot sign in again.
         next.identities[actor.key] = {
@@ -322,7 +399,19 @@ export function step({ state, rooms, intents }) {
           room: actor.room,
           visited: [...actor.visited],
           role: actor.role,
+          inventory,
+          worn,
         };
+      } else {
+        // A guest has no record to restore to, so their things fall where they
+        // stood rather than disappearing with them.
+        for (const object of next.objects) {
+          if (object.holder !== actor.id) continue;
+          object.holder = null;
+          object.room = actor.room;
+          object.inside = null;
+          object.worn = false;
+        }
       }
       events.push({ room: actor.room, text: `${actor.name} vanishes.`, exceptId: actor.id });
       next.actors = next.actors.filter((a) => a.id !== intent.actorId);
@@ -365,6 +454,7 @@ export function step({ state, rooms, intents }) {
         if (object.forSale) continue;
         object.holder = actor.id;
         object.room = null;
+        object.worn = false;
         events.push({ room: actor.room, text: intent.messages.others, exceptId: actor.id });
         events.push({ onlyId: actor.id, text: intent.messages.actor });
         continue;
@@ -375,6 +465,7 @@ export function step({ state, rooms, intents }) {
       if (intent.kind === "drop") {
         object.holder = null;
         object.room = actor.room;
+        object.worn = false;
         events.push({ room: actor.room, text: intent.messages.others, exceptId: actor.id });
         events.push({ onlyId: actor.id, text: intent.messages.actor });
         continue;
@@ -383,6 +474,7 @@ export function step({ state, rooms, intents }) {
       const recipient = find(intent.toId);
       if (!recipient || recipient.room !== actor.room) continue;
       object.holder = recipient.id;
+      object.worn = false;
       events.push({ room: actor.room, text: intent.messages.others, exceptId: actor.id });
       events.push({ onlyId: actor.id, text: intent.messages.actor });
       events.push({ onlyId: recipient.id, text: intent.messages.target });
@@ -404,6 +496,7 @@ export function step({ state, rooms, intents }) {
       object.inside = container.id;
       object.holder = null;
       object.room = null;
+      object.worn = false;
       events.push({ room: actor.room, text: intent.messages.others, exceptId: actor.id });
       events.push({ onlyId: actor.id, text: intent.messages.actor });
       continue;
@@ -418,6 +511,7 @@ export function step({ state, rooms, intents }) {
       object.inside = null;
       object.holder = actor.id;
       object.room = null;
+      object.worn = false;
       events.push({ room: actor.room, text: intent.messages.others, exceptId: actor.id });
       events.push({ onlyId: actor.id, text: intent.messages.actor });
       continue;
@@ -696,6 +790,11 @@ export function step({ state, rooms, intents }) {
     next.engagements = [];
     next.objects = next.objects.filter((object) => !object.ephemeral);
     for (const object of next.objects) {
+      if (object.holder !== null) continue;
+      if (object.inside !== null) {
+        const container = next.objects.find((candidate) => candidate.id === object.inside);
+        if (container && container.holder !== null) continue;
+      }
       object.holder = null;
       object.room = object.home;
       object.inside = object.homeInside;

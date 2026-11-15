@@ -7,7 +7,7 @@ Wants=mudbench-holo.service
 Type=simple
 WorkingDirectory=/home/callard/mudbenchmark/runtime
 Environment=DECOY_MODE=corroborated
-Environment=RESPAWN_AT_START=true
+Environment=RESPAWN_AT_START=false
 ExecStart=/usr/bin/node server.mjs
 Restart=always
 RestartSec=3

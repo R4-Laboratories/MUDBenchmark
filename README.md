@@ -57,10 +57,11 @@ limits.
 
 The world runs. Telnet and WebSocket share one authority; the rules are modelled
 in LexLean and proved in Lean; the gate re-proves the model, replays the
-acceptance vectors, and ratchets rule debt. Phases A–F of
+acceptance vectors, and ratchets rule debt. Phases A–G of
 [the MUD baseline](docs/MUD-BASELINE.md) are done: data-driven verbs, mobiles
-with behaviours, combat, item properties, a clock and weather, a shop, and
-communication. Character persistence (Phase G) is next.
+with behaviours, combat, item properties, a clock and weather, a shop,
+communication, and persistent characters. The next work is hardening and the
+benchmark itself.
 
 ## Provenance
 

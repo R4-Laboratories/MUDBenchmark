@@ -267,6 +267,30 @@
       ],
       "bites": 2,
       "value": 2
+    },
+    {
+      "id": "satchel",
+      "name": "a leather satchel",
+      "room": 1,
+      "flags": [
+        "takeable",
+        "container"
+      ],
+      "capacity": 3,
+      "open": true
+    },
+    {
+      "id": "torch",
+      "name": "a pitch torch",
+      "room": 3,
+      "flags": [
+        "takeable",
+        "light"
+      ],
+      "lit": false,
+      "forSale": true,
+      "price": 3,
+      "value": 1
     }
   ],
   "climate": {

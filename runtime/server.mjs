@@ -10,7 +10,7 @@ import { readFileSync, writeFileSync, renameSync, appendFileSync } from "node:fs
 import { randomBytes } from "node:crypto";
 import { WebSocketServer } from "ws";
 import { recordSpan, digest } from "./telemetry.mjs";
-import { step, initialState, digestState, phaseAt, upgradeState, releaseHeldObjects, TICK_MS } from "./world.mjs";
+import { step, initialState, digestState, phaseAt, upgradeState, releaseHeldObjects, checkpointIdentities, TICK_MS } from "./world.mjs";
 import { loadWorld } from "./worlddata.mjs";
 import { describe as renderRoom } from "./view.mjs";
 import { loadVerbs, render, resolve } from "./verbs.mjs";
@@ -109,6 +109,7 @@ let state = loadState();
 
 function saveState() {
   try {
+    checkpointIdentities(state);
     const tmp = `${STATE_FILE}.tmp`;
     writeFileSync(tmp, `${JSON.stringify(state)}\n`);
     renameSync(tmp, STATE_FILE);
@@ -242,6 +243,9 @@ async function handleCommand(id, line) {
     }
     if (!key || !/^[a-z0-9_-]{1,24}$/i.test(key)) {
       return sendTo(id, "Usage: login <name> [key]. Names are 1-24 letters, digits, - or _.\r\n");
+    }
+    if (state.actors.some((candidate) => candidate.id !== id && candidate.key === key)) {
+      return sendTo(id, "That name is already signed in.\r\n");
     }
     const known = state.identities[key];
     if (known && !token) {
