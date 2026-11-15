@@ -52,6 +52,65 @@ So the hosting model is:
   disagrees with the server, that is an integrity signal worth recording, not a
   bug to hide.
 
+### 2.1 What can be modelled, and what cannot
+
+PrismPM compiles a closed `.lex.tex` graph into a Lean-checked snapshot, proof
+evidence, `lean4-prod` named-root coverage, **a generated Cargo crate**, an
+import-free Core-Wasm guest, a View, and the `.holo`. The generated crate is the
+part that decides this question.
+
+| Part of hosting | Modelled? |
+|---|---|
+| session lifecycle: join, leave, admission | yes — states and transitions |
+| tick scheduling: which pulses are due at tick *n* | yes — a total function of *n* |
+| event fan-out and observation scope — who is shown what | yes — this is the "no omniscience" guarantee |
+| ordering: exactly one authoritative order per tick | yes — a property of the scheduler |
+| sockets, TLS, backpressure, reconnection | no — transport |
+| process supervision, persistence to disk | no — runtime |
+| metrics and trace export | no — runtime |
+
+So the server is **not a second implementation of the rules**. It is a thin
+shell — a socket, a clock, a store — that calls generated, verified roots. That
+is the same relationship Karst has between its model and `karst-kernel`, except
+the kernel is generated instead of hand-mirrored.
+
+What cannot happen: **the server cannot be a `.holo`.** A holo is an import-free
+WASI guest and the sandbox has no listening socket. `wasmtime` ships in the SDK,
+so a server *may* execute the guest for its rules, but the listener is always
+host code.
+
+### 2.2 Where it runs
+
+Three parts, and one of them cannot be Pages.
+
+| Piece | Host | Why |
+|---|---|---|
+| Static client | GitHub Pages | it is a page; Pages is sufficient |
+| World server | `wick` (192.168.103.59) | needs a process, a socket and durable state |
+| Build | `wick`, in the PrismPM image | 32 cores, 178 GB free, Docker; this Mac has 70 GB |
+
+Reachability:
+
+- same LAN — `ws://192.168.103.59:<port>`
+- anywhere else — a tunnel (Cloudflare Tunnel or Tailscale) terminating TLS, so
+  the Pages client can use `wss://`
+- Pages cannot proxy, poll or hold a socket. It serves files, nothing else.
+
+Pinned build image, from `prismpm.lock`:
+
+```
+ghcr.io/uor-foundation/prismpm-sdk-candidate@sha256:60226bc791d4c0e5613402a6be7e63f4963d3faf7f327befcf56fc0e41d0ce21
+```
+
+It is multi-arch (`linux/amd64`, `linux/arm64`) and carries `prismpm`,
+`wasmtime`, `otelcol-contrib` and `prismpm-conformance` — the last three matter:
+the guest can be executed host-side, and OpenTelemetry export has a collector in
+the same image.
+
+Caveat to keep in view: PrismPM publishes v0.4.0 as an SDK *candidate*, and its
+README states plainly that it "is not an accepted production-system release". We
+depend on a candidate, so the digest is pinned and we expect to move.
+
 ## 3. Consequences
 
 1. **PrismPM becomes a build dependency.** `prismpm` is not installed on this
