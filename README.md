@@ -31,7 +31,7 @@ shown can be detected by construction.
 
 | Plane | What it is | How it is built |
 |---|---|---|
-| Rules | The world's semantics: `(state, actor, command) → (state', events)` | LexLean model, proved in Lean, built by Prism |
+| Rules | The world's semantics: `(state, tick) → (state', events)`, every autonomous process included | LexLean model, proved in Lean, built by Prism |
 | World | Rooms, exits, objects, roles, scenarios | Authored data, validated against the rules |
 | Runtime | Holds state, batches real-time input into ticks, persists | Ordinary Rust |
 | Gateway | The wire people and agents both use | Telnet-compatible text, plus a structured channel |
@@ -45,8 +45,8 @@ persistence and instrumentation are ordinary software — see
 
 ## Status
 
-Founding scaffold. Nothing runs yet. The next milestones are the reducer
-contract and a single playable room.
+Founding scaffold. Nothing runs yet. The next milestones are the tick contract
+and a single playable room.
 
 ## Provenance
 

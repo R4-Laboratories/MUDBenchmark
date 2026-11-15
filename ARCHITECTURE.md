@@ -21,20 +21,66 @@ the model rather than to restate it.
 So the rule is: **anything that decides an outcome is modelled and proved;
 anything that merely moves bytes is code, and is tested against the model.**
 
-## 2. The core: a pure, proved reducer
+## 2. The core: the world as a pure fold over ticks
 
-The whole benchmark rests on one function:
+A classic MUD is not a request/response system, and modelling it that way would
+lose the thing that makes it a world. The classic architecture is a fixed-rate
+loop over a set of independent timers. From SMAUG's own design notes:
+
+> What update_handler does is it keeps track of a bunch of timers… Whenever one
+> of these timers hits 0, it's set back to an initial value … Everything which
+> happens without players issuing orders for it to happen, happens here.
+> Battles are waged because of these timers… Basically if every player suddenly
+> lost connection, what would continue to happen in the game world, would be
+> determined by the update functions.
+
+The timers are per-subsystem and run at different rates. In ROM/Merc-derived
+codebases the base rate is `PULSE_PER_SECOND = 4`, with `PULSE_VIOLENCE` at
+roughly 2–3 pulses, `PULSE_MOBILE` at 4–5, `PULSE_TICK` at 30 seconds and
+`PULSE_AREA` at 120 seconds. Each decrements every pulse and fires at zero.
+
+So the unit of the world is not a command. It is a **tick**, and a tick carries
+every process that comes due in it:
 
 ```
-step : (World, ActorId, Command) → (World, List Event)
+tick : (World, TickInputs) → (World, List Event)
 ```
 
-The runtime holds `World`. For each command it calls `step`, replaces the state,
-and broadcasts the events. Nothing else changes state.
+The whole run is a fold of that function over logical time. Player commands are
+one kind of input; they do not drive the loop, they are gathered into it.
 
-This shape is what makes Prism a genuine fit rather than a decorative one: a
-pure transition is exactly a decision function, and it is the thing the
-benchmark's integrity depends on.
+This is still exactly a decision function, so it is still Prism-shaped — but it
+is a decision function over the *substrate*, not over one player's turn.
+
+### 2.1 Pulses are part of the model, not the runtime
+
+The schedule must be pure, or replay is fiction. Each pulse is defined by a
+period in ticks, and the model decides which pulses are due from the tick
+number alone. The runtime never decides that combat advances; it only decides
+when to call `tick`.
+
+| Pulse | Period (reference) | What it advances |
+|---|---|---|
+| violence | ~0.5 s | rounds of an engagement already begun |
+| mobile | ~1 s | NPC movement and behaviour |
+| regen | ~1 s | health, stamina, mana recovery |
+| decay | minutes | corpse and object decay |
+| tick | ~30 s | hunger, affects expiring, timed state |
+| area | ~2 min | resets, respawns, repopulation |
+| checkpoint | minutes | durable snapshot of the world |
+
+The families are borrowed; the periods are ours to set, and they are part of the
+proved model so a run is reproducible to the pulse.
+
+### 2.2 Consequence: a command is intent, not an effect
+
+`attack` does not resolve combat; it begins an engagement that the violence
+pulse then advances. This is the single most important design fact for agent
+evaluation, and it is deliberate: an agent must reason about time it does not
+control. A model that treats one successful command as one successful outcome
+will be measurably wrong, in a way that is visible in the span record rather
+than hidden in prose.
+
 
 ### Properties the model must establish
 
@@ -139,15 +185,23 @@ spans alone and compared against the state the engine actually held.
 ## 4. Tick semantics
 
 The upstream simulation spec assumes fixed discrete steps; a MUD is real-time.
-Both are kept:
+Both are kept, with the wall clock allowed to do exactly one job: decide when to
+call `tick`.
 
-- logical time advances in discrete ticks, and `step` is only ever a tick
-  transition
-- the runtime batches real-time input into the next tick
-- therefore a replay is exact even though players type whenever they like
+- the model sees **logical ticks** and never a clock
+- pulse periods are counted in ticks (§2.1), so "combat advances" is a property
+  of the tick number, not of elapsed seconds
+- the runtime batches real-time input and fires `tick` at its chosen rate
+- therefore a replay is exact even though players type whenever they like, and
+  even if the server runs slower or faster than its nominal rate
 
-This preserves determinism without making humans wait for a turn order they
-cannot see.
+This is what keeps the benchmark honest: a slow server does not change the game,
+and a replayed run reproduces the same world at the same tick number.
+
+The one thing the runtime must never do is let wall-clock time leak into the
+model. If it did, two runs of the same commands would differ, and every
+comparison built on them would be unsound.
+
 
 ## 5. What is deliberately not modelled
 

@@ -138,8 +138,8 @@ Amended here:
 
 | Phase | Content | Change from upstream |
 |---|---|---|
-| 0 | Repo, reducer contract, one room | reducer contract is new and comes first |
-| 1 | World + reducer proved, playable by a human | proves before it plays |
+| 0 | Repo, tick contract, one room | tick contract is new and comes first |
+| 1 | World + tick contract proved, playable by a human | proves before it plays |
 | 2 | Gateway + harness, one agent plays | same wire, so phase 2 is smaller |
 | 3 | Observability + span schema | promoted earlier: captures before scoring |
 | 4 | Router + flat-prompt control | new, and measurable from the start |
