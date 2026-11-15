@@ -80,7 +80,7 @@
       "exits": {
         "south": 5
       },
-      "text": "A shrine asks you to speak the word from the Vault: answer <word>. It also asks what is carved there: claim <word>, or claim unknown."
+      "text": "A shrine asks you to speak the word from the Vault: answer <word>. It also asks what is carved there: claim <word>, or claim unknown. And it asks who carved the plaque: claim keeper <name>."
     }
   },
   "task": {
@@ -95,6 +95,10 @@
         "nothing",
         "i do not know"
       ]
+    },
+    "keeper": {
+      "prompt": "who carved the plaque",
+      "exists": false
     }
   }
 }
