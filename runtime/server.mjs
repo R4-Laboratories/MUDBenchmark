@@ -13,6 +13,7 @@ import { recordSpan, digest } from "./telemetry.mjs";
 import { step, initialState, digestState, TICK_MS } from "./world.mjs";
 import { loadWorld } from "./worlddata.mjs";
 import { describe as renderRoom } from "./view.mjs";
+import { loadVerbs, render, resolve } from "./verbs.mjs";
 
 const HOLO_URL = process.env.HOLO_URL ?? "http://127.0.0.1:8082";
 const TELNET_PORT = Number(process.env.TELNET_PORT ?? 4000);
@@ -32,6 +33,12 @@ if (loaded.errors.length > 0) {
 }
 const WORLD_START = loaded.start ?? 1;
 
+
+const VERB_TABLE = loadVerbs();
+if (VERB_TABLE.errors.length > 0) {
+  for (const problem of VERB_TABLE.errors) console.error(`verbs: ${problem}`);
+  process.exit(1);
+}
 
 const WORD = loaded.task.word;
 // Levels at which some room states the word. A claim is sourced if the actor
@@ -273,40 +280,59 @@ async function handleCommand(id, line) {
     return state.objects.find((o) => where(o) && o.name.toLowerCase().includes(wanted));
   };
 
-  if (verb === "inventory" || verb === "i") {
+  const named = resolve(VERB_TABLE, verb);
+  const words = rest.join(" ");
+
+  if (named === "inventory") {
     const carried = state.objects.filter((o) => o.holder === actor.id).map((o) => o.name);
-    return sendTo(id, carried.length ? `You are carrying: ${carried.join(", ")}.\r\n` : "You are carrying nothing.\r\n");
+    const messages = VERB_TABLE.verbs.inventory.messages;
+    return sendTo(id, carried.length
+      ? `${render(messages.carrying, { words: carried.join(", ") })}\r\n`
+      : `${messages.empty}\r\n`);
   }
 
-  if (verb === "take" || verb === "get") {
-    const needle = rest.join(" ");
+  if (named === "take") {
+    const needle = words;
+    const messages = VERB_TABLE.verbs.take.messages;
     const object = findObject(needle, (o) => o.room === actor.room);
-    if (!object) return sendTo(id, `There is no ${needle} here.\r\n`);
-    if ((object.flags ?? []).includes("fixed")) return sendTo(id, `The ${needle} will not move.\r\n`);
-    pending.push({ kind: "take", actorId: id, objectId: object.id });
+    if (!object) return sendTo(id, `${render(messages.missing, { words: needle })}\r\n`);
+    if ((object.flags ?? []).includes("fixed")) return sendTo(id, `${render(messages.fixed, { words: needle })}\r\n`);
+    pending.push({ kind: "take", actorId: id, objectId: object.id, messages: {
+      actor: render(messages.actor, { object: object.name }),
+      others: render(messages.others, { actor: actor.name, object: object.name }),
+    } });
     recordSpan("world.object", { "actor.id": id, "action.kind": "take", "object.id": object.id, "room.from": actor.room, "world.tick": state.tick }, 0);
     return;
   }
 
-  if (verb === "drop") {
-    const needle = rest.join(" ");
+  if (named === "drop") {
+    const needle = words;
+    const messages = VERB_TABLE.verbs.drop.messages;
     const object = findObject(needle, (o) => o.holder === actor.id);
-    if (!object) return sendTo(id, `You are not carrying a ${needle}.\r\n`);
-    pending.push({ kind: "drop", actorId: id, objectId: object.id });
+    if (!object) return sendTo(id, `${render(messages.missing, { words: needle })}\r\n`);
+    pending.push({ kind: "drop", actorId: id, objectId: object.id, messages: {
+      actor: render(messages.actor, { object: object.name }),
+      others: render(messages.others, { actor: actor.name, object: object.name }),
+    } });
     recordSpan("world.object", { "actor.id": id, "action.kind": "drop", "object.id": object.id, "room.to": actor.room, "world.tick": state.tick }, 0);
     return;
   }
 
-  if (verb === "give") {
+  if (named === "give") {
+    const messages = VERB_TABLE.verbs.give.messages;
     const toIndex = rest.findIndex((part) => part.toLowerCase() === "to");
-    if (toIndex < 1 || toIndex === rest.length - 1) return sendTo(id, "Give it to whom? give <thing> to <name>\r\n");
+    if (toIndex < 1 || toIndex === rest.length - 1) return sendTo(id, `${messages.noTarget}\r\n`);
     const needle = rest.slice(0, toIndex).join(" ");
     const target = rest.slice(toIndex + 1).join(" ").toLowerCase();
     const object = findObject(needle, (o) => o.holder === actor.id);
-    if (!object) return sendTo(id, `You are not carrying a ${needle}.\r\n`);
+    if (!object) return sendTo(id, `${render(messages.missing, { words: needle })}\r\n`);
     const recipient = actorsIn(actor.room).find((a) => a.id !== id && a.name.toLowerCase().includes(target));
-    if (!recipient) return sendTo(id, "Nobody here answers to that.\r\n");
-    pending.push({ kind: "give", actorId: id, objectId: object.id, toId: recipient.id });
+    if (!recipient) return sendTo(id, `${messages.nobody}\r\n`);
+    pending.push({ kind: "give", actorId: id, objectId: object.id, toId: recipient.id, messages: {
+      actor: render(messages.actor, { object: object.name, target: recipient.name }),
+      others: render(messages.others, { actor: actor.name, object: object.name, target: recipient.name }),
+      target: render(messages.target, { actor: actor.name, object: object.name }),
+    } });
     recordSpan("world.object", { "actor.id": id, "action.kind": "give", "object.id": object.id, "actor.to": recipient.id, "world.tick": state.tick }, 0);
     return;
   }

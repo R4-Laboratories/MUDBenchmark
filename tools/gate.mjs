@@ -19,6 +19,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { loadWorld } from "../runtime/worlddata.mjs";
 import { describe as renderRoom } from "../runtime/view.mjs";
+import { loadVerbs } from "../runtime/verbs.mjs";
 import { join } from "node:path";
 
 const root = process.cwd();
@@ -75,6 +76,10 @@ const hidden = renderRoom({ room: noticeRoom, role: 0, cleared: (role, level) =>
 if (!shown.includes("SECRET-NOTICE")) failures.push("the room renderer drops a notice it was cleared for");
 if (hidden.includes("SECRET-NOTICE")) failures.push("the room renderer shows a notice it was not cleared for");
 
+// The verb table must resolve its own aliases and use only known codes.
+const verbTable = loadVerbs();
+if (verbTable.errors.length > 0) failures.push(`verbs are invalid: ${verbTable.errors[0]}`);
+
 // Generated code must match the model it claims to come from.
 const drift = spawnSync(process.execPath, ["tools/mechanize.mjs", "--check"], { encoding: "utf8" });
 const driftOk = drift.status === 0;
@@ -99,6 +104,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"mechanizedDrift".padEnd(26)}  ${(driftOk ? "clean" : "DRIFT").padStart(5)}   == clean`);
   console.log(`${"worldArms".padEnd(26)}  ${(worldProblems.length === 0 ? "4 ok" : "BROKEN").padStart(5)}   == walkable`);
   console.log(`${"renderer".padEnd(26)}  ${(shown.includes("SECRET-NOTICE") && !hidden.includes("SECRET-NOTICE") ? "2 ok" : "BROKEN").padStart(5)}   == hides/shows`);
+  console.log(`${"verbTable".padEnd(26)}  ${(verbTable.errors.length === 0 ? `${verbTable.byAlias.size} keys` : "BROKEN").padStart(5)}   == resolvable`);
   console.log("");
   if (failures.length === 0) {
     console.log("gate: passed");

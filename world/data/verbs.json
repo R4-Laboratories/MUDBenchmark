@@ -1,0 +1,45 @@
+{
+  "schema": "mudbenchmark/verbs/1",
+  "note": "A verb's effect lives in the server; its words live here. Codes: %a actor, %o object, %t target, %s the words typed.",
+  "verbs": {
+    "take": {
+      "aliases": ["get", "grab"],
+      "argument": "object",
+      "messages": {
+        "actor": "You take %o.",
+        "others": "%a takes %o.",
+        "missing": "There is no %s here.",
+        "fixed": "The %s will not move."
+      }
+    },
+    "drop": {
+      "aliases": ["discard"],
+      "argument": "object",
+      "messages": {
+        "actor": "You drop %o.",
+        "others": "%a drops %o.",
+        "missing": "You are not carrying a %s."
+      }
+    },
+    "give": {
+      "aliases": [],
+      "argument": "object to actor",
+      "messages": {
+        "actor": "You give %o to %t.",
+        "others": "%a gives %o to %t.",
+        "target": "%a gives you %o.",
+        "missing": "You are not carrying a %s.",
+        "noTarget": "Give it to whom? give <thing> to <name>.",
+        "nobody": "Nobody here answers to that."
+      }
+    },
+    "inventory": {
+      "aliases": ["i", "inv"],
+      "argument": "none",
+      "messages": {
+        "carrying": "You are carrying: %s.",
+        "empty": "You are carrying nothing."
+      }
+    }
+  }
+}

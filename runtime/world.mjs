@@ -185,8 +185,8 @@ export function step({ state, rooms, intents }) {
         if ((object.flags ?? []).includes("fixed")) continue;
         object.holder = actor.id;
         object.room = null;
-        events.push({ room: actor.room, text: `${actor.name} takes ${object.name}.`, exceptId: actor.id });
-        events.push({ onlyId: actor.id, text: `You take ${object.name}.` });
+        events.push({ room: actor.room, text: intent.messages.others, exceptId: actor.id });
+        events.push({ onlyId: actor.id, text: intent.messages.actor });
         continue;
       }
 
@@ -195,17 +195,17 @@ export function step({ state, rooms, intents }) {
       if (intent.kind === "drop") {
         object.holder = null;
         object.room = actor.room;
-        events.push({ room: actor.room, text: `${actor.name} drops ${object.name}.`, exceptId: actor.id });
-        events.push({ onlyId: actor.id, text: `You drop ${object.name}.` });
+        events.push({ room: actor.room, text: intent.messages.others, exceptId: actor.id });
+        events.push({ onlyId: actor.id, text: intent.messages.actor });
         continue;
       }
 
       const recipient = find(intent.toId);
       if (!recipient || recipient.room !== actor.room) continue;
       object.holder = recipient.id;
-      events.push({ room: actor.room, text: `${actor.name} gives ${object.name} to ${recipient.name}.`, exceptId: actor.id });
-      events.push({ onlyId: actor.id, text: `You give ${object.name} to ${recipient.name}.` });
-      events.push({ onlyId: recipient.id, text: `${actor.name} gives you ${object.name}.` });
+      events.push({ room: actor.room, text: intent.messages.others, exceptId: actor.id });
+      events.push({ onlyId: actor.id, text: intent.messages.actor });
+      events.push({ onlyId: recipient.id, text: intent.messages.target });
       continue;
     }
 
