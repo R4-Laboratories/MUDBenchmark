@@ -81,6 +81,17 @@ for (const file of inputs) {
       continue;
     }
 
+    if (span.name === "world.weather") {
+      rows.push({
+        ...common,
+        event: "weather",
+        from: span["weather.from"] ?? null,
+        to: span["weather.to"] ?? null,
+        room_from: num(span["room.id"]),
+      });
+      continue;
+    }
+
     if (span.name === "world.combat") {
       rows.push({
         ...common,

@@ -131,6 +131,34 @@ export function loadWorld({ mode = "single", path = DEFAULT_PATH } = {}) {
     else if (container.inside !== undefined) errors.push(`container ${container.id} is itself inside something; nesting is one level`);
   }
 
+  // The climate is data too: a day length, the phases that divide it, and the
+  // weather the world moves through. An hour covered by no phase is a world
+  // with a hole in its day, so coverage is checked rather than assumed.
+  const rawClimate = raw.climate ?? {};
+  const dayLength = rawClimate.dayLength ?? 720;
+  if (!Number.isInteger(dayLength) || dayLength < 24) errors.push("climate dayLength must be at least 24 ticks");
+  const phases = rawClimate.phases ?? [];
+  if (phases.length === 0) errors.push("climate has no phases");
+  const hours = new Set();
+  for (const phase of phases) {
+    if (!Number.isInteger(phase.from) || !Number.isInteger(phase.to) || phase.from > phase.to || phase.to > 23) {
+      errors.push(`climate phase ${phase.id} has an invalid hour range`);
+      continue;
+    }
+    for (let hour = phase.from; hour <= phase.to; hour += 1) hours.add(hour);
+  }
+  for (let hour = 0; hour < 24; hour += 1) {
+    if (!hours.has(hour)) errors.push(`climate leaves hour ${hour} without a phase`);
+  }
+  const weather = rawClimate.weather ?? [];
+  if (weather.length === 0) errors.push("climate has no weather");
+  for (const entry of weather) {
+    if (typeof entry.id !== "string" || typeof entry.text !== "string") errors.push("a weather state has no id or text");
+  }
+  const weatherPeriod = rawClimate.weatherPeriod ?? 120;
+  if (!Number.isInteger(weatherPeriod) || weatherPeriod < 1) errors.push("climate weatherPeriod must be at least 1");
+  const climate = { dayLength, phases, weather, weatherPeriod };
+
   // Zones are a naming layer over rooms, as they were in the codebases this
   // borrows from; they are how a world gets reset a piece at a time.
   const zones = (raw.zones ?? []).map((zone) => {
@@ -162,5 +190,5 @@ export function loadWorld({ mode = "single", path = DEFAULT_PATH } = {}) {
     if (!rooms[task[key]]) errors.push(`task.${key} names room ${task[key]}, which does not exist`);
   }
 
-  return { rooms, start, task, npcs, objects, zones, errors };
+  return { rooms, start, task, npcs, objects, zones, climate, errors };
 }

@@ -40,8 +40,10 @@ done.
 eaten, or lit. `objsys` was the largest subsystem in AberMUD for a reason: it is
 where most player verbs live.
 
-**E. World systems.** Weather and time, shops that buy and sell, and area resets
-that repopulate rather than only reposition.
+**E. World systems.** Weather and time *done*; shops that buy and sell *next*.
+Area resets already restore objects as well as creatures. The climate is data:
+a day length, phases covering all 24 hours, and weather on its own pulse. Night
+silences the speaker, so time changes behaviour rather than only description.
 
 **F. Communication.** Channels, tells, mail, and the social verbs that made MUDs
 social places rather than adventure parsers.

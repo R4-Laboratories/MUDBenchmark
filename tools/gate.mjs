@@ -20,7 +20,7 @@ import { spawnSync } from "node:child_process";
 import { loadWorld } from "../runtime/worlddata.mjs";
 import { describe as renderRoom } from "../runtime/view.mjs";
 import { loadVerbs } from "../runtime/verbs.mjs";
-import { initialState, nextFrom, step } from "../runtime/world.mjs";
+import { initialState, nextFrom, phaseAt, step } from "../runtime/world.mjs";
 import { join } from "node:path";
 
 const root = process.cwd();
@@ -186,6 +186,63 @@ let items = { ok: true, why: [] };
   if (!items.ok) failures.push(`item properties are broken: ${items.why[0]}`);
 }
 
+// Time and weather must move, and the night must change behaviour: a speaker
+// sleeps when the world is dark and talks when it is light.
+let climate = { ok: true, why: [], changes: 0, nightTalk: 0, dayTalk: 0 };
+{
+  const world = loadWorld({ mode: "single" });
+  const hour = world.climate.dayLength / 24;
+  const at = (h) => phaseAt(Math.round(h * hour), world.climate);
+  if (at(0) !== "night" || at(9) !== "day" || at(18) !== "dusk") {
+    climate.ok = false;
+    climate.why.push(`phases are wrong: 00=${at(0)}, 09=${at(9)}, 18=${at(18)}`);
+  }
+
+  const speaker = { id: "gate-speaker", name: "a gate speaker", room: 1, home: 1, period: 1, jitter: 0, behaviour: "speaker", phrases: ["gate speaks"], hp: 1 };
+  const npcs = world.npcs.filter((n) => n.id !== "bard").concat(speaker);
+  let state = initialState(world.rooms, npcs, world.objects, world.start, world.climate);
+
+  for (let i = 0; i < world.climate.weatherPeriod + 2; i += 1) {
+    const result = step({ state, rooms: world.rooms, intents: [] });
+    state = result.state;
+    for (const event of result.events) {
+      if (event.weather) {
+        climate.changes += 1;
+        if (event.weather.from === event.weather.to) {
+          climate.ok = false;
+          climate.why.push("the weather changed to the state it was already in");
+        }
+      }
+    }
+  }
+  if (climate.changes === 0) {
+    climate.ok = false;
+    climate.why.push("the weather never changed");
+  }
+
+  const countSpeaker = (from) => {
+    let local = { ...state, tick: from, npcs: state.npcs.map((n) => ({ ...n, clock: { period: 1, remaining: 1 } })) };
+    let spoken = 0;
+    for (let i = 0; i < 6; i += 1) {
+      const result = step({ state: local, rooms: world.rooms, intents: [] });
+      local = result.state;
+      spoken += result.events.filter((event) => event.source === speaker.id).length;
+    }
+    return spoken;
+  };
+  climate.nightTalk = countSpeaker(0);
+  climate.dayTalk = countSpeaker(Math.round(12 * hour));
+  if (climate.nightTalk !== 0) {
+    climate.ok = false;
+    climate.why.push("a speaker talked through the night");
+  }
+  if (climate.dayTalk === 0) {
+    climate.ok = false;
+    climate.why.push("a speaker stayed silent by day");
+  }
+  if (!climate.ok) failures.push(`climate is broken: ${climate.why[0]}`);
+}
+
 // Generated code must match the model it claims to come from.
 const drift = spawnSync(process.execPath, ["tools/mechanize.mjs", "--check"], { encoding: "utf8" });
 const driftOk = drift.status === 0;
@@ -211,6 +268,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"worldArms".padEnd(26)}  ${(worldProblems.length === 0 ? "4 ok" : "BROKEN").padStart(5)}   == walkable`);
   console.log(`${"renderer".padEnd(26)}  ${(shown.includes("SECRET-NOTICE") && !hidden.includes("SECRET-NOTICE") ? "2 ok" : "BROKEN").padStart(5)}   == hides/shows`);
   console.log(`${"combat".padEnd(26)}  ${(combat.outcome === "killed" ? `${combat.rounds} rounds` : "BROKEN").padStart(5)}   == kills`);
+  console.log(`${"climate".padEnd(26)}  ${(climate.ok ? `${climate.changes} changes` : "BROKEN").padStart(5)}   == day, night, weather`);
   console.log(`${"items".padEnd(26)}  ${(items.ok ? "5 ok" : "BROKEN").padStart(5)}   == containers, wear, food, reset`);
   console.log(`${"generator@500k".padEnd(26)}  ${(oldDirs.size >= 2 ? `${oldDirs.size} dirs` : "BROKEN").padStart(5)}   == still varies`);
   console.log(`${"verbTable".padEnd(26)}  ${(verbTable.errors.length === 0 ? `${verbTable.byAlias.size} keys` : "BROKEN").padStart(5)}   == resolvable`);

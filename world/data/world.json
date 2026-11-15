@@ -247,5 +247,54 @@
       ],
       "bites": 2
     }
-  ]
+  ],
+  "climate": {
+    "dayLength": 720,
+    "weatherPeriod": 120,
+    "phases": [
+      {
+        "id": "night",
+        "from": 0,
+        "to": 5
+      },
+      {
+        "id": "dawn",
+        "from": 6,
+        "to": 8
+      },
+      {
+        "id": "day",
+        "from": 9,
+        "to": 17
+      },
+      {
+        "id": "dusk",
+        "from": 18,
+        "to": 20
+      },
+      {
+        "id": "night",
+        "from": 21,
+        "to": 23
+      }
+    ],
+    "weather": [
+      {
+        "id": "clear",
+        "text": "The air is still."
+      },
+      {
+        "id": "rain",
+        "text": "Rain falls on the stone."
+      },
+      {
+        "id": "fog",
+        "text": "A fog clings to the walls."
+      },
+      {
+        "id": "wind",
+        "text": "A cold wind finds the corridors."
+      }
+    ]
+  }
 }

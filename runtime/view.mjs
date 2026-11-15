@@ -10,9 +10,10 @@
  *           tick: number, cleared: (role: number, level: number) => boolean }} input
  * @returns {string} the text a player sees
  */
-export function describe({ room, role = 0, others = [], beasts = [], objects = [], tick = 0, cleared }) {
+export function describe({ room, role = 0, others = [], beasts = [], objects = [], tick = 0, phase = null, weather = null, cleared }) {
   const exits = Object.keys(room.exits ?? {}).join(", ") || "none";
   const lines = [``, `[${room.name}]`, room.text];
+  if (phase || weather) lines.push([phase ? `It is ${phase}.` : null, weather].filter(Boolean).join(" "));
 
   for (const notice of room.notices ?? []) {
     if (cleared ? cleared(role, notice.level) : false) lines.push(notice.text);

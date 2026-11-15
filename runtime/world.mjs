@@ -37,11 +37,29 @@ const seedOf = (value) => {
   return hash;
 };
 
-export function initialState(rooms, npcs = [], objects = [], start = 1) {
+const DEFAULT_CLIMATE = {
+  dayLength: 720,
+  weatherPeriod: 120,
+  phases: [
+    { id: "night", from: 0, to: 5 },
+    { id: "day", from: 6, to: 23 },
+  ],
+  weather: [{ id: "clear", text: "The air is still." }],
+};
+
+/** The hour of the world's day, and the phase that covers it. */
+export function phaseAt(tick, climate = DEFAULT_CLIMATE) {
+  const hour = Math.floor(((tick % climate.dayLength) + climate.dayLength) % climate.dayLength / (climate.dayLength / 24));
+  return (climate.phases.find((phase) => hour >= phase.from && hour <= phase.to) ?? { id: "day" }).id;
+}
+
+export function initialState(rooms, npcs = [], objects = [], start = 1, climate = DEFAULT_CLIMATE) {
   return {
     tick: 0,
     cycle: 0,
     start,
+    climate,
+    weather: 0,
     engagements: [],
     npcs: npcs
       .filter((npc) => rooms[npc.room] !== undefined)
@@ -71,6 +89,7 @@ export function initialState(rooms, npcs = [], objects = [], start = 1) {
       mobile: makePulse({ period: 4, remaining: 4 }),
       violence: makePulse({ period: 4, remaining: 4 }),
       area: makePulse({ period: 240, remaining: 240 }),
+      weather: makePulse({ period: climate.weatherPeriod, remaining: climate.weatherPeriod }),
     },
   };
 }
@@ -89,6 +108,8 @@ export function digestState(state) {
     tick: state.tick,
     cycle: state.cycle ?? 0,
     start: state.start ?? 1,
+    climate: state.climate,
+    weather: state.weather,
     engagements: (state.engagements ?? []).map((e) => ({ ...e })),
     objects: [...state.objects].sort((a, b) => a.id.localeCompare(b.id)),
     npcs: [...state.npcs].sort((a, b) => a.id.localeCompare(b.id)),
@@ -113,6 +134,8 @@ export function step({ state, rooms, intents }) {
     tick: state.tick + 1,
     cycle: state.cycle ?? 0,
     start: state.start ?? 1,
+    climate: state.climate,
+    weather: state.weather,
     engagements: (state.engagements ?? []).map((e) => ({ ...e })),
     npcs: state.npcs.map((n) => ({ ...n, clock: { ...n.clock } })),
     actors: state.actors.map((a) => ({ ...a, visited: [...a.visited] })),
@@ -132,6 +155,22 @@ export function step({ state, rooms, intents }) {
   next.pulses.area = advance(next.pulses.area);
   const areaDue = pulseDue(next.pulses.area);
   if (areaDue) next.pulses.area = advance(next.pulses.area);
+
+  // Weather moves on its own slow clock. It never repeats the state it is
+  // already in, so a change is always a change.
+  next.pulses.weather = advance(next.pulses.weather);
+  const weatherDue = pulseDue(next.pulses.weather);
+  if (weatherDue) next.pulses.weather = advance(next.pulses.weather);
+  if (weatherDue && next.climate.weather.length > 1) {
+    const from = next.climate.weather[next.weather].id;
+    let pick = nextFrom(next.tick, next.climate.weather.length - 1);
+    if (pick >= next.weather) pick += 1;
+    next.weather = pick;
+    const to = next.climate.weather[pick];
+    for (const room of Object.keys(rooms)) {
+      events.push({ room: Number(room), text: to.text, weather: { from, to: to.id } });
+    }
+  }
   const find = (id) => next.actors.find((a) => a.id === id);
 
   for (const intent of intents) {
@@ -367,6 +406,7 @@ export function step({ state, rooms, intents }) {
     if (behaviour === "sentinel") continue;
 
     if (behaviour === "speaker") {
+      if (phaseAt(next.tick, next.climate) === "night") continue;
       const phrases = npc.phrases ?? [];
       if (phrases.length === 0) continue;
       const line = phrases[nextFrom(next.tick + npc.id.length, phrases.length)];

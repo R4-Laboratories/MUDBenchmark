@@ -10,7 +10,7 @@ import { readFileSync, writeFileSync, renameSync, appendFileSync } from "node:fs
 import { randomBytes } from "node:crypto";
 import { WebSocketServer } from "ws";
 import { recordSpan, digest } from "./telemetry.mjs";
-import { step, initialState, digestState, TICK_MS } from "./world.mjs";
+import { step, initialState, digestState, phaseAt, TICK_MS } from "./world.mjs";
 import { loadWorld } from "./worlddata.mjs";
 import { describe as renderRoom } from "./view.mjs";
 import { loadVerbs, render, resolve } from "./verbs.mjs";
@@ -78,7 +78,7 @@ function allowCommand(id) {
 function loadState() {
   try {
     const saved = JSON.parse(readFileSync(STATE_FILE, "utf8"));
-    const base = initialState(ROOMS, loaded.npcs, loaded.objects, loaded.start);
+    const base = initialState(ROOMS, loaded.npcs, loaded.objects, loaded.start, loaded.climate);
     return {
       tick: saved.tick ?? 0,
       npcs: saved.npcs ?? base.npcs,
@@ -93,7 +93,7 @@ function loadState() {
       pulses: saved.pulses ?? base.pulses,
     };
   } catch {
-    return initialState(ROOMS, loaded.npcs, loaded.objects, loaded.start);
+    return initialState(ROOMS, loaded.npcs, loaded.objects, loaded.start, loaded.climate);
   }
 }
 
@@ -143,6 +143,8 @@ function describe(room, selfId) {
     beasts: npcsIn(room).map((n) => n.name),
     objects: objectsHere,
     tick: state.tick,
+    phase: phaseAt(state.tick, state.climate),
+    weather: state.climate.weather[state.weather]?.text ?? null,
     cleared: isCleared,
   });
 }
@@ -549,6 +551,14 @@ function onTick() {
 
   for (const event of result.events) {
     // An NPC's action is gameplay data, not just text delivered to a room.
+    if (event.weather) {
+      recordSpan("world.weather", {
+        "weather.from": event.weather.from,
+        "weather.to": event.weather.to,
+        "room.id": event.room,
+        "world.tick": state.tick,
+      }, 0);
+    }
     if (event.combat) {
       recordSpan("world.combat", {
         "actor.id": event.combat.attacker,
@@ -680,7 +690,13 @@ const web = http.createServer((req, res) => {
   }
   if (req.url === "/health") {
     res.writeHead(200, { "content-type": "application/json" });
-    res.end(JSON.stringify({ tick: state.tick, actors: state.actors.length, npcs: state.npcs.length }));
+    res.end(JSON.stringify({
+      tick: state.tick,
+      actors: state.actors.length,
+      npcs: state.npcs.length,
+      phase: phaseAt(state.tick, state.climate),
+      weather: state.climate.weather[state.weather]?.id ?? null,
+    }));
     return;
   }
   res.writeHead(404, { "content-type": "text/plain" });
