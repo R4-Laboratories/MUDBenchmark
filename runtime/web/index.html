@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MUDBench</title>
+<style>
+  :root { color-scheme: dark; }
+  body {
+    margin: 0; height: 100vh; display: flex; flex-direction: column;
+    background: #0d1117; color: #c9d1d9;
+    font: 14px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  header {
+    padding: 8px 14px; border-bottom: 1px solid #21262d;
+    color: #8b949e; display: flex; justify-content: space-between;
+  }
+  #log { flex: 1; overflow-y: auto; padding: 14px; white-space: pre-wrap; }
+  #log .me { color: #79c0ff; }
+  #log .sys { color: #8b949e; }
+  form { display: flex; border-top: 1px solid #21262d; }
+  input {
+    flex: 1; background: transparent; border: 0; outline: 0;
+    padding: 12px 14px; color: #c9d1d9; font: inherit;
+  }
+  input::placeholder { color: #484f58; }
+</style>
+</head>
+<body>
+  <header>
+    <span>MUDBench</span>
+    <span id="state">connecting…</span>
+  </header>
+  <div id="log"></div>
+  <form id="entry">
+    <input id="cmd" autocomplete="off" autofocus placeholder="look · who · say <text> · n/s/e/w · answer <word> · login <name>">
+  </form>
+<script>
+  const log = document.getElementById("log");
+  const state = document.getElementById("state");
+  const cmd = document.getElementById("cmd");
+
+  const append = (text, cls) => {
+    const span = document.createElement("span");
+    if (cls) span.className = cls;
+    span.textContent = text + "\n";
+    log.appendChild(span);
+    log.scrollTop = log.scrollHeight;
+  };
+
+  let socket;
+  function connect() {
+    socket = new WebSocket(`ws://${location.host}`);
+    socket.onopen = () => { state.textContent = "connected"; };
+    socket.onclose = () => { state.textContent = "disconnected"; setTimeout(connect, 1500); };
+    socket.onerror = () => { state.textContent = "error"; };
+    socket.onmessage = (event) => append(event.data);
+  }
+  connect();
+
+  document.getElementById("entry").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const line = cmd.value.trim();
+    if (!line) return;
+    append("> " + line, "me");
+    if (socket.readyState === WebSocket.OPEN) socket.send(line + "\n");
+    else append("(not connected)", "sys");
+    cmd.value = "";
+  });
+</script>
+</body>
+</html>

@@ -21,7 +21,7 @@ import { appendFileSync, writeFileSync, readFileSync } from "node:fs";
 import { recordSpan, digest } from "./telemetry.mjs";
 import { assemble } from "./router.mjs";
 
-const WS_URL = process.env.WS_URL ?? "ws://127.0.0.1:4001";
+const WS_URL = process.env.WS_URL ?? "ws://127.0.0.1:8090";
 const BRAIN = process.env.BRAIN ?? "scripted";
 const LOG = process.env.HARNESS_LOG ?? "/tmp/mudbench-harness.jsonl";
 const NAME = process.env.HARNESS_NAME ?? "agent";

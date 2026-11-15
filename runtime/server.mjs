@@ -5,6 +5,7 @@
 // `step` in world.mjs. That is what makes a recorded run replayable.
 
 import net from "node:net";
+import http from "node:http";
 import { readFileSync, writeFileSync, renameSync, appendFileSync } from "node:fs";
 import { WebSocketServer } from "ws";
 import { recordSpan, digest } from "./telemetry.mjs";
@@ -12,7 +13,7 @@ import { step, initialState, digestState, TICK_MS } from "./world.mjs";
 
 const HOLO_URL = process.env.HOLO_URL ?? "http://127.0.0.1:8082";
 const TELNET_PORT = Number(process.env.TELNET_PORT ?? 4000);
-const WS_PORT = Number(process.env.WS_PORT ?? 4001);
+const WEB_PORT = Number(process.env.WEB_PORT ?? 8090);
 const STATE_FILE = process.env.STATE_FILE ?? "/tmp/mudbench-world.json";
 const TRACE_FILE = process.env.TRACE_FILE ?? "/tmp/mudbench-trace.jsonl";
 
@@ -50,6 +51,7 @@ const RESPAWN_AT_START = process.env.RESPAWN_AT_START === "true";
 
 const transports = new Map(); // id -> { send, close, welcomed }
 const pending = [];
+const deferred = new Map(); // id -> lines typed before the actor existed
 let nextId = 1;
 
 // --- persistence ---------------------------------------------------------
@@ -152,7 +154,14 @@ async function handle(id, line) {
     return sendTo(id, `You are known as ${key}. Your room and history return on your next visit.\r\n`);
   }
 
-  if (!actor) return sendTo(id, "You are still arriving. Try again in a moment.\r\n");
+  // A command typed before the join tick lands is queued, not refused: the
+  // browser and the harness both send immediately on connect.
+  if (!actor) {
+    const queue = deferred.get(id) ?? [];
+    queue.push(line);
+    deferred.set(id, queue);
+    return;
+  }
 
   if (verb === "look" || verb === "l") return sendTo(id, describe(actor.room, id));
 
@@ -250,6 +259,13 @@ function onTick() {
     if (actor) sendTo(actor.id, describe(actor.room, actor.id));
   }
 
+  // Anything typed before the actor existed is played now, in order.
+  for (const [id, lines] of deferred) {
+    if (!actorById(id)) continue;
+    deferred.delete(id);
+    for (const line of lines) handle(id, line).catch(() => {});
+  }
+
   if (result.checkpoint) saveState();
 
   // The trace written into the span stream, not a second file: from these a run
@@ -306,7 +322,30 @@ const server = net.createServer((socket) => {
   });
 });
 
-const wss = new WebSocketServer({ port: WS_PORT });
+// One origin for the page and the socket: no port juggling, no mixed content,
+// and a browser client that is the same client the harness is.
+const web = http.createServer((req, res) => {
+  if (req.url === "/" || req.url === "/index.html") {
+    try {
+      const html = readFileSync(new URL("./web/index.html", import.meta.url));
+      res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+      res.end(html);
+    } catch {
+      res.writeHead(500, { "content-type": "text/plain" });
+      res.end("client missing");
+    }
+    return;
+  }
+  if (req.url === "/health") {
+    res.writeHead(200, { "content-type": "application/json" });
+    res.end(JSON.stringify({ tick: state.tick, actors: state.actors.length, npcs: state.npcs.length }));
+    return;
+  }
+  res.writeHead(404, { "content-type": "text/plain" });
+  res.end("not found");
+});
+
+const wss = new WebSocketServer({ server: web });
 wss.on("connection", (ws) => {
   const id = join(`agent-${nextId}`);
   transports.set(id, {
@@ -336,9 +375,12 @@ server.listen(TELNET_PORT, () => {
     "world.rooms": JSON.stringify(ROOMS),
   }, 0);
   console.log(`telnet on :${TELNET_PORT}`);
-  console.log(`websocket on :${WS_PORT}`);
   console.log(`holo at ${HOLO_URL}`);
   console.log(`tick ${TICK_MS}ms, resumed at tick ${state.tick}, ${state.actors.length} actors in state`);
+});
+
+web.listen(WEB_PORT, () => {
+  console.log(`world on http://localhost:${WEB_PORT}/ (page and websocket)`);
 });
 
 for (const signal of ["SIGINT", "SIGTERM"]) {
