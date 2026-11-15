@@ -28,6 +28,8 @@ const ROOMS = {
 const WORD = "amber";
 const VAULT = 4;
 const SHRINE = 6;
+// Experiment control: restore a returning player's history but not its room.
+const RESPAWN_AT_START = process.env.RESPAWN_AT_START === "true";
 
 const transports = new Map(); // id -> { send, close, welcomed }
 const pending = [];
@@ -129,7 +131,7 @@ async function handle(id, line) {
     if (!/^[a-z0-9_-]{1,24}$/i.test(key)) {
       return sendTo(id, "Names are 1-24 letters, digits, - or _.\r\n");
     }
-    pending.push({ kind: "login", actorId: id, key });
+    pending.push({ kind: "login", actorId: id, key, respawn: RESPAWN_AT_START });
     return sendTo(id, `You are known as ${key}. Your room and history return on your next visit.\r\n`);
   }
 
