@@ -12,6 +12,8 @@ no matter what the surrounding process does.
 | `Fanout` | `Event {room, kind}`, `Viewer {actor, room}` | `sees_decides` — a viewer is shown an event exactly when the rooms are equal | verified |
 | `World` | `Exit {start, finish}`, `Actor {actor, room}` | `connects_decides`, `coLocated_decides` | verified |
 | `Conservation` | `Ledger {before, after}` | `preserved_decides` — a count is preserved exactly when before equals after | verified |
+| `Pulses` | `Pulse {period, remaining}`, recursive `minus` | `advance_at_zero` — a pulse at zero rearms to its period | verified |
+| `Perception` | `Observer {role, room}`, `Notice {room, level}` | `perceives_decides` — an observer sees a notice exactly when co-located and cleared | verified |
 
 Each theorem is proved by `simplify` over its own definitions plus `Nat.beq_eq`,
 with `propext` as the only axiom. Nothing is `sorry`-ed and nothing is deferred.

@@ -29,7 +29,7 @@ second outage, and the state on disk is restored by the checkpoint.
 `mudbench-holo.service` names one build directory:
 
 ```
-world/.prism/build/9911e65f81a018d2ad63f2c166550c73ddcc78f1a2fecf64bed7362ff4ac95ac
+world/.prism/build/216ceb1751ff994be6866800561da6bc7096ab01dc095c4cdca423415eda72fb
 ```
 
 A new `prismpm build` produces a new digest and the unit keeps serving the old

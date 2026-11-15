@@ -1,0 +1,90 @@
+\begin{lexlean}{Perception}
+\useglossary{lexlean.std.bool@1.2.0}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Boolean}
+\begin{semanticmodule}
+definition{
+  name: same,
+  parameters: [left : Nat, right : Nat],
+  result: Bool,
+  body: (match left
+    | Nat.zero => (match right
+      | Nat.zero => true
+      | Nat.succ w => false)
+    | Nat.succ x => (match right
+      | Nat.zero => false
+      | Nat.succ y => (same x y))),
+  recursive_argument: left
+}
+
+structure{
+  name: Observer,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: role, type: Nat}, {name: room, type: Nat}]
+}
+
+structure{
+  name: Notice,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: room, type: Nat}, {name: level, type: Nat}]
+}
+
+definition{
+  name: cleared,
+  parameters: [observer : Observer, notice : Notice],
+  result: Bool,
+  body: (match (project notice level)
+    | Nat.zero => true
+    | Nat.succ a => (match a
+      | Nat.zero => (match (project observer role)
+        | Nat.zero => false
+        | Nat.succ r1 => true)
+      | Nat.succ b => (match b
+        | Nat.zero => (match (project observer role)
+          | Nat.zero => false
+          | Nat.succ r2 => (match r2
+            | Nat.zero => false
+            | Nat.succ s2 => true))
+        | Nat.succ c => (match c
+          | Nat.zero => (match (project observer role)
+            | Nat.zero => false
+            | Nat.succ r3 => (match r3
+              | Nat.zero => false
+              | Nat.succ s3 => (match s3
+                | Nat.zero => false
+                | Nat.succ s4 => true)))
+          | Nat.succ d => false))))
+}
+
+definition{
+  name: perceives,
+  parameters: [observer : Observer, notice : Notice],
+  result: Bool,
+  body: ((same (project observer room) (project notice room)) && (cleared observer notice))
+}
+
+definition{
+  name: Perceives,
+  parameters: [observer : Observer, notice : Notice],
+  result: Prop,
+  body: (((same (project observer room) (project notice room)) = true) /\ ((cleared observer notice) = true))
+}
+
+theorem{
+  name: perceives_decides,
+  parameters: [observer : Observer, notice : Notice],
+  statement: (((perceives observer notice) = true) <-> (Perceives observer notice)),
+  proof: simplify{
+    definitions: [
+      Bool.and_eq_true,
+      Perceives,
+      cleared,
+      perceives
+    ]
+  },
+  axioms: [propext]
+}
+\end{semanticmodule}
+\end{lexlean}
