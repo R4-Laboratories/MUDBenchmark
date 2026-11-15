@@ -111,6 +111,36 @@ Caveat to keep in view: PrismPM publishes v0.4.0 as an SDK *candidate*, and its
 README states plainly that it "is not an accepted production-system release". We
 depend on a candidate, so the digest is pinned and we expect to move.
 
+### 2.3 PrismPM models deployment, not just the build
+
+The first version of this document said hosting could not be modelled at all.
+That was wrong, and the tool was already ahead of the claim. `prismpm` ships a
+deployment surface:
+
+```
+prismpm plan | deploy | run | status | backup | restore | rollback | destroy
+```
+
+with adapters published per target — `adapter-compose`, `adapter-github-pages`
+and `adapter-kubernetes` — and the words that go with a real deployment:
+"Produce a deterministic target-state-bound deployment plan", "Deploy an
+immutable release through its modeled target adapter", "Capture a complete
+logical snapshot from a ready modeled deployment", "Restore and prove a pending
+backup in a distinct clean target".
+
+So the correct statement is narrower than "not modelled" and stronger than
+"modelled":
+
+- the **listener is still a process in a container** — WASI still has no socket
+- but the **deployment of that container is modelled**: target, plan, identity,
+  backup, restore and rollback are PrismPM concepts, not ad-hoc scripts
+- and the static client is the `adapter-github-pages` path, so Pages is a
+  modelled target rather than a manual upload
+
+Practical consequence: `wick` should be described as a modeled Compose target,
+not a box we scp into. A release is immutable and identified, and rolling back
+is a PrismPM command rather than a manual revert.
+
 ## 3. Consequences
 
 1. **PrismPM becomes a build dependency.** `prismpm` is not installed on this
