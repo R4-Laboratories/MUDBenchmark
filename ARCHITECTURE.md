@@ -81,6 +81,39 @@ control. A model that treats one successful command as one successful outcome
 will be measurably wrong, in a way that is visible in the span record rather
 than hidden in prose.
 
+### 2.3 What the proved app is, and what it is not
+
+Prism's rule language compiles every condition to a comparison between one field
+of the request and a constant or another field. Fields are natural numbers. There
+are no lookups, no tables, and no world state.
+
+That is a hard boundary, and it decides the decomposition:
+
+- **LexLean** carries the world semantics — rooms, actors, items, pulses,
+  schedules, and their invariants. It is where "the substrate of loops" is
+  modelled.
+- **Prism** carries one deployable decision: **transition admission**. Given the
+  numbers a client claims as the witnesses of a transition, decide whether the
+  claim is admissible.
+
+The admission app is small on purpose. Its job is the trust boundary: it is what
+the server runs on every request to reject a transition that violates
+conservation or moves an actor through an exit it is not standing at. A model
+that "proved the world" while the world ran in Rust would be proving a stub.
+
+The invariants it carries are the ones a cheat would have to break:
+
+| Invariant | Statement |
+|---|---|
+| INV-003 | a transfer is never admissible above what the actor holds |
+| INV-004 | a transfer is never admissible above the destination's capacity |
+| INV-005/006 | a move is never admissible unless the exit starts in the actor's room |
+| INV-007/008 | an engagement is never admissible unless both are in the same room |
+| INV-001/002 | waiting and speaking are always admissible |
+
+INV-001 and INV-002 matter more than they look: they say the engine never
+suppresses speech or idle time, which the safety model depends on.
+
 
 ### Properties the model must establish
 

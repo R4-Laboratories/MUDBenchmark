@@ -1,0 +1,314 @@
+{
+  "name": "mud-transition-admission",
+  "title": "MUD transition admission",
+  "purpose": "given a claimed world transition, decide whether it is admissible.",
+  "fields": [
+    {
+      "name": "kind",
+      "kind": "choice",
+      "values": [
+        "choice",
+        "move",
+        "transfer",
+        "engage",
+        "speak",
+        "wait"
+      ]
+    },
+    {
+      "name": "room",
+      "kind": "number"
+    },
+    {
+      "name": "origin",
+      "kind": "number"
+    },
+    {
+      "name": "destination",
+      "kind": "number"
+    },
+    {
+      "name": "held",
+      "kind": "number"
+    },
+    {
+      "name": "amount",
+      "kind": "number"
+    },
+    {
+      "name": "capacity",
+      "kind": "number"
+    }
+  ],
+  "outcomes": [
+    "admissible",
+    "refused"
+  ],
+  "rules": [
+    {
+      "id": "REQ-001",
+      "when": [
+        {
+          "field": "kind",
+          "op": "is",
+          "value": "wait"
+        }
+      ],
+      "then": "admissible",
+      "says": "when kind is wait then admissible"
+    },
+    {
+      "id": "REQ-002",
+      "when": [
+        {
+          "field": "kind",
+          "op": "is",
+          "value": "speak"
+        }
+      ],
+      "then": "admissible",
+      "says": "when kind is speak then admissible"
+    },
+    {
+      "id": "REQ-003",
+      "when": [
+        {
+          "field": "kind",
+          "op": "is",
+          "value": "move"
+        },
+        {
+          "field": "origin",
+          "op": "=",
+          "value": {
+            "field": "room"
+          }
+        }
+      ],
+      "then": "admissible",
+      "says": "when kind is move and origin = room then admissible"
+    },
+    {
+      "id": "REQ-004",
+      "when": [
+        {
+          "field": "kind",
+          "op": "is",
+          "value": "transfer"
+        },
+        {
+          "field": "amount",
+          "op": "<=",
+          "value": {
+            "field": "held"
+          }
+        },
+        {
+          "field": "amount",
+          "op": "<=",
+          "value": {
+            "field": "capacity"
+          }
+        }
+      ],
+      "then": "admissible",
+      "says": "when kind is transfer and amount <= held and amount <= capacity then admissible"
+    },
+    {
+      "id": "REQ-005",
+      "when": [
+        {
+          "field": "kind",
+          "op": "is",
+          "value": "engage"
+        },
+        {
+          "field": "room",
+          "op": "=",
+          "value": {
+            "field": "destination"
+          }
+        }
+      ],
+      "then": "admissible",
+      "says": "when kind is engage and room = destination then admissible"
+    }
+  ],
+  "otherwise": "refused",
+  "properties": [
+    {
+      "id": "INV-001",
+      "kind": "always",
+      "when": [
+        {
+          "field": "kind",
+          "op": "is",
+          "value": "wait"
+        }
+      ],
+      "then": "admissible",
+      "says": "always when kind is wait then admissible"
+    },
+    {
+      "id": "INV-002",
+      "kind": "always",
+      "when": [
+        {
+          "field": "kind",
+          "op": "is",
+          "value": "speak"
+        }
+      ],
+      "then": "admissible",
+      "says": "always when kind is speak then admissible"
+    },
+    {
+      "id": "INV-003",
+      "kind": "never",
+      "when": [
+        {
+          "field": "kind",
+          "op": "is",
+          "value": "transfer"
+        },
+        {
+          "field": "amount",
+          "op": ">",
+          "value": {
+            "field": "held"
+          }
+        }
+      ],
+      "then": "admissible",
+      "says": "never when kind is transfer and amount > held then admissible"
+    },
+    {
+      "id": "INV-004",
+      "kind": "never",
+      "when": [
+        {
+          "field": "kind",
+          "op": "is",
+          "value": "transfer"
+        },
+        {
+          "field": "amount",
+          "op": ">",
+          "value": {
+            "field": "capacity"
+          }
+        }
+      ],
+      "then": "admissible",
+      "says": "never when kind is transfer and amount > capacity then admissible"
+    },
+    {
+      "id": "INV-005",
+      "kind": "never",
+      "when": [
+        {
+          "field": "kind",
+          "op": "is",
+          "value": "move"
+        },
+        {
+          "field": "origin",
+          "op": ">",
+          "value": {
+            "field": "room"
+          }
+        }
+      ],
+      "then": "admissible",
+      "says": "never when kind is move and origin > room then admissible"
+    },
+    {
+      "id": "INV-006",
+      "kind": "never",
+      "when": [
+        {
+          "field": "kind",
+          "op": "is",
+          "value": "move"
+        },
+        {
+          "field": "origin",
+          "op": "<",
+          "value": {
+            "field": "room"
+          }
+        }
+      ],
+      "then": "admissible",
+      "says": "never when kind is move and origin < room then admissible"
+    },
+    {
+      "id": "INV-007",
+      "kind": "never",
+      "when": [
+        {
+          "field": "kind",
+          "op": "is",
+          "value": "engage"
+        },
+        {
+          "field": "room",
+          "op": ">",
+          "value": {
+            "field": "destination"
+          }
+        }
+      ],
+      "then": "admissible",
+      "says": "never when kind is engage and room > destination then admissible"
+    },
+    {
+      "id": "INV-008",
+      "kind": "never",
+      "when": [
+        {
+          "field": "kind",
+          "op": "is",
+          "value": "engage"
+        },
+        {
+          "field": "room",
+          "op": "<",
+          "value": {
+            "field": "destination"
+          }
+        }
+      ],
+      "then": "admissible",
+      "says": "never when kind is engage and room < destination then admissible"
+    }
+  ],
+  "examples": [
+    {
+      "request": "wait 1 1 1 1 1 1",
+      "response": "admissible"
+    },
+    {
+      "request": "transfer 1 1 1 10 5 5",
+      "response": "admissible"
+    },
+    {
+      "request": "transfer 1 1 1 10 50 5",
+      "response": "refused"
+    },
+    {
+      "request": "move 5 5 9 1 1 1",
+      "response": "admissible"
+    },
+    {
+      "request": "move 5 4 9 1 1 1",
+      "response": "refused"
+    },
+    {
+      "request": "engage 3 1 3 1 1 1",
+      "response": "admissible"
+    }
+  ],
+  "schema": "prism/spec/1",
+  "actors": []
+}
