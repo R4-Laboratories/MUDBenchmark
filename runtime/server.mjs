@@ -165,9 +165,10 @@ const server = net.createServer((socket) => {
   const actor = { id, name: `guest-${id}`, room: 1 };
   let buffer = "";
   attach(actor, {
-    send: (t) => socket.write(t),
+    send: (t) => { if (socket.writable) socket.write(t); },
     close: () => socket.end(),
   });
+  socket.on("error", () => {}); // a dead client must never take the world down
   socket.on("data", async (chunk) => {
     buffer += chunk.toString("utf8");
     let idx;
@@ -188,9 +189,10 @@ wss.on("connection", (ws) => {
   const id = nextId++;
   const actor = { id, name: `agent-${id}`, room: 1 };
   attach(actor, {
-    send: (t) => ws.send(t.replace(/\r\n/g, "\n")),
+    send: (t) => { if (ws.readyState === 1) ws.send(t.replace(/\r\n/g, "\n")); },
     close: () => ws.close(),
   });
+  ws.on("error", () => {});
   ws.on("message", async (data) => {
     for (const line of data.toString("utf8").split("\n")) {
       try { await handle(actor, line); } catch (e) { ws.send(`error: ${e.message}\n`); }

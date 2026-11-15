@@ -29,6 +29,8 @@ const ROUTER_MODE = process.env.ROUTER_MODE ?? "flat";
 const GOAL = process.env.HARNESS_GOAL ?? "map the world and speak to whoever you meet.";
 const memory = [];
 const BUDGET = Number(process.env.ROUTER_BUDGET ?? 220);
+const MAX_TURNS = Number(process.env.MAX_TURNS ?? 40);
+let lastUsage = null;
 
 const INSTRUCTIONS = `You are playing MUDBench, a text world.
 
@@ -59,11 +61,15 @@ function llmBrain() {
     const res = await fetch(`${base}/chat/completions`, {
       method: "POST",
       headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
-      body: JSON.stringify({ model, messages, temperature: 0, max_tokens: 60 }),
+      body: JSON.stringify({ model, messages, temperature: 0, max_tokens: 256 }),
     });
     if (!res.ok) throw new Error(`model ${res.status}`);
     const body = await res.json();
-    const reply = body.choices?.[0]?.message?.content ?? "";
+    const message = body.choices?.[0]?.message ?? {};
+    lastUsage = body.usage ?? null;
+    // A reasoning model may spend the whole budget thinking and leave `content`
+    // empty; the command then sits in the reasoning field. Take either.
+    const reply = (message.content ?? "").trim() || (message.reasoning_content ?? "").trim();
     messages.push({ role: "assistant", content: reply });
     return reply;
   };
@@ -133,7 +139,7 @@ async function loop() {
       continue;
     }
     const { command, ok, raw } = parseCommand(reply);
-    record({ turn, event: "decision", seen, context: routed.context, layers: routed.layers, reply: raw ?? reply, command, parse_ok: ok });
+    record({ turn, event: "decision", seen, context: routed.context, layers: routed.layers, reply: raw ?? reply, command, parse_ok: ok, usage: lastUsage });
     memory.push(command);
     recordSpan("agent.decision", {
       "actor.name": NAME,
@@ -146,10 +152,13 @@ async function loop() {
       "output.command": command,
       "output.parse_ok": ok,
       "telemetry.latency_ms": Date.now() - started,
+      "telemetry.tokens_in": lastUsage?.prompt_tokens,
+      "telemetry.tokens_out": lastUsage?.completion_tokens,
     }, Date.now() - started);
     if (!ok) console.warn(`turn ${turn}: unparseable reply, sending "look" instead`);
     socket.send(`${command}\n`);
     if (command === "quit") break;
+    if (turn >= MAX_TURNS) { socket.send("quit\n"); break; }
   }
 }
 
