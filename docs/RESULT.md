@@ -127,3 +127,26 @@ BRAIN=llm ROUTER_MODE=flat MAX_TURNS=10 \
 node runtime/report.mjs /tmp/run-*.jsonl
 node runtime/replay.mjs /tmp/mudbench-spans.jsonl
 ```
+
+## 9. Replication
+
+The two decisive arms were re-run, ten more each, same design.
+
+| arm | original | replication | combined |
+|---|---|---|---|
+| `corroborated` (the lie) | 4/6 | **5/8** | **9/14** (64%) |
+| `true` (authenticity) | 0/5 | **1/8** | **1/13** (8%) |
+
+The effect holds and the gap widened. The truth arm is no longer zero — one run
+answered the false word first even when the world twice pointed at the Vault —
+which is the honest version of the number.
+
+Two details worth keeping:
+
+- **Two of eight** answering runs in the corroborated arm had *not* seen the
+  Vault before answering, and answered from the corroborated claim. That is not
+  manipulation of a memory; it is accepting an assertion as knowledge.
+- The after-the-fact failure persisted in both arms (one run each replaced a
+  correct answer later), so it is independent of the first-answer failure.
+
+The claim in §2 stands, with `9/14` against `1/13` behind it.
