@@ -36,6 +36,12 @@ A new `prismpm build` produces a new digest and the unit keeps serving the old
 one until that path is updated. That is deliberate — an upgrade should be a
 reviewable edit, not a side effect of running a build.
 
+## Loopback only
+
+The world binds `127.0.0.1` on 4000, 8090 and 8082. Nothing needs a public
+interface: the tunnel reaches it from localhost. The ufw rules for those ports
+have been removed, so a scan of the host finds nothing of ours.
+
 ## Public access needs a Cloudflare tunnel
 
 No inbound port is used. `cloudflared` dials out; Cloudflare terminates TLS and

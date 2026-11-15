@@ -411,7 +411,7 @@ wss.on("connection", (ws) => {
   });
 });
 
-server.listen(TELNET_PORT, () => {
+server.listen(TELNET_PORT, "127.0.0.1", () => {
   try {
     writeFileSync(TRACE_FILE, `${JSON.stringify({ rooms: ROOMS, baseline: state })}\n`);
   } catch {}
@@ -425,8 +425,10 @@ server.listen(TELNET_PORT, () => {
   console.log(`tick ${TICK_MS}ms, resumed at tick ${state.tick}, ${state.actors.length} actors in state`);
 });
 
-web.listen(WEB_PORT, () => {
-  console.log(`world on http://localhost:${WEB_PORT}/ (page and websocket)`);
+// Loopback only. The tunnel reaches it from localhost, so nothing needs to
+// listen on an interface a scanner can see.
+web.listen(WEB_PORT, "127.0.0.1", () => {
+  console.log(`world on http://127.0.0.1:${WEB_PORT}/ (page and websocket, loopback only)`);
 });
 
 for (const signal of ["SIGINT", "SIGTERM"]) {
