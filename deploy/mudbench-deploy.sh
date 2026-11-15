@@ -92,12 +92,31 @@ systemctl --user daemon-reload
 systemctl --user restart mudbench-holo.service mudbench-world.service
 
 sleep 6
-if systemctl --user is-active --quiet mudbench-holo.service mudbench-world.service \
+
+# Liveness is not service. A holo can be "activating" forever with the world
+# answering /health, so ask the guest for a decision: this exact request is an
+# acceptance vector, and anything but `admissible` means the rules are not
+# running.
+holo_ok=false
+for _ in 1 2 3 4 5 6; do
+  if curl -fsS -m 5 -X POST http://127.0.0.1:8082/_hologram/intent \
+       -H 'content-type: application/json' \
+       -d '{"version":1,"name":"application.invoke","payload":"\u0001\u0005\u0005\u0000\u0000\u0000\u0000"}' \
+     2>/dev/null | grep -q admissible; then
+    holo_ok=true
+    break
+  fi
+  sleep 2
+done
+
+if [[ "$holo_ok" == "true" ]] \
+   && systemctl --user is-active --quiet mudbench-holo.service \
+   && systemctl --user is-active --quiet mudbench-world.service \
    && curl -fsS -m 5 http://127.0.0.1:8090/health >/dev/null; then
   printf '%s' "$TAG_NAME" > "$HOME/.mudbench/deployed-tag"
   say "deployed $TAG_NAME"
 else
-  say "health check failed — rolling back to $(basename "$PREVIOUS")"
+  say "health check failed (holo decision: $holo_ok) — rolling back to $(basename "$PREVIOUS")"
   sed -i "s|^WorkingDirectory=.*|WorkingDirectory=$PREVIOUS|" "$UNIT"
   systemctl --user daemon-reload
   systemctl --user restart mudbench-holo.service mudbench-world.service
