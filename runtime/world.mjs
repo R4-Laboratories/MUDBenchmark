@@ -20,7 +20,22 @@ export const PULSES = {
 
 export const CHECKPOINT = 240;
 
-const nextFrom = (seed, bound) => ((seed * 1103515245 + 12345) % 2147483648) % bound;
+// An LCG whose multiply is done in doubles, not in 32 bits. The product of a
+// tick-derived seed and 1103515245 passes 2^53 at about tick 409,000, after
+// which the low bits are all zero: every direction becomes the same and every
+// blow does one damage. Math.imul keeps the multiplication exact and the
+// generator alive for as long as the world runs.
+export const nextFrom = (seed, bound) => ((Math.imul(seed | 0, 1103515245) + 12345) >>> 0) % bound;
+
+// An id is opaque: the server happens to number actors, but a reducer that
+// multiplies a string produces NaN damage and a fight that never lands a blow.
+// Hash it to a stable integer instead of trusting its shape.
+const seedOf = (value) => {
+  if (typeof value === "number") return value;
+  let hash = 7;
+  for (const ch of String(value)) hash = (hash * 31 + ch.codePointAt(0)) % 2147483648;
+  return hash;
+};
 
 export function initialState(rooms, npcs = [], objects = [], start = 1) {
   return {
@@ -288,7 +303,7 @@ export function step({ state, rooms, intents }) {
       const target = next.actors.find((a) => a.id === engagement.targetId)
         ?? next.npcs.find((n) => n.id === engagement.targetId);
 
-      const damage = 1 + nextFrom(next.tick * 7 + engagement.attackerId, 4);
+      const damage = 1 + nextFrom(next.tick * 7 + seedOf(engagement.attackerId), 4);
       target.hp -= damage;
       const killed = target.hp <= 0;
       const detail = {

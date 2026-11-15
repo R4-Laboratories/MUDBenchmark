@@ -20,18 +20,18 @@ rather than only code.
 
 ## Phases
 
-**A. Verbs as data, with audiences.** Every command becomes a row in
+**A. Verbs as data, with audiences.** *Done.* Every command becomes a row in
 `world/data/verbs.json`: its aliases, what it needs, and one message per audience
 (`actor`, `others`, `target`) with `%a`, `%o`, `%t`, `%s` codes — the shape
 idirt's `data/actions` used. The server stops formatting strings; it renders
 templates. Every verb added after this is data, and the wording of the game
 becomes reviewable without reading code.
 
-**B. Mobiles that do something.** A creature gets a behaviour: `wander`,
+**B. Mobiles that do something.** *Done.* A creature gets a behaviour: `wander`,
 `sentinel`, or `speaker` with a phrase list. Each runs on its own clock, so the
 world has inhabitants rather than furniture. Every action is an event and a span.
 
-**C. Combat.** The `fight` subsystem: hit points, an attack that begins an
+**C. Combat.** *Done.* The `fight` subsystem: hit points, an attack that begins an
 engagement, and the violence pulse resolving rounds — which is what
 `ARCHITECTURE.md` has claimed since the first session and the runtime has never
 done.

@@ -20,6 +20,7 @@ import { spawnSync } from "node:child_process";
 import { loadWorld } from "../runtime/worlddata.mjs";
 import { describe as renderRoom } from "../runtime/view.mjs";
 import { loadVerbs } from "../runtime/verbs.mjs";
+import { initialState, nextFrom, step } from "../runtime/world.mjs";
 import { join } from "node:path";
 
 const root = process.cwd();
@@ -80,6 +81,55 @@ if (hidden.includes("SECRET-NOTICE")) failures.push("the room renderer shows a n
 const verbTable = loadVerbs();
 if (verbTable.errors.length > 0) failures.push(`verbs are invalid: ${verbTable.errors[0]}`);
 
+// Combat must actually resolve: an attack on a 12 hp guard kills it, round by
+// round, and the damage reported sums to exactly its hit points. A duplicated
+// span would double the sum, a missing round would fall short of it.
+let combat = { rounds: 0, damage: 0, outcome: null, dead: false, afterDeath: 0, hpTraceOk: true };
+// The generator must still produce variety when the world is old. Its multiply
+// used to be done in doubles, whose low bits vanish after about tick 409,000 —
+// every NPC then walked one way forever. A cheap assertion buys that back.
+const oldSeed = 500000 * 31 + 4;
+const oldDirs = new Set([0, 1, 2, 3].map((k) => nextFrom(oldSeed + k, 4)));
+{
+  const world = loadWorld({ mode: "single" });
+  const guardHome = world.npcs.find((npc) => npc.id === "guard");
+  const npcs = world.npcs.map((npc) => (npc.id === "guard" ? { ...npc, room: 1, home: 1 } : npc));
+  let state = initialState(world.rooms, npcs, world.objects, world.start);
+  state = step({ state, rooms: world.rooms, intents: [{ kind: "join", actorId: "gate", name: "gate" }] }).state;
+  state = step({ state, rooms: world.rooms, intents: [{ kind: "attack", actorId: "gate", targetId: "guard" }] }).state;
+
+  for (let i = 0; i < 40; i += 1) {
+    const { state: next, events } = step({ state, rooms: world.rooms, intents: [] });
+    for (const event of events) {
+      if (!event.combat) continue;
+      // Hit points must fall by exactly the damage reported. A duplicated span
+      // makes the trace jump; a missing round leaves it too high.
+      combat.rounds += 1;
+      combat.damage += event.combat.damage;
+      combat.outcome = event.combat.outcome;
+      if (combat.dead) combat.afterDeath += 1;
+      if (event.combat.outcome === "killed") combat.dead = true;
+      const expected = (combat.hpBefore ?? guardHome?.hp ?? 12) - event.combat.damage;
+      if (event.combat.outcome === "killed" ? event.combat.hp !== 0 || expected > 0 : event.combat.hp !== expected) {
+        combat.hpTraceOk = false;
+      }
+      combat.hpBefore = event.combat.hp;
+    }
+    state = next;
+  }
+  const guard = state.npcs.find((npc) => npc.id === "guard");
+  combat.remainingHp = guard?.hp;
+  combat.engagementsLeft = state.engagements.length;
+  if (!guardHome) failures.push("the world has no guard to fight");
+  if (oldDirs.size < 2) failures.push("the world's generator collapses at tick 500,000 — old worlds stop varying");
+  if (!combat.hpTraceOk) failures.push("the combat hit-point trace does not fall by the damage each round — spans are missing or duplicated");
+  if (combat.damage < (guardHome?.hp ?? 0)) failures.push(`combat dealt ${combat.damage} damage to a ${guardHome?.hp} hp guard — spans are missing`);
+  if (combat.outcome !== "killed") failures.push(`40 ticks of combat never killed the guard (last outcome ${combat.outcome})`);
+  if (!guard?.dead) failures.push("a guard that reached zero hit points is not dead");
+  if (combat.afterDeath > 0) failures.push(`combat continued after death (${combat.afterDeath} extra rounds)`);
+  if (combat.engagementsLeft !== 0) failures.push(`a finished engagement is still open (${combat.engagementsLeft})`);
+}
+
 // Generated code must match the model it claims to come from.
 const drift = spawnSync(process.execPath, ["tools/mechanize.mjs", "--check"], { encoding: "utf8" });
 const driftOk = drift.status === 0;
@@ -104,6 +154,8 @@ if (process.argv.includes("--json")) {
   console.log(`${"mechanizedDrift".padEnd(26)}  ${(driftOk ? "clean" : "DRIFT").padStart(5)}   == clean`);
   console.log(`${"worldArms".padEnd(26)}  ${(worldProblems.length === 0 ? "4 ok" : "BROKEN").padStart(5)}   == walkable`);
   console.log(`${"renderer".padEnd(26)}  ${(shown.includes("SECRET-NOTICE") && !hidden.includes("SECRET-NOTICE") ? "2 ok" : "BROKEN").padStart(5)}   == hides/shows`);
+  console.log(`${"combat".padEnd(26)}  ${(combat.outcome === "killed" ? `${combat.rounds} rounds` : "BROKEN").padStart(5)}   == kills`);
+  console.log(`${"generator@500k".padEnd(26)}  ${(oldDirs.size >= 2 ? `${oldDirs.size} dirs` : "BROKEN").padStart(5)}   == still varies`);
   console.log(`${"verbTable".padEnd(26)}  ${(verbTable.errors.length === 0 ? `${verbTable.byAlias.size} keys` : "BROKEN").padStart(5)}   == resolvable`);
   console.log("");
   if (failures.length === 0) {
