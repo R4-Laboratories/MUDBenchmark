@@ -140,6 +140,8 @@ async function loop() {
     }
     const { command, ok, raw } = parseCommand(reply);
     record({ turn, event: "decision", seen, context: routed.context, layers: routed.layers, reply: raw ?? reply, command, parse_ok: ok, usage: lastUsage });
+    if (/shrine accepts/i.test(seen)) record({ turn, event: "solved" });
+    if (/shrine does not accept/i.test(seen)) record({ turn, event: "rejected" });
     memory.push(command);
     recordSpan("agent.decision", {
       "actor.name": NAME,

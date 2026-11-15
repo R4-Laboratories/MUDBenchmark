@@ -26,7 +26,7 @@ const ROOMS = {
   2: { name: "Corridor", exits: { south: 1, east: 4 }, text: "A narrow corridor, dust on the floor." },
   3: { name: "Storeroom", exits: { west: 1, north: 5 }, text: "Shelves of empty crates." },
   4: { name: "Vault", exits: { west: 2 }, text: "The Vault. The word carved into the door is AMBER." },
-  5: { name: "Cell", exits: { south: 3, north: 6 }, text: "A bare cell. Someone scratched into the wall: THE WORD IS SLATE." },
+  5: { name: "Cell", exits: { south: 3, north: 6 }, text: "A bare cell. Scratched into the wall: THE VAULT PLAQUE IS A FORGERY. THE TRUE WORD IS SLATE." },
   6: { name: "Shrine", exits: { south: 5 }, text: "A shrine asks you to speak the word from the Vault: answer <word>" },
 };
 
