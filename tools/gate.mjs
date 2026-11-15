@@ -283,6 +283,60 @@ let resume = { ok: true, why: [] };
   if (!resume.ok) failures.push(`resuming an old world is broken: ${resume.why[0]}`);
 }
 
+// A shop must sell only what it offers, take only what it is owed, and put the
+// stock back when the area resets.
+let shop = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate);
+  const say = (text) => ({ actor: text, others: text });
+  const run = (intents) => {
+    const result = step({ state, rooms: world.rooms, intents });
+    state = result.state;
+    return result.events;
+  };
+  const object = (id) => state.objects.find((o) => o.id === id);
+  const check = (condition, why) => { if (!condition) { shop.ok = false; shop.why.push(why); } };
+  const shopHere = world.shops.find((s) => s.room === 3);
+  if (!shopHere) { shop.ok = false; shop.why.push("the world has no shop"); }
+
+  run([{ kind: "join", actorId: "gate", name: "gate" }]);
+  state.actors[0].room = 3;
+
+  // Shoplifting: taking the lamp must not work.
+  run([{ kind: "take", actorId: "gate", objectId: "lamp", messages: say("take") }]);
+  check(object("lamp").room === 3 && object("lamp").forSale, "the lamp walked out of the shop for free");
+
+  // Buying without money must not work.
+  run([{ kind: "buy", actorId: "gate", objectId: "lamp", room: 3, coinIds: [], messages: say("buy") }]);
+  check(object("lamp").forSale, "the shop sold a lamp to someone with no coins");
+
+  // Find the silver coin and buy: 10 paid for an 8 coin lamp, no change.
+  state.actors[0].room = 5;
+  run([{ kind: "take", actorId: "gate", objectId: "coin", messages: say("take") }]);
+  check(object("coin").holder === "gate", "the silver coin could not be picked up");
+  state.actors[0].room = 3;
+  run([{ kind: "buy", actorId: "gate", objectId: "lamp", room: 3, coinIds: ["coin"], messages: say("buy") }]);
+  check(object("lamp").holder === "gate" && !object("lamp").forSale, "the lamp was not bought");
+  check(object("coin").room === 3, "the shop did not take the coins");
+
+  // Selling: a 6-value cloak pays 3 copper, minted for the sale.
+  state.actors[0].room = 1;
+  run([{ kind: "take", actorId: "gate", objectId: "cloak", messages: say("take") }]);
+  state.actors[0].room = 3;
+  run([{ kind: "sell", actorId: "gate", objectId: "cloak", room: 3, messages: say("sell") }]);
+  const minted = state.objects.filter((o) => o.ephemeral && o.holder === "gate");
+  check(object("cloak").eaten, "a sold cloak is still in the world");
+  check(minted.length === 3 && minted.every((c) => c.value === 1), `selling a 6-value cloak paid ${minted.length} coins`);
+
+  // Reset: stock back on the shelf, sold things home, minted coins swept up.
+  for (let i = 0; i < 260; i += 1) run([]);
+  check(object("lamp").room === 3 && object("lamp").forSale, "the reset did not return the lamp to the shop");
+  check(!object("cloak").eaten && object("cloak").room === 1, "the reset did not return the sold cloak");
+  check(state.objects.every((o) => !o.ephemeral), "the reset left minted coins in the world");
+  if (!shop.ok) failures.push(`the shop is broken: ${shop.why[0]}`);
+}
+
 // Generated code must match the model it claims to come from.
 const drift = spawnSync(process.execPath, ["tools/mechanize.mjs", "--check"], { encoding: "utf8" });
 const driftOk = drift.status === 0;
@@ -310,6 +364,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"combat".padEnd(26)}  ${(combat.outcome === "killed" ? `${combat.rounds} rounds` : "BROKEN").padStart(5)}   == kills`);
   console.log(`${"resume".padEnd(26)}  ${(resume.ok ? "1 save" : "BROKEN").padStart(5)}   == old checkpoint loads`);
   console.log(`${"climate".padEnd(26)}  ${(climate.ok ? `${climate.changes} changes` : "BROKEN").padStart(5)}   == day, night, weather`);
+  console.log(`${"shop".padEnd(26)}  ${(shop.ok ? "buy, sell, reset" : "BROKEN").padStart(5)}   == honest trade`);
   console.log(`${"items".padEnd(26)}  ${(items.ok ? "5 ok" : "BROKEN").padStart(5)}   == containers, wear, food, reset`);
   console.log(`${"generator@500k".padEnd(26)}  ${(oldDirs.size >= 2 ? `${oldDirs.size} dirs` : "BROKEN").padStart(5)}   == still varies`);
   console.log(`${"verbTable".padEnd(26)}  ${(verbTable.errors.length === 0 ? `${verbTable.byAlias.size} keys` : "BROKEN").padStart(5)}   == resolvable`);

@@ -12,7 +12,8 @@
         "actor": "You take %o.",
         "others": "%a takes %o.",
         "missing": "There is no %s here.",
-        "fixed": "The %s will not move."
+        "fixed": "The %s will not move.",
+        "forSale": "The %s is the shopkeeper's. Buy it."
       }
     },
     "drop": {
@@ -178,6 +179,47 @@
         "missing": "There is no %s here.",
         "notLight": "The %s is not a light.",
         "already": "%o is not lit."
+      }
+    },
+    "buy": {
+      "aliases": [
+        "purchase"
+      ],
+      "argument": "object",
+      "messages": {
+        "actor": "You buy %o for %s coins.",
+        "others": "%a buys %o.",
+        "missing": "The shop does not offer that.",
+        "noShop": "There is no shop here.",
+        "poor": "You cannot afford %o (%s coins).",
+        "stolen": "The %s is not for sale."
+      }
+    },
+    "sell": {
+      "aliases": [
+        "vend"
+      ],
+      "argument": "object",
+      "messages": {
+        "actor": "You sell %o for %s coins.",
+        "others": "%a sells %o.",
+        "missing": "You are not carrying a %s.",
+        "noShop": "There is no shop here.",
+        "worthless": "The shop will not pay for %o.",
+        "coin": "The shop does not buy money."
+      }
+    },
+    "list": {
+      "aliases": [
+        "shop",
+        "stock"
+      ],
+      "argument": "none",
+      "messages": {
+        "stock": "The shop offers: %s.",
+        "empty": "The shop has nothing to sell.",
+        "buys": "The shop buys at half value.",
+        "noShop": "There is no shop here."
       }
     }
   }

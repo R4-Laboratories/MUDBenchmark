@@ -154,6 +154,16 @@
       "jitter": 5,
       "behaviour": "sentinel",
       "hp": 12
+    },
+    {
+      "id": "shopkeeper",
+      "name": "a shopkeeper",
+      "room": 3,
+      "home": 3,
+      "period": 12,
+      "jitter": 4,
+      "behaviour": "sentinel",
+      "hp": 20
     }
   ],
   "zones": [
@@ -180,15 +190,20 @@
         "takeable",
         "light"
       ],
-      "lit": false
+      "lit": false,
+      "forSale": true,
+      "price": 8,
+      "value": 4
     },
     {
       "id": "coin",
       "name": "a silver coin",
       "room": 5,
       "flags": [
-        "takeable"
-      ]
+        "takeable",
+        "coin"
+      ],
+      "value": 10
     },
     {
       "id": "scroll",
@@ -198,7 +213,8 @@
         "takeable",
         "readable"
       ],
-      "readable": true
+      "readable": true,
+      "value": 5
     },
     {
       "id": "anvil",
@@ -206,7 +222,8 @@
       "room": 3,
       "flags": [
         "fixed"
-      ]
+      ],
+      "value": 20
     },
     {
       "id": "chest",
@@ -224,8 +241,10 @@
       "name": "a copper coin",
       "inside": "chest",
       "flags": [
-        "takeable"
-      ]
+        "takeable",
+        "coin"
+      ],
+      "value": 1
     },
     {
       "id": "cloak",
@@ -235,7 +254,8 @@
         "takeable",
         "wearable"
       ],
-      "slot": "body"
+      "slot": "body",
+      "value": 6
     },
     {
       "id": "bread",
@@ -245,7 +265,8 @@
         "takeable",
         "food"
       ],
-      "bites": 2
+      "bites": 2,
+      "value": 2
     }
   ],
   "climate": {
@@ -296,5 +317,12 @@
         "text": "A cold wind finds the corridors."
       }
     ]
-  }
+  },
+  "shops": [
+    {
+      "id": "store",
+      "room": 3,
+      "keeper": "shopkeeper"
+    }
+  ]
 }

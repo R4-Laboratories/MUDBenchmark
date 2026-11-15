@@ -73,6 +73,7 @@ export function initialState(rooms, npcs = [], objects = [], start = 1, climate 
       holder: null,
       room: object.inside ? null : object.room,
       inside: object.inside ?? null,
+      forSale: object.forSale ?? false,
       home: object.inside ? null : object.room,
       homeInside: object.inside ?? null,
       worn: false,
@@ -319,6 +320,7 @@ export function step({ state, rooms, intents }) {
       if (intent.kind === "take") {
         if (object.holder !== null || object.room !== actor.room) continue;
         if ((object.flags ?? []).includes("fixed")) continue;
+        if (object.forSale) continue;
         object.holder = actor.id;
         object.room = null;
         events.push({ room: actor.room, text: intent.messages.others, exceptId: actor.id });
@@ -421,6 +423,63 @@ export function step({ state, rooms, intents }) {
       if (!(object.flags ?? []).includes("light")) continue;
       if (object.holder !== actor.id && object.room !== actor.room) continue;
       object.lit = intent.kind === "light";
+      events.push({ room: actor.room, text: intent.messages.others, exceptId: actor.id });
+      events.push({ onlyId: actor.id, text: intent.messages.actor });
+      continue;
+    }
+
+    if (intent.kind === "buy") {
+      const object = next.objects.find((o) => o.id === intent.objectId);
+      if (!object || !object.forSale || object.room !== intent.room) continue;
+      const coins = (intent.coinIds ?? [])
+        .map((coinId) => next.objects.find((o) => o.id === coinId))
+        .filter((coin) => coin && coin.holder === actor.id && (coin.flags ?? []).includes("coin"));
+      const paid = coins.reduce((sum, coin) => sum + coin.value, 0);
+      if (paid < object.price) continue;
+      // The shop keeps the change: the selection is greedy, not exact.
+      for (const coin of coins) {
+        coin.holder = null;
+        coin.room = intent.room;
+      }
+      object.forSale = false;
+      object.holder = actor.id;
+      object.room = null;
+      events.push({ room: actor.room, text: intent.messages.others, exceptId: actor.id });
+      events.push({ onlyId: actor.id, text: intent.messages.actor });
+      continue;
+    }
+
+    if (intent.kind === "sell") {
+      const object = next.objects.find((o) => o.id === intent.objectId);
+      if (!object || object.holder !== actor.id || object.eaten) continue;
+      if ((object.flags ?? []).includes("coin") || !Number.isInteger(object.value)) continue;
+      const payment = Math.floor(object.value / 2);
+      if (payment < 1) continue;
+      object.eaten = true;
+      object.holder = null;
+      object.room = null;
+      // The shop pays in copper, minted for the sale and swept up by the reset.
+      for (let i = 0; i < payment; i += 1) {
+        next.objects.push({
+          id: `coin-${next.tick}-${intent.objectId}-${i}`,
+          name: "a copper coin",
+          flags: ["takeable", "coin"],
+          value: 1,
+          holder: actor.id,
+          room: null,
+          inside: null,
+          home: null,
+          homeInside: null,
+          worn: false,
+          open: false,
+          lit: false,
+          eaten: false,
+          forSale: false,
+          ephemeral: true,
+          maxBites: 0,
+          bites: 0,
+        });
+      }
       events.push({ room: actor.room, text: intent.messages.others, exceptId: actor.id });
       events.push({ onlyId: actor.id, text: intent.messages.actor });
       continue;
@@ -530,6 +589,7 @@ export function step({ state, rooms, intents }) {
       npc.hp = npc.maxHp;
     }
     next.engagements = [];
+    next.objects = next.objects.filter((object) => !object.ephemeral);
     for (const object of next.objects) {
       object.holder = null;
       object.room = object.home;
@@ -539,6 +599,7 @@ export function step({ state, rooms, intents }) {
       object.lit = false;
       object.eaten = false;
       object.bites = object.maxBites;
+      object.forSale = object.home !== null && (object.price ?? 0) > 0;
     }
     for (const room of Object.keys(rooms)) {
       events.push({ room: Number(room), text: "A bell rings somewhere below." });

@@ -93,7 +93,7 @@ export function loadWorld({ mode = "single", path = DEFAULT_PATH } = {}) {
   // silently does nothing.
   const objects = [];
   const seenObject = new Set();
-  const FLAGS = new Set(["takeable", "fixed", "container", "wearable", "food", "light", "readable"]);
+  const FLAGS = new Set(["takeable", "fixed", "container", "wearable", "food", "light", "readable", "coin"]);
   for (const object of raw.objects ?? []) {
     if (seenObject.has(object.id)) errors.push(`object id "${object.id}" is used twice`);
     seenObject.add(object.id);
@@ -114,6 +114,12 @@ export function loadWorld({ mode = "single", path = DEFAULT_PATH } = {}) {
     }
     if (flags.includes("food")) {
       if (!Number.isInteger(object.bites) || object.bites < 1) errors.push(`food ${object.id} has no bites`);
+    }
+    if (flags.includes("coin") && (!Number.isInteger(object.value) || object.value < 1)) {
+      errors.push(`coin ${object.id} has no integer value`);
+    }
+    if (object.forSale && (!Number.isInteger(object.price) || object.price < 1)) {
+      errors.push(`object ${object.id} is for sale without a price`);
     }
     if (flags.includes("light") && typeof (object.lit ?? false) !== "boolean") {
       errors.push(`light ${object.id} has a non-boolean lit`);
@@ -159,6 +165,16 @@ export function loadWorld({ mode = "single", path = DEFAULT_PATH } = {}) {
   if (!Number.isInteger(weatherPeriod) || weatherPeriod < 1) errors.push("climate weatherPeriod must be at least 1");
   const climate = { dayLength, phases, weather, weatherPeriod };
 
+  // A shop is a room with a keeper and stock. The keeper must be a mobile that
+  // exists and stands there, or the shop is a stall nobody minds.
+  const shops = (raw.shops ?? []).map((shop) => {
+    const keeper = npcs.find((npc) => npc.id === shop.keeper);
+    if (!rooms[shop.room]) errors.push(`shop ${shop.id} is in room ${shop.room}, which does not exist`);
+    if (!keeper) errors.push(`shop ${shop.id} names keeper "${shop.keeper}", which does not exist`);
+    else if (keeper.room !== shop.room) errors.push(`shop ${shop.id} has its keeper in room ${keeper.room}, not ${shop.room}`);
+    return { ...shop };
+  });
+
   // Zones are a naming layer over rooms, as they were in the codebases this
   // borrows from; they are how a world gets reset a piece at a time.
   const zones = (raw.zones ?? []).map((zone) => {
@@ -190,5 +206,5 @@ export function loadWorld({ mode = "single", path = DEFAULT_PATH } = {}) {
     if (!rooms[task[key]]) errors.push(`task.${key} names room ${task[key]}, which does not exist`);
   }
 
-  return { rooms, start, task, npcs, objects, zones, climate, errors };
+  return { rooms, start, task, npcs, objects, shops, zones, climate, errors };
 }

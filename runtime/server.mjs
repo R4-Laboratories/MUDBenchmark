@@ -294,6 +294,59 @@ async function handleCommand(id, line) {
     return sendTo(id, `${render(messages.actor, { target: target.name })}\r\n`);
   }
 
+  const shopHere = (loaded.shops ?? []).find((shop) =>
+    shop.room === actor.room && state.npcs.some((npc) => npc.id === shop.keeper && npc.room === actor.room && !npc.dead));
+
+  if (named === "list") {
+    const messages = VERB_TABLE.verbs.list.messages;
+    if (!shopHere) return sendTo(id, `${messages.noShop}\r\n`);
+    const stock = state.objects.filter((o) => o.room === actor.room && o.forSale && !o.eaten);
+    const lines = stock.map((o) => `${o.name} (${o.price})`);
+    sendTo(id, `${stock.length ? render(messages.stock, { words: lines.join(", ") }) : messages.empty}\r\n`);
+    return sendTo(id, `${messages.buys}\r\n`);
+  }
+
+  if (named === "buy") {
+    const messages = VERB_TABLE.verbs.buy.messages;
+    if (!shopHere) return sendTo(id, `${messages.noShop}\r\n`);
+    const object = findObject(words, (o) => o.room === actor.room && o.forSale && !o.eaten);
+    if (!object) return sendTo(id, `${render(messages.missing, { words })}\r\n`);
+    const coins = state.objects
+      .filter((o) => o.holder === id && (o.flags ?? []).includes("coin") && !o.eaten)
+      .sort((a, b) => b.value - a.value);
+    const chosen = [];
+    let paid = 0;
+    for (const coin of coins) {
+      chosen.push(coin);
+      paid += coin.value;
+      if (paid >= object.price) break;
+    }
+    const paidWords = `${paid} coin${paid === 1 ? "" : "s"}`;
+    if (paid < object.price) return sendTo(id, `${render(messages.poor, { object: object.name, words: paidWords })}\r\n`);
+    pending.push({ kind: "buy", actorId: id, objectId: object.id, room: actor.room, coinIds: chosen.map((c) => c.id), messages: {
+      actor: render(messages.actor, { object: object.name, words: paidWords }),
+      others: render(messages.others, { actor: actor.name, object: object.name }),
+    } });
+    recordSpan("world.trade", { "actor.id": id, "action.kind": "buy", "object.id": object.id, "price": object.price, "paid": paid, "room.id": actor.room, "world.tick": state.tick }, 0);
+    return;
+  }
+
+  if (named === "sell") {
+    const messages = VERB_TABLE.verbs.sell.messages;
+    if (!shopHere) return sendTo(id, `${messages.noShop}\r\n`);
+    const object = findObject(words, (o) => o.holder === id && !o.eaten);
+    if (!object) return sendTo(id, `${render(messages.missing, { words })}\r\n`);
+    if ((object.flags ?? []).includes("coin")) return sendTo(id, `${messages.coin}\r\n`);
+    const payment = Math.floor((object.value ?? 0) / 2);
+    if (payment < 1) return sendTo(id, `${render(messages.worthless, { object: object.name })}\r\n`);
+    pending.push({ kind: "sell", actorId: id, objectId: object.id, room: actor.room, messages: {
+      actor: render(messages.actor, { object: object.name, words: `${payment} coin${payment === 1 ? "" : "s"}` }),
+      others: render(messages.others, { actor: actor.name, object: object.name }),
+    } });
+    recordSpan("world.trade", { "actor.id": id, "action.kind": "sell", "object.id": object.id, "price": payment, "room.id": actor.room, "world.tick": state.tick }, 0);
+    return;
+  }
+
   if (named === "inventory") {
     const carried = state.objects.filter((o) => o.holder === actor.id && !o.eaten);
     const names = carried.map((o) => {
@@ -333,6 +386,7 @@ async function handleCommand(id, line) {
     const object = findObject(needle, (o) => o.room === actor.room && !o.inside && !o.eaten);
     if (!object) return sendTo(id, `${render(messages.missing, { words: needle })}\r\n`);
     if ((object.flags ?? []).includes("fixed")) return sendTo(id, `${render(messages.fixed, { words: needle })}\r\n`);
+    if (object.forSale) return sendTo(id, `${render(messages.forSale, { words: needle })}\r\n`);
     pending.push({ kind: "take", actorId: id, objectId: object.id, messages: {
       actor: render(messages.actor, { object: object.name }),
       others: render(messages.others, { actor: actor.name, object: object.name }),

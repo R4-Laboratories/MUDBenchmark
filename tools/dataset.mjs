@@ -81,6 +81,20 @@ for (const file of inputs) {
       continue;
     }
 
+    if (span.name === "world.trade") {
+      rows.push({
+        ...common,
+        event: "trade",
+        actor: span["actor.id"] ?? null,
+        action: span["action.kind"] ?? null,
+        object: span["object.id"] ?? null,
+        price: num(span.price),
+        paid: num(span.paid),
+        room_from: num(span["room.id"]),
+      });
+      continue;
+    }
+
     if (span.name === "world.weather") {
       rows.push({
         ...common,
