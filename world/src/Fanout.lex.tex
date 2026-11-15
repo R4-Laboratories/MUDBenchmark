@@ -1,0 +1,49 @@
+\begin{lexlean}{Fanout}
+\useglossary{lexlean.std.bool@1.2.0}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{prism.arch@1.0.0}
+\title{Text application model}
+\begin{semanticmodule}
+structure{
+  name: Event,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: room, type: Nat}, {name: kind, type: Nat}]
+}
+
+structure{
+  name: Viewer,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: actor, type: Nat}, {name: room, type: Nat}]
+}
+
+definition{
+  name: sees,
+  parameters: [viewer : Viewer, event : Event],
+  result: Bool,
+  body: ((project viewer room) =? (project event room))
+}
+
+definition{
+  name: Sees,
+  parameters: [viewer : Viewer, event : Event],
+  result: Prop,
+  body: ((project viewer room) = (project event room))
+}
+
+theorem{
+  name: sees_decides,
+  parameters: [viewer : Viewer, event : Event],
+  statement: (((sees viewer event) = true) <-> (Sees viewer event)),
+  proof: simplify{
+    definitions: [
+      Nat.beq_eq,
+      Sees,
+      sees
+    ]
+  },
+  axioms: [propext]
+}
+\end{semanticmodule}
+\end{lexlean}

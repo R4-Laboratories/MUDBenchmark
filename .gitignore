@@ -12,3 +12,7 @@ node_modules/
 # Local scratch
 /local/
 .DS_Store
+
+# PrismPM / LexLean build output
+**/.prism/build/
+**/.lexlean/

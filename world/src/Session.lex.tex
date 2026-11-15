@@ -1,0 +1,46 @@
+\begin{lexlean}{Session}
+\useglossary{lexlean.std.bool@1.2.0}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{prism.arch@1.0.0}
+\title{Text application model}
+\begin{semanticmodule}
+structure{
+  name: Session,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: actor, type: Nat},
+    {name: room, type: Nat},
+    {name: phase, type: Nat}
+  ]
+}
+
+definition{
+  name: admissible,
+  parameters: [session : Session],
+  result: Bool,
+  body: ((project session phase) =? 0)
+}
+
+definition{
+  name: Admissible,
+  parameters: [session : Session],
+  result: Prop,
+  body: ((project session phase) = 0)
+}
+
+theorem{
+  name: admissible_decides,
+  parameters: [session : Session],
+  statement: (((admissible session) = true) <-> (Admissible session)),
+  proof: simplify{
+    definitions: [
+      Admissible,
+      Nat.beq_eq,
+      admissible
+    ]
+  },
+  axioms: [propext]
+}
+\end{semanticmodule}
+\end{lexlean}

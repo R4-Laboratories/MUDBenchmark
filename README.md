@@ -59,7 +59,8 @@ the upstream corpus, is authoritative here.
 ## Layout
 
 ```
-docs/           founding documents — reconciliation, safety model
-prism/          the LexLean model and its Prism app (generated)
+docs/           founding documents — reconciliation, hosting, safety model
+prism/          the Prism admission app (prism MCP), not the world model
+world/          the PrismPM project: LexLean model of the world and hosting
 runtime/        the server (not yet started)
 ```
