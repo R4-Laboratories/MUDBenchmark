@@ -76,7 +76,14 @@ export function loadWorld({ mode = "single", path = DEFAULT_PATH } = {}) {
     if (!rooms[npc.room]) errors.push(`npc ${npc.id} is in room ${npc.room}, which does not exist`);
     if (!Number.isInteger(npc.period) || npc.period < 1) errors.push(`npc ${npc.id} has a period below 1`);
     if (!Number.isInteger(npc.jitter) || npc.jitter < 0) errors.push(`npc ${npc.id} has a negative jitter`);
-    npcs.push({ ...npc });
+    const behaviour = npc.behaviour ?? "wander";
+    if (!["wander", "sentinel", "speaker"].includes(behaviour)) {
+      errors.push(`npc ${npc.id} has unknown behaviour "${behaviour}"`);
+    }
+    if (behaviour === "speaker" && !(npc.phrases ?? []).length) {
+      errors.push(`npc ${npc.id} speaks but has no phrases`);
+    }
+    npcs.push({ ...npc, behaviour });
   }
 
   // Objects must start somewhere real, and ids must be unique.

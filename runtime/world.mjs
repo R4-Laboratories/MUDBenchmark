@@ -225,14 +225,28 @@ export function step({ state, rooms, intents }) {
     const period = npc.period + nextFrom(next.tick * 31 + npc.id.length, (npc.jitter ?? 0) + 1);
     npc.clock = { period, remaining: period };
 
+    const behaviour = npc.behaviour ?? "wander";
+
+    // A sentinel never leaves, but its clock still runs; that is a behaviour,
+    // not an absence of one.
+    if (behaviour === "sentinel") continue;
+
+    if (behaviour === "speaker") {
+      const phrases = npc.phrases ?? [];
+      if (phrases.length === 0) continue;
+      const line = phrases[nextFrom(next.tick + npc.id.length, phrases.length)];
+      events.push({ room: npc.room, text: line, source: npc.id });
+      continue;
+    }
+
     const exits = Object.keys(rooms[npc.room]?.exits ?? {});
     if (exits.length === 0) continue;
     const dir = exits[nextFrom(next.tick + npc.id.length, exits.length)];
     const to = rooms[npc.room].exits[dir];
     const from = npc.room;
     npc.room = to;
-    events.push({ room: from, text: `${npc.name} scuttles ${dir}.` });
-    events.push({ room: to, text: `${npc.name} arrives.` });
+    events.push({ room: from, text: `${npc.name} scuttles ${dir}.`, source: npc.id });
+    events.push({ room: to, text: `${npc.name} arrives.`, source: npc.id });
   }
 
   if (areaDue) {

@@ -116,7 +116,8 @@
       "room": 2,
       "home": 2,
       "period": 8,
-      "jitter": 6
+      "jitter": 6,
+      "behaviour": "wander"
     },
     {
       "id": "moth",
@@ -124,7 +125,31 @@
       "room": 5,
       "home": 5,
       "period": 14,
-      "jitter": 10
+      "jitter": 10,
+      "behaviour": "wander"
+    },
+    {
+      "id": "bard",
+      "name": "a bard",
+      "room": 1,
+      "home": 1,
+      "period": 18,
+      "jitter": 8,
+      "behaviour": "speaker",
+      "phrases": [
+        "The bard plucks a string.",
+        "The bard hums something older than the walls.",
+        "The bard says: every word here is borrowed."
+      ]
+    },
+    {
+      "id": "guard",
+      "name": "a guard",
+      "room": 6,
+      "home": 6,
+      "period": 10,
+      "jitter": 5,
+      "behaviour": "sentinel"
     }
   ],
   "zones": [

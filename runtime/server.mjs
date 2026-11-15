@@ -399,6 +399,15 @@ function onTick() {
   state = result.state;
 
   for (const event of result.events) {
+    // An NPC's action is gameplay data, not just text delivered to a room.
+    if (event.source) {
+      recordSpan("world.npc", {
+        "npc.id": event.source,
+        "room.id": event.room,
+        "event.text": event.text.slice(0, 80),
+        "world.tick": state.tick,
+      }, 0);
+    }
     if (event.onlyId !== undefined) sendTo(event.onlyId, event.text);
     else broadcast(event.room, event.text, event.exceptId);
   }
