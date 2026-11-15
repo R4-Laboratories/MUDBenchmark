@@ -72,6 +72,14 @@ when to call `tick`.
 The families are borrowed; the periods are ours to set, and they are part of the
 proved model so a run is reproducible to the pulse.
 
+Implementation status (`runtime/world.mjs`): `mobile` every 4 ticks and `area`
+every 240 are live, `checkpoint` every 240 persists the world, and `regen` and
+`decay` are not built yet. The table above describes the target, not the code.
+
+Determinism note: NPC movement is a pure function of the tick number and the
+NPC's id, so a replay of the same ticks produces the same wanderings. Nothing in
+`world.mjs` reads a clock or a random source.
+
 ### 2.2 Consequence: a command is intent, not an effect
 
 `attack` does not resolve combat; it begins an engagement that the violence
