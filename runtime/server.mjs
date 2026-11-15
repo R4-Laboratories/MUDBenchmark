@@ -12,6 +12,7 @@ import { WebSocketServer } from "ws";
 import { recordSpan, digest } from "./telemetry.mjs";
 import { step, initialState, digestState, TICK_MS } from "./world.mjs";
 import { loadWorld } from "./worlddata.mjs";
+import { describe as renderRoom } from "./view.mjs";
 
 const HOLO_URL = process.env.HOLO_URL ?? "http://127.0.0.1:8082";
 const TELNET_PORT = Number(process.env.TELNET_PORT ?? 4000);
@@ -114,17 +115,14 @@ function describe(room, selfId) {
   const r = ROOMS[room];
   if (!r) return "You are nowhere.\r\n";
   const role = actorById(selfId)?.role ?? 0;
-  const others = actorsIn(room).filter((a) => a.id !== selfId).map((a) => a.name);
-  const beasts = npcsIn(room).map((n) => n.name);
-  const exits = Object.keys(r.exits).join(", ") || "none";
-  const lines = [``, `[${r.name}]`, r.text];
-  for (const secret of r.secrets ?? []) {
-    if (isCleared(role, secret.level)) lines.push(secret.text);
-  }
-  lines.push(others.length ? `You are not alone: ${others.join(", ")}.` : `You are alone.`);
-  if (beasts.length) lines.push(`Here also: ${beasts.join(", ")}.`);
-  lines.push(`Exits: ${exits}.`, `Tick ${state.tick}.`, ``);
-  return lines.join("\r\n");
+  return renderRoom({
+    room: r,
+    role,
+    others: actorsIn(room).filter((a) => a.id !== selfId).map((a) => a.name),
+    beasts: npcsIn(room).map((n) => n.name),
+    tick: state.tick,
+    cleared: isCleared,
+  });
 }
 
 // --- clearance, asked of the model ---------------------------------------

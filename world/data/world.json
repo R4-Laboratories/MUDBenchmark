@@ -9,7 +9,13 @@
         "north": 2,
         "east": 3
       },
-      "text": "A cold marble hall. A plaque reads: the Vault keeps the word."
+      "text": "A cold marble hall. A plaque reads: the Vault keeps the word.",
+      "notices": [
+        {
+          "level": 3,
+          "text": "A brass plate, legible only up close: the word is AMBER."
+        }
+      ]
     },
     "2": {
       "name": "Corridor",
