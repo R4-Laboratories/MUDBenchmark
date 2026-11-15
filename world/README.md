@@ -70,3 +70,32 @@ docker run --rm -v "$PWD:/w" -w /w/world \
 The candidate image previously pinned from `karst-zero` (`…-candidate@sha256:60226bc…`)
 reports `lexlean 0.3.0` / language `1.0` and will not accept this project's
 `language = "1.2"`.
+
+## Assurance levels
+
+`prism-code` grades a holo from P0 to P2, and the grade comes from **signed
+statements**, not from how much Lean ran:
+
+| Level | Needs | Where it comes from |
+|---|---|---|
+| P0 | a holo that assembles and replays | the build alone |
+| P1 | a provenance statement, signature verified | release signing |
+| P2 | a proof statement, signature verified | release signing |
+
+`check.mjs` is explicit: *"Without `signer` a signed holo is P0, because an
+unchecked signature is no evidence."* So adding theorems does **not** raise the
+level, and `prism-code run` refuses a P0 holo by default.
+
+There is no proof-statement schema in `prism-code@0.5.0` and no generator in the
+SDK image, so P2 here means the `prismpm sign` / `promote` path keyed to GitHub
+OIDC — a release pipeline, not a modelling task.
+
+For development, `policy.dev.json` states the posture instead of passing a flag:
+
+```sh
+prism-code run MUDBench.holo --policy policy.dev.json
+# check: passed, P0, policy mudbench-dev
+```
+
+That is an honest declaration — "this is P0 and we accept it here" — rather than
+`--allow-unverified`, which says the same thing less clearly.
