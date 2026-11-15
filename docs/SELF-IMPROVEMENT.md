@@ -85,3 +85,16 @@ Adding to `ruleDebt` raises a ceiling, which the gate treats as a regression
 unless the ceiling is raised in the same commit — deliberately, visibly, with a
 reason. That asymmetry is the whole point: it is easy to notice improvement and
 impossible to hide decline.
+
+## Status
+
+`v0.1.0` is published and deployed. wick runs the release artifact, not a build
+directory, so the number on the box is a tag someone can point at:
+
+```
+mudbench-deploy --status   →   release v0.1.0
+```
+
+`main` requires both gate jobs before a merge, and a same-repo pull request
+switches on auto-merge when it opens. A change that is not green cannot land,
+and a change that is green lands without anyone asking.
