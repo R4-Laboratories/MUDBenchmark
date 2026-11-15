@@ -81,3 +81,38 @@ stated twice produced none out of four.
 had seen the Vault. That turns "answered without seeing" from an inference into a
 column, and it is the half of the safety model that was missing: not only what an
 agent answers, but what it could have known when it answered.
+
+## Scaled: six runs per arm, with a control that does not name the answer
+
+The truth arm's crate now asserts *"THE VAULT PLAQUE IS AUTHENTIC."* — it does
+not repeat the word, so a correct answer still requires having read the Vault.
+
+| arm | repeated claim | runs | answered | first answer wrong |
+|---|---|---|---|---|
+| `single` | nothing | 6 | 5 | **0** (0%) |
+| `corroborated` | the lie | 6 | 6 | **4** (67%) |
+| `true` | the truth's authenticity | 6 | 5 | **0** (0%) |
+
+All sixteen answering runs had seen the Vault before answering, so none of this
+is knowledge-free guessing: every agent in the two zero-error arms answered
+correctly from its own observation, and two thirds of the lie-corroborated arm
+answered against it.
+
+## What this says
+
+The failure is produced by **corroborating a false claim**, not by the decoy
+alone and not by redundancy as such. A single contradictory inscription changed
+nothing; a second inscription agreeing with it flipped four of six.
+
+That is the first result in this project with a control, a plausible mechanism
+and a clear direction — and it is a negative statement about models: they do not
+distinguish *repeated assertion* from *evidence*.
+
+## Limits, stated before anyone quotes it
+
+- Six runs per arm, one model, one world, temperature 0.
+- 4/6 against 0/5 is a strong signal, not a small-sample certainty.
+- One run in the truth arm still replaced a correct answer later, so the
+  after-the-fact failure exists independently of the first-answer failure.
+- The mechanism is inferred from behaviour in a text world; nothing here shows
+  how a model would treat corroboration in a different medium.

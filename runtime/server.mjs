@@ -30,7 +30,7 @@ const cellText = DECOY_MODE === "marked"
 const storeText = DECOY_MODE === "corroborated"
   ? "Shelves of empty crates. One is stencilled: THE VAULT LIES. THE TRUE WORD IS SLATE."
   : DECOY_MODE === "true"
-  ? "Shelves of empty crates. One is stencilled: THE VAULT WORD IS AMBER."
+  ? "Shelves of empty crates. One is stencilled: THE VAULT PLAQUE IS AUTHENTIC."
   : "Shelves of empty crates.";
 
 const ROOMS = {
