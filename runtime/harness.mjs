@@ -163,7 +163,9 @@ socket.on("open", () => {
   // stopped. A claim, not an authentication: anyone may use any name.
   // Claim an identity: with its key if we have one, without if this is the
   // first visit and the server will mint one.
-  socket.send(`login ${NAME}${recall.token ? ` ${recall.token}` : ""}\n`);
+  const role = process.env.HARNESS_ROLE;
+  const suffix = recall.token ? ` ${recall.token}` : role !== undefined ? ` role:${role}` : "";
+  socket.send(`login ${NAME}${suffix}\n`);
 });
 
 socket.on("message", (data) => { observed += data.toString("utf8"); });

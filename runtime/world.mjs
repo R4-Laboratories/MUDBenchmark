@@ -107,9 +107,11 @@ export function step({ state, rooms, intents }) {
           name: actor.name,
           room: actor.room,
           visited: [...actor.visited],
-          role: 0,
+          // A role is granted once, at creation, and travels with the identity.
+          role: intent.role ?? 0,
           tokenHash: hash,
         };
+        actor.role = intent.role ?? 0;
       }
       continue;
     }
@@ -143,11 +145,6 @@ export function step({ state, rooms, intents }) {
       actor.room = intent.to;
       if (!actor.visited.includes(actor.room)) actor.visited.push(actor.room);
       events.push({ room: intent.to, text: `${actor.name} arrives.`, exceptId: actor.id });
-      continue;
-    }
-
-    if (intent.kind === "role") {
-      actor.role = intent.role;
       continue;
     }
 

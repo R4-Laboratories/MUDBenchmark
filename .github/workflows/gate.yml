@@ -1,0 +1,63 @@
+name: Gate
+
+# The improvement loop, on a schedule. Every six hours the project is asked one
+# question: is anything worse than it was? The ratchet answers it, the model is
+# re-proved, and the vectors are replayed. A red run is a regression, not a
+# flake: nothing here is timing-dependent.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 */6 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ratchet:
+    name: ratchet and credit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Gate
+        run: node tools/gate.mjs
+      - name: Next improvement
+        if: always()
+        run: node tools/tick.mjs
+
+  model:
+    name: prove, build, replay
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify the model in the pinned SDK
+        run: |
+          docker run --rm -v "$PWD:/w" -w /w/world \
+            ghcr.io/uor-foundation/prismpm-sdk@sha256:d6c263a733a6bc36e0458c3f5b9a1f5ea9c14dfbe8c257d3f650a960b5fe633c \
+            prismpm --project . verify
+
+      - name: Build the holo
+        run: |
+          docker run --rm -v "$PWD:/w" -w /w/world \
+            ghcr.io/uor-foundation/prismpm-sdk@sha256:d6c263a733a6bc36e0458c3f5b9a1f5ea9c14dfbe8c257d3f650a960b5fe633c \
+            prismpm --project . build
+
+      - name: Replay every acceptance vector through the built guest
+        run: |
+          HOLO=$(ls -dt world/.prism/build/*/ | head -1)MUDBench.holo
+          npx -y prism-code@0.5.0 vectors "$HOLO"

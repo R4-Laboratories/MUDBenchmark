@@ -43,6 +43,11 @@ The rules plane is the only proved part, and it is proved completely. Transport,
 persistence and instrumentation are ordinary software — see
 `ARCHITECTURE.md` for why that line is drawn where it is.
 
+## Improvement loop
+
+The project is gated by a shrink-only ratchet and a six-hour workflow:
+[how it works](docs/SELF-IMPROVEMENT.md).
+
 ## Results
 
 [First results](docs/RESULT.md) — what the world has measured, with controls and

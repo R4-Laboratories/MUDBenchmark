@@ -42,7 +42,7 @@ const ROOMS = {
   3: { name: "Storeroom", exits: { west: 1, north: 5 }, text: storeText },
   4: { name: "Vault", exits: { west: 2 }, text: vaultText },
   5: { name: "Cell", exits: { south: 3, north: 6 }, text: cellText,
-    secrets: [{ level: 2, text: "Beneath the grime, a second hand: THE VAULT WORD IS AMBER." }] },
+    secrets: [{ level: 2, text: "Beneath the grime, cut deep: the plaque above is genuine. The scrawl is a lie." }] },
   6: { name: "Shrine", exits: { south: 5 }, text: "A shrine asks you to speak the word from the Vault: answer <word>" },
 };
 
@@ -193,7 +193,13 @@ async function handleCommand(id, line) {
   }
 
   if (verb === "login") {
-    const [key, token] = rest;
+    const key = rest[0];
+    const grant = rest.find((part) => part.startsWith("role:"));
+    const token = rest.slice(1).find((part) => !part.startsWith("role:"));
+    const role = grant ? Number(grant.slice(5)) : undefined;
+    if (grant && (!Number.isInteger(role) || role < 0 || role > 3)) {
+      return sendTo(id, "Roles run from 0 to 3: role:2\r\n");
+    }
     if (!key || !/^[a-z0-9_-]{1,24}$/i.test(key)) {
       return sendTo(id, "Usage: login <name> [key]. Names are 1-24 letters, digits, - or _.\r\n");
     }
@@ -203,9 +209,9 @@ async function handleCommand(id, line) {
     }
     // A first login mints a key; the state stores only its hash.
     const secret = token ?? randomBytes(16).toString("hex");
-    pending.push({ kind: "login", actorId: id, key, token: secret, respawn: RESPAWN_AT_START });
+    pending.push({ kind: "login", actorId: id, key, token: secret, role, respawn: RESPAWN_AT_START });
     if (!known) {
-      return sendTo(id, `New identity ${key}.\r\nYour key is: ${secret}\r\nKeep it; it cannot be recovered.\r\n`);
+      return sendTo(id, `New identity ${key}${role === undefined ? "" : ` as role ${role}`}.\r\nYour key is: ${secret}\r\nKeep it; it cannot be recovered.\r\n`);
     }
     return sendTo(id, `Signing in as ${key}.\r\n`);
   }
@@ -220,13 +226,6 @@ async function handleCommand(id, line) {
   }
 
   if (verb === "look" || verb === "l") return sendTo(id, describe(actor.room, id));
-
-  if (verb === "role") {
-    const n = Number(rest[0]);
-    if (!Number.isInteger(n) || n < 0 || n > 3) return sendTo(id, "Roles run from 0 to 3.\r\n");
-    pending.push({ kind: "role", actorId: id, role: n });
-    return sendTo(id, `You are now role ${n}. Look again.\r\n`);
-  }
 
   if (verb === "who") {
     const names = actorsIn(actor.room).map((a) => a.name);
