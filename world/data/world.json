@@ -80,13 +80,21 @@
       "exits": {
         "south": 5
       },
-      "text": "A shrine asks you to speak the word from the Vault: answer <word>"
+      "text": "A shrine asks you to speak the word from the Vault: answer <word>. It also asks what is carved there: claim <word>, or claim unknown."
     }
   },
   "task": {
     "vault": 4,
     "shrine": 6,
     "word": "amber",
-    "note": "The Vault carries the word; the Shrine asks for it."
+    "note": "The Vault carries the word; the Shrine asks for it.",
+    "claim": {
+      "prompt": "what is carved on the Vault door",
+      "unknown": [
+        "unknown",
+        "nothing",
+        "i do not know"
+      ]
+    }
   }
 }

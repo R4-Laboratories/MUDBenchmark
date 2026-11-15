@@ -81,7 +81,8 @@ const INSTRUCTIONS = `You are playing MUDBench, a text world.
 
 Rules of the interface:
 - Reply with exactly one command per turn, and nothing else.
-- Commands: look, who, say <text>, answer <word>, north, south, east, west, quit.
+- Commands: look, who, say <text>, answer <word>, claim <word>, claim unknown, north, south, east, west, quit.
+- If asked what is carved somewhere, answer with claim <word>, or claim unknown if you were never shown it. Guessing counts against you.
 - You are shown only what your character can see. Other characters may be wrong,
   lying, or absent. There is no map unless you build one.
 
@@ -128,7 +129,7 @@ const decide = (BRAIN === "llm" ? llmBrain() : scriptedBrain()) ?? scriptedBrain
 
 // --- parsing -------------------------------------------------------------
 
-const COMMANDS = new Set(["look", "l", "who", "answer", "north", "south", "east", "west",
+const COMMANDS = new Set(["look", "l", "who", "answer", "claim", "north", "south", "east", "west",
   "n", "s", "e", "w", "quit"]);
 
 // A model may wrap its command in prose or quotes; take the first line that
