@@ -19,11 +19,16 @@
 import WebSocket from "ws";
 import { appendFileSync } from "node:fs";
 import { recordSpan, digest } from "./telemetry.mjs";
+import { assemble } from "./router.mjs";
 
 const WS_URL = process.env.WS_URL ?? "ws://127.0.0.1:4001";
 const BRAIN = process.env.BRAIN ?? "scripted";
 const LOG = process.env.HARNESS_LOG ?? "/tmp/mudbench-harness.jsonl";
 const NAME = process.env.HARNESS_NAME ?? "agent";
+const ROUTER_MODE = process.env.ROUTER_MODE ?? "flat";
+const GOAL = process.env.HARNESS_GOAL ?? "map the world and speak to whoever you meet.";
+const memory = [];
+const BUDGET = Number(process.env.ROUTER_BUDGET ?? 220);
 
 const INSTRUCTIONS = `You are playing MUDBench, a text world.
 
@@ -114,18 +119,28 @@ async function loop() {
 
     turn += 1;
     const started = Date.now();
+    const routed = assemble({ events: seen, memory, goal: GOAL, mode: ROUTER_MODE, budget: BUDGET });
+    if (process.env.ROUTER_TRACE) {
+      console.log(`[${routed.mode}] layers=${routed.layers.join(",")} tokens=${routed.tokens}`);
+      console.log(routed.context);
+      console.log("---");
+    }
     let reply;
     try {
-      reply = await decide(seen);
+      reply = await decide(routed.context);
     } catch (error) {
       record({ turn, event: "brain-error", message: error.message, seen });
       continue;
     }
     const { command, ok, raw } = parseCommand(reply);
-    record({ turn, event: "decision", seen, reply: raw ?? reply, command, parse_ok: ok });
+    record({ turn, event: "decision", seen, context: routed.context, layers: routed.layers, reply: raw ?? reply, command, parse_ok: ok });
+    memory.push(command);
     recordSpan("agent.decision", {
       "actor.name": NAME,
-      "router.mode": process.env.ROUTER_MODE ?? "flat",
+      "router.mode": routed.mode,
+      "router.layers": routed.layers.join(","),
+      "router.tokens": routed.tokens,
+      "router.context.hash": digest(routed.context),
       "observation.hash": digest(seen),
       "observation.bytes": seen.length,
       "output.command": command,
