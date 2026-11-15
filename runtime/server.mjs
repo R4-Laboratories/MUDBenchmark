@@ -13,6 +13,7 @@
 import net from "node:net";
 import http from "node:http";
 import { WebSocketServer } from "ws";
+import { recordSpan, digest } from "./telemetry.mjs";
 
 const HOLO_URL = process.env.HOLO_URL ?? "http://127.0.0.1:8082";
 const TELNET_PORT = Number(process.env.TELNET_PORT ?? 4000);
@@ -96,7 +97,16 @@ async function handle(actor, line) {
   }
 
   if (verb === "say") {
+    const started = Date.now();
     const verdict = await admit({ kind: 4, room: actor.room });
+    recordSpan("world.transition", {
+      "actor.id": actor.id,
+      "action.kind": "speak",
+      "room.from": actor.room,
+      "admission.verdict": verdict,
+      "observation.hash": digest(`${actor.room}:say`),
+      "event.count": verdict === "admissible" ? othersIn(actor.room, actor).length : 0,
+    }, Date.now() - started);
     if (verdict !== "admissible") return actor.send("You cannot speak here.\r\n");
     broadcast(actor.room, `${actor.name} says: ${rest.join(" ")}`, actor);
     actor.send(`You say: ${rest.join(" ")}\r\n`);
@@ -110,12 +120,22 @@ async function handle(actor, line) {
     if (!target) return actor.send(`You cannot go ${dir}.\r\n`);
 
     // The server owns topology; the holo checks the witness.
+    const started = Date.now();
     const verdict = await admit({
       kind: 1,
       room: actor.room,
       origin: actor.room,
       destination: target,
     });
+    recordSpan("world.transition", {
+      "actor.id": actor.id,
+      "action.kind": "move",
+      "room.from": actor.room,
+      "room.to": target,
+      "admission.verdict": verdict,
+      "observation.hash": digest(`${actor.room}:${dir}`),
+      "event.count": verdict === "admissible" ? othersIn(actor.room, actor).length + 1 : 0,
+    }, Date.now() - started);
     if (verdict !== "admissible") return actor.send("That move is refused.\r\n");
 
     const from = actor.room;

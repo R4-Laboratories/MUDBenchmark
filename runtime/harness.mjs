@@ -18,6 +18,7 @@
 
 import WebSocket from "ws";
 import { appendFileSync } from "node:fs";
+import { recordSpan, digest } from "./telemetry.mjs";
 
 const WS_URL = process.env.WS_URL ?? "ws://127.0.0.1:4001";
 const BRAIN = process.env.BRAIN ?? "scripted";
@@ -112,6 +113,7 @@ async function loop() {
     if (!seen.trim()) continue;
 
     turn += 1;
+    const started = Date.now();
     let reply;
     try {
       reply = await decide(seen);
@@ -121,6 +123,15 @@ async function loop() {
     }
     const { command, ok, raw } = parseCommand(reply);
     record({ turn, event: "decision", seen, reply: raw ?? reply, command, parse_ok: ok });
+    recordSpan("agent.decision", {
+      "actor.name": NAME,
+      "router.mode": process.env.ROUTER_MODE ?? "flat",
+      "observation.hash": digest(seen),
+      "observation.bytes": seen.length,
+      "output.command": command,
+      "output.parse_ok": ok,
+      "telemetry.latency_ms": Date.now() - started,
+    }, Date.now() - started);
     if (!ok) console.warn(`turn ${turn}: unparseable reply, sending "look" instead`);
     socket.send(`${command}\n`);
     if (command === "quit") break;
