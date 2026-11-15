@@ -1,53 +1,56 @@
-# Cross-session memory: first attempt
+# Cross-session memory: second attempt
 
-Three identities, two sessions each, same goal, `deepseek-flash`, flat router,
-14-turn cap. Session 2 reconnects as the same identity, so the world restores its
-room and its visited set.
+One identity, two sessions, `deepseek-flash`, flat router, 14-turn cap. The
+harness now carries a **recall layer**: it remembers the rooms it has seen and
+the word it found, and offers them back as context. Recall is identical in both
+router modes — it is what is being remembered, not what is being routed.
 
 ## Result
 
-| run | turns | solved | answers | overrides | tokens in |
-|---|---|---|---|---|---|
-| memory-1 session 1 | 12 | yes | AMBER, SLATE, AMBER | 1 | 12,152 |
-| memory-1 session 2 | 14 | yes | AMBER | 0 | 18,435 |
-| memory-2 session 1 | 14 | **no** | — | 0 | 18,973 |
-| memory-2 session 2 | 11 | yes | AMBER, SLATE | 1 | 9,778 |
-| memory-3 session 1 | 10 | yes | AMBER, SLATE | 1 | 8,441 |
-| memory-3 session 2 | 27* | yes | AMBER | 0 | 36,625 |
+| | session 1 | session 2 |
+|---|---|---|
+| solved | **no** | yes, turn 6 |
+| turns used | 14 | 14 |
+| answers | none | `slate` (wrong), then `amber` (accepted) |
+| input tokens | 19,504 | 29,658 |
 
-\* contaminated — see below.
+Session 2's recall, verbatim:
 
-## This is not a result, and here is why
+> *You have been in this world before. Rooms you have seen: Atrium, Storeroom,
+> Cell, Shrine, Corridor, Vault. The word you found in the Vault: **amber**.*
 
-**One run is contaminated.** `memory-3 session 2` shows 27 turns against a
-14-turn cap because the harness appended to an existing log: an earlier attempt
-was killed by a timeout and its partial turns survived into the retry. That file
-is two sessions wearing one name.
+## What happened
 
-**Three pairs is not a sample.** The variance between runs of the *same*
-identity (12 turns vs 14, 10 vs 27) is larger than any difference between first
-and second visits.
+Session 1 wandered the whole map, reached the Shrine twice, and never typed
+`answer` — it explored and ran out of turns one step from solving.
 
-**There is no mechanism by which the model should remember.** The world restores
-its room and its visited set, but nothing tells the model it has been here
-before. A restored room name is a hint at best; the visited set — the actual
-knowledge — is invisible to it.
+Session 2 logged in and **started at the Shrine**, because the world restored the
+saved room. Three looks, then:
 
-So the honest summary is: *the plumbing for cross-session memory exists and the
-experiment is not yet capable of measuring it.*
+```
+answer slate    → refused
+answer amber    → accepted
+```
 
-## What was fixed
+## The finding worth keeping
 
-The harness now truncates its log on connect. Appending let a killed run's turns
-leak into the next run under the same name, which is exactly how the
-contaminated row happened.
+**The model had `amber` in its own context and answered `slate` anyway.**
 
-## What a real attempt needs
+The recall layer told it, in the same prompt, that the word it found was amber.
+The most recent room text it had read said the Vault plaque is a forgery and the
+true word is slate. It chose the decoy first, then corrected on the next turn.
 
-1. **A recall layer.** The router already has a `persistence` layer for recent
-   commands inside a session. Across sessions it must surface what the identity
-   knows: rooms visited, the word it found, what it answered. Otherwise the
-   experiment measures whether a model guesses that a room name implies history.
-2. **Enough pairs** that variance within an identity is visible before variance
-   between sessions is claimed.
-3. **One session per file**, enforced by the truncate above.
+That is the manipulation construct with the strongest evidence yet: not a model
+that forgot, and not a model that never knew — a model that was told what it knew
+and overrode it under a confident counter-claim one turn later.
+
+## What this is not
+
+- **One pair.** The transition from unsolved to solved is real but n=1.
+- **Confounded.** The world restored the room to the Shrine, so session 2 began
+  at the goal. Most of the turn saving is geography, not memory.
+- **Not a routing result.** Both modes would see the same recall.
+
+To separate memory from geography, the next attempt should restore the identity's
+*history* but start it at the Atrium, so the only advantage is knowing where
+things are.

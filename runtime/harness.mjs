@@ -17,7 +17,7 @@
 //             MODEL_BASE_URL, MODEL_API_KEY, MODEL_NAME
 
 import WebSocket from "ws";
-import { appendFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, writeFileSync, readFileSync } from "node:fs";
 import { recordSpan, digest } from "./telemetry.mjs";
 import { assemble } from "./router.mjs";
 
@@ -31,6 +31,47 @@ const memory = [];
 const BUDGET = Number(process.env.ROUTER_BUDGET ?? 220);
 const MAX_TURNS = Number(process.env.MAX_TURNS ?? 40);
 let lastUsage = null;
+
+// --- recall: what this identity knows from earlier sessions ---------------
+//
+// The world restores the room and the visited set; that is not legible to a
+// model. This is: the harness keeps what it saw and offers it back as context.
+// It is identical in both router modes, because memory is not what is being
+// routed.
+
+const MEMORY_FILE = process.env.HARNESS_MEMORY ?? `/tmp/mudbench-memory-${NAME}.json`;
+
+function loadMemory() {
+  try {
+    const saved = JSON.parse(readFileSync(MEMORY_FILE, "utf8"));
+    return { rooms: saved.rooms ?? [], word: saved.word ?? null, answers: saved.answers ?? 0 };
+  } catch {
+    return { rooms: [], word: null, answers: 0 };
+  }
+}
+
+const recall = loadMemory();
+
+function observe(text) {
+  for (const match of text.matchAll(/\[([A-Z][A-Za-z ]+)\]/g)) {
+    if (!recall.rooms.includes(match[1])) recall.rooms.push(match[1]);
+  }
+  if (text.includes("word carved into the door is AMBER")) recall.word = "amber";
+  if (text.includes("shrine accepts your answer")) recall.answers += 1;
+}
+
+function recallText() {
+  if (!recall.rooms.length && !recall.word && !recall.answers) return null;
+  const parts = ["You have been in this world before."];
+  if (recall.rooms.length) parts.push(`Rooms you have seen: ${recall.rooms.join(", ")}.`);
+  if (recall.word) parts.push(`The word you found in the Vault: ${recall.word}.`);
+  if (recall.answers) parts.push(`You have answered at the shrine ${recall.answers} time(s).`);
+  return parts.join(" ");
+}
+
+function saveMemory() {
+  try { writeFileSync(MEMORY_FILE, JSON.stringify(recall)); } catch {}
+}
 
 const INSTRUCTIONS = `You are playing MUDBench, a text world.
 
@@ -119,7 +160,7 @@ socket.on("message", (data) => { observed += data.toString("utf8"); });
 
 socket.on("error", (error) => { console.error(`harness error: ${error.message}`); process.exit(1); });
 
-socket.on("close", () => { console.log("harness disconnected"); process.exit(0); });
+socket.on("close", () => { saveMemory(); console.log("harness disconnected"); process.exit(0); });
 
 // One turn per window: let the room speak, then decide.
 async function loop() {
@@ -131,7 +172,8 @@ async function loop() {
 
     turn += 1;
     const started = Date.now();
-    const routed = assemble({ events: seen, memory, goal: GOAL, mode: ROUTER_MODE, budget: BUDGET });
+    observe(seen);
+    const routed = assemble({ events: seen, memory, goal: GOAL, mode: ROUTER_MODE, budget: BUDGET, recall: recallText() });
     if (process.env.ROUTER_TRACE) {
       console.log(`[${routed.mode}] layers=${routed.layers.join(",")} tokens=${routed.tokens}`);
       console.log(routed.context);
@@ -145,7 +187,8 @@ async function loop() {
       continue;
     }
     const { command, ok, raw } = parseCommand(reply);
-    record({ turn, event: "decision", seen, context: routed.context, layers: routed.layers, reply: raw ?? reply, command, parse_ok: ok, usage: lastUsage });
+    record({ turn, event: "decision", seen, context: routed.context, layers: routed.layers, recall: recallText(), reply: raw ?? reply, command, parse_ok: ok, usage: lastUsage });
+    saveMemory();
     if (/shrine accepts/i.test(seen)) record({ turn, event: "solved" });
     if (/shrine does not accept/i.test(seen)) record({ turn, event: "rejected" });
     memory.push(command);
