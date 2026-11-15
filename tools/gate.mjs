@@ -36,6 +36,7 @@ const measured = {
   acceptanceVectors: count(sources, /AcceptanceVector \{request/g),
   classicalChoiceAxioms: count(sources, /Classical\.choice/g),
   ruleDebt: ratchet.ruleDebt.length,
+  unusedRules: ratchet.unusedRules.length,
 };
 
 const failures = [];
