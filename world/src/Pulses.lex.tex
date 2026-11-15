@@ -1,0 +1,53 @@
+\begin{lexlean}{Pulses}
+\useglossary{lexlean.std.bool@1.2.0}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Boolean}
+\begin{semanticmodule}
+definition{
+  name: minus,
+  parameters: [left : Nat, right : Nat],
+  result: Nat,
+  body: (match right
+    | Nat.zero => left
+    | Nat.succ rest => (match left
+      | Nat.zero => 0
+      | Nat.succ lower => (minus lower rest))),
+  recursive_argument: right
+}
+
+structure{
+  name: Pulse,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: period, type: Nat}, {name: remaining, type: Nat}]
+}
+
+definition{
+  name: due,
+  parameters: [pulse : Pulse],
+  result: Bool,
+  body: ((project pulse remaining) =? 0)
+}
+
+definition{
+  name: advance,
+  parameters: [pulse : Pulse],
+  result: Pulse,
+  body: (match (project pulse remaining)
+    | Nat.zero => (record Pulse {period := (project pulse period), remaining := (project pulse period)})
+    | Nat.succ rest => (record Pulse {period := (project pulse period), remaining := rest}))
+}
+
+theorem{
+  name: advance_at_zero,
+  parameters: [period : Nat],
+  statement: ((project (advance (record Pulse {period := period, remaining := 0})) remaining) = period),
+  proof: simplify{
+    definitions: [
+      advance
+    ]
+  },
+  axioms: [propext]
+}
+\end{semanticmodule}
+\end{lexlean}
