@@ -22,7 +22,7 @@ export const CHECKPOINT = 240;
 
 const nextFrom = (seed, bound) => ((seed * 1103515245 + 12345) % 2147483648) % bound;
 
-export function initialState(rooms, npcs = []) {
+export function initialState(rooms, npcs = [], objects = []) {
   return {
     tick: 0,
     cycle: 0,
@@ -33,6 +33,7 @@ export function initialState(rooms, npcs = []) {
         clock: makePulse({ period: npc.period, remaining: npc.period }),
       })),
     actors: [],
+    objects: objects.map((object) => ({ ...object, holder: null })),
     identities: {},
     // Countdowns, generated from Pulses.lex.tex. Starting at zero makes the
     // first tick fire, then every period after it.
@@ -56,6 +57,7 @@ export function digestState(state) {
   const canonical = JSON.stringify({
     tick: state.tick,
     cycle: state.cycle ?? 0,
+    objects: [...state.objects].sort((a, b) => a.id.localeCompare(b.id)),
     npcs: [...state.npcs].sort((a, b) => a.id.localeCompare(b.id)),
     actors: [...state.actors].sort((a, b) => a.id - b.id),
     identities: Object.fromEntries(
@@ -79,6 +81,7 @@ export function step({ state, rooms, intents }) {
     cycle: state.cycle ?? 0,
     npcs: state.npcs.map((n) => ({ ...n, clock: { ...n.clock } })),
     actors: state.actors.map((a) => ({ ...a, visited: [...a.visited] })),
+    objects: state.objects.map((o) => ({ ...o })),
     identities: { ...state.identities },
     pulses: { mobile: { ...state.pulses.mobile }, area: { ...state.pulses.area } },
   };
@@ -168,6 +171,41 @@ export function step({ state, rooms, intents }) {
       actor.room = intent.to;
       if (!actor.visited.includes(actor.room)) actor.visited.push(actor.room);
       events.push({ room: intent.to, text: `${actor.name} arrives.`, exceptId: actor.id });
+      continue;
+    }
+
+    // Objects, as the old codebases had them: a thing has a place, or a holder,
+    // never both, and moving it is the only operation that changes that.
+    if (intent.kind === "take" || intent.kind === "drop" || intent.kind === "give") {
+      const object = next.objects.find((o) => o.id === intent.objectId);
+      if (!object) continue;
+
+      if (intent.kind === "take") {
+        if (object.holder !== null || object.room !== actor.room) continue;
+        if ((object.flags ?? []).includes("fixed")) continue;
+        object.holder = actor.id;
+        object.room = null;
+        events.push({ room: actor.room, text: `${actor.name} takes ${object.name}.`, exceptId: actor.id });
+        events.push({ onlyId: actor.id, text: `You take ${object.name}.` });
+        continue;
+      }
+
+      if (object.holder !== actor.id) continue;
+
+      if (intent.kind === "drop") {
+        object.holder = null;
+        object.room = actor.room;
+        events.push({ room: actor.room, text: `${actor.name} drops ${object.name}.`, exceptId: actor.id });
+        events.push({ onlyId: actor.id, text: `You drop ${object.name}.` });
+        continue;
+      }
+
+      const recipient = find(intent.toId);
+      if (!recipient || recipient.room !== actor.room) continue;
+      object.holder = recipient.id;
+      events.push({ room: actor.room, text: `${actor.name} gives ${object.name} to ${recipient.name}.`, exceptId: actor.id });
+      events.push({ onlyId: actor.id, text: `You give ${object.name} to ${recipient.name}.` });
+      events.push({ onlyId: recipient.id, text: `${actor.name} gives you ${object.name}.` });
       continue;
     }
 

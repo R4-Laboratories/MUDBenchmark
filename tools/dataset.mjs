@@ -81,6 +81,19 @@ for (const file of inputs) {
       continue;
     }
 
+    if (span.name === "world.object") {
+      rows.push({
+        ...common,
+        event: "object",
+        actor: span["actor.id"] ?? null,
+        action: span["action.kind"] ?? null,
+        object: span["object.id"] ?? null,
+        room_from: num(span["room.from"]),
+        room_to: num(span["room.to"]),
+      });
+      continue;
+    }
+
     if (span.name === "world.claim" || span.name === "world.answer") {
       rows.push({
         ...common,

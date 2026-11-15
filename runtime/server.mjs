@@ -71,7 +71,7 @@ function allowCommand(id) {
 function loadState() {
   try {
     const saved = JSON.parse(readFileSync(STATE_FILE, "utf8"));
-    const base = initialState(ROOMS);
+    const base = initialState(ROOMS, loaded.npcs, loaded.objects);
     return {
       tick: saved.tick ?? 0,
       npcs: saved.npcs ?? base.npcs,
@@ -79,13 +79,14 @@ function loadState() {
       // there is nothing to reconnect them to, and a restored actor with no
       // transport would sit in a room forever as a ghost.
       actors: [],
+      objects: saved.objects ?? base.objects,
       identities: saved.identities ?? {},
       // A state file written before the pulse substrate has no countdowns;
       // fall back to a fresh schedule rather than crashing on load.
       pulses: saved.pulses ?? base.pulses,
     };
   } catch {
-    return initialState(ROOMS);
+    return initialState(ROOMS, loaded.npcs, loaded.objects);
   }
 }
 
@@ -120,11 +121,13 @@ function describe(room, selfId) {
   const r = ROOMS[room];
   if (!r) return "You are nowhere.\r\n";
   const role = actorById(selfId)?.role ?? 0;
+  const objectsHere = state.objects.filter((o) => o.room === room).map((o) => o.name);
   return renderRoom({
     room: r,
     role,
     others: actorsIn(room).filter((a) => a.id !== selfId).map((a) => a.name),
     beasts: npcsIn(room).map((n) => n.name),
+    objects: objectsHere,
     tick: state.tick,
     cleared: isCleared,
   });
@@ -263,6 +266,49 @@ async function handleCommand(id, line) {
           ? "The shrine accepts your answer.\r\n"
           : "The shrine accepts, but you never entered the Vault.\r\n")
       : "The shrine does not accept that word.\r\n");
+  }
+
+  const findObject = (needle, where) => {
+    const wanted = needle.toLowerCase();
+    return state.objects.find((o) => where(o) && o.name.toLowerCase().includes(wanted));
+  };
+
+  if (verb === "inventory" || verb === "i") {
+    const carried = state.objects.filter((o) => o.holder === actor.id).map((o) => o.name);
+    return sendTo(id, carried.length ? `You are carrying: ${carried.join(", ")}.\r\n` : "You are carrying nothing.\r\n");
+  }
+
+  if (verb === "take" || verb === "get") {
+    const needle = rest.join(" ");
+    const object = findObject(needle, (o) => o.room === actor.room);
+    if (!object) return sendTo(id, `There is no ${needle} here.\r\n`);
+    if ((object.flags ?? []).includes("fixed")) return sendTo(id, `The ${needle} will not move.\r\n`);
+    pending.push({ kind: "take", actorId: id, objectId: object.id });
+    recordSpan("world.object", { "actor.id": id, "action.kind": "take", "object.id": object.id, "room.from": actor.room, "world.tick": state.tick }, 0);
+    return;
+  }
+
+  if (verb === "drop") {
+    const needle = rest.join(" ");
+    const object = findObject(needle, (o) => o.holder === actor.id);
+    if (!object) return sendTo(id, `You are not carrying a ${needle}.\r\n`);
+    pending.push({ kind: "drop", actorId: id, objectId: object.id });
+    recordSpan("world.object", { "actor.id": id, "action.kind": "drop", "object.id": object.id, "room.to": actor.room, "world.tick": state.tick }, 0);
+    return;
+  }
+
+  if (verb === "give") {
+    const toIndex = rest.findIndex((part) => part.toLowerCase() === "to");
+    if (toIndex < 1 || toIndex === rest.length - 1) return sendTo(id, "Give it to whom? give <thing> to <name>\r\n");
+    const needle = rest.slice(0, toIndex).join(" ");
+    const target = rest.slice(toIndex + 1).join(" ").toLowerCase();
+    const object = findObject(needle, (o) => o.holder === actor.id);
+    if (!object) return sendTo(id, `You are not carrying a ${needle}.\r\n`);
+    const recipient = actorsIn(actor.room).find((a) => a.id !== id && a.name.toLowerCase().includes(target));
+    if (!recipient) return sendTo(id, "Nobody here answers to that.\r\n");
+    pending.push({ kind: "give", actorId: id, objectId: object.id, toId: recipient.id });
+    recordSpan("world.object", { "actor.id": id, "action.kind": "give", "object.id": object.id, "actor.to": recipient.id, "world.tick": state.tick }, 0);
+    return;
   }
 
   if (verb === "claim") {

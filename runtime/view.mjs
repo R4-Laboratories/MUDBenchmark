@@ -10,7 +10,7 @@
  *           tick: number, cleared: (role: number, level: number) => boolean }} input
  * @returns {string} the text a player sees
  */
-export function describe({ room, role = 0, others = [], beasts = [], tick = 0, cleared }) {
+export function describe({ room, role = 0, others = [], beasts = [], objects = [], tick = 0, cleared }) {
   const exits = Object.keys(room.exits ?? {}).join(", ") || "none";
   const lines = [``, `[${room.name}]`, room.text];
 
@@ -20,6 +20,7 @@ export function describe({ room, role = 0, others = [], beasts = [], tick = 0, c
 
   lines.push(others.length ? `You are not alone: ${others.join(", ")}.` : `You are alone.`);
   if (beasts.length) lines.push(`Here also: ${beasts.join(", ")}.`);
+  if (objects.length) lines.push(`You can see: ${objects.join(", ")}.`);
   lines.push(`Exits: ${exits}.`, `Tick ${tick}.`, ``);
   return lines.join("\r\n");
 }

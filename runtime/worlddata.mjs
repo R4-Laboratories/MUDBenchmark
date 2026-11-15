@@ -79,6 +79,25 @@ export function loadWorld({ mode = "single", path = DEFAULT_PATH } = {}) {
     npcs.push({ ...npc });
   }
 
+  // Objects must start somewhere real, and ids must be unique.
+  const objects = [];
+  const seenObject = new Set();
+  for (const object of raw.objects ?? []) {
+    if (seenObject.has(object.id)) errors.push(`object id "${object.id}" is used twice`);
+    seenObject.add(object.id);
+    if (!rooms[object.room]) errors.push(`object ${object.id} is in room ${object.room}, which does not exist`);
+    objects.push({ ...object });
+  }
+
+  // Zones are a naming layer over rooms, as they were in the codebases this
+  // borrows from; they are how a world gets reset a piece at a time.
+  const zones = (raw.zones ?? []).map((zone) => {
+    for (const id of zone.rooms) {
+      if (!rooms[id]) errors.push(`zone ${zone.id} names room ${id}, which does not exist`);
+    }
+    return { ...zone };
+  });
+
   // Every room must be reachable from the start, or nobody will ever see it.
   const start = raw.start ?? 1;
   const seen = new Set([start]);
@@ -101,5 +120,5 @@ export function loadWorld({ mode = "single", path = DEFAULT_PATH } = {}) {
     if (!rooms[task[key]]) errors.push(`task.${key} names room ${task[key]}, which does not exist`);
   }
 
-  return { rooms, start, task, npcs, errors };
+  return { rooms, start, task, npcs, objects, zones, errors };
 }

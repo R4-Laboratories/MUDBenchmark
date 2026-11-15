@@ -126,5 +126,56 @@
       "period": 14,
       "jitter": 10
     }
+  ],
+  "zones": [
+    {
+      "id": "start",
+      "name": "The Start",
+      "rooms": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "lamp",
+      "name": "a brass lamp",
+      "room": 3,
+      "flags": [
+        "takeable",
+        "light"
+      ]
+    },
+    {
+      "id": "coin",
+      "name": "a silver coin",
+      "room": 5,
+      "flags": [
+        "takeable"
+      ]
+    },
+    {
+      "id": "scroll",
+      "name": "a curled scroll",
+      "room": 2,
+      "flags": [
+        "takeable",
+        "readable"
+      ]
+    },
+    {
+      "id": "anvil",
+      "name": "a heavy anvil",
+      "room": 3,
+      "flags": [
+        "fixed"
+      ]
+    }
   ]
 }
