@@ -37,21 +37,24 @@ split is an artefact of observation, not a finding.
 
 ## Replay
 
-`runtime/replay.mjs` re-executes the pulse substrate from a trace and compares.
+`runtime/replay.mjs` re-executes a recorded run and compares the whole world
+state, tick by tick.
 
 ```
-replayed to tick 589, checked 109 checkpoints, 0 mismatched
+replayed to tick 886, checked 34 ticks, 0 mismatched
 ```
 
-**Scope, stated plainly: this replays the tick and the NPCs.** Both are pure
-functions of the tick number, so the check is real — it would catch a change in
-the movement rule or a non-deterministic seed.
+The trace carries its baseline state, the intents applied on each tick, and a
+digest of the resulting state. Replay re-runs `step` from that baseline with the
+same intents and checks every digest. Verified with an actor joining, moving,
+speaking and leaving partway through the run.
 
-It does **not** replay players. A player's room lives in the server's `Map`, not
-in the world state, so a run cannot be reconstructed end to end. `SAFETY-MODEL.md`
-§3 requires that a run be reconstructible from spans alone and match the state
-the engine held. We are not there: the engine's state and the world's state are
-two different objects.
+Scope: this now covers **the whole world**, because actors live in the modelled
+state (`runtime/world.mjs`) rather than in the server's `Map`. The server owns
+transports and nothing else.
 
-Making players part of the modelled state is the refactor that closes it, and it
-should happen before any run is called auditable.
+What is still missing for `SAFETY-MODEL.md` §3: the trace is a separate file
+from the span record. The spec asks that a run be reconstructible **from spans
+alone**. Making each tick span carry the state digest and the intent list would
+close that; until then there are two records of the same run that happen to
+agree.
