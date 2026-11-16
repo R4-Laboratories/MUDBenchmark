@@ -105,5 +105,5 @@ node tools/publish.mjs --candidates candidates.json --result result.json
 holds the hidden playthroughs; `tools/measure.mjs` admits a candidate only if it
 is no worse on every measure and better on at least one; `tools/publish.mjs`
 re-measures, composes the candidate onto the current overlay, runs the gate, and
-defaults to a dry run. `.github/workflows/loop.yml` is the scheduled tick, and
+defaults to a dry run. `.github/workflows/loop.yml` is the scheduled tick (`GITHUB_TOKEN` only; no GitHub App), and
 `docs/SELF-IMPROVEMENT.md` records the bounds and what is still human.

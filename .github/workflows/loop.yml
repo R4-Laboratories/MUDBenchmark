@@ -1,17 +1,21 @@
-# The self-improvement tick.
+# The self-improvement tick, in the lexlean-r4 pattern: one job, the project's
+# own gate, a direct commit to main, and a dispatched release. It uses only
+# `secrets.GITHUB_TOKEN`; there is no App and no second credential.
 #
-# One candidate inventory per run, measured against the hidden playthroughs.
-# If one dominates, the publisher writes `world/data/generated/pacing.json`,
-# runs the gate with it applied, and opens a `loop/...` pull request. It never
-# pushes to main. The existing automerge workflow switches on auto-merge when
-# the pull request opens, and branch protection waits for the gate.
+# The tick is valid only on the tip of main. It builds one seeded inventory,
+# measures it on the hidden playthroughs, and commits the admitted pacing file
+# if one dominates. A settled inventory commits nothing. The gate runs in this
+# job with the file applied, and the tag's Gate run proves it again with the
+# model before a release is published.
 #
-# Pause: set the repository variable MUDBENCH_LOOP_PAUSED to `true`.
-# Credential: a GitHub App installed on this repository, with
-#   MUDBENCH_APP_ID  (repository variable)
-#   MUDBENCH_APP_PRIVATE_KEY (repository secret)
-# The default Actions token cannot open a pull request that triggers workflows,
-# so the App is not optional.
+# Enable: set the repository variable MUDBENCH_LOOP to `on`.
+# Pause: set it to `off` (or delete it). The default is off.
+#
+# If main requires status checks, GitHub rejects the direct push because the
+# gate checks are not attached to it. lexlean-r4's main is unprotected, which is
+# why the same push lands there. The two no-app fixes are recorded in
+# docs/SELF-IMPROVEMENT.md: allow the bot to push, or dispatch the gate on a
+# branch and merge that pull request.
 
 name: Loop
 
@@ -19,25 +23,25 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "dry-run checks the candidate without a branch; write leaves the file; push opens a PR"
+        description: "dry-run checks without a commit; commit pushes the admitted pacing file"
         type: choice
-        options: [dry-run, write, push]
+        options: [dry-run, commit]
         default: dry-run
   schedule:
     - cron: '17 */6 * * *'
 
 permissions:
   contents: write
-  pull-requests: write
+  actions: write
 
 concurrency:
   group: loop
   cancel-in-progress: false
 
 jobs:
-  propose:
-    name: propose, measure, publish
-    if: vars.MUDBENCH_LOOP_PAUSED != 'true' && vars.MUDBENCH_APP_ID != ''
+  tick:
+    name: one tick of the loop
+    if: vars.MUDBENCH_LOOP == 'on'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -49,19 +53,22 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Mint the publisher token
-        id: app
-        uses: actions/create-github-app-token@v1
-        with:
-          app-id: ${{ vars.MUDBENCH_APP_ID }}
-          private-key: ${{ secrets.MUDBENCH_APP_PRIVATE_KEY }}
-
-      - name: Point git at the App
-        env:
-          GH_TOKEN: ${{ steps.app.outputs.token }}
-        run: gh auth setup-git
+      - name: Is this the tip of main
+        id: tip
+        shell: bash
+        run: |
+          set -euo pipefail
+          remote=$(git ls-remote origin refs/heads/main | awk '{print $1}')
+          local=$(git rev-parse HEAD)
+          if [ "$remote" = "$local" ]; then
+            echo "current=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "current=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::main moved; this tick is stale and will not measure"
+          fi
 
       - name: Build and measure one inventory
+        if: steps.tip.outputs.current == 'true'
         env:
           SEED: ${{ github.run_id }}-${{ github.run_attempt }}
         run: |
@@ -70,12 +77,29 @@ jobs:
           node tools/measure.mjs --candidates /tmp/candidates.json --out /tmp/result.json
 
       - name: Publish
-        env:
-          GH_TOKEN: ${{ steps.app.outputs.token }}
+        id: publish
+        if: steps.tip.outputs.current == 'true'
         run: |
           set -euo pipefail
           MODE="${{ inputs.mode }}"
-          if [ -z "$MODE" ]; then MODE="push"; fi
-          git config user.name "mudbench-loop[bot]"
-          git config user.email "mudbench-loop[bot]@users.noreply.github.com"
+          if [ -z "$MODE" ]; then MODE="commit"; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           node tools/publish.mjs --candidates /tmp/candidates.json --result /tmp/result.json --"$MODE"
+
+      - name: Tag the tick and dispatch its release
+        if: steps.tip.outputs.current == 'true' && steps.publish.outputs.committed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          BASE=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1 || true)
+          BASE=${BASE:-v0.0.0}
+          TAG="${BASE}-loop.${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}"
+          git tag "$TAG"
+          git push origin "$TAG"
+          # A tag pushed with GITHUB_TOKEN does not trigger a workflow. Dispatch
+          # is the documented exception, and it preserves the tag as the ref, so
+          # the release job runs against the exact committed tree.
+          gh workflow run gate.yml --ref "$TAG"
+          echo "::notice::dispatched the release for $TAG" >> "$GITHUB_STEP_SUMMARY"

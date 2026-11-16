@@ -89,31 +89,36 @@ impossible to hide decline.
 
 ## Status
 
-`v0.23.0` is published and deployed. wick runs the release artifact, not a
+`v0.24.0` is published and deployed. wick runs the release artifact, not a
 build directory, so the number on the box is a tag someone can point at:
 
 ```
-mudbench-deploy --status   →   release v0.23.0
+mudbench-deploy --status   →   release v0.24.0
 ```
 
 `main` requires both gate jobs before a merge, and a same-repo pull request
 switches on auto-merge when it opens. A change that is not green cannot land,
 and a change that is green lands without anyone asking.
 
-S0, S1 and the write surface of S2 are in place. The loop can propose, measure,
-admit and apply a candidate to `world/data/generated/pacing.json` in a dry run
-that runs the full gate. The publisher can open a `loop/...` PR, but the GitHub
-App that makes that PR trigger workflows is not installed yet, so no loop PR has
-been opened and the scheduled job stays off until `MUDBENCH_APP_ID` exists.
+S0, S1 and the S2 write path are in place. The loop uses only `GITHUB_TOKEN`:
+`loop.yml` builds the inventory, measures it, runs the gate in the same job,
+commits `world/data/generated/pacing.json`, and dispatches a tagged release. It
+does not need a GitHub App.
+
+The one difference from lexlean-r4 is branch protection. lexlean-r4's `main` is
+unprotected, so its tick's direct push lands. MUDBench's `main` requires the two
+gate checks, so the same push is rejected until the bot is allowed to push or
+the checks are removed. That is a repository setting, not a missing credential.
 
 ---
 
 # From a gate to a bounded self-improvement loop
 
-Status: **S0 and S1 are in place; S2 onward is not enabled.** The loop can
-propose and measure. It cannot write a file, open a PR, merge or publish. This
-section records what is built and how to get from here to a loop that admits and
-publishes bounded changes without letting the game rewrite its own judges.
+Status: **S0, S1 and the S2 write path are in place.** The loop can propose,
+measure, admit, write one file, gate it, commit it and dispatch its release. What
+it cannot do yet is push past `main`'s required checks. That is a repository
+setting, not a missing credential, and it is the only thing between the tick and
+a live change.
 
 ## What we already have
 
@@ -174,44 +179,51 @@ node tools/measure.mjs --candidates candidates.json --out result.json
   or edited report cannot name a winner the current world did not admit.
 - **Gate first.** It writes the file, runs `node tools/gate.mjs` with the
   candidate applied, and restores the old file if the gate fails.
-- **PR only.** `--push` creates `loop/<candidate>-<hash>`, opens a pull request
-  and enables auto-merge. It never pushes to `main`.
+- **Commit, then release.** `--commit` runs the gate on this tree, commits the
+  one file, and pushes to `main`. The workflow then tags
+  `v<current>-loop.<n>` and dispatches `gate.yml` on that tag. The tag push
+  itself would not trigger a workflow; dispatch is the documented exception.
+- **PR fallback.** `--push` creates `loop/<candidate>-<hash>` and opens a pull
+  request. It never pushes to `main`; it is for a person who wants the review
+  path.
 - **Settle is silent.** When the inventory has no winner, the publisher refuses
   and opens nothing. In the first end-to-end test the second tick settled: the
   applied candidate is a fixed point, not a step toward another change.
-- **Pause and opt-in.** `MUDBENCH_LOOP_PAUSED=true` stops the scheduled job, and
-  the job also stays off until `MUDBENCH_APP_ID` is set.
+- **Opt-in and pause.** The job runs only when `MUDBENCH_LOOP=on`; set it to `off` to stop it.
 
-### The gap between merge and deploy
+### The one difference from lexlean-r4
 
-The publisher opens a pull request; auto-merge lands it on `main`. The game
-deploys **releases**, not `main`. A merged candidate is therefore on `main` and
-in the next tagged release, but not on the box until a tag exists.
+lexlean-r4's `main` is unprotected. Its engine job runs the gate, commits, and
+pushes `HEAD:refs/heads/main` with `GITHUB_TOKEN`. That is why it needs no App.
 
-The next piece is a `workflow_run` job that fires when the Gate workflow
-completes successfully on `main`, checks that the merge touched
-`world/data/generated/pacing.json`, and creates a `v<current>-loop.<n>` tag with
-the App token. The existing release job and the pull-based deploy then run
-unchanged. Until that exists, the loop's authority ends at `main`; a person
-tags the release.
+MUDBench's `main` has two required status checks. A direct push by the Actions
+bot is rejected because those checks are attached to pull requests, not to the
+push. The loop's gate run is real, but branch protection does not count it.
+
+Two no-app fixes:
+
+1. **Match lexlean-r4.** Remove the required status checks from `main`, or add
+   the Actions app as a bypass actor. The loop's in-job gate and the push gate
+   still run; they no longer block the bot.
+2. **Keep the checks.** The loop pushes a branch, dispatches `gate.yml` on that
+   branch, waits for the check runs, and merges the pull request with
+   `GITHUB_TOKEN`. More moving parts, no protection change.
+
+The first is the r4 mechanism. The second preserves the human gate.
 
 ## Turning the loop on
 
-1. Create a GitHub App owned by the repository owner. Give it **Contents:
-   read and write** and **Pull requests: read and write**, and install it on
-   this repository only.
-2. Add `MUDBENCH_APP_ID` as a repository variable and
-   `MUDBENCH_APP_PRIVATE_KEY` as a repository secret.
-3. Leave `MUDBENCH_LOOP_PAUSED` unset. The scheduled job is also inert until
-   the App ID exists, so a missing secret cannot produce a nightly red run.
-4. Run the **Loop** workflow by hand with `dry-run`. It measures, writes the
+1. Set the repository variable `MUDBENCH_LOOP=on`. The default is off.
+2. Choose the push path: allow the Actions bot to push to `main`, or use the
+   branch-dispatch-merge path.
+3. Run the **Loop** workflow by hand with `dry-run`. It measures, writes the
    pacing file, runs the full gate with it applied, prints it, and restores it.
-5. Run it with `push`. It opens a `loop/...` pull request; the gate and
-   automerge workflows take over. To stop it, set
-   `MUDBENCH_LOOP_PAUSED=true`.
+4. Run it with `commit`. It commits the pacing file, pushes to `main`, tags
+   `v<current>-loop.<n>`, and dispatches the release. To stop it, set
+   `MUDBENCH_LOOP=off`.
 
-The first real pull request is the acceptance test for S2. Until it exists,
-"the loop can publish" is a tested tool, not a demonstrated outcome.
+The first real commit is the acceptance test for S2. Until it exists, "the loop
+can publish" is a tested tool, not a demonstrated outcome.
 
 ## What the references actually contribute
 

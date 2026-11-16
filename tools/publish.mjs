@@ -7,17 +7,20 @@
 // applied, and only then offers a branch and a PR.
 //
 // The default is a dry run: write, gate, print, restore. `--write` leaves the
-// file for inspection. `--push` creates a `loop/...` branch and opens a PR with
-// auto-merge enabled; it never pushes to main.
+// file for inspection. `--commit` commits the generated file and pushes it to
+// main, which is the lexlean-r4 engine tick: the gate ran in this job, on this
+// exact tree. `--push` is the PR fallback and needs a token that can open pull
+// requests; it never pushes to main.
 //
 // Usage:
 //   node tools/publish.mjs --candidates c.json --result r.json [--dry-run]
 //   node tools/publish.mjs --candidates c.json --result r.json --write
+//   node tools/publish.mjs --candidates c.json --result r.json --commit
 //   GH_TOKEN=... node tools/publish.mjs --candidates c.json --result r.json --push
 
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { measureCandidates } from "./measure.mjs";
 
@@ -31,7 +34,10 @@ const option = (name, fallback) => {
   const index = args.indexOf(`--${name}`);
   return index === -1 ? fallback : args[index + 1];
 };
-const mode = args.includes("--push") ? "push" : args.includes("--write") ? "write" : "dry-run";
+const mode = args.includes("--commit") ? "commit"
+  : args.includes("--push") ? "push"
+  : args.includes("--write") ? "write"
+  : "dry-run";
 
 function stop(message) {
   console.error(`publish refused: ${message}`);
@@ -43,6 +49,16 @@ const resultPath = option("result", null);
 if (!candidatesPath || !resultPath) {
   console.error("usage: node tools/publish.mjs --candidates <c.json> --result <r.json> [--dry-run|--write|--push]");
   process.exit(2);
+}
+
+// The tick is only valid on the tip of main. A stale checkout would measure a
+// world that no longer exists, and a push would either fail or land a change
+// nobody measured. Check before spending the run.
+if (mode === "commit" || mode === "push") {
+  const remote = execFileSync("git", ["ls-remote", "origin", "refs/heads/main"], { cwd: ROOT, encoding: "utf8" })
+    .split(/\s+/)[0];
+  const local = execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim();
+  if (remote !== local) stop("this checkout is not the tip of main; fetch and re-run");
 }
 
 const candidates = JSON.parse(readFileSync(candidatesPath, "utf8"));
@@ -145,10 +161,8 @@ if (mode === "write") {
   process.exit(0);
 }
 
-// --- push -----------------------------------------------------------------
-if (!process.env.GH_TOKEN) stop("--push needs GH_TOKEN (the GitHub App installation token)");
-
-const status = execFileSync("git", ["status", "--porcelain"], { cwd: ROOT, encoding: "utf8" })
+const lines = changes.map((change) => `- ${change.target} ${change.field} ${change.from} → ${change.to}`);
+const status = execFileSync("git", ["status", "--porcelain", "--untracked-files=all"], { cwd: ROOT, encoding: "utf8" })
   .split("\n")
   .filter(Boolean);
 const unexpected = status.filter((line) => !line.endsWith("world/data/generated/pacing.json"));
@@ -156,6 +170,28 @@ if (unexpected.length) {
   restore();
   stop(`the working tree has changes outside the generated file: ${unexpected[0]}`);
 }
+const git = (...argv) => execFileSync("git", argv, { cwd: ROOT, encoding: "utf8" });
+
+// --- commit: the r4-engine tick -------------------------------------------
+if (mode === "commit") {
+  git("add", "world/data/generated/pacing.json");
+  git("commit", "-m", `Pacing candidate ${winner.id}\n\n${lines.join("\n")}`);
+  const sha = git("rev-parse", "HEAD").trim();
+  try {
+    git("push", "origin", "HEAD:main");
+  } catch (error) {
+    console.error((error.stderr || error.stdout || "").trim());
+    stop("the push to main was refused. main's required checks are not satisfied by a direct push; see docs/SELF-IMPROVEMENT.md for the two no-app settings.");
+  }
+  console.error(`pushed ${sha.slice(0, 12)} to main: ${winner.id}, ${changes.length} change(s)`);
+  if (process.env.GITHUB_OUTPUT) {
+    appendFileSync(process.env.GITHUB_OUTPUT, `committed=true\nsha=${sha}\n`);
+  }
+  process.exit(0);
+}
+
+// --- push: the PR fallback ------------------------------------------------
+if (!process.env.GH_TOKEN) stop("--push needs GH_TOKEN (a token that can open pull requests)");
 
 const branch = `loop/${winner.id}-${fresh.hash.slice(0, 6)}`;
 const existing = execFileSync("gh", ["pr", "list", "--state", "open", "--json", "headRefName", "--jq", ".[].headRefName"], {
@@ -167,7 +203,6 @@ if (existing.length) {
   stop(`a loop pull request is already open: ${existing[0]}`);
 }
 
-const lines = changes.map((change) => `- ${change.target} ${change.field} ${change.from} → ${change.to}`);
 const body = [
   `Admitted by the hidden playthrough corpus.`,
   "",
@@ -182,7 +217,6 @@ const body = [
   "The gate ran with this file applied before the branch was created.",
 ].join("\n");
 
-const git = (...argv) => execFileSync("git", argv, { cwd: ROOT, encoding: "utf8" });
 git("checkout", "-b", branch);
 git("add", "world/data/generated/pacing.json");
 git("commit", "-m", `Pacing candidate ${winner.id}\n\n${lines.join("\n")}`);
