@@ -22,8 +22,13 @@ six-digit code, shows the response, joins from another browser, lists devices
 and revokes one. The two-profile test linked, took turns signing in as the same
 `prism:`, revoked B, and refused B's old log; the linked session survived a
 reload. A simultaneous login is still refused with "That Prism id is already
-signed in"; **X4 heartbeat/takeover** is next, then X5 identity kernel and X6
-release-on-merge.
+signed in". **X4 is implemented in v0.31**: a second login takes over, the old
+socket gets a take-back notice and closes, the browser re-signs with a fresh
+Prism session after a server restart, the AI reconnects with a fresh session,
+and a 30-second ping/pong terminates a socket that stops answering. The gate
+proves the reducer's leave-then-login order; the headless run proved the
+takeover, take-back and reconnect. **X5 the `Identity` kernel** is next, then
+X6 release-on-merge.
 
 The question is narrow: **is a Prism id actually a player account yet?** The
 answer is that the signature path is real and the account is real, but the

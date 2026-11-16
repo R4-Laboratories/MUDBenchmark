@@ -288,6 +288,24 @@ let prismLogin = { ok: true, why: [] };
   if (prismLogin.why.length) { prismLogin.ok = false; failures.push(`Prism login is broken: ${prismLogin.why[0]}`); }
 }
 
+// X4: a second login takes over only after the old actor leaves.
+let takeover = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, world.levels, questTable.quests);
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
+  const check = (condition, why) => { if (!condition) { takeover.ok = false; takeover.why.push(why); } };
+  const key = `sha256:${"c".repeat(64)}`;
+  run([{ kind: "join", actorId: "a", name: "a" }]);
+  run([{ kind: "login", actorId: "a", key, authenticated: true, prism: true, name: "prism:cccccccc" }]);
+  run([{ kind: "join", actorId: "b", name: "b" }]);
+  run([{ kind: "leave", actorId: "a" }, { kind: "login", actorId: "b", key, authenticated: true, prism: true, name: "prism:cccccccc" }]);
+  check(!state.actors.some((actor) => actor.id === "a"), "the old actor stayed after the takeover leave");
+  check(state.actors.find((actor) => actor.id === "b")?.key === key, "the new actor did not take the key");
+  check(state.actors.length === 1, "the takeover left two controllers");
+  if (takeover.why.length) { takeover.ok = false; failures.push(`takeover is broken: ${takeover.why[0]}`); }
+}
+
 // X2: the pinned public log refuses a revoked device's pre-revocation log.
 let identityPin = { ok: true, why: [] };
 {
@@ -1360,6 +1378,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"state".padEnd(26)}  ${(durableState.ok ? "5 checks" : "BROKEN").padStart(5)}   == atomic, backup, fail-loud`);
   console.log(`${"claim".padEnd(26)}  ${(claim.ok ? "1 alias" : "BROKEN").padStart(5)}   == tombstone, mail, guild`);
   console.log(`${"pinned".padEnd(26)}  ${(identityPin.ok ? "revoked" : "BROKEN").padStart(5)}   == old log refused`);
+  console.log(`${"takeover".padEnd(26)}  ${(takeover.ok ? "1 actor" : "BROKEN").padStart(5)}   == leave then login`);
   console.log(`${"llms".padEnd(26)}  ${(llms.ok ? "verbs, rooms" : "STALE").padStart(5)}   == generated contract`);
   console.log(`${"claims".padEnd(26)}  ${(claimsCheck.status === 0 ? "levels ok" : "STALE").padStart(5)}   == build, open, some-true`);
   console.log(`${"commandsDoc".padEnd(26)}  ${(commandsCheck.status === 0 ? "current" : "STALE").padStart(5)}   == generated reference`);

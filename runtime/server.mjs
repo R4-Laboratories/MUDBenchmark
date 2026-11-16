@@ -99,6 +99,21 @@ const VAULT = loaded.task.vault;
 const SHRINE = loaded.task.shrine;
 const transports = new Map(); // id -> { send, close, welcomed }
 const pending = [];
+
+// A second login for an account that is already online takes it over: the old
+// socket is told, closed, and its actor leaves before the new login intent, so
+// the reducer never sees two controllers. The old character's progress is
+// written by the leave, and its goods fall where it stood.
+function takeover(key, newId) {
+  const old = state.actors.find((candidate) => candidate.id !== newId && candidate.key === key);
+  if (!old) return;
+  const transport = transports.get(old.id);
+  if (transport) {
+    transport.send("You have been signed in elsewhere. If this was not you, sign in again to take it back.\r\n");
+    try { transport.close(); } catch {}
+  }
+  pending.push({ kind: "leave", actorId: old.id });
+}
 const deferred = new Map(); // id -> lines typed before the actor existed
 let nextId = 1;
 
@@ -368,9 +383,8 @@ async function handleCommand(id, line) {
       };
       saveIdentityStore();
     }
-    if (state.actors.some((candidate) => candidate.id !== id && candidate.key === verdict.prism)) {
-      return sendTo(id, "That Prism id is already signed in.\r\n");
-    }
+    // A second device/tab takes over; the old socket is told and closed.
+    takeover(verdict.prism, id);
     // A claimed Prism id carries the adopted name; a new one uses the short id.
     const known = state.identities[verdict.prism];
     const display = known?.name ?? prismDisplay(verdict.prism);
@@ -421,9 +435,6 @@ async function handleCommand(id, line) {
     const secret = restRaw.slice(1).join(" ");
     if (!validName(key)) return sendTo(id, "Names are 1-24 letters, digits, - or _.\r\n");
     if (!secret) return sendTo(id, "Usage: login <name> <password>. New here? register <name> <password>.\r\n");
-    if (state.actors.some((candidate) => candidate.id !== id && candidate.key === key)) {
-      return sendTo(id, "That name is already signed in.\r\n");
-    }
     const known = state.identities[key];
     if (!known) return sendTo(id, "No such name. New here? register <name> <password>.\r\n");
     if (known.retired) return sendTo(id, "This account moved; sign in with your Prism id.\r\n");
@@ -431,6 +442,7 @@ async function handleCommand(id, line) {
       ? verifyPassword(secret, known.salt, known.passwordHash)
       : (known.tokenHash ? createHash("sha256").update(secret, "utf8").digest("hex") === known.tokenHash : false);
     if (!passwordOk) return sendTo(id, "That name and password do not match.\r\n");
+    takeover(key, id);
     pending.push({ kind: "login", actorId: id, key, authenticated: true, respawn: false });
     return sendTo(id, `Signing in as ${key}.\r\n`);
   }
@@ -1520,6 +1532,7 @@ const web = http.createServer((req, res) => {
       weather: state.climate.weather[state.weather]?.id ?? null,
       identities: Object.keys(state.identities ?? {}).length,
       pinned: Object.keys(identityStore.prisms).length,
+      connections: wss.clients.size,
       identity: { file: IDENTITY_FILE },
       state: {
         file: STATE_FILE,
@@ -1540,6 +1553,8 @@ wss.on("connection", (ws, req) => {
     ws.close();
     return;
   }
+  ws.isAlive = true;
+  ws.on("pong", () => { ws.isAlive = true; });
   const id = join(`agent-${nextId}`);
   transports.set(id, {
     send: (t) => { if (ws.readyState === 1) ws.send(t.replace(/\r\n/g, "\n")); },
@@ -1561,6 +1576,21 @@ wss.on("connection", (ws, req) => {
     pending.push({ kind: "leave", actorId: id });
   });
 });
+
+// A socket that does not answer a ping is dead even if TCP has not noticed.
+// This is what lets a stale tab stop blocking a takeover.
+const HEARTBEAT_MS = Number(process.env.WS_HEARTBEAT_MS ?? 30000);
+const heartbeat = setInterval(() => {
+  for (const ws of wss.clients) {
+    if (ws.isAlive === false) {
+      ws.terminate();
+      continue;
+    }
+    ws.isAlive = false;
+    try { ws.ping(); } catch {}
+  }
+}, HEARTBEAT_MS);
+heartbeat.unref?.();
 
 server.listen(TELNET_PORT, "127.0.0.1", () => {
   try {

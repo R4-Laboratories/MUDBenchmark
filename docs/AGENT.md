@@ -200,10 +200,13 @@ displayed as `prism:<first 8 hex>`. The id is browser-local: clearing
 site data or losing the browser loses the character until you link another
 device or save a recovery kit. **Prism devices** in the signed-in panel creates
 an out-of-band link offer, accepts a request with a six-digit code, lists the
-id's devices and revokes one. One character has one controller: after linking,
-sign in on the new device when the old one quits. The server pins the public
-log; a revoked device is refused after the owner signs in again. Recovery is
-not built yet. The AI has its own Prism id in the same browser;
+id's devices and revokes one. A second login for the same account takes over:
+the old socket is told, closed, and its actor leaves before the new one enters.
+The old page shows the notice and can sign in again to take the account back.
+The browser re-signs with a fresh Prism session after a reconnect; the AI does
+too. A socket that stops answering the server's 30-second ping is terminated.
+The server pins the public log; a revoked device is refused after the owner
+signs in again. Recovery is not built yet. The AI has its own Prism id in the same browser;
 **Reset identity** starts a new character. A device revoked elsewhere is
 refused once a surviving device has logged in with the newer public log; the
 server pins that log in `identities.json`.

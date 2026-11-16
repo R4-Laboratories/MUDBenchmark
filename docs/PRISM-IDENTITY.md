@@ -108,9 +108,15 @@ mechanism and its gate are in place.
 - **Prism devices** — the signed-in panel can create an out-of-band link offer
   (URI and QR), paste the new device's request and six-digit code, show the
   response, join from another browser, list the id's devices and revoke one.
-  One character has one controller: after linking, sign in on the new device
-  when the old one quits. The next heartbeat/takeover step (X4) makes the switch
-  explicit.
+- **Takeover and reconnect** — a second login for the same id (Prism or legacy)
+  tells the old socket "You have been signed in elsewhere", closes it, and lets
+  the old actor leave before the new login. The old page clears its session and
+  shows the notice; **Use my Prism id** takes the account back. The browser
+  re-signs with a fresh `prism/session/1` after a network drop or a server
+  restart without a click. The AI signs a fresh session on every socket open and
+  reconnects after a close while running; a takeover stops it. A WebSocket
+  ping/pong every 30 seconds terminates a socket that stops answering, so a
+  stale tab cannot block a takeover.
 - `world/fixtures/prism-session.json` — a committed signed session. The gate
   verifies it, refuses a session for another origin, and refuses an expired one.
   The gate also proves the reducer creates a passwordless Prism identity.
@@ -203,8 +209,16 @@ sequence and refused the old log again after a restart.
 A two-profile headless Chromium run linked a second device, signed it in as the
 same `prism:` after the first quit, revoked it from the first, published, and
 saw the removed device's old log refused; the linked session also survived a
-reload. A simultaneous login is still refused with "That Prism id is already
-signed in"; X4 adds the explicit takeover.
+reload.
+
+X4 was run in headless Chromium: a second signed-in device took the account
+over while the first was online; the first showed the notice and took it back;
+after a server restart the first re-signed and was back in the Atrium without a
+click; the AI reconnected with a fresh session (its join count went from one to
+two and its status returned to live). The reducer gate proves the takeover order
+(leave, then login) leaves one actor; the Node run proved the old socket is
+closed. A socket that stops answering pings is terminated by the server; a
+paused client cannot read its own close, so that half is a server-side check.
 
 Not yet proven by the gate: a tampered signature, an unknown device, a replay
 across a restart, a second connection resuming (today it is refused), device

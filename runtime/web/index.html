@@ -442,6 +442,7 @@
 
   let mode = "play";
   let prismSession = null;
+  let playAuth = null;
   let pendingOffer = null;
   let pendingJoin = null;
   let playSocket = null;
@@ -452,7 +453,7 @@
   const AI = {
     socket: null, config: null, identity: null, name: "",
     running: false, paused: false, authed: false, busy: false,
-    observed: "", quiet: null, registering: false,
+    observed: "", quiet: null, reconnect: null, registering: false,
     turn: 0, commands: 0, latencies: [], usage: { prompt: 0, completion: 0 },
     history: [], director: [], transcript: [], thoughts: [], room: "",
     lastCommand: "", startedAt: null, recent: [], nudge: false, lastError: null,
@@ -522,6 +523,9 @@
       state.textContent = "connected";
       state.className = "live";
       append("Connected. Register or log in to play. Type help for the commands.", "sys");
+      // A reconnect signs a fresh Prism session instead of landing on the
+      // guest screen; the old socket's death must not cost the character.
+      if (playAuth === "prism" && mode === "play" && !authed) signInPrism(false);
     };
     playSocket.onclose = () => {
       state.textContent = "disconnected";
@@ -537,6 +541,11 @@
     playSocket.onmessage = (event) => {
       const text = String(event.data);
       append(text);
+      if (/signed in elsewhere/i.test(text)) {
+        playAuth = null;
+        prismSession = null;
+        append("You were signed in from another tab or device. If this was not you, sign in again to take it back.", "err");
+      }
       const signedAs = text.match(/Signing in as ([^\r\n.]+)\./i);
       if (/You are now|Signing in as|Account .* created|Welcome,\s/.test(text)) {
         authed = true;
@@ -570,6 +579,7 @@
 
   const send = (line, echo) => {
     if (!line) return;
+    if (line === "quit") playAuth = null;
     if (echo) append("> " + echo, "me");
     if (playSocket?.readyState === WebSocket.OPEN) playSocket.send(line + "\n");
     else append("(not connected)", "err");
@@ -593,21 +603,28 @@
     return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
   };
 
-  prismLogin.addEventListener("click", async () => {
-    append("Loading your Prism id…", "sys");
+  async function signInPrism(announce = true) {
+    if (mode !== "play") return;
+    if (announce) append("Loading your Prism id…", "sys");
     try {
       const session = await prismSignIn("default", location.origin);
       prismSession = await loadSession("default");
       renderDevices();
       if (session.storage === "memory") append("This window cannot keep the Prism id; a reload will make a new one.", "err");
       else if (!session.persisted) append("The browser did not grant persistent storage; it may evict the Prism id.", "sys");
-      append("> prism [session hidden]", "me");
-      if (playSocket?.readyState === WebSocket.OPEN) playSocket.send(`prism ${b64uJson(session)}\n`);
-      else append("(not connected)", "err");
+      if (announce) append("> prism [session hidden]", "me");
+      if (playSocket?.readyState === WebSocket.OPEN) {
+        playSocket.send(`prism ${b64uJson(session)}\n`);
+        playAuth = "prism";
+      } else if (announce) {
+        append("(not connected)", "err");
+      }
     } catch (error) {
       append(`Prism: ${error.message}`, "err");
     }
-  });
+  }
+
+  prismLogin.addEventListener("click", () => signInPrism(true));
   for (const field of [nameInput, passwordInput]) {
     field.addEventListener("keydown", (event) => {
       if (event.key !== "Enter") return;
@@ -1003,6 +1020,7 @@
     AI.lastCommand = "";
     liveThought.textContent = "";
     AI.startedAt = new Date().toISOString();
+    clearTimeout(AI.reconnect);
 
     persistConfig(true);
     log.innerHTML = "";
@@ -1028,6 +1046,7 @@
     AI.paused = true;
     AI.busy = false;
     clearTimeout(AI.quiet);
+    clearTimeout(AI.reconnect);
     if (AI.socket?.readyState === WebSocket.OPEN) {
       try { AI.socket.send("quit\n"); } catch {}
       setTimeout(() => { try { AI.socket.close(); } catch {} }, 100);
@@ -1121,18 +1140,27 @@
   }
 
   function connectAI() {
+    clearTimeout(AI.reconnect);
     const scheme = location.protocol === "https:" ? "wss:" : "ws:";
     const ws = new WebSocket(`${scheme}//${location.host}`);
     AI.socket = ws;
-    ws.onopen = () => {
+    ws.onopen = async () => {
       setAIStatus("signing in");
-      ws.send(`prism ${b64uJson(AI.identity)}\n`);
+      try {
+        // A fresh session on every open: a replayed envelope would be refused
+        // by the server's replay set, and a stale one could be expired.
+        AI.identity = await prismSignIn("ai", location.origin);
+        if (ws.readyState === WebSocket.OPEN) ws.send(`prism ${b64uJson(AI.identity)}\n`);
+      } catch (error) {
+        setAIStatus("error");
+        addChat("system", `Prism: ${error.message}`);
+      }
     };
     ws.onclose = () => {
       AI.authed = false;
       if (AI.running) {
-        setAIStatus("disconnected");
-        addChat("system", "The AI's connection closed.");
+        setAIStatus("reconnecting");
+        AI.reconnect = setTimeout(connectAI, 2000);
       }
     };
     ws.onerror = () => {
@@ -1144,6 +1172,15 @@
       // The guest banner is for a person about to register. The AI is not that
       // person; hide it so the stream starts at the login.
       if (/^Welcome to MUDBench\.\r?\nRegister/.test(text)) return;
+      if (/signed in elsewhere/i.test(text)) {
+        AI.running = false;
+        AI.paused = true;
+        clearTimeout(AI.reconnect);
+        updatePause();
+        setAIStatus("taken over");
+        addChat("system", "This AI was signed in from another tab or device; it stopped here.");
+        return;
+      }
       AI.observed += text;
       append(text);
 
