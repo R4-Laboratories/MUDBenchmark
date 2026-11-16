@@ -38,6 +38,10 @@ function openDB() {
 }
 
 async function read(store) {
+  // A write in this page is the newest truth; IndexedDB is for the next load.
+  // Without this, a linked session saved in memory can be shadowed by a stale
+  // IndexedDB record until the page is reloaded.
+  if (memory.has(store)) return memory.get(store);
   try {
     const db = await openDB();
     return await new Promise((resolve, reject) => {
@@ -84,6 +88,14 @@ async function remove(store) {
 export async function identity(store = "default") {
   const session = await read(store);
   return session?.prism ?? null;
+}
+
+export async function load(store = "default") {
+  return read(store);
+}
+
+export async function save(store, session) {
+  await write(store, session);
 }
 
 export async function signIn(store = "default", app = location.origin) {

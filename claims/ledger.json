@@ -99,6 +99,12 @@
       "level": "build",
       "statement": "A Prism login pins the public log it admitted; a presented log that omits a stored record is refused; a revocation presented by a surviving device is merged and survives a restart; after that the revoked device's pre-revocation log is refused.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-11",
+      "level": "some-true",
+      "statement": "Two browser profiles link with an offer, a six-digit code and a request/response exchange; the linked device signs in as the owner when the first quits; the owner revokes it, signs in again, and the removed device's old log is refused; the linked session survives a reload.",
+      "authority": "headless Chromium two-profile run 2026-11-16; wrong code, expired offer and replayed accept in tools/gate.mjs"
     }
   ]
 }

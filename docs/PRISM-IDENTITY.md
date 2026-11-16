@@ -105,6 +105,12 @@ mechanism and its gate are in place.
 - `index.html` — **Use my Prism id** is the primary sign-in; the name/password
   form is under **Use a name and password instead**. The AI has its own Prism id
   in the same browser and a **Reset identity** button.
+- **Prism devices** — the signed-in panel can create an out-of-band link offer
+  (URI and QR), paste the new device's request and six-digit code, show the
+  response, join from another browser, list the id's devices and revoke one.
+  One character has one controller: after linking, sign in on the new device
+  when the old one quits. The next heartbeat/takeover step (X4) makes the switch
+  explicit.
 - `world/fixtures/prism-session.json` — a committed signed session. The gate
   verifies it, refuses a session for another origin, and refuses an expired one.
   The gate also proves the reducer creates a passwordless Prism identity.
@@ -194,6 +200,12 @@ revoked device's pre-revocation log is refused; the pin survives a file write
 and load; a tampered log is refused. A live server test reproduced the same
 sequence and refused the old log again after a restart.
 
+A two-profile headless Chromium run linked a second device, signed it in as the
+same `prism:` after the first quit, revoked it from the first, published, and
+saw the removed device's old log refused; the linked session also survived a
+reload. A simultaneous login is still refused with "That Prism id is already
+signed in"; X4 adds the explicit takeover.
+
 Not yet proven by the gate: a tampered signature, an unknown device, a replay
 across a restart, a second connection resuming (today it is refused), device
 linking, recovery, revocation, and a production browser through the tunnel.
@@ -203,7 +215,8 @@ linking, recovery, revocation, and a production browser through the tunnel.
 1. **Protocol.** Stitch Prism id (`prism/identity/4`).
 2. **Display.** `prism:<first 8 hex>`; the full id is the account key.
 3. **Frame.** The game loads the identity module directly (`/prism-id.mjs`) and
-   does not vendor the full frame yet. Linking and recovery are later work.
+   does not vendor the full frame yet. Out-of-band linking is built; recovery is
+   later. Devices take turns until X4's takeover.
 4. **Relay.** The relay is not consulted. The server pins the public log it has
    seen; a device removed elsewhere is refused once a surviving device has
    logged in with the newer log. Before that, the no-relay design cannot know.

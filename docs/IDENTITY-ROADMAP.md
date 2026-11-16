@@ -16,8 +16,14 @@ checkpoint survival, and a gate test. `casey` remains a deliberate owner action
 because it is token-only. **X2 is implemented in v0.29**: the server pins each
 Prism's public log in `identities.json`, refuses a presented log that omits a
 stored record, merges a newer log, and the pin survives a restart; the gate
-links and revokes a device to prove it. X3 linking, X4 heartbeat, X5 identity
-kernel and X6 release-on-merge remain.
+links and revokes a device to prove it. **X3 is implemented in v0.30**: the
+signed-in panel creates an out-of-band offer and QR, accepts a request with the
+six-digit code, shows the response, joins from another browser, lists devices
+and revokes one. The two-profile test linked, took turns signing in as the same
+`prism:`, revoked B, and refused B's old log; the linked session survived a
+reload. A simultaneous login is still refused with "That Prism id is already
+signed in"; **X4 heartbeat/takeover** is next, then X5 identity kernel and X6
+release-on-merge.
 
 The question is narrow: **is a Prism id actually a player account yet?** The
 answer is that the signature path is real and the account is real, but the

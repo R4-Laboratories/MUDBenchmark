@@ -345,6 +345,26 @@ let identityPin = { ok: true, why: [] };
   const tampered = await verify(linked, forged, { records: before });
   check(!tampered.ok, "a tampered log was accepted");
 
+  // A replayed accept, a wrong six-digit code and an expired offer are refused.
+  let replayed = false;
+  try { await acceptLinkRequest(owner, offer.pending, request, { now, confirmCode: code }); } catch { replayed = true; }
+  check(replayed, "a replayed link request was accepted");
+  const wrongOffer = await createLinkOffer(revoked, { now, ttl: 300000 });
+  const wrongRequest = await requestLink(joining.device, wrongOffer.offer);
+  let wrongCode = false;
+  try { await acceptLinkRequest(revoked, wrongOffer.pending, wrongRequest, { now, confirmCode: "000000" }); } catch { wrongCode = true; }
+  check(wrongCode, "a wrong link code was accepted");
+  const expiredOffer = await createLinkOffer(revoked, { now, ttl: 1 });
+  const expiredRequest = await requestLink(joining.device, expiredOffer.offer);
+  let expired = false;
+  try {
+    await acceptLinkRequest(revoked, expiredOffer.pending, expiredRequest, {
+      now: now + 10,
+      confirmCode: await linkCode(expiredOffer.offer.secret, expiredRequest.device),
+    });
+  } catch { expired = true; }
+  check(expired, "an expired link offer was accepted");
+
   if (identityPin.why.length) { identityPin.ok = false; failures.push(`the pinned log is broken: ${identityPin.why[0]}`); }
 }
 

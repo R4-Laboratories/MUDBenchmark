@@ -100,6 +100,17 @@
   .panel { border: 1px solid var(--line); padding: 12px; margin-bottom: 14px; }
   .panel h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); margin: 0 0 10px; }
   .panel p { margin: 0 0 10px; color: var(--muted); font-size: 12px; }
+  .panel textarea {
+    background: #0b0f14; color: var(--text); border: 1px solid var(--line);
+    padding: 8px; font: inherit; font-size: 12px; width: 100%; min-height: 56px;
+    resize: vertical;
+  }
+  #link-qr { display: block; margin: 8px 0; width: 180px; height: 180px; image-rendering: pixelated; background: #fff; }
+  #devices-list .device {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 4px 0; border-bottom: 1px solid var(--line); font-size: 12px;
+  }
+  #devices-list .device button { padding: 2px 8px; font-size: 11px; }
   .field { display: grid; gap: 6px; margin-bottom: 8px; }
   .field label { color: var(--muted); font-size: 12px; }
   .field input, .field select, #director-form input {
@@ -246,6 +257,41 @@
           </div>
           <div class="row"><button type="button" id="claim-button">Claim</button></div>
         </details>
+        <details class="small muted" id="devices">
+          <summary>Prism devices</summary>
+          <p>This device and any linked devices. A revoked device is refused after you sign in again, because the server must see the newer log. If the other device is still signed in, quit it first; one character has one controller.</p>
+          <div id="devices-list"></div>
+          <div class="row"><button type="button" id="device-publish">Sign in again to publish</button></div>
+          <div class="row">
+            <button type="button" id="link-offer">Link another device</button>
+            <button type="button" id="link-join">Join an existing Prism id</button>
+          </div>
+          <div id="link-offer-box" hidden>
+            <p>On the new device, sign in with a Prism id, choose <strong>Join an existing Prism id</strong>, and paste this link:</p>
+            <textarea id="link-uri" readonly rows="3"></textarea>
+            <canvas id="link-qr" width="180" height="180"></canvas>
+            <p>Paste the new device's request here, type the six digits it shows, and accept:</p>
+            <textarea id="link-request" rows="4" placeholder="request JSON"></textarea>
+            <div class="field"><label for="link-code">Six-digit code</label><input id="link-code" inputmode="numeric" maxlength="6" autocomplete="off"></div>
+            <div class="row"><button type="button" id="link-accept">Accept device</button></div>
+            <div id="link-response-box" hidden>
+              <p>Paste this response on the new device:</p>
+              <textarea id="link-response" readonly rows="4"></textarea>
+            </div>
+          </div>
+          <div id="link-join-box" hidden>
+            <p>Paste the link from your other device:</p>
+            <textarea id="join-uri" rows="3" placeholder="prism-link:…"></textarea>
+            <div class="row"><button type="button" id="join-request">Create request</button></div>
+            <div id="join-request-box" hidden>
+              <p>Your code is <strong id="join-code">…</strong>. Type it on the other device, and paste this request there:</p>
+              <textarea id="join-request-text" readonly rows="4"></textarea>
+              <p>Paste the response from the other device:</p>
+              <textarea id="join-response" rows="4"></textarea>
+              <div class="row"><button type="button" id="join-complete">Finish linking</button></div>
+            </div>
+          </div>
+        </details>
       </section>
 
       <section class="panel" id="ai-setup">
@@ -337,7 +383,8 @@
     PROVIDERS, DEFAULT_GOAL, buildSystemPrompt, buildUserPrompt,
     parseBrain, requestFor, replyFrom, trimHistory,
   } from "/ai.mjs";
-  import { signIn as prismSignIn, reset as prismReset, identity as prismIdentity } from "/prism-auth.mjs";
+  import { signIn as prismSignIn, reset as prismReset, identity as prismIdentity, load as loadSession, save as saveSession } from "/prism-auth.mjs";
+  import { createLinkOffer, parseLinkUri, requestLink, acceptLinkRequest, completeLink, linkCode, revokeDevice, resolvePrism, linkQr } from "/prism-id.mjs";
 
   const log = document.getElementById("log");
   const state = document.getElementById("state");
@@ -394,6 +441,9 @@
   };
 
   let mode = "play";
+  let prismSession = null;
+  let pendingOffer = null;
+  let pendingJoin = null;
   let playSocket = null;
   let playEnabled = true;
   let authed = false;
@@ -547,6 +597,8 @@
     append("Loading your Prism id…", "sys");
     try {
       const session = await prismSignIn("default", location.origin);
+      prismSession = await loadSession("default");
+      renderDevices();
       if (session.storage === "memory") append("This window cannot keep the Prism id; a reload will make a new one.", "err");
       else if (!session.persisted) append("The browser did not grant persistent storage; it may evict the Prism id.", "sys");
       append("> prism [session hidden]", "me");
@@ -569,6 +621,142 @@
     if (!name || !secret) { append("Enter the old name and its password or token.", "err"); return; }
     send(`adopt ${name} ${secret}`, `adopt ${name} [secret hidden]`);
     document.getElementById("claim-secret").value = "";
+  });
+
+  function drawQr(canvas, uri) {
+    const { size, modules } = linkQr(uri);
+    const scale = 4;
+    const quiet = 4;
+    const width = (size + quiet * 2) * scale;
+    canvas.width = width;
+    canvas.height = width;
+    const context = canvas.getContext("2d");
+    context.fillStyle = "#fff";
+    context.fillRect(0, 0, width, width);
+    context.fillStyle = "#000";
+    for (let y = 0; y < size; y += 1) {
+      for (let x = 0; x < size; x += 1) {
+        if (modules[y][x]) context.fillRect((x + quiet) * scale, (y + quiet) * scale, scale, scale);
+      }
+    }
+  }
+
+  async function renderDevices() {
+    const box = document.getElementById("devices-list");
+    box.innerHTML = "";
+    if (!prismSession) { box.textContent = "Sign in with a Prism id to see devices."; return; }
+    try {
+      const state = await resolvePrism(prismSession.prism, prismSession.log);
+      const current = prismSession.device?.id;
+      for (const id of state.active) {
+        const row = document.createElement("div");
+        row.className = "device";
+        const label = document.createElement("span");
+        label.textContent = `${id.slice(0, 10)}… ${state.roles[id] ?? ""}${id === current ? " (this device)" : ""}`;
+        row.appendChild(label);
+        if (id !== current) {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.textContent = "Revoke";
+          button.addEventListener("click", async () => {
+            if (!confirm(`Revoke ${id.slice(0, 10)}…? Sign in again afterward to publish it.`)) return;
+            try {
+              prismSession = await revokeDevice(prismSession, id, { rotate: true });
+              await saveSession("default", prismSession);
+              append("Device revoked. Sign in again to publish the revocation.", "sys");
+              renderDevices();
+            } catch (error) {
+              append(`Revoke: ${error.message}`, "err");
+            }
+          });
+          row.appendChild(button);
+        }
+        box.appendChild(row);
+      }
+      if (!state.active.length) box.textContent = "No active devices.";
+    } catch (error) {
+      box.textContent = `Devices: ${error.message}`;
+    }
+  }
+
+  document.getElementById("link-offer").addEventListener("click", async () => {
+    if (!prismSession) { append("Sign in with a Prism id first.", "err"); return; }
+    try {
+      pendingOffer = await createLinkOffer(prismSession, { now: Date.now(), ttl: 5 * 60 * 1000 });
+      document.getElementById("link-uri").value = pendingOffer.uri;
+      drawQr(document.getElementById("link-qr"), pendingOffer.uri);
+      document.getElementById("link-offer-box").hidden = false;
+      document.getElementById("link-response-box").hidden = true;
+      append("Link offer created. On the new device, choose Join an existing Prism id.", "sys");
+    } catch (error) {
+      append(`Link: ${error.message}`, "err");
+    }
+  });
+
+  document.getElementById("link-accept").addEventListener("click", async () => {
+    if (!pendingOffer) { append("Create an offer first.", "err"); return; }
+    let request;
+    try { request = JSON.parse(document.getElementById("link-request").value); } catch { append("Paste the request JSON.", "err"); return; }
+    try {
+      const accepted = await acceptLinkRequest(prismSession, pendingOffer.pending, request, {
+        now: Date.now(),
+        confirmCode: document.getElementById("link-code").value.trim(),
+      });
+      prismSession = accepted.session;
+      await saveSession("default", prismSession);
+      document.getElementById("link-response").value = JSON.stringify(accepted.response);
+      document.getElementById("link-response-box").hidden = false;
+      append("Device accepted. Paste the response on the new device.", "sys");
+      renderDevices();
+    } catch (error) {
+      append(`Link refused: ${error.message}`, "err");
+    }
+  });
+
+  document.getElementById("link-join").addEventListener("click", () => {
+    const box = document.getElementById("link-join-box");
+    box.hidden = !box.hidden;
+  });
+
+  document.getElementById("join-request").addEventListener("click", async () => {
+    let offer;
+    try { offer = parseLinkUri(document.getElementById("join-uri").value.trim()); } catch { append("Paste a valid prism-link: URI.", "err"); return; }
+    const current = await loadSession("default");
+    if (!current) { append("Sign in with a Prism id first; a temporary one is fine.", "err"); return; }
+    try {
+      const request = await requestLink(current.device, offer);
+      const code = await linkCode(offer.secret, request.device);
+      pendingJoin = { offer, session: current };
+      document.getElementById("join-code").textContent = code;
+      document.getElementById("join-request-text").value = JSON.stringify(request);
+      document.getElementById("join-request-box").hidden = false;
+      append("Request created. Type the code on the other device and paste the request there.", "sys");
+    } catch (error) {
+      append(`Link: ${error.message}`, "err");
+    }
+  });
+
+  document.getElementById("join-complete").addEventListener("click", async () => {
+    if (!pendingJoin) { append("Create a request first.", "err"); return; }
+    let response;
+    try { response = JSON.parse(document.getElementById("join-response").value); } catch { append("Paste the response JSON.", "err"); return; }
+    try {
+      const linked = await completeLink(pendingJoin.session.device, pendingJoin.offer, response);
+      await saveSession("default", linked);
+      prismSession = linked;
+      append("This device is linked. If the other device is still signed in, quit it, then sign in with your Prism id.", "sys");
+      renderDevices();
+      send("quit", "quit");
+      setTimeout(() => document.getElementById("prism-login").click(), 1800);
+    } catch (error) {
+      append(`Link refused: ${error.message}`, "err");
+    }
+  });
+
+  document.getElementById("device-publish").addEventListener("click", () => {
+    append("Signing in again to publish the current Prism log…", "sys");
+    send("quit", "quit");
+    setTimeout(() => document.getElementById("prism-login").click(), 1800);
   });
 
   document.getElementById("help").addEventListener("click", () => send("help", "help"));
