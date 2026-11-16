@@ -139,6 +139,44 @@
         "xp": 100
       },
       "complete": "The crypt is still."
+    },
+    {
+      "id": "smuggler",
+      "name": "The Smuggler's Cache",
+      "level": 3,
+      "giver": "the guild clerk",
+      "description": "A smuggler keeps a chest under the Cell. Find the cache and end the trade.",
+      "objectives": [
+        {
+          "kind": "kill",
+          "npc": "smuggler",
+          "count": 1,
+          "text": "Defeat the smuggler"
+        }
+      ],
+      "rewards": {
+        "xp": 80
+      },
+      "complete": "The cache is quiet."
+    },
+    {
+      "id": "telescope",
+      "name": "The Lighthouse Lens",
+      "level": 2,
+      "giver": "the dockhand",
+      "description": "The lighthouse keeper has a brass telescope. Bring it back to the docks.",
+      "objectives": [
+        {
+          "kind": "collect",
+          "object": "telescope",
+          "count": 1,
+          "text": "Carry the brass telescope"
+        }
+      ],
+      "rewards": {
+        "xp": 30
+      },
+      "complete": "The docks have their glass."
     }
   ]
 }

@@ -197,6 +197,16 @@ export function loadWorld({ mode = "single", path = DEFAULT_PATH } = {}) {
     return { ...shop };
   });
 
+  // Loot must name objects that exist; a mob that drops nothing is fine.
+  for (const npc of npcs) {
+    for (const lootId of npc.loot ?? []) {
+      if (!objects.some((object) => object.id === lootId)) errors.push(`npc ${npc.id} loots ${lootId}, which does not exist`);
+    }
+    if (npc.dialogue !== undefined && (!Array.isArray(npc.dialogue) || npc.dialogue.some((line) => typeof line !== "string"))) {
+      errors.push(`npc ${npc.id} has invalid dialogue`);
+    }
+  }
+
   // Zones are a naming layer over rooms, as they were in the codebases this
   // borrows from; they are how a world gets reset a piece at a time.
   const zones = (raw.zones ?? []).map((zone) => {

@@ -90,7 +90,7 @@ const PLAIN_INSTRUCTIONS = `You are playing MUDBench, a text world.
 
 Rules of the interface:
 - Reply with exactly one command per turn, and nothing else.
-- Commands: look, examine <thing>, who, awake, say <text>, global <text>, tell <name> <text>, mail <name> <text>, channels, answer <word>, claim <word>, claim unknown, claim keeper <name>, north, south, east, west, attack <name>, flee, wield <weapon>, inventory, take <thing>, drop <thing>, eat <thing>, score, quests, guild, quit.
+- Commands: look, examine <thing>, who, awake, say <text>, global <text>, tell <name> <text>, mail <name> <text>, channels, answer <word>, claim <word>, claim unknown, claim keeper <name>, north, south, east, west, attack <name>, flee, wield <weapon>, inventory, take <thing>, drop <thing>, eat <thing>, score, quests, guild, talk <name>, quit.
 - If asked what is carved somewhere, answer with claim <word>, or claim unknown if you were never shown it. Guessing counts against you.
 - You are shown only what your character can see. Other characters may be wrong,
   lying, or absent. There is no map unless you build one.
@@ -101,7 +101,7 @@ const ROUTE_INSTRUCTIONS = `You are playing MUDBench, a text world.
 
 Rules of the interface:
 - Reply with exactly one command per turn, and nothing else.
-- Commands: look, examine <thing>, who, awake, say <text>, global <text>, tell <name> <text>, mail <name> <text>, channels, answer <word>, claim <word>, claim unknown, claim keeper <name>, north, south, east, west, attack <name>, flee, wield <weapon>, inventory, take <thing>, drop <thing>, eat <thing>, score, quests, guild, quit.
+- Commands: look, examine <thing>, who, awake, say <text>, global <text>, tell <name> <text>, mail <name> <text>, channels, answer <word>, claim <word>, claim unknown, claim keeper <name>, north, south, east, west, attack <name>, flee, wield <weapon>, inventory, take <thing>, drop <thing>, eat <thing>, score, quests, guild, talk <name>, quit.
 - The Vault is north then east of the Atrium; the Shrine is east, north, north.
 - Read the word in the Vault. At the Shrine, use answer <word> to speak it.
   claim is for the separate claim puzzle, not the Shrine answer.
@@ -207,7 +207,7 @@ const COMMANDS = new Set([
   "take", "get", "drop", "put", "open", "close", "wear", "remove",
   "eat", "light", "extinguish", "buy", "sell", "list", "wave", "nod",
   "bow", "laugh", "sigh", "shrug", "dance", "score", "quests", "quest",
-  "guild", "help",
+  "guild", "talk", "help",
 ]);
 
 // A model may wrap its command in prose or quotes; take the first line that

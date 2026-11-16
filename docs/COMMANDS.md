@@ -43,6 +43,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `sell` | `vend` | object |
 | `take` | `get`, `grab` | object |
 | `takeFrom` | — | object from object |
+| `talk` | `greet` | actor |
 | `tell` | `whisper` | actor text |
 | `unwield` | `sheathe` | none |
 | `wear` | `don` | object |
@@ -80,6 +81,8 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `boar` | The Boar at the Edge | 1 | Defeat the wild boar | 40 xp |
 | `well` | The Well Key | 1 | Carry the brass key | 25 xp |
 | `ghoul` | The Crypt Ghoul | 3 | Defeat the crypt ghoul | 100 xp |
+| `smuggler` | The Smuggler's Cache | 3 | Defeat the smuggler | 80 xp |
+| `telescope` | The Lighthouse Lens | 2 | Carry the brass telescope | 30 xp |
 
 ## Rooms
 
@@ -89,7 +92,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 2 | The Corridor | temple | no | south 1, east 4 |
 | 3 | The Storeroom | temple | yes | west 1, north 5 |
 | 4 | The Vault | temple | no | west 2 |
-| 5 | The Cell | temple | no | south 3, north 6 |
+| 5 | The Cell | temple | no | south 3, north 6, down 25 |
 | 6 | The Shrine | temple | yes | south 5, north 7 |
 | 7 | The Chancel | temple | yes | south 6 |
 | 8 | Market Square | town | yes | north 1, east 9, west 10, south 11 |
@@ -103,10 +106,18 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 16 | The Old Well | wilds | no | west 11 |
 | 17 | The Graveyard | wilds | no | east 11, south 21 |
 | 18 | The Deep Forest | wilds | no | west 15, south 20 |
-| 19 | The Riverbank | wilds | no | north 15, east 20 |
+| 19 | The Riverbank | wilds | no | north 15, east 20, south 30 |
 | 20 | The Abandoned Mill | wilds | no | west 19, north 18 |
 | 21 | The Crypt Entrance | wilds | no | north 17, down 22 |
 | 22 | The Crypt Hall | wilds | no | up 21, east 23 |
 | 23 | The Ossuary | wilds | no | west 22 |
 | 24 | The Guild Hall | town | yes | south 10 |
+| 25 | The Undercroft | undercroft | no | up 5, east 26, south 27 |
+| 26 | The Sewer Junction | undercroft | no | west 25, east 28 |
+| 27 | The Flooded Passage | undercroft | no | north 25, east 29 |
+| 28 | The Rat Warren | undercroft | no | west 26, north 29 |
+| 29 | The Smuggler's Cache | undercroft | no | west 27, south 28 |
+| 30 | The Harbor Quay | harbor | no | north 19, east 31 |
+| 31 | The Docks | harbor | no | west 30, north 32 |
+| 32 | The Lighthouse | harbor | no | south 31 |
 

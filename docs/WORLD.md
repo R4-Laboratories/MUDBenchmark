@@ -1,6 +1,6 @@
 # The world
 
-Twenty-four rooms in three zones, arranged so a new player can walk out of the
+Thirty-two rooms in five zones, arranged so a new player can walk out of the
 Atrium and keep going. The Vault and Shrine remain exactly where the benchmark
 expects them.
 
@@ -32,6 +32,14 @@ expects them.
 | 22 | The Crypt Hall | wilds | no | u 21, e 23 |
 | 23 | The Ossuary | wilds | no | w 22 |
 | 24 | The Guild Hall | town | yes | s 10 |
+| 25 | The Undercroft | undercroft | no | up 5, e 26, s 27 |
+| 26 | The Sewer Junction | undercroft | no | w 25, e 28 |
+| 27 | The Flooded Passage | undercroft | no | n 25, e 29 |
+| 28 | The Rat Warren | undercroft | no | w 26, n 29 |
+| 29 | The Smuggler's Cache | undercroft | no | w 27, s 28 |
+| 30 | The Harbor Quay | harbor | no | n 19, e 31 |
+| 31 | The Docks | harbor | no | w 30, n 32 |
+| 32 | The Lighthouse | harbor | no | s 31 |
 
 Every exit has a way back. Every room has a long description, at least one
 `details` entry for `look <thing>`, and at least one ambient line that shows on
@@ -44,9 +52,13 @@ a rotating basis.
 | temple | 1–7 | bard, rat, moth, guard, shopkeeper, vault guardian |
 | town | 8–14, 24 | smith, innkeeper, market woman, guild clerk |
 | wilds | 15–23 | boar, wolf, ghoul |
+| undercroft | 25–29 | sewer rat, smuggler |
+| harbor | 30–32 | dockhand, lighthouse keeper |
 
 A wandering mobile filters its exits to rooms in its own zone, so the boar stays
 in the wilds and the market stays a market. Aggression is skipped in safe rooms.
+Unsafe rooms say `Contested ground: players may attack here.`; safe rooms say
+`This is a safe place.`
 
 ## Shops
 
@@ -70,6 +82,8 @@ the change; `sell` pays half value; the two-hour reset returns unsold stock.
 | The True Word | 1 | enter the Vault, answer at the Shrine |
 | The Vault Guardian | 2 | defeat the stone figure |
 | The Crypt Ghoul | 3 | defeat the ghoul |
+| The Smuggler's Cache | 3 | defeat the smuggler |
+| The Lighthouse Lens | 2 | carry the brass telescope |
 
 ## Login
 

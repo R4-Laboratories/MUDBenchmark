@@ -13,7 +13,7 @@
   * { box-sizing: border-box; }
   body {
     margin: 0; min-height: 100vh; background: var(--bg); color: var(--text);
-    font: 14px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font: 16px/1.7 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   }
   header {
     display: flex; align-items: baseline; gap: 12px; padding: 10px 16px;
@@ -21,21 +21,37 @@
   }
   header strong { color: var(--text); font-weight: 600; letter-spacing: .06em; }
   header .spacer { flex: 1; }
+  header button {
+    background: transparent; color: var(--muted); border: 1px solid var(--line);
+    font: inherit; padding: 2px 8px; cursor: pointer;
+  }
+  header button:hover { color: var(--text); border-color: var(--muted); }
   #state { color: var(--muted); }
   #state.live { color: var(--good); }
   main {
     display: grid; grid-template-columns: minmax(0, 1fr) 340px;
     height: calc(100vh - 47px);
   }
-  #terminal { display: flex; flex-direction: column; min-width: 0; border-right: 1px solid var(--line); }
-  #log { flex: 1; overflow-y: auto; padding: 16px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  #terminal { display: flex; flex-direction: column; min-width: 0; min-height: 0; border-right: 1px solid var(--line); position: relative; }
+  #log {
+    flex: 1; min-height: 0; overflow-y: auto; padding: 22px 26px;
+    white-space: pre-wrap; overflow-wrap: anywhere;
+    font-size: var(--log-size, 16px); line-height: 1.7;
+    max-width: 110ch; width: 100%; margin: 0 auto;
+  }
+  #latest {
+    position: absolute; right: 18px; bottom: 64px; display: none;
+    background: #1f6feb; color: #fff; border: 0; padding: 7px 12px;
+    font: inherit; cursor: pointer; box-shadow: 0 4px 16px #0008;
+  }
+  #latest:hover { background: #388bfd; }
   #log .me { color: var(--accent); }
   #log .sys { color: var(--muted); }
   #log .err { color: #ff7b72; }
   #entry { display: flex; border-top: 1px solid var(--line); }
   #entry input {
     flex: 1; background: transparent; border: 0; outline: 0;
-    padding: 13px 16px; color: var(--text); font: inherit;
+    padding: 14px 18px; color: var(--text); font: inherit; font-size: max(16px, var(--log-size, 16px));
   }
   #entry input::placeholder { color: var(--faint); }
   #entry input:disabled { opacity: .45; }
@@ -79,10 +95,14 @@
     <span class="muted">one world · people and agents</span>
     <span class="spacer"></span>
     <span id="state">connecting…</span>
+    <span class="spacer"></span>
+    <button type="button" id="font-down" title="Smaller text">A−</button>
+    <button type="button" id="font-up" title="Larger text">A+</button>
   </header>
   <main>
     <section id="terminal">
       <div id="log" aria-live="polite"></div>
+      <button type="button" id="latest">↓ Latest</button>
       <form id="entry">
         <input id="cmd" autocomplete="off" disabled placeholder="Sign in to play" aria-label="Command">
         <button type="submit">Send</button>
@@ -118,8 +138,11 @@
 
       <section class="panel">
         <h2>Hand to an agent</h2>
-        <p>The agent connects on the same WebSocket, logs in with this account, sees the same room and obeys the same 250 ms allowance. It gets no privileged view.</p>
-        <button type="button" id="agent-toggle">Show agent command</button>
+        <p>The agent runs <strong>on your machine</strong>, not on the game server. It connects on the same WebSocket, logs in with this account, sees the same room and obeys the same 250 ms allowance. Quit this browser character first: one character has one controller. The game server never sees a provider key.</p>
+        <div class="row">
+          <a class="button" href="/agent.mjs" download>Download agent.mjs</a>
+          <button type="button" id="agent-toggle">Show command</button>
+        </div>
         <div id="agent-panel">
           <div class="field">
             <label for="provider">Provider</label>
@@ -166,16 +189,44 @@
   const provider = document.getElementById("provider");
   const model = document.getElementById("model");
   const base = document.getElementById("base");
+  const latest = document.getElementById("latest");
 
   let socket;
   let authed = false;
+  let stick = true;
+
+  const savedFont = (() => { try { return Number(localStorage.getItem("mudbench-font")) || 16; } catch { return 16; } })();
+  const setFont = (size) => {
+    const next = Math.max(12, Math.min(24, size));
+    document.documentElement.style.setProperty("--log-size", `${next}px`);
+    try { localStorage.setItem("mudbench-font", String(next)); } catch {}
+  };
+  setFont(savedFont);
+  document.getElementById("font-down").addEventListener("click", () => setFont((Number(localStorage.getItem("mudbench-font")) || 16) - 1));
+  document.getElementById("font-up").addEventListener("click", () => setFont((Number(localStorage.getItem("mudbench-font")) || 16) + 1));
+
+  const atBottom = () => log.scrollHeight - log.scrollTop - log.clientHeight < 48;
+  log.addEventListener("scroll", () => {
+    stick = atBottom();
+    latest.style.display = stick ? "none" : "block";
+  });
+  latest.addEventListener("click", () => {
+    stick = true;
+    latest.style.display = "none";
+    log.scrollTop = log.scrollHeight;
+  });
 
   const append = (text, cls) => {
     const span = document.createElement("span");
     if (cls) span.className = cls;
     span.textContent = String(text).replace(/\r/g, "").replace(/\n+$/, "") + "\n";
     log.appendChild(span);
-    log.scrollTop = log.scrollHeight;
+    // Keep the reader at the newest line unless they have deliberately
+    // scrolled up; in that case offer a jump instead of yanking them down.
+    requestAnimationFrame(() => {
+      if (stick) log.scrollTop = log.scrollHeight;
+      latest.style.display = stick ? "none" : "block";
+    });
   };
 
   const rememberName = () => {
@@ -302,7 +353,8 @@
     } else {
       env = `BRAIN=llm MODEL_PROVIDER=openai MODEL_BASE_URL=${base.value || "https://api.example.com/v1"} MODEL_NAME=${model.value || "your-model"} MODEL_API_KEY_FILE=$HOME/.config/mudbench-model.key`;
     }
-    agentCommand.textContent = `cd runtime\n${env} HARNESS_NAME=${name} HARNESS_PASSWORD='<your password>' WS_URL=${ws} node harness.mjs`;
+    const host = location.host;
+    agentCommand.textContent = `curl -O ${location.protocol}//${host}/agent.mjs\n${env} HARNESS_NAME=${name} HARNESS_PASSWORD='<your password>' WS_URL=${ws} node agent.mjs`;
   }
   renderAgent();
 

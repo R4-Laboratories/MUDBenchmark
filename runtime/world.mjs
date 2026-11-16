@@ -22,6 +22,9 @@ export const AREA_PERIOD = 28_800;
 
 export const PULSES = {
   mobile: 4,
+  // One combat round every three seconds. Old MUDs did not resolve a fight in
+  // a second; the input allowance stays at 250 ms, but steel is slower.
+  violence: 12,
   area: AREA_PERIOD,
 };
 
@@ -129,8 +132,8 @@ function advanceQuests(state, actor, event, events) {
 }
 
 const DEFAULT_CLIMATE = {
-  dayLength: 720,
-  weatherPeriod: 120,
+  dayLength: 7200,
+  weatherPeriod: 2400,
   phases: [
     { id: "night", from: 0, to: 5 },
     { id: "day", from: 6, to: 23 },
@@ -185,7 +188,7 @@ export function initialState(rooms, npcs = [], objects = [], start = 1, climate 
     // first tick fire, then every period after it.
     pulses: {
       mobile: makePulse({ period: 4, remaining: 4 }),
-      violence: makePulse({ period: 4, remaining: 4 }),
+      violence: makePulse({ period: 12, remaining: 12 }),
       area: makePulse({ period: AREA_PERIOD, remaining: AREA_PERIOD }),
       weather: makePulse({ period: climate.weatherPeriod, remaining: climate.weatherPeriod }),
     },
@@ -1229,8 +1232,17 @@ export function step({ state, rooms, intents }) {
 
       if (killed) {
         if (next.npcs.includes(target)) {
+          const deathRoom = target.room;
           target.dead = true;
           target.room = null;
+          for (const lootId of target.loot ?? []) {
+            const loot = next.objects.find((object) => object.id === lootId);
+            if (!loot || loot.eaten || loot.holder !== null) continue;
+            loot.room = deathRoom;
+            loot.inside = null;
+            loot.heldRoom = null;
+            events.push({ room: deathRoom, text: `${loot.name} falls from ${target.name}.` });
+          }
           events.push({ room: attacker.room, text: `${target.name} dies.` });
           if (next.actors.includes(attacker)) {
             awardXp(next, attacker, target.xp ?? Math.max(1, target.maxHp ?? 1), events);

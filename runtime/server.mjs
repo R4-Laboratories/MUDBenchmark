@@ -814,6 +814,16 @@ async function handleCommand(id, line) {
     return;
   }
 
+  if (named === "talk") {
+    const messages = VERB_TABLE.verbs.talk.messages;
+    const npc = npcsIn(actor.room).find((candidate) => candidate.name.toLowerCase().includes(words.toLowerCase()));
+    if (!npc) return sendTo(id, `${render(messages.missing, { words })}\r\n`);
+    const lines = Array.isArray(npc.dialogue) && npc.dialogue.length ? npc.dialogue : [npc.description ?? npc.examine ?? `${npc.name} has nothing to say.`];
+    const line = lines[nextFrom(state.tick + npc.id.length, lines.length)];
+    recordSpan("world.talk", { "actor.id": id, "npc.id": npc.id, "room.id": actor.room, "text": line.slice(0, 500), "world.tick": state.tick }, 0);
+    return sendTo(id, `${render(messages.actor, { words: `${npc.name} says: ${line}` })}\r\n`);
+  }
+
   if (named === "inventory") {
     const carried = state.objects.filter((o) => o.holder === actor.id && !o.eaten);
     const names = carried.map((o) => {
@@ -1226,6 +1236,17 @@ const web = http.createServer((req, res) => {
     } catch {
       res.writeHead(500, { "content-type": "text/plain" });
       res.end("client missing");
+    }
+    return;
+  }
+  if (req.url === "/agent.mjs") {
+    try {
+      const source = readFileSync(new URL("./agent.mjs", import.meta.url));
+      res.writeHead(200, { "content-type": "text/javascript; charset=utf-8" });
+      res.end(source);
+    } catch {
+      res.writeHead(404, { "content-type": "text/plain" });
+      res.end("not found");
     }
     return;
   }

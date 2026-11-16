@@ -1,7 +1,7 @@
 # Combat
 
-Combat is a duel of clocks. The violence pulse fires every four ticks — one
-second — and resolves one round for each engagement. The tick and the
+Combat is a duel of clocks. The violence pulse fires every twelve ticks — three
+seconds — and resolves one round for each engagement. The tick and the
 attacker's id seed every roll, so a replay fights the same fight.
 
 ## One round

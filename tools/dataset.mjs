@@ -109,6 +109,18 @@ for (const file of inputs) {
       continue;
     }
 
+    if (span.name === "world.talk") {
+      rows.push({
+        ...common,
+        event: "talk",
+        actor: span["actor.id"] ?? null,
+        target: span["npc.id"] ?? null,
+        text: span.text ?? null,
+        room_from: num(span["room.id"]),
+      });
+      continue;
+    }
+
     if (span.name === "world.quest") {
       rows.push({
         ...common,

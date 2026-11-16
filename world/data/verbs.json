@@ -392,6 +392,17 @@
         "noGuild": "You are not in a guild.",
         "empty": "Say what to your guild?"
       }
+    },
+    "talk": {
+      "aliases": [
+        "greet"
+      ],
+      "argument": "actor",
+      "messages": {
+        "actor": "%s",
+        "others": "%a speaks with %t.",
+        "missing": "There is no %s here to talk to."
+      }
     }
   }
 }

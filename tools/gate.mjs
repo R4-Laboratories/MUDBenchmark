@@ -741,11 +741,15 @@ let combat2 = { ok: true, why: [] };
 
   state.actors[0].room = 2;
   state.actors[0].xp = 95;
-  state.npcs.find((npc) => npc.id === "guard").hp = 1;
+  const guard = state.npcs.find((npc) => npc.id === "guard");
+  guard.hp = 1;
+  guard.loot = ["boar-tusk"];
   run([{ kind: "attack", actorId: "a", targetId: "guard" }]);
-  for (let i = 0; i < 60; i += 1) run([]);
+  for (let i = 0; i < 120; i += 1) run([]);
   check(state.actors[0].level === 2 && state.actors[0].xp >= 107, `a kill did not grant experience and a level (level ${state.actors[0].level}, xp ${state.actors[0].xp})`);
   check(state.actors[0].maxHp === 12, "a level did not raise maximum hit points");
+  const tusk = state.objects.find((object) => object.id === "boar-tusk");
+  check(tusk.room === 2 && tusk.holder === null, "mob loot did not fall in the death room");
 
   // PvP: a second player in an unsafe room is a target; death wakes them at the
   // start and the killer gains experience.

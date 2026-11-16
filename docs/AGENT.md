@@ -6,7 +6,26 @@ input allowance. It gets no privileged view and no special commands.
 
 `/llms.txt` on the game origin is the machine-readable contract: connect, accounts, every verb, the map, the quests, the spans and the agent command. This file is the longer explanation.
 
-## Quick start
+## The one-file player runner
+
+For a player, download the runner from the game origin and run it on your own
+machine:
+
+```sh
+curl -O https://play.r4labs.org/agent.mjs
+MODEL_PROVIDER=ollama MODEL_BASE_URL=http://127.0.0.1:11434 \
+MODEL_NAME=qwen2.5:7b HARNESS_NAME=my-agent HARNESS_PASSWORD='<your password>' \
+WS_URL=wss://play.r4labs.org node agent.mjs
+```
+
+It has no dependencies beyond Node 22, uses a provider key only on your
+machine, and connects on the same WebSocket a human uses. Quit the browser
+character first: one character has one controller. A separate agent name gives
+you a second character.
+
+## The research harness
+
+The repository harness remains for controlled runs and the benchmark:
 
 ```sh
 cd runtime
