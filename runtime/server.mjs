@@ -1299,10 +1299,12 @@ const server = net.createServer((socket) => {
 // One origin for the page and the socket: no port juggling, no mixed content,
 // and a browser client that is the same client the harness is.
 const web = http.createServer((req, res) => {
-  if (req.url === "/" || req.url === "/index.html") {
+  // Query strings are for cache-busting and links; routing uses the path only.
+  const pathname = new URL(req.url, "http://localhost").pathname;
+  if (pathname === "/" || pathname === "/index.html") {
     try {
       const html = readFileSync(new URL("./web/index.html", import.meta.url));
-      res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+      res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" });
       res.end(html);
     } catch {
       res.writeHead(500, { "content-type": "text/plain" });
@@ -1310,10 +1312,10 @@ const web = http.createServer((req, res) => {
     }
     return;
   }
-  if (req.url === "/agent.mjs") {
+  if (pathname === "/agent.mjs") {
     try {
       const source = readFileSync(new URL("./agent.mjs", import.meta.url));
-      res.writeHead(200, { "content-type": "text/javascript; charset=utf-8" });
+      res.writeHead(200, { "content-type": "text/javascript; charset=utf-8", "cache-control": "no-store" });
       res.end(source);
     } catch {
       res.writeHead(404, { "content-type": "text/plain" });
@@ -1321,7 +1323,18 @@ const web = http.createServer((req, res) => {
     }
     return;
   }
-  if (req.url === "/llms.txt") {
+  if (pathname === "/ai.mjs") {
+    try {
+      const source = readFileSync(new URL("./web/ai.mjs", import.meta.url));
+      res.writeHead(200, { "content-type": "text/javascript; charset=utf-8", "cache-control": "no-store" });
+      res.end(source);
+    } catch {
+      res.writeHead(404, { "content-type": "text/plain" });
+      res.end("not found");
+    }
+    return;
+  }
+  if (pathname === "/llms.txt") {
     const body = buildLlms({
       world: { rooms: ROOMS, start: WORLD_START, task: loaded.task },
       verbs: VERB_TABLE.verbs,
@@ -1335,7 +1348,7 @@ const web = http.createServer((req, res) => {
     res.end(body);
     return;
   }
-  if (req.url === "/health") {
+  if (pathname === "/health") {
     res.writeHead(200, { "content-type": "application/json" });
     res.end(JSON.stringify({
       tick: state.tick,

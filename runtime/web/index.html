@@ -11,6 +11,7 @@
     --muted: #8b949e; --faint: #484f58; --accent: #79c0ff; --good: #7ee787;
   }
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
   body {
     margin: 0; min-height: 100vh; background: var(--bg); color: var(--text);
     font: 16px/1.7 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -26,13 +27,28 @@
     font: inherit; padding: 2px 8px; cursor: pointer;
   }
   header button:hover { color: var(--text); border-color: var(--muted); }
+  #modes { display: flex; border: 1px solid var(--line); align-self: center; }
+  #modes button { border: 0; border-right: 1px solid var(--line); padding: 3px 10px; }
+  #modes button:last-child { border-right: 0; }
+  #modes button.active { background: var(--accent); color: #0d1117; }
   #state { color: var(--muted); }
   #state.live { color: var(--good); }
   main {
-    display: grid; grid-template-columns: minmax(0, 1fr) 340px;
+    display: grid; grid-template-columns: minmax(0, 1fr) 360px;
     height: calc(100vh - 47px);
   }
+  body.ai-mode main { grid-template-columns: minmax(0, 1fr) 400px; }
   #terminal { display: flex; flex-direction: column; min-width: 0; min-height: 0; border-right: 1px solid var(--line); position: relative; }
+  #livebar {
+    display: none; align-items: center; gap: 10px; padding: 7px 18px;
+    border-bottom: 1px solid var(--line); background: #0b0f14; font-size: 13px;
+  }
+  body.ai-mode #livebar { display: flex; }
+  #livebar .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); }
+  #livebar.live .dot { background: #ff5c5c; box-shadow: 0 0 8px #ff5c5c; animation: pulse 1.6s infinite; }
+  #livebar .spacer { flex: 1; }
+  #live-thought { max-width: 52ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+  @keyframes pulse { 50% { opacity: .35; } }
   #log {
     flex: 1; min-height: 0; overflow-y: auto; padding: 22px 26px;
     white-space: pre-wrap; overflow-wrap: anywhere;
@@ -49,6 +65,7 @@
   #log .me { color: var(--accent); }
   #log .sys { color: var(--muted); }
   #log .err { color: #ff7b72; }
+  #log .ai-cmd { color: var(--accent); opacity: .9; }
   #log .room {
     color: var(--accent); font-weight: 600; letter-spacing: .04em;
     margin-top: 24px; padding-top: 12px; border-top: 1px solid var(--line);
@@ -64,6 +81,7 @@
   #log .exits { color: var(--muted); margin-top: 10px; }
   #log .event { color: #b8c4d2; }
   #entry { display: flex; border-top: 1px solid var(--line); }
+  body.ai-mode #entry { display: none; }
   #entry input {
     flex: 1; background: transparent; border: 0; outline: 0;
     padding: 14px 18px; color: var(--text); font: inherit; font-size: max(16px, var(--log-size, 16px));
@@ -77,29 +95,74 @@
   #entry button { margin: 6px; padding: 8px 16px; }
   #entry button:hover, .panel button:hover, .panel a.button:hover { background: #388bfd; }
   aside { overflow-y: auto; padding: 14px; background: var(--panel); }
+  body.ai-mode:not(.ai-running) aside { overflow-y: auto; }
+  body.ai-mode.ai-running aside { overflow: hidden; display: flex; flex-direction: column; }
   .panel { border: 1px solid var(--line); padding: 12px; margin-bottom: 14px; }
   .panel h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); margin: 0 0 10px; }
   .panel p { margin: 0 0 10px; color: var(--muted); font-size: 12px; }
   .field { display: grid; gap: 6px; margin-bottom: 8px; }
   .field label { color: var(--muted); font-size: 12px; }
-  .field input, .field select {
+  .field input, .field select, #director-form input {
     background: #0b0f14; color: var(--text); border: 1px solid var(--line);
     padding: 8px; font: inherit; min-width: 0;
   }
   .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
   .row button { flex: 1; }
+  .row.grow input { flex: 1; }
   .muted { color: var(--muted); }
   .small { font-size: 12px; }
+  .err { color: #ff7b72; }
   pre {
     margin: 8px 0 0; padding: 10px; background: #0b0f14; border: 1px solid var(--line);
     white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; color: var(--muted);
   }
   #signed { display: none; }
-  #signed strong { color: var(--good); }
-  #agent-panel { display: none; }
+  #ai-setup { display: none; }
+  body.ai-mode #ai-setup { display: block; }
+  body.ai-mode.ai-running #ai-setup { display: none; }
+  body.ai-mode #account, body.ai-mode #signed, body.ai-mode #glance { display: none; }
+  #ai-live { display: none; }
+  body.ai-mode.ai-running #ai-live {
+    display: flex; flex-direction: column; flex: 1; min-height: 0;
+    border: 1px solid var(--line); padding: 12px; margin-bottom: 0;
+  }
+  #ai-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+  #ai-head .row { margin: 0; flex: 0 1 auto; }
+  #ai-head button { padding: 4px 8px; font-size: 12px; }
+  #ai-sub { display: block; font-size: 11px; }
+  #chat {
+    flex: 1; min-height: 120px; overflow-y: auto; display: flex; flex-direction: column;
+    gap: 8px; padding-right: 4px;
+  }
+  .msg { border: 1px solid var(--line); background: #0b0f14; padding: 8px 10px; font-size: 13px; line-height: 1.5; }
+  .msg.you { border-color: #1f6feb88; }
+  .msg.ai { border-color: #7ee78766; }
+  .msg.system { border-color: #f0883e66; color: var(--muted); }
+  .msg .who { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  #director-form { display: flex; gap: 6px; margin-top: 8px; }
+  #director-form input { flex: 1; }
+  #director-form button { background: #1f6feb; color: #fff; border: 0; padding: 8px 12px; font: inherit; cursor: pointer; }
+  #observe {
+    height: 42%; min-height: 170px; display: flex; flex-direction: column;
+    border-top: 1px solid var(--line); margin-top: 10px; padding-top: 8px;
+  }
+  #tabs { display: flex; gap: 4px; margin-bottom: 6px; }
+  #tabs .tab { flex: 1; background: transparent; color: var(--muted); border: 1px solid var(--line); padding: 4px; cursor: pointer; font: inherit; }
+  #tabs .tab.active { color: var(--text); border-color: var(--accent); }
+  .pane { flex: 1; min-height: 0; overflow-y: auto; }
+  #mind { display: flex; flex-direction: column; gap: 8px; }
+  .thought { border-left: 2px solid var(--accent); padding: 6px 10px; background: #0b0f14; font-size: 13px; line-height: 1.5; }
+  .thought .meta { color: var(--muted); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 4px; }
+  #run-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
+  .stat { border: 1px solid var(--line); padding: 6px 8px; font-size: 11px; color: var(--muted); }
+  .stat b { display: block; color: var(--text); font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
+  #ai-settings { font-size: 12px; color: var(--muted); margin-top: 6px; overflow-wrap: anywhere; }
   @media (max-width: 900px) {
     main { grid-template-columns: 1fr; height: auto; }
+    body.ai-mode main { grid-template-columns: 1fr; }
     #terminal { height: 62vh; border-right: 0; border-bottom: 1px solid var(--line); }
+    body.ai-mode.ai-running #terminal { height: 55vh; }
+    body.ai-mode.ai-running aside { height: 78vh; }
     aside { max-height: none; }
   }
 </style>
@@ -107,7 +170,12 @@
 <body>
   <header>
     <strong>MUDBench</strong>
-    <span class="muted">one world · people and agents</span>
+    <span class="muted" id="tagline">one world · people and agents</span>
+    <span class="spacer"></span>
+    <div id="modes" role="tablist" aria-label="Mode">
+      <button type="button" id="mode-play" class="mode active">Play</button>
+      <button type="button" id="mode-ai" class="mode">Watch AI</button>
+    </div>
     <span class="spacer"></span>
     <span id="state">connecting…</span>
     <span class="spacer"></span>
@@ -116,6 +184,14 @@
   </header>
   <main>
     <section id="terminal">
+      <div id="livebar">
+        <span class="dot"></span>
+        <strong id="live-name">AI</strong>
+        <span id="live-room" class="muted"></span>
+        <span id="live-thought" class="muted"></span>
+        <span class="spacer"></span>
+        <span id="live-status" class="muted">setting up</span>
+      </div>
       <div id="log" aria-live="polite"></div>
       <button type="button" id="latest">↓ Latest</button>
       <form id="entry">
@@ -152,46 +228,98 @@
         </div>
       </section>
 
-      <section class="panel">
-        <h2>Hand to an agent</h2>
-        <p>The agent runs <strong>on your machine</strong>, not on the game server. It connects on the same WebSocket, logs in with this account, sees the same room and obeys the same 250 ms allowance. Quit this browser character first: one character has one controller. The game server never sees a provider key.</p>
-        <div class="row">
-          <a class="button" href="/agent.mjs" download>Download agent.mjs</a>
-          <button type="button" id="agent-toggle">Show command</button>
+      <section class="panel" id="ai-setup">
+        <h2>Watch an AI play</h2>
+        <p>The AI gets its own character and plays through this same page. It sees the room text, types one command per turn, and is bound by the same 250&nbsp;ms limit. You steer it in the Director chat; its reasoning appears in Mind. The provider key stays in this browser.</p>
+        <div class="field">
+          <label for="ai-provider">Brain</label>
+          <select id="ai-provider"></select>
         </div>
-        <div id="agent-panel">
-          <div class="field">
-            <label for="provider">Provider</label>
-            <select id="provider">
-              <option value="ollama">Ollama (local)</option>
-              <option value="openai">OpenAI-compatible</option>
-              <option value="prime-router">prime-router</option>
-            </select>
+        <div class="field">
+          <label for="ai-base">Base URL</label>
+          <input id="ai-base" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="ai-model">Model</label>
+          <div class="row grow">
+            <input id="ai-model" list="ai-models" autocomplete="off">
+            <button type="button" id="ai-find">Find</button>
           </div>
-          <div class="field">
-            <label for="model">Model</label>
-            <input id="model" value="qwen2.5:7b" autocomplete="off">
+          <datalist id="ai-models"></datalist>
+        </div>
+        <div class="field" id="ai-key-field">
+          <label for="ai-key">API key <span class="muted">(this browser only)</span></label>
+          <input id="ai-key" type="password" autocomplete="off" placeholder="sk-…">
+        </div>
+        <div class="field">
+          <label for="ai-name">AI character</label>
+          <div class="row grow">
+            <input id="ai-name" autocomplete="off" maxlength="24" placeholder="scout">
+            <button type="button" id="ai-newname">New</button>
           </div>
-          <div class="field">
-            <label for="base">Base URL</label>
-            <input id="base" value="http://127.0.0.1:11434" autocomplete="off">
+        </div>
+        <div class="row">
+          <button type="button" id="ai-start">Start watching</button>
+          <button type="button" id="ai-forget">Forget key</button>
+        </div>
+        <p class="small muted" id="ai-hint"></p>
+        <details class="small muted">
+          <summary>How this works</summary>
+          <p>1. Pick a brain. Ollama is free and local; OpenAI and Anthropic need a key.</p>
+          <p>2. The AI registers its own character on first run. The name and a generated password stay in this browser.</p>
+          <p>3. It sees the same room text you do, types one command per turn, and waits for the server like any player.</p>
+          <p>4. Send direction in the Director chat. The AI replies there and its private reasoning appears in Mind.</p>
+          <p>The game server never sees the provider key.</p>
+        </details>
+      </section>
+
+      <section class="panel" id="ai-live">
+        <div id="ai-head">
+          <div>
+            <strong id="ai-title">scout</strong>
+            <span id="ai-sub" class="muted">ready</span>
           </div>
-          <pre id="agent-command">Fill in a name to generate the command.</pre>
           <div class="row">
-            <button type="button" id="copy">Copy</button>
-            <a class="button" href="https://github.com/R4-Laboratories/MUDBenchmark/blob/main/docs/AGENT.md">Agent docs</a>
+            <button type="button" id="ai-pause">Pause</button>
+            <button type="button" id="ai-step">Step</button>
+            <button type="button" id="ai-stop">Stop</button>
+          </div>
+        </div>
+        <div id="chat" aria-live="polite"></div>
+        <form id="director-form">
+          <input id="director-input" autocomplete="off" placeholder="Steer the AI…" aria-label="Director message">
+          <button type="submit">Send</button>
+        </form>
+        <div id="observe">
+          <div id="tabs" role="tablist">
+            <button type="button" class="tab active" data-tab="mind">Mind</button>
+            <button type="button" class="tab" data-tab="run">Run</button>
+          </div>
+          <div id="mind-pane" class="pane"><div id="mind"></div></div>
+          <div id="run-pane" class="pane" hidden>
+            <div id="run-stats"></div>
+            <div class="row">
+              <button type="button" id="ai-transcript">Download transcript</button>
+              <button type="button" id="ai-copy">Copy JSON</button>
+            </div>
+            <details class="small muted"><summary>Brain settings</summary><div id="ai-settings"></div></details>
           </div>
         </div>
       </section>
 
-      <section class="panel">
+      <section class="panel" id="glance">
         <h2>At a glance</h2>
-        <p class="small muted">24 rooms: the temple, the town and the wilds. Shops in the Storeroom, Smithy and the Gilded Rat. Quests from the shrine and the guild clerk. Safe rooms refuse combat.</p>
+        <p class="small muted">33 rooms: the temple, the town, the wilds, the undercroft and the harbor. Shops in the Storeroom, Smithy and the Gilded Rat. Quests from the shrine, the guild clerk and the docks. The Ring beneath the Docks is a consensual arena.</p>
         <p class="small muted"><a href="/llms.txt" style="color: var(--accent)">/llms.txt</a> is the machine-readable contract for agents.</p>
       </section>
     </aside>
   </main>
-<script>
+<script type="module">
+  import {
+    PROVIDERS, DEFAULT_GOAL, buildSystemPrompt, buildUserPrompt,
+    parseBrain, requestFor, replyFrom, trimHistory,
+  } from "/ai.mjs";
+
   const log = document.getElementById("log");
   const state = document.getElementById("state");
   const cmd = document.getElementById("cmd");
@@ -200,16 +328,65 @@
   const account = document.getElementById("account");
   const signed = document.getElementById("signed");
   const signedName = document.getElementById("signed-name");
-  const agentPanel = document.getElementById("agent-panel");
-  const agentCommand = document.getElementById("agent-command");
-  const provider = document.getElementById("provider");
-  const model = document.getElementById("model");
-  const base = document.getElementById("base");
   const latest = document.getElementById("latest");
+  const modePlay = document.getElementById("mode-play");
+  const modeAI = document.getElementById("mode-ai");
 
-  let socket;
+  const aiProvider = document.getElementById("ai-provider");
+  const aiBase = document.getElementById("ai-base");
+  const aiModel = document.getElementById("ai-model");
+  const aiModels = document.getElementById("ai-models");
+  const aiKey = document.getElementById("ai-key");
+  const aiKeyField = document.getElementById("ai-key-field");
+  const aiName = document.getElementById("ai-name");
+  const aiHint = document.getElementById("ai-hint");
+  const aiStart = document.getElementById("ai-start");
+  const aiForget = document.getElementById("ai-forget");
+  const aiFind = document.getElementById("ai-find");
+  const aiNewName = document.getElementById("ai-newname");
+  const aiPause = document.getElementById("ai-pause");
+  const aiStep = document.getElementById("ai-step");
+  const aiStop = document.getElementById("ai-stop");
+  const aiTitle = document.getElementById("ai-title");
+  const aiSub = document.getElementById("ai-sub");
+  const aiSettings = document.getElementById("ai-settings");
+  const aiTranscript = document.getElementById("ai-transcript");
+  const aiCopy = document.getElementById("ai-copy");
+  const chat = document.getElementById("chat");
+  const mind = document.getElementById("mind");
+  const runStats = document.getElementById("run-stats");
+  const directorForm = document.getElementById("director-form");
+  const directorInput = document.getElementById("director-input");
+  const liveName = document.getElementById("live-name");
+  const liveRoom = document.getElementById("live-room");
+  const liveStatus = document.getElementById("live-status");
+  const liveThought = document.getElementById("live-thought");
+  const livebar = document.getElementById("livebar");
+
+  const CONFIG_KEY = "mudbench-ai-config";
+  const KEY_KEY = "mudbench-ai-key";
+  const PASS_KEY = "mudbench-ai-passwords";
+  const loadJSON = (key, fallback) => {
+    try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; }
+  };
+  const saveJSON = (key, value) => {
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
+  };
+
+  let mode = "play";
+  let playSocket = null;
+  let playEnabled = true;
   let authed = false;
   let stick = true;
+
+  const AI = {
+    socket: null, config: null, password: "", name: "",
+    running: false, paused: false, authed: false, busy: false,
+    observed: "", quiet: null, registering: false,
+    turn: 0, commands: 0, latencies: [], usage: { prompt: 0, completion: 0 },
+    history: [], director: [], transcript: [], thoughts: [], room: "",
+    lastCommand: "", startedAt: null, recent: [], nudge: false, lastError: null,
+  };
 
   const savedFont = (() => { try { return Number(localStorage.getItem("mudbench-font")) || 16; } catch { return 16; } })();
   const setFont = (size) => {
@@ -254,8 +431,6 @@
       else if (!cls && !/^\[/.test(line.trim())) kind = "desc";
       addLine(line, kind);
     }
-    // Keep the reader at the newest line unless they have deliberately
-    // scrolled up; in that case offer a jump instead of yanking them down.
     requestAnimationFrame(() => {
       if (stick) log.scrollTop = log.scrollHeight;
       latest.style.display = stick ? "none" : "block";
@@ -269,15 +444,17 @@
   if (savedName) nameInput.value = savedName;
   if (savedName) passwordInput.focus();
 
-  function connect() {
+  // --- play mode ----------------------------------------------------------
+  function connectPlay() {
+    if (!playEnabled || mode !== "play") return;
     const scheme = location.protocol === "https:" ? "wss:" : "ws:";
-    socket = new WebSocket(`${scheme}//${location.host}`);
-    socket.onopen = () => {
+    playSocket = new WebSocket(`${scheme}//${location.host}`);
+    playSocket.onopen = () => {
       state.textContent = "connected";
       state.className = "live";
       append("Connected. Register or log in to play. Type help for the commands.", "sys");
     };
-    socket.onclose = () => {
+    playSocket.onclose = () => {
       state.textContent = "disconnected";
       state.className = "";
       authed = false;
@@ -285,10 +462,10 @@
       signed.style.display = "none";
       cmd.disabled = true;
       cmd.placeholder = "Sign in to play";
-      setTimeout(connect, 1500);
+      if (playEnabled && mode === "play") setTimeout(connectPlay, 1500);
     };
-    socket.onerror = () => { state.textContent = "error"; state.className = ""; };
-    socket.onmessage = (event) => {
+    playSocket.onerror = () => { state.textContent = "error"; state.className = ""; };
+    playSocket.onmessage = (event) => {
       const text = String(event.data);
       append(text);
       const who = text.match(/Signing in as ([a-z0-9_-]+)/i) ?? text.match(/Welcome, ([a-z0-9_-]+)\./i);
@@ -310,17 +487,15 @@
         signed.style.display = "none";
         cmd.disabled = true;
         cmd.placeholder = "Sign in to play";
-        // The server closes the socket; this is a belt-and-braces reset.
-        setTimeout(() => { try { socket.close(); } catch {} }, 120);
+        setTimeout(() => { try { playSocket.close(); } catch {} }, 120);
       }
     };
   }
-  connect();
 
   const send = (line, echo) => {
     if (!line) return;
     if (echo) append("> " + echo, "me");
-    if (socket.readyState === WebSocket.OPEN) socket.send(line + "\n");
+    if (playSocket?.readyState === WebSocket.OPEN) playSocket.send(line + "\n");
     else append("(not connected)", "err");
   };
 
@@ -353,53 +528,606 @@
     cmd.value = "";
   });
 
-  document.getElementById("agent-toggle").addEventListener("click", () => {
-    agentPanel.style.display = agentPanel.style.display === "block" ? "none" : "block";
-    renderAgent();
-  });
-  const baseDefaults = {
-    ollama: "http://127.0.0.1:11434",
-    openai: "https://api.example.com/v1",
-    "prime-router": "http://127.0.0.1:8000",
-  };
-  const modelDefaults = {
-    ollama: "qwen2.5:7b",
-    openai: "your-model",
-    "prime-router": "qwen2.5:7b",
-  };
-  provider.addEventListener("change", () => {
-    base.value = baseDefaults[provider.value] ?? base.value;
-    model.value = modelDefaults[provider.value] ?? model.value;
-    renderAgent();
-  });
-  model.addEventListener("input", renderAgent);
-  base.addEventListener("input", renderAgent);
-  nameInput.addEventListener("input", renderAgent);
-
-  function renderAgent() {
-    const name = nameInput.value.trim() || "my-agent";
-    const ws = location.protocol === "https:" ? `wss://${location.host}` : `ws://${location.host}`;
-    let env;
-    if (provider.value === "prime-router") {
-      env = `BRAIN=llm MODEL_PROVIDER=prime-router PRIME_ROUTER_URL=http://127.0.0.1:8000 PRIME_ROUTER_IDENTITY=mudbench-${name}`;
-    } else if (provider.value === "ollama") {
-      env = `BRAIN=llm MODEL_PROVIDER=ollama MODEL_BASE_URL=${base.value || "http://127.0.0.1:11434"} MODEL_NAME=${model.value || "qwen2.5:7b"}`;
+  // --- mode ---------------------------------------------------------------
+  function setMode(next) {
+    if (next === mode) return;
+    mode = next;
+    modePlay.classList.toggle("active", mode === "play");
+    modeAI.classList.toggle("active", mode === "ai");
+    document.body.classList.toggle("ai-mode", mode === "ai");
+    if (mode === "ai") {
+      playEnabled = false;
+      if (playSocket?.readyState === WebSocket.OPEN) {
+        try { playSocket.send("quit\n"); } catch {}
+        setTimeout(() => { try { playSocket.close(); } catch {} }, 150);
+      }
+      account.style.display = "none";
+      signed.style.display = "none";
+      if (!AI.running) setAIStatus("ready");
+      renderSetup();
+      if (!AI.running) detectLocalModels();
+      if (AI.running) document.body.classList.add("ai-running");
     } else {
-      env = `BRAIN=llm MODEL_PROVIDER=openai MODEL_BASE_URL=${base.value || "https://api.example.com/v1"} MODEL_NAME=${model.value || "your-model"} MODEL_API_KEY_FILE=$HOME/.config/mudbench-model.key`;
+      stopAI(true);
+      document.body.classList.remove("ai-mode", "ai-running");
+      account.style.display = "block";
+      signed.style.display = "none";
+      autoStart = false;
+      playEnabled = true;
+      if (!playSocket || playSocket.readyState === WebSocket.CLOSED) connectPlay();
+      state.textContent = "connected";
+      state.className = "live";
     }
-    const host = location.host;
-    agentCommand.textContent = `curl -O ${location.protocol}//${host}/agent.mjs\n${env} HARNESS_NAME=${name} HARNESS_PASSWORD='<your password>' WS_URL=${ws} node agent.mjs`;
   }
-  renderAgent();
 
-  document.getElementById("copy").addEventListener("click", async () => {
+  modePlay.addEventListener("click", () => setMode("play"));
+  modeAI.addEventListener("click", () => setMode("ai"));
+
+  // --- AI setup -----------------------------------------------------------
+  let autoStart = location.hash === "#ai";
+
+  for (const [id, provider] of Object.entries(PROVIDERS)) {
+    const option = document.createElement("option");
+    option.value = id;
+    option.textContent = provider.label;
+    aiProvider.appendChild(option);
+  }
+
+  const savedConfig = loadJSON(CONFIG_KEY, null);
+  const savedKey = (() => { try { return localStorage.getItem(KEY_KEY) ?? ""; } catch { return ""; } })();
+
+  function applyProvider(id, reset = true) {
+    const provider = PROVIDERS[id] ?? PROVIDERS.ollama;
+    if (reset) {
+      aiBase.value = provider.base;
+      aiModel.value = provider.model;
+    }
+    aiKeyField.hidden = !provider.needsKey;
+    aiHint.textContent = provider.hint;
+    aiHint.className = "small muted";
+    if (!reset) return;
+    persistConfig(false);
+  }
+
+  function persistConfig(includeKey = false) {
+    const config = {
+      provider: aiProvider.value,
+      base: aiBase.value.trim(),
+      model: aiModel.value.trim(),
+      name: aiName.value.trim() || "scout",
+    };
+    saveJSON(CONFIG_KEY, config);
+    if (includeKey) {
+      try {
+        if (aiKey.value.trim()) localStorage.setItem(KEY_KEY, aiKey.value.trim());
+        else localStorage.removeItem(KEY_KEY);
+      } catch {}
+    }
+  }
+
+  function renderSetup() {
+    const config = loadJSON(CONFIG_KEY, {}) ?? {};
+    const key = (() => { try { return localStorage.getItem(KEY_KEY) ?? ""; } catch { return ""; } })();
+    aiProvider.value = config.provider ?? "ollama";
+    aiBase.value = config.base ?? PROVIDERS[aiProvider.value].base;
+    aiModel.value = config.model ?? PROVIDERS[aiProvider.value].model;
+    aiName.value = config.name ?? "scout";
+    if (key && PROVIDERS[aiProvider.value].needsKey) aiKey.value = key;
+    applyProvider(aiProvider.value, false);
+    aiTitle.textContent = aiName.value || "scout";
+    aiSub.textContent = `${PROVIDERS[aiProvider.value].label} · ${aiModel.value || "no model"}`;
+  }
+
+  aiProvider.addEventListener("change", () => {
+    applyProvider(aiProvider.value, true);
+    aiKey.value = PROVIDERS[aiProvider.value].needsKey ? savedKey : "";
+  });
+  for (const field of [aiBase, aiModel, aiName]) field.addEventListener("change", () => persistConfig(false));
+
+  aiNewName.addEventListener("click", () => {
+    const suffix = Math.random().toString(16).slice(2, 7);
+    aiName.value = `scout-${suffix}`;
+    persistConfig(false);
+    aiHint.textContent = "New character name. It will register on first run.";
+    aiHint.className = "small muted";
+  });
+
+  aiForget.addEventListener("click", () => {
+    try { localStorage.removeItem(KEY_KEY); } catch {}
+    aiKey.value = "";
+    aiHint.textContent = "The key was removed from this browser.";
+    aiHint.className = "small muted";
+  });
+
+  function fillModels(models) {
+    aiModels.innerHTML = "";
+    for (const id of models) {
+      const option = document.createElement("option");
+      option.value = id;
+      aiModels.appendChild(option);
+    }
+    if (models.length && !models.includes(aiModel.value)) aiModel.value = models[0];
+  }
+
+  async function detectLocalModels() {
+    if (aiProvider.value !== "ollama" || !aiBase.value.trim()) return;
     try {
-      await navigator.clipboard.writeText(agentCommand.textContent);
-      append("Agent command copied. The password is a placeholder; use your own.", "sys");
+      const res = await fetch(`${aiBase.value.trim().replace(/\/+$/, "")}/models`, { signal: AbortSignal.timeout(2500) });
+      if (!res.ok) return;
+      const body = await res.json();
+      const models = (body.data ?? []).map((entry) => entry.id).filter(Boolean).sort();
+      if (!models.length) return;
+      fillModels(models);
+      showHint(`Ollama is up: ${models.length} model${models.length === 1 ? "" : "s"} found.`, false);
     } catch {
-      append("Copy failed; select the command by hand.", "err");
+      // Leave the hint alone; the setup explains how to start Ollama.
+    }
+  }
+
+  aiFind.addEventListener("click", async () => {
+    const provider = aiProvider.value;
+    if (provider === "prime-router") {
+      aiHint.textContent = "Prime Router has no model list; use its configured model.";
+      aiHint.className = "small muted";
+      return;
+    }
+    const base = aiBase.value.trim().replace(/\/+$/, "");
+    const key = aiKey.value.trim();
+    const headers = provider === "anthropic"
+      ? { "x-api-key": key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" }
+      : (key ? { authorization: `Bearer ${key}` } : {});
+    aiHint.textContent = "Looking for models…";
+    aiHint.className = "small muted";
+    try {
+      const res = await fetch(`${base}/models`, { headers });
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+      const body = await res.json();
+      const models = (body.data ?? []).map((entry) => entry.id).filter(Boolean).sort();
+      fillModels(models);
+      aiHint.textContent = models.length
+        ? `Found ${models.length} model${models.length === 1 ? "" : "s"}. Pick one above.`
+        : "The endpoint answered but listed no models.";
+      aiHint.className = "small muted";
+      persistConfig(false);
+    } catch (error) {
+      aiHint.textContent = `Could not list models: ${error.message}. Check the base URL${PROVIDERS[provider].needsKey ? " and key" : ""}.`;
+      aiHint.className = "small err";
     }
   });
+
+  function passwordFor(name) {
+    const passwords = loadJSON(PASS_KEY, {});
+    if (!passwords[name]) {
+      passwords[name] = crypto.randomUUID().replace(/-/g, "").slice(0, 24);
+      saveJSON(PASS_KEY, passwords);
+    }
+    return passwords[name];
+  }
+
+  function showHint(text, error = false) {
+    aiHint.textContent = text;
+    aiHint.className = `small ${error ? "err" : "muted"}`;
+  }
+
+  function startAI() {
+    const provider = aiProvider.value;
+    const config = {
+      provider,
+      base: aiBase.value.trim(),
+      model: aiModel.value.trim(),
+      key: aiKey.value.trim(),
+      name: aiName.value.trim() || "scout",
+      temperature: 0.7,
+      maxTokens: 400,
+    };
+    if (!/^[A-Za-z0-9_-]{1,24}$/.test(config.name)) {
+      showHint("The AI name must be 1-24 letters, digits, - or _.", true);
+      return;
+    }
+    if (!config.base || !config.model) {
+      showHint("Set a base URL and a model first.", true);
+      return;
+    }
+    if (PROVIDERS[provider].needsKey && !config.key) {
+      showHint("This provider needs an API key.", true);
+      return;
+    }
+    if (AI.socket) { try { AI.socket.close(); } catch {} AI.socket = null; }
+
+    AI.config = config;
+    AI.name = config.name;
+    AI.password = passwordFor(config.name);
+    AI.running = true;
+    AI.paused = false;
+    AI.authed = false;
+    AI.busy = false;
+    AI.registering = false;
+    AI.observed = "";
+    AI.turn = 0;
+    AI.commands = 0;
+    AI.latencies = [];
+    AI.usage = { prompt: 0, completion: 0 };
+    AI.history = [];
+    AI.director = [];
+    AI.transcript = [];
+    AI.thoughts = [];
+    AI.recent = [];
+    AI.nudge = false;
+    AI.lastError = null;
+    AI.room = "";
+    AI.lastCommand = "";
+    liveThought.textContent = "";
+    AI.startedAt = new Date().toISOString();
+
+    persistConfig(true);
+    log.innerHTML = "";
+    chat.innerHTML = "";
+    mind.innerHTML = "";
+    aiTitle.textContent = AI.name;
+    aiSub.textContent = `${PROVIDERS[provider].label} · ${config.model}`;
+    aiSettings.textContent = `${PROVIDERS[provider].label} · ${config.model} · ${config.base} · character ${AI.name}`;
+    updatePause();
+    setAIStatus("connecting");
+    document.body.classList.add("ai-mode", "ai-running");
+    mode = "ai";
+    modePlay.classList.remove("active");
+    modeAI.classList.add("active");
+    updateLiveBar();
+    updateRunStats();
+    connectAI();
+  }
+
+  function stopAI(silent = false) {
+    AI.running = false;
+    AI.paused = true;
+    AI.busy = false;
+    clearTimeout(AI.quiet);
+    if (AI.socket?.readyState === WebSocket.OPEN) {
+      try { AI.socket.send("quit\n"); } catch {}
+      setTimeout(() => { try { AI.socket.close(); } catch {} }, 100);
+    }
+    AI.socket = null;
+    AI.authed = false;
+    document.body.classList.remove("ai-running");
+    if (!silent) {
+      setAIStatus("stopped");
+      renderSetup();
+      document.body.classList.add("ai-mode");
+    }
+  }
+
+  function setAIStatus(text) {
+    const label = `AI ${text}`;
+    state.textContent = label;
+    state.className = text === "live" || text === "thinking" ? "live" : "";
+    liveStatus.textContent = text;
+    livebar.classList.toggle("live", text === "live" || text === "thinking");
+  }
+
+  function updateLiveBar() {
+    liveName.textContent = AI.name || "AI";
+    liveRoom.textContent = AI.room ? `· ${AI.room}` : "";
+    if (AI.running && AI.name) aiTitle.textContent = AI.name;
+  }
+
+  function updatePause() {
+    aiPause.textContent = AI.paused ? "Resume" : "Pause";
+  }
+
+  function setPaused(next) {
+    AI.paused = next;
+    updatePause();
+    setAIStatus(next ? "paused" : "live");
+    if (!next) scheduleTurn(250);
+  }
+
+  function addChat(who, text) {
+    const wrap = document.createElement("div");
+    wrap.className = `msg ${who}`;
+    const label = document.createElement("div");
+    label.className = "who";
+    label.textContent = who === "you" ? "You" : who === "ai" ? (AI.name || "AI") : "System";
+    const body = document.createElement("div");
+    body.textContent = text;
+    wrap.append(label, body);
+    chat.appendChild(wrap);
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  function addThought(turn, text, muted = false) {
+    const wrap = document.createElement("div");
+    wrap.className = `thought${muted ? " muted" : ""}`;
+    const meta = document.createElement("div");
+    meta.className = "meta";
+    meta.textContent = `Turn ${turn} · ${new Date().toLocaleTimeString()}`;
+    const body = document.createElement("div");
+    body.textContent = text;
+    wrap.append(meta, body);
+    mind.appendChild(wrap);
+    mind.scrollTop = mind.scrollHeight;
+    liveThought.textContent = text.slice(0, 140);
+    AI.thoughts.push({ turn, text, at: new Date().toISOString() });
+  }
+
+  function updateRunStats() {
+    const avg = AI.latencies.length
+      ? Math.round(AI.latencies.reduce((sum, value) => sum + value, 0) / AI.latencies.length)
+      : 0;
+    const tokens = AI.usage.prompt + AI.usage.completion;
+    const stats = [
+      ["Turn", String(AI.turn)],
+      ["Commands", String(AI.commands)],
+      ["Avg", avg ? `${(avg / 1000).toFixed(1)}s` : "—"],
+      ["Tokens", tokens ? `${(tokens / 1000).toFixed(1)}k` : "—"],
+      ["Model", AI.config?.model ?? "—"],
+      ["Room", AI.room || "—"],
+    ];
+    runStats.innerHTML = "";
+    for (const [label, value] of stats) {
+      const cell = document.createElement("div");
+      cell.className = "stat";
+      cell.textContent = label;
+      const strong = document.createElement("b");
+      strong.textContent = value;
+      cell.appendChild(strong);
+      runStats.appendChild(cell);
+    }
+  }
+
+  function connectAI() {
+    const scheme = location.protocol === "https:" ? "wss:" : "ws:";
+    const ws = new WebSocket(`${scheme}//${location.host}`);
+    AI.socket = ws;
+    ws.onopen = () => {
+      setAIStatus("signing in");
+      ws.send(`login ${AI.name} ${AI.password}\n`);
+    };
+    ws.onclose = () => {
+      AI.authed = false;
+      if (AI.running) {
+        setAIStatus("disconnected");
+        addChat("system", "The AI's connection closed.");
+      }
+    };
+    ws.onerror = () => {
+      setAIStatus("error");
+      addChat("system", "The AI's connection failed.");
+    };
+    ws.onmessage = (event) => {
+      const text = String(event.data);
+      // The guest banner is for a person about to register. The AI is not that
+      // person; hide it so the stream starts at the login.
+      if (/^Welcome to MUDBench\.\r?\nRegister/.test(text)) return;
+      AI.observed += text;
+      append(text);
+
+      if (/No such name/i.test(text) && !AI.registering) {
+        AI.registering = true;
+        setTimeout(() => {
+          if (AI.socket?.readyState === WebSocket.OPEN) {
+            AI.socket.send(`register ${AI.name} ${AI.password}\n`);
+          }
+        }, 320);
+      }
+      if (/That name is already signed in|That name and password do not match|That name is taken/i.test(text)) {
+        AI.paused = true;
+        updatePause();
+        setAIStatus("error");
+        addChat("system", text.trim());
+        return;
+      }
+      if (/Signing in as|Account .* created|Welcome,\s/.test(text)) {
+        if (!AI.authed) {
+          AI.authed = true;
+          AI.registering = false;
+          setAIStatus("live");
+          addChat("system", `The AI is in as ${AI.name}. Watch, or steer it below.`);
+        }
+      }
+      const room = text.match(/^\[(.+)\]$/m);
+      if (room) {
+        AI.room = room[1];
+        updateLiveBar();
+        updateRunStats();
+      }
+      scheduleTurn(650);
+    };
+  }
+
+  function scheduleTurn(delay = 600) {
+    clearTimeout(AI.quiet);
+    AI.quiet = setTimeout(() => {
+      if (AI.running && AI.authed && !AI.paused && !AI.busy) runTurn();
+    }, delay);
+  }
+
+  async function runTurn(force = false) {
+    if (!AI.running || !AI.authed || AI.busy) return;
+    if (AI.paused && !force) return;
+    const observation = AI.observed.trim();
+    // A director message is a reason to act even when the game has said nothing
+    // new since the last turn. Without this, steering a paused AI would queue
+    // the message and then wait for an unrelated NPC to move.
+    if (!observation && !force && AI.director.length === 0) return;
+
+    AI.observed = "";
+    AI.busy = true;
+    AI.turn += 1;
+    const turn = AI.turn;
+    const director = [...AI.director];
+    setAIStatus("thinking");
+    updateRunStats();
+
+    const started = performance.now();
+    try {
+      const system = buildSystemPrompt({ name: AI.name, goal: DEFAULT_GOAL });
+      const user = buildUserPrompt({
+        turn,
+        observation,
+        director,
+        note: AI.nudge ? "You repeated a command. Do something different: move, examine, take, talk, or check your inventory." : "",
+      });
+      AI.nudge = false;
+      const messages = trimHistory([...AI.history, { role: "user", content: user }], 8);
+      const request = requestFor(AI.config.provider, AI.config, system, messages);
+      const res = await fetch(request.url, {
+        method: "POST",
+        headers: request.headers,
+        body: JSON.stringify(request.body),
+        signal: AbortSignal.timeout(120000),
+      });
+      if (!res.ok) {
+        const detail = (await res.text()).slice(0, 240);
+        throw new Error(`${res.status} ${res.statusText}${detail ? ` — ${detail}` : ""}`);
+      }
+      const body = await res.json();
+      const { text, usage } = replyFrom(AI.config.provider, body);
+      if (!text) throw new Error("The model returned an empty reply.");
+      const latency = Math.round(performance.now() - started);
+      const parsed = parseBrain(text);
+
+      AI.history.push({ role: "user", content: user }, { role: "assistant", content: text });
+      AI.history = trimHistory(AI.history, 8);
+      AI.latencies.push(latency);
+      AI.usage.prompt += usage?.input_tokens ?? usage?.prompt_tokens ?? 0;
+      AI.usage.completion += usage?.output_tokens ?? usage?.completion_tokens ?? 0;
+      AI.lastCommand = parsed.command;
+      const recent = [...AI.recent, parsed.command];
+      const stuck = recent.length >= 5 && recent.slice(-5).every((command) => command === parsed.command);
+
+      if (stuck) {
+        if (parsed.thought) addThought(turn, parsed.thought);
+        else addThought(turn, `No reasoning returned; the model chose ${parsed.command}.`, true);
+        AI.transcript.push({
+          turn, observation, director, thought: parsed.thought, reply: parsed.reply,
+          command: parsed.command, latency_ms: latency, usage: usage ?? null,
+          stuck: true, at: new Date().toISOString(),
+        });
+        AI.paused = true;
+        updatePause();
+        setAIStatus("paused");
+        addChat("system", `The AI repeated "${parsed.command}" five times. Steer it, then Resume.`);
+        return;
+      }
+
+      if (director.length) AI.director.splice(0, director.length);
+      AI.transcript.push({
+        turn,
+        observation,
+        director,
+        thought: parsed.thought,
+        reply: parsed.reply,
+        command: parsed.command,
+        latency_ms: latency,
+        usage: usage ?? null,
+        at: new Date().toISOString(),
+      });
+      if (parsed.thought) addThought(turn, parsed.thought);
+      else addThought(turn, `No reasoning returned; the model chose ${parsed.command}.`, true);
+      if (parsed.reply && !/^none$/i.test(parsed.reply)) addChat("ai", parsed.reply);
+      if (recent.length >= 3 && recent.slice(-3).every((command) => command === parsed.command)) AI.nudge = true;
+      AI.recent = recent.slice(-12);
+
+      AI.commands += 1;
+      addLine(`> ${parsed.command}`, "ai-cmd");
+      if (AI.socket?.readyState === WebSocket.OPEN) AI.socket.send(`${parsed.command}\n`);
+      else throw new Error("The AI is not connected.");
+      AI.lastError = null;
+      setAIStatus("live");
+    } catch (error) {
+      const message = error?.name === "TimeoutError"
+        ? "The model did not answer within two minutes."
+        : error.message;
+      addChat("system", `Brain error: ${message}`);
+      if (String(message).includes("Failed to fetch")) {
+        addChat("system", PROVIDERS[AI.config.provider].hint);
+      }
+      AI.paused = true;
+      AI.lastError = String(message);
+      updatePause();
+      setAIStatus("error");
+    } finally {
+      AI.busy = false;
+      updateRunStats();
+    }
+  }
+
+  aiStart.addEventListener("click", startAI);
+  aiStop.addEventListener("click", () => stopAI());
+  aiPause.addEventListener("click", () => setPaused(!AI.paused));
+  aiStep.addEventListener("click", async () => {
+    AI.paused = true;
+    updatePause();
+    setAIStatus("paused");
+    await runTurn(true);
+    if (AI.running && AI.paused && !AI.lastError) setAIStatus("paused");
+  });
+
+  directorForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const text = directorInput.value.trim();
+    if (!text) return;
+    directorInput.value = "";
+    addChat("you", text);
+    AI.director.push(text);
+    // A director message is a fresh start for the repetition guard: the AI
+    // should not be paused again for the commands it made before the steer.
+    AI.recent = [];
+    if (!AI.running) return;
+    if (AI.paused) addChat("system", "Queued for the next turn. Resume when you want the AI to act.");
+    else scheduleTurn(250);
+  });
+
+  for (const tab of document.querySelectorAll("#tabs .tab")) {
+    tab.addEventListener("click", () => {
+      for (const other of document.querySelectorAll("#tabs .tab")) other.classList.toggle("active", other === tab);
+      document.getElementById("mind-pane").hidden = tab.dataset.tab !== "mind";
+      document.getElementById("run-pane").hidden = tab.dataset.tab !== "run";
+    });
+  }
+
+  function transcriptJSON() {
+    return JSON.stringify({
+      schema: "mudbench/ai-session/1",
+      started_at: AI.startedAt,
+      provider: AI.config?.provider ?? null,
+      model: AI.config?.model ?? null,
+      character: AI.name,
+      goal: DEFAULT_GOAL,
+      turns: AI.transcript,
+    }, null, 2);
+  }
+
+  aiTranscript.addEventListener("click", () => {
+    if (!AI.transcript.length) { addChat("system", "No turns to download yet."); return; }
+    const blob = new Blob([transcriptJSON()], { type: "application/json" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `mudbench-${AI.name}-${Date.now()}.json`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+    addChat("system", "Transcript downloaded. The key is not in it.");
+  });
+
+  aiCopy.addEventListener("click", async () => {
+    if (!AI.transcript.length) { addChat("system", "No turns to copy yet."); return; }
+    try {
+      await navigator.clipboard.writeText(transcriptJSON());
+      addChat("system", "Transcript JSON copied.");
+    } catch {
+      addChat("system", "Copy failed; use Download transcript.");
+    }
+  });
+
+  renderSetup();
+  updateRunStats();
+
+  if (autoStart) {
+    setMode("ai");
+    setAIStatus("ready");
+  } else {
+    connectPlay();
+  }
 </script>
 </body>
 </html>

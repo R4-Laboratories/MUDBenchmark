@@ -6,6 +6,87 @@ input allowance. It gets no privileged view and no special commands.
 
 `/llms.txt` on the game origin is the machine-readable contract: connect, accounts, every verb, the map, the quests, the spans and the agent command. This file is the longer explanation.
 
+## Watch an AI play in the browser
+
+Open the game and choose **Watch AI**. The AI gets its own character and plays
+through the same page: the left pane is its view, the Director chat is yours,
+and the Mind panel is its reasoning. The provider key never reaches the game
+server; it is stored in this browser's localStorage and sent only to the
+provider's endpoint.
+
+| Brain | Base URL | Key |
+| --- | --- | --- |
+| Ollama (local) | `http://localhost:11434/v1` | none |
+| OpenAI | `https://api.openai.com/v1` | required |
+| Anthropic (Claude) | `https://api.anthropic.com/v1` | required |
+| OpenAI-compatible (custom) | any `/v1` endpoint | optional |
+| Prime Router (hypersphere, local) | `http://localhost:8000` | none |
+
+### Ollama, the free local path
+
+```sh
+ollama serve
+ollama pull qwen2.5:7b
+```
+
+If the page is not served from localhost, allow its origin:
+
+```sh
+OLLAMA_ORIGINS=https://play.r4labs.org ollama serve
+```
+
+Choose **Ollama**, press **Find** to list models, and pick one. A 7B or larger
+model is the useful floor; 0.5B models tend to repeat a single command.
+
+### OpenAI or Anthropic
+
+Choose the provider, paste the key, and press **Find** to list the models the
+key can see. The key is sent directly from the browser to that provider. For
+Anthropic the page sets `anthropic-dangerous-direct-browser-access: true`,
+which is Anthropic's required header for browser clients. **Forget key**
+removes it from localStorage.
+
+### The character
+
+The AI registers its own character on first run. The name is in the setup
+panel; **New** generates a fresh one. A generated password is stored per name in
+this browser. If the name already exists with a different password, choose a
+new name. One character has one controller, and the AI is a controller like any
+other.
+
+### What the AI sees and what it may do
+
+The AI receives the same room blocks and events a person does, on the same
+WebSocket, with the same 250 ms input allowance and the same command table. It
+is asked for three sections each turn:
+
+```
+THOUGHT: one or two sentences of reasoning
+REPLY: a short message to the director, or none
+COMMAND: exactly one game command
+```
+
+The browser parser accepts a missing label, falls back to the last line that
+starts with a known verb, and refuses `quit`. A reply with no usable command
+becomes `look`. The game server sees only the command, never the thought, the
+director message or the key.
+
+### Director, Mind, Run
+
+- **Director** is the chat on the right. A message is queued into the next
+  prompt as `DIRECTOR:` and the AI answers in `REPLY:`.
+- **Mind** is the thought stream, one card per turn. If the model returns no
+  `THOUGHT`, the card says so rather than inventing one.
+- **Run** shows turns, commands sent, average model latency, tokens, model and
+  room. **Download transcript** writes a JSON record of every turn (observation,
+  thought, reply, command, latency, usage) with no key in it. That is the
+  benchmark artifact for a watched run.
+- **Pause**, **Step** and **Stop** are in the live header. Pausing keeps the
+  character in the world; Step runs exactly one model turn.
+
+A repetition guard pauses the stream if the same command is chosen five times
+in a row, and tells you to steer it. A director message clears the guard.
+
 ## The one-file player runner
 
 For a player, download the runner from the game origin and run it on your own

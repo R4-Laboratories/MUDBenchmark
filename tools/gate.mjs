@@ -34,6 +34,7 @@ import { buildLlms } from "../runtime/llms.mjs";
 import { AREA_PERIOD, armorOf, attackRoll, checkpointIdentities, initialState, nextFrom, phaseAt, releaseHeldObjects, step, upgradeState } from "../runtime/world.mjs";
 import { join } from "node:path";
 import { buildCandidates } from "./candidate.mjs";
+import { buildSystemPrompt, buildUserPrompt, parseBrain, requestFor, replyFrom, trimHistory } from "../runtime/web/ai.mjs";
 import { measureCandidates } from "./measure.mjs";
 
 const root = process.cwd();
@@ -108,10 +109,41 @@ if (claimsCheck.status !== 0) failures.push(`claims are stale: ${(claimsCheck.st
 const commandsCheck = spawnSync(process.execPath, ["tools/commands.mjs", "--check"], { encoding: "utf8" });
 if (commandsCheck.status !== 0) failures.push(`docs/COMMANDS.md is stale: ${(commandsCheck.stderr || "").trim().split("\n")[0]}`);
 
-// The web shell must actually offer account and agent handoff controls.
+// The web shell must actually offer account and AI-play controls.
 const web = readFileSync("runtime/web/index.html", "utf8");
-if (!/id="login"/.test(web) || !/id="register"/.test(web) || !/id="agent-panel"/.test(web)) {
-  failures.push("the web shell lost its login or agent panel");
+if (!/id="login"/.test(web) || !/id="register"/.test(web) || !/id="mode-ai"/.test(web) || !/id="ai-provider"/.test(web) || !/id="director-input"/.test(web)) {
+  failures.push("the web shell lost its login or AI-play controls");
+}
+
+// The browser AI: the parser, the prompt, and every provider request shape.
+let webAI = { ok: true, why: [] };
+{
+  const check = (condition, why) => { if (!condition) { webAI.ok = false; webAI.why.push(why); } };
+  const good = parseBrain("THOUGHT: The Vault is north.\nREPLY: On my way.\nCOMMAND: north");
+  check(good.command === "north", "the parser lost a labelled command");
+  check(good.thought.includes("Vault"), "the parser lost the thought");
+  check(good.reply === "On my way.", "the parser lost the reply");
+  const bare = parseBrain("I will look around.\nlook");
+  check(bare.command === "look", "the parser did not fall back to a bare verb");
+  const quit = parseBrain("THOUGHT: done\nCOMMAND: quit");
+  check(quit.command === "look", "the parser let the model quit the session");
+  const system = buildSystemPrompt({ name: "scout" });
+  check(system.includes("scout") && system.includes("COMMAND:"), "the system prompt lost the name or format");
+  const user = buildUserPrompt({ turn: 2, observation: "[The Atrium]", director: ["go north"] });
+  check(user.includes("TURN 2") && user.includes("go north"), "the user prompt lost the turn or direction");
+  const openai = requestFor("openai", { base: "https://api.openai.com/v1", model: "m", key: "k", name: "scout" }, "sys", [{ role: "user", content: "hi" }]);
+  check(openai.url.endsWith("/chat/completions") && openai.headers.authorization === "Bearer k", "the OpenAI request shape is wrong");
+  const anthropic = requestFor("anthropic", { base: "https://api.anthropic.com/v1", model: "m", key: "k" }, "sys", [{ role: "user", content: "hi" }]);
+  check(anthropic.headers["anthropic-dangerous-direct-browser-access"] === "true", "the Anthropic request lost the browser header");
+  const prime = requestFor("prime-router", { base: "http://localhost:8000", name: "scout" }, "sys", [{ role: "user", content: "hi" }]);
+  check(prime.url.endsWith("/api/chat") && prime.body.identity === "mudbench-scout", "the prime-router request shape is wrong");
+  const reply = replyFrom("anthropic", { content: [{ type: "text", text: "THOUGHT: x\nCOMMAND: look" }], usage: { input_tokens: 3, output_tokens: 4 } });
+  check(reply.text.includes("COMMAND") && reply.usage.input_tokens === 3, "the Anthropic reply shape is wrong");
+  const history = [];
+  for (let i = 0; i < 12; i += 1) history.push({ role: i % 2 ? "assistant" : "user", content: `m${i}` });
+  const trimmed = trimHistory(history, 2);
+  check(trimmed.length === 4 && trimmed[0].role === "user", "history trimming cut a pair in half");
+  if (!webAI.ok) failures.push(`the browser AI is broken: ${webAI.why[0]}`);
 }
 
 // The world is a map, not a pile of rooms: every room has a real description,
@@ -1098,6 +1130,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"mechanizedDrift".padEnd(26)}  ${(driftOk ? "clean" : "DRIFT").padStart(5)}   == clean`);
   console.log(`${"loop".padEnd(26)}  ${(loop.ok ? String(loop.count) : "BROKEN").padStart(5)}   == ${loop.ok ? `${loop.admitted} admitted, bounded` : "no verdict"}`);
   console.log(`${"pacing".padEnd(26)}  ${(pacing.ok ? "14 hp" : "BROKEN").padStart(5)}   == applied, bound, refused`);
+  console.log(`${"webAI".padEnd(26)}  ${(webAI.ok ? "5 checks" : "BROKEN").padStart(5)}   == parse, prompt, requests`);
   console.log(`${"llms".padEnd(26)}  ${(llms.ok ? "verbs, rooms" : "STALE").padStart(5)}   == generated contract`);
   console.log(`${"claims".padEnd(26)}  ${(claimsCheck.status === 0 ? "levels ok" : "STALE").padStart(5)}   == build, open, some-true`);
   console.log(`${"commandsDoc".padEnd(26)}  ${(commandsCheck.status === 0 ? "current" : "STALE").padStart(5)}   == generated reference`);
