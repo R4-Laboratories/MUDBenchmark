@@ -135,6 +135,12 @@
       "level": "some-true",
       "statement": "A browser Prism account created alice and bob, switched between them, reloaded and found both, claimed oldcasey as a third character, and played it; the AI account created scout and its Model tab showed the live prompt, context, reply, command and token stats.",
       "authority": "headless Chromium run 2026-11-16 against a mock OpenAI-compatible provider"
+    },
+    {
+      "id": "MB-17",
+      "level": "some-true",
+      "statement": "One release workflow dispatch on a green commit publishes the Gate-tested holo, manifest, identity receipt and runtime; the deploy timer pulls it; a commit with no green Gate run is refused before the tag; the previous release can be deployed and the new one restored.",
+      "authority": "release.yml dispatch 2026-11-16; red-SHA refusal; mudbench-deploy rollback rehearsal"
     }
   ]
 }

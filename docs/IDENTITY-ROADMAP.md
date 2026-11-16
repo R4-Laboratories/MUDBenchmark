@@ -448,13 +448,22 @@ another account and a duplicate name; an old save migrates to one account and
 one character. `node tools/gate.mjs` prints `characters 2 chars` and
 `prismLogin account`; the headless run is recorded in MB-14 and MB-16.
 
-**X6. Release-on-merge, the small half of candidate 3.** *(CI)*
+**X6. Release-on-merge, the small half of candidate 3.** *(CI)* — **implemented in v0.34.**
 A `workflow_dispatch` "release this commit" that requires the gate on that
 exact SHA, creates the tag and the GitHub release, and lets the deploy timer
 pull. Do not auto-release every merge: the world should not restart under
 players as a side effect of a merge.
 *Acceptance:* a merged, gated commit is released with one action and deployed;
 a red gate cannot release; a rollback is rehearsed.
+
+*Implemented:* `.github/workflows/release.yml` takes a commit SHA and a tag,
+requires a successful `Gate` run on that exact SHA, downloads that run's
+tested holo, manifest and identity receipt, creates the tag and publishes the
+release. It does not rebuild. A missing, pending or red Gate stops before the
+tag. `docs/RELEASES.md` records the one-action path, the older tag path and the
+rollback. Rehearsed in v0.34: one dispatch published the commit the Gate
+proved, the timer pulled it, a SHA with no green Gate was refused before the
+tag, and the previous release was deployed and the new one restored.
 
 ### Later — v0.29 and beyond
 

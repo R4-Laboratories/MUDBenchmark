@@ -89,26 +89,29 @@ impossible to hide decline.
 
 ## Status
 
-`v0.24.0` is published and deployed. wick runs the release artifact, not a
+`v0.33.0` is published and deployed. wick runs the release artifact, not a
 build directory, so the number on the box is a tag someone can point at:
 
 ```
-mudbench-deploy --status   →   release v0.24.0
+mudbench-deploy --status   →   release v0.33.0
 ```
 
-`main` requires both gate jobs before a merge, and a same-repo pull request
-switches on auto-merge when it opens. A change that is not green cannot land,
-and a change that is green lands without anyone asking.
+`main` has no required status checks, so the loop's direct push lands. The Gate
+still runs on every push and pull request, and X6's release workflow requires a
+green Gate on the exact SHA, so a red commit cannot become a release even when
+it is on `main`.
 
 S0, S1 and the S2 write path are in place. The loop uses only `GITHUB_TOKEN`:
 `loop.yml` builds the inventory, measures it, runs the gate in the same job,
 commits `world/data/generated/pacing.json`, and dispatches a tagged release. It
 does not need a GitHub App.
 
-The one difference from lexlean-r4 is branch protection. lexlean-r4's `main` is
-unprotected, so its tick's direct push lands. MUDBench's `main` requires the two
-gate checks, so the same push is rejected until the bot is allowed to push or
-the checks are removed. That is a repository setting, not a missing credential.
+X6 adds the deliberate release: `gh workflow run release.yml -f sha=<sha> -f
+tag=vX.Y.Z` finds the successful Gate run for that SHA, downloads its artifact
+(holo, manifest and identity receipt), creates the tag and publishes the
+release. A missing or red Gate stops before the tag. The deploy timer pulls the
+newest release every ten minutes; rollback is `mudbench-deploy <previous-tag>`.
+`docs/RELEASES.md` records the path and the rehearsal.
 
 ---
 
