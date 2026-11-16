@@ -16,7 +16,7 @@
 // Usage: node tools/gate.mjs [--json]
 
 import { createHash } from "node:crypto";
-import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { spawnSync } from "node:child_process";
 import { loadWorld } from "../runtime/worlddata.mjs";
@@ -36,6 +36,7 @@ import { join } from "node:path";
 import { buildCandidates } from "./candidate.mjs";
 import { buildSystemPrompt, buildUserPrompt, parseBrain, requestFor, replyFrom, trimHistory } from "../runtime/web/ai.mjs";
 import { verifyPrismSession } from "../runtime/prism-auth.mjs";
+import { loadStateFile, saveStateFile } from "../runtime/state.mjs";
 import { measureCandidates } from "./measure.mjs";
 
 const root = process.cwd();
@@ -268,7 +269,48 @@ let prismLogin = { ok: true, why: [] };
   if (actor?.name !== name) prismLogin.why.push("the actor did not take the Prism display name");
   if (identity?.kind !== "prism" || identity?.tokenHash !== null) prismLogin.why.push("the identity is not a passwordless Prism record");
   if (identity?.prism !== key) prismLogin.why.push("the identity is not keyed by the Prism id");
+
+  // An unauthenticated intent must not take over the passwordless record.
+  run([{ kind: "join", actorId: "q", name: "q" }]);
+  run([{ kind: "login", actorId: "q", key, authenticated: false, prism: true, name: "hijack" }]);
+  if (state.actors.find((candidate) => candidate.id === "q")?.key === key) {
+    prismLogin.why.push("an unauthenticated login took over a Prism account");
+  }
+
+  // A new legacy identity is typed, and an old untyped one is normalized.
+  run([{ kind: "join", actorId: "l", name: "l" }]);
+  run([{ kind: "register", actorId: "l", key: "legacy-test", passwordHash: "h", salt: "s" }]);
+  if (state.identities["legacy-test"]?.kind !== "legacy") prismLogin.why.push("a legacy identity has no kind");
+  const upgraded = upgradeState({ identities: { "old-name": { name: "old-name" } } }, initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, world.levels, questTable.quests));
+  if (upgraded.identities["old-name"]?.kind !== "legacy") prismLogin.why.push("upgradeState did not type an old identity");
+
   if (prismLogin.why.length) { prismLogin.ok = false; failures.push(`Prism login is broken: ${prismLogin.why[0]}`); }
+}
+
+// The state file is atomic, backed up, and fail-loud.
+let durableState = { ok: true, why: [] };
+{
+  const dir = mkdtempSync(join(tmpdir(), "mudbench-state-"));
+  const file = join(dir, "world.json");
+  const initial = () => ({ identities: {}, tick: 0 });
+  const restore = (raw) => ({ ...raw, restored: true });
+  const missing = loadStateFile(file, { initial, restore });
+  if (missing.restored) durableState.why.push("a missing state file was treated as a restore");
+  saveStateFile(file, { identities: { a: { name: "a" } }, tick: 1 });
+  const loaded = loadStateFile(file, { initial, restore });
+  if (!loaded.restored || loaded.identities.a?.name !== "a") durableState.why.push("a saved state did not load");
+  saveStateFile(file, { identities: { a: { name: "a2" } }, tick: 2 });
+  if (!existsSync(`${file}.1`)) durableState.why.push("no backup was written");
+  writeFileSync(file, "{broken");
+  const fromBackup = loadStateFile(file, { initial, restore });
+  if (fromBackup.identities.a?.name !== "a") durableState.why.push("the backup was not restored");
+  writeFileSync(file, "{broken");
+  writeFileSync(`${file}.1`, "{broken");
+  let refused = false;
+  try { loadStateFile(file, { initial, restore }); } catch { refused = true; }
+  if (!refused) durableState.why.push("a corrupt state and backup did not refuse to start");
+  rmSync(dir, { recursive: true, force: true });
+  if (durableState.why.length) { durableState.ok = false; failures.push(`state durability is broken: ${durableState.why[0]}`); }
 }
 
 // The Prism session verifier: a committed signed session, a wrong origin, expiry.
@@ -638,9 +680,9 @@ let comms = { ok: true, why: [], said: 0, told: 0, mailed: 0, gestured: 0 };
     { kind: "join", actorId: "c", name: "carol" },
   ]);
   run([
-    { kind: "login", actorId: "a", key: "alice", token: null, role: 3 },
-    { kind: "login", actorId: "b", key: "bob", token: null, role: 0 },
-    { kind: "login", actorId: "c", key: "carol", token: null, role: 0 },
+    { kind: "login", actorId: "a", key: "alice", token: null, role: 3, authenticated: true },
+    { kind: "login", actorId: "b", key: "bob", token: null, role: 0, authenticated: true },
+    { kind: "login", actorId: "c", key: "carol", token: null, role: 0, authenticated: true },
   ]);
   run([{ kind: "move", actorId: "b", dir: "north", to: 2 }]);
 
@@ -672,7 +714,7 @@ let comms = { ok: true, why: [], said: 0, told: 0, mailed: 0, gestured: 0 };
   check(state.mail.some((l) => l.text === "second" && !l.read), "mail to an absent identity was not stored");
 
   run([{ kind: "join", actorId: "b2", name: "bob" }]);
-  const delivered = lines(run([{ kind: "login", actorId: "b2", key: "bob", token: null }]));
+  const delivered = lines(run([{ kind: "login", actorId: "b2", key: "bob", token: null, authenticated: true }]));
   check(delivered.some((e) => e.text.includes("second")), "a letter did not arrive on login");
 
   run([{ kind: "move", actorId: "b2", dir: "north", to: 2 }]);
@@ -1166,6 +1208,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"webAI".padEnd(26)}  ${(webAI.ok ? "5 checks" : "BROKEN").padStart(5)}   == parse, prompt, requests`);
   console.log(`${"prismId".padEnd(26)}  ${(prismSession.ok ? "signed" : "BROKEN").padStart(5)}   == session verifier`);
   console.log(`${"prismLogin".padEnd(26)}  ${(prismLogin.ok ? "1 account" : "BROKEN").padStart(5)}   == id, no password`);
+  console.log(`${"state".padEnd(26)}  ${(durableState.ok ? "5 checks" : "BROKEN").padStart(5)}   == atomic, backup, fail-loud`);
   console.log(`${"llms".padEnd(26)}  ${(llms.ok ? "verbs, rooms" : "STALE").padStart(5)}   == generated contract`);
   console.log(`${"claims".padEnd(26)}  ${(claimsCheck.status === 0 ? "levels ok" : "STALE").padStart(5)}   == build, open, some-true`);
   console.log(`${"commandsDoc".padEnd(26)}  ${(commandsCheck.status === 0 ? "current" : "STALE").padStart(5)}   == generated reference`);

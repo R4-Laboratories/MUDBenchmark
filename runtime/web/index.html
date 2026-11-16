@@ -202,11 +202,11 @@
     <aside>
       <section class="panel" id="account">
         <h2>Sign in</h2>
-        <p>Use your Prism id. No password, and the id stays in this browser.</p>
+        <p>Use your Prism id. No password. The id is kept in this browser; clearing site data or losing the browser loses the character until device linking exists.</p>
         <div class="row">
           <button type="button" id="prism-login" autofocus>Use my Prism id</button>
         </div>
-        <p class="small muted">The first time, this browser creates an id. That id is the account.</p>
+        <p class="small muted">The first time, this browser creates an id. That id is the account. It is not portable yet.</p>
         <details class="small muted">
           <summary>Use a name and password instead</summary>
           <div class="field">
@@ -260,7 +260,7 @@
         </div>
         <div class="field">
           <label>AI Prism identity</label>
-          <p class="small muted" id="ai-identity">Created in this browser on first run. No password.</p>
+          <p class="small muted" id="ai-identity">Created in this browser on first run. Clearing site data loses it; device linking is not built yet.</p>
           <div class="row"><button type="button" id="ai-reset">Reset identity</button></div>
         </div>
         <div class="row">
@@ -532,6 +532,8 @@
     append("Loading your Prism id…", "sys");
     try {
       const session = await prismSignIn("default", location.origin);
+      if (session.storage === "memory") append("This window cannot keep the Prism id; a reload will make a new one.", "err");
+      else if (!session.persisted) append("The browser did not grant persistent storage; it may evict the Prism id.", "sys");
       append("> prism [session hidden]", "me");
       if (playSocket?.readyState === WebSocket.OPEN) playSocket.send(`prism ${b64uJson(session)}\n`);
       else append("(not connected)", "err");
@@ -656,6 +658,7 @@
   for (const field of [aiBase, aiModel]) field.addEventListener("change", () => persistConfig(false));
 
   aiReset.addEventListener("click", async () => {
+    if (!confirm("Reset the AI's Prism id? The current AI character will be orphaned.")) return;
     if (AI.running) stopAI();
     await prismReset("ai");
     AI.identity = null;
@@ -761,6 +764,9 @@
       setAIStatus("error");
       return;
     }
+
+    if (session.storage === "memory") showHint("This window cannot keep the AI id; a reload will create a new one.", true);
+    else if (!session.persisted) showHint("The browser did not grant persistent storage; it may evict the AI id.", false);
 
     AI.config = config;
     AI.identity = session;

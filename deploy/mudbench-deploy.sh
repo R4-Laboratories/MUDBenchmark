@@ -57,6 +57,13 @@ for a in json.load(sys.stdin)['assets']:
 
 current_dir() { sed -n 's/^WorkingDirectory=//p' "$1"; }
 
+ensure_env() {
+  local unit="$1" key="$2" value="$3"
+  if ! grep -q "^Environment=$key=" "$unit"; then
+    sed -i "/^\[Service\]/a Environment=$key=$value" "$unit"
+  fi
+}
+
 if [[ "${1:-}" == "--status" ]]; then
   say "holo    $(current_dir "$UNIT_HOLO")"
   say "world   $(current_dir "$UNIT_WORLD")"
@@ -104,6 +111,19 @@ say "replaying acceptance vectors"
 say "flipping both units"
 sed -i "s|^WorkingDirectory=.*|WorkingDirectory=$DEST|" "$UNIT_HOLO"
 sed -i "s|^WorkingDirectory=.*|WorkingDirectory=$DEST/runtime|" "$UNIT_WORLD"
+
+# The only durable path is outside the release artifact. The default in the
+# server is the same; the unit is explicit so a future default cannot move it.
+ensure_env "$UNIT_WORLD" STATE_FILE "$HOME/.mudbench/state/world.json"
+ensure_env "$UNIT_WORLD" PRISM_ORIGINS "https://play.r4labs.org"
+mkdir -p "$HOME/.mudbench/state"
+if [[ ! -f "$HOME/.mudbench/state/world.json" && -f /tmp/mudbench-world.json ]]; then
+  cp /tmp/mudbench-world.json "$HOME/.mudbench/state/world.json"
+  chmod 600 "$HOME/.mudbench/state/world.json"
+  count=$(python3 -c 'import json,sys;print(len(json.load(open(sys.argv[1])).get("identities",{})))' "$HOME/.mudbench/state/world.json" 2>/dev/null || echo "?")
+  say "migrated state to $HOME/.mudbench/state/world.json ($count identities)"
+fi
+
 systemctl --user daemon-reload
 systemctl --user restart mudbench-holo.service mudbench-world.service
 
@@ -121,14 +141,23 @@ for _ in 1 2 3 4 5 6; do
   sleep 2
 done
 
-if [[ "$holo_ok" == "true" ]] \
+assets_ok=false
+lock_hash=$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["output"]["sha256"])' "$DEST/runtime/web/prism-id.lock.json" 2>/dev/null || true)
+live_hash=$(curl -fsS -m 5 http://127.0.0.1:8090/prism-id.mjs 2>/dev/null | sha256sum | awk '{print $1}')
+if curl -fsS -m 5 http://127.0.0.1:8090/ 2>/dev/null | grep -q 'id="prism-login"' \
+   && [[ -n "$lock_hash" && "$live_hash" == "$lock_hash" ]] \
+   && curl -fsS -m 5 http://127.0.0.1:8090/ai.mjs >/dev/null 2>&1; then
+  assets_ok=true
+fi
+
+if [[ "$holo_ok" == "true" && "$assets_ok" == "true" ]] \
    && systemctl --user is-active --quiet mudbench-holo.service \
    && systemctl --user is-active --quiet mudbench-world.service \
    && curl -fsS -m 5 http://127.0.0.1:8090/health >/dev/null; then
   printf '%s' "$TAG_NAME" > "$HOME/.mudbench/deployed-tag"
-  say "deployed $TAG_NAME (holo and runtime)"
+  say "deployed $TAG_NAME (holo, runtime, login assets)"
 else
-  say "health check failed (holo: $holo_ok) — rolling back"
+  say "health check failed (holo: $holo_ok, login assets: $assets_ok) — rolling back"
   sed -i "s|^WorkingDirectory=.*|WorkingDirectory=$PREV_HOLO|" "$UNIT_HOLO"
   sed -i "s|^WorkingDirectory=.*|WorkingDirectory=$PREV_WORLD|" "$UNIT_WORLD"
   systemctl --user daemon-reload

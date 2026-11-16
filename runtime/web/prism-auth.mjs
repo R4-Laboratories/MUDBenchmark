@@ -15,6 +15,9 @@ const DB_NAME = "mudbench-prism";
 const DB_VERSION = 1;
 const STORE = "identities";
 const memory = new Map();
+let memoryOnly = false;
+
+export const storageMode = () => (memoryOnly ? "memory" : "indexeddb");
 
 const b64u = (bytes) =>
   btoa(String.fromCharCode(...new Uint8Array(bytes)))
@@ -44,6 +47,7 @@ async function read(store) {
       request.onerror = () => reject(request.error);
     });
   } catch {
+    memoryOnly = true;
     return memory.get(store) ?? null;
   }
 }
@@ -59,7 +63,8 @@ async function write(store, value) {
       tx.onerror = () => reject(tx.error);
     });
   } catch {
-    // The in-memory copy still works for this page.
+    // The in-memory copy still works for this page, but a reload will not.
+    memoryOnly = true;
   }
 }
 
@@ -82,6 +87,11 @@ export async function identity(store = "default") {
 }
 
 export async function signIn(store = "default", app = location.origin) {
+  // Ask the browser to keep this origin's storage. A denial is not fatal, but
+  // it is shown; eviction would otherwise look like a deleted account.
+  if (navigator.storage?.persist) {
+    try { await navigator.storage.persist(); } catch {}
+  }
   let session = await read(store);
   if (!session?.prism || !session?.log) {
     session = await Prism.createPrism({});
@@ -98,14 +108,16 @@ export async function signIn(store = "default", app = location.origin) {
   );
   const raw = await crypto.subtle.exportKey("raw", keys.publicKey);
   const now = Date.now();
-  const expires = now + 7 * 24 * 60 * 60 * 1000;
+  const expires = now + 10 * 60 * 1000;
   const envelope = await Prism.signAction(
     session,
     "prism/session/1",
     { sessionKey: b64u(raw), expires },
     { audience: app, now },
   );
-  return { app, envelope, records: [...session.log.values()] };
+  let persisted = false;
+  try { persisted = (await navigator.storage?.persisted?.()) ?? false; } catch {}
+  return { app, envelope, records: [...session.log.values()], persisted, storage: storageMode() };
 }
 
 export async function reset(store = "default") {

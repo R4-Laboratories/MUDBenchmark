@@ -81,6 +81,12 @@
       "query": "tools/queries/corroboration.mjs",
       "sample_size": 24,
       "seed": "4 arms; six runs per arm; 16 turns; deepseek-flash temperature 0; fixed route; expanded world"
+    },
+    {
+      "id": "MB-08",
+      "level": "build",
+      "statement": "A Prism id signs in with a signed session for the page origin; the account is keyed by the id with no password; a wrong origin, an expired session and an unauthenticated no-token login are refused; the state file is atomic, backed up, and a corrupt file refuses to start.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

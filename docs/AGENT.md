@@ -196,8 +196,10 @@ The browser signs in with a **Prism id**: **Use my Prism id**. The id is
 created and kept in the browser's IndexedDB, no password is sent, and the server
 verifies a signed `prism/session/1` action against the id's public log. The wire
 message is `prism <base64url session>`. The account is keyed by the id and
-displayed as `prism:<first 8 hex>`. The AI has its own Prism id in the same
-browser; **Reset identity** starts a new character.
+displayed as `prism:<first 8 hex>`. The id is browser-local today: clearing
+site data or losing the browser loses the character, because device linking and
+recovery are not built yet. The AI has its own Prism id in the same browser;
+**Reset identity** starts a new character.
 
 The name/password form remains under **Use a name and password instead** for
 telnet, CLI clients and older accounts: `register <name> <password>` creates;

@@ -9,14 +9,25 @@
 
 import { logFromRecords, verifyAction } from "./web/prism-id.mjs";
 
-const MAX_SESSION_MS = 8 * 24 * 60 * 60 * 1000;
+const MAX_SESSION_MS = 15 * 60 * 1000;
+const WINDOW_MS = 5 * 60 * 1000;
+const MAX_RECORDS = 64;
 const SESSION_ACTION = "prism/session/1";
 
-// The action nonce is single use inside its window. A process-local set is
-// enough for a login: a replay after a restart still has to be inside the
-// sixty-second window and carry a fresh session expiry.
-const seen = new Set();
-let seenCount = 0;
+// The action nonce is single use inside its window. The map is pruned by age,
+// not by an arbitrary count: a restart inside the window still permits one
+// replay, so the window is kept short and the log pinning (the next step)
+// addresses the remaining gap.
+const replay = new Map();
+const seen = {
+  has: (key) => replay.has(key),
+  add: (key) => { replay.set(key, Date.now()); },
+};
+function pruneReplay(now) {
+  for (const [key, at] of replay) {
+    if (now - at > WINDOW_MS) replay.delete(key);
+  }
+}
 
 export function prismDisplay(prism) {
   const hex = String(prism).replace(/^sha256:/, "");
@@ -44,6 +55,9 @@ export async function verifyPrismSession(session, { origin, now = Date.now() } =
   if (expires > body.at + MAX_SESSION_MS) {
     return { ok: false, reason: "the session lasts too long" };
   }
+  if (!Array.isArray(records) || records.length > MAX_RECORDS) {
+    return { ok: false, reason: "the Prism log is too large" };
+  }
 
   let log;
   try {
@@ -52,12 +66,13 @@ export async function verifyPrismSession(session, { origin, now = Date.now() } =
     return { ok: false, reason: "the Prism log does not parse" };
   }
 
+  pruneReplay(now);
   let verdict;
   try {
     verdict = await verifyAction(body.prism, log, envelope, {
       audience: app,
       now,
-      window: 60000,
+      window: WINDOW_MS,
       seen,
     });
   } catch (error) {
@@ -65,10 +80,12 @@ export async function verifyPrismSession(session, { origin, now = Date.now() } =
   }
   if (!verdict.allowed) return { ok: false, reason: verdict.reason };
 
-  seenCount += 1;
-  if (seenCount > 10000) {
-    seen.clear();
-    seenCount = 0;
-  }
-  return { ok: true, prism: body.prism, display: prismDisplay(body.prism), device: verdict.device, expires };
+  return {
+    ok: true,
+    prism: body.prism,
+    display: prismDisplay(body.prism),
+    device: verdict.device,
+    deviceId: envelope.signer ?? null,
+    expires,
+  };
 }

@@ -1,8 +1,9 @@
 # Prism identity as the player account
 
-Status: **implemented in the browser and the server; the leaf password form remains
-for telnet, CLI and older accounts.** This records the two identity protocols,
-the one this project uses, and the exact server change.
+Status: **implemented in the browser and the server; browser-local until device
+linking exists; the legacy password form remains for telnet, CLI and older
+accounts.** This records the two identity protocols, the one this project
+uses, and the exact server change.
 
 ## What the three repositories contain
 
@@ -52,29 +53,29 @@ The browser:
 
 The server:
 
-1. Parses the session and requires `app === location.origin` and a valid
-   `expires` no more than eight days out.
+1. Parses the session and requires `app === location.origin`, a well-formed
+   session key, and an expiry no more than fifteen minutes out. The action
+   itself must be within a five-minute window of server time.
 2. Rebuilds the log with `logFromRecords(records)`.
 3. Calls `verifyAction(body.prism, log, envelope, { audience: app, now,
-   window: 60000 })`, which checks the action kind, signature, audience,
-   replay nonce, time window, device role and revocation.
+   window: 5 * 60 * 1000 })`, which checks the action kind, signature,
+   audience, replay nonce, time window, device role and revocation.
 4. On `allowed`, uses `body.prism` as the account key. A new id creates a new
    actor; a known id restores level, XP, guild and quests.
 5. Never sees a password for a Prism account and never stores the id's private
    keys.
 
 The WebSocket is the authenticated session after login. Per-command signatures
-are not needed; a reconnect signs a fresh session. A short-lived `seen` set
-refuses a replayed envelope.
+are not needed; a reconnect signs a fresh session. A short-lived, age-pruned
+`seen` map refuses a replayed envelope. The session key is generated and sent,
+but the server does not yet use it for per-command signatures: the login is a
+short-lived bearer credential (five-minute window, ten-minute expiry).
 
-**Removed devices.** `verifyAction` checks the log the client presented. A
-device removed elsewhere can sign until its session expires unless the server
-hears the id's public log. Two options, in order of work:
-
-- require a fresh session per connection (cheap; a removed device is refused
-  on its next connect, not instantly);
-- fetch the public log topic from the relay and pass `bus` to `verifyAction`
-  (instant, but adds the relay dependency).
+**Removed devices are not yet refused.** `verifyAction` checks the log the
+client presents. A device removed elsewhere can still present its
+pre-revocation log and sign in; the server has no pinned log to compare it
+with. Server-side log pinning is the next identity step (X2 in the roadmap).
+Do not claim revocation until that lands. The relay is not consulted.
 
 ## What is implemented
 
@@ -101,12 +102,13 @@ repetition with no console errors.
 
 ## The account
 
-The account key is the Prism id. The display name is a handle bound to it.
+The account key is the Prism id. The display is the short id.
 
 ```json
 {
+  "kind": "prism",
   "prism": "sha256:…",
-  "handle": "casey",
+  "name": "prism:9f2c1a3b",
   "level": 3,
   "xp": 120,
   "guild": "…",
@@ -115,11 +117,11 @@ The account key is the Prism id. The display name is a handle bound to it.
 }
 ```
 
-- `prism` is immutable. `handle` is 1–24 characters, unique, and changeable.
-- `who` shows `casey (prism:9f2c…)`; the full id is available on `who <name>`.
+- `prism` is immutable. The display is `prism:<first 8 hex>`; a handle registry
+  is not built yet, and `who <name>` does not exist.
 - Items stay world state and are not persisted by identity.
-- The `identities` record in the world state gains a `kind` field:
-  `prism` or `legacy`.
+- `kind` is `prism` or `legacy`; older records are typed on the next
+  `upgradeState`.
 
 ## The AI character
 
@@ -153,20 +155,21 @@ must name it.
 
 `register` and `login` stay for telnet and CLI clients. The browser defaults to
 the Prism id. A new id creates a fresh account. An existing name/password
-account can be claimed once, by proving the password and then binding the name
-as the handle; after that the id is the account and the password is retired for
-that character.
+account cannot be claimed yet; the one-time claim is the next identity step
+(X1). The browser says the id is browser-local so a player is not surprised by
+its loss.
 
 ## Tests
 
-- Node: create → sign → verify allowed; wrong audience, expired envelope,
-  tampered signature, unknown device and replay refused.
-- Server: a Prism login creates an actor; the same id on a second connection
-  resumes it; a second id is a second character; a bare id is refused; a
-  session naming another origin is refused.
-- Browser: the frame creates the id, signs the session, the game logs in, and
-  the AI persona plays.
-- Migration: a legacy account claims once and cannot be claimed again.
+The gate proves the committed signed fixture, a wrong origin, an expired
+session, a passwordless Prism account, the unauthenticated-takeover refusal,
+and state atomicity/backup/fail-loud. A hand test proved create → sign → verify
+and that the browser id survives a reload; another proved the AI signs in and
+plays under its own id.
+
+Not yet proven by the gate: a tampered signature, an unknown device, a replay
+across a restart, a second connection resuming (today it is refused), device
+linking, recovery, revocation, and a production browser through the tunnel.
 
 ## Decisions taken
 
@@ -174,7 +177,8 @@ that character.
 2. **Display.** `prism:<first 8 hex>`; the full id is the account key.
 3. **Frame.** The game loads the identity module directly (`/prism-id.mjs`) and
    does not vendor the full frame yet. Linking and recovery are later work.
-4. **Relay.** A fresh session per connection; the relay is not consulted, so a
-   device removed elsewhere is refused on its next connect, not instantly.
+4. **Relay.** The relay is not consulted. A device removed elsewhere can
+   present its old log until server-side log pinning (X2) lands.
 5. **Legacy.** The name/password form remains for telnet, CLI and older
-   accounts. A one-time claim of an old account by a Prism id is not built yet.
+   accounts. The one-time claim of an old account by a Prism id is not built
+   yet (X1).

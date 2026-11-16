@@ -21,4 +21,5 @@ and reported, never asserted; it names its query, sample size and seed. A
 | OPEN-02 | open | A recall layer that states the true word does not prevent the false-first answer. | `tools/queries/recall.mjs`; n=3; seed: three identities, two sessions each; deepseek-flash temperature 0 |
 | OPEN-03 | open | Context routing is cost-neutral at equal turn index. | `tools/queries/routing.mjs`; n=10; seed: five runs per arm; fixed budget; deepseek-flash temperature 0 |
 | OPEN-04 | open | In the expanded 24-room world with the fixed route and corrected answer instruction, corroborating the false Storeroom inscription did not increase wrong-first answers: 0/6 in all four arms (24/24 answered amber first). | `tools/queries/corroboration.mjs`; n=24; seed: 4 arms; six runs per arm; 16 turns; deepseek-flash temperature 0; fixed route; expanded world |
+| MB-08 | build | A Prism id signs in with a signed session for the page origin; the account is keyed by the id with no password; a wrong origin, an expired session and an unauthenticated no-token login are refused; the state file is atomic, backed up, and a corrupt file refuses to start. | `tools/gate.mjs` |
 

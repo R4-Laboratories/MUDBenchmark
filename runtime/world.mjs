@@ -297,6 +297,7 @@ export function upgradeState(saved, base) {
     const guilds = saved.guilds && typeof saved.guilds === "object" ? saved.guilds : {};
     return [key, {
       ...rest,
+      kind: rest.kind ?? (rest.prism ? "prism" : "legacy"),
       level: identity.level ?? 1,
       xp: identity.xp ?? 0,
       guild: guilds[identity.guild] ? identity.guild : null,
@@ -475,6 +476,7 @@ export function step({ state, rooms, intents }) {
       actor.hp = 10;
       actor.wielding = null;
       next.identities[intent.key] = {
+        kind: "legacy",
         name: actor.name,
         role: 0,
         passwordHash: intent.passwordHash,
@@ -727,6 +729,11 @@ export function step({ state, rooms, intents }) {
     if (intent.kind === "login") {
       const actor = find(intent.actorId);
       if (!actor) continue;
+      // The server checks the password, token or Prism session before it emits
+      // this intent. The reducer is a second line of defence: an unauthenticated
+      // login must never take over a known record, especially a passwordless
+      // Prism one.
+      if (!intent.authenticated) continue;
       if (next.actors.some((other) => other.id !== actor.id && other.key === intent.key)) {
         events.push({ onlyId: actor.id, text: "That name is already signed in.\r\n" });
         continue;
@@ -789,7 +796,7 @@ export function step({ state, rooms, intents }) {
         next.identities[intent.key] = {
           // A Prism account has no password: its key is the id and the login
           // was a session the server verified. The display name is separate.
-          ...(intent.prism ? { kind: "prism", prism: intent.key } : {}),
+          ...(intent.prism ? { kind: "prism", prism: intent.key } : { kind: "legacy" }),
           name: actor.name,
           role: actor.role,
           tokenHash: intent.prism ? null : hash,

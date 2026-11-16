@@ -6,7 +6,9 @@
 
 import net from "node:net";
 import http from "node:http";
-import { readFileSync, writeFileSync, renameSync, appendFileSync } from "node:fs";
+import { readFileSync, statSync, writeFileSync, appendFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { join as joinPath } from "node:path";
 import { createHash } from "node:crypto";
 import { WebSocketServer } from "ws";
 import { recordSpan, digest } from "./telemetry.mjs";
@@ -23,12 +25,18 @@ import { buildLlms } from "./llms.mjs";
 import { hashPassword, verifyPassword, validName, validPassword } from "./accounts.mjs";
 import { allowCommand as allowInput, DEFAULT_INTERVAL_MS } from "./allowance.mjs";
 import { verifyPrismSession, prismDisplay } from "./prism-auth.mjs";
+import { loadStateFile, saveStateFile } from "./state.mjs";
 
 const HOLO_URL = process.env.HOLO_URL ?? "http://127.0.0.1:8082";
 const TELNET_PORT = Number(process.env.TELNET_PORT ?? 4000);
 const WEB_PORT = Number(process.env.WEB_PORT ?? 8090);
-const STATE_FILE = process.env.STATE_FILE ?? "/tmp/mudbench-world.json";
+// Identities and progress must not live on tmpfs. The default is a durable
+// directory outside the release artifact; the unit and the deploy set it too.
+const STATE_FILE = process.env.STATE_FILE ?? joinPath(homedir(), ".mudbench", "state", "world.json");
 const TRACE_FILE = process.env.TRACE_FILE ?? "/tmp/mudbench-trace.jsonl";
+const PRISM_ORIGINS = (process.env.PRISM_ORIGINS ?? "").split(",").map((value) => value.trim()).filter(Boolean);
+const PRISM_LOGIN_MAX = 65536;
+const PRISM_RECORDS_MAX = 64;
 const COMMAND_INTERVAL_MS = Number(process.env.COMMAND_INTERVAL_MS ?? DEFAULT_INTERVAL_MS);
 
 // The world is data: rooms, exits, notices and the task live in
@@ -112,30 +120,39 @@ function allowCommand(id) {
 
 // --- persistence ---------------------------------------------------------
 
+function makeInitialState() {
+  return initialState(ROOMS, loaded.npcs, loaded.objects, loaded.start, loaded.climate, CHANNELS.channels, LEVELS.levels, QUESTS.quests);
+}
+
+function restoreState(saved) {
+  const base = makeInitialState();
+  if (!saved) return base;
+  const upgraded = upgradeState(saved, base);
+  // Players are saved for the trace but not restored: without an identity
+  // there is nothing to reconnect them to, and a restored actor with no
+  // transport would sit in a room forever as a ghost. What they carried is
+  // released where they stood, or a deploy quietly deletes their inventory.
+  releaseHeldObjects(upgraded, saved.actors ?? []);
+  return { ...upgraded, actors: [] };
+}
+
 function loadState() {
   try {
-    const saved = JSON.parse(readFileSync(STATE_FILE, "utf8"));
-    const base = initialState(ROOMS, loaded.npcs, loaded.objects, loaded.start, loaded.climate, CHANNELS.channels, LEVELS.levels, QUESTS.quests);
-    const upgraded = upgradeState(saved, base);
-    // Players are saved for the trace but not restored: without an identity
-    // there is nothing to reconnect them to, and a restored actor with no
-    // transport would sit in a room forever as a ghost. What they carried is
-    // released where they stood, or a deploy quietly deletes their inventory.
-    releaseHeldObjects(upgraded, saved.actors ?? []);
-    return { ...upgraded, actors: [] };
-  } catch {
-    return initialState(ROOMS, loaded.npcs, loaded.objects, loaded.start, loaded.climate, CHANNELS.channels, LEVELS.levels, QUESTS.quests);
+    return loadStateFile(STATE_FILE, { initial: makeInitialState, restore: restoreState });
+  } catch (error) {
+    console.error(`state: ${error.message}`);
+    process.exit(1);
   }
 }
 
 let state = loadState();
+let lastSave = (() => { try { return statSync(STATE_FILE).mtimeMs; } catch { return 0; } })();
 
 function saveState() {
   try {
     checkpointIdentities(state);
-    const tmp = `${STATE_FILE}.tmp`;
-    writeFileSync(tmp, `${JSON.stringify(state)}\n`);
-    renameSync(tmp, STATE_FILE);
+    saveStateFile(STATE_FILE, state);
+    lastSave = Date.now();
   } catch (error) {
     console.error(`state not saved: ${error.message}`);
   }
@@ -286,20 +303,29 @@ async function handleCommand(id, line) {
   if (verb === "prism") {
     // A Prism id login. The session is a signed `prism/session/1` action for
     // this page origin; the id is public, the signature is the credential.
+    if (actor?.key) return sendTo(id, `You are already signed in as ${actor.name}. quit to change.\r\n`);
     const transport = transports.get(id);
     const origin = transport?.origin ?? null;
     if (!origin) return sendTo(id, "Prism sign-in needs the browser client.\r\n");
+    if (PRISM_ORIGINS.length && !PRISM_ORIGINS.includes(origin)) {
+      return sendTo(id, "Prism sign-in refused: this origin is not allowed.\r\n");
+    }
     // The session is base64url and case-sensitive: use the raw argument, not
     // the lowercased command words.
     const token = restRaw[0];
     if (!token) return sendTo(id, "Usage: prism <session>.\r\n");
+    if (token.length > PRISM_LOGIN_MAX) return sendTo(id, "Prism sign-in refused: the session is too large.\r\n");
     let session;
     try {
       session = JSON.parse(Buffer.from(token, "base64url").toString("utf8"));
     } catch {
       return sendTo(id, "The Prism session is malformed.\r\n");
     }
-    const verdict = await verifyPrismSession(session.session ?? session, { origin });
+    const parsed = session.session ?? session;
+    if (!Array.isArray(parsed.records) || parsed.records.length > PRISM_RECORDS_MAX) {
+      return sendTo(id, "Prism sign-in refused: the log is too large.\r\n");
+    }
+    const verdict = await verifyPrismSession(parsed, { origin });
     if (!verdict.ok) return sendTo(id, `Prism sign-in refused: ${verdict.reason}.\r\n`);
     if (state.actors.some((candidate) => candidate.id !== id && candidate.key === verdict.prism)) {
       return sendTo(id, "That Prism id is already signed in.\r\n");
@@ -316,7 +342,7 @@ async function handleCommand(id, line) {
     recordSpan("world.prism", {
       "actor.id": id,
       "prism.id": verdict.prism,
-      "prism.device": verdict.device?.id ?? null,
+      "prism.device": parsed.envelope?.signer ?? verdict.deviceId ?? null,
       "prism.expires": verdict.expires,
       "world.tick": state.tick,
     }, 0);
@@ -1171,6 +1197,9 @@ async function handle(id, line) {
 
 function onTick() {
   const intents = pending.splice(0);
+  // A login or registration must hit the disk before the next checkpoint; a
+  // kill -9 must not erase an account created seconds ago.
+  const identityChanged = intents.some((intent) => ["login", "register", "password", "claim"].includes(intent.kind));
   const result = step({ state, rooms: ROOMS, intents });
   state = result.state;
 
@@ -1276,7 +1305,7 @@ function onTick() {
     for (const line of lines) handleCommand(id, line).catch(() => {});
   }
 
-  if (result.checkpoint) saveState();
+  if (result.checkpoint || identityChanged) saveState();
 
   // The trace written into the span stream, not a second file: from these a run
   // can be reconstructed with nothing but the record.
@@ -1409,6 +1438,12 @@ const web = http.createServer((req, res) => {
       npcs: state.npcs.length,
       phase: phaseAt(state.tick, state.climate),
       weather: state.climate.weather[state.weather]?.id ?? null,
+      identities: Object.keys(state.identities ?? {}).length,
+      state: {
+        file: STATE_FILE,
+        saved_at: lastSave ? new Date(lastSave).toISOString() : null,
+        age_ms: lastSave ? Date.now() - lastSave : null,
+      },
     }));
     return;
   }
@@ -1416,7 +1451,7 @@ const web = http.createServer((req, res) => {
   res.end("not found");
 });
 
-const wss = new WebSocketServer({ server: web });
+const wss = new WebSocketServer({ server: web, maxPayload: 256 * 1024 });
 wss.on("connection", (ws, req) => {
   if (transports.size >= MAX_CLIENTS) {
     ws.send("The world is full.\n");
