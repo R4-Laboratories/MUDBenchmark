@@ -140,7 +140,7 @@
       "id": "MB-17",
       "level": "some-true",
       "statement": "One release workflow dispatch on a green commit publishes the Gate-tested holo, manifest, identity receipt and runtime; the deploy timer pulls it; a commit with no green Gate run is refused before the tag; the previous release can be deployed and the new one restored.",
-      "authority": "release.yml dispatch 2026-11-16; red-SHA refusal; mudbench-deploy rollback rehearsal"
+      "authority": "release.yml dispatch 2026-11-16 (run 43974588055); red-SHA refusal (run 43974677949); timer pull; rollback v0.33.0 and restore v0.34.0; the timer skips a tag already deployed"
     }
   ]
 }

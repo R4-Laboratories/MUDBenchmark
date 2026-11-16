@@ -79,6 +79,13 @@ else
 fi
 
 TAG_NAME=$(printf '%s' "$RELEASE" | python3 -c 'import sys,json;print(json.load(sys.stdin)["tag_name"])')
+# The timer asks for the newest release every ten minutes. If it is already on
+# the box, do not restart the world just to prove it again. An explicit tag
+# still deploys, so a rollback and a deliberate redeploy work.
+if [[ "$TAG" == "latest" && "$TAG_NAME" == "$(cat "$HOME/.mudbench/deployed-tag" 2>/dev/null || true)" ]]; then
+  say "$TAG_NAME is already deployed"
+  exit 0
+fi
 HOLO_URL=$(asset_url "$RELEASE" MUDBench.holo)
 RUNTIME_URL=$(asset_url "$RELEASE" runtime.tar.gz)
 [[ -n "$HOLO_URL" ]] || die "release $TAG_NAME has no MUDBench.holo"

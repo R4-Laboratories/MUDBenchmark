@@ -49,8 +49,16 @@ back if the world or the holo fails to start. A rollback is the previous tag:
 `mudbench-deploy <previous-tag>`. The account/character state is forward
 compatible; rolling back the runtime does not rewrite the world state.
 
+The timer asks for the newest release every ten minutes. If that tag is already
+on the box it exits without restarting; an explicit `mudbench-deploy vX.Y.Z`
+always deploys, which is what makes the rollback rehearsal possible.
+
 ## Rehearsal
 
-- a merged, green commit released by one dispatch, then pulled by the timer;
-- a SHA with no green Gate run refused before the tag is created;
-- the previous release deployed, verified, and the new release deployed again.
+Rehearsed 2026-11-16:
+
+- v0.34.0 released from `8b6b241` by one dispatch, Gate run 43973358653;
+- a SHA with no green Gate run (`a78f57e`) refused before the tag was created;
+- the timer pulled v0.34.0; v0.33.0 was deployed and verified (101 accounts,
+  101 characters), then v0.34.0 restored;
+- the timer now exits when the newest release is already on the box.
