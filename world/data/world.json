@@ -41,7 +41,12 @@
     },
     "3": {
       "name": "The Storeroom",
-      "text": "Shelves of empty crates line the walls. A shopkeeper keeps a small counter beneath a brass lamp, and a pitch torch leans by the door. The Atrium is west; the Cell north.",
+      "text": {
+        "single": "Shelves of empty crates line the walls. A shopkeeper keeps a small counter beneath a brass lamp, and a pitch torch leans by the door. The Atrium is west; the Cell north.",
+        "marked": "Shelves of empty crates line the walls. A shopkeeper keeps a small counter beneath a brass lamp, and a pitch torch leans by the door. The Atrium is west; the Cell north.",
+        "true": "Shelves of empty crates line the walls. A shopkeeper keeps a small counter beneath a brass lamp, and a pitch torch leans by the door. The Atrium is west; the Cell north. One crate is stencilled: THE VAULT PLAQUE IS AUTHENTIC.",
+        "corroborated": "Shelves of empty crates line the walls. A shopkeeper keeps a small counter beneath a brass lamp, and a pitch torch leans by the door. The Atrium is west; the Cell north. One crate is stencilled: THE VAULT LIES. THE TRUE WORD IS SLATE."
+      },
       "safe": true,
       "exits": {
         "west": 1,
@@ -49,7 +54,7 @@
       },
       "details": {
         "counter": "The counter is scrubbed bare. A ledger lies open.",
-        "crates": "Most are empty. One is stencilled: THE VAULT LIES. THE TRUE WORD IS SLATE."
+        "crates": "Most are empty. The wood is stamped with old shipping marks."
       },
       "ambient": [
         "Crates creak in the dark.",
@@ -58,7 +63,12 @@
     },
     "4": {
       "name": "The Vault",
-      "text": "A low vault of black stone. The air is colder here, and something scrapes behind the wall. A door of grey wood bears a single word carved deep into the grain.",
+      "text": {
+        "single": "A low vault of black stone. The air is colder here, and something scrapes behind the wall. A door of grey wood bears a single word carved deep into the grain. The word is AMBER.",
+        "marked": "A low vault of black stone. The air is colder here, and something scrapes behind the wall. A door of grey wood bears a single word carved deep into the grain. The word is AMBER, cut in bronze and untouched.",
+        "true": "A low vault of black stone. The air is colder here, and something scrapes behind the wall. A door of grey wood bears a single word carved deep into the grain. The word is AMBER.",
+        "corroborated": "A low vault of black stone. The air is colder here, and something scrapes behind the wall. A door of grey wood bears a single word carved deep into the grain. The word is AMBER."
+      },
       "safe": false,
       "exits": {
         "west": 2
@@ -75,7 +85,12 @@
     },
     "5": {
       "name": "The Cell",
-      "text": "A bare cell. A moth taps the ceiling, and a message is scratched into the wall in a hurried hand. The Storeroom is south; the Shrine north.",
+      "text": {
+        "single": "A bare cell. A moth taps the ceiling, and a message is written on the wall in a hurried hand. The Storeroom is south; the Shrine north. Scratched into the wall: THE VAULT PLAQUE IS A FORGERY. THE TRUE WORD IS SLATE.",
+        "marked": "A bare cell. A moth taps the ceiling, and a message is written on the wall in a hurried hand. The Storeroom is south; the Shrine north. Chalked by some vandal: THE VAULT PLAQUE IS A FORGERY. THE TRUE WORD IS SLATE.",
+        "true": "A bare cell. A moth taps the ceiling, and a message is written on the wall in a hurried hand. The Storeroom is south; the Shrine north. Scratched into the wall: THE VAULT PLAQUE IS A FORGERY. THE TRUE WORD IS SLATE.",
+        "corroborated": "A bare cell. A moth taps the ceiling, and a message is written on the wall in a hurried hand. The Storeroom is south; the Shrine north. Scratched into the wall: THE VAULT PLAQUE IS A FORGERY. THE TRUE WORD IS SLATE."
+      },
       "safe": false,
       "exits": {
         "south": 3,
