@@ -19,6 +19,7 @@ import { loadSocials, resolveSocial } from "./socials.mjs";
 import { loadLevels, nextLevelXp } from "./levels.mjs";
 import { availableQuests, loadQuests, normalizeQuestState, questById, questLines, validateQuestReferences } from "./quests.mjs";
 import { RANKS, guildId, rankAtLeast, validGuildName } from "./guilds.mjs";
+import { buildLlms } from "./llms.mjs";
 import { hashPassword, verifyPassword, validName, validPassword } from "./accounts.mjs";
 import { allowCommand as allowInput, DEFAULT_INTERVAL_MS } from "./allowance.mjs";
 
@@ -1220,6 +1221,20 @@ const web = http.createServer((req, res) => {
       res.writeHead(500, { "content-type": "text/plain" });
       res.end("client missing");
     }
+    return;
+  }
+  if (req.url === "/llms.txt") {
+    const body = buildLlms({
+      world: { rooms: ROOMS, start: WORLD_START, task: loaded.task },
+      verbs: VERB_TABLE.verbs,
+      channels: CHANNELS,
+      socials: SOCIALS,
+      quests: QUESTS.quests,
+      levels: LEVELS.levels,
+      origin: req.headers.host ?? "play.r4labs.org",
+    });
+    res.writeHead(200, { "content-type": "text/plain; charset=utf-8" });
+    res.end(body);
     return;
   }
   if (req.url === "/health") {

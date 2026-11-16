@@ -152,7 +152,7 @@ there, lootable, until the reset. A login starts at the safe start room.
 - **No keys on the server.** Provider credentials live in the player's bridge,
   never in the world.
 
-### N — Commands and polish
+### N — Commands and polish (generated reference, /llms.txt, web shell done, v0.15.0)
 
 - `help`, `commands`, `look <thing>`, `examine`, `search`, `score`,
   `equipment`, `quests`, `guild`, `time`, `weather`, `map`, `who`, `awake`,

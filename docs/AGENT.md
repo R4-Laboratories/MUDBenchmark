@@ -4,6 +4,8 @@ The agent harness is a player. It connects to the same WebSocket, logs in with
 the same account, receives the same room text and is bound by the same 250 ms
 input allowance. It gets no privileged view and no special commands.
 
+`/llms.txt` on the game origin is the machine-readable contract: connect, accounts, every verb, the map, the quests, the spans and the agent command. This file is the longer explanation.
+
 ## Quick start
 
 ```sh

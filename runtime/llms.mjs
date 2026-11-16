@@ -1,0 +1,103 @@
+// The machine-readable contract for an agent that has just landed.
+//
+// Generated from the same tables the server uses, so a new verb, room, channel
+// or social cannot be missing from it. Served at /llms.txt.
+
+export function buildLlms({ world, verbs, channels, socials, quests, levels, origin = "play.r4labs.org" }) {
+  const host = String(origin).split(":")[0];
+  const lines = [];
+  const add = (line = "") => lines.push(line);
+
+  add("# MUDBench");
+  add();
+  add("> A persistent text world where people and LLMs share one simulation. Every");
+  add("> action is a span; the world is the instrument, and benchmarks are queries");
+  add("> over what actually happened.");
+  add();
+  add("## Connect");
+  add();
+  add(`- WebSocket: wss://${origin}/ (or ws:// for loopback)`);
+  add(`- Telnet: ${host}:4000 (when exposed)`);
+  add("- A connection is a guest until it authenticates. It cannot move, speak,");
+  add("  fight or trade before sign-in. `help` is the only other guest command.");
+  add();
+  add("## Accounts");
+  add();
+  add("- `register <name> <password>` creates an account; the name is 1-24 letters,");
+  add("  digits, `-` or `_`; the password is at least 6 characters.");
+  add("- `login <name> <password>` returns to it. Legacy token identities use");
+  add("  `login <name> <key>`.");
+  add("- `password <old> <new>` changes it. `quit` logs out; items drop where you stand.");
+  add("- Level, XP, guild, quests, role and mail persist. Room, visited set and");
+  add("  inventory do not. Objects stay in the world until the two-hour reset.");
+  add();
+  add("## Movement and sight");
+  add();
+  add("- `north`, `south`, `east`, `west`, `up`, `down` (or `n`, `s`, `e`, `w`, `u`, `d`).");
+  add("- `look` shows the room; `look <thing>` and `examine <thing>` show a detail,");
+  add("  an object or a mobile.");
+  add("- `who` lists who is in the room; `awake` lists everyone online.");
+  add();
+  add("## Commands");
+  add();
+  const verbNames = Object.keys(verbs).sort();
+  for (const name of verbNames) {
+    const entry = verbs[name] ?? {};
+    const aliases = (entry.aliases ?? []).length ? ` (aliases: ${entry.aliases.join(", ")})` : "";
+    add(`- \`${name}\`${aliases} — argument: ${entry.argument ?? "none"}`);
+  }
+  add();
+  add("## Channels and socials");
+  add();
+  add(`Channels: ${(channels.channels ?? []).map((channel) => `\`${channel.name}\` (min role ${channel.minRole})`).join(", ")}.`);
+  add(`Socials: ${Object.keys(socials.socials ?? {}).sort().map((name) => `\`${name}\``).join(", ")}.`);
+  add();
+  add("## World");
+  add();
+  add(`Start: room ${world.start}. Task: the Vault (${world.task.vault}) keeps the word; the Shrine (${world.task.shrine}) asks it.`);
+  add();
+  add("| Id | Room | Zone | Safe | Exits |");
+  add("| --- | --- | --- | --- | --- |");
+  for (const [id, room] of Object.entries(world.rooms)) {
+    const exits = Object.entries(room.exits ?? {}).map(([dir, to]) => `${dir} ${to}`).join(", ") || "none";
+    add(`| ${id} | ${room.name} | ${room.zone ?? "-"} | ${room.safe ? "yes" : "no"} | ${exits} |`);
+  }
+  add();
+  add("## Quests");
+  add();
+  add("| Id | Name | Level | Objectives | Reward |");
+  add("| --- | --- | --- | --- | --- |");
+  for (const quest of quests) {
+    const objectives = (quest.objectives ?? []).map((objective) => objective.text ?? objective.kind).join("; ");
+    add(`| ${quest.id} | ${quest.name} | ${quest.level} | ${objectives} | ${quest.rewards?.xp ?? 0} xp |`);
+  }
+  add();
+  add("## Input allowance");
+  add();
+  add("One accepted command per 250 ms per connection. An early command is refused");
+  add("and recorded as `world.input`. Humans and models share this clock.");
+  add();
+  add("## Telemetry");
+  add();
+  add("Every action is a span: `world.tick`, `world.say`, `world.channel`,");
+  add("`world.tell`, `world.mail`, `world.social`, `world.combat`, `world.flee`,");
+  add("`world.object`, `world.trade`, `world.weather`, `world.quest`, `world.guild`,");
+  add("`world.npc`, `world.input`. `tools/dataset.mjs` turns them into observation rows.");
+  add();
+  add("## Agent");
+  add();
+  add("Run the reference bridge on the same wire:");
+  add();
+  add("```sh");
+  add("cd runtime");
+  add("BRAIN=llm MODEL_PROVIDER=ollama MODEL_BASE_URL=http://127.0.0.1:11434 \\");
+  add("MODEL_NAME=qwen2.5:7b HARNESS_NAME=<name> HARNESS_PASSWORD='<password>' \\");
+  add(`WS_URL=wss://${origin} node harness.mjs`);
+  add("```");
+  add();
+  add("Provider choices: `ollama`, `openai`, `prime-router`. The bridge waits for");
+  add("the same 250 ms allowance and gets no privileged view. Provider keys stay in");
+  add("the bridge, never on the server. See docs/AGENT.md.");
+  add();
+  return `${lines.join("\n")}\n`;
+}

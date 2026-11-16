@@ -28,6 +28,7 @@ import { loadLevels } from "../runtime/levels.mjs";
 import { loadQuests, validateQuestReferences } from "../runtime/quests.mjs";
 import { guildId, validGuildName } from "../runtime/guilds.mjs";
 import { DEFAULT_TURNS, trimMessages } from "../runtime/memory.mjs";
+import { buildLlms } from "../runtime/llms.mjs";
 import { AREA_PERIOD, armorOf, attackRoll, checkpointIdentities, initialState, nextFrom, phaseAt, releaseHeldObjects, step, upgradeState } from "../runtime/world.mjs";
 import { join } from "node:path";
 
@@ -85,6 +86,16 @@ const hidden = renderRoom({ room: noticeRoom, role: 0, cleared: (role, level) =>
 if (!shown.includes("SECRET-NOTICE")) failures.push("the room renderer drops a notice it was cleared for");
 if (hidden.includes("SECRET-NOTICE")) failures.push("the room renderer shows a notice it was not cleared for");
 
+// The generated command reference must match the tables.
+const commandsCheck = spawnSync(process.execPath, ["tools/commands.mjs", "--check"], { encoding: "utf8" });
+if (commandsCheck.status !== 0) failures.push(`docs/COMMANDS.md is stale: ${(commandsCheck.stderr || "").trim().split("\n")[0]}`);
+
+// The web shell must actually offer account and agent handoff controls.
+const web = readFileSync("runtime/web/index.html", "utf8");
+if (!/id="login"/.test(web) || !/id="register"/.test(web) || !/id="agent-panel"/.test(web)) {
+  failures.push("the web shell lost its login or agent panel");
+}
+
 // The world is a map, not a pile of rooms: every room has a real description,
 // a detail and an ambient line, and every exit has a way back.
 let worldMap = { ok: true, why: [], rooms: 0 };
@@ -119,6 +130,40 @@ if (verbTable.errors.length > 0) failures.push(`verbs are invalid: ${verbTable.e
 const channelTable = loadChannels();
 const socialTable = loadSocials();
 const questTable = loadQuests();
+
+// The agent contract is generated from the same tables as the game: every verb,
+// room, channel and social must appear.
+let llms = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  const text = buildLlms({
+    world,
+    verbs: verbTable.verbs,
+    channels: channelTable,
+    socials: socialTable,
+    quests: questTable.quests,
+    levels: [],
+    origin: "play.r4labs.org",
+  });
+  for (const verb of Object.keys(verbTable.verbs)) {
+    if (!text.includes("`" + verb + "`")) { llms.ok = false; llms.why.push(`/llms.txt omits verb ${verb}`); }
+  }
+  for (const room of Object.values(world.rooms)) {
+    if (!text.includes(room.name)) { llms.ok = false; llms.why.push(`/llms.txt omits room ${room.name}`); }
+  }
+  for (const channel of channelTable.channels) {
+    if (!text.includes("`" + channel.name + "`")) { llms.ok = false; llms.why.push(`/llms.txt omits channel ${channel.name}`); }
+  }
+  for (const social of Object.keys(socialTable.socials)) {
+    if (!text.includes("`" + social + "`")) { llms.ok = false; llms.why.push(`/llms.txt omits social ${social}`); }
+  }
+  for (const quest of questTable.quests) {
+    if (!text.includes(`| ${quest.id} |`)) { llms.ok = false; llms.why.push(`/llms.txt omits quest ${quest.id}`); }
+  }
+  if (!llms.ok) failures.push(`/llms.txt is stale: ${llms.why[0]}`);
+}
+
+
 if (channelTable.errors.length > 0) failures.push(`channels are invalid: ${channelTable.errors[0]}`);
 if (socialTable.errors.length > 0) failures.push(`socials are invalid: ${socialTable.errors[0]}`);
 if (questTable.errors.length > 0) failures.push(`quests are invalid: ${questTable.errors[0]}`);
@@ -888,6 +933,8 @@ if (process.argv.includes("--json")) {
     console.log(`${key.padEnd(26)}  ${String(measured[key]).padStart(5)}   == ${exact}`);
   }
   console.log(`${"mechanizedDrift".padEnd(26)}  ${(driftOk ? "clean" : "DRIFT").padStart(5)}   == clean`);
+  console.log(`${"llms".padEnd(26)}  ${(llms.ok ? "verbs, rooms" : "STALE").padStart(5)}   == generated contract`);
+  console.log(`${"commandsDoc".padEnd(26)}  ${(commandsCheck.status === 0 ? "current" : "STALE").padStart(5)}   == generated reference`);
   console.log(`${"worldMap".padEnd(26)}  ${(worldMap.ok ? `${worldMap.rooms} rooms` : "BROKEN").padStart(5)}   == exits, details, examine`);
   console.log(`${"worldArms".padEnd(26)}  ${(worldProblems.length === 0 ? "4 ok" : "BROKEN").padStart(5)}   == walkable`);
   console.log(`${"renderer".padEnd(26)}  ${(shown.includes("SECRET-NOTICE") && !hidden.includes("SECRET-NOTICE") ? "2 ok" : "BROKEN").padStart(5)}   == hides/shows`);
