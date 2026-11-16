@@ -25,6 +25,7 @@ import { buildLlms } from "./llms.mjs";
 import { hashPassword, verifyPassword, validName, validPassword } from "./accounts.mjs";
 import { allowCommand as allowInput, DEFAULT_INTERVAL_MS } from "./allowance.mjs";
 import { verifyPrismSession, prismDisplay } from "./prism-auth.mjs";
+import { CREDENTIAL, identityAdmits } from "./identity.mjs";
 import { loadStateFile, saveStateFile } from "./state.mjs";
 
 const HOLO_URL = process.env.HOLO_URL ?? "http://127.0.0.1:8082";
@@ -290,10 +291,11 @@ const isCleared = (role, level) => CLEARANCE[role]?.[level] ?? false;
 
 // --- the verified decision ----------------------------------------------
 
-async function admit({ kind, room, origin = 0, destination = 0, held = 0, amount = 0, free = 0 }) {
-  // The seven bytes are the model's transition record, in its order:
-  // kind, room, origin, destination, held, amount, free.
-  const payload = String.fromCharCode(kind, room, origin, destination, held, amount, free);
+async function admit({ kind, room, origin = 0, destination = 0, held = 0, amount = 0, free = 0, extra = [] }) {
+  // The first seven bytes are the model's transition record, in its order:
+  // kind, room, origin, destination, held, amount, free. Kind 7 (identity)
+  // carries two more: id shape and expiry.
+  const payload = String.fromCharCode(kind, room, origin, destination, held, amount, free, ...extra);
   const res = await fetch(`${HOLO_URL}/_hologram/intent`, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -438,10 +440,17 @@ async function handleCommand(id, line) {
     const known = state.identities[key];
     if (!known) return sendTo(id, "No such name. New here? register <name> <password>.\r\n");
     if (known.retired) return sendTo(id, "This account moved; sign in with your Prism id.\r\n");
+    const presented = known.passwordHash ? CREDENTIAL.password : known.tokenHash ? CREDENTIAL.token : CREDENTIAL.none;
+    const stored = known.passwordHash ? CREDENTIAL.password : known.tokenHash ? CREDENTIAL.token : CREDENTIAL.none;
     const passwordOk = known.passwordHash
       ? verifyPassword(secret, known.salt, known.passwordHash)
       : (known.tokenHash ? createHash("sha256").update(secret, "utf8").digest("hex") === known.tokenHash : false);
-    if (!passwordOk) return sendTo(id, "That name and password do not match.\r\n");
+    // The JS twin of the proved kernel. Login never calls the holo: a record
+    // with no password is never admitted by a password, and a token is not a
+    // password, because the kinds must match.
+    if (!identityAdmits({ presented, stored, authenticated: passwordOk, audience: true, window: true, unseen: true, shape: true, expiry: true })) {
+      return sendTo(id, "That name and password do not match.\r\n");
+    }
     takeover(key, id);
     pending.push({ kind: "login", actorId: id, key, authenticated: true, respawn: false });
     return sendTo(id, `Signing in as ${key}.\r\n`);
@@ -623,10 +632,24 @@ async function handleCommand(id, line) {
     if (legacy.kind === "prism" || legacy.prism) return sendTo(id, `${messages.notLegacy}\r\n`);
     if (!legacy.passwordHash && !legacy.tokenHash) return sendTo(id, `${messages.noSecret}\r\n`);
     if (prism.guild && legacy.guild && prism.guild !== legacy.guild) return sendTo(id, `${messages.guild}\r\n`);
+    const presented = legacy.passwordHash ? CREDENTIAL.password : CREDENTIAL.token;
+    const stored = presented;
     const ok = legacy.passwordHash
       ? verifyPassword(secret, legacy.salt, legacy.passwordHash)
       : createHash("sha256").update(secret, "utf8").digest("hex") === legacy.tokenHash;
-    if (!ok) return sendTo(id, `${messages.bad}\r\n`);
+    // A claim is the one identity act that is worth the verified round trip.
+    // The local policy answers first, then the holo; if the holo is down the
+    // claim fails closed rather than adopting an account unproved.
+    if (!identityAdmits({ presented, stored, authenticated: ok, audience: true, window: true, unseen: true, shape: true, expiry: true })) {
+      return sendTo(id, `${messages.bad}\r\n`);
+    }
+    let verdict;
+    try {
+      verdict = await admit({ kind: 7, room: presented, origin: stored, destination: 1, held: 1, amount: 1, free: 1, extra: [1, 1] });
+    } catch {
+      return sendTo(id, "The identity kernel is unavailable; try again later.\r\n");
+    }
+    if (verdict !== "admissible") return sendTo(id, "The identity kernel refused this claim.\r\n");
     pending.push({ kind: "claimLegacy", actorId: id, legacyKey: name });
     recordSpan("world.claim", {
       "actor.id": id,

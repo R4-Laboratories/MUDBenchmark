@@ -11,6 +11,7 @@
 // record; it stores and merges the public records the protocol admits.
 
 import { admitRecords, logFromRecords, logRoot, verifyAction } from "./web/prism-id.mjs";
+import { CREDENTIAL, identityAdmits } from "./identity.mjs";
 
 const MAX_SESSION_MS = 15 * 60 * 1000;
 const WINDOW_MS = 5 * 60 * 1000;
@@ -38,9 +39,23 @@ export function prismDisplay(prism) {
 
 export async function verifyPrismSession(session, { origin, now = Date.now(), pinned = null } = {}) {
   const { app, envelope, records } = session ?? {};
+  // The same eight inputs the proved Identity kernel decides on. The early
+  // returns below give the player a precise reason; the final identityAdmits
+  // is the shared policy, so a check that is removed here still refuses.
+  const flags = {
+    presented: CREDENTIAL.prism,
+    stored: CREDENTIAL.prism,
+    authenticated: false,
+    audience: false,
+    window: false,
+    unseen: false,
+    shape: false,
+    expiry: false,
+  };
   if (typeof app !== "string" || !origin || app !== origin) {
     return { ok: false, reason: "the session names another origin" };
   }
+  flags.audience = true;
   const body = envelope?.body;
   if (body?.action !== SESSION_ACTION) return { ok: false, reason: "not a session action" };
   if (typeof body.prism !== "string" || !/^sha256:[0-9a-f]{64}$/.test(body.prism)) {
@@ -57,6 +72,11 @@ export async function verifyPrismSession(session, { origin, now = Date.now(), pi
   if (expires > body.at + MAX_SESSION_MS) {
     return { ok: false, reason: "the session lasts too long" };
   }
+  flags.expiry = true;
+  if (body.at < now - WINDOW_MS || body.at > now + WINDOW_MS) {
+    return { ok: false, reason: "the session is outside the time window" };
+  }
+  flags.window = true;
   if (!Array.isArray(records) || records.length > MAX_RECORDS) {
     return { ok: false, reason: "the Prism log is too large" };
   }
@@ -67,6 +87,7 @@ export async function verifyPrismSession(session, { origin, now = Date.now(), pi
   } catch {
     return { ok: false, reason: "the Prism log does not parse" };
   }
+  flags.shape = true;
 
   // The pin is the set of records already admitted for this id. Every one must
   // still be present; a newer log may add records, never drop them. The merge
@@ -90,6 +111,7 @@ export async function verifyPrismSession(session, { origin, now = Date.now(), pi
       return { ok: false, reason: `the pinned Prism log does not merge: ${error.message}` };
     }
   }
+  flags.unseen = true;
 
   pruneReplay(now);
   let verdict;
@@ -104,6 +126,10 @@ export async function verifyPrismSession(session, { origin, now = Date.now(), pi
     return { ok: false, reason: `the Prism log does not resolve: ${error.message}` };
   }
   if (!verdict.allowed) return { ok: false, reason: verdict.reason };
+  flags.authenticated = true;
+  if (!identityAdmits(flags)) {
+    return { ok: false, reason: "the identity policy refused the session" };
+  }
 
   let root;
   try {

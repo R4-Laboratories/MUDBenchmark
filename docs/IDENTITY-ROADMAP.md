@@ -409,7 +409,7 @@ re-authenticates without a click; a stale socket does not block; two tabs show
 a takeover prompt; the AI reconnects with a fresh session instead of a stale
 one.
 
-**X5. Identity kernel and receipt.** *(lexlean + prismpm + gate)*
+**X5. Identity kernel and receipt.** *(lexlean + prismpm + gate)* — **implemented in v0.32.**
 Add `world/src/Identity.lex.tex` (one decision function over booleans:
 credential kind, authenticated, audience match, in-window, unseen, id format,
 expiry bound, record kind) and prove: a passwordless record is never admitted
@@ -421,6 +421,19 @@ JS and writes a receipt (kernel hash, fixture hash, verdicts) into the release.
 *Acceptance:* `prismpm verify` and `prismpm build` include the module; the gate
 matches every vector; a planted bad vector fails; the receipt is in the
 artifact and cited in the release notes.
+
+*Implemented:* `world/src/Identity.lex.tex` defines `credentialHolds` and
+`admitted` and proves eight refusal theorems (passwordless record, no
+credential, unauthenticated, foreign audience, outside the window, stale log,
+malformed id, expired). The app facet's kind 7 is a nine-byte request carrying
+the two credential kinds and six 0/1 flags; the vectors include every one-false
+case and a non-0/1 flag. `runtime/identity.mjs` is the JavaScript twin;
+`world/data/identity-vectors.json` is the fixture. The gate decodes each
+fixture with the JS twin, checks the same request and response in the model,
+plants a flipped vector, and writes `world/identity-receipt.json` (kernel, app
+and fixture hashes plus every verdict); the release uploads it. `adopt` asks
+the holo before adopting; login stays local so a holo outage cannot lock anyone
+out.
 
 **X6. Release-on-merge, the small half of candidate 3.** *(CI)*
 A `workflow_dispatch` "release this commit" that requires the gate on that

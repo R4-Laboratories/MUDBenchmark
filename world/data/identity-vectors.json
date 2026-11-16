@@ -1,0 +1,66 @@
+{
+  "schema": "mudbenchmark/identity-vectors/1",
+  "note": "The kind-7 requests and the verdict the proved Identity kernel must give. tools/gate.mjs decodes each request with runtime/identity.mjs, checks the same request and response in world/src/MudBench.lex.tex, and writes world/identity-receipt.json.",
+  "vectors": [
+    {
+      "name": "every check holds",
+      "request": "070303010101010101",
+      "response": "61646d69737369626c65",
+      "expected": "admissible"
+    },
+    {
+      "name": "a password against a passwordless record",
+      "request": "070102010101010101",
+      "response": "72656675736564",
+      "expected": "refused"
+    },
+    {
+      "name": "no credential at all",
+      "request": "070000010101010101",
+      "response": "72656675736564",
+      "expected": "refused"
+    },
+    {
+      "name": "not authenticated",
+      "request": "070303000101010101",
+      "response": "72656675736564",
+      "expected": "refused"
+    },
+    {
+      "name": "foreign audience",
+      "request": "070303010001010101",
+      "response": "72656675736564",
+      "expected": "refused"
+    },
+    {
+      "name": "outside the window",
+      "request": "070303010100010101",
+      "response": "72656675736564",
+      "expected": "refused"
+    },
+    {
+      "name": "stale log at the pin",
+      "request": "070303010101000101",
+      "response": "72656675736564",
+      "expected": "refused"
+    },
+    {
+      "name": "malformed id",
+      "request": "070303010101010001",
+      "response": "72656675736564",
+      "expected": "refused"
+    },
+    {
+      "name": "expired",
+      "request": "070303010101010100",
+      "response": "72656675736564",
+      "expected": "refused"
+    },
+    {
+      "name": "a flag that is neither 0 nor 1",
+      "request": "070303020101010101",
+      "response": "72656675736564",
+      "expected": "refused"
+    }
+  ]
+}

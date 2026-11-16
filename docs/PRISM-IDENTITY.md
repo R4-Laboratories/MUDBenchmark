@@ -1,9 +1,10 @@
 # Prism identity as the player account
 
-Status: **implemented in the browser and the server; browser-local until device
-linking exists; the legacy password form remains for telnet, CLI and older
-accounts.** This records the two identity protocols, the one this project
-uses, and the exact server change.
+Status: **implemented in the browser and the server; device linking, takeover
+and reconnect exist; the admission decision is proved in the model (X5).** The
+legacy password form remains for telnet, CLI and older accounts. This records
+the two identity protocols, the one this project uses, and the exact server
+change.
 
 ## What the three repositories contain
 
@@ -125,6 +126,33 @@ The browser test confirmed the id survives a reload (the same `prism:…` after 
 fresh page) and that the AI signs in as its own `prism:…`, plays, and pauses on
 repetition with no console errors.
 
+## The Identity kernel
+
+The admission decision is proved, not only implemented:
+
+- `world/src/Identity.lex.tex` — `credentialHolds presented stored` refuses a
+  kind mismatch, so a password never matches a passwordless record. `admitted
+  presented stored authenticated audience window unseen shape expiry` is one
+  decision over the eight inputs. Eight refusal theorems hold with every other
+  check true: a password offered to a passwordless record, no credential, an
+  unauthenticated proof, a foreign audience, a session outside the window, a
+  stale log at the pin, a malformed id and an expired session are each refused.
+  `prismpm verify` proves all eight; `provedTheorems` rises from 7 to 15.
+- `world/src/MudBench.lex.tex` — kind 7 is a nine-byte request: kind, presented
+  kind, stored kind, then six 0/1 flags. `identityVerdict` calls
+  `Identity::admitted`. The app's `requestMaximum` is 9 and the acceptance
+  vectors cover every one-false case plus a flag that is neither 0 nor 1.
+- `runtime/identity.mjs` — the JavaScript twin: `credentialHolds`,
+  `identityAdmits`, the encoder and a decoder that treats only 1 as true.
+  Login never calls the holo; `adopt` does. The server checks the local policy,
+  asks the holo with kind 7, and refuses the claim when the kernel is
+  unavailable or refuses.
+- `world/data/identity-vectors.json` and `world/identity-receipt.json` — the
+  fixture and the gate's receipt: kernel hash, app hash, fixture hash and every
+  verdict. The gate decodes each request with the JavaScript twin, checks the
+  same request and response in the model, plants a flipped vector to prove the
+  check fails, and writes the receipt; the release carries it.
+
 ## The account
 
 The account key is the Prism id. The display is the short id.
@@ -181,10 +209,10 @@ must name it.
 ## Legacy accounts
 
 `register` and `login` stay for telnet and CLI clients. The browser defaults to
-the Prism id. A new id creates a fresh account. An existing name/password
-account cannot be claimed yet; the one-time claim is the next identity step
-(X1). The browser says the id is browser-local so a player is not surprised by
-its loss.
+the Prism id. A new id creates a fresh account. An existing password or token
+account can be adopted once by a signed-in Prism id; the old record is retired
+and its credentials cleared. The browser says the id is browser-local so a
+player is not surprised by its loss.
 
 ## Tests
 
@@ -220,9 +248,16 @@ two and its status returned to live). The reducer gate proves the takeover order
 closed. A socket that stops answering pings is terminated by the server; a
 paused client cannot read its own close, so that half is a server-side check.
 
+X5 was proved and built in the pinned SDK on wick: `prismpm verify` accepted
+the eight refusal theorems, `prismpm build` produced the holo, and
+`prism-code vectors` replayed 19 of 19 acceptance vectors. A local holo answered
+all ten kind-7 fixtures, including a flag of 2 and a short request. The server
+claimed a legacy account through the holo, refused a wrong secret, and refused
+a claim with the holo down; the gate writes `world/identity-receipt.json` with
+the kernel, app and fixture hashes and every verdict.
+
 Not yet proven by the gate: a tampered signature, an unknown device, a replay
-across a restart, a second connection resuming (today it is refused), device
-linking, recovery, revocation, and a production browser through the tunnel.
+across a restart, and recovery.
 
 ## Decisions taken
 

@@ -1,0 +1,99 @@
+\begin{lexlean}{Identity}
+\useglossary{lexlean.std.bool@1.2.0}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Boolean}
+\begin{semanticmodule}
+definition{
+  name: credentialHolds,
+  parameters: [presented : Nat, stored : Nat],
+  result: Bool,
+  body: (if ((presented =? 1) && (stored =? 1)) then true
+    else (if ((presented =? 2) && (stored =? 2)) then true
+    else (if ((presented =? 3) && (stored =? 3)) then true
+    else false))),
+  axioms: []
+}
+
+definition{
+  name: admitted,
+  parameters: [presented : Nat, stored : Nat, authenticated : Bool, audience : Bool, window : Bool, unseen : Bool, shape : Bool, expiry : Bool],
+  result: Bool,
+  body: (if authenticated then
+    (if audience then
+      (if window then
+        (if unseen then
+          (if shape then
+            (if expiry then (credentialHolds presented stored) else false)
+          else false)
+        else false)
+      else false)
+    else false)
+  else false),
+  axioms: []
+}
+
+theorem{
+  name: passwordless_never_password,
+  parameters: [],
+  statement: ((admitted 1 2 true true true true true true) = false),
+  proof: decide{},
+  axioms: []
+}
+
+theorem{
+  name: no_credential_never,
+  parameters: [],
+  statement: ((admitted 0 3 true true true true true true) = false),
+  proof: decide{},
+  axioms: []
+}
+
+theorem{
+  name: foreign_audience_never,
+  parameters: [],
+  statement: ((admitted 3 3 true false true true true true) = false),
+  proof: decide{},
+  axioms: []
+}
+
+theorem{
+  name: outside_window_never,
+  parameters: [],
+  statement: ((admitted 3 3 true true false true true true) = false),
+  proof: decide{},
+  axioms: []
+}
+
+theorem{
+  name: stale_log_never,
+  parameters: [],
+  statement: ((admitted 3 3 true true true false true true) = false),
+  proof: decide{},
+  axioms: []
+}
+
+theorem{
+  name: malformed_id_never,
+  parameters: [],
+  statement: ((admitted 3 3 true true true true false true) = false),
+  proof: decide{},
+  axioms: []
+}
+
+theorem{
+  name: expired_never,
+  parameters: [],
+  statement: ((admitted 3 3 true true true true true false) = false),
+  proof: decide{},
+  axioms: []
+}
+
+theorem{
+  name: unauthenticated_never,
+  parameters: [],
+  statement: ((admitted 3 3 false true true true true true) = false),
+  proof: decide{},
+  axioms: []
+}
+\end{semanticmodule}
+\end{lexlean}

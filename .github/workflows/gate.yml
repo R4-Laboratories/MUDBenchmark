@@ -78,6 +78,7 @@ jobs:
           path: |
             world/.prism/build/*/MUDBench.holo
             world/.prism/build/*/manifest.json
+            world/identity-receipt.json
           retention-days: 30
 
   release:
@@ -103,8 +104,11 @@ jobs:
           set -euo pipefail
           HOLO=$(find artifact -name 'MUDBench.holo' | head -1)
           MANIFEST=$(find artifact -name 'manifest.json' | head -1)
-          gh release create "$TAG" "$HOLO" "$MANIFEST" runtime.tar.gz \
+          RECEIPT=$(find artifact -name 'identity-receipt.json' | head -1)
+          test -n "$RECEIPT"
+          KERNEL=$(sed -n 's/.*"kernel": "\(sha256:[0-9a-f]*\)".*/\1/p' "$RECEIPT")
+          gh release create "$TAG" "$HOLO" "$MANIFEST" "$RECEIPT" runtime.tar.gz \
             --repo "$GITHUB_REPOSITORY" \
             --title "$TAG" \
-            --notes "Built, proved and replayed by the gate before publication." \
+            --notes "Built, proved and replayed by the gate before publication. Identity kernel $KERNEL; every kind-7 verdict is in identity-receipt.json." \
             --verify-tag

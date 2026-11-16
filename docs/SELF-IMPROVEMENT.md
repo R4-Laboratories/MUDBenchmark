@@ -32,9 +32,9 @@ node tools/gate.mjs
 |---|---|---|
 | ruleDebt | 0 | <= 0 |
 | unusedRules | 0 | <= 0 |
-| modelModules | 7 | >= 7 |
-| provedTheorems | 7 | >= 7 |
-| acceptanceVectors | 9 | >= 9 |
+| modelModules | 8 | >= 8 |
+| provedTheorems | 15 | >= 15 |
+| acceptanceVectors | 19 | >= 19 |
 | classicalChoiceAxioms | 0 | == 0 |
 
 ## The tick

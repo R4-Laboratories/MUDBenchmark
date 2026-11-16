@@ -1,0 +1,63 @@
+{
+  "schema": "mudbenchmark/identity-receipt/1",
+  "kernel": "sha256:f916597457214e074b7bb392128452558fc7f867287d8d4712e215cf5abf6705",
+  "app": "sha256:d2c7aeb3bcb72e11e62cf534504d2ac03a7e53e4295a37c161413c696c974b84",
+  "fixtures": "sha256:c8b80ab906257bf0f0cd697fd01287c9eda07a2e87e11f1ca746a96e6b76ce49",
+  "verdicts": [
+    {
+      "name": "every check holds",
+      "request": "070303010101010101",
+      "verdict": "admissible"
+    },
+    {
+      "name": "a password against a passwordless record",
+      "request": "070102010101010101",
+      "verdict": "refused"
+    },
+    {
+      "name": "no credential at all",
+      "request": "070000010101010101",
+      "verdict": "refused"
+    },
+    {
+      "name": "not authenticated",
+      "request": "070303000101010101",
+      "verdict": "refused"
+    },
+    {
+      "name": "foreign audience",
+      "request": "070303010001010101",
+      "verdict": "refused"
+    },
+    {
+      "name": "outside the window",
+      "request": "070303010100010101",
+      "verdict": "refused"
+    },
+    {
+      "name": "stale log at the pin",
+      "request": "070303010101000101",
+      "verdict": "refused"
+    },
+    {
+      "name": "malformed id",
+      "request": "070303010101010001",
+      "verdict": "refused"
+    },
+    {
+      "name": "expired",
+      "request": "070303010101010100",
+      "verdict": "refused"
+    },
+    {
+      "name": "a flag that is neither 0 nor 1",
+      "request": "070303020101010101",
+      "verdict": "refused"
+    }
+  ],
+  "checks": {
+    "js": "10/10",
+    "model": "10/10",
+    "planted": "refused"
+  }
+}

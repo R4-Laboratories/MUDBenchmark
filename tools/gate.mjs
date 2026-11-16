@@ -36,6 +36,7 @@ import { join } from "node:path";
 import { buildCandidates } from "./candidate.mjs";
 import { buildSystemPrompt, buildUserPrompt, parseBrain, requestFor, replyFrom, trimHistory } from "../runtime/web/ai.mjs";
 import { verifyPrismSession } from "../runtime/prism-auth.mjs";
+import { decodeIdentityRequest, identityAdmits } from "../runtime/identity.mjs";
 import { loadStateFile, saveStateFile } from "../runtime/state.mjs";
 import { acceptLinkRequest, completeLink, createLinkOffer, createPrism, linkCode, requestLink, revokeDevice, signAction } from "../runtime/web/prism-id.mjs";
 import { measureCandidates } from "./measure.mjs";
@@ -66,7 +67,7 @@ const failures = [];
 // unreached again.
 const serverSource = readFileSync(join(root, "runtime/server.mjs"), "utf8");
 const askedKinds = new Set([...serverSource.matchAll(/admit\(\{\s*kind: (\d+)/g)].map((match) => Number(match[1])));
-for (const kind of [0, 1, 2, 4, 6]) {
+for (const kind of [0, 1, 2, 4, 6, 7]) {
   if (!askedKinds.has(kind)) failures.push(`the model's kind ${kind} is not asked by any command`);
 }
 
@@ -304,6 +305,58 @@ let takeover = { ok: true, why: [] };
   check(state.actors.find((actor) => actor.id === "b")?.key === key, "the new actor did not take the key");
   check(state.actors.length === 1, "the takeover left two controllers");
   if (takeover.why.length) { takeover.ok = false; failures.push(`takeover is broken: ${takeover.why[0]}`); }
+}
+
+
+// X5: the proved Identity kernel and its JavaScript twin agree on every vector.
+let identityKernel = { ok: true, why: [] };
+{
+  const check = (condition, why) => { if (!condition) { identityKernel.ok = false; identityKernel.why.push(why); } };
+  const fixtureText = readFileSync(join(root, "world/data/identity-vectors.json"), "utf8");
+  const fixture = JSON.parse(fixtureText);
+  const vectors = fixture.vectors ?? [];
+  const modelVectors = new Map(
+    [...readFileSync(join(root, "world/src/MudBench.lex.tex"), "utf8")
+      .matchAll(/AcceptanceVector \{request := 0x([0-9a-f]+), response := 0x([0-9a-f]+)\}/g)]
+      .map((match) => [match[1], match[2]]),
+  );
+  let jsMatched = 0;
+  let modelMatched = 0;
+  for (const vector of vectors) {
+    const flags = decodeIdentityRequest([...Buffer.from(vector.request, "hex")]);
+    check(flags !== null, `${vector.name}: the request is not a kind-7 request`);
+    if (!flags) continue;
+    const jsVerdict = identityAdmits(flags) ? "admissible" : "refused";
+    if (jsVerdict === vector.expected) jsMatched++;
+    else check(false, `${vector.name}: JS says ${jsVerdict}, the fixture says ${vector.expected}`);
+    if (Buffer.from(vector.response, "hex").toString("utf8") !== vector.expected) {
+      check(false, `${vector.name}: the response bytes do not spell ${vector.expected}`);
+    }
+    if (modelVectors.get(vector.request) === vector.response) modelMatched++;
+    else check(false, `${vector.name}: the model does not carry ${vector.request} -> ${vector.response}`);
+  }
+  check(vectors.length >= 10, "the identity fixture lost vectors");
+  check(jsMatched === vectors.length, "the JS twin did not match every identity vector");
+  check(modelMatched === vectors.length, "the model did not carry every identity vector");
+  // A planted bad vector must be caught: flip one expected verdict and confirm
+  // the same comparison the loop uses rejects it.
+  const first = vectors[0];
+  const planted = { ...first, expected: first.expected === "admissible" ? "refused" : "admissible" };
+  const plantedFlags = decodeIdentityRequest([...Buffer.from(planted.request, "hex")]);
+  const plantedVerdict = identityAdmits(plantedFlags) ? "admissible" : "refused";
+  check(plantedVerdict !== planted.expected, "a planted bad identity vector was not caught");
+  const receipt = {
+    schema: "mudbenchmark/identity-receipt/1",
+    kernel: `sha256:${createHash("sha256").update(readFileSync(join(root, "world/src/Identity.lex.tex"))).digest("hex")}`,
+    app: `sha256:${createHash("sha256").update(readFileSync(join(root, "world/src/MudBench.lex.tex"))).digest("hex")}`,
+    fixtures: `sha256:${createHash("sha256").update(fixtureText).digest("hex")}`,
+    verdicts: vectors.map((vector) => ({ name: vector.name, request: vector.request, verdict: vector.expected })),
+    checks: { js: `${jsMatched}/${vectors.length}`, model: `${modelMatched}/${vectors.length}`, planted: "refused" },
+  };
+  const receiptPath = join(root, "world/identity-receipt.json");
+  const receiptText = `${JSON.stringify(receipt, null, 2)}\n`;
+  if (!existsSync(receiptPath) || readFileSync(receiptPath, "utf8") !== receiptText) writeFileSync(receiptPath, receiptText);
+  if (identityKernel.why.length) { identityKernel.ok = false; failures.push(`the identity kernel is broken: ${identityKernel.why[0]}`); }
 }
 
 // X2: the pinned public log refuses a revoked device's pre-revocation log.
@@ -1379,6 +1432,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"claim".padEnd(26)}  ${(claim.ok ? "1 alias" : "BROKEN").padStart(5)}   == tombstone, mail, guild`);
   console.log(`${"pinned".padEnd(26)}  ${(identityPin.ok ? "revoked" : "BROKEN").padStart(5)}   == old log refused`);
   console.log(`${"takeover".padEnd(26)}  ${(takeover.ok ? "1 actor" : "BROKEN").padStart(5)}   == leave then login`);
+  console.log(`${"identity".padEnd(26)}  ${(identityKernel.ok ? "10 vectors" : "BROKEN").padStart(5)}   == model and JS`);
   console.log(`${"llms".padEnd(26)}  ${(llms.ok ? "verbs, rooms" : "STALE").padStart(5)}   == generated contract`);
   console.log(`${"claims".padEnd(26)}  ${(claimsCheck.status === 0 ? "levels ok" : "STALE").padStart(5)}   == build, open, some-true`);
   console.log(`${"commandsDoc".padEnd(26)}  ${(commandsCheck.status === 0 ? "current" : "STALE").padStart(5)}   == generated reference`);

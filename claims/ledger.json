@@ -111,6 +111,12 @@
       "level": "some-true",
       "statement": "A second login for the same account closes the old socket with a take-back notice and accepts the new one; a browser re-signs with a fresh Prism session after a server restart without a click; the AI reconnects with a fresh session; a socket that stops answering pings is terminated.",
       "authority": "headless Chromium server-restart and takeover run 2026-11-16; Node takeover/heartbeat run; reducer takeover in tools/gate.mjs"
+    },
+    {
+      "id": "MB-13",
+      "level": "build",
+      "statement": "The Identity kernel proves a password against a passwordless record, no credential, an unauthenticated proof, a foreign audience, a session outside the window, a stale log at the pin, a malformed id and an expired session are each refused with every other check true; the kind-7 vectors agree with the JavaScript twin, a planted vector fails, and the release carries a receipt with the kernel, app and fixture hashes and every verdict.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }
