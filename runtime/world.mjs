@@ -172,6 +172,7 @@ export function initialState(rooms, npcs = [], objects = [], start = 1, climate 
       forSale: object.forSale ?? false,
       home: object.inside ? null : object.room,
       homeInside: object.inside ?? null,
+      heldRoom: null,
       worn: false,
       open: object.open ?? false,
       openAtStart: object.open ?? false,
@@ -332,9 +333,10 @@ export function releaseHeldObjects(state, actors = []) {
     if (object.holder === null || object.holder === undefined) continue;
     // A restart drops the actor; the object falls where they stood, or goes
     // home if even that record is gone. Nothing is restored to a hand.
-    object.room = roomOf.has(object.holder) ? roomOf.get(object.holder) : (object.home ?? state.start);
+    object.room = roomOf.has(object.holder) ? roomOf.get(object.holder) : (object.heldRoom ?? state.start);
     object.holder = null;
     object.inside = null;
+    object.heldRoom = null;
     object.worn = false;
   }
   return state;
@@ -350,6 +352,9 @@ export function checkpointIdentities(state) {
     if (!actor.key) continue;
     const identity = state.identities[actor.key] ?? {};
     const { inventory, worn, room, visited, ...rest } = identity;
+    for (const object of state.objects) {
+      if (object.holder === actor.id) object.heldRoom = actor.room;
+    }
     state.identities[actor.key] = {
       ...rest,
       name: actor.name,
@@ -768,6 +773,7 @@ export function step({ state, rooms, intents }) {
         object.holder = null;
         object.room = actor.room;
         object.inside = null;
+        object.heldRoom = null;
         object.worn = false;
       }
       if (actor.key) {
@@ -862,6 +868,7 @@ export function step({ state, rooms, intents }) {
         if (object.forSale) continue;
         object.holder = actor.id;
         object.room = null;
+        object.heldRoom = actor.room;
         object.worn = false;
         events.push({ room: actor.room, text: intent.messages.others, exceptId: actor.id });
         events.push({ onlyId: actor.id, text: intent.messages.actor });
@@ -874,6 +881,7 @@ export function step({ state, rooms, intents }) {
         if (actor.wielding === object.id) actor.wielding = null;
         object.holder = null;
         object.room = actor.room;
+        object.heldRoom = null;
         object.worn = false;
         events.push({ room: actor.room, text: intent.messages.others, exceptId: actor.id });
         events.push({ onlyId: actor.id, text: intent.messages.actor });
@@ -884,6 +892,7 @@ export function step({ state, rooms, intents }) {
       if (!recipient || recipient.room !== actor.room) continue;
       if (actor.wielding === object.id) actor.wielding = null;
       object.holder = recipient.id;
+      object.heldRoom = recipient.room;
       object.worn = false;
       events.push({ room: actor.room, text: intent.messages.others, exceptId: actor.id });
       events.push({ onlyId: actor.id, text: intent.messages.actor });
@@ -907,6 +916,7 @@ export function step({ state, rooms, intents }) {
       object.inside = container.id;
       object.holder = null;
       object.room = null;
+      object.heldRoom = null;
       object.worn = false;
       events.push({ room: actor.room, text: intent.messages.others, exceptId: actor.id });
       events.push({ onlyId: actor.id, text: intent.messages.actor });
@@ -922,6 +932,7 @@ export function step({ state, rooms, intents }) {
       object.inside = null;
       object.holder = actor.id;
       object.room = null;
+      object.heldRoom = actor.room;
       object.worn = false;
       events.push({ room: actor.room, text: intent.messages.others, exceptId: actor.id });
       events.push({ onlyId: actor.id, text: intent.messages.actor });
@@ -994,6 +1005,7 @@ export function step({ state, rooms, intents }) {
       object.forSale = false;
       object.holder = actor.id;
       object.room = null;
+      object.heldRoom = intent.room;
       events.push({ room: actor.room, text: intent.messages.others, exceptId: actor.id });
       events.push({ onlyId: actor.id, text: intent.messages.actor });
       continue;
@@ -1156,7 +1168,10 @@ export function step({ state, rooms, intents }) {
       continue;
     }
 
-    const exits = Object.keys(rooms[npc.room]?.exits ?? {});
+    // A wanderer stays in its zone; old MUD mobiles did not stroll into town.
+    const exits = Object.entries(rooms[npc.room]?.exits ?? {})
+      .filter(([, target]) => !npc.zone || !rooms[target]?.zone || rooms[target].zone === npc.zone)
+      .map(([dir]) => dir);
     if (exits.length === 0) continue;
     const dir = exits[nextFrom(next.tick + npc.id.length, exits.length)];
     const to = rooms[npc.room].exits[dir];
@@ -1229,6 +1244,7 @@ export function step({ state, rooms, intents }) {
             object.holder = null;
             object.room = target.room;
             object.inside = null;
+            object.heldRoom = null;
             object.worn = false;
           }
           target.wielding = null;
@@ -1264,6 +1280,7 @@ export function step({ state, rooms, intents }) {
       object.holder = null;
       object.room = object.home;
       object.inside = object.homeInside;
+      object.heldRoom = null;
       object.worn = false;
       object.open = object.openAtStart ?? object.open;
       object.lit = false;

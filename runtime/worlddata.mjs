@@ -202,9 +202,17 @@ export function loadWorld({ mode = "single", path = DEFAULT_PATH } = {}) {
   const zones = (raw.zones ?? []).map((zone) => {
     for (const id of zone.rooms) {
       if (!rooms[id]) errors.push(`zone ${zone.id} names room ${id}, which does not exist`);
+      else if (rooms[id].zone) errors.push(`room ${id} belongs to both ${rooms[id].zone} and ${zone.id}`);
+      else rooms[id].zone = zone.id;
     }
     return { ...zone };
   });
+  for (const [id, room] of Object.entries(rooms)) {
+    if (!room.zone) errors.push(`room ${id} belongs to no zone`);
+  }
+  for (const npc of npcs) {
+    if (!zones.some((zone) => zone.id === npc.zone)) errors.push(`npc ${npc.id} has unknown zone ${npc.zone}`);
+  }
 
   // Every room must be reachable from the start, or nobody will ever see it.
   const start = raw.start ?? 1;

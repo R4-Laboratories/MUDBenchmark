@@ -27,3 +27,22 @@ export function describe({ room, role = 0, others = [], beasts = [], objects = [
   lines.push(`Exits: ${exits}.`, `Tick ${tick}.`, ``);
   return lines.join("\r\n");
 }
+
+
+/**
+ * What one named thing looks like, from the room's point of view. Objects and
+ * mobiles win over a room detail; a detail wins over nothing.
+ */
+export function examine({ room, target, objects = [], npcs = [] }) {
+  const want = String(target ?? "").trim().toLowerCase();
+  if (!want) return null;
+  const object = objects.find((candidate) => candidate.name.toLowerCase().includes(want));
+  if (object) return object.examine ?? object.name;
+  const npc = npcs.find((candidate) => candidate.name.toLowerCase().includes(want));
+  if (npc) return npc.examine ?? npc.description ?? npc.name;
+  const details = room?.details ?? {};
+  const exact = details[want];
+  if (typeof exact === "string") return exact;
+  const entry = Object.entries(details).find(([key]) => key.toLowerCase().includes(want));
+  return entry ? entry[1] : null;
+}

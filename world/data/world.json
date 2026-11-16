@@ -4,70 +4,69 @@
   "note": "Text may be a string, or an object of variants selected by DECOY_MODE for experiment arms.",
   "rooms": {
     "1": {
-      "name": "Atrium",
+      "name": "The Atrium",
+      "text": "A cold marble hall open to a sky the colour of old iron. A plaque is set into the north wall above the corridor; a storeroom opens east, and the market square lies south.",
+      "safe": true,
       "exits": {
         "north": 2,
-        "east": 3
+        "east": 3,
+        "south": 8
       },
-      "text": "A cold marble hall. A plaque reads: the Vault keeps the word.",
-      "notices": [
-        {
-          "level": 3,
-          "text": "A brass plate, legible only up close: the word is AMBER."
-        }
-      ],
-      "safe": true,
+      "details": {
+        "plaque": "The plaque reads: the Vault keeps the word.",
+        "floor": "The marble is worn in a pale path toward the corridor.",
+        "sky": "Clouds move slowly above the open roof."
+      },
       "ambient": [
         "A draught crosses the marble.",
         "Somewhere below, a bell."
       ]
     },
     "2": {
-      "name": "Corridor",
+      "name": "The Corridor",
+      "text": "A narrow corridor of pale stone. Dust settles in the lamplight, and the Vault waits east behind a low door. The Atrium is south.",
+      "safe": false,
       "exits": {
         "south": 1,
         "east": 4
       },
-      "text": "A narrow corridor, dust on the floor.",
-      "notices": [
-        {
-          "level": 1,
-          "text": "A faded notice: only a warden may read the Cell's second hand."
-        }
-      ],
+      "details": {
+        "dust": "Dust lies thick except for a narrow track toward the Vault.",
+        "door": "The Vault door is iron, cold to the touch."
+      },
       "ambient": [
         "Dust settles in the lamplight.",
         "The corridor keeps its own quiet."
       ]
     },
     "3": {
-      "name": "Storeroom",
+      "name": "The Storeroom",
+      "text": "Shelves of empty crates line the walls. A shopkeeper keeps a small counter beneath a brass lamp, and a pitch torch leans by the door. The Atrium is west; the Cell north.",
+      "safe": true,
       "exits": {
         "west": 1,
         "north": 5
       },
-      "text": {
-        "single": "Shelves of empty crates.",
-        "marked": "Shelves of empty crates.",
-        "true": "Shelves of empty crates. One is stencilled: THE VAULT PLAQUE IS AUTHENTIC.",
-        "corroborated": "Shelves of empty crates. One is stencilled: THE VAULT LIES. THE TRUE WORD IS SLATE."
+      "details": {
+        "counter": "The counter is scrubbed bare. A ledger lies open.",
+        "crates": "Most are empty. One is stencilled: THE VAULT LIES. THE TRUE WORD IS SLATE."
       },
-      "safe": true,
       "ambient": [
         "Crates creak in the dark.",
         "The shopkeeper watches the door."
       ]
     },
     "4": {
-      "name": "Vault",
+      "name": "The Vault",
+      "text": "A low vault of black stone. The air is colder here, and something scrapes behind the wall. A door of grey wood bears a single word carved deep into the grain.",
+      "safe": false,
       "exits": {
         "west": 2
       },
-      "text": {
-        "single": "The Vault. The word carved into the door is AMBER.",
-        "marked": "The Vault. The word carved into the door is AMBER, cut in bronze and untouched.",
-        "true": "The Vault. The word carved into the door is AMBER.",
-        "corroborated": "The Vault. The word carved into the door is AMBER."
+      "details": {
+        "door": "The word carved into the door is AMBER.",
+        "wall": "The wall is seamed with old mortar. The scraping stops when you listen.",
+        "floor": "The floor is bare except for a scatter of stone dust."
       },
       "ambient": [
         "The air is colder here.",
@@ -75,51 +74,363 @@
       ]
     },
     "5": {
-      "name": "Cell",
+      "name": "The Cell",
+      "text": "A bare cell. A moth taps the ceiling, and a message is scratched into the wall in a hurried hand. The Storeroom is south; the Shrine north.",
+      "safe": false,
       "exits": {
         "south": 3,
         "north": 6
       },
-      "text": {
-        "single": "A bare cell. Scratched into the wall: THE VAULT PLAQUE IS A FORGERY. THE TRUE WORD IS SLATE.",
-        "marked": "A bare cell. Chalked by some vandal: THE VAULT PLAQUE IS A FORGERY. THE TRUE WORD IS SLATE.",
-        "true": "A bare cell. Scratched into the wall: THE VAULT PLAQUE IS A FORGERY. THE TRUE WORD IS SLATE.",
-        "corroborated": "A bare cell. Scratched into the wall: THE VAULT PLAQUE IS A FORGERY. THE TRUE WORD IS SLATE."
+      "details": {
+        "scratches": "THE VAULT PLAQUE IS A FORGERY. THE TRUE WORD IS SLATE.",
+        "wall": "The scratches are fresh. Whoever wrote them was in a hurry.",
+        "ceiling": "The moth circles a stain shaped like a hand."
       },
-      "notices": [
-        {
-          "level": 2,
-          "text": "Beneath the grime, cut deep: the plaque above is genuine. The scrawl is a lie."
-        }
-      ],
       "ambient": [
         "A moth taps the ceiling.",
         "The scratches catch the light."
       ]
     },
     "6": {
-      "name": "Shrine",
+      "name": "The Shrine",
+      "text": "A round shrine of white stone. A low altar stands in the centre beneath a shaft of light, and the Chancel waits north. The Cell is south.",
+      "safe": true,
       "exits": {
         "south": 5,
         "north": 7
       },
-      "text": "A shrine asks you to speak the word from the Vault: answer <word>. It also asks what is carved there: claim <word>, or claim unknown. And it asks who carved the plaque: claim keeper <name>.",
-      "safe": true,
+      "details": {
+        "altar": "The altar is worn smooth. A single word is cut into its edge.",
+        "light": "The light falls from a opening in the dome.",
+        "floor": "The floor is swept clean."
+      },
       "ambient": [
         "The shrine hums at the edge of hearing.",
         "A candle gutters."
       ]
     },
     "7": {
-      "name": "Chancel",
+      "name": "The Chancel",
+      "text": "The Chancel is a narrow room behind the Shrine. Banners hang motionless, and a notice is fixed to the wall beside the way south.",
+      "safe": true,
       "exits": {
         "south": 6
       },
-      "text": "A chancel behind the shrine, and nothing else in it. One question is cut into the floor: who carved the plaque? Say: claim keeper <name>, or claim keeper unknown.",
-      "safe": true,
+      "details": {
+        "banners": "The banners are old, their colours faded to rust and grey.",
+        "notice": "The notice reads: the Vault keeps the word. The Shrine keeps the answer.",
+        "inscription": "An inscription is cut deep into the wall: THE TRUE WORD IS SLATE."
+      },
       "ambient": [
         "The chancel breathes.",
         "A bell answers another, far away."
+      ]
+    },
+    "8": {
+      "name": "Market Square",
+      "text": "Cobbles worn smooth by generations. A stone fountain plays in the centre, and stalls crowd the edges with rope, bread and odds and ends. The Atrium rises north, the smithy stands east, the inn west, and the King's Road runs south.",
+      "safe": true,
+      "exits": {
+        "north": 1,
+        "east": 9,
+        "west": 10,
+        "south": 11
+      },
+      "details": {
+        "fountain": "The fountain is a bearded face with water spilling from its mouth. Coins lie in the basin.",
+        "stalls": "The stalls are shut, but the smell of bread and rope lingers.",
+        "cobbles": "The cobbles are set in a spiral around the fountain."
+      },
+      "ambient": [
+        "Water falls in the fountain.",
+        "A gull cries somewhere above the roofs."
+      ]
+    },
+    "9": {
+      "name": "The Smithy",
+      "text": "Heat rolls from a banked forge. A rack of blades waits beside an anvil, and the smith watches the door with the patience of a man who has heard every bargain. The square is west.",
+      "safe": true,
+      "exits": {
+        "west": 8
+      },
+      "details": {
+        "forge": "The forge glows red under a crust of ash.",
+        "anvil": "The anvil is scarred by years of work.",
+        "rack": "The rack holds a short sword, a leather jerkin and a lantern, each with a price."
+      },
+      "ambient": [
+        "The forge ticks as it cools.",
+        "The smith turns a blade in the light."
+      ]
+    },
+    "10": {
+      "name": "The Gilded Rat",
+      "text": "A low-beamed inn. A hearth fills the room with smoky warmth, benches crowd the tables, and a stew pot hangs over the fire. Stairs climb to the guest rooms; the market square is east.",
+      "safe": true,
+      "exits": {
+        "east": 8,
+        "up": 12,
+        "north": 24
+      },
+      "details": {
+        "hearth": "The hearth is broad enough to stand in. A cat sleeps on the warm stones.",
+        "stew": "The stew smells of root vegetables and pepper.",
+        "stairs": "The stairs are worn in the middle of each tread."
+      },
+      "ambient": [
+        "The fire settles.",
+        "Someone laughs in the kitchen."
+      ]
+    },
+    "11": {
+      "name": "The King's Road",
+      "text": "The road leaves the square and runs south between low walls. A signpost stands at the fork: the forest lies south, the old well east, the graveyard west. The market is north.",
+      "safe": false,
+      "exits": {
+        "north": 8,
+        "south": 15,
+        "east": 16,
+        "west": 17
+      },
+      "details": {
+        "signpost": "MARKET north; FOREST south; WELL east; GRAVEYARD west.",
+        "walls": "The walls are dry-stone, hip high, and full of beetles.",
+        "road": "The road is packed earth, deep-rutted by carts."
+      },
+      "ambient": [
+        "A cart creaks somewhere out of sight.",
+        "The wind carries the smell of rain."
+      ]
+    },
+    "12": {
+      "name": "The Upstairs Landing",
+      "text": "A narrow landing at the top of the inn stairs. Two guest-room doors face each other across a runner of faded carpet. The common room is down.",
+      "safe": true,
+      "exits": {
+        "down": 10,
+        "east": 13,
+        "west": 14
+      },
+      "details": {
+        "doors": "The doors are painted green, both scuffed at the handle.",
+        "carpet": "The runner is worn to the threads in the middle.",
+        "window": "A small window looks down on the market square."
+      },
+      "ambient": [
+        "The inn hums below.",
+        "A board creaks underfoot."
+      ]
+    },
+    "13": {
+      "name": "The East Guest Room",
+      "text": "A small room with a bed, a washstand and a window over the square. The landing is west.",
+      "safe": true,
+      "exits": {
+        "west": 12
+      },
+      "details": {
+        "bed": "The bed is narrow but clean.",
+        "window": "The market fountain glints below.",
+        "washstand": "A chipped jug and basin stand on the washstand."
+      },
+      "ambient": [
+        "The window rattles softly.",
+        "The room smells of soap and old wood."
+      ]
+    },
+    "14": {
+      "name": "The West Guest Room",
+      "text": "A small room with a bed, a chest and a shuttered window. The landing is east.",
+      "safe": true,
+      "exits": {
+        "east": 12
+      },
+      "details": {
+        "bed": "The bed is made with coarse linen.",
+        "chest": "The chest is empty and smells of cedar.",
+        "shutter": "The shutter is latched against the wind."
+      },
+      "ambient": [
+        "The shutter taps the frame.",
+        "Somewhere below, a cup is set down."
+      ]
+    },
+    "15": {
+      "name": "The Forest Edge",
+      "text": "The road gives way to grass and the first rank of trees. A path runs east into the deep forest, and the river lies south. The King's Road is north.",
+      "safe": false,
+      "exits": {
+        "north": 11,
+        "east": 18,
+        "south": 19
+      },
+      "details": {
+        "trees": "The trees are old and close, their bark furred with moss.",
+        "path": "The path is narrow and churned by hooves.",
+        "grass": "The grass is tall and wet with dew."
+      },
+      "ambient": [
+        "Branches move without wind.",
+        "Something large shifts in the undergrowth."
+      ]
+    },
+    "16": {
+      "name": "The Old Well",
+      "text": "A round stone well stands in a ring of nettles. The rope is gone, but a bucket hangs from the crossbar. The King's Road is west.",
+      "safe": false,
+      "exits": {
+        "west": 11
+      },
+      "details": {
+        "well": "The well is deep and cold. Something glints at the bottom.",
+        "bucket": "The bucket is cracked and dry.",
+        "nettles": "The nettles are waist high and dense."
+      },
+      "ambient": [
+        "Water drips far below.",
+        "The nettles stir."
+      ]
+    },
+    "17": {
+      "name": "The Graveyard",
+      "text": "Leaning stones crowd a walled yard. A mausoleum stands at the south end, its door ajar, and the King's Road is east.",
+      "safe": false,
+      "exits": {
+        "east": 11,
+        "south": 21
+      },
+      "details": {
+        "stones": "The names are worn away. One stone reads only: HE KNEW.",
+        "mausoleum": "The mausoleum door is iron and stands ajar.",
+        "yard": "The grass is rank and full of thorns."
+      },
+      "ambient": [
+        "A crow settles on a stone.",
+        "The wind smells of turned earth."
+      ]
+    },
+    "18": {
+      "name": "The Deep Forest",
+      "text": "The path narrows between older trees. Moss covers the stones, and the light comes down in green shafts. The forest edge is west; an old mill stands east.",
+      "safe": false,
+      "exits": {
+        "west": 15,
+        "south": 20
+      },
+      "details": {
+        "moss": "The moss is thick and soft underfoot.",
+        "trees": "The trees are wider than a man and knotted with roots.",
+        "light": "The light falls in slow green shafts."
+      },
+      "ambient": [
+        "A branch cracks overhead.",
+        "The forest holds its breath."
+      ]
+    },
+    "19": {
+      "name": "The Riverbank",
+      "text": "A broad river runs south, brown and fast. A broken jetty juts into the water, and the mill stands east. The forest edge is north.",
+      "safe": false,
+      "exits": {
+        "north": 15,
+        "east": 20
+      },
+      "details": {
+        "river": "The river is high and carries branches from somewhere upstream.",
+        "jetty": "The jetty is half drowned, its posts green with weed.",
+        "mill": "The mill wheel turns slowly, though no one tends it."
+      },
+      "ambient": [
+        "The river speaks over its stones.",
+        "The mill wheel groans."
+      ]
+    },
+    "20": {
+      "name": "The Abandoned Mill",
+      "text": "The mill is open to the weather. A great wheel turns outside, and a chest sits against the wall beneath a fall of dust. The riverbank is west; the deep forest north.",
+      "safe": false,
+      "exits": {
+        "west": 19,
+        "north": 18
+      },
+      "details": {
+        "wheel": "The wheel turns without grinding anything.",
+        "chest": "The chest is banded with iron and closed.",
+        "dust": "Dust covers everything in a fine grey coat."
+      },
+      "ambient": [
+        "The wheel groans.",
+        "Dust drifts down from the roof."
+      ]
+    },
+    "21": {
+      "name": "The Crypt Entrance",
+      "text": "A cold stair spirals down beneath the mausoleum. The graveyard is north, and the dark is below.",
+      "safe": false,
+      "exits": {
+        "north": 17,
+        "down": 22
+      },
+      "details": {
+        "stairs": "The stairs are worn in the centre and slick with damp.",
+        "door": "The iron door hangs open.",
+        "dark": "The dark below is complete."
+      },
+      "ambient": [
+        "Water drips on stone.",
+        "The stair breathes cold air."
+      ]
+    },
+    "22": {
+      "name": "The Crypt Hall",
+      "text": "A low hall of pillars and broken tombs. The air is thick and cold, and something moves at the edge of the light. The stair is up; the ossuary east.",
+      "safe": false,
+      "exits": {
+        "up": 21,
+        "east": 23
+      },
+      "details": {
+        "pillars": "The pillars are carved with names no one remembers.",
+        "tombs": "The tombs are broken open and empty.",
+        "floor": "The floor is slick with a sheen of damp."
+      },
+      "ambient": [
+        "A chain shifts in the dark.",
+        "The cold gets into your bones."
+      ]
+    },
+    "23": {
+      "name": "The Ossuary",
+      "text": "Bones are stacked in careful walls. A stone chest stands at the far end, its lid carved with a closed hand. The crypt hall is west.",
+      "safe": false,
+      "exits": {
+        "west": 22
+      },
+      "details": {
+        "bones": "The bones are sorted by kind: femurs, skulls, ribs.",
+        "chest": "The chest is stone and heavy. The lid is carved with a closed hand.",
+        "walls": "The bone walls are taller than you."
+      },
+      "ambient": [
+        "A bone settles somewhere.",
+        "The air is dry and old."
+      ]
+    },
+    "24": {
+      "name": "The Guild Hall",
+      "text": "A long room with a high roof and banners of no single house. A notice board covers one wall, and a clerk keeps a table by the door. The inn is south.",
+      "safe": true,
+      "exits": {
+        "south": 10
+      },
+      "details": {
+        "banners": "The banners are blank, waiting for names.",
+        "noticeboard": "The board is pinned with guild notices and a list of rules.",
+        "table": "The clerk's table holds a ledger and a lamp."
+      },
+      "ambient": [
+        "The banners stir.",
+        "The clerk turns a page."
       ]
     }
   },
@@ -154,7 +465,9 @@
       "damage": 2,
       "armor": 0,
       "aggression": 0,
-      "xp": 3
+      "xp": 3,
+      "examine": "A thin rat with wet fur and a torn ear.",
+      "zone": "temple"
     },
     {
       "id": "moth",
@@ -168,7 +481,9 @@
       "damage": 2,
       "armor": 0,
       "aggression": 0,
-      "xp": 2
+      "xp": 2,
+      "examine": "A pale moth, large as a hand.",
+      "zone": "temple"
     },
     {
       "id": "bard",
@@ -187,7 +502,9 @@
       "damage": 2,
       "armor": 0,
       "aggression": 0,
-      "xp": 8
+      "xp": 8,
+      "examine": "The bard's fingers never stop moving. He watches the door more than the strings.",
+      "zone": "temple"
     },
     {
       "id": "guard",
@@ -201,7 +518,9 @@
       "damage": 2,
       "armor": 0,
       "aggression": 0,
-      "xp": 12
+      "xp": 12,
+      "examine": "The guard is carved from pale stone. The sword at its side is not.",
+      "zone": "temple"
     },
     {
       "id": "shopkeeper",
@@ -215,7 +534,9 @@
       "damage": 2,
       "armor": 0,
       "aggression": 0,
-      "xp": 20
+      "xp": 20,
+      "examine": "The shopkeeper has the patient face of someone who has heard every offer.",
+      "zone": "temple"
     },
     {
       "id": "vault-guardian",
@@ -230,13 +551,134 @@
       "armor": 0,
       "aggression": 50,
       "xp": 8,
-      "description": "A stone figure stands where the Vault's shadow falls."
+      "description": "A stone figure stands where the Vault's shadow falls.",
+      "examine": "The guardian's eyes are chips of black stone. Its hands are closing.",
+      "zone": "temple"
+    },
+    {
+      "id": "smith",
+      "name": "the smith",
+      "room": 9,
+      "home": 9,
+      "period": 20,
+      "jitter": 4,
+      "behaviour": "sentinel",
+      "hp": 25,
+      "damage": 0,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 0,
+      "description": "The smith is broad and soot-stained, and watches the door.",
+      "examine": "A heavy apron, scarred hands, and a hammer within reach.",
+      "zone": "town"
+    },
+    {
+      "id": "innkeeper",
+      "name": "the innkeeper",
+      "room": 10,
+      "home": 10,
+      "period": 22,
+      "jitter": 4,
+      "behaviour": "sentinel",
+      "hp": 20,
+      "damage": 0,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 0,
+      "description": "The innkeeper wipes a cup and watches the room.",
+      "examine": "She has a quick eye for a full purse and an empty one.",
+      "zone": "town"
+    },
+    {
+      "id": "market-woman",
+      "name": "a market woman",
+      "room": 8,
+      "home": 8,
+      "period": 24,
+      "jitter": 4,
+      "behaviour": "sentinel",
+      "hp": 15,
+      "damage": 0,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 0,
+      "description": "A market woman stands behind a shuttered stall.",
+      "examine": "Her stall smells of rope and dried herbs.",
+      "zone": "town"
+    },
+    {
+      "id": "guild-clerk",
+      "name": "the guild clerk",
+      "room": 24,
+      "home": 24,
+      "period": 26,
+      "jitter": 4,
+      "behaviour": "sentinel",
+      "hp": 20,
+      "damage": 0,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 0,
+      "description": "A clerk keeps a ledger by the door.",
+      "examine": "The ledger has a column for every guild, and most are empty.",
+      "zone": "town"
+    },
+    {
+      "id": "boar",
+      "name": "a wild boar",
+      "room": 15,
+      "home": 15,
+      "period": 10,
+      "jitter": 5,
+      "behaviour": "wander",
+      "hp": 12,
+      "damage": 2,
+      "armor": 0,
+      "aggression": 40,
+      "xp": 12,
+      "description": "A boar roots at the edge of the trees.",
+      "examine": "Its tusks are long and yellow. It has not seen you yet.",
+      "zone": "wilds"
+    },
+    {
+      "id": "wolf",
+      "name": "a grey wolf",
+      "room": 18,
+      "home": 18,
+      "period": 9,
+      "jitter": 4,
+      "behaviour": "wander",
+      "hp": 16,
+      "damage": 3,
+      "armor": 1,
+      "aggression": 60,
+      "xp": 20,
+      "description": "A grey wolf watches from between the trees.",
+      "examine": "It is thin, and its eyes are steady.",
+      "zone": "wilds"
+    },
+    {
+      "id": "ghoul",
+      "name": "a ghoul",
+      "room": 22,
+      "home": 22,
+      "period": 8,
+      "jitter": 3,
+      "behaviour": "sentinel",
+      "hp": 20,
+      "damage": 3,
+      "armor": 1,
+      "aggression": 70,
+      "xp": 30,
+      "description": "A ghoul crouches among the broken tombs.",
+      "examine": "Its skin is drawn tight over the bones, and its mouth is wet.",
+      "zone": "wilds"
     }
   ],
   "zones": [
     {
-      "id": "start",
-      "name": "The Start",
+      "id": "temple",
+      "name": "The Temple",
       "rooms": [
         1,
         2,
@@ -245,6 +687,35 @@
         5,
         6,
         7
+      ]
+    },
+    {
+      "id": "town",
+      "name": "The Town",
+      "rooms": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        24
+      ]
+    },
+    {
+      "id": "wilds",
+      "name": "The Wilds",
+      "rooms": [
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23
       ]
     }
   ],
@@ -260,7 +731,8 @@
       "lit": false,
       "forSale": true,
       "price": 8,
-      "value": 4
+      "value": 4,
+      "examine": "A brass lamp with a dented reservoir. It still holds oil."
     },
     {
       "id": "coin",
@@ -270,7 +742,8 @@
         "takeable",
         "coin"
       ],
-      "value": 10
+      "value": 10,
+      "examine": "A silver coin stamped with a closed hand."
     },
     {
       "id": "scroll",
@@ -281,7 +754,8 @@
         "readable"
       ],
       "readable": true,
-      "value": 5
+      "value": 5,
+      "examine": "A curled scroll, its seal broken. The hand is careful and small."
     },
     {
       "id": "anvil",
@@ -290,7 +764,8 @@
       "flags": [
         "fixed"
       ],
-      "value": 20
+      "value": 20,
+      "examine": "A heavy anvil, scarred by years of work."
     },
     {
       "id": "chest",
@@ -301,7 +776,8 @@
         "container"
       ],
       "capacity": 4,
-      "open": false
+      "open": false,
+      "examine": "An oaken chest bound with iron. The lock is simple."
     },
     {
       "id": "copper",
@@ -311,7 +787,8 @@
         "takeable",
         "coin"
       ],
-      "value": 1
+      "value": 1,
+      "examine": "A copper coin, green at the edge."
     },
     {
       "id": "cloak",
@@ -322,7 +799,8 @@
         "wearable"
       ],
       "slot": "body",
-      "value": 6
+      "value": 6,
+      "examine": "A grey cloak of heavy wool. It smells of rain."
     },
     {
       "id": "bread",
@@ -334,7 +812,8 @@
       ],
       "bites": 2,
       "value": 2,
-      "heal": 2
+      "heal": 2,
+      "examine": "A coarse loaf, still warm."
     },
     {
       "id": "satchel",
@@ -345,7 +824,8 @@
         "container"
       ],
       "capacity": 3,
-      "open": true
+      "open": true,
+      "examine": "A leather satchel with a brass clasp."
     },
     {
       "id": "torch",
@@ -358,12 +838,13 @@
       "lit": false,
       "forSale": true,
       "price": 3,
-      "value": 1
+      "value": 1,
+      "examine": "A pitch-soaked torch. It would burn for an hour."
     },
     {
       "id": "sword",
       "name": "a short sword",
-      "room": 3,
+      "room": 9,
       "flags": [
         "takeable",
         "weapon"
@@ -371,7 +852,8 @@
       "damage": 3,
       "price": 14,
       "value": 8,
-      "examine": "The blade is plain, but well kept."
+      "examine": "The blade is plain, but well kept. The smith will not part with it cheaply.",
+      "forSale": true
     },
     {
       "id": "club",
@@ -388,7 +870,7 @@
     {
       "id": "jerkin",
       "name": "a leather jerkin",
-      "room": 3,
+      "room": 9,
       "flags": [
         "takeable",
         "wearable",
@@ -397,7 +879,136 @@
       "armor": 1,
       "price": 10,
       "value": 5,
-      "examine": "Cracked leather, still serviceable."
+      "examine": "Cracked leather, still serviceable.",
+      "forSale": true
+    },
+    {
+      "id": "lantern",
+      "name": "a tin lantern",
+      "room": 9,
+      "flags": [
+        "takeable",
+        "light"
+      ],
+      "lit": false,
+      "forSale": true,
+      "price": 8,
+      "value": 4,
+      "examine": "A tin lantern with a horn pane. It needs oil."
+    },
+    {
+      "id": "stew",
+      "name": "a bowl of stew",
+      "room": 10,
+      "flags": [
+        "takeable",
+        "food"
+      ],
+      "bites": 2,
+      "heal": 3,
+      "forSale": true,
+      "price": 3,
+      "value": 2,
+      "examine": "Root vegetables, pepper and something richer. It is hot."
+    },
+    {
+      "id": "well-key",
+      "name": "a brass key",
+      "room": 16,
+      "flags": [
+        "takeable"
+      ],
+      "value": 5,
+      "examine": "A small brass key on a chain, green with damp."
+    },
+    {
+      "id": "boar-tusk",
+      "name": "a boar tusk",
+      "room": 15,
+      "flags": [
+        "takeable"
+      ],
+      "value": 4,
+      "examine": "A curved tusk, yellow at the root."
+    },
+    {
+      "id": "herbs",
+      "name": "a bundle of herbs",
+      "room": 18,
+      "flags": [
+        "takeable",
+        "food"
+      ],
+      "bites": 1,
+      "heal": 2,
+      "value": 2,
+      "examine": "A bundle of narrow leaves with a sharp, clean smell."
+    },
+    {
+      "id": "mill-chest",
+      "name": "an iron-banded chest",
+      "room": 20,
+      "flags": [
+        "fixed",
+        "container"
+      ],
+      "capacity": 3,
+      "open": false,
+      "examine": "The chest is banded with iron and shut fast."
+    },
+    {
+      "id": "silver",
+      "name": "a silver mark",
+      "inside": "mill-chest",
+      "flags": [
+        "takeable",
+        "coin"
+      ],
+      "value": 5,
+      "examine": "A silver mark, stamped with a mill wheel."
+    },
+    {
+      "id": "crypt-chest",
+      "name": "a stone chest",
+      "room": 23,
+      "flags": [
+        "fixed",
+        "container"
+      ],
+      "capacity": 4,
+      "open": false,
+      "examine": "A stone chest, its lid carved with a closed hand."
+    },
+    {
+      "id": "gold",
+      "name": "a gold coin",
+      "inside": "crypt-chest",
+      "flags": [
+        "takeable",
+        "coin"
+      ],
+      "value": 10,
+      "examine": "A gold coin, older than the crypt."
+    },
+    {
+      "id": "signpost",
+      "name": "a signpost",
+      "room": 11,
+      "flags": [
+        "fixed",
+        "readable"
+      ],
+      "examine": "MARKET north; FOREST south; WELL east; GRAVEYARD west."
+    },
+    {
+      "id": "noticeboard",
+      "name": "a notice board",
+      "room": 24,
+      "flags": [
+        "fixed",
+        "readable"
+      ],
+      "examine": "Rules of the hall: no bloodshed, no debts, no names on the banners without a guild."
     }
   ],
   "climate": {
@@ -454,6 +1065,16 @@
       "id": "store",
       "room": 3,
       "keeper": "shopkeeper"
+    },
+    {
+      "id": "smithy",
+      "room": 9,
+      "keeper": "smith"
+    },
+    {
+      "id": "inn",
+      "room": 10,
+      "keeper": "innkeeper"
     }
   ]
 }

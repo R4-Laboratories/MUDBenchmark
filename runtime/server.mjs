@@ -12,7 +12,7 @@ import { WebSocketServer } from "ws";
 import { recordSpan, digest } from "./telemetry.mjs";
 import { step, initialState, digestState, phaseAt, upgradeState, releaseHeldObjects, checkpointIdentities, armorOf, nextFrom, TICK_MS } from "./world.mjs";
 import { loadWorld } from "./worlddata.mjs";
-import { describe as renderRoom } from "./view.mjs";
+import { describe as renderRoom, examine } from "./view.mjs";
 import { loadVerbs, render, resolve } from "./verbs.mjs";
 import { loadChannels, resolveChannel } from "./channels.mjs";
 import { loadSocials, resolveSocial } from "./socials.mjs";
@@ -232,8 +232,8 @@ async function admit({ kind, room, origin = 0, destination = 0 }) {
 
 // --- commands ------------------------------------------------------------
 
-const DIRECTIONS = { n: "north", s: "south", e: "east", w: "west",
-  north: "north", south: "south", east: "east", west: "west" };
+const DIRECTIONS = { n: "north", s: "south", e: "east", w: "west", u: "up", d: "down",
+  north: "north", south: "south", east: "east", west: "west", up: "up", down: "down" };
 
 async function handleCommand(id, line) {
   const raw = line.trim();
@@ -269,6 +269,7 @@ async function handleCommand(id, line) {
   }
 
   if (verb === "register") {
+    if (actor?.key) return sendTo(id, `You are already signed in as ${actor.name}. quit to change.\r\n`);
     const key = rest[0];
     const password = restRaw.slice(1).join(" ");
     if (!validName(key)) return sendTo(id, "Names are 1-24 letters, digits, - or _.\r\n");
@@ -283,6 +284,7 @@ async function handleCommand(id, line) {
   }
 
   if (verb === "login") {
+    if (actor?.key) return sendTo(id, `You are already signed in as ${actor.name}. quit to change.\r\n`);
     const key = rest[0];
     const secret = restRaw.slice(1).join(" ");
     if (!validName(key)) return sendTo(id, "Names are 1-24 letters, digits, - or _.\r\n");
@@ -316,6 +318,16 @@ async function handleCommand(id, line) {
     return sendTo(id, "Changing your password.\r\n");
   }
 
+  if (verb === "help" || verb === "commands") {
+    const names = Object.keys(VERB_TABLE.verbs).sort().join(", ");
+    const channels = CHANNELS.channels.map((channel) => channel.name).join(", ");
+    const socials = Object.keys(SOCIALS.socials).sort().join(", ");
+    if (!actor?.key) {
+      return sendTo(id, "MUDBench is a persistent world for people and agents.\r\nSign in to play: register <name> <password>, or login <name> <password>.\r\nThen type help for the commands.\r\n");
+    }
+    return sendTo(id, `Commands: ${names}.\r\nLook and examine: look, look <thing>, examine <thing>.\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
+  }
+
   // A command typed before the join tick lands is queued, not refused: the
   // browser and the harness both send immediately on connect.
   if (!actor) {
@@ -325,7 +337,18 @@ async function handleCommand(id, line) {
     return;
   }
 
-  if (verb === "look" || verb === "l") return sendTo(id, describe(actor.room, id));
+  if (!actor.key) {
+    return sendTo(id, "You must sign in first. register <name> <password>, or login <name> <password>.\r\n");
+  }
+
+  if (verb === "look" || verb === "l" || verb === "examine" || verb === "x") {
+    const target = restRaw.join(" ").trim();
+    if (!target) return sendTo(id, describe(actor.room, id));
+    const here = state.objects.filter((object) =>
+      !object.eaten && (object.room === actor.room || object.holder === id));
+    const text = examine({ room: ROOMS[actor.room], target, objects: here, npcs: npcsIn(actor.room) });
+    return sendTo(id, text ? `${text}\r\n` : `You see no ${target} here.\r\n`);
+  }
 
   if (verb === "who") {
     const names = actorsIn(actor.room).map((a) => a.name);
@@ -1095,8 +1118,12 @@ function onTick() {
     const actor = actorById(id);
     if (!actor) continue;
     transport.welcomed = true;
-    transport.send(`Welcome to MUDBench, ${actor.name}.\r\n`);
-    transport.send(describe(actor.room, id));
+    if (!actor.key) {
+      transport.send("Welcome to MUDBench.\r\nRegister <name> <password>, or login <name> <password>.\r\n");
+    } else {
+      transport.send(`Welcome to MUDBench, ${actor.name}.\r\n`);
+      transport.send(describe(actor.room, id));
+    }
   }
 
   // A mover is shown the room it moved into.
@@ -1108,7 +1135,7 @@ function onTick() {
 
   // Someone who just claimed an identity is placed at their saved room.
   for (const intent of intents) {
-    if (intent.kind !== "login") continue;
+    if (intent.kind !== "login" && intent.kind !== "register") continue;
     const actor = actorById(intent.actorId);
     if (actor) sendTo(actor.id, describe(actor.room, actor.id));
   }

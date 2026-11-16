@@ -43,6 +43,11 @@ At 28,800 ticks (two hours at 250 ms) the world resets:
 An object held at reset returns home too. The reset is the world's, not the
 character's: level, XP, guild, quests and mail survive it.
 
+No other path respawns an item. A logout or death drops held objects where the
+character stood; a restart keeps them there. `heldRoom` records where a carried
+object was last known, so a crash drops it in that room rather than at home.
+Only the reset returns an object to its starting point.
+
 ## Checkpoints
 
 `saveState` calls `checkpointIdentities`: every online actor's progression is
@@ -50,12 +55,17 @@ written into their identity. Room, visited set and hands are not written. A
 hard restart therefore restores accounts and progress, drops every actor, and
 lets the next login begin at the start.
 
-## Accounts
+## Accounts and the login gate
 
 A password is scrypt-hashed with a per-account salt. The reducer never sees a
 password; the server verifies the credential and sends an authenticated login
 intent. Legacy token identities still sign in with their key, and `password
 <old> <new>` upgrades one to a password.
+
+A connection is a guest until it authenticates. The welcome banner offers
+`register` and `login`; every gameplay command before sign-in is refused, and
+the only other guest command is `help`. Registering or logging in shows the
+room; play begins at the Atrium.
 
 ## Safe rooms
 

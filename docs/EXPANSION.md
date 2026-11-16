@@ -120,7 +120,7 @@ there, lootable, until the reset. A login starts at the safe start room.
 - **Persistence.** Membership and rank are on the identity; the guild record is
   in the world state and survives restarts.
 
-### L — The world
+### L — The world (first map done, v0.13.0)
 
 - **A real map.** A starting town (temple, market, guild hall, smith, inn), a
   road, a forest, a mine, a crypt, a river and a tower; 25–40 rooms in the first

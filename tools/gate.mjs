@@ -18,7 +18,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { loadWorld } from "../runtime/worlddata.mjs";
-import { describe as renderRoom } from "../runtime/view.mjs";
+import { describe as renderRoom, examine } from "../runtime/view.mjs";
 import { loadVerbs } from "../runtime/verbs.mjs";
 import { loadChannels } from "../runtime/channels.mjs";
 import { loadSocials } from "../runtime/socials.mjs";
@@ -83,6 +83,32 @@ const shown = renderRoom({ room: noticeRoom, role: 3, cleared: (role, level) => 
 const hidden = renderRoom({ room: noticeRoom, role: 0, cleared: (role, level) => role >= level });
 if (!shown.includes("SECRET-NOTICE")) failures.push("the room renderer drops a notice it was cleared for");
 if (hidden.includes("SECRET-NOTICE")) failures.push("the room renderer shows a notice it was not cleared for");
+
+// The world is a map, not a pile of rooms: every room has a real description,
+// a detail and an ambient line, and every exit has a way back.
+let worldMap = { ok: true, why: [], rooms: 0 };
+{
+  const world = loadWorld({ mode: "single" });
+  const opposite = { north: "south", south: "north", east: "west", west: "east", up: "down", down: "up" };
+  worldMap.rooms = Object.keys(world.rooms).length;
+  for (const [id, room] of Object.entries(world.rooms)) {
+    if (typeof room.text !== "string" || room.text.length < 60) { worldMap.ok = false; worldMap.why.push(`room ${id} has no real description`); }
+    if (Object.keys(room.details ?? {}).length === 0) { worldMap.ok = false; worldMap.why.push(`room ${id} has no details to examine`); }
+    if (!Array.isArray(room.ambient) || room.ambient.length === 0) { worldMap.ok = false; worldMap.why.push(`room ${id} has no ambient line`); }
+    for (const [direction, target] of Object.entries(room.exits ?? {})) {
+      const back = opposite[direction];
+      if (!back || world.rooms[target]?.exits?.[back] !== Number(id)) {
+        worldMap.ok = false;
+        worldMap.why.push(`exit ${id} ${direction} -> ${target} has no way back`);
+      }
+    }
+  }
+  if (!examine({ room: world.rooms[1], target: "plaque" })) { worldMap.ok = false; worldMap.why.push("the Atrium plaque cannot be examined"); }
+  if (!examine({ room: world.rooms[1], target: "sword", objects: world.objects })) { worldMap.ok = false; worldMap.why.push("an object cannot be examined"); }
+  if (!examine({ room: world.rooms[1], target: "bard", npcs: world.npcs })) { worldMap.ok = false; worldMap.why.push("a mobile cannot be examined"); }
+  if (examine({ room: world.rooms[1], target: "nothing-at-all" })) { worldMap.ok = false; worldMap.why.push("a missing thing was examined"); }
+  if (!worldMap.ok) failures.push(`the world map is broken: ${worldMap.why[0]}`);
+}
 
 // The verb table must resolve its own aliases and use only known codes.
 const verbTable = loadVerbs();
@@ -625,7 +651,9 @@ let combat2 = { ok: true, why: [] };
 
   run([{ kind: "join", actorId: "a", name: "alice" }]);
   run([{ kind: "login", actorId: "a", key: "alice", token: null, authenticated: true }]);
-  state.actors[0].room = 3;
+  state.actors[0].room = 9;
+  state.objects.find((o) => o.id === "sword").forSale = false;
+  state.objects.find((o) => o.id === "jerkin").forSale = false;
   run([{ kind: "take", actorId: "a", objectId: "sword", messages: say("take") }]);
   run([{ kind: "take", actorId: "a", objectId: "jerkin", messages: say("take") }]);
   run([{ kind: "wield", actorId: "a", objectId: "sword", messages: say("wield") }]);
@@ -661,11 +689,17 @@ let combat2 = { ok: true, why: [] };
   run([{ kind: "login", actorId: "b", key: "bob", token: null, authenticated: true }]);
   state.actors.find((actor) => actor.id === "b").room = 2;
   state.actors.find((actor) => actor.id === "b").hp = 1;
+  const torch = state.objects.find((o) => o.id === "torch");
+  torch.holder = "b";
+  torch.room = null;
+  torch.heldRoom = 2;
   const xpBefore = state.actors[0].xp;
   run([{ kind: "attack", actorId: "a", targetId: "b" }]);
   for (let i = 0; i < 80; i += 1) run([]);
   const deadBob = state.actors.find((actor) => actor.id === "b");
+  const droppedTorch = state.objects.find((object) => object.id === "torch");
   check(deadBob.room === 1 && deadBob.hp === deadBob.maxHp, "a dead player did not wake at the start");
+  check(droppedTorch.holder === null && droppedTorch.room === 2, "a dead player did not drop everything where they fell");
   check(state.engagements.length === 0, "a death left an engagement open");
   check(state.actors[0].xp > xpBefore, "a PvP kill did not grant experience");
 
@@ -839,6 +873,7 @@ if (process.argv.includes("--json")) {
     console.log(`${key.padEnd(26)}  ${String(measured[key]).padStart(5)}   == ${exact}`);
   }
   console.log(`${"mechanizedDrift".padEnd(26)}  ${(driftOk ? "clean" : "DRIFT").padStart(5)}   == clean`);
+  console.log(`${"worldMap".padEnd(26)}  ${(worldMap.ok ? `${worldMap.rooms} rooms` : "BROKEN").padStart(5)}   == exits, details, examine`);
   console.log(`${"worldArms".padEnd(26)}  ${(worldProblems.length === 0 ? "4 ok" : "BROKEN").padStart(5)}   == walkable`);
   console.log(`${"renderer".padEnd(26)}  ${(shown.includes("SECRET-NOTICE") && !hidden.includes("SECRET-NOTICE") ? "2 ok" : "BROKEN").padStart(5)}   == hides/shows`);
   console.log(`${"accounts".padEnd(26)}  ${(accounts.ok ? "hash, register" : "BROKEN").padStart(5)}   == names and passwords`);

@@ -82,6 +82,63 @@
         "xp": 10
       },
       "complete": "The shopkeeper takes the loaf."
+    },
+    {
+      "id": "boar",
+      "name": "The Boar at the Edge",
+      "level": 1,
+      "giver": "the market woman",
+      "description": "A boar has been rooting at the forest edge. Drive it off.",
+      "objectives": [
+        {
+          "kind": "kill",
+          "npc": "boar",
+          "count": 1,
+          "text": "Defeat the wild boar"
+        }
+      ],
+      "rewards": {
+        "xp": 40
+      },
+      "complete": "The forest edge is quiet again."
+    },
+    {
+      "id": "well",
+      "name": "The Well Key",
+      "level": 1,
+      "giver": "the guild clerk",
+      "description": "A brass key is lost in the old well. Bring it back.",
+      "objectives": [
+        {
+          "kind": "collect",
+          "object": "well-key",
+          "count": 1,
+          "text": "Carry the brass key"
+        }
+      ],
+      "rewards": {
+        "xp": 25
+      },
+      "complete": "The key is safe."
+    },
+    {
+      "id": "ghoul",
+      "name": "The Crypt Ghoul",
+      "level": 3,
+      "giver": "the guild clerk",
+      "description": "Something has been feeding in the crypt. End it.",
+      "objectives": [
+        {
+          "kind": "kill",
+          "npc": "ghoul",
+          "count": 1,
+          "text": "Defeat the crypt ghoul"
+        }
+      ],
+      "rewards": {
+        "xp": 100
+      },
+      "complete": "The crypt is still."
     }
   ]
 }
