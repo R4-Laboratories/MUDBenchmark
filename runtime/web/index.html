@@ -38,6 +38,7 @@
     padding: 13px 16px; color: var(--text); font: inherit;
   }
   #entry input::placeholder { color: var(--faint); }
+  #entry input:disabled { opacity: .45; }
   #entry button, .panel button, .panel a.button {
     background: #1f6feb; color: #fff; border: 0; padding: 8px 12px;
     font: inherit; cursor: pointer; text-decoration: none; display: inline-block;
@@ -83,7 +84,7 @@
     <section id="terminal">
       <div id="log" aria-live="polite"></div>
       <form id="entry">
-        <input id="cmd" autocomplete="off" placeholder="look · say <text> · global <text> · n/s/e/w · help" aria-label="Command">
+        <input id="cmd" autocomplete="off" disabled placeholder="Sign in to play" aria-label="Command">
         <button type="submit">Send</button>
       </form>
     </section>
@@ -93,7 +94,7 @@
         <p>Register a new name, or sign in with a saved one. Passwords are hashed on the server; this page never stores them.</p>
         <div class="field">
           <label for="name">Name</label>
-          <input id="name" autocomplete="username" placeholder="your name" maxlength="24">
+          <input id="name" autocomplete="username" autofocus placeholder="your name" maxlength="24">
         </div>
         <div class="field">
           <label for="password">Password</label>
@@ -172,7 +173,7 @@
   const append = (text, cls) => {
     const span = document.createElement("span");
     if (cls) span.className = cls;
-    span.textContent = String(text).replace(/\r/g, "") + "\n";
+    span.textContent = String(text).replace(/\r/g, "").replace(/\n+$/, "") + "\n";
     log.appendChild(span);
     log.scrollTop = log.scrollHeight;
   };
@@ -182,6 +183,7 @@
   };
   const savedName = (() => { try { return localStorage.getItem("mudbench-name") ?? ""; } catch { return ""; } })();
   if (savedName) nameInput.value = savedName;
+  if (savedName) passwordInput.focus();
 
   function connect() {
     const scheme = location.protocol === "https:" ? "wss:" : "ws:";
@@ -197,6 +199,8 @@
       authed = false;
       account.style.display = "block";
       signed.style.display = "none";
+      cmd.disabled = true;
+      cmd.placeholder = "Sign in to play";
       setTimeout(connect, 1500);
     };
     socket.onerror = () => { state.textContent = "error"; state.className = ""; };
@@ -212,12 +216,18 @@
         account.style.display = "none";
         signed.style.display = "block";
         passwordInput.value = "";
+        cmd.disabled = false;
+        cmd.placeholder = "look · say <text> · global <text> · n/s/e/w · help";
         cmd.focus();
       }
       if (/Goodbye\./.test(text)) {
         authed = false;
         account.style.display = "block";
         signed.style.display = "none";
+        cmd.disabled = true;
+        cmd.placeholder = "Sign in to play";
+        // The server closes the socket; this is a belt-and-braces reset.
+        setTimeout(() => { try { socket.close(); } catch {} }, 120);
       }
     };
   }
@@ -240,6 +250,13 @@
 
   document.getElementById("login").addEventListener("click", () => credential("login"));
   document.getElementById("register").addEventListener("click", () => credential("register"));
+  for (const field of [nameInput, passwordInput]) {
+    field.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter") return;
+      event.preventDefault();
+      document.getElementById("login").click();
+    });
+  }
   document.getElementById("help").addEventListener("click", () => send("help", "help"));
   document.getElementById("quit").addEventListener("click", () => send("quit", "quit"));
 
@@ -255,7 +272,21 @@
     agentPanel.style.display = agentPanel.style.display === "block" ? "none" : "block";
     renderAgent();
   });
-  provider.addEventListener("change", renderAgent);
+  const baseDefaults = {
+    ollama: "http://127.0.0.1:11434",
+    openai: "https://api.example.com/v1",
+    "prime-router": "http://127.0.0.1:8000",
+  };
+  const modelDefaults = {
+    ollama: "qwen2.5:7b",
+    openai: "your-model",
+    "prime-router": "qwen2.5:7b",
+  };
+  provider.addEventListener("change", () => {
+    base.value = baseDefaults[provider.value] ?? base.value;
+    model.value = modelDefaults[provider.value] ?? model.value;
+    renderAgent();
+  });
   model.addEventListener("input", renderAgent);
   base.addEventListener("input", renderAgent);
   nameInput.addEventListener("input", renderAgent);

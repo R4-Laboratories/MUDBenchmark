@@ -265,7 +265,11 @@ async function handleCommand(id, line) {
 
   if (verb === "quit") {
     sendTo(id, "Goodbye.\r\n");
-    pending.push({ kind: "leave", actorId: id });
+    // A quit ends the connection, not just the body. The close handler queues
+    // the leave intent; leaving the socket open made a second login impossible.
+    const leaving = transports.get(id);
+    if (leaving?.close) setTimeout(() => leaving.close(), 75);
+    else pending.push({ kind: "leave", actorId: id });
     return;
   }
 
