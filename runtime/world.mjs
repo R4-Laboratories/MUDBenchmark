@@ -185,6 +185,7 @@ export function initialState(rooms, npcs = [], objects = [], start = 1, climate 
       maxBites: object.bites ?? 0,
     })),
     identities: {},
+    accounts: {},
     // Countdowns, generated from Pulses.lex.tex. Starting at zero makes the
     // first tick fire, then every period after it.
     pulses: {
@@ -228,6 +229,9 @@ export function digestState(state) {
     actors: [...state.actors].sort((a, b) => a.id - b.id),
     identities: Object.fromEntries(
       Object.keys(state.identities ?? {}).sort().map((k) => [k, state.identities[k]]),
+    ),
+    accounts: Object.fromEntries(
+      Object.keys(state.accounts ?? {}).sort().map((k) => [k, state.accounts[k]]),
     ),
     pulses: state.pulses,
   });
@@ -290,26 +294,82 @@ export function upgradeState(saved, base) {
     return { ...n, ...old, hp: old.hp ?? maxHp, maxHp, dead: old.dead ?? false };
   });
 
-  // Only progression survives this release. Room, visited set and inventory
-  // are session state; old saves are stripped of them here.
-  const identities = Object.fromEntries(Object.entries(saved.identities ?? base.identities ?? {}).map(([key, identity]) => {
-    const { inventory, worn, room, visited, ...rest } = identity;
-    const guilds = saved.guilds && typeof saved.guilds === "object" ? saved.guilds : {};
-    return [key, {
+  // Accounts and characters are separate from this release. An account is the
+  // Prism id (or a legacy name) and owns one or more characters; a character is
+  // the in-game name and owns the progression, guild and quest keys. An old
+  // save has one identity that is both, so it migrates to one account and one
+  // character. A claimed legacy name becomes the Prism account's character,
+  // not a second copy.
+  const guilds = saved.guilds && typeof saved.guilds === "object" ? saved.guilds : {};
+  const normalizeCharacter = (name, identity, owner) => {
+    const { inventory, worn, room, visited, passwordHash, salt, tokenHash, prism, claimedFrom, retired, mergedInto, characters, ...rest } = identity;
+    return {
       ...rest,
-      kind: rest.kind ?? (rest.prism ? "prism" : "legacy"),
+      kind: "character",
+      owner,
+      name,
       level: identity.level ?? 1,
       xp: identity.xp ?? 0,
       guild: guilds[identity.guild] ? identity.guild : null,
-      guildRank: guilds[identity.guild]?.members?.[key] ?? null,
+      guildRank: guilds[identity.guild]?.members?.[name] ?? null,
       quests: identity.quests ?? { active: [], completed: [] },
-    }];
-  }));
+    };
+  };
+  let accounts;
+  let identities;
+  if (saved.accounts && typeof saved.accounts === "object") {
+    accounts = Object.fromEntries(Object.entries(saved.accounts).map(([key, account]) => [key, {
+      ...account,
+      kind: account.kind ?? (account.prism ? "prism" : "legacy"),
+      characters: [...(account.characters ?? [])],
+    }]));
+    identities = Object.fromEntries(Object.entries(saved.identities ?? {}).map(([key, identity]) => [key,
+      normalizeCharacter(identity.name ?? key, identity, identity.owner ?? key),
+    ]));
+  } else {
+    accounts = {};
+    identities = {};
+    // Prism accounts first, so a claimed name becomes the Prism character.
+    for (const [key, identity] of Object.entries(saved.identities ?? {})) {
+      const kind = identity.kind ?? (identity.prism ? "prism" : "legacy");
+      if (kind !== "prism") continue;
+      const name = identity.name ?? key;
+      accounts[key] = {
+        kind: "prism",
+        name: key,
+        characters: [name],
+        claimedFrom: identity.claimedFrom ?? null,
+        passwordHash: null,
+        salt: null,
+        tokenHash: null,
+        retired: identity.retired ?? false,
+        mergedInto: identity.mergedInto ?? null,
+      };
+      if (!identities[name]) identities[name] = normalizeCharacter(name, identity, key);
+    }
+    for (const [key, identity] of Object.entries(saved.identities ?? {})) {
+      const kind = identity.kind ?? (identity.prism ? "prism" : "legacy");
+      if (kind !== "legacy") continue;
+      const retired = identity.retired === true || Boolean(identity.mergedInto);
+      accounts[key] = {
+        kind: "legacy",
+        name: key,
+        characters: retired ? [] : [key],
+        passwordHash: retired ? null : (identity.passwordHash ?? null),
+        salt: retired ? null : (identity.salt ?? null),
+        tokenHash: retired ? null : (identity.tokenHash ?? null),
+        retired,
+        mergedInto: identity.mergedInto ?? null,
+      };
+      if (!retired && !identities[key]) identities[key] = normalizeCharacter(key, identity, key);
+    }
+  }
 
   return {
     ...base,
     ...saved,
     identities,
+    accounts,
     climate,
     weather,
     start: saved.start ?? base.start,
@@ -364,6 +424,8 @@ export function checkpointIdentities(state) {
     }
     state.identities[actor.key] = {
       ...rest,
+      kind: "character",
+      owner: actor.account ?? rest.owner ?? actor.key,
       name: actor.name,
       role: actor.role ?? 0,
       level: actor.level ?? 1,
@@ -403,6 +465,7 @@ export function step({ state, rooms, intents }) {
     })),
     objects: state.objects.map((o) => ({ ...o })),
     identities: { ...state.identities },
+    accounts: Object.fromEntries(Object.entries(state.accounts ?? {}).map(([key, account]) => [key, { ...account, characters: [...(account.characters ?? [])] }])),
     // Clone every pulse generically: a hand-written list silently dropped the
     // violence clock when it was added.
     pulses: Object.fromEntries(Object.entries(state.pulses).map(([name, pulse]) => [name, { ...pulse }])),
@@ -444,6 +507,7 @@ export function step({ state, rooms, intents }) {
           room: next.start,
           visited: [next.start],
           key: null,
+          account: null,
           role: 0,
           hp: 10,
           maxHp: 10,
@@ -463,6 +527,7 @@ export function step({ state, rooms, intents }) {
       const actor = find(intent.actorId);
       if (!actor) continue;
       actor.key = intent.key;
+      actor.account = intent.key;
       actor.name = intent.key;
       actor.room = next.start;
       actor.visited = [next.start];
@@ -475,16 +540,25 @@ export function step({ state, rooms, intents }) {
       actor.maxHp = 10;
       actor.hp = 10;
       actor.wielding = null;
-      next.identities[intent.key] = {
+      next.accounts[intent.key] = {
         kind: "legacy",
-        name: actor.name,
-        role: 0,
+        name: intent.key,
+        characters: [intent.key],
         passwordHash: intent.passwordHash,
         salt: intent.salt,
         tokenHash: null,
+        retired: false,
+        mergedInto: null,
+      };
+      next.identities[intent.key] = {
+        kind: "character",
+        owner: intent.key,
+        name: actor.name,
+        role: 0,
         level: 1,
         xp: 0,
         guild: null,
+        guildRank: null,
         quests: { active: [], completed: [] },
       };
       continue;
@@ -492,9 +566,12 @@ export function step({ state, rooms, intents }) {
 
     if (intent.kind === "password") {
       const actor = find(intent.actorId);
-      if (!actor?.key || !next.identities[actor.key]) continue;
-      next.identities[actor.key] = {
-        ...next.identities[actor.key],
+      const accountKey = actor?.account ?? actor?.key;
+      if (!accountKey || !next.accounts[accountKey]) continue;
+      // A Prism account has no password; only a legacy account can change one.
+      if (next.accounts[accountKey].kind === "prism") continue;
+      next.accounts[accountKey] = {
+        ...next.accounts[accountKey],
         passwordHash: intent.passwordHash,
         salt: intent.salt,
       };
@@ -729,87 +806,81 @@ export function step({ state, rooms, intents }) {
     if (intent.kind === "login") {
       const actor = find(intent.actorId);
       if (!actor) continue;
-      // The server checks the password, token or Prism session before it emits
-      // this intent. The reducer is a second line of defence: an unauthenticated
-      // login must never take over a known record, especially a passwordless
-      // Prism one.
       if (!intent.authenticated) continue;
+      const accountKey = intent.account ?? intent.key;
+      let account = next.accounts[accountKey];
+      let known = next.identities[intent.key];
+      // Direct reducer callers (the gate's older fixtures) may not have an
+      // account yet. The server always passes one; create a legacy account
+      // here so the reducer's own tests stay honest.
+      if (!account && !intent.prism) {
+        account = {
+          kind: "legacy", name: accountKey, characters: [intent.key],
+          passwordHash: null, salt: null, tokenHash: null,
+          retired: false, mergedInto: null,
+        };
+        next.accounts[accountKey] = account;
+      }
+      if (known && !known.owner && accountKey === intent.key) {
+        known = { ...known, kind: "character", owner: accountKey };
+        next.identities[intent.key] = known;
+        if (!account.characters.includes(intent.key)) {
+          account.characters = [...account.characters, intent.key];
+        }
+      }
+      if (!known && account && !intent.prism) {
+        known = {
+          kind: "character", owner: accountKey, name: intent.name ?? intent.key,
+          role: intent.role ?? 0, level: 1, xp: 0, guild: null, guildRank: null,
+          quests: { active: [], completed: [] },
+        };
+        next.identities[intent.key] = known;
+      }
+      if (!account || !known || account.retired) {
+        events.push({ onlyId: actor.id, text: "That account is not available.\r\n" });
+        continue;
+      }
+      if (known.owner !== accountKey || !account.characters.includes(intent.key)) {
+        events.push({ onlyId: actor.id, text: "That character is not on this account.\r\n" });
+        continue;
+      }
       if (next.actors.some((other) => other.id !== actor.id && other.key === intent.key)) {
-        events.push({ onlyId: actor.id, text: "That name is already signed in.\r\n" });
-        continue;
-      }
-      const known = next.identities[intent.key];
-      if (known?.retired) {
-        events.push({ onlyId: actor.id, text: "This account moved; sign in with your Prism id.\r\n" });
-        continue;
-      }
-      const hash = intent.token
-        ? createHash("sha256").update(intent.token, "utf8").digest("hex")
-        : null;
-
-      // The server has already verified a password or a legacy key. An intent
-      // that did not come through that door still has to present the token.
-      if (!intent.authenticated && known && known.tokenHash !== hash) {
-        events.push({ onlyId: actor.id, text: "That name is taken, and the key does not match.\r\n" });
+        events.push({ onlyId: actor.id, text: "That character is already signed in.\r\n" });
         continue;
       }
 
       actor.key = intent.key;
-      if (known) {
-        actor.name = known.name ?? intent.key;
-        // No position persistence: every login begins at the safe start.
-        actor.room = next.start;
-        actor.visited = [next.start];
-        actor.role = known.role ?? 0;
-        actor.level = known.level ?? 1;
-        actor.xp = known.xp ?? 0;
-        actor.maxHp = 10 + (actor.level - 1) * 2;
-        actor.hp = actor.maxHp;
-        actor.wielding = null;
-        actor.guild = next.guilds[known.guild] ? known.guild : null;
-        actor.guildRank = actor.guild ? (next.guilds[actor.guild].members[actor.key] ?? null) : null;
-        actor.quests = {
-          active: [...(known.quests?.active ?? [])],
-          completed: [...(known.quests?.completed ?? [])],
-        };
-        // Do not restore inventory: what the character carried was dropped
-        // where they logged out and belongs to the world until the reset.
-        next.identities[intent.key] = {
-          ...known,
-          name: actor.name,
-          role: actor.role,
-          level: actor.level,
-          xp: actor.xp,
-          guild: actor.guild,
-          guildRank: actor.guildRank,
-          quests: actor.quests,
-        };
-      } else {
-        actor.name = intent.name ?? intent.key;
-        actor.room = next.start;
-        actor.visited = [next.start];
-        actor.role = intent.role ?? 0;
-        actor.level = 1;
-        actor.xp = 0;
-        actor.maxHp = 10;
-        actor.hp = 10;
-        actor.wielding = null;
-        actor.guild = null;
-        actor.guildRank = null;
-        actor.quests = { active: [], completed: [] };
-        next.identities[intent.key] = {
-          // A Prism account has no password: its key is the id and the login
-          // was a session the server verified. The display name is separate.
-          ...(intent.prism ? { kind: "prism", prism: intent.key } : { kind: "legacy" }),
-          name: actor.name,
-          role: actor.role,
-          tokenHash: intent.prism ? null : hash,
-          level: 1,
-          xp: 0,
-          guild: null,
-          quests: { active: [], completed: [] },
-        };
-      }
+      actor.account = accountKey;
+      actor.name = known.name ?? intent.key;
+      // No position persistence: every login begins at the safe start.
+      actor.room = next.start;
+      actor.visited = [next.start];
+      actor.role = known.role ?? 0;
+      actor.level = known.level ?? 1;
+      actor.xp = known.xp ?? 0;
+      actor.maxHp = 10 + (actor.level - 1) * 2;
+      actor.hp = actor.maxHp;
+      actor.wielding = null;
+      actor.guild = next.guilds[known.guild] ? known.guild : null;
+      actor.guildRank = actor.guild ? (next.guilds[actor.guild].members[actor.key] ?? null) : null;
+      actor.quests = {
+        active: [...(known.quests?.active ?? [])],
+        completed: [...(known.quests?.completed ?? [])],
+      };
+      // Do not restore inventory: what the character carried was dropped
+      // where they logged out and belongs to the world until the reset.
+      next.identities[intent.key] = {
+        ...known,
+        kind: "character",
+        owner: accountKey,
+        name: actor.name,
+        role: actor.role,
+        level: actor.level,
+        xp: actor.xp,
+        guild: actor.guild,
+        guildRank: actor.guildRank,
+        quests: actor.quests,
+      };
       advanceQuests(next, actor, { kind: "visit", room: actor.room }, events);
       for (const letter of next.mail) {
         if (letter.toKey !== actor.key || letter.read) continue;
@@ -819,86 +890,53 @@ export function step({ state, rooms, intents }) {
       continue;
     }
 
-    // X1: one-time adoption of a legacy name by a Prism account. The server
-    // verifies the old password or token; the reducer merges the progress and
-    // keyed records, then tombstones the old identity so it cannot log in.
+    if (intent.kind === "createCharacter") {
+      let account = next.accounts[intent.accountKey];
+      if (!account) {
+        account = {
+          kind: "prism", name: intent.accountKey, characters: [], claimedFrom: null,
+          passwordHash: null, salt: null, tokenHash: null,
+          retired: false, mergedInto: null,
+        };
+        next.accounts[intent.accountKey] = account;
+      }
+      if (account.kind !== "prism") continue;
+      if (next.identities[intent.name] || next.accounts[intent.name]) continue;
+      if (account.characters.includes(intent.name)) continue;
+      account.characters = [...account.characters, intent.name];
+      next.identities[intent.name] = {
+        kind: "character", owner: intent.accountKey, name: intent.name,
+        role: 0, level: 1, xp: 0, guild: null, guildRank: null,
+        quests: { active: [], completed: [] },
+      };
+      continue;
+    }
+
+    // X1: one-time adoption of a legacy name by a Prism account. The old
+    // character is not merged into another; it becomes another character on
+    // the Prism account, keeping its own progression, guild and quests.
     if (intent.kind === "claimLegacy") {
       const actor = find(intent.actorId);
-      if (!actor?.key || intent.legacyKey === actor.key) continue;
-      const prism = next.identities[actor.key];
-      const legacy = next.identities[intent.legacyKey];
-      if (!prism || prism.kind !== "prism" || !legacy) continue;
-      if (prism.claimedFrom || legacy.retired || legacy.mergedInto) continue;
-      // The old character must not be online: one account, one controller.
+      if (!actor?.account) continue;
+      const account = next.accounts[actor.account];
+      const legacyAccount = next.accounts[intent.legacyKey];
+      const character = next.identities[intent.legacyKey];
+      if (!account || account.kind !== "prism" || account.claimedFrom) continue;
+      if (!legacyAccount || legacyAccount.kind !== "legacy" || legacyAccount.retired) continue;
+      if (!character || character.owner !== intent.legacyKey) continue;
+      if (account.characters.includes(intent.legacyKey)) continue;
       if (next.actors.some((candidate) => candidate.id !== actor.id && candidate.key === intent.legacyKey)) continue;
-      if (prism.guild && legacy.guild && prism.guild !== legacy.guild) continue;
 
-      const legacyName = legacy.name ?? intent.legacyKey;
-      const prismLevel = prism.level ?? 1;
-      const legacyLevel = legacy.level ?? 1;
-      const level = Math.max(prismLevel, legacyLevel);
-      const xp = prismLevel === legacyLevel
-        ? Math.max(prism.xp ?? 0, legacy.xp ?? 0)
-        : prismLevel > legacyLevel ? (prism.xp ?? 0) : (legacy.xp ?? 0);
-
-      let guild = prism.guild ?? null;
-      let guildRank = prism.guildRank ?? null;
-      if (!guild && legacy.guild && next.guilds[legacy.guild]) {
-        const club = next.guilds[legacy.guild];
-        guild = legacy.guild;
-        guildRank = club.members?.[intent.legacyKey] ?? legacy.guildRank ?? "member";
-        if (club.members?.[intent.legacyKey]) delete club.members[intent.legacyKey];
-        club.members[actor.key] = guildRank;
-        club.invites = (club.invites ?? []).map((key) => (key === intent.legacyKey ? actor.key : key));
-        if (club.founder === intent.legacyKey) club.founder = actor.key;
-      } else if (guild && legacy.guild === guild && next.guilds[guild]?.members?.[intent.legacyKey]) {
-        const club = next.guilds[guild];
-        guildRank = club.members[intent.legacyKey];
-        delete club.members[intent.legacyKey];
-        club.members[actor.key] = guildRank;
-      }
-
-      const completed = [...new Set([...(prism.quests?.completed ?? []), ...(legacy.quests?.completed ?? [])])];
-      const active = [...(prism.quests?.active ?? [])];
-      for (const entry of legacy.quests?.active ?? []) {
-        if (!active.some((candidate) => candidate.id === entry.id)) active.push(entry);
-      }
-
-      for (const letter of next.mail) {
-        if (letter.toKey === intent.legacyKey) letter.toKey = actor.key;
-        if (letter.fromKey === intent.legacyKey) letter.fromKey = actor.key;
-      }
-
-      const before = actor.name;
-      actor.name = legacyName;
-      actor.level = level;
-      actor.xp = xp;
-      actor.maxHp = 10 + (level - 1) * 2;
-      actor.hp = actor.maxHp;
-      actor.guild = guild;
-      actor.guildRank = guildRank;
-      actor.quests = { active, completed };
-
-      next.identities[actor.key] = {
-        ...prism,
-        name: legacyName,
-        claimedFrom: intent.legacyKey,
-        level,
-        xp,
-        guild,
-        guildRank,
-        quests: { active, completed },
-      };
-      next.identities[intent.legacyKey] = {
-        ...legacy,
-        retired: true,
-        mergedInto: actor.key,
-        passwordHash: null,
-        salt: null,
-        tokenHash: null,
-      };
-      events.push({ onlyId: actor.id, text: `You are now ${legacyName}.\r\n` });
-      events.push({ room: actor.room, text: `${before} is now known as ${legacyName}.`, exceptId: actor.id });
+      next.identities[intent.legacyKey] = { ...character, kind: "character", owner: actor.account };
+      account.characters = [...account.characters, intent.legacyKey];
+      account.claimedFrom = intent.legacyKey;
+      legacyAccount.retired = true;
+      legacyAccount.mergedInto = actor.account;
+      legacyAccount.characters = [];
+      legacyAccount.passwordHash = null;
+      legacyAccount.salt = null;
+      legacyAccount.tokenHash = null;
+      events.push({ onlyId: actor.id, text: `${intent.legacyKey} is now on this account. Type play ${intent.legacyKey} to enter as them.\r\n` });
       continue;
     }
 

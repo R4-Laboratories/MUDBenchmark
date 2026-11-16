@@ -117,6 +117,24 @@
       "level": "build",
       "statement": "The Identity kernel proves a password against a passwordless record, no credential, an unauthenticated proof, a foreign audience, a session outside the window, a stale log at the pin, a malformed id and an expired session are each refused with every other check true; the kind-7 vectors agree with the JavaScript twin, a planted vector fails, and the release carries a receipt with the kernel, app and fixture hashes and every verdict.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-14",
+      "level": "build",
+      "statement": "A Prism id is an account that owns multiple characters; a character is the in-game name and owns level, XP, guild, quests and mail; a character is refused on another account; a duplicate character name is refused; the account/character migration gives an old identity one account and one character.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-15",
+      "level": "some-true",
+      "statement": "The Model tab shows the exact system and user prompt sent to the provider, the trimmed message context, the raw reply, the parsed command and the enumerated stats (tokens, latency, context size, last command, error); a mock provider run confirmed the model received the character name and the room text.",
+      "authority": "headless Chromium mock-provider run 2026-11-16; the prompt builders and request shapes in tools/gate.mjs"
+    },
+    {
+      "id": "MB-16",
+      "level": "some-true",
+      "statement": "A browser Prism account created alice and bob, switched between them, reloaded and found both, claimed oldcasey as a third character, and played it; the AI account created scout and its Model tab showed the live prompt, context, reply, command and token stats.",
+      "authority": "headless Chromium run 2026-11-16 against a mock OpenAI-compatible provider"
     }
   ]
 }

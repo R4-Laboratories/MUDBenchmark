@@ -195,10 +195,12 @@ cannot out-click a human, and a human cannot out-click a model.
 The browser signs in with a **Prism id**: **Use my Prism id**. The id is
 created and kept in the browser's IndexedDB, no password is sent, and the server
 verifies a signed `prism/session/1` action against the id's public log. The wire
-message is `prism <base64url session>`. The account is keyed by the id and
-displayed as `prism:<first 8 hex>`. The id is browser-local: clearing
-site data or losing the browser loses the character until you link another
-device. **Prism devices** in the signed-in panel creates
+message is `prism <base64url session>`. The Prism id is the **account**, shown
+as `prism:<first 8 hex>`. The account owns characters; the character name is
+the in-game name. After signing in the page lists them: `play <name>` enters
+one, `create <name>` adds one. A second `play` for a character already online
+takes it over. The id is browser-local: clearing site data or losing the
+browser loses the account until you link another device. **Prism devices** in the signed-in panel creates
 an out-of-band link offer, accepts a request with a six-digit code, lists the
 id's devices and revokes one. A second login for the same account takes over:
 the old socket is told, closed, and its actor leaves before the new one enters.
@@ -211,18 +213,19 @@ signs in again. Recovery is not built yet. The AI has its own Prism id in the sa
 refused once a surviving device has logged in with the newer public log; the
 server pins that log in `identities.json`.
 
-A legacy account can be adopted once by a signed-in Prism id: **Claim an old
-name** in the signed-in panel, or the wire command
+A legacy account can be adopted once by a signed-in Prism account: **Claim an
+old name** in the signed-in panel, or the wire command
 `adopt <old-name> <password-or-token>`. The server checks the old credential
 against the record's kind — a password never matches a passwordless record —
 then asks the proved Identity kernel through the holo. If the kernel is
-unavailable the claim fails closed; login itself never calls the holo. The
-reducer then moves level, XP, guild, quests and mail keys, and retires the old
-login. One claim per Prism id.
+unavailable the claim fails closed; login itself never calls the holo. The old
+character becomes another character on the Prism account, keeping its own
+level, guild, quests and mail; the old account is retired. One claim per Prism
+account.
 
 The name/password form remains under **Use a name and password instead** for
-telnet, CLI clients and older accounts: `register <name> <password>` creates;
-`login <name> <password>` returns; `password <old> <new>` changes. Legacy token
-identities use `login <name> <key>`. Passwords are scrypt hashed; use the
-WebSocket URL for a public world, because telnet carries the password in clear
-text.
+telnet, CLI clients and older accounts: `register <name> <password>` creates a
+legacy account with one character; `login <name> <password>` returns;
+`password <old> <new>` changes. Legacy token accounts use `login <name> <key>`.
+Prism accounts have no password. Passwords are scrypt hashed; use the WebSocket
+URL for a public world, because telnet carries the password in clear text.

@@ -100,11 +100,21 @@ const VAULT = loaded.task.vault;
 const SHRINE = loaded.task.shrine;
 const transports = new Map(); // id -> { send, close, welcomed }
 const pending = [];
+const accountSessions = new Map(); // id -> { key, kind: "prism" | "legacy" }
 
 // A second login for an account that is already online takes it over: the old
 // socket is told, closed, and its actor leaves before the new login intent, so
 // the reducer never sees two controllers. The old character's progress is
 // written by the leave, and its goods fall where it stood.
+function sendCharacters(id, session) {
+  if (!session) return;
+  const account = state.accounts?.[session.key];
+  const characters = account?.characters ?? [];
+  const label = session.kind === "prism" ? prismDisplay(session.key) : session.key;
+  sendTo(id, `Account ${label}. Characters: ${characters.length ? characters.join(", ") : "(none yet)"}.\r\n`);
+  sendTo(id, `#characters ${JSON.stringify({ account: label, characters })}\r\n`);
+}
+
 function takeover(key, newId) {
   const old = state.actors.find((candidate) => candidate.id !== newId && candidate.key === key);
   if (!old) return;
@@ -339,12 +349,15 @@ async function handleCommand(id, line) {
   if (transport) transport.lastCommandAt = now;
 
   if (verb === "quit") {
-    sendTo(id, "Goodbye.\r\n");
-    // A quit ends the connection, not just the body. The close handler queues
-    // the leave intent; leaving the socket open made a second login impossible.
+    const session = accountSessions.get(id);
     const leaving = transports.get(id);
-    if (leaving?.close) setTimeout(() => leaving.close(), 75);
-    else pending.push({ kind: "leave", actorId: id });
+    if (actor?.key) pending.push({ kind: "leave", actorId: id });
+    sendTo(id, "Goodbye.\r\n");
+    // A signed-in account stays connected at the character list; a guest ends
+    // the connection. One character is one controller, but one account can
+    // bring several characters in turn.
+    if (session) setTimeout(() => sendCharacters(id, session), 350);
+    else if (leaving?.close) setTimeout(() => leaving.close(), 75);
     return;
   }
 
@@ -385,19 +398,10 @@ async function handleCommand(id, line) {
       };
       saveIdentityStore();
     }
-    // A second device/tab takes over; the old socket is told and closed.
-    takeover(verdict.prism, id);
-    // A claimed Prism id carries the adopted name; a new one uses the short id.
-    const known = state.identities[verdict.prism];
-    const display = known?.name ?? prismDisplay(verdict.prism);
-    pending.push({
-      kind: "login",
-      actorId: id,
-      key: verdict.prism,
-      authenticated: true,
-      prism: true,
-      name: display,
-    });
+    // The Prism id is the account, not the character. The client chooses a
+    // character next; the account session survives a character switch.
+    const accountSession = { key: verdict.prism, kind: "prism" };
+    accountSessions.set(id, accountSession);
     recordSpan("world.prism", {
       "actor.id": id,
       "prism.id": verdict.prism,
@@ -405,7 +409,9 @@ async function handleCommand(id, line) {
       "prism.expires": verdict.expires,
       "world.tick": state.tick,
     }, 0);
-    return sendTo(id, `Signing in as ${display}.\r\n`);
+    sendTo(id, `Signed in as ${prismDisplay(verdict.prism)}.\r\n`);
+    sendCharacters(id, accountSession);
+    return;
   }
 
   if (verb === "wait") {
@@ -416,19 +422,65 @@ async function handleCommand(id, line) {
     return sendTo(id, "You wait.\r\n");
   }
 
+  if (verb === "characters") {
+    const session = accountSessions.get(id);
+    if (!session) return sendTo(id, "Sign in with your Prism id first.\r\n");
+    return sendCharacters(id, session);
+  }
+
+  if (verb === "play") {
+    const session = accountSessions.get(id);
+    if (!session) return sendTo(id, "Sign in with your Prism id first.\r\n");
+    const name = rest[0];
+    if (!name) return sendTo(id, "Usage: play <character>.\r\n");
+    if (actor?.key === name) return sendTo(id, `You are already playing ${name}.\r\n`);
+    const account = state.accounts?.[session.key];
+    const character = state.identities[name];
+    if (!account || !account.characters?.includes(name) || !character || character.owner !== session.key) {
+      return sendTo(id, `No character named ${name} on this account.\r\n`);
+    }
+    takeover(name, id);
+    if (actor?.key) {
+      pending.push({ kind: "leave", actorId: id });
+      pending.push({ kind: "join", actorId: id, name });
+    }
+    pending.push({ kind: "login", actorId: id, key: name, account: session.key, authenticated: true, prism: session.kind === "prism", name });
+    return sendTo(id, `Signing in as ${name}.\r\n`);
+  }
+
+  if (verb === "create") {
+    const session = accountSessions.get(id);
+    if (!session || session.kind !== "prism") return sendTo(id, "Sign in with a Prism id to create a character.\r\n");
+    const name = rest[0];
+    if (!validName(name)) return sendTo(id, "Names are 1-24 letters, digits, - or _.\r\n");
+    if (state.identities[name] || state.accounts[name]) return sendTo(id, "That name is taken.\r\n");
+    if (state.accounts[session.key]?.characters?.includes(name)) return sendTo(id, "That character is already on this account.\r\n");
+    pending.push({ kind: "createCharacter", accountKey: session.key, name, actorId: id });
+    if (actor?.key) {
+      pending.push({ kind: "leave", actorId: id });
+      pending.push({ kind: "join", actorId: id, name });
+    }
+    pending.push({ kind: "login", actorId: id, key: name, account: session.key, authenticated: true, prism: true, name });
+    setTimeout(() => sendCharacters(id, session), 350);
+    return sendTo(id, `Character ${name} created. Signing in as ${name}.\r\n`);
+  }
+
   if (verb === "register") {
     if (actor?.key) return sendTo(id, `You are already signed in as ${actor.name}. quit to change.\r\n`);
     const key = rest[0];
     const password = restRaw.slice(1).join(" ");
     if (!validName(key)) return sendTo(id, "Names are 1-24 letters, digits, - or _.\r\n");
     if (!validPassword(password)) return sendTo(id, "Passwords are at least 6 characters.\r\n");
-    if (state.identities[key]) return sendTo(id, "That name is taken.\r\n");
+    if (state.accounts[key] || state.identities[key]) return sendTo(id, "That name is taken.\r\n");
     if (state.actors.some((candidate) => candidate.id !== id && candidate.key === key)) {
       return sendTo(id, "That name is already signed in.\r\n");
     }
     const { salt, hash } = hashPassword(password);
+    accountSessions.set(id, { key, kind: "legacy" });
     pending.push({ kind: "register", actorId: id, key, passwordHash: hash, salt });
-    return sendTo(id, `Account ${key} created. Welcome.\r\n`);
+    sendTo(id, `Account ${key} created. Welcome.\r\n`);
+    setTimeout(() => sendCharacters(id, { key, kind: "legacy" }), 350);
+    return;
   }
 
   if (verb === "login") {
@@ -437,34 +489,41 @@ async function handleCommand(id, line) {
     const secret = restRaw.slice(1).join(" ");
     if (!validName(key)) return sendTo(id, "Names are 1-24 letters, digits, - or _.\r\n");
     if (!secret) return sendTo(id, "Usage: login <name> <password>. New here? register <name> <password>.\r\n");
-    const known = state.identities[key];
-    if (!known) return sendTo(id, "No such name. New here? register <name> <password>.\r\n");
-    if (known.retired) return sendTo(id, "This account moved; sign in with your Prism id.\r\n");
-    const presented = known.passwordHash ? CREDENTIAL.password : known.tokenHash ? CREDENTIAL.token : CREDENTIAL.none;
-    const stored = known.passwordHash ? CREDENTIAL.password : known.tokenHash ? CREDENTIAL.token : CREDENTIAL.none;
-    const passwordOk = known.passwordHash
-      ? verifyPassword(secret, known.salt, known.passwordHash)
-      : (known.tokenHash ? createHash("sha256").update(secret, "utf8").digest("hex") === known.tokenHash : false);
+    const account = state.accounts?.[key];
+    if (!account) return sendTo(id, "No such name. New here? register <name> <password>.\r\n");
+    if (account.retired) return sendTo(id, "This account moved; sign in with your Prism id.\r\n");
+    const characterKey = account.characters?.[0] ?? key;
+    const character = state.identities[characterKey];
+    if (!character) return sendTo(id, "That account has no character.\r\n");
+    const presented = account.passwordHash ? CREDENTIAL.password : account.tokenHash ? CREDENTIAL.token : CREDENTIAL.none;
+    const stored = presented;
+    const passwordOk = account.passwordHash
+      ? verifyPassword(secret, account.salt, account.passwordHash)
+      : (account.tokenHash ? createHash("sha256").update(secret, "utf8").digest("hex") === account.tokenHash : false);
     // The JS twin of the proved kernel. Login never calls the holo: a record
     // with no password is never admitted by a password, and a token is not a
     // password, because the kinds must match.
     if (!identityAdmits({ presented, stored, authenticated: passwordOk, audience: true, window: true, unseen: true, shape: true, expiry: true })) {
       return sendTo(id, "That name and password do not match.\r\n");
     }
-    takeover(key, id);
-    pending.push({ kind: "login", actorId: id, key, authenticated: true, respawn: false });
-    return sendTo(id, `Signing in as ${key}.\r\n`);
+    accountSessions.set(id, { key, kind: "legacy" });
+    takeover(characterKey, id);
+    pending.push({ kind: "login", actorId: id, key: characterKey, account: key, authenticated: true, respawn: false });
+    sendTo(id, `Signing in as ${character.name ?? characterKey}.\r\n`);
+    setTimeout(() => sendCharacters(id, { key, kind: "legacy" }), 350);
+    return;
   }
 
   if (verb === "password") {
     const oldSecret = restRaw[0] ?? "";
     const newSecret = restRaw.slice(1).join(" ");
     if (!actor?.key) return sendTo(id, "Sign in first.\r\n");
-    const known = state.identities[actor.key];
-    if (!known) return sendTo(id, "No account to change.\r\n");
-    const oldOk = known.passwordHash
-      ? verifyPassword(oldSecret, known.salt, known.passwordHash)
-      : (known.tokenHash ? createHash("sha256").update(oldSecret, "utf8").digest("hex") === known.tokenHash : false);
+    const account = state.accounts?.[actor.account ?? actor.key];
+    if (!account) return sendTo(id, "No account to change.\r\n");
+    if (account.kind === "prism") return sendTo(id, "Prism accounts have no password.\r\n");
+    const oldOk = account.passwordHash
+      ? verifyPassword(oldSecret, account.salt, account.passwordHash)
+      : (account.tokenHash ? createHash("sha256").update(oldSecret, "utf8").digest("hex") === account.tokenHash : false);
     if (!oldOk) return sendTo(id, "The old password does not match.\r\n");
     if (!validPassword(newSecret)) return sendTo(id, "Passwords are at least 6 characters.\r\n");
     const { salt, hash } = hashPassword(newSecret);
@@ -477,9 +536,9 @@ async function handleCommand(id, line) {
     const channels = CHANNELS.channels.map((channel) => channel.name).join(", ");
     const socials = Object.keys(SOCIALS.socials).sort().join(", ");
     if (!actor?.key) {
-      return sendTo(id, "MUDBench is a persistent world for people and agents.\r\nSign in to play: register <name> <password>, or login <name> <password>.\r\nThen type help for the commands.\r\n");
+      return sendTo(id, "MUDBench is a persistent world for people and agents.\r\nSign in with your Prism id, or register <name> <password> / login <name> <password>.\r\nThen type help for the commands.\r\n");
     }
-    return sendTo(id, `Commands: ${names}.\r\nLook and examine: look, look <thing>, examine <thing>.\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
+    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look, look <thing>, examine <thing>.\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
   }
 
   // A command typed before the join tick lands is queued, not refused: the
@@ -555,7 +614,7 @@ async function handleCommand(id, line) {
     const want = needle.toLowerCase();
     // A retired record is an alias, not an account: mail and guild lookups must
     // land on the Prism identity that adopted it.
-    const entries = Object.entries(state.identities).filter(([, identity]) => !identity.retired);
+    const entries = Object.entries(state.identities);
     return entries.find(([, identity]) => identity.name.toLowerCase() === want)
       ?? entries.find(([, identity]) => identity.name.toLowerCase().includes(want));
   };
@@ -613,30 +672,32 @@ async function handleCommand(id, line) {
   }
 
   if (named === "adopt") {
-    // X1: one-time adoption of a legacy name. The old password or token is
-    // checked here; the reducer performs the merge and the tombstone.
+    // X1: one-time addition of a legacy character to a Prism account. The old
+    // password or token is checked here; the reducer reassigns the character
+    // and retires the legacy account. The character keeps its own progress.
     const messages = VERB_TABLE.verbs.adopt.messages;
     if (!actor?.key) return sendTo(id, "Sign in first.\r\n");
-    const prism = state.identities[actor.key];
-    if (prism?.kind !== "prism") return sendTo(id, `${messages.noPrism}\r\n`);
-    if (prism.claimedFrom) return sendTo(id, `${messages.claimed}\r\n`);
+    const account = state.accounts?.[actor.account];
+    if (account?.kind !== "prism") return sendTo(id, `${messages.noPrism}\r\n`);
+    if (account.claimedFrom) return sendTo(id, `${messages.claimed}\r\n`);
     const name = rest[0];
     const secret = restRaw.slice(1).join(" ");
     if (!name || !secret) return sendTo(id, `${messages.usage}\r\n`);
+    if (account.characters?.includes(name)) return sendTo(id, `${messages.claimed}\r\n`);
     if (state.actors.some((candidate) => candidate.id !== id && candidate.key === name)) {
       return sendTo(id, `${messages.online}\r\n`);
     }
+    const legacyAccount = state.accounts?.[name];
     const legacy = state.identities[name];
-    if (!legacy) return sendTo(id, `${messages.missing}\r\n`);
-    if (legacy.retired || legacy.mergedInto) return sendTo(id, `${messages.moved}\r\n`);
-    if (legacy.kind === "prism" || legacy.prism) return sendTo(id, `${messages.notLegacy}\r\n`);
-    if (!legacy.passwordHash && !legacy.tokenHash) return sendTo(id, `${messages.noSecret}\r\n`);
-    if (prism.guild && legacy.guild && prism.guild !== legacy.guild) return sendTo(id, `${messages.guild}\r\n`);
-    const presented = legacy.passwordHash ? CREDENTIAL.password : CREDENTIAL.token;
+    if (!legacyAccount || !legacy || legacy.owner !== name) return sendTo(id, `${messages.missing}\r\n`);
+    if (legacyAccount.retired || legacyAccount.mergedInto) return sendTo(id, `${messages.moved}\r\n`);
+    if (legacyAccount.kind !== "legacy") return sendTo(id, `${messages.notLegacy}\r\n`);
+    if (!legacyAccount.passwordHash && !legacyAccount.tokenHash) return sendTo(id, `${messages.noSecret}\r\n`);
+    const presented = legacyAccount.passwordHash ? CREDENTIAL.password : CREDENTIAL.token;
     const stored = presented;
-    const ok = legacy.passwordHash
-      ? verifyPassword(secret, legacy.salt, legacy.passwordHash)
-      : createHash("sha256").update(secret, "utf8").digest("hex") === legacy.tokenHash;
+    const ok = legacyAccount.passwordHash
+      ? verifyPassword(secret, legacyAccount.salt, legacyAccount.passwordHash)
+      : createHash("sha256").update(secret, "utf8").digest("hex") === legacyAccount.tokenHash;
     // A claim is the one identity act that is worth the verified round trip.
     // The local policy answers first, then the holo; if the holo is down the
     // claim fails closed rather than adopting an account unproved.
@@ -650,13 +711,14 @@ async function handleCommand(id, line) {
       return sendTo(id, "The identity kernel is unavailable; try again later.\r\n");
     }
     if (verdict !== "admissible") return sendTo(id, "The identity kernel refused this claim.\r\n");
-    pending.push({ kind: "claimLegacy", actorId: id, legacyKey: name });
+    pending.push({ kind: "claimLegacy", actorId: id, accountKey: actor.account, legacyKey: name });
     recordSpan("world.claim", {
       "actor.id": id,
-      "claim.prism": actor.key,
+      "claim.account": actor.account,
       "claim.legacy": name,
       "world.tick": state.tick,
     }, 0);
+    setTimeout(() => sendCharacters(id, accountSessions.get(id)), 350);
     return sendTo(id, `${render(messages.claiming, { words: name })}\r\n`);
   }
 
@@ -1314,7 +1376,7 @@ function onTick() {
   const intents = pending.splice(0);
   // A login or registration must hit the disk before the next checkpoint; a
   // kill -9 must not erase an account created seconds ago.
-  const identityChanged = intents.some((intent) => ["login", "register", "password", "claim", "claimLegacy"].includes(intent.kind));
+  const identityChanged = intents.some((intent) => ["login", "register", "password", "claim", "claimLegacy", "createCharacter"].includes(intent.kind));
   const result = step({ state, rooms: ROOMS, intents });
   state = result.state;
 
@@ -1477,6 +1539,7 @@ const server = net.createServer((socket) => {
   socket.on("close", () => {
     transports.delete(id);
     buckets.delete(id);
+    accountSessions.delete(id);
     pending.push({ kind: "leave", actorId: id });
   });
 });
@@ -1553,7 +1616,9 @@ const web = http.createServer((req, res) => {
       npcs: state.npcs.length,
       phase: phaseAt(state.tick, state.climate),
       weather: state.climate.weather[state.weather]?.id ?? null,
-      identities: Object.keys(state.identities ?? {}).length,
+      accounts: Object.keys(state.accounts ?? {}).length,
+      characters: Object.keys(state.identities ?? {}).length,
+      identities: Object.keys(state.accounts ?? {}).length,
       pinned: Object.keys(identityStore.prisms).length,
       connections: wss.clients.size,
       identity: { file: IDENTITY_FILE },
@@ -1596,6 +1661,7 @@ wss.on("connection", (ws, req) => {
   ws.on("close", () => {
     transports.delete(id);
     buckets.delete(id);
+    accountSessions.delete(id);
     pending.push({ kind: "leave", actorId: id });
   });
 });

@@ -436,6 +436,18 @@ and fixture hashes plus every verdict); the release uploads it. `adopt` asks
 the holo before adopting; login stays local so a holo outage cannot lock anyone
 out.
 
+**X7. Account and characters.** *(runtime + browser)* — **implemented in v0.33.**
+A Prism id is an account, not a character. The account owns one or more
+characters; a character is the in-game name and owns level, XP, guild, quests
+and mail. Signing in shows the list; `play <name>` enters one, `create <name>`
+adds one, and a second `play` takes over. A legacy claim adds the old character
+to the account and retires the legacy account; it is not merged.
+*Acceptance:* a browser created two characters, switched, reloaded and found
+both, and played a claimed legacy character; the reducer refuses a character on
+another account and a duplicate name; an old save migrates to one account and
+one character. `node tools/gate.mjs` prints `characters 2 chars` and
+`prismLogin account`; the headless run is recorded in MB-14 and MB-16.
+
 **X6. Release-on-merge, the small half of candidate 3.** *(CI)*
 A `workflow_dispatch` "release this commit" that requires the gate on that
 exact SHA, creates the tag and the GitHub release, and lets the deploy timer

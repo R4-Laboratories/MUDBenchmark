@@ -246,45 +246,64 @@ let accounts = { ok: true, why: [] };
   const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
   run([{ kind: "join", actorId: "a", name: "agent" }]);
   run([{ kind: "register", actorId: "a", key: "alice", passwordHash: hash, salt }]);
-  if (state.identities.alice?.passwordHash !== hash) { accounts.ok = false; accounts.why.push("register did not write the password hash"); }
+  if (state.accounts.alice?.passwordHash !== hash) { accounts.ok = false; accounts.why.push("register did not write the password hash"); }
+  if (state.identities.alice?.passwordHash !== undefined) { accounts.ok = false; accounts.why.push("register wrote a credential onto the character"); }
   if (state.identities.alice?.room !== undefined || state.identities.alice?.inventory !== undefined) { accounts.ok = false; accounts.why.push("register wrote session state"); }
   run([{ kind: "join", actorId: "b", name: "agent" }]);
   run([{ kind: "login", actorId: "b", key: "alice", authenticated: true }]);
   if (state.actors.find((actor) => actor.id === "b")?.level !== 1) { accounts.ok = false; accounts.why.push("login did not set progression defaults"); }
   run([{ kind: "password", actorId: "a", passwordHash: "new-hash", salt: "new-salt" }]);
-  if (state.identities.alice.passwordHash !== "new-hash") { accounts.ok = false; accounts.why.push("password change did not take"); }
+  if (state.accounts.alice.passwordHash !== "new-hash") { accounts.ok = false; accounts.why.push("password change did not take"); }
   if (!accounts.ok) failures.push(`accounts are broken: ${accounts.why[0]}`);
 }
 
-// A Prism login creates an account keyed by the id, with no password.
+// A Prism account owns one or more characters; the character is the in-game name.
 let prismLogin = { ok: true, why: [] };
 {
   const world = loadWorld({ mode: "single" });
   let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels);
   const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
   const key = `sha256:${"a".repeat(64)}`;
-  const name = "prism:aaaaaaaa";
   run([{ kind: "join", actorId: "p", name: "p" }]);
-  run([{ kind: "login", actorId: "p", key, authenticated: true, prism: true, name }]);
+  run([
+    { kind: "createCharacter", accountKey: key, name: "scout", actorId: "p" },
+    { kind: "login", actorId: "p", key: "scout", account: key, authenticated: true, prism: true },
+  ]);
   const actor = state.actors.find((candidate) => candidate.id === "p");
-  const identity = state.identities[key];
-  if (actor?.name !== name) prismLogin.why.push("the actor did not take the Prism display name");
-  if (identity?.kind !== "prism" || identity?.tokenHash !== null) prismLogin.why.push("the identity is not a passwordless Prism record");
-  if (identity?.prism !== key) prismLogin.why.push("the identity is not keyed by the Prism id");
+  const account = state.accounts[key];
+  const character = state.identities.scout;
+  if (actor?.name !== "scout") prismLogin.why.push("the actor did not take the character name");
+  if (actor?.account !== key) prismLogin.why.push("the actor did not record the account");
+  if (account?.kind !== "prism" || account?.characters?.[0] !== "scout" || account?.passwordHash !== null) {
+    prismLogin.why.push("the Prism account is not a passwordless account with its character");
+  }
+  if (character?.kind !== "character" || character?.owner !== key) prismLogin.why.push("the character is not owned by the Prism account");
+  if (character?.passwordHash !== undefined) prismLogin.why.push("the character kept a credential");
 
-  // An unauthenticated intent must not take over the passwordless record.
+  // An unauthenticated intent must not take over the character.
   run([{ kind: "join", actorId: "q", name: "q" }]);
-  run([{ kind: "login", actorId: "q", key, authenticated: false, prism: true, name: "hijack" }]);
-  if (state.actors.find((candidate) => candidate.id === "q")?.key === key) {
-    prismLogin.why.push("an unauthenticated login took over a Prism account");
+  run([{ kind: "login", actorId: "q", key: "scout", account: key, authenticated: false, prism: true }]);
+  if (state.actors.find((candidate) => candidate.id === "q")?.key === "scout") {
+    prismLogin.why.push("an unauthenticated login took over a Prism character");
   }
 
-  // A new legacy identity is typed, and an old untyped one is normalized.
+  // A character on another account is refused.
+  run([{ kind: "join", actorId: "r", name: "r" }]);
+  run([{ kind: "login", actorId: "r", key: "scout", account: `sha256:${"d".repeat(64)}`, authenticated: true, prism: true }]);
+  if (state.actors.find((candidate) => candidate.id === "r")?.key === "scout") {
+    prismLogin.why.push("a character was admitted to the wrong account");
+  }
+
+  // A legacy register creates an account and its one character.
   run([{ kind: "join", actorId: "l", name: "l" }]);
   run([{ kind: "register", actorId: "l", key: "legacy-test", passwordHash: "h", salt: "s" }]);
-  if (state.identities["legacy-test"]?.kind !== "legacy") prismLogin.why.push("a legacy identity has no kind");
+  if (state.accounts["legacy-test"]?.kind !== "legacy") prismLogin.why.push("a legacy account has no kind");
+  if (state.identities["legacy-test"]?.kind !== "character" || state.identities["legacy-test"]?.owner !== "legacy-test") {
+    prismLogin.why.push("a legacy character is not owned by its account");
+  }
   const upgraded = upgradeState({ identities: { "old-name": { name: "old-name" } } }, initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, world.levels, questTable.quests));
-  if (upgraded.identities["old-name"]?.kind !== "legacy") prismLogin.why.push("upgradeState did not type an old identity");
+  if (upgraded.accounts["old-name"]?.kind !== "legacy") prismLogin.why.push("upgradeState did not create an account");
+  if (upgraded.identities["old-name"]?.kind !== "character") prismLogin.why.push("upgradeState did not create a character");
 
   if (prismLogin.why.length) { prismLogin.ok = false; failures.push(`Prism login is broken: ${prismLogin.why[0]}`); }
 }
@@ -296,13 +315,17 @@ let takeover = { ok: true, why: [] };
   let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, world.levels, questTable.quests);
   const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
   const check = (condition, why) => { if (!condition) { takeover.ok = false; takeover.why.push(why); } };
-  const key = `sha256:${"c".repeat(64)}`;
+  const account = `sha256:${"c".repeat(64)}`;
+  const character = "scout";
   run([{ kind: "join", actorId: "a", name: "a" }]);
-  run([{ kind: "login", actorId: "a", key, authenticated: true, prism: true, name: "prism:cccccccc" }]);
+  run([
+    { kind: "createCharacter", accountKey: account, name: character, actorId: "a" },
+    { kind: "login", actorId: "a", key: character, account, authenticated: true, prism: true },
+  ]);
   run([{ kind: "join", actorId: "b", name: "b" }]);
-  run([{ kind: "leave", actorId: "a" }, { kind: "login", actorId: "b", key, authenticated: true, prism: true, name: "prism:cccccccc" }]);
+  run([{ kind: "leave", actorId: "a" }, { kind: "login", actorId: "b", key: character, account, authenticated: true, prism: true }]);
   check(!state.actors.some((actor) => actor.id === "a"), "the old actor stayed after the takeover leave");
-  check(state.actors.find((actor) => actor.id === "b")?.key === key, "the new actor did not take the key");
+  check(state.actors.find((actor) => actor.id === "b")?.key === character, "the new actor did not take the key");
   check(state.actors.length === 1, "the takeover left two controllers");
   if (takeover.why.length) { takeover.ok = false; failures.push(`takeover is broken: ${takeover.why[0]}`); }
 }
@@ -357,6 +380,36 @@ let identityKernel = { ok: true, why: [] };
   const receiptText = `${JSON.stringify(receipt, null, 2)}\n`;
   if (!existsSync(receiptPath) || readFileSync(receiptPath, "utf8") !== receiptText) writeFileSync(receiptPath, receiptText);
   if (identityKernel.why.length) { identityKernel.ok = false; failures.push(`the identity kernel is broken: ${identityKernel.why[0]}`); }
+}
+
+// X7: an account owns more than one character; the character is the game name.
+let characters = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, world.levels, questTable.quests);
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
+  const check = (condition, why) => { if (!condition) { characters.ok = false; characters.why.push(why); } };
+  const account = `sha256:${"e".repeat(64)}`;
+  const other = `sha256:${"f".repeat(64)}`;
+  run([{ kind: "join", actorId: "a", name: "a" }]);
+  run([
+    { kind: "createCharacter", accountKey: account, name: "alice", actorId: "a" },
+    { kind: "login", actorId: "a", key: "alice", account, authenticated: true, prism: true },
+  ]);
+  check(state.actors.find((actor) => actor.id === "a")?.name === "alice", "the first character did not enter");
+  run([{ kind: "leave", actorId: "a" }, { kind: "join", actorId: "a", name: "a" }]);
+  run([
+    { kind: "createCharacter", accountKey: account, name: "bob", actorId: "a" },
+    { kind: "login", actorId: "a", key: "bob", account, authenticated: true, prism: true },
+  ]);
+  check(state.accounts[account]?.characters?.length === 2, "a second character was not added to the account");
+  check(state.actors.find((actor) => actor.id === "a")?.name === "bob", "the second character did not enter");
+  run([{ kind: "join", actorId: "b", name: "b" }]);
+  run([{ kind: "login", actorId: "b", key: "alice", account: other, authenticated: true, prism: true }]);
+  check(state.actors.find((actor) => actor.id === "b")?.key !== "alice", "a character was admitted to another account");
+  run([{ kind: "createCharacter", accountKey: account, name: "alice", actorId: "a" }]);
+  check(state.accounts[account]?.characters?.length === 2, "a duplicate character name was added");
+  if (characters.why.length) { characters.ok = false; failures.push(`characters are broken: ${characters.why[0]}`); }
 }
 
 // X2: the pinned public log refuses a revoked device's pre-revocation log.
@@ -448,13 +501,12 @@ let claim = { ok: true, why: [] };
   const check = (condition, why) => { if (!condition) { claim.ok = false; claim.why.push(why); } };
   const legacyKey = "oldcasey";
   const prismKey = `sha256:${"b".repeat(64)}`;
+  const prismCharacter = "scout";
 
   run([{ kind: "join", actorId: "l", name: "l" }]);
   run([{ kind: "register", actorId: "l", key: legacyKey, passwordHash: "h", salt: "s" }]);
   // The old character quits before the claim; the owner still holds the old
-  // password or token, which is what authorises the adoption. The leave writes
-  // the actor's hands into the identity, so the legacy progression is set after
-  // it, exactly as a save would have left it.
+  // password or token, which is what authorises the adoption.
   run([{ kind: "leave", actorId: "l" }]);
   state.identities[legacyKey] = {
     ...state.identities[legacyKey],
@@ -465,44 +517,48 @@ let claim = { ok: true, why: [] };
   state.mail.push({ id: "m1", from: legacyKey, fromKey: legacyKey, toKey: legacyKey, text: "old letter", tick: 0, read: false });
 
   run([{ kind: "join", actorId: "p", name: "p" }]);
-  run([{ kind: "login", actorId: "p", key: prismKey, authenticated: true, prism: true, name: "prism:bbbbbbbb" }]);
-  run([{ kind: "claimLegacy", actorId: "p", legacyKey }]);
+  run([
+    { kind: "createCharacter", accountKey: prismKey, name: prismCharacter, actorId: "p" },
+    { kind: "login", actorId: "p", key: prismCharacter, account: prismKey, authenticated: true, prism: true },
+  ]);
+  run([{ kind: "claimLegacy", actorId: "p", accountKey: prismKey, legacyKey }]);
 
-  const actor = state.actors.find((candidate) => candidate.id === "p");
-  const prism = state.identities[prismKey];
-  const retired = state.identities[legacyKey];
-  check(actor?.name === legacyKey, "the claim did not take the old name");
-  check(actor?.level === 5 && actor?.xp === 500, "the claim did not take the old level and xp");
-  check(prism?.name === legacyKey && prism?.claimedFrom === legacyKey, "the Prism identity did not record the claim");
-  check(prism?.kind === "prism" && prism?.prism === prismKey, "the claim lost the Prism id");
-  check(retired?.retired === true && retired?.mergedInto === prismKey, "the old identity was not tombstoned");
-  check(retired?.passwordHash === null && retired?.tokenHash === null, "the old credentials were not cleared");
-  check(state.mail[0]?.toKey === prismKey && state.mail[0]?.fromKey === prismKey, "the old mail was not aliased");
-  check(state.guilds.g1?.members?.[prismKey] === "officer" && !state.guilds.g1?.members?.[legacyKey], "the guild membership did not move");
-  check(state.guilds.g1?.founder === prismKey, "the guild founder did not move");
-  check(prism?.quests?.completed?.includes("scroll"), "the old completed quests did not merge");
-  check(prism?.quests?.active?.some((entry) => entry.id === "word"), "the old active quest did not merge");
+  const account = state.accounts[prismKey];
+  const legacyAccount = state.accounts[legacyKey];
+  const claimed = state.identities[legacyKey];
+  check(account?.claimedFrom === legacyKey, "the Prism account did not record the claim");
+  check(account?.characters?.includes(prismCharacter) && account?.characters?.includes(legacyKey), "the claimed character is not on the Prism account");
+  check(claimed?.owner === prismKey && claimed?.name === legacyKey, "the claimed character did not move to the Prism account");
+  check(claimed?.level === 5 && claimed?.xp === 500, "the claim lost the old progression");
+  check(claimed?.guild === "g1" && claimed?.guildRank === "officer", "the claim lost the old guild");
+  check(claimed?.quests?.completed?.includes("scroll") && claimed?.quests?.active?.some((entry) => entry.id === "word"), "the claim lost the old quests");
+  check(legacyAccount?.retired === true && legacyAccount?.mergedInto === prismKey, "the old account was not tombstoned");
+  check(legacyAccount?.passwordHash === null && legacyAccount?.tokenHash === null, "the old credentials were not cleared");
+  check(state.mail[0]?.toKey === legacyKey && state.mail[0]?.fromKey === legacyKey, "the old mail keys moved");
+  check(state.guilds.g1?.members?.[legacyKey] === "officer" && state.guilds.g1?.founder === legacyKey, "the old guild keys moved");
 
-  run([{ kind: "claimLegacy", actorId: "p", legacyKey }]);
-  check(state.identities[prismKey]?.claimedFrom === legacyKey && state.actors.find((candidate) => candidate.id === "p")?.level === 5, "a second claim changed the account");
+  // A second claim is refused.
+  run([{ kind: "claimLegacy", actorId: "p", accountKey: prismKey, legacyKey }]);
+  check(state.accounts[prismKey]?.characters?.filter((name) => name === legacyKey).length === 1, "a second claim added the character again");
 
+  // The retired legacy account cannot log in.
   run([{ kind: "join", actorId: "o", name: "o" }]);
-  const oldEvents = run([{ kind: "login", actorId: "o", key: legacyKey, authenticated: true }]);
+  const oldEvents = run([{ kind: "login", actorId: "o", key: legacyKey, account: legacyKey, authenticated: true }]);
   check(!state.actors.find((candidate) => candidate.id === "o")?.key, "the retired legacy login was accepted");
-  check(oldEvents.some((event) => /account moved/i.test(event.text ?? "")), "the retired login did not explain the move");
+  check(oldEvents.some((event) => /not available/i.test(event.text ?? "")), "the retired login did not explain the move");
 
-  // One controller: the claimed character quits before the resume check.
+  // The claimed character can be played from the Prism account.
   run([{ kind: "leave", actorId: "p" }]);
   run([{ kind: "join", actorId: "p2", name: "p2" }]);
-  run([{ kind: "login", actorId: "p2", key: prismKey, authenticated: true, prism: true, name: "prism:bbbbbbbb" }]);
+  run([{ kind: "login", actorId: "p2", key: legacyKey, account: prismKey, authenticated: true, prism: true }]);
   const returning = state.actors.find((candidate) => candidate.id === "p2");
-  check(returning?.name === legacyKey && returning?.level === 5, "the claimed account did not resume under the old name");
+  check(returning?.name === legacyKey && returning?.level === 5, "the claimed character did not resume");
 
   const checkpointed = checkpointIdentities(state);
   const upgraded = upgradeState(checkpointed, initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, world.levels, questTable.quests));
-  check(upgraded.identities[prismKey]?.name === legacyKey && upgraded.identities[prismKey]?.claimedFrom === legacyKey, "the claim did not survive a checkpoint");
-  check(upgraded.identities[legacyKey]?.retired === true && upgraded.identities[legacyKey]?.mergedInto === prismKey, "the tombstone did not survive a checkpoint");
-  check(upgraded.identities[legacyKey]?.passwordHash === null && upgraded.identities[legacyKey]?.tokenHash === null, "the cleared credentials did not survive a checkpoint");
+  check(upgraded.identities[legacyKey]?.owner === prismKey, "the claim did not survive a checkpoint");
+  check(upgraded.accounts[prismKey]?.claimedFrom === legacyKey, "the claim record did not survive a checkpoint");
+  check(upgraded.accounts[legacyKey]?.retired === true && upgraded.accounts[legacyKey]?.mergedInto === prismKey, "the tombstone did not survive a checkpoint");
 
   if (claim.why.length) { claim.ok = false; failures.push(`the legacy claim is broken: ${claim.why[0]}`); }
 }
@@ -1427,11 +1483,12 @@ if (process.argv.includes("--json")) {
   console.log(`${"pacing".padEnd(26)}  ${(pacing.ok ? "14 hp" : "BROKEN").padStart(5)}   == applied, bound, refused`);
   console.log(`${"webAI".padEnd(26)}  ${(webAI.ok ? "5 checks" : "BROKEN").padStart(5)}   == parse, prompt, requests`);
   console.log(`${"prismId".padEnd(26)}  ${(prismSession.ok ? "signed" : "BROKEN").padStart(5)}   == session verifier`);
-  console.log(`${"prismLogin".padEnd(26)}  ${(prismLogin.ok ? "1 account" : "BROKEN").padStart(5)}   == id, no password`);
+  console.log(`${"prismLogin".padEnd(26)}  ${(prismLogin.ok ? "account" : "BROKEN").padStart(5)}   == id, character`);
   console.log(`${"state".padEnd(26)}  ${(durableState.ok ? "5 checks" : "BROKEN").padStart(5)}   == atomic, backup, fail-loud`);
-  console.log(`${"claim".padEnd(26)}  ${(claim.ok ? "1 alias" : "BROKEN").padStart(5)}   == tombstone, mail, guild`);
+  console.log(`${"claim".padEnd(26)}  ${(claim.ok ? "adds char" : "BROKEN").padStart(5)}   == owner, tombstone`);
   console.log(`${"pinned".padEnd(26)}  ${(identityPin.ok ? "revoked" : "BROKEN").padStart(5)}   == old log refused`);
   console.log(`${"takeover".padEnd(26)}  ${(takeover.ok ? "1 actor" : "BROKEN").padStart(5)}   == leave then login`);
+  console.log(`${"characters".padEnd(26)}  ${(characters.ok ? "2 chars" : "BROKEN").padStart(5)}   == create, switch`);
   console.log(`${"identity".padEnd(26)}  ${(identityKernel.ok ? "10 vectors" : "BROKEN").padStart(5)}   == model and JS`);
   console.log(`${"llms".padEnd(26)}  ${(llms.ok ? "verbs, rooms" : "STALE").padStart(5)}   == generated contract`);
   console.log(`${"claims".padEnd(26)}  ${(claimsCheck.status === 0 ? "levels ok" : "STALE").padStart(5)}   == build, open, some-true`);
@@ -1439,7 +1496,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"worldMap".padEnd(26)}  ${(worldMap.ok ? `${worldMap.rooms} rooms` : "BROKEN").padStart(5)}   == exits, details, examine`);
   console.log(`${"worldArms".padEnd(26)}  ${(worldProblems.length === 0 ? "4 ok" : "BROKEN").padStart(5)}   == walkable`);
   console.log(`${"renderer".padEnd(26)}  ${(shown.includes("SECRET-NOTICE") && !hidden.includes("SECRET-NOTICE") ? "2 ok" : "BROKEN").padStart(5)}   == hides/shows`);
-  console.log(`${"accounts".padEnd(26)}  ${(accounts.ok ? "hash, register" : "BROKEN").padStart(5)}   == names and passwords`);
+  console.log(`${"accounts".padEnd(26)}  ${(accounts.ok ? "hash, account" : "BROKEN").padStart(5)}   == names and passwords`);
   console.log(`${"allowance".padEnd(26)}  ${(allowance.ok ? "250 ms" : "BROKEN").padStart(5)}   == one command`);
   console.log(`${"memory".padEnd(26)}  ${(memory.ok ? `${DEFAULT_TURNS} turns` : "BROKEN").padStart(5)}   == rolling window`);
   console.log(`${"safe".padEnd(26)}  ${(safe.ok ? "2 rooms" : "BROKEN").padStart(5)}   == no combat`);

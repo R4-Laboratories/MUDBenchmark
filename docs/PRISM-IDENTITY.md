@@ -97,8 +97,10 @@ mechanism and its gate are in place.
   public log (a presented log may add records, never omit one). The pinned logs
   live in `identities.json`, separate from the tick state.
 - `server.mjs` — the WebSocket `prism <base64url session>` command. The upgrade
-  request's `Origin` is the audience; a successful login creates or restores an
-  account keyed by the id and names it `prism:<first 8 hex>`.
+  request's `Origin` is the audience; a successful sign-in is the **account**,
+  and the client then chooses a character. `characters` lists them, `play
+  <name>` enters one and `create <name>` adds one. The character name is the
+  in-game name; the account label is `prism:<first 8 hex>`.
 - `adopt` — the one-time legacy claim. The signed-in panel has **Claim an old
   name**; the server checks the old password or token, and the reducer merges
   level, XP, guild, quests and mail keys and tombstones the old record. One
@@ -153,37 +155,53 @@ The admission decision is proved, not only implemented:
   same request and response in the model, plants a flipped vector to prove the
   check fails, and writes the receipt; the release carries it.
 
-## The account
+## The account and its characters
 
-The account key is the Prism id. The display is the short id.
+The Prism id is the account. It is a small record in `state.accounts`:
 
 ```json
 {
   "kind": "prism",
-  "prism": "sha256:…",
-  "name": "prism:9f2c1a3b",
-  "level": 3,
-  "xp": 120,
-  "guild": "…",
-  "quests": { "active": [], "completed": [] },
-  "created": 1762516800000
+  "characters": ["casey", "scout"],
+  "claimedFrom": "casey"
 }
 ```
 
-- `prism` is immutable. The display is `prism:<first 8 hex>` for a new account;
-  a claimed account displays the old name (`casey`) and keeps the Prism key as
-  the account. A handle registry is not built yet, and `who <name>` does not
-  exist.
-- Items stay world state and are not persisted by identity.
-- `kind` is `prism` or `legacy`; older records are typed on the next
-  `upgradeState`.
+A character is the in-game name and the record that owns progression:
+
+```json
+{
+  "kind": "character",
+  "owner": "sha256:…",
+  "name": "casey",
+  "level": 5,
+  "xp": 500,
+  "guild": "keepers",
+  "guildRank": "officer",
+  "quests": { "active": [], "completed": ["scroll"] }
+}
+```
+
+- The Prism key is immutable; the account label is `prism:<first 8 hex>`.
+- Signing in with the Prism id shows the character list. `play <name>` enters
+  one; `create <name>` adds one. A second `play` for a character already online
+  takes it over and closes the old socket.
+- `register`/`login` create or return a legacy account with one character, the
+  name itself. Legacy credentials live on the account, not the character.
+- `adopt <old-name> <secret>` adds the legacy character to the Prism account and
+  retires the legacy account. It keeps its own level, guild, quests and mail; it
+  is not merged into another character. One claim per Prism account.
+- The migration from v0.32 gives every existing identity one account and one
+  character. Items stay world state and are not persisted by the character.
 
 ## The AI character
 
-The current implementation gives the AI its **own Prism id**, created in the
-same browser under the IndexedDB store `ai`, with a **Reset identity** button.
-It is a real Prism player: its own account, its own progress, the same signed
-session flow. It is not yet owned by the human's id.
+The AI has its **own Prism id** (the account), created in the same browser
+under the IndexedDB store `ai`, with a **Reset identity** button. The AI panel
+names a character; if the account already has it the AI plays it, otherwise it
+creates it. Another tab or a person can play the same character and take it
+over; the old socket is told and closed. The AI is still a separate account
+from the human, not a persona of it.
 
 The next step is the **persona** path: `ensurePersona(session, audience)` and
 `signPersonaAction(...)` are already exported by the pinned module. One id would
@@ -255,6 +273,14 @@ all ten kind-7 fixtures, including a flag of 2 and a short request. The server
 claimed a legacy account through the holo, refused a wrong secret, and refused
 a claim with the holo down; the gate writes `world/identity-receipt.json` with
 the kernel, app and fixture hashes and every verdict.
+
+The account/character run was headless Chromium against a mock
+OpenAI-compatible provider: a Prism account created alice and bob, switched
+between them, reloaded and found both, claimed oldcasey as a third character,
+and played it. The AI account created scout; its Model tab showed the exact
+system and user prompt, the trimmed context, the raw reply, the parsed command,
+the context size and the token totals, and the mock recorded the same character
+name and room text. MB-14, MB-15 and MB-16 record the claims.
 
 Not yet proven by the gate: a tampered signature, an unknown device, a replay
 across a restart, and recovery.

@@ -131,7 +131,13 @@
   #ai-setup { display: none; }
   body.ai-mode #ai-setup { display: block; }
   body.ai-mode.ai-running #ai-setup { display: none; }
-  body.ai-mode #account, body.ai-mode #signed, body.ai-mode #glance { display: none; }
+  body.ai-mode #account, body.ai-mode #characters, body.ai-mode #signed, body.ai-mode #glance { display: none; }
+  #character-list { display: flex; flex-direction: column; gap: 6px; margin: 8px 0; }
+  #character-list .row { margin: 0; }
+  #character-list button { text-align: left; }
+  #model-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
+  .model-block h3 { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 10px 0 0; }
+  .model-block pre { max-height: 240px; overflow: auto; }
   #ai-live { display: none; }
   body.ai-mode.ai-running #ai-live {
     display: flex; flex-direction: column; flex: 1; min-height: 0;
@@ -213,11 +219,11 @@
     <aside>
       <section class="panel" id="account">
         <h2>Sign in</h2>
-        <p>Use your Prism id. No password. The id is kept in this browser; clearing site data or losing the browser loses the character until device linking exists.</p>
+        <p>Use your Prism id. No password. The id is your account; after signing in you choose a character. Clearing site data or losing the browser loses the account until you link another device.</p>
         <div class="row">
           <button type="button" id="prism-login" autofocus>Use my Prism id</button>
         </div>
-        <p class="small muted">The first time, this browser creates an id. That id is the account. It is not portable yet.</p>
+        <p class="small muted">The first time, this browser creates an id. That id is the account, not a character. It is not portable yet.</p>
         <details class="small muted">
           <summary>Use a name and password instead</summary>
           <div class="field">
@@ -236,17 +242,33 @@
         </details>
       </section>
 
+      <section class="panel" id="characters" hidden>
+        <h2>Your characters</h2>
+        <p>Signed in as <strong id="account-name">…</strong>. The Prism id is the account; each character keeps its own name, level, guild and quests.</p>
+        <div id="character-list"></div>
+        <form id="create-character-form">
+          <div class="field">
+            <label for="new-character">New character</label>
+            <input id="new-character" autocomplete="off" maxlength="24" placeholder="name">
+          </div>
+          <div class="row"><button type="submit">Create character</button></div>
+        </form>
+        <p class="small muted" id="character-hint"></p>
+        <div class="row"><button type="button" id="sign-out">Sign out</button></div>
+      </section>
+
       <section class="panel" id="signed">
         <h2>Signed in</h2>
         <p>You are <strong id="signed-name">…</strong>. The character keeps level, XP, guild and quests; items stay in the world.</p>
         <div class="row">
+          <button type="button" id="characters-button">Characters</button>
           <button type="button" id="help">Help</button>
           <button type="button" id="who">Who</button>
           <button type="button" id="quit">Quit</button>
         </div>
         <details class="small muted">
           <summary>Claim an old name</summary>
-          <p>Move an old name and its progress onto this Prism id. Use its password or legacy token. Sign in with a Prism id first; one claim per Prism id.</p>
+          <p>Add an old name as a character on this Prism account. Use its password or legacy token. It keeps its own level, guild and quests; one claim per Prism account.</p>
           <div class="field">
             <label for="claim-name">Old name</label>
             <input id="claim-name" autocomplete="off" maxlength="24" placeholder="casey">
@@ -318,8 +340,13 @@
           <input id="ai-key" type="password" autocomplete="off" placeholder="sk-…">
         </div>
         <div class="field">
+          <label for="ai-character">Character name</label>
+          <input id="ai-character" autocomplete="off" maxlength="24" placeholder="scout">
+          <p class="small muted">The AI signs in with its Prism id, then plays this character. If it does not exist, the AI creates it. Another tab or a person can take the same character over.</p>
+        </div>
+        <div class="field">
           <label>AI Prism identity</label>
-          <p class="small muted" id="ai-identity">Created in this browser on first run. Clearing site data loses it; device linking is not built yet.</p>
+          <p class="small muted" id="ai-identity">The Prism id is the account. The character name above is the in-game name. Clearing site data loses the account.</p>
           <div class="row"><button type="button" id="ai-reset">Reset identity</button></div>
         </div>
         <div class="row">
@@ -330,7 +357,7 @@
         <details class="small muted">
           <summary>How this works</summary>
           <p>1. Pick a brain. Ollama is free and local; OpenAI and Anthropic need a key.</p>
-          <p>2. The AI gets its own Prism id in this browser on first run; there is no password and no account form.</p>
+          <p>2. The AI gets its own Prism id in this browser on first run; that is the account. It creates or plays the character named above.</p>
           <p>3. It sees the same room text you do, types one command per turn, and waits for the server like any player.</p>
           <p>4. Send direction in the Director chat. The AI replies there and its private reasoning appears in Mind.</p>
           <p>The game server never sees the provider key.</p>
@@ -358,8 +385,16 @@
           <div id="tabs" role="tablist">
             <button type="button" class="tab active" data-tab="mind">Mind</button>
             <button type="button" class="tab" data-tab="run">Run</button>
+            <button type="button" class="tab" data-tab="model">Model</button>
           </div>
           <div id="mind-pane" class="pane"><div id="mind"></div></div>
+          <div id="model-pane" class="pane" hidden>
+            <div id="model-stats"></div>
+            <div class="model-block"><h3>Sent to the model</h3><pre id="model-prompt"></pre></div>
+            <div class="model-block"><h3>Context</h3><pre id="model-context"></pre></div>
+            <div class="model-block"><h3>Model returned</h3><pre id="model-reply"></pre></div>
+            <div class="model-block"><h3>Sent to the game</h3><pre id="model-command"></pre></div>
+          </div>
           <div id="run-pane" class="pane" hidden>
             <div id="run-stats"></div>
             <div class="row">
@@ -392,6 +427,14 @@
   const nameInput = document.getElementById("name");
   const passwordInput = document.getElementById("password");
   const account = document.getElementById("account");
+  const charactersPanel = document.getElementById("characters");
+  const characterList = document.getElementById("character-list");
+  const accountName = document.getElementById("account-name");
+  const createCharacterForm = document.getElementById("create-character-form");
+  const newCharacter = document.getElementById("new-character");
+  const characterHint = document.getElementById("character-hint");
+  const charactersButton = document.getElementById("characters-button");
+  const signOut = document.getElementById("sign-out");
   const signed = document.getElementById("signed");
   const signedName = document.getElementById("signed-name");
   const latest = document.getElementById("latest");
@@ -403,6 +446,7 @@
   const aiBase = document.getElementById("ai-base");
   const aiModel = document.getElementById("ai-model");
   const aiModels = document.getElementById("ai-models");
+  const aiCharacter = document.getElementById("ai-character");
   const aiKey = document.getElementById("ai-key");
   const aiKeyField = document.getElementById("ai-key-field");
   const aiIdentity = document.getElementById("ai-identity");
@@ -422,6 +466,11 @@
   const chat = document.getElementById("chat");
   const mind = document.getElementById("mind");
   const runStats = document.getElementById("run-stats");
+  const modelStats = document.getElementById("model-stats");
+  const modelPrompt = document.getElementById("model-prompt");
+  const modelContext = document.getElementById("model-context");
+  const modelReply = document.getElementById("model-reply");
+  const modelCommand = document.getElementById("model-command");
   const directorForm = document.getElementById("director-form");
   const directorInput = document.getElementById("director-input");
   const liveName = document.getElementById("live-name");
@@ -449,6 +498,7 @@
   let playEnabled = true;
   let authed = false;
   let stick = true;
+  let characterState = { account: "", characters: [] };
 
   const AI = {
     socket: null, config: null, identity: null, name: "",
@@ -457,6 +507,7 @@
     turn: 0, commands: 0, latencies: [], usage: { prompt: 0, completion: 0 },
     history: [], director: [], transcript: [], thoughts: [], room: "",
     lastCommand: "", startedAt: null, recent: [], nudge: false, lastError: null,
+    character: "scout", lastRequest: null, lastReply: null, lastParsed: null, lastLatency: 0,
   };
 
   const savedFont = (() => { try { return Number(localStorage.getItem("mudbench-font")) || 16; } catch { return 16; } })();
@@ -531,8 +582,14 @@
       state.textContent = "disconnected";
       state.className = "";
       authed = false;
-      account.style.display = "block";
       signed.style.display = "none";
+      if (characterState.account) {
+        charactersPanel.hidden = false;
+        account.style.display = "none";
+      } else {
+        charactersPanel.hidden = true;
+        account.style.display = "block";
+      }
       cmd.disabled = true;
       cmd.placeholder = "Sign in to play";
       if (playEnabled && mode === "play") setTimeout(connectPlay, 1500);
@@ -540,10 +597,26 @@
     playSocket.onerror = () => { state.textContent = "error"; state.className = ""; };
     playSocket.onmessage = (event) => {
       const text = String(event.data);
+      const charactersLine = text.match(/^#characters (.*)\r?\n?$/);
+      if (charactersLine) {
+        try { renderCharacters(JSON.parse(charactersLine[1])); } catch {}
+        return;
+      }
       append(text);
       if (/signed in elsewhere/i.test(text)) {
         playAuth = null;
         prismSession = null;
+        authed = false;
+        signed.style.display = "none";
+        cmd.disabled = true;
+        cmd.placeholder = "Signed in elsewhere";
+        if (characterState.account) {
+          charactersPanel.hidden = false;
+          account.style.display = "none";
+          renderCharacters(characterState);
+        } else {
+          account.style.display = "block";
+        }
         append("You were signed in from another tab or device. If this was not you, sign in again to take it back.", "err");
       }
       const signedAs = text.match(/Signing in as ([^\r\n.]+)\./i);
@@ -560,6 +633,12 @@
         const nowKnown = text.match(/You are now ([^\r\n.]+)\./i);
         if (nowKnown) signedName.textContent = nowKnown[1];
         account.style.display = "none";
+        if (characterState.account) {
+          charactersPanel.hidden = false;
+          renderCharacters(characterState);
+        } else {
+          charactersPanel.hidden = true;
+        }
         signed.style.display = "block";
         passwordInput.value = "";
         cmd.disabled = false;
@@ -568,18 +647,22 @@
       }
       if (/Goodbye\./.test(text)) {
         authed = false;
-        account.style.display = "block";
         signed.style.display = "none";
         cmd.disabled = true;
-        cmd.placeholder = "Sign in to play";
-        setTimeout(() => { try { playSocket.close(); } catch {} }, 120);
+        cmd.placeholder = "Choose a character";
+        if (characterState.account) {
+          charactersPanel.hidden = false;
+          account.style.display = "none";
+          renderCharacters(characterState);
+        } else {
+          account.style.display = "block";
+        }
       }
     };
   }
 
   const send = (line, echo) => {
     if (!line) return;
-    if (line === "quit") playAuth = null;
     if (echo) append("> " + echo, "me");
     if (playSocket?.readyState === WebSocket.OPEN) playSocket.send(line + "\n");
     else append("(not connected)", "err");
@@ -602,6 +685,61 @@
     for (const byte of bytes) binary += String.fromCharCode(byte);
     return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
   };
+
+  function renderCharacters(info) {
+    characterState = {
+      account: info?.account ?? "",
+      characters: [...(info?.characters ?? [])],
+    };
+    accountName.textContent = characterState.account || "Prism account";
+    characterList.innerHTML = "";
+    if (!characterState.characters.length) {
+      const empty = document.createElement("p");
+      empty.className = "small muted";
+      empty.textContent = "No characters yet. Create one below.";
+      characterList.appendChild(empty);
+    }
+    for (const name of characterState.characters) {
+      const row = document.createElement("div");
+      row.className = "row";
+      const button = document.createElement("button");
+      button.type = "button";
+      const current = authed && signedName.textContent === name;
+      button.textContent = current ? `Playing ${name}` : `Play ${name}`;
+      button.disabled = current;
+      button.addEventListener("click", () => send(`play ${name}`, `play ${name}`));
+      row.appendChild(button);
+      characterList.appendChild(row);
+    }
+    charactersPanel.hidden = false;
+    account.style.display = "none";
+    characterHint.textContent = characterState.characters.length
+      ? "Pick a character, or create another. Switching takes over that character."
+      : "Choose a name; it is the name other players see.";
+  }
+
+  createCharacterForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const name = newCharacter.value.trim();
+    if (!name) return;
+    send(`create ${name}`, `create ${name}`);
+    newCharacter.value = "";
+  });
+  charactersButton.addEventListener("click", () => send("characters", "characters"));
+  signOut.addEventListener("click", () => {
+    playAuth = null;
+    prismSession = null;
+    characterState = { account: "", characters: [] };
+    charactersPanel.hidden = true;
+    signed.style.display = "none";
+    account.style.display = "block";
+    authed = false;
+    cmd.disabled = true;
+    cmd.placeholder = "Sign in to play";
+    try { playSocket?.close(); } catch {}
+    // The socket's close handler reconnects; calling connectPlay here as well
+    // would leave two sockets racing.
+  });
 
   async function signInPrism(announce = true) {
     if (mode !== "play") return;
@@ -854,6 +992,7 @@
       provider: aiProvider.value,
       base: aiBase.value.trim(),
       model: aiModel.value.trim(),
+      character: aiCharacter.value.trim(),
     };
     saveJSON(CONFIG_KEY, config);
     if (includeKey) {
@@ -870,6 +1009,7 @@
     aiProvider.value = config.provider ?? "ollama";
     aiBase.value = config.base ?? PROVIDERS[aiProvider.value].base;
     aiModel.value = config.model ?? PROVIDERS[aiProvider.value].model;
+    aiCharacter.value = config.character ?? "scout";
     if (key && PROVIDERS[aiProvider.value].needsKey) aiKey.value = key;
     applyProvider(aiProvider.value, false);
     aiTitle.textContent = "AI";
@@ -883,7 +1023,7 @@
     applyProvider(aiProvider.value, true);
     aiKey.value = PROVIDERS[aiProvider.value].needsKey ? savedKey : "";
   });
-  for (const field of [aiBase, aiModel]) field.addEventListener("change", () => persistConfig(false));
+  for (const field of [aiBase, aiModel, aiCharacter]) field.addEventListener("change", () => persistConfig(false));
 
   aiReset.addEventListener("click", async () => {
     if (!confirm("Reset the AI's Prism id? The current AI character will be orphaned.")) return;
@@ -1018,6 +1158,11 @@
     AI.lastError = null;
     AI.room = "";
     AI.lastCommand = "";
+    AI.character = aiCharacter.value.trim() || "scout";
+    AI.lastRequest = null;
+    AI.lastReply = null;
+    AI.lastParsed = null;
+    AI.lastLatency = 0;
     liveThought.textContent = "";
     AI.startedAt = new Date().toISOString();
     clearTimeout(AI.reconnect);
@@ -1137,6 +1282,54 @@
       cell.appendChild(strong);
       runStats.appendChild(cell);
     }
+    if (typeof updateModelInspector === "function") updateModelInspector();
+  }
+
+  function updateModelInspector() {
+    const request = AI.lastRequest;
+    const reply = AI.lastReply;
+    const parsed = AI.lastParsed;
+    const messages = request?.messages ?? [];
+    const contextChars = messages.reduce((sum, message) => sum + String(message.content ?? "").length, 0);
+    const stats = [
+      ["Provider", AI.config?.provider ?? "—"],
+      ["Model", AI.config?.model ?? "—"],
+      ["Character", AI.name || AI.character || "—"],
+      ["Turn", String(AI.turn)],
+      ["Commands", String(AI.commands)],
+      ["Prompt tokens", AI.usage.prompt ? String(AI.usage.prompt) : "—"],
+      ["Completion tokens", AI.usage.completion ? String(AI.usage.completion) : "—"],
+      ["Last latency", AI.lastLatency ? `${(AI.lastLatency / 1000).toFixed(1)}s` : "—"],
+      ["Context", `${messages.length} msgs · ${contextChars} chars`],
+      ["Last command", AI.lastCommand || "—"],
+      ["Error", AI.lastError || "—"],
+      ["Phase", AI.lastError ? "error" : AI.paused ? "paused" : AI.running ? "running" : "stopped"],
+    ];
+    modelStats.innerHTML = "";
+    for (const [label, value] of stats) {
+      const cell = document.createElement("div");
+      cell.className = "stat";
+      cell.textContent = label;
+      const strong = document.createElement("b");
+      strong.textContent = value;
+      cell.appendChild(strong);
+      modelStats.appendChild(cell);
+    }
+    modelPrompt.textContent = request
+      ? `SYSTEM
+${request.system}
+
+${messages.map((message, index) => `[${index}] ${String(message.role).toUpperCase()}\n${message.content}`).join("\n\n")}`
+      : "No turn yet.";
+    modelContext.textContent = messages.length ? JSON.stringify(messages, null, 2) : "No context yet.";
+    modelReply.textContent = reply?.text ?? "No reply yet.";
+    modelCommand.textContent = parsed
+      ? `COMMAND: ${parsed.command}
+THOUGHT: ${parsed.thought || "(none)"}
+REPLY: ${parsed.reply || "(none)"}
+
+RECENT: ${AI.recent.join(" · ") || "(none)"}`
+      : "No command yet.";
   }
 
   function connectAI() {
@@ -1169,6 +1362,22 @@
     };
     ws.onmessage = (event) => {
       const text = String(event.data);
+      const charactersLine = text.match(/^#characters (.*)\r?\n?$/);
+      if (charactersLine) {
+        if (AI.running && !AI.authed) {
+          try {
+            const info = JSON.parse(charactersLine[1]);
+            const wanted = AI.character || info.characters[0] || "scout";
+            const line = info.characters.includes(wanted) ? `play ${wanted}` : `create ${wanted}`;
+            // The server's 250 ms input limit covers the sign-in too.
+            setTimeout(() => {
+              if (ws.readyState === WebSocket.OPEN) ws.send(`${line}\n`);
+            }, 350);
+            setAIStatus(info.characters.includes(wanted) ? `choosing ${wanted}` : `creating ${wanted}`);
+          } catch {}
+        }
+        return;
+      }
       // The guest banner is for a person about to register. The AI is not that
       // person; hide it so the stream starts at the login.
       if (/^Welcome to MUDBench\.\r?\nRegister/.test(text)) return;
@@ -1250,6 +1459,8 @@
       AI.nudge = false;
       const messages = trimHistory([...AI.history, { role: "user", content: user }], 8);
       const request = requestFor(AI.config.provider, { ...AI.config, name: AI.name || "ai" }, system, messages);
+      AI.lastRequest = { system, messages, provider: AI.config.provider, model: AI.config.model, at: new Date().toISOString() };
+      updateModelInspector();
       const res = await fetch(request.url, {
         method: "POST",
         headers: request.headers,
@@ -1265,6 +1476,10 @@
       if (!text) throw new Error("The model returned an empty reply.");
       const latency = Math.round(performance.now() - started);
       const parsed = parseBrain(text);
+      AI.lastLatency = latency;
+      AI.lastReply = { text, usage: usage ?? null, latency_ms: latency, at: new Date().toISOString() };
+      AI.lastParsed = parsed;
+      updateModelInspector();
 
       AI.history.push({ role: "user", content: user }, { role: "assistant", content: text });
       AI.history = trimHistory(AI.history, 8);
@@ -1363,6 +1578,7 @@
       for (const other of document.querySelectorAll("#tabs .tab")) other.classList.toggle("active", other === tab);
       document.getElementById("mind-pane").hidden = tab.dataset.tab !== "mind";
       document.getElementById("run-pane").hidden = tab.dataset.tab !== "run";
+      document.getElementById("model-pane").hidden = tab.dataset.tab !== "model";
     });
   }
 
