@@ -123,13 +123,17 @@ The account key is the Prism id. The display name is a handle bound to it.
 
 ## The AI character
 
-The AI should be a **persona of the same Prism id**, not a second identity.
-The module already exports `ensurePersona(session, audience)` and
-`signPersonaAction(...)` for exactly this. The human's id owns the AI character;
-the director chat stays local to the browser; the game server sees the persona
-as the player.
+The current implementation gives the AI its **own Prism id**, created in the
+same browser under the IndexedDB store `ai`, with a **Reset identity** button.
+It is a real Prism player: its own account, its own progress, the same signed
+session flow. It is not yet owned by the human's id.
 
-A separate id per AI is possible, but it makes ownership and recovery worse.
+The next step is the **persona** path: `ensurePersona(session, audience)` and
+`signPersonaAction(...)` are already exported by the pinned module. One id would
+own both the human and the AI, the director chat stays local, and the server
+would key the AI account by the persona while the base id remains the owner.
+That is a larger change; until it lands, two ids in one browser is the honest
+description.
 
 ## The frame
 
