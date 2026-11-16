@@ -1,3 +1,9 @@
+> **Replication note (2026-11-16):** the corroboration result below did **not**
+> replicate in the expanded 24-room world: all four arms answered amber first,
+> 0 wrong-first in 24 runs. See [RESULT-EXPANDED.md](RESULT-EXPANDED.md). The
+> sections below are the original seven-room measurement under their original
+> conditions, retained as history, not as the current claim.
+
 # First results
 
 A persistent text world where people and models share one simulation, and every

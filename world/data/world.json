@@ -564,7 +564,7 @@
       "hp": 8,
       "damage": 1,
       "armor": 0,
-      "aggression": 50,
+      "aggression": 0,
       "xp": 8,
       "description": "A stone figure stands where the Vault's shadow falls.",
       "examine": "The guardian's eyes are chips of black stone. Its hands are closing.",

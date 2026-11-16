@@ -53,10 +53,10 @@
     {
       "id": "OPEN-01",
       "level": "open",
-      "statement": "Corroborating a false claim with a second inscription increases the rate of wrong-first answers, while corroborating the truth does not.",
+      "statement": "In the original seven-room world (2026-11-15), corroborating a false claim with a second inscription produced wrong-first answers in 4/6 corroborated runs; the result did not replicate in the expanded world (see OPEN-04).",
       "query": "tools/queries/corroboration.mjs",
       "sample_size": 18,
-      "seed": "DECOY_MODE arms; six runs per arm; deepseek-flash temperature 0"
+      "seed": "original seven-room world; DECOY_MODE arms; six runs per arm; deepseek-flash temperature 0"
     },
     {
       "id": "OPEN-02",
@@ -73,6 +73,14 @@
       "query": "tools/queries/routing.mjs",
       "sample_size": 10,
       "seed": "five runs per arm; fixed budget; deepseek-flash temperature 0"
+    },
+    {
+      "id": "OPEN-04",
+      "level": "open",
+      "statement": "In the expanded 24-room world with the fixed route and corrected answer instruction, corroborating the false Storeroom inscription did not increase wrong-first answers: 0/6 in all four arms (24/24 answered amber first).",
+      "query": "tools/queries/corroboration.mjs",
+      "sample_size": 24,
+      "seed": "4 arms; six runs per arm; 16 turns; deepseek-flash temperature 0; fixed route; expanded world"
     }
   ]
 }

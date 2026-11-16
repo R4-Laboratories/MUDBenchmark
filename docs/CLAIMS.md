@@ -17,7 +17,8 @@ and reported, never asserted; it names its query, sample size and seed. A
 | MB-06 | build | A guest cannot play before authentication; one accepted command per 250 ms is enforced on every transport. | `tools/gate.mjs` |
 | MB-07 | build | The world is 24 connected rooms with reciprocal exits, descriptions, details and zone-bound mobiles. | `tools/gate.mjs` |
 | AUTH-01 | some-true | The WebSocket wire protocol is RFC 6455. | RFC 6455 |
-| OPEN-01 | open | Corroborating a false claim with a second inscription increases the rate of wrong-first answers, while corroborating the truth does not. | `tools/queries/corroboration.mjs`; n=18; seed: DECOY_MODE arms; six runs per arm; deepseek-flash temperature 0 |
+| OPEN-01 | open | In the original seven-room world (2026-11-15), corroborating a false claim with a second inscription produced wrong-first answers in 4/6 corroborated runs; the result did not replicate in the expanded world (see OPEN-04). | `tools/queries/corroboration.mjs`; n=18; seed: original seven-room world; DECOY_MODE arms; six runs per arm; deepseek-flash temperature 0 |
 | OPEN-02 | open | A recall layer that states the true word does not prevent the false-first answer. | `tools/queries/recall.mjs`; n=3; seed: three identities, two sessions each; deepseek-flash temperature 0 |
 | OPEN-03 | open | Context routing is cost-neutral at equal turn index. | `tools/queries/routing.mjs`; n=10; seed: five runs per arm; fixed budget; deepseek-flash temperature 0 |
+| OPEN-04 | open | In the expanded 24-room world with the fixed route and corrected answer instruction, corroborating the false Storeroom inscription did not increase wrong-first answers: 0/6 in all four arms (24/24 answered amber first). | `tools/queries/corroboration.mjs`; n=24; seed: 4 arms; six runs per arm; 16 turns; deepseek-flash temperature 0; fixed route; expanded world |
 

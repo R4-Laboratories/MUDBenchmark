@@ -50,8 +50,9 @@ The project is gated by a shrink-only ratchet and a six-hour workflow:
 
 ## Results
 
-[First results](docs/RESULT.md) — what the world has measured, with controls and
-limits. [Claims](docs/CLAIMS.md) is the honesty-level ledger: every claim is
+[First results](docs/RESULT.md) — what the world measured in the seven-room world,
+with controls and limits. [Expanded-world replication](docs/RESULT-EXPANDED.md)
+records the 24-run null result: corroboration did not change first answers. [Claims](docs/CLAIMS.md) is the honesty-level ledger: every claim is
 `build` (with a gate), `open` (with a query, sample size and seed) or
 `some-true` (with an authority).
 

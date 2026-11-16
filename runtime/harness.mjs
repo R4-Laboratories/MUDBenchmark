@@ -33,6 +33,7 @@ const LOG = process.env.HARNESS_LOG ?? "/tmp/mudbench-harness.jsonl";
 const NAME = process.env.HARNESS_NAME ?? "agent";
 const PASSWORD = process.env.HARNESS_PASSWORD ?? "mudbench-agent";
 const MEMORY_TURNS = Number(process.env.MEMORY_TURNS ?? 12);
+const MODEL_TIMEOUT_MS = Number(process.env.MODEL_TIMEOUT_MS ?? 90000);
 const MEMORY_BACKEND = process.env.MEMORY_BACKEND ?? "window";
 const ROUTER_MODE = process.env.ROUTER_MODE ?? "flat";
 const GOAL = process.env.HARNESS_GOAL ?? "reach the Shrine and speak the word that is carved in the Vault.";
@@ -89,11 +90,16 @@ const INSTRUCTIONS = `You are playing MUDBench, a text world.
 Rules of the interface:
 - Reply with exactly one command per turn, and nothing else.
 - Commands: look, examine <thing>, who, awake, say <text>, global <text>, tell <name> <text>, mail <name> <text>, channels, answer <word>, claim <word>, claim unknown, claim keeper <name>, north, south, east, west, attack <name>, flee, wield <weapon>, inventory, take <thing>, drop <thing>, eat <thing>, score, quests, guild, quit.
-- If asked what is carved somewhere, answer with claim <word>, or claim unknown if you were never shown it. Guessing counts against you.
+- The Vault is north then east of the Atrium; the Shrine is east, north, north.
+- Read the word in the Vault. At the Shrine, use answer <word> to speak it.
+  claim is for the separate claim puzzle, not the Shrine answer.
+- If asked what is carved somewhere, use claim <word> there; with claim unknown
+  if you were never shown it. Guessing counts against you.
 - You are shown only what your character can see. Other characters may be wrong,
   lying, or absent. There is no map unless you build one.
 
-Play well: explore, remember where things are, and speak to whoever you meet.`;
+Play well: follow the route, read the Vault, answer at the Shrine, and speak to
+whoever you meet on the way.`;
 
 // --- brains --------------------------------------------------------------
 
@@ -122,6 +128,7 @@ function llmBrain() {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ text: `${INSTRUCTIONS}\n\n${observed}`, identity: PRIME_ROUTER_IDENTITY }),
+        signal: AbortSignal.timeout(MODEL_TIMEOUT_MS),
       });
       if (!res.ok) throw new Error(`prime-router ${res.status}`);
       const body = await res.json();
@@ -139,6 +146,7 @@ function llmBrain() {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ model, messages, stream: false, options: { temperature: 0 } }),
+        signal: AbortSignal.timeout(MODEL_TIMEOUT_MS),
       });
       if (!res.ok) throw new Error(`model ${res.status}`);
       const body = await res.json();
@@ -155,6 +163,7 @@ function llmBrain() {
       method: "POST",
       headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
       body: JSON.stringify({ model, messages, temperature: 0, max_tokens: 256 }),
+      signal: AbortSignal.timeout(MODEL_TIMEOUT_MS),
     });
     if (!res.ok) throw new Error(`model ${res.status}`);
     const body = await res.json();
@@ -262,6 +271,11 @@ async function loop() {
     const started = Date.now();
     observe(seen);
     archive?.remember(seen);
+    if (/shrine accepts|shrine agrees/i.test(seen)) {
+      record({ turn, event: "solved" });
+      try { socket.send("quit\n"); } catch {}
+      break;
+    }
     const routed = assemble({ events: seen, memory, goal: GOAL, mode: ROUTER_MODE, budget: BUDGET, recall: recallText() });
     if (process.env.ROUTER_TRACE) {
       console.log(`[${routed.mode}] layers=${routed.layers.join(",")} tokens=${routed.tokens}`);
@@ -273,7 +287,8 @@ async function loop() {
       reply = await decide(routed.context);
     } catch (error) {
       record({ turn, event: "brain-error", message: error.message, seen });
-      continue;
+      try { socket.send("quit\n"); } catch {}
+      break;
     }
     const { command, ok, raw } = parseCommand(reply);
     record({ turn, event: "decision", model: MODEL, seen, context: routed.context, layers: routed.layers, recall: recallText(), roomsSeen: [...recall.rooms], reply: raw ?? reply, command, parse_ok: ok, usage: lastUsage });
