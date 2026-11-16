@@ -16,6 +16,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 
 | Verb | Aliases | Argument |
 | --- | --- | --- |
+| `adopt` | — | text |
 | `attack` | `kill`, `hit` | actor |
 | `buy` | `purchase` | object |
 | `channels` | `chan` | none |

@@ -89,6 +89,10 @@ Do not claim revocation until that lands. The relay is not consulted.
 - `server.mjs` — the WebSocket `prism <base64url session>` command. The upgrade
   request's `Origin` is the audience; a successful login creates or restores an
   account keyed by the id and names it `prism:<first 8 hex>`.
+- `adopt` — the one-time legacy claim. The signed-in panel has **Claim an old
+  name**; the server checks the old password or token, and the reducer merges
+  level, XP, guild, quests and mail keys and tombstones the old record. One
+  claim per Prism id; the old login refuses with "This account moved".
 - `index.html` — **Use my Prism id** is the primary sign-in; the name/password
   form is under **Use a name and password instead**. The AI has its own Prism id
   in the same browser and a **Reset identity** button.
@@ -117,8 +121,10 @@ The account key is the Prism id. The display is the short id.
 }
 ```
 
-- `prism` is immutable. The display is `prism:<first 8 hex>`; a handle registry
-  is not built yet, and `who <name>` does not exist.
+- `prism` is immutable. The display is `prism:<first 8 hex>` for a new account;
+  a claimed account displays the old name (`casey`) and keeps the Prism key as
+  the account. A handle registry is not built yet, and `who <name>` does not
+  exist.
 - Items stay world state and are not persisted by identity.
 - `kind` is `prism` or `legacy`; older records are typed on the next
   `upgradeState`.
@@ -167,6 +173,12 @@ and state atomicity/backup/fail-loud. A hand test proved create → sign → ver
 and that the browser id survives a reload; another proved the AI signs in and
 plays under its own id.
 
+The gate also proves the one-time claim: the old name and progression move to
+the Prism key, mail and guild keys are aliased, the old credentials are cleared
+and tombstoned, a second claim and the old login are refused, the claim survives
+a checkpoint, and the account resumes under the old name. A live server test
+covered both the password and token claim paths.
+
 Not yet proven by the gate: a tampered signature, an unknown device, a replay
 across a restart, a second connection resuming (today it is refused), device
 linking, recovery, revocation, and a production browser through the tunnel.
@@ -180,5 +192,5 @@ linking, recovery, revocation, and a production browser through the tunnel.
 4. **Relay.** The relay is not consulted. A device removed elsewhere can
    present its old log until server-side log pinning (X2) lands.
 5. **Legacy.** The name/password form remains for telnet, CLI and older
-   accounts. The one-time claim of an old account by a Prism id is not built
-   yet (X1).
+   accounts. The one-time `adopt` claim is built; it accepts a password or a
+   legacy token, and `casey` is left to its owner.

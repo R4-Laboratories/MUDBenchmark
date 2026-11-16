@@ -201,6 +201,12 @@ site data or losing the browser loses the character, because device linking and
 recovery are not built yet. The AI has its own Prism id in the same browser;
 **Reset identity** starts a new character.
 
+A legacy account can be adopted once by a signed-in Prism id: **Claim an old
+name** in the signed-in panel, or the wire command
+`adopt <old-name> <password-or-token>`. The server checks the old credential,
+moves level, XP, guild, quests and mail keys, and retires the old login. One
+claim per Prism id.
+
 The name/password form remains under **Use a name and password instead** for
 telnet, CLI clients and older accounts: `register <name> <password>` creates;
 `login <name> <password>` returns; `password <old> <new>` changes. Legacy token

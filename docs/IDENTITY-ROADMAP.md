@@ -9,9 +9,12 @@ pinned identity module in Node, and read the deployed artifact.
 one-time migration), N2 (authenticated-login invariant, `kind` normalization),
 N4 (deploy proves `/` and the pinned module hash), and the N3 caps, ten-minute
 expiry, five-minute window and device-id logging are implemented and gated.
-N5 is partial (`navigator.storage.persist()` plus honest copy). N3's full
-vector set, X1 claim, X2 log pinning, X3 linking, X4 heartbeat, X5 identity
-kernel and X6 release-on-merge remain.
+N5 is partial (`navigator.storage.persist()` plus honest copy). **X1 is
+implemented in v0.28**: `adopt` with a password or legacy token, progression
+and keyed-record merge, tombstone, old-login refusal, second-claim refusal,
+checkpoint survival, and a gate test. `casey` remains a deliberate owner action
+because it is token-only. N3's full vector set, X2 log pinning, X3 linking, X4
+heartbeat, X5 identity kernel and X6 release-on-merge remain.
 
 The question is narrow: **is a Prism id actually a player account yet?** The
 answer is that the signature path is real and the account is real, but the

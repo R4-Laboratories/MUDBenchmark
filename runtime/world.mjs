@@ -739,6 +739,10 @@ export function step({ state, rooms, intents }) {
         continue;
       }
       const known = next.identities[intent.key];
+      if (known?.retired) {
+        events.push({ onlyId: actor.id, text: "This account moved; sign in with your Prism id.\r\n" });
+        continue;
+      }
       const hash = intent.token
         ? createHash("sha256").update(intent.token, "utf8").digest("hex")
         : null;
@@ -812,6 +816,89 @@ export function step({ state, rooms, intents }) {
         letter.read = true;
         events.push({ onlyId: actor.id, text: `A letter from ${letter.from}, sent at tick ${letter.tick}: ${letter.text}` });
       }
+      continue;
+    }
+
+    // X1: one-time adoption of a legacy name by a Prism account. The server
+    // verifies the old password or token; the reducer merges the progress and
+    // keyed records, then tombstones the old identity so it cannot log in.
+    if (intent.kind === "claimLegacy") {
+      const actor = find(intent.actorId);
+      if (!actor?.key || intent.legacyKey === actor.key) continue;
+      const prism = next.identities[actor.key];
+      const legacy = next.identities[intent.legacyKey];
+      if (!prism || prism.kind !== "prism" || !legacy) continue;
+      if (prism.claimedFrom || legacy.retired || legacy.mergedInto) continue;
+      // The old character must not be online: one account, one controller.
+      if (next.actors.some((candidate) => candidate.id !== actor.id && candidate.key === intent.legacyKey)) continue;
+      if (prism.guild && legacy.guild && prism.guild !== legacy.guild) continue;
+
+      const legacyName = legacy.name ?? intent.legacyKey;
+      const prismLevel = prism.level ?? 1;
+      const legacyLevel = legacy.level ?? 1;
+      const level = Math.max(prismLevel, legacyLevel);
+      const xp = prismLevel === legacyLevel
+        ? Math.max(prism.xp ?? 0, legacy.xp ?? 0)
+        : prismLevel > legacyLevel ? (prism.xp ?? 0) : (legacy.xp ?? 0);
+
+      let guild = prism.guild ?? null;
+      let guildRank = prism.guildRank ?? null;
+      if (!guild && legacy.guild && next.guilds[legacy.guild]) {
+        const club = next.guilds[legacy.guild];
+        guild = legacy.guild;
+        guildRank = club.members?.[intent.legacyKey] ?? legacy.guildRank ?? "member";
+        if (club.members?.[intent.legacyKey]) delete club.members[intent.legacyKey];
+        club.members[actor.key] = guildRank;
+        club.invites = (club.invites ?? []).map((key) => (key === intent.legacyKey ? actor.key : key));
+        if (club.founder === intent.legacyKey) club.founder = actor.key;
+      } else if (guild && legacy.guild === guild && next.guilds[guild]?.members?.[intent.legacyKey]) {
+        const club = next.guilds[guild];
+        guildRank = club.members[intent.legacyKey];
+        delete club.members[intent.legacyKey];
+        club.members[actor.key] = guildRank;
+      }
+
+      const completed = [...new Set([...(prism.quests?.completed ?? []), ...(legacy.quests?.completed ?? [])])];
+      const active = [...(prism.quests?.active ?? [])];
+      for (const entry of legacy.quests?.active ?? []) {
+        if (!active.some((candidate) => candidate.id === entry.id)) active.push(entry);
+      }
+
+      for (const letter of next.mail) {
+        if (letter.toKey === intent.legacyKey) letter.toKey = actor.key;
+        if (letter.fromKey === intent.legacyKey) letter.fromKey = actor.key;
+      }
+
+      const before = actor.name;
+      actor.name = legacyName;
+      actor.level = level;
+      actor.xp = xp;
+      actor.maxHp = 10 + (level - 1) * 2;
+      actor.hp = actor.maxHp;
+      actor.guild = guild;
+      actor.guildRank = guildRank;
+      actor.quests = { active, completed };
+
+      next.identities[actor.key] = {
+        ...prism,
+        name: legacyName,
+        claimedFrom: intent.legacyKey,
+        level,
+        xp,
+        guild,
+        guildRank,
+        quests: { active, completed },
+      };
+      next.identities[intent.legacyKey] = {
+        ...legacy,
+        retired: true,
+        mergedInto: actor.key,
+        passwordHash: null,
+        salt: null,
+        tokenHash: null,
+      };
+      events.push({ onlyId: actor.id, text: `You are now ${legacyName}.\r\n` });
+      events.push({ room: actor.room, text: `${before} is now known as ${legacyName}.`, exceptId: actor.id });
       continue;
     }
 

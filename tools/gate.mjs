@@ -287,6 +287,74 @@ let prismLogin = { ok: true, why: [] };
   if (prismLogin.why.length) { prismLogin.ok = false; failures.push(`Prism login is broken: ${prismLogin.why[0]}`); }
 }
 
+// X1: a legacy name is adopted once, keyed records move, and the old login dies.
+let claim = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, world.levels, questTable.quests);
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
+  const check = (condition, why) => { if (!condition) { claim.ok = false; claim.why.push(why); } };
+  const legacyKey = "oldcasey";
+  const prismKey = `sha256:${"b".repeat(64)}`;
+
+  run([{ kind: "join", actorId: "l", name: "l" }]);
+  run([{ kind: "register", actorId: "l", key: legacyKey, passwordHash: "h", salt: "s" }]);
+  // The old character quits before the claim; the owner still holds the old
+  // password or token, which is what authorises the adoption. The leave writes
+  // the actor's hands into the identity, so the legacy progression is set after
+  // it, exactly as a save would have left it.
+  run([{ kind: "leave", actorId: "l" }]);
+  state.identities[legacyKey] = {
+    ...state.identities[legacyKey],
+    level: 5, xp: 500, guild: "g1", guildRank: "officer",
+    quests: { active: [{ id: "word", progress: {} }], completed: ["scroll"] },
+  };
+  state.guilds.g1 = { id: "g1", name: "The Keepers", founder: legacyKey, created: 0, members: { [legacyKey]: "officer" }, invites: [legacyKey] };
+  state.mail.push({ id: "m1", from: legacyKey, fromKey: legacyKey, toKey: legacyKey, text: "old letter", tick: 0, read: false });
+
+  run([{ kind: "join", actorId: "p", name: "p" }]);
+  run([{ kind: "login", actorId: "p", key: prismKey, authenticated: true, prism: true, name: "prism:bbbbbbbb" }]);
+  run([{ kind: "claimLegacy", actorId: "p", legacyKey }]);
+
+  const actor = state.actors.find((candidate) => candidate.id === "p");
+  const prism = state.identities[prismKey];
+  const retired = state.identities[legacyKey];
+  check(actor?.name === legacyKey, "the claim did not take the old name");
+  check(actor?.level === 5 && actor?.xp === 500, "the claim did not take the old level and xp");
+  check(prism?.name === legacyKey && prism?.claimedFrom === legacyKey, "the Prism identity did not record the claim");
+  check(prism?.kind === "prism" && prism?.prism === prismKey, "the claim lost the Prism id");
+  check(retired?.retired === true && retired?.mergedInto === prismKey, "the old identity was not tombstoned");
+  check(retired?.passwordHash === null && retired?.tokenHash === null, "the old credentials were not cleared");
+  check(state.mail[0]?.toKey === prismKey && state.mail[0]?.fromKey === prismKey, "the old mail was not aliased");
+  check(state.guilds.g1?.members?.[prismKey] === "officer" && !state.guilds.g1?.members?.[legacyKey], "the guild membership did not move");
+  check(state.guilds.g1?.founder === prismKey, "the guild founder did not move");
+  check(prism?.quests?.completed?.includes("scroll"), "the old completed quests did not merge");
+  check(prism?.quests?.active?.some((entry) => entry.id === "word"), "the old active quest did not merge");
+
+  run([{ kind: "claimLegacy", actorId: "p", legacyKey }]);
+  check(state.identities[prismKey]?.claimedFrom === legacyKey && state.actors.find((candidate) => candidate.id === "p")?.level === 5, "a second claim changed the account");
+
+  run([{ kind: "join", actorId: "o", name: "o" }]);
+  const oldEvents = run([{ kind: "login", actorId: "o", key: legacyKey, authenticated: true }]);
+  check(!state.actors.find((candidate) => candidate.id === "o")?.key, "the retired legacy login was accepted");
+  check(oldEvents.some((event) => /account moved/i.test(event.text ?? "")), "the retired login did not explain the move");
+
+  // One controller: the claimed character quits before the resume check.
+  run([{ kind: "leave", actorId: "p" }]);
+  run([{ kind: "join", actorId: "p2", name: "p2" }]);
+  run([{ kind: "login", actorId: "p2", key: prismKey, authenticated: true, prism: true, name: "prism:bbbbbbbb" }]);
+  const returning = state.actors.find((candidate) => candidate.id === "p2");
+  check(returning?.name === legacyKey && returning?.level === 5, "the claimed account did not resume under the old name");
+
+  const checkpointed = checkpointIdentities(state);
+  const upgraded = upgradeState(checkpointed, initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, world.levels, questTable.quests));
+  check(upgraded.identities[prismKey]?.name === legacyKey && upgraded.identities[prismKey]?.claimedFrom === legacyKey, "the claim did not survive a checkpoint");
+  check(upgraded.identities[legacyKey]?.retired === true && upgraded.identities[legacyKey]?.mergedInto === prismKey, "the tombstone did not survive a checkpoint");
+  check(upgraded.identities[legacyKey]?.passwordHash === null && upgraded.identities[legacyKey]?.tokenHash === null, "the cleared credentials did not survive a checkpoint");
+
+  if (claim.why.length) { claim.ok = false; failures.push(`the legacy claim is broken: ${claim.why[0]}`); }
+}
+
 // The state file is atomic, backed up, and fail-loud.
 let durableState = { ok: true, why: [] };
 {
@@ -1209,6 +1277,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"prismId".padEnd(26)}  ${(prismSession.ok ? "signed" : "BROKEN").padStart(5)}   == session verifier`);
   console.log(`${"prismLogin".padEnd(26)}  ${(prismLogin.ok ? "1 account" : "BROKEN").padStart(5)}   == id, no password`);
   console.log(`${"state".padEnd(26)}  ${(durableState.ok ? "5 checks" : "BROKEN").padStart(5)}   == atomic, backup, fail-loud`);
+  console.log(`${"claim".padEnd(26)}  ${(claim.ok ? "1 alias" : "BROKEN").padStart(5)}   == tombstone, mail, guild`);
   console.log(`${"llms".padEnd(26)}  ${(llms.ok ? "verbs, rooms" : "STALE").padStart(5)}   == generated contract`);
   console.log(`${"claims".padEnd(26)}  ${(claimsCheck.status === 0 ? "levels ok" : "STALE").padStart(5)}   == build, open, some-true`);
   console.log(`${"commandsDoc".padEnd(26)}  ${(commandsCheck.status === 0 ? "current" : "STALE").padStart(5)}   == generated reference`);

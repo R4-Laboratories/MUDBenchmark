@@ -330,7 +330,9 @@ async function handleCommand(id, line) {
     if (state.actors.some((candidate) => candidate.id !== id && candidate.key === verdict.prism)) {
       return sendTo(id, "That Prism id is already signed in.\r\n");
     }
-    const display = prismDisplay(verdict.prism);
+    // A claimed Prism id carries the adopted name; a new one uses the short id.
+    const known = state.identities[verdict.prism];
+    const display = known?.name ?? prismDisplay(verdict.prism);
     pending.push({
       kind: "login",
       actorId: id,
@@ -383,6 +385,7 @@ async function handleCommand(id, line) {
     }
     const known = state.identities[key];
     if (!known) return sendTo(id, "No such name. New here? register <name> <password>.\r\n");
+    if (known.retired) return sendTo(id, "This account moved; sign in with your Prism id.\r\n");
     const passwordOk = known.passwordHash
       ? verifyPassword(secret, known.salt, known.passwordHash)
       : (known.tokenHash ? createHash("sha256").update(secret, "utf8").digest("hex") === known.tokenHash : false);
@@ -488,7 +491,9 @@ async function handleCommand(id, line) {
   };
   const findIdentity = (needle) => {
     const want = needle.toLowerCase();
-    const entries = Object.entries(state.identities);
+    // A retired record is an alias, not an account: mail and guild lookups must
+    // land on the Prism identity that adopted it.
+    const entries = Object.entries(state.identities).filter(([, identity]) => !identity.retired);
     return entries.find(([, identity]) => identity.name.toLowerCase() === want)
       ?? entries.find(([, identity]) => identity.name.toLowerCase().includes(want));
   };
@@ -543,6 +548,40 @@ async function handleCommand(id, line) {
       "world.tick": state.tick,
     }, 0);
     return;
+  }
+
+  if (named === "adopt") {
+    // X1: one-time adoption of a legacy name. The old password or token is
+    // checked here; the reducer performs the merge and the tombstone.
+    const messages = VERB_TABLE.verbs.adopt.messages;
+    if (!actor?.key) return sendTo(id, "Sign in first.\r\n");
+    const prism = state.identities[actor.key];
+    if (prism?.kind !== "prism") return sendTo(id, `${messages.noPrism}\r\n`);
+    if (prism.claimedFrom) return sendTo(id, `${messages.claimed}\r\n`);
+    const name = rest[0];
+    const secret = restRaw.slice(1).join(" ");
+    if (!name || !secret) return sendTo(id, `${messages.usage}\r\n`);
+    if (state.actors.some((candidate) => candidate.id !== id && candidate.key === name)) {
+      return sendTo(id, `${messages.online}\r\n`);
+    }
+    const legacy = state.identities[name];
+    if (!legacy) return sendTo(id, `${messages.missing}\r\n`);
+    if (legacy.retired || legacy.mergedInto) return sendTo(id, `${messages.moved}\r\n`);
+    if (legacy.kind === "prism" || legacy.prism) return sendTo(id, `${messages.notLegacy}\r\n`);
+    if (!legacy.passwordHash && !legacy.tokenHash) return sendTo(id, `${messages.noSecret}\r\n`);
+    if (prism.guild && legacy.guild && prism.guild !== legacy.guild) return sendTo(id, `${messages.guild}\r\n`);
+    const ok = legacy.passwordHash
+      ? verifyPassword(secret, legacy.salt, legacy.passwordHash)
+      : createHash("sha256").update(secret, "utf8").digest("hex") === legacy.tokenHash;
+    if (!ok) return sendTo(id, `${messages.bad}\r\n`);
+    pending.push({ kind: "claimLegacy", actorId: id, legacyKey: name });
+    recordSpan("world.claim", {
+      "actor.id": id,
+      "claim.prism": actor.key,
+      "claim.legacy": name,
+      "world.tick": state.tick,
+    }, 0);
+    return sendTo(id, `${render(messages.claiming, { words: name })}\r\n`);
   }
 
   if (named === "say") {
@@ -1199,7 +1238,7 @@ function onTick() {
   const intents = pending.splice(0);
   // A login or registration must hit the disk before the next checkpoint; a
   // kill -9 must not erase an account created seconds ago.
-  const identityChanged = intents.some((intent) => ["login", "register", "password", "claim"].includes(intent.kind));
+  const identityChanged = intents.some((intent) => ["login", "register", "password", "claim", "claimLegacy"].includes(intent.kind));
   const result = step({ state, rooms: ROOMS, intents });
   state = result.state;
 

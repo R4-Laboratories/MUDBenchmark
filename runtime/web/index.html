@@ -233,6 +233,19 @@
           <button type="button" id="who">Who</button>
           <button type="button" id="quit">Quit</button>
         </div>
+        <details class="small muted">
+          <summary>Claim an old name</summary>
+          <p>Move an old name and its progress onto this Prism id. Use its password or legacy token. Sign in with a Prism id first; one claim per Prism id.</p>
+          <div class="field">
+            <label for="claim-name">Old name</label>
+            <input id="claim-name" autocomplete="off" maxlength="24" placeholder="casey">
+          </div>
+          <div class="field">
+            <label for="claim-secret">Password or token</label>
+            <input id="claim-secret" type="password" autocomplete="off">
+          </div>
+          <div class="row"><button type="button" id="claim-button">Claim</button></div>
+        </details>
       </section>
 
       <section class="panel" id="ai-setup">
@@ -475,7 +488,7 @@
       const text = String(event.data);
       append(text);
       const signedAs = text.match(/Signing in as ([^\r\n.]+)\./i);
-      if (/Signing in as|Account .* created|Welcome,\s/.test(text)) {
+      if (/You are now|Signing in as|Account .* created|Welcome,\s/.test(text)) {
         authed = true;
         if (signedAs) {
           signedName.textContent = signedAs[1];
@@ -485,6 +498,8 @@
           if (who) nameInput.value = who[1];
           signedName.textContent = nameInput.value.trim() || "player";
         }
+        const nowKnown = text.match(/You are now ([^\r\n.]+)\./i);
+        if (nowKnown) signedName.textContent = nowKnown[1];
         account.style.display = "none";
         signed.style.display = "block";
         passwordInput.value = "";
@@ -548,6 +563,14 @@
       document.getElementById("login").click();
     });
   }
+  document.getElementById("claim-button").addEventListener("click", () => {
+    const name = document.getElementById("claim-name").value.trim();
+    const secret = document.getElementById("claim-secret").value;
+    if (!name || !secret) { append("Enter the old name and its password or token.", "err"); return; }
+    send(`adopt ${name} ${secret}`, `adopt ${name} [secret hidden]`);
+    document.getElementById("claim-secret").value = "";
+  });
+
   document.getElementById("help").addEventListener("click", () => send("help", "help"));
   document.getElementById("who").addEventListener("click", () => send("who", "who"));
   document.getElementById("quit").addEventListener("click", () => send("quit", "quit"));
