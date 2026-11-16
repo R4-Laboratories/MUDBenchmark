@@ -35,6 +35,7 @@ import { AREA_PERIOD, armorOf, attackRoll, checkpointIdentities, initialState, n
 import { join } from "node:path";
 import { buildCandidates } from "./candidate.mjs";
 import { buildSystemPrompt, buildUserPrompt, parseBrain, requestFor, replyFrom, trimHistory } from "../runtime/web/ai.mjs";
+import { verifyPrismSession } from "../runtime/prism-auth.mjs";
 import { measureCandidates } from "./measure.mjs";
 
 const root = process.cwd();
@@ -111,8 +112,8 @@ if (commandsCheck.status !== 0) failures.push(`docs/COMMANDS.md is stale: ${(com
 
 // The web shell must actually offer account and AI-play controls.
 const web = readFileSync("runtime/web/index.html", "utf8");
-if (!/id="login"/.test(web) || !/id="register"/.test(web) || !/id="mode-ai"/.test(web) || !/id="ai-provider"/.test(web) || !/id="director-input"/.test(web)) {
-  failures.push("the web shell lost its login or AI-play controls");
+if (!/id="login"/.test(web) || !/id="register"/.test(web) || !/id="prism-login"/.test(web) || !/id="mode-ai"/.test(web) || !/id="ai-provider"/.test(web) || !/id="ai-reset"/.test(web) || !/id="director-input"/.test(web)) {
+  failures.push("the web shell lost its Prism, password or AI-play controls");
 }
 
 // The browser AI: the parser, the prompt, and every provider request shape.
@@ -250,6 +251,38 @@ let accounts = { ok: true, why: [] };
   run([{ kind: "password", actorId: "a", passwordHash: "new-hash", salt: "new-salt" }]);
   if (state.identities.alice.passwordHash !== "new-hash") { accounts.ok = false; accounts.why.push("password change did not take"); }
   if (!accounts.ok) failures.push(`accounts are broken: ${accounts.why[0]}`);
+}
+
+// A Prism login creates an account keyed by the id, with no password.
+let prismLogin = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels);
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
+  const key = `sha256:${"a".repeat(64)}`;
+  const name = "prism:aaaaaaaa";
+  run([{ kind: "join", actorId: "p", name: "p" }]);
+  run([{ kind: "login", actorId: "p", key, authenticated: true, prism: true, name }]);
+  const actor = state.actors.find((candidate) => candidate.id === "p");
+  const identity = state.identities[key];
+  if (actor?.name !== name) prismLogin.why.push("the actor did not take the Prism display name");
+  if (identity?.kind !== "prism" || identity?.tokenHash !== null) prismLogin.why.push("the identity is not a passwordless Prism record");
+  if (identity?.prism !== key) prismLogin.why.push("the identity is not keyed by the Prism id");
+  if (prismLogin.why.length) { prismLogin.ok = false; failures.push(`Prism login is broken: ${prismLogin.why[0]}`); }
+}
+
+// The Prism session verifier: a committed signed session, a wrong origin, expiry.
+let prismSession = { ok: true, why: [] };
+{
+  const fixture = JSON.parse(readFileSync(join(root, "world/fixtures/prism-session.json"), "utf8"));
+  const at = fixture.envelope.body.at;
+  const good = await verifyPrismSession(fixture, { origin: fixture.app, now: at });
+  if (!good.ok || good.prism !== fixture.envelope.body.prism) prismSession.why.push(`a signed session was refused: ${good.reason ?? "no id"}`);
+  const wrong = await verifyPrismSession(fixture, { origin: "https://evil.example", now: at });
+  if (wrong.ok) prismSession.why.push("a session for another origin was accepted");
+  const expired = await verifyPrismSession(fixture, { origin: fixture.app, now: fixture.envelope.body.payload.expires + 1 });
+  if (expired.ok) prismSession.why.push("an expired session was accepted");
+  if (prismSession.why.length) { prismSession.ok = false; failures.push(`the Prism verifier is broken: ${prismSession.why[0]}`); }
 }
 
 // One accepted command per 250 ms, on every transport.
@@ -1131,6 +1164,8 @@ if (process.argv.includes("--json")) {
   console.log(`${"loop".padEnd(26)}  ${(loop.ok ? String(loop.count) : "BROKEN").padStart(5)}   == ${loop.ok ? `${loop.admitted} admitted, bounded` : "no verdict"}`);
   console.log(`${"pacing".padEnd(26)}  ${(pacing.ok ? "14 hp" : "BROKEN").padStart(5)}   == applied, bound, refused`);
   console.log(`${"webAI".padEnd(26)}  ${(webAI.ok ? "5 checks" : "BROKEN").padStart(5)}   == parse, prompt, requests`);
+  console.log(`${"prismId".padEnd(26)}  ${(prismSession.ok ? "signed" : "BROKEN").padStart(5)}   == session verifier`);
+  console.log(`${"prismLogin".padEnd(26)}  ${(prismLogin.ok ? "1 account" : "BROKEN").padStart(5)}   == id, no password`);
   console.log(`${"llms".padEnd(26)}  ${(llms.ok ? "verbs, rooms" : "STALE").padStart(5)}   == generated contract`);
   console.log(`${"claims".padEnd(26)}  ${(claimsCheck.status === 0 ? "levels ok" : "STALE").padStart(5)}   == build, open, some-true`);
   console.log(`${"commandsDoc".padEnd(26)}  ${(commandsCheck.status === 0 ? "current" : "STALE").padStart(5)}   == generated reference`);

@@ -774,7 +774,7 @@ export function step({ state, rooms, intents }) {
           quests: actor.quests,
         };
       } else {
-        actor.name = intent.key;
+        actor.name = intent.name ?? intent.key;
         actor.room = next.start;
         actor.visited = [next.start];
         actor.role = intent.role ?? 0;
@@ -787,9 +787,12 @@ export function step({ state, rooms, intents }) {
         actor.guildRank = null;
         actor.quests = { active: [], completed: [] };
         next.identities[intent.key] = {
+          // A Prism account has no password: its key is the id and the login
+          // was a session the server verified. The display name is separate.
+          ...(intent.prism ? { kind: "prism", prism: intent.key } : {}),
           name: actor.name,
           role: actor.role,
-          tokenHash: hash,
+          tokenHash: intent.prism ? null : hash,
           level: 1,
           xp: 0,
           guild: null,

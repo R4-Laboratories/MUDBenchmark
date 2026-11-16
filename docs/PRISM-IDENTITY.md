@@ -1,8 +1,8 @@
 # Prism identity as the player account
 
-Status: **design, not implemented.** This records the two identity protocols in
-the referenced repositories, the one this project should use, and the exact
-server change. Nothing here is wired into login yet.
+Status: **implemented in the browser and the server; the leaf password form remains
+for telnet, CLI and older accounts.** This records the two identity protocols,
+the one this project uses, and the exact server change.
 
 ## What the three repositories contain
 
@@ -76,6 +76,29 @@ hears the id's public log. Two options, in order of work:
 - fetch the public log topic from the relay and pass `bus` to `verifyAction`
   (instant, but adds the relay dependency).
 
+## What is implemented
+
+- `runtime/web/prism-id.mjs` — the pinned Stitch module, copied byte for byte;
+  `prism-id.lock.json` names the source commit and the module hash.
+- `runtime/web/prism-auth.mjs` — creates or loads the id in IndexedDB, makes a
+  non-extractable P-256 session key, and signs `prism/session/1` for the page
+  origin.
+- `runtime/prism-auth.mjs` — the server verifier: session key and expiry,
+  `logFromRecords`, `verifyAction`, and a short-lived replay set.
+- `server.mjs` — the WebSocket `prism <base64url session>` command. The upgrade
+  request's `Origin` is the audience; a successful login creates or restores an
+  account keyed by the id and names it `prism:<first 8 hex>`.
+- `index.html` — **Use my Prism id** is the primary sign-in; the name/password
+  form is under **Use a name and password instead**. The AI has its own Prism id
+  in the same browser and a **Reset identity** button.
+- `world/fixtures/prism-session.json` — a committed signed session. The gate
+  verifies it, refuses a session for another origin, and refuses an expired one.
+  The gate also proves the reducer creates a passwordless Prism identity.
+
+The browser test confirmed the id survives a reload (the same `prism:…` after a
+fresh page) and that the AI signs in as its own `prism:…`, plays, and pauses on
+repetition with no console errors.
+
 ## The account
 
 The account key is the Prism id. The display name is a handle bound to it.
@@ -141,12 +164,13 @@ that character.
   the AI persona plays.
 - Migration: a legacy account claims once and cannot be claimed again.
 
-## Open decisions
+## Decisions taken
 
-1. **Protocol.** Stitch Prism id (recommended) or the `me` passkey. The rest of
-   this document assumes the Prism id.
-2. **Display.** Handle plus short id (recommended), or the full id as the name.
-3. **Frame.** Vendor the modules, or load the canonical frame by hash.
-4. **Relay.** Fresh session per connection first; relay for instant removals
-   later.
-5. **Legacy.** One-time claim by password (recommended) or a fresh start.
+1. **Protocol.** Stitch Prism id (`prism/identity/4`).
+2. **Display.** `prism:<first 8 hex>`; the full id is the account key.
+3. **Frame.** The game loads the identity module directly (`/prism-id.mjs`) and
+   does not vendor the full frame yet. Linking and recovery are later work.
+4. **Relay.** A fresh session per connection; the relay is not consulted, so a
+   device removed elsewhere is refused on its next connect, not instantly.
+5. **Legacy.** The name/password form remains for telnet, CLI and older
+   accounts. A one-time claim of an old account by a Prism id is not built yet.

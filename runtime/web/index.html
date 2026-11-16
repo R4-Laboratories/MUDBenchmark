@@ -202,20 +202,27 @@
     <aside>
       <section class="panel" id="account">
         <h2>Sign in</h2>
-        <p>Register a new name, or sign in with a saved one. Passwords are hashed on the server; this page never stores them.</p>
-        <div class="field">
-          <label for="name">Name</label>
-          <input id="name" autocomplete="username" autofocus placeholder="your name" maxlength="24">
-        </div>
-        <div class="field">
-          <label for="password">Password</label>
-          <input id="password" type="password" autocomplete="current-password" placeholder="at least 6 characters" maxlength="128">
-        </div>
+        <p>Use your Prism id. No password, and the id stays in this browser.</p>
         <div class="row">
-          <button type="button" id="login">Log in</button>
-          <button type="button" id="register">Register</button>
+          <button type="button" id="prism-login" autofocus>Use my Prism id</button>
         </div>
-        <p class="small muted" id="account-hint">New here? Register. Returning? Log in.</p>
+        <p class="small muted">The first time, this browser creates an id. That id is the account.</p>
+        <details class="small muted">
+          <summary>Use a name and password instead</summary>
+          <div class="field">
+            <label for="name">Name</label>
+            <input id="name" autocomplete="username" placeholder="your name" maxlength="24">
+          </div>
+          <div class="field">
+            <label for="password">Password</label>
+            <input id="password" type="password" autocomplete="current-password" placeholder="at least 6 characters" maxlength="128">
+          </div>
+          <div class="row">
+            <button type="button" id="login">Log in</button>
+            <button type="button" id="register">Register</button>
+          </div>
+          <p class="small muted" id="account-hint">New here? Register. Returning? Log in.</p>
+        </details>
       </section>
 
       <section class="panel" id="signed">
@@ -252,11 +259,9 @@
           <input id="ai-key" type="password" autocomplete="off" placeholder="sk-…">
         </div>
         <div class="field">
-          <label for="ai-name">AI character</label>
-          <div class="row grow">
-            <input id="ai-name" autocomplete="off" maxlength="24" placeholder="scout">
-            <button type="button" id="ai-newname">New</button>
-          </div>
+          <label>AI Prism identity</label>
+          <p class="small muted" id="ai-identity">Created in this browser on first run. No password.</p>
+          <div class="row"><button type="button" id="ai-reset">Reset identity</button></div>
         </div>
         <div class="row">
           <button type="button" id="ai-start">Start watching</button>
@@ -266,7 +271,7 @@
         <details class="small muted">
           <summary>How this works</summary>
           <p>1. Pick a brain. Ollama is free and local; OpenAI and Anthropic need a key.</p>
-          <p>2. The AI registers its own character on first run. The name and a generated password stay in this browser.</p>
+          <p>2. The AI gets its own Prism id in this browser on first run; there is no password and no account form.</p>
           <p>3. It sees the same room text you do, types one command per turn, and waits for the server like any player.</p>
           <p>4. Send direction in the Director chat. The AI replies there and its private reasoning appears in Mind.</p>
           <p>The game server never sees the provider key.</p>
@@ -319,6 +324,7 @@
     PROVIDERS, DEFAULT_GOAL, buildSystemPrompt, buildUserPrompt,
     parseBrain, requestFor, replyFrom, trimHistory,
   } from "/ai.mjs";
+  import { signIn as prismSignIn, reset as prismReset, identity as prismIdentity } from "/prism-auth.mjs";
 
   const log = document.getElementById("log");
   const state = document.getElementById("state");
@@ -329,6 +335,7 @@
   const signed = document.getElementById("signed");
   const signedName = document.getElementById("signed-name");
   const latest = document.getElementById("latest");
+  const prismLogin = document.getElementById("prism-login");
   const modePlay = document.getElementById("mode-play");
   const modeAI = document.getElementById("mode-ai");
 
@@ -338,12 +345,12 @@
   const aiModels = document.getElementById("ai-models");
   const aiKey = document.getElementById("ai-key");
   const aiKeyField = document.getElementById("ai-key-field");
-  const aiName = document.getElementById("ai-name");
+  const aiIdentity = document.getElementById("ai-identity");
   const aiHint = document.getElementById("ai-hint");
   const aiStart = document.getElementById("ai-start");
   const aiForget = document.getElementById("ai-forget");
   const aiFind = document.getElementById("ai-find");
-  const aiNewName = document.getElementById("ai-newname");
+  const aiReset = document.getElementById("ai-reset");
   const aiPause = document.getElementById("ai-pause");
   const aiStep = document.getElementById("ai-step");
   const aiStop = document.getElementById("ai-stop");
@@ -380,7 +387,7 @@
   let stick = true;
 
   const AI = {
-    socket: null, config: null, password: "", name: "",
+    socket: null, config: null, identity: null, name: "",
     running: false, paused: false, authed: false, busy: false,
     observed: "", quiet: null, registering: false,
     turn: 0, commands: 0, latencies: [], usage: { prompt: 0, completion: 0 },
@@ -442,7 +449,6 @@
   };
   const savedName = (() => { try { return localStorage.getItem("mudbench-name") ?? ""; } catch { return ""; } })();
   if (savedName) nameInput.value = savedName;
-  if (savedName) passwordInput.focus();
 
   // --- play mode ----------------------------------------------------------
   function connectPlay() {
@@ -468,12 +474,17 @@
     playSocket.onmessage = (event) => {
       const text = String(event.data);
       append(text);
-      const who = text.match(/Signing in as ([a-z0-9_-]+)/i) ?? text.match(/Welcome, ([a-z0-9_-]+)\./i);
+      const signedAs = text.match(/Signing in as ([^\r\n.]+)\./i);
       if (/Signing in as|Account .* created|Welcome,\s/.test(text)) {
         authed = true;
-        if (who) nameInput.value = who[1];
-        const name = nameInput.value.trim() || "player";
-        signedName.textContent = name;
+        if (signedAs) {
+          signedName.textContent = signedAs[1];
+          if (!signedAs[1].startsWith("prism:")) nameInput.value = signedAs[1];
+        } else {
+          const who = text.match(/Welcome, ([^\r\n.]+)\./i);
+          if (who) nameInput.value = who[1];
+          signedName.textContent = nameInput.value.trim() || "player";
+        }
         account.style.display = "none";
         signed.style.display = "block";
         passwordInput.value = "";
@@ -509,6 +520,25 @@
 
   document.getElementById("login").addEventListener("click", () => credential("login"));
   document.getElementById("register").addEventListener("click", () => credential("register"));
+
+  const b64uJson = (value) => {
+    const bytes = new TextEncoder().encode(JSON.stringify(value));
+    let binary = "";
+    for (const byte of bytes) binary += String.fromCharCode(byte);
+    return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  };
+
+  prismLogin.addEventListener("click", async () => {
+    append("Loading your Prism id…", "sys");
+    try {
+      const session = await prismSignIn("default", location.origin);
+      append("> prism [session hidden]", "me");
+      if (playSocket?.readyState === WebSocket.OPEN) playSocket.send(`prism ${b64uJson(session)}\n`);
+      else append("(not connected)", "err");
+    } catch (error) {
+      append(`Prism: ${error.message}`, "err");
+    }
+  });
   for (const field of [nameInput, passwordInput]) {
     field.addEventListener("keydown", (event) => {
       if (event.key !== "Enter") return;
@@ -594,7 +624,6 @@
       provider: aiProvider.value,
       base: aiBase.value.trim(),
       model: aiModel.value.trim(),
-      name: aiName.value.trim() || "scout",
     };
     saveJSON(CONFIG_KEY, config);
     if (includeKey) {
@@ -611,25 +640,28 @@
     aiProvider.value = config.provider ?? "ollama";
     aiBase.value = config.base ?? PROVIDERS[aiProvider.value].base;
     aiModel.value = config.model ?? PROVIDERS[aiProvider.value].model;
-    aiName.value = config.name ?? "scout";
     if (key && PROVIDERS[aiProvider.value].needsKey) aiKey.value = key;
     applyProvider(aiProvider.value, false);
-    aiTitle.textContent = aiName.value || "scout";
+    aiTitle.textContent = "AI";
     aiSub.textContent = `${PROVIDERS[aiProvider.value].label} · ${aiModel.value || "no model"}`;
+    prismIdentity("ai").then((id) => {
+      if (id) aiIdentity.textContent = `Prism id ${id.slice(0, 15)}… is in this browser.`;
+    }).catch(() => {});
   }
 
   aiProvider.addEventListener("change", () => {
     applyProvider(aiProvider.value, true);
     aiKey.value = PROVIDERS[aiProvider.value].needsKey ? savedKey : "";
   });
-  for (const field of [aiBase, aiModel, aiName]) field.addEventListener("change", () => persistConfig(false));
+  for (const field of [aiBase, aiModel]) field.addEventListener("change", () => persistConfig(false));
 
-  aiNewName.addEventListener("click", () => {
-    const suffix = Math.random().toString(16).slice(2, 7);
-    aiName.value = `scout-${suffix}`;
-    persistConfig(false);
-    aiHint.textContent = "New character name. It will register on first run.";
-    aiHint.className = "small muted";
+  aiReset.addEventListener("click", async () => {
+    if (AI.running) stopAI();
+    await prismReset("ai");
+    AI.identity = null;
+    aiIdentity.textContent = "The next start creates a new AI Prism id.";
+    aiTitle.textContent = "AI";
+    showHint("AI identity reset. The next start is a new character.", false);
   });
 
   aiForget.addEventListener("click", () => {
@@ -695,35 +727,21 @@
     }
   });
 
-  function passwordFor(name) {
-    const passwords = loadJSON(PASS_KEY, {});
-    if (!passwords[name]) {
-      passwords[name] = crypto.randomUUID().replace(/-/g, "").slice(0, 24);
-      saveJSON(PASS_KEY, passwords);
-    }
-    return passwords[name];
-  }
-
   function showHint(text, error = false) {
     aiHint.textContent = text;
     aiHint.className = `small ${error ? "err" : "muted"}`;
   }
 
-  function startAI() {
+  async function startAI() {
     const provider = aiProvider.value;
     const config = {
       provider,
       base: aiBase.value.trim(),
       model: aiModel.value.trim(),
       key: aiKey.value.trim(),
-      name: aiName.value.trim() || "scout",
       temperature: 0.7,
       maxTokens: 400,
     };
-    if (!/^[A-Za-z0-9_-]{1,24}$/.test(config.name)) {
-      showHint("The AI name must be 1-24 letters, digits, - or _.", true);
-      return;
-    }
     if (!config.base || !config.model) {
       showHint("Set a base URL and a model first.", true);
       return;
@@ -734,9 +752,19 @@
     }
     if (AI.socket) { try { AI.socket.close(); } catch {} AI.socket = null; }
 
+    setAIStatus("creating id");
+    let session;
+    try {
+      session = await prismSignIn("ai", location.origin);
+    } catch (error) {
+      showHint(`Prism: ${error.message}`, true);
+      setAIStatus("error");
+      return;
+    }
+
     AI.config = config;
-    AI.name = config.name;
-    AI.password = passwordFor(config.name);
+    AI.identity = session;
+    AI.name = "";
     AI.running = true;
     AI.paused = false;
     AI.authed = false;
@@ -763,9 +791,10 @@
     log.innerHTML = "";
     chat.innerHTML = "";
     mind.innerHTML = "";
-    aiTitle.textContent = AI.name;
+    aiTitle.textContent = "AI";
     aiSub.textContent = `${PROVIDERS[provider].label} · ${config.model}`;
-    aiSettings.textContent = `${PROVIDERS[provider].label} · ${config.model} · ${config.base} · character ${AI.name}`;
+    aiSettings.textContent = `${PROVIDERS[provider].label} · ${config.model} · ${config.base}`;
+    aiIdentity.textContent = "Prism id ready. Signing in…";
     updatePause();
     setAIStatus("connecting");
     document.body.classList.add("ai-mode", "ai-running");
@@ -880,7 +909,7 @@
     AI.socket = ws;
     ws.onopen = () => {
       setAIStatus("signing in");
-      ws.send(`login ${AI.name} ${AI.password}\n`);
+      ws.send(`prism ${b64uJson(AI.identity)}\n`);
     };
     ws.onclose = () => {
       AI.authed = false;
@@ -901,27 +930,24 @@
       AI.observed += text;
       append(text);
 
-      if (/No such name/i.test(text) && !AI.registering) {
-        AI.registering = true;
-        setTimeout(() => {
-          if (AI.socket?.readyState === WebSocket.OPEN) {
-            AI.socket.send(`register ${AI.name} ${AI.password}\n`);
-          }
-        }, 320);
-      }
-      if (/That name is already signed in|That name and password do not match|That name is taken/i.test(text)) {
+      if (/Prism sign-in refused/i.test(text)) {
         AI.paused = true;
         updatePause();
         setAIStatus("error");
         addChat("system", text.trim());
         return;
       }
-      if (/Signing in as|Account .* created|Welcome,\s/.test(text)) {
+      const signedAs = text.match(/Signing in as ([^\r\n.]+)\./i);
+      if (signedAs) {
+        AI.name = signedAs[1];
+        aiTitle.textContent = AI.name;
+        updateLiveBar();
+      }
+      if (/Signing in as|Welcome,\s/.test(text)) {
         if (!AI.authed) {
           AI.authed = true;
-          AI.registering = false;
           setAIStatus("live");
-          addChat("system", `The AI is in as ${AI.name}. Watch, or steer it below.`);
+          addChat("system", `The AI is in as ${AI.name || "its Prism id"}. Watch, or steer it below.`);
         }
       }
       const room = text.match(/^\[(.+)\]$/m);
@@ -960,7 +986,7 @@
 
     const started = performance.now();
     try {
-      const system = buildSystemPrompt({ name: AI.name, goal: DEFAULT_GOAL });
+      const system = buildSystemPrompt({ name: AI.name || "an autonomous player", goal: DEFAULT_GOAL });
       const user = buildUserPrompt({
         turn,
         observation,
@@ -969,7 +995,7 @@
       });
       AI.nudge = false;
       const messages = trimHistory([...AI.history, { role: "user", content: user }], 8);
-      const request = requestFor(AI.config.provider, AI.config, system, messages);
+      const request = requestFor(AI.config.provider, { ...AI.config, name: AI.name || "ai" }, system, messages);
       const res = await fetch(request.url, {
         method: "POST",
         headers: request.headers,

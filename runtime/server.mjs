@@ -22,6 +22,7 @@ import { RANKS, guildId, rankAtLeast, validGuildName } from "./guilds.mjs";
 import { buildLlms } from "./llms.mjs";
 import { hashPassword, verifyPassword, validName, validPassword } from "./accounts.mjs";
 import { allowCommand as allowInput, DEFAULT_INTERVAL_MS } from "./allowance.mjs";
+import { verifyPrismSession, prismDisplay } from "./prism-auth.mjs";
 
 const HOLO_URL = process.env.HOLO_URL ?? "http://127.0.0.1:8082";
 const TELNET_PORT = Number(process.env.TELNET_PORT ?? 4000);
@@ -280,6 +281,46 @@ async function handleCommand(id, line) {
     if (leaving?.close) setTimeout(() => leaving.close(), 75);
     else pending.push({ kind: "leave", actorId: id });
     return;
+  }
+
+  if (verb === "prism") {
+    // A Prism id login. The session is a signed `prism/session/1` action for
+    // this page origin; the id is public, the signature is the credential.
+    const transport = transports.get(id);
+    const origin = transport?.origin ?? null;
+    if (!origin) return sendTo(id, "Prism sign-in needs the browser client.\r\n");
+    // The session is base64url and case-sensitive: use the raw argument, not
+    // the lowercased command words.
+    const token = restRaw[0];
+    if (!token) return sendTo(id, "Usage: prism <session>.\r\n");
+    let session;
+    try {
+      session = JSON.parse(Buffer.from(token, "base64url").toString("utf8"));
+    } catch {
+      return sendTo(id, "The Prism session is malformed.\r\n");
+    }
+    const verdict = await verifyPrismSession(session.session ?? session, { origin });
+    if (!verdict.ok) return sendTo(id, `Prism sign-in refused: ${verdict.reason}.\r\n`);
+    if (state.actors.some((candidate) => candidate.id !== id && candidate.key === verdict.prism)) {
+      return sendTo(id, "That Prism id is already signed in.\r\n");
+    }
+    const display = prismDisplay(verdict.prism);
+    pending.push({
+      kind: "login",
+      actorId: id,
+      key: verdict.prism,
+      authenticated: true,
+      prism: true,
+      name: display,
+    });
+    recordSpan("world.prism", {
+      "actor.id": id,
+      "prism.id": verdict.prism,
+      "prism.device": verdict.device?.id ?? null,
+      "prism.expires": verdict.expires,
+      "world.tick": state.tick,
+    }, 0);
+    return sendTo(id, `Signing in as ${display}.\r\n`);
   }
 
   if (verb === "wait") {
@@ -1334,6 +1375,18 @@ const web = http.createServer((req, res) => {
     }
     return;
   }
+  if (pathname === "/prism-id.mjs" || pathname === "/prism-auth.mjs") {
+    try {
+      const name = pathname.slice(1);
+      const source = readFileSync(new URL(`./web/${name}`, import.meta.url));
+      res.writeHead(200, { "content-type": "text/javascript; charset=utf-8", "cache-control": "no-store" });
+      res.end(source);
+    } catch {
+      res.writeHead(404, { "content-type": "text/plain" });
+      res.end("not found");
+    }
+    return;
+  }
   if (pathname === "/llms.txt") {
     const body = buildLlms({
       world: { rooms: ROOMS, start: WORLD_START, task: loaded.task },
@@ -1364,7 +1417,7 @@ const web = http.createServer((req, res) => {
 });
 
 const wss = new WebSocketServer({ server: web });
-wss.on("connection", (ws) => {
+wss.on("connection", (ws, req) => {
   if (transports.size >= MAX_CLIENTS) {
     ws.send("The world is full.\n");
     ws.close();
@@ -1375,6 +1428,9 @@ wss.on("connection", (ws) => {
     send: (t) => { if (ws.readyState === 1) ws.send(t.replace(/\r\n/g, "\n")); },
     close: () => ws.close(),
     welcomed: false,
+    // The Prism session names the page origin it was signed for. The upgrade
+    // request carries it; a telnet client has none and cannot use Prism.
+    origin: req.headers.origin ?? null,
   });
   ws.on("error", () => {});
   ws.on("message", async (data) => {
