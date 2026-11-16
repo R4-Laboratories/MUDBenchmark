@@ -27,6 +27,7 @@ import { allowCommand, DEFAULT_INTERVAL_MS } from "../runtime/allowance.mjs";
 import { loadLevels } from "../runtime/levels.mjs";
 import { loadQuests, validateQuestReferences } from "../runtime/quests.mjs";
 import { guildId, validGuildName } from "../runtime/guilds.mjs";
+import { DEFAULT_TURNS, trimMessages } from "../runtime/memory.mjs";
 import { AREA_PERIOD, armorOf, attackRoll, checkpointIdentities, initialState, nextFrom, phaseAt, releaseHeldObjects, step, upgradeState } from "../runtime/world.mjs";
 import { join } from "node:path";
 
@@ -186,6 +187,20 @@ let safe = { ok: true, why: [] };
   run([{ kind: "attack", actorId: "a", targetId: "guard" }]);
   if (state.engagements.length !== 2) { safe.ok = false; safe.why.push("an attack in an unsafe room did not engage both sides"); }
   if (!safe.ok) failures.push(`safe rooms are broken: ${safe.why[0]}`);
+}
+
+// The model's context is a bounded window, not an ever-growing transcript.
+let memory = { ok: true, why: [] };
+{
+  const messages = [{ role: "system", content: "sys" }];
+  for (let i = 0; i < 30; i += 1) messages.push({ role: i % 2 ? "assistant" : "user", content: String(i) });
+  const trimmed = trimMessages(messages, 2);
+  if (trimmed.length !== 5 || trimmed[0].content !== "sys") { memory.ok = false; memory.why.push("the system prompt or the last two turns were not kept"); }
+  if (trimmed.at(-1).content !== "29") { memory.ok = false; memory.why.push("the newest turn was dropped"); }
+  const noSystem = trimMessages([{ role: "user", content: "a" }, { role: "assistant", content: "b" }, { role: "user", content: "c" }], 1);
+  if (noSystem.length !== 2 || noSystem.at(-1).content !== "c") { memory.ok = false; memory.why.push("a systemless window is wrong"); }
+  if (DEFAULT_TURNS !== 12) { memory.ok = false; memory.why.push("the default window is not twelve turns"); }
+  if (!memory.ok) failures.push(`the memory window is broken: ${memory.why[0]}`);
 }
 
 // Combat must actually resolve: an attack on a 12 hp guard kills it, round by
@@ -878,6 +893,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"renderer".padEnd(26)}  ${(shown.includes("SECRET-NOTICE") && !hidden.includes("SECRET-NOTICE") ? "2 ok" : "BROKEN").padStart(5)}   == hides/shows`);
   console.log(`${"accounts".padEnd(26)}  ${(accounts.ok ? "hash, register" : "BROKEN").padStart(5)}   == names and passwords`);
   console.log(`${"allowance".padEnd(26)}  ${(allowance.ok ? "250 ms" : "BROKEN").padStart(5)}   == one command`);
+  console.log(`${"memory".padEnd(26)}  ${(memory.ok ? `${DEFAULT_TURNS} turns` : "BROKEN").padStart(5)}   == rolling window`);
   console.log(`${"safe".padEnd(26)}  ${(safe.ok ? "2 rooms" : "BROKEN").padStart(5)}   == no combat`);
   console.log(`${"guilds".padEnd(26)}  ${(guilds.ok ? "create, rank, chat" : "BROKEN").padStart(5)}   == roster and chat`);
   console.log(`${"quests".padEnd(26)}  ${(quests.ok ? "accept, advance, pay" : "BROKEN").padStart(5)}   == facts, once`);

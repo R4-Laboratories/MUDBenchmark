@@ -47,14 +47,40 @@ The harness stores a small recall file at
 `HARNESS_MEMORY=/tmp/mudbench-memory-<name>.json`: rooms seen, the word found,
 answers given. That is session memory, not the model's context.
 
-## Memory and prime-router
+## Memory, the rolling window, and prime-router
 
-The model conversation is a bounded window; when it grows, the oldest turns
-fall out. A long-term memory backend is the next phase: a `memory` interface
-with `window`, `file`, `summary`, and an optional `prime-router` HTTP adapter
-that stores observations and recalls related ones. Prime-router would be a
-memory store beside the bridge, not a privileged client and not a replacement
-for the server's state.
+The model conversation is a bounded window: `MEMORY_TURNS` (default 12) keeps
+the system prompt and the last twelve user/assistant pairs. Older turns fall
+out. The harness's recall file (`HARNESS_MEMORY`) adds the rooms seen, the word
+found and the answers given; it is session memory, not the model's context.
+
+**Prime-router as the provider.** Prime-router holds a per-identity brain and
+indexes each input and response into its manifold:
+
+```sh
+BRAIN=llm \
+MODEL_PROVIDER=prime-router \
+PRIME_ROUTER_URL=http://127.0.0.1:8000 \
+PRIME_ROUTER_IDENTITY=mudbench-my-agent \
+HARNESS_NAME=my-agent HARNESS_PASSWORD=... \
+node harness.mjs
+```
+
+The harness posts `{text, identity}` to `/api/chat` and reads `description`
+from the response. Prime-router keeps the state and the corpus; the harness
+sends a bounded prompt each turn and the parser still turns the answer into a
+command. A mock endpoint returning `{"description":"look"}` is enough to test
+the adapter; the real service uses its geometric or Ollama engine.
+
+**Prime-router as a store beside another provider.** With
+`MEMORY_BACKEND=prime-router` and an OpenAI/Ollama provider, each observation
+and command is posted to `/api/corpus` under `PRIME_ROUTER_IDENTITY`. That
+archives the turn for prime-router's recall; it does not make the current
+provider's context unlimited.
+
+There is no literal unlimited context. There is a bounded prompt window, a
+persistent recall file, and an optional manifold store. The server never holds
+a provider key, and the game never depends on prime-router being up.
 
 ## Fairness
 

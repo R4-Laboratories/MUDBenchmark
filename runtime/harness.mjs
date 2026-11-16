@@ -20,15 +20,20 @@ import WebSocket from "ws";
 import { appendFileSync, writeFileSync, readFileSync } from "node:fs";
 import { recordSpan, digest } from "./telemetry.mjs";
 import { assemble } from "./router.mjs";
+import { primeRouterMemory, trimMessages } from "./memory.mjs";
 
 const WS_URL = process.env.WS_URL ?? "ws://127.0.0.1:8090";
 const BRAIN = process.env.BRAIN ?? "scripted";
+const PROVIDER = process.env.MODEL_PROVIDER ?? "openai";
 const MODEL = process.env.MODEL_NAME ?? "deepseek-flash";
-const MODEL_BASE = process.env.MODEL_BASE_URL ?? "https://api.deepseek.com/v1";
+const PRIME_ROUTER_URL = process.env.PRIME_ROUTER_URL ?? "http://127.0.0.1:8000";
+const MODEL_BASE = process.env.MODEL_BASE_URL ?? (PROVIDER === "prime-router" ? PRIME_ROUTER_URL : "https://api.deepseek.com/v1");
+const PRIME_ROUTER_IDENTITY = process.env.PRIME_ROUTER_IDENTITY ?? `mudbench-${process.env.HARNESS_NAME ?? "agent"}`;
 const LOG = process.env.HARNESS_LOG ?? "/tmp/mudbench-harness.jsonl";
 const NAME = process.env.HARNESS_NAME ?? "agent";
 const PASSWORD = process.env.HARNESS_PASSWORD ?? "mudbench-agent";
-const PROVIDER = process.env.MODEL_PROVIDER ?? "openai";
+const MEMORY_TURNS = Number(process.env.MEMORY_TURNS ?? 12);
+const MEMORY_BACKEND = process.env.MEMORY_BACKEND ?? "window";
 const ROUTER_MODE = process.env.ROUTER_MODE ?? "flat";
 const GOAL = process.env.HARNESS_GOAL ?? "reach the Shrine and speak the word that is carved in the Vault.";
 const memory = [];
@@ -106,8 +111,27 @@ function llmBrain() {
   if (!key && process.env.MODEL_API_KEY_FILE) {
     try { key = readFileSync(process.env.MODEL_API_KEY_FILE, "utf8").trim(); } catch { /* fall through */ }
   }
-  if (PROVIDER !== "ollama" && !key) return null;
-  const messages = [{ role: "system", content: INSTRUCTIONS }];
+  if (!["ollama", "prime-router"].includes(PROVIDER) && !key) return null;
+  let messages = [{ role: "system", content: INSTRUCTIONS }];
+  if (PROVIDER === "prime-router") {
+    return async (observed) => {
+      messages.push({ role: "user", content: observed });
+      // prime-router holds a per-identity brain and indexes the turn into its
+      // corpus. Its answer is prose or a command; the parser decides.
+      const res = await fetch(`${base}/api/chat`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ text: `${INSTRUCTIONS}\n\n${observed}`, identity: PRIME_ROUTER_IDENTITY }),
+      });
+      if (!res.ok) throw new Error(`prime-router ${res.status}`);
+      const body = await res.json();
+      lastUsage = null;
+      const reply = String(body.description ?? body.response ?? "").trim();
+      messages.push({ role: "assistant", content: reply });
+      messages = trimMessages(messages, MEMORY_TURNS);
+      return reply;
+    };
+  }
   if (PROVIDER === "ollama") {
     return async (observed) => {
       messages.push({ role: "user", content: observed });
@@ -121,6 +145,7 @@ function llmBrain() {
       lastUsage = { prompt_tokens: body.prompt_eval_count, completion_tokens: body.eval_count };
       const reply = (body.message?.content ?? "").trim();
       messages.push({ role: "assistant", content: reply });
+      messages = trimMessages(messages, MEMORY_TURNS);
       return reply;
     };
   }
@@ -139,11 +164,15 @@ function llmBrain() {
     // empty; the command then sits in the reasoning field. Take either.
     const reply = (message.content ?? "").trim() || (message.reasoning_content ?? "").trim();
     messages.push({ role: "assistant", content: reply });
+    messages = trimMessages(messages, MEMORY_TURNS);
     return reply;
   };
 }
 
 const decide = (BRAIN === "llm" ? llmBrain() : scriptedBrain()) ?? scriptedBrain();
+const archive = MEMORY_BACKEND === "prime-router" && PROVIDER !== "prime-router"
+  ? primeRouterMemory({ base: PRIME_ROUTER_URL, identity: PRIME_ROUTER_IDENTITY })
+  : null;
 
 // --- parsing -------------------------------------------------------------
 
@@ -232,6 +261,7 @@ async function loop() {
     turn += 1;
     const started = Date.now();
     observe(seen);
+    archive?.remember(seen);
     const routed = assemble({ events: seen, memory, goal: GOAL, mode: ROUTER_MODE, budget: BUDGET, recall: recallText() });
     if (process.env.ROUTER_TRACE) {
       console.log(`[${routed.mode}] layers=${routed.layers.join(",")} tokens=${routed.tokens}`);
@@ -251,6 +281,7 @@ async function loop() {
     if (/shrine accepts/i.test(seen)) record({ turn, event: "solved" });
     if (/shrine does not accept/i.test(seen)) record({ turn, event: "rejected" });
     memory.push(command);
+    archive?.remember(command);
     recordSpan("agent.decision", {
       "actor.name": NAME,
       "router.mode": routed.mode,

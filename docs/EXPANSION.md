@@ -133,7 +133,7 @@ there, lootable, until the reset. A login starts at the safe start room.
 - **Shops** in the market and the inn, each with stock, prices and a till.
 - **The two contradictory inscriptions** stay, now as a quest chain.
 
-### M — The LLM bridge
+### M — The LLM bridge (provider + rolling window done, v0.14.0)
 
 - **A player can hand their character to a model.** A reference bridge
   (`runtime/agent.mjs`) connects on the same wire as a human, logs in with the

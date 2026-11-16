@@ -64,7 +64,8 @@ allowance, the two-hour reset, weapons and PvP, levels and quests, guilds, a
 larger world, and an LLM bridge. The foundation (accounts, 250 ms input allowance, no item persistence,
 global chat and safe rooms) and combat 2.0 (weapons, armour, healing food,
 flee, PvP, aggressive mobiles and levels) are in place. The world now has 24 connected rooms across three zones, a login gate, shops,
-quests and guilds. The memory-backed bridge and command polish follow.
+quests and guilds. The LLM bridge now supports prime-router as a provider or a corpus archive, and
+the memory window is bounded. Command polish and more world content follow.
 
 ## Provenance
 
