@@ -105,7 +105,9 @@ const total = (components) =>
   Object.values(components).reduce((sum, value) => sum + value, 0) / Object.keys(components).length;
 
 export function measureCandidates(report) {
-  const bounds = JSON.parse(readFileSync(join(ROOT, "world/bounds.json"), "utf8"));
+  const boundsText = readFileSync(join(ROOT, "world/bounds.json"), "utf8");
+  const bounds = JSON.parse(boundsText);
+  const worldText = readFileSync(join(ROOT, "world/data/world.json"), "utf8");
   const world = loadWorld({ mode: "single" });
   const questTable = loadQuests();
   if (questTable.errors.length) throw new Error(questTable.errors.join("; "));
@@ -114,7 +116,33 @@ export function measureCandidates(report) {
   const baselineComponents = componentsOf(baselineMetrics);
   const baselineTotal = total(baselineComponents);
 
+  // A report is bound to the world and bounds it was built from. Re-measuring a
+  // stale report against a newer world would admit a change nobody proposed.
+  const stale =
+    (report.worldHash && report.worldHash !== sha(worldText)) ||
+    (report.boundsHash && report.boundsHash !== sha(boundsText));
+
   const results = [];
+  if (stale) {
+    for (const candidate of report.candidates ?? []) {
+      results.push({
+        id: candidate.id,
+        changes: candidate.changes ?? [],
+        status: "refused",
+        reason: "the candidate report is bound to a different world or bounds file",
+      });
+    }
+    const payload = {
+      schema: "mudbenchmark/measure/1",
+      candidates: report.hash ?? null,
+      baseline: { metrics: baselineMetrics, components: baselineComponents, total: baselineTotal },
+      results,
+      winner: null,
+      settled: true,
+    };
+    return { ...payload, hash: sha(JSON.stringify(payload)) };
+  }
+
   for (const candidate of report.candidates ?? []) {
     const refusal = validate(candidate, bounds, world);
     if (refusal) {

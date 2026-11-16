@@ -1020,6 +1020,13 @@ let loop = { ok: true, why: [], count: 0, admitted: 0, winner: null };
     loop.why.push("the out-of-band refusal did not name the band");
   }
 
+  const stale = JSON.parse(JSON.stringify(first));
+  stale.worldHash = "0".repeat(64);
+  const staleResults = measureCandidates(stale).results;
+  if (staleResults.some((result) => result.status !== "refused")) {
+    loop.why.push("a report bound to another world was measured anyway");
+  }
+
   if (loop.why.length) {
     loop.ok = false;
     failures.push(`the candidate loop is broken: ${loop.why[0]}`);
