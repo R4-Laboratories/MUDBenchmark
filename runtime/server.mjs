@@ -10,12 +10,13 @@ import { readFileSync, writeFileSync, renameSync, appendFileSync } from "node:fs
 import { createHash } from "node:crypto";
 import { WebSocketServer } from "ws";
 import { recordSpan, digest } from "./telemetry.mjs";
-import { step, initialState, digestState, phaseAt, upgradeState, releaseHeldObjects, checkpointIdentities, TICK_MS } from "./world.mjs";
+import { step, initialState, digestState, phaseAt, upgradeState, releaseHeldObjects, checkpointIdentities, armorOf, nextFrom, TICK_MS } from "./world.mjs";
 import { loadWorld } from "./worlddata.mjs";
 import { describe as renderRoom } from "./view.mjs";
 import { loadVerbs, render, resolve } from "./verbs.mjs";
 import { loadChannels, resolveChannel } from "./channels.mjs";
 import { loadSocials, resolveSocial } from "./socials.mjs";
+import { loadLevels, nextLevelXp } from "./levels.mjs";
 import { hashPassword, verifyPassword, validName, validPassword } from "./accounts.mjs";
 import { allowCommand as allowInput, DEFAULT_INTERVAL_MS } from "./allowance.mjs";
 
@@ -57,6 +58,12 @@ if (SOCIALS.errors.length > 0) {
   process.exit(1);
 }
 
+const LEVELS = loadLevels();
+if (LEVELS.errors.length > 0) {
+  for (const problem of LEVELS.errors) console.error(`levels: ${problem}`);
+  process.exit(1);
+}
+
 const WORD = loaded.task.word;
 // Levels at which some room states the word. A claim is sourced if the actor
 // saw the Vault or was cleared for any of these notices.
@@ -92,7 +99,7 @@ function allowCommand(id) {
 function loadState() {
   try {
     const saved = JSON.parse(readFileSync(STATE_FILE, "utf8"));
-    const base = initialState(ROOMS, loaded.npcs, loaded.objects, loaded.start, loaded.climate, CHANNELS.channels);
+    const base = initialState(ROOMS, loaded.npcs, loaded.objects, loaded.start, loaded.climate, CHANNELS.channels, LEVELS.levels);
     const upgraded = upgradeState(saved, base);
     // Players are saved for the trace but not restored: without an identity
     // there is nothing to reconnect them to, and a restored actor with no
@@ -101,7 +108,7 @@ function loadState() {
     releaseHeldObjects(upgraded, saved.actors ?? []);
     return { ...upgraded, actors: [] };
   } catch {
-    return initialState(ROOMS, loaded.npcs, loaded.objects, loaded.start, loaded.climate, CHANNELS.channels);
+    return initialState(ROOMS, loaded.npcs, loaded.objects, loaded.start, loaded.climate, CHANNELS.channels, LEVELS.levels);
   }
 }
 
@@ -497,8 +504,10 @@ async function handleCommand(id, line) {
     const target = [...actorsIn(actor.room).filter((a) => a.id !== id), ...npcsIn(actor.room)]
       .find((c) => c.name.toLowerCase().includes(needle) || c.name.toLowerCase().includes(`a ${needle}`));
     if (!target) return sendTo(id, `${render(messages.missing, { words })}\r\n`);
+    // The reducer announces the attack on the next tick; sending here too
+    // printed "You attack" twice.
     pending.push({ kind: "attack", actorId: id, targetId: target.id });
-    return sendTo(id, `${render(messages.actor, { target: target.name })}\r\n`);
+    return;
   }
 
   const shopHere = (loaded.shops ?? []).find((shop) =>
@@ -552,6 +561,47 @@ async function handleCommand(id, line) {
     } });
     recordSpan("world.trade", { "actor.id": id, "action.kind": "sell", "object.id": object.id, "price": payment, "room.id": actor.room, "world.tick": state.tick }, 0);
     return;
+  }
+
+  if (named === "wield" || named === "unwield") {
+    const messages = VERB_TABLE.verbs[named].messages;
+    if (named === "unwield") {
+      if (!actor.wielding) return sendTo(id, `${messages.nothing}\r\n`);
+      pending.push({ kind: "unwield", actorId: id });
+      recordSpan("world.object", { "actor.id": id, "action.kind": "unwield", "object.id": actor.wielding, "world.tick": state.tick }, 0);
+      return;
+    }
+    const object = findObject(words, (o) => o.holder === id && !o.eaten);
+    if (!object) return sendTo(id, `${render(messages.missing, { words })}\r\n`);
+    if (!(object.flags ?? []).includes("weapon")) return sendTo(id, `${render(messages.notWeapon, { words })}\r\n`);
+    pending.push({ kind: "wield", actorId: id, objectId: object.id, messages: {
+      actor: render(messages.actor, { object: object.name }),
+      others: render(messages.others, { actor: actor.name, object: object.name }),
+    } });
+    recordSpan("world.object", { "actor.id": id, "action.kind": "wield", "object.id": object.id, "world.tick": state.tick }, 0);
+    return;
+  }
+
+  if (named === "flee") {
+    const messages = VERB_TABLE.verbs.flee.messages;
+    const exits = Object.entries(ROOMS[actor.room]?.exits ?? {});
+    if (exits.length === 0) return sendTo(id, `${messages.noExit}\r\n`);
+    const [dir, to] = exits[nextFrom(state.tick + actor.room, exits.length)];
+    pending.push({ kind: "flee", actorId: id, dir, to, messages: {
+      actor: render(messages.actor, { words: dir }),
+      others: render(messages.others, { actor: actor.name, words: dir }),
+    } });
+    recordSpan("world.flee", { "actor.id": id, "room.from": actor.room, "room.to": to, "direction": dir, "world.tick": state.tick }, 0);
+    return;
+  }
+
+  if (named === "score") {
+    const messages = VERB_TABLE.verbs.score.messages;
+    const weapon = state.objects.find((o) => o.id === actor.wielding);
+    const armor = armorOf(actor, state.objects);
+    const nextXp = nextLevelXp(state.levels, actor.level);
+    const line = `Level ${actor.level} (${actor.xp}${nextXp === null ? "" : `/${nextXp}`} xp), ${actor.hp}/${actor.maxHp} hp, armour ${armor}, ${weapon ? `wielding ${weapon.name}` : "unarmed"}${actor.guild ? `, guild ${actor.guild}` : ""}.`;
+    return sendTo(id, `${render(messages.line, { words: line })}\r\n`);
   }
 
   if (named === "inventory") {
@@ -811,6 +861,8 @@ function onTick() {
       recordSpan("world.combat", {
         "actor.id": event.combat.attacker,
         "target.id": event.combat.target,
+        "weapon.id": event.combat.weapon ?? null,
+        "chance": event.combat.chance,
         "damage": event.combat.damage,
         "target.hp": event.combat.hp,
         "outcome": event.combat.outcome,

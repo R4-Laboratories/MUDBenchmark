@@ -24,7 +24,8 @@ import { loadChannels } from "../runtime/channels.mjs";
 import { loadSocials } from "../runtime/socials.mjs";
 import { hashPassword, verifyPassword, validName, validPassword } from "../runtime/accounts.mjs";
 import { allowCommand, DEFAULT_INTERVAL_MS } from "../runtime/allowance.mjs";
-import { AREA_PERIOD, checkpointIdentities, initialState, nextFrom, phaseAt, releaseHeldObjects, step, upgradeState } from "../runtime/world.mjs";
+import { loadLevels } from "../runtime/levels.mjs";
+import { AREA_PERIOD, armorOf, attackRoll, checkpointIdentities, initialState, nextFrom, phaseAt, releaseHeldObjects, step, upgradeState } from "../runtime/world.mjs";
 import { join } from "node:path";
 
 const root = process.cwd();
@@ -153,7 +154,7 @@ let safe = { ok: true, why: [] };
   const guard = state.npcs.find((npc) => npc.id === "guard");
   guard.room = 2;
   run([{ kind: "attack", actorId: "a", targetId: "guard" }]);
-  if (state.engagements.length !== 1) { safe.ok = false; safe.why.push("an attack in an unsafe room did not begin"); }
+  if (state.engagements.length !== 2) { safe.ok = false; safe.why.push("an attack in an unsafe room did not engage both sides"); }
   if (!safe.ok) failures.push(`safe rooms are broken: ${safe.why[0]}`);
 }
 
@@ -169,16 +170,16 @@ const oldDirs = new Set([0, 1, 2, 3].map((k) => nextFrom(oldSeed + k, 4)));
 {
   const world = loadWorld({ mode: "single" });
   const guardHome = world.npcs.find((npc) => npc.id === "guard");
-  const npcs = world.npcs.map((npc) => (npc.id === "guard" ? { ...npc, room: 2, home: 2 } : npc));
+  const npcs = world.npcs.map((npc) => (npc.id === "guard" ? { ...npc, room: 2, home: 2, damage: 0 } : npc));
   let state = initialState(world.rooms, npcs, world.objects, world.start);
   state = step({ state, rooms: world.rooms, intents: [{ kind: "join", actorId: "gate", name: "gate" }] }).state;
   state.actors[0].room = 2;
   state = step({ state, rooms: world.rooms, intents: [{ kind: "attack", actorId: "gate", targetId: "guard" }] }).state;
 
-  for (let i = 0; i < 40; i += 1) {
+  for (let i = 0; i < 100; i += 1) {
     const { state: next, events } = step({ state, rooms: world.rooms, intents: [] });
     for (const event of events) {
-      if (!event.combat) continue;
+      if (!event.combat || event.combat.target !== "guard") continue;
       // Hit points must fall by exactly the damage reported. A duplicated span
       // makes the trace jump; a missing round leaves it too high.
       combat.rounds += 1;
@@ -592,6 +593,98 @@ let persistence = { ok: true, why: [] };
   if (!persistence.ok) failures.push(`persistence is broken: ${persistence.why[0]}`);
 }
 
+// Weapons, armour, food, flight and levels must all change the world.
+let combat2 = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  const levelTable = loadLevels();
+  if (levelTable.errors.length > 0) { combat2.ok = false; combat2.why.push(`levels are invalid: ${levelTable.errors[0]}`); }
+  const npcs = world.npcs.map((npc) => (npc.id === "guard" ? { ...npc, room: 2, home: 2, damage: 0 } : npc));
+  let state = initialState(world.rooms, npcs, world.objects, world.start, world.climate, channelTable.channels, levelTable.levels);
+  const say = (text) => ({ actor: text, others: text });
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
+  const object = (id) => state.objects.find((o) => o.id === id);
+  const check = (condition, why) => { if (!condition) { combat2.ok = false; combat2.why.push(why); } };
+
+  const bare = attackRoll({ tick: 10, attackerId: "x", weaponDamage: 0, targetArmor: 0 });
+  const armed = attackRoll({ tick: 10, attackerId: "x", weaponDamage: 3, targetArmor: 0 });
+  if (bare.hit) check(armed.damage === bare.damage + 3, "a weapon did not add its damage");
+  let armourMatters = false;
+  for (let tick = 0; tick < 1000 && !armourMatters; tick += 1) {
+    const open = attackRoll({ tick, attackerId: "x", weaponDamage: 0, targetArmor: 0 });
+    const closed = attackRoll({ tick, attackerId: "x", weaponDamage: 0, targetArmor: 100 });
+    if (open.hit && open.chance > 5 && !closed.hit) armourMatters = true;
+  }
+  check(armourMatters, "armour did not reduce the chance to hit");
+
+  run([{ kind: "join", actorId: "a", name: "alice" }]);
+  run([{ kind: "login", actorId: "a", key: "alice", token: null, authenticated: true }]);
+  state.actors[0].room = 3;
+  run([{ kind: "take", actorId: "a", objectId: "sword", messages: say("take") }]);
+  run([{ kind: "take", actorId: "a", objectId: "jerkin", messages: say("take") }]);
+  run([{ kind: "wield", actorId: "a", objectId: "sword", messages: say("wield") }]);
+  run([{ kind: "wear", actorId: "a", objectId: "jerkin", messages: say("wear") }]);
+  check(state.actors[0].wielding === "sword", "wielding did not take");
+  check(armorOf(state.actors[0], state.objects) === 1, "worn armour was not counted");
+
+  state.actors[0].room = 5;
+  run([{ kind: "take", actorId: "a", objectId: "bread", messages: say("take") }]);
+  state.actors[0].hp = 5;
+  run([{ kind: "eat", actorId: "a", objectId: "bread", messages: say("eat") }]);
+  check(state.actors[0].hp === 7, `one bite healed to ${state.actors[0].hp} instead of 7`);
+  run([{ kind: "eat", actorId: "a", objectId: "bread", messages: say("eat") }]);
+  check(state.actors[0].hp === 9, `two bites healed to ${state.actors[0].hp} instead of 9`);
+
+  state.actors[0].room = 2;
+  run([{ kind: "attack", actorId: "a", targetId: "guard" }]);
+  check(state.engagements.length === 2, "a PvE attack did not engage both sides");
+  run([{ kind: "flee", actorId: "a", dir: "east", to: 4, messages: { actor: "FA", others: "FO" } }]);
+  check(state.engagements.length === 0 && state.actors[0].room === 4, "flee did not end the fight and move");
+
+  state.actors[0].room = 2;
+  state.actors[0].xp = 95;
+  state.npcs.find((npc) => npc.id === "guard").hp = 1;
+  run([{ kind: "attack", actorId: "a", targetId: "guard" }]);
+  for (let i = 0; i < 60; i += 1) run([]);
+  check(state.actors[0].level === 2 && state.actors[0].xp >= 107, `a kill did not grant experience and a level (level ${state.actors[0].level}, xp ${state.actors[0].xp})`);
+  check(state.actors[0].maxHp === 12, "a level did not raise maximum hit points");
+
+  // PvP: a second player in an unsafe room is a target; death wakes them at the
+  // start and the killer gains experience.
+  run([{ kind: "join", actorId: "b", name: "bob" }]);
+  run([{ kind: "login", actorId: "b", key: "bob", token: null, authenticated: true }]);
+  state.actors.find((actor) => actor.id === "b").room = 2;
+  state.actors.find((actor) => actor.id === "b").hp = 1;
+  const xpBefore = state.actors[0].xp;
+  run([{ kind: "attack", actorId: "a", targetId: "b" }]);
+  for (let i = 0; i < 80; i += 1) run([]);
+  const deadBob = state.actors.find((actor) => actor.id === "b");
+  check(deadBob.room === 1 && deadBob.hp === deadBob.maxHp, "a dead player did not wake at the start");
+  check(state.engagements.length === 0, "a death left an engagement open");
+  check(state.actors[0].xp > xpBefore, "a PvP kill did not grant experience");
+
+  if (!combat2.ok) failures.push(`combat 2.0 is broken: ${combat2.why[0]}`);
+}
+
+// An aggressive mobile begins the fight on its own clock, and the victim is
+// engaged back.
+let aggression = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  const npcs = world.npcs.map((npc) => (npc.id === "vault-guardian"
+    ? { ...npc, room: 2, home: 2, period: 1, jitter: 0, aggression: 100 }
+    : npc));
+  let state = initialState(world.rooms, npcs, world.objects, world.start);
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
+  run([{ kind: "join", actorId: "a", name: "alice" }]);
+  state.actors[0].room = 2;
+  const events = [];
+  for (let i = 0; i < 8; i += 1) events.push(...run([]));
+  if (state.engagements.length !== 2) { aggression.ok = false; aggression.why.push("a guardian did not engage both sides"); }
+  if (!events.some((event) => /attacks you/.test(event.text ?? ""))) { aggression.ok = false; aggression.why.push("the victim was not told"); }
+  if (!aggression.ok) failures.push(`aggression is broken: ${aggression.why[0]}`);
+}
+
 // Generated code must match the model it claims to come from.
 const drift = spawnSync(process.execPath, ["tools/mechanize.mjs", "--check"], { encoding: "utf8" });
 const driftOk = drift.status === 0;
@@ -619,6 +712,8 @@ if (process.argv.includes("--json")) {
   console.log(`${"accounts".padEnd(26)}  ${(accounts.ok ? "hash, register" : "BROKEN").padStart(5)}   == names and passwords`);
   console.log(`${"allowance".padEnd(26)}  ${(allowance.ok ? "250 ms" : "BROKEN").padStart(5)}   == one command`);
   console.log(`${"safe".padEnd(26)}  ${(safe.ok ? "2 rooms" : "BROKEN").padStart(5)}   == no combat`);
+  console.log(`${"aggression".padEnd(26)}  ${(aggression.ok ? "1 duel" : "BROKEN").padStart(5)}   == mobs start fights`);
+  console.log(`${"combat2".padEnd(26)}  ${(combat2.ok ? "weapons, armour, xp" : "BROKEN").padStart(5)}   == fight and grow`);
   console.log(`${"combat".padEnd(26)}  ${(combat.outcome === "killed" ? `${combat.rounds} rounds` : "BROKEN").padStart(5)}   == kills`);
   console.log(`${"resume".padEnd(26)}  ${(resume.ok ? "1 save" : "BROKEN").padStart(5)}   == old checkpoint loads`);
   console.log(`${"climate".padEnd(26)}  ${(climate.ok ? `${climate.changes} changes` : "BROKEN").padStart(5)}   == day, night, weather`);

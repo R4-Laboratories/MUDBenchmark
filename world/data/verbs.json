@@ -277,6 +277,49 @@
         "list": "Awake: %s.",
         "alone": "You are the only one awake."
       }
+    },
+    "wield": {
+      "aliases": [
+        "equip"
+      ],
+      "argument": "object",
+      "messages": {
+        "actor": "You wield %o.",
+        "others": "%a wields %o.",
+        "missing": "You are not carrying a %s.",
+        "notWeapon": "The %s is not a weapon."
+      }
+    },
+    "unwield": {
+      "aliases": [
+        "sheathe"
+      ],
+      "argument": "none",
+      "messages": {
+        "actor": "You lower your weapon.",
+        "others": "%a lowers their weapon.",
+        "nothing": "You are not wielding anything."
+      }
+    },
+    "flee": {
+      "aliases": [
+        "run"
+      ],
+      "argument": "none",
+      "messages": {
+        "actor": "You flee %s.",
+        "others": "%a flees %s.",
+        "noExit": "There is nowhere to flee."
+      }
+    },
+    "score": {
+      "aliases": [
+        "stats"
+      ],
+      "argument": "none",
+      "messages": {
+        "line": "%s"
+      }
     }
   }
 }

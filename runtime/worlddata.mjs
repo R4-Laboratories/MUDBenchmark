@@ -96,6 +96,9 @@ export function loadWorld({ mode = "single", path = DEFAULT_PATH } = {}) {
       errors.push(`npc ${npc.id} speaks but has no phrases`);
     }
     if (!Number.isInteger(npc.hp) || npc.hp < 1) errors.push(`npc ${npc.id} has no hit points`);
+    if (npc.damage !== undefined && (!Number.isInteger(npc.damage) || npc.damage < 0)) errors.push(`npc ${npc.id} has an invalid damage`);
+    if (npc.armor !== undefined && (!Number.isInteger(npc.armor) || npc.armor < 0)) errors.push(`npc ${npc.id} has an invalid armor`);
+    if (npc.aggression !== undefined && (!Number.isInteger(npc.aggression) || npc.aggression < 0 || npc.aggression > 100)) errors.push(`npc ${npc.id} has an aggression outside 0..100`);
     npcs.push({ ...npc, behaviour, maxHp: npc.hp });
   }
 
@@ -105,7 +108,7 @@ export function loadWorld({ mode = "single", path = DEFAULT_PATH } = {}) {
   // silently does nothing.
   const objects = [];
   const seenObject = new Set();
-  const FLAGS = new Set(["takeable", "fixed", "container", "wearable", "food", "light", "readable", "coin"]);
+  const FLAGS = new Set(["takeable", "fixed", "container", "wearable", "food", "light", "readable", "coin", "weapon", "armor"]);
   for (const object of raw.objects ?? []) {
     if (seenObject.has(object.id)) errors.push(`object id "${object.id}" is used twice`);
     seenObject.add(object.id);
@@ -124,8 +127,15 @@ export function loadWorld({ mode = "single", path = DEFAULT_PATH } = {}) {
     if (flags.includes("container")) {
       if (!Number.isInteger(object.capacity) || object.capacity < 1) errors.push(`container ${object.id} has no capacity`);
     }
+    if (flags.includes("weapon") && (!Number.isInteger(object.damage) || object.damage < 1)) {
+      errors.push(`weapon ${object.id} has no damage`);
+    }
+    if (flags.includes("armor") && (!Number.isInteger(object.armor) || object.armor < 1)) {
+      errors.push(`armor ${object.id} has no armor value`);
+    }
     if (flags.includes("food")) {
       if (!Number.isInteger(object.bites) || object.bites < 1) errors.push(`food ${object.id} has no bites`);
+      if (object.heal !== undefined && (!Number.isInteger(object.heal) || object.heal < 0)) errors.push(`food ${object.id} has an invalid heal`);
     }
     if (flags.includes("coin") && (!Number.isInteger(object.value) || object.value < 1)) {
       errors.push(`coin ${object.id} has no integer value`);

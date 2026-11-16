@@ -95,6 +95,18 @@ for (const file of inputs) {
       continue;
     }
 
+    if (span.name === "world.flee") {
+      rows.push({
+        ...common,
+        event: "flee",
+        actor: span["actor.id"] ?? null,
+        action: span.direction ?? null,
+        room_from: num(span["room.from"]),
+        room_to: num(span["room.to"]),
+      });
+      continue;
+    }
+
     if (span.name === "world.weather") {
       rows.push({
         ...common,
@@ -112,6 +124,8 @@ for (const file of inputs) {
         event: "combat",
         actor: span["actor.id"] ?? null,
         target: span["target.id"] ?? null,
+        weapon: span["weapon.id"] ?? null,
+        chance: num(span.chance),
         damage: num(span.damage),
         target_hp: num(span["target.hp"]),
         verdict: span.outcome ?? null,

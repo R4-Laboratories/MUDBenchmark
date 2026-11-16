@@ -50,7 +50,7 @@ there, lootable, until the reset. A login starts at the safe start room.
 
 ## Phases
 
-### H — Foundation (this release)
+### H — Foundation (done, v0.9.0)
 
 - **Accounts.** `register <name> <password>`, `login <name> <password>`,
   `password <old> <new>`. Passwords are scrypt-hashed with a per-account salt.
@@ -72,7 +72,7 @@ there, lootable, until the reset. A login starts at the safe start room.
 - **Room details.** Rooms gain optional `details` (`look <thing>`), `ambient`
   lines and a safe marker. The view shows them.
 
-### I — Combat 2.0
+### I — Combat 2.0 (done, v0.10.0)
 
 - **Weapons.** `wield <weapon>`, `unwield`, `equipment`. A weapon has `damage`;
   damage is the actor's base plus the weapon's. Unarmed is the base.

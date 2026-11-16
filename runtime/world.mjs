@@ -10,6 +10,7 @@
 
 import { createHash } from "node:crypto";
 import { advance, due as pulseDue, makePulse } from "./generated/Pulses.mjs";
+import { levelForXp, nextLevelXp } from "./levels.mjs";
 
 export const TICK_MS = 250;
 
@@ -41,6 +42,50 @@ const seedOf = (value) => {
   return hash;
 };
 
+const DEFAULT_LEVELS = [0, 100, 300, 700, 1500, 3000, 6000, 10000, 15000, 22000, 30000];
+
+/**
+ * One attack: a hit chance of 57 minus armour, then 1..4 plus the weapon.
+ * AberMUD's shape, deterministic from the tick and the attacker's id so a
+ * replay fights identically.
+ */
+export function attackRoll({ tick, attackerId, weaponDamage = 0, targetArmor = 0, npcDamage = null }) {
+  const chance = Math.max(5, 57 - targetArmor);
+  const roll = nextFrom(tick * 13 + seedOf(attackerId), 100);
+  if (roll >= chance) return { hit: false, damage: 0, chance };
+  // A mobile's Damage is its whole blow, not a bonus on a player's base; a
+  // training dummy with Damage 0 hits for nothing.
+  const damage = npcDamage !== null
+    ? (npcDamage <= 0 ? 0 : 1 + nextFrom(tick * 7 + seedOf(attackerId), npcDamage))
+    : 1 + nextFrom(tick * 7 + seedOf(attackerId), 4) + weaponDamage;
+  return { hit: true, damage, chance };
+}
+
+/** The armour a character is wearing, from the objects currently on them. */
+export function armorOf(actor, objects) {
+  return objects
+    .filter((object) => object.holder === actor.id && object.worn && (object.flags ?? []).includes("armor"))
+    .reduce((total, object) => total + (object.armor ?? 0), 0);
+}
+
+const weaponOf = (actor, objects) => {
+  const object = objects.find((candidate) => candidate.id === actor.wielding);
+  if (!object || object.holder !== actor.id || object.eaten) return null;
+  return (object.flags ?? []).includes("weapon") ? object : null;
+};
+
+function awardXp(state, actor, amount, events) {
+  actor.xp = (actor.xp ?? 0) + amount;
+  const level = levelForXp(state.levels ?? DEFAULT_LEVELS, actor.xp);
+  if (level > (actor.level ?? 1)) {
+    actor.level = level;
+    actor.maxHp = 10 + (level - 1) * 2;
+    actor.hp = actor.maxHp;
+    events.push({ onlyId: actor.id, text: `You have reached level ${level}.\r\n` });
+    events.push({ room: actor.room, text: `${actor.name} has reached level ${level}.`, exceptId: actor.id });
+  }
+}
+
 const DEFAULT_CLIMATE = {
   dayLength: 720,
   weatherPeriod: 120,
@@ -57,7 +102,7 @@ export function phaseAt(tick, climate = DEFAULT_CLIMATE) {
   return (climate.phases.find((phase) => hour >= phase.from && hour <= phase.to) ?? { id: "day" }).id;
 }
 
-export function initialState(rooms, npcs = [], objects = [], start = 1, climate = DEFAULT_CLIMATE, channels = []) {
+export function initialState(rooms, npcs = [], objects = [], start = 1, climate = DEFAULT_CLIMATE, channels = [], levels = DEFAULT_LEVELS) {
   return {
     tick: 0,
     cycle: 0,
@@ -65,6 +110,7 @@ export function initialState(rooms, npcs = [], objects = [], start = 1, climate 
     climate,
     weather: 0,
     channels,
+    levels,
     mail: [],
     engagements: [],
     npcs: npcs
@@ -118,6 +164,7 @@ export function digestState(state) {
     climate: state.climate,
     weather: state.weather,
     channels: state.channels ?? [],
+    levels: state.levels,
     mail: (state.mail ?? []).map((letter) => ({ ...letter })),
     engagements: (state.engagements ?? []).map((e) => ({ ...e })),
     objects: [...state.objects].sort((a, b) => a.id.localeCompare(b.id)),
@@ -210,6 +257,7 @@ export function upgradeState(saved, base) {
     cycle: saved.cycle ?? base.cycle,
     engagements: Array.isArray(saved.engagements) ? saved.engagements : [],
     channels: base.channels,
+    levels: base.levels,
     mail: Array.isArray(saved.mail) ? saved.mail : [],
     pulses,
     npcs,
@@ -270,6 +318,7 @@ export function step({ state, rooms, intents }) {
     climate: state.climate,
     weather: state.weather,
     channels: state.channels ?? [],
+    levels: state.levels,
     mail: (state.mail ?? []).map((letter) => ({ ...letter })),
     engagements: (state.engagements ?? []).map((e) => ({ ...e })),
     npcs: state.npcs.map((n) => ({ ...n, clock: { ...n.clock } })),
@@ -331,6 +380,7 @@ export function step({ state, rooms, intents }) {
           xp: 0,
           guild: null,
           quests: { active: [], completed: [] },
+          wielding: null,
         });
       }
       continue;
@@ -349,6 +399,9 @@ export function step({ state, rooms, intents }) {
       actor.xp = 0;
       actor.guild = null;
       actor.quests = { active: [], completed: [] };
+      actor.maxHp = 10;
+      actor.hp = 10;
+      actor.wielding = null;
       next.identities[intent.key] = {
         name: actor.name,
         role: 0,
@@ -404,6 +457,9 @@ export function step({ state, rooms, intents }) {
         actor.role = known.role ?? 0;
         actor.level = known.level ?? 1;
         actor.xp = known.xp ?? 0;
+        actor.maxHp = 10 + (actor.level - 1) * 2;
+        actor.hp = actor.maxHp;
+        actor.wielding = null;
         actor.guild = known.guild ?? null;
         actor.quests = {
           active: [...(known.quests?.active ?? [])],
@@ -427,6 +483,9 @@ export function step({ state, rooms, intents }) {
         actor.role = intent.role ?? 0;
         actor.level = 1;
         actor.xp = 0;
+        actor.maxHp = 10;
+        actor.hp = 10;
+        actor.wielding = null;
         actor.guild = null;
         actor.quests = { active: [], completed: [] };
         next.identities[intent.key] = {
@@ -450,6 +509,7 @@ export function step({ state, rooms, intents }) {
     if (intent.kind === "leave") {
       const actor = find(intent.actorId);
       if (!actor) continue;
+      actor.wielding = null;
       // Items are mortal: they fall where the character stood and belong to
       // the world until the two-hour reset. Only progression is written down.
       for (const object of next.objects) {
@@ -499,8 +559,43 @@ export function step({ state, rooms, intents }) {
       if (!target || target.dead || target.room !== actor.room) continue;
       if (next.engagements.some((e) => e.attackerId === actor.id && e.targetId === target.id)) continue;
       next.engagements.push({ attackerId: actor.id, targetId: target.id });
+      // A fight is two-way: the target engages the attacker on the same round.
+      if (!next.engagements.some((e) => e.attackerId === target.id && e.targetId === actor.id)) {
+        next.engagements.push({ attackerId: target.id, targetId: actor.id });
+      }
       events.push({ room: actor.room, text: `${actor.name} attacks ${target.name}!`, exceptId: actor.id });
       events.push({ onlyId: actor.id, text: `You attack ${target.name}.` });
+      continue;
+    }
+
+    if (intent.kind === "wield") {
+      const object = next.objects.find((o) => o.id === intent.objectId);
+      if (!object || object.holder !== actor.id || object.eaten) continue;
+      if (!(object.flags ?? []).includes("weapon")) continue;
+      actor.wielding = object.id;
+      events.push({ room: actor.room, text: `${actor.name} wields ${object.name}.`, exceptId: actor.id });
+      events.push({ onlyId: actor.id, text: `You wield ${object.name}.` });
+      continue;
+    }
+
+    if (intent.kind === "unwield") {
+      if (!actor.wielding) continue;
+      actor.wielding = null;
+      events.push({ room: actor.room, text: `${actor.name} lowers their weapon.`, exceptId: actor.id });
+      events.push({ onlyId: actor.id, text: "You lower your weapon." });
+      continue;
+    }
+
+    // Flee ends every engagement the actor is part of and takes one exit.
+    if (intent.kind === "flee") {
+      if (rooms[actor.room]?.exits?.[intent.dir] !== intent.to) continue;
+      next.engagements = next.engagements.filter((e) => e.attackerId !== actor.id && e.targetId !== actor.id);
+      const from = actor.room;
+      events.push({ room: from, text: `${actor.name} flees ${intent.dir}.`, exceptId: actor.id });
+      actor.room = intent.to;
+      if (!actor.visited.includes(actor.room)) actor.visited.push(actor.room);
+      events.push({ room: intent.to, text: `${actor.name} arrives.`, exceptId: actor.id });
+      events.push({ onlyId: actor.id, text: `You flee ${intent.dir}.` });
       continue;
     }
 
@@ -523,6 +618,7 @@ export function step({ state, rooms, intents }) {
       if (object.holder !== actor.id) continue;
 
       if (intent.kind === "drop") {
+        if (actor.wielding === object.id) actor.wielding = null;
         object.holder = null;
         object.room = actor.room;
         object.worn = false;
@@ -533,6 +629,7 @@ export function step({ state, rooms, intents }) {
 
       const recipient = find(intent.toId);
       if (!recipient || recipient.room !== actor.room) continue;
+      if (actor.wielding === object.id) actor.wielding = null;
       object.holder = recipient.id;
       object.worn = false;
       events.push({ room: actor.room, text: intent.messages.others, exceptId: actor.id });
@@ -553,6 +650,7 @@ export function step({ state, rooms, intents }) {
       if (!container.open) continue;
       const held = next.objects.filter((o) => o.inside === container.id && !o.eaten).length;
       if (held >= container.capacity) continue;
+      if (actor.wielding === object.id) actor.wielding = null;
       object.inside = container.id;
       object.holder = null;
       object.room = null;
@@ -603,6 +701,8 @@ export function step({ state, rooms, intents }) {
       if (!object || object.holder !== actor.id || object.eaten) continue;
       if (!(object.flags ?? []).includes("food")) continue;
       object.bites = (object.bites ?? 1) - 1;
+      const before = actor.hp;
+      if (object.heal) actor.hp = Math.min(actor.maxHp ?? 10, actor.hp + object.heal);
       if (object.bites <= 0) {
         object.eaten = true;
         object.holder = null;
@@ -610,6 +710,7 @@ export function step({ state, rooms, intents }) {
       }
       events.push({ room: actor.room, text: intent.messages.others, exceptId: actor.id });
       events.push({ onlyId: actor.id, text: intent.messages.actor });
+      if (actor.hp > before) events.push({ onlyId: actor.id, text: "You feel better.\r\n" });
       continue;
     }
 
@@ -768,6 +869,21 @@ export function step({ state, rooms, intents }) {
 
     const behaviour = npc.behaviour ?? "wander";
 
+    // Aggression: a mobile whose clock comes round may begin a fight with
+    // someone in its room. The victim is engaged back, so the fight is mutual.
+    if (!npc.dead && (npc.aggression ?? 0) > 0 && !rooms[npc.room]?.safe) {
+      const victim = next.actors.find((actor) => actor.room === npc.room);
+      const engaged = next.engagements.some((e) =>
+        (e.attackerId === npc.id && e.targetId === victim?.id) ||
+        (e.attackerId === victim?.id && e.targetId === npc.id));
+      if (victim && !engaged && nextFrom(next.tick * 17 + seedOf(npc.id), 100) < npc.aggression) {
+        next.engagements.push({ attackerId: npc.id, targetId: victim.id });
+        next.engagements.push({ attackerId: victim.id, targetId: npc.id });
+        events.push({ room: npc.room, text: `${npc.name} attacks ${victim.name}!`, exceptId: victim.id });
+        events.push({ onlyId: victim.id, text: `${npc.name} attacks you!\r\n` });
+      }
+    }
+
     // A sentinel never leaves, but its clock still runs; that is a behaviour,
     // not an absence of one.
     if (behaviour === "sentinel") continue;
@@ -792,52 +908,81 @@ export function step({ state, rooms, intents }) {
   }
 
   if (violenceDue) {
+    const attackerOf = (engagement) => next.actors.find((a) => a.id === engagement.attackerId)
+      ?? next.npcs.find((n) => n.id === engagement.attackerId);
+    const targetOf = (engagement) => next.actors.find((a) => a.id === engagement.targetId)
+      ?? next.npcs.find((n) => n.id === engagement.targetId);
+
     const contested = next.engagements.filter((engagement) => {
-      const attacker = next.actors.find((a) => a.id === engagement.attackerId);
-      return attacker && !rooms[attacker.room]?.safe;
+      const attacker = attackerOf(engagement);
+      const target = targetOf(engagement);
+      return attacker && target && !attacker.dead && rooms[attacker.room] && !rooms[attacker.room].safe && !target.dead && target.hp > 0;
     });
     next.engagements = contested;
-    const living = contested.filter((engagement) => {
-      const attacker = next.actors.find((a) => a.id === engagement.attackerId);
-      const target = next.actors.find((a) => a.id === engagement.targetId)
-        ?? next.npcs.find((n) => n.id === engagement.targetId);
-      return attacker && target && !target.dead && target.hp > 0;
-    });
 
-    for (const engagement of living) {
-      const attacker = next.actors.find((a) => a.id === engagement.attackerId);
-      const target = next.actors.find((a) => a.id === engagement.targetId)
-        ?? next.npcs.find((n) => n.id === engagement.targetId);
-
-      const damage = 1 + nextFrom(next.tick * 7 + seedOf(engagement.attackerId), 4);
-      target.hp -= damage;
-      const killed = target.hp <= 0;
+    for (const engagement of contested) {
+      const attacker = attackerOf(engagement);
+      const target = targetOf(engagement);
+      // A snapshot can contain the reciprocal of a fight that has just ended.
+      if (!attacker || !target || attacker.dead || target.dead || target.hp <= 0) continue;
+      const weapon = next.actors.includes(attacker) ? weaponOf(attacker, next.objects) : null;
+      const weaponDamage = weapon?.damage ?? 0;
+      const npcDamage = next.npcs.includes(attacker) ? (attacker.damage ?? 0) : null;
+      const targetArmor = next.actors.includes(target) ? armorOf(target, next.objects) : (target.armor ?? 0);
+      const roll = attackRoll({ tick: next.tick, attackerId: attacker.id, weaponDamage, npcDamage, targetArmor });
+      if (roll.hit) target.hp -= roll.damage;
+      const killed = roll.hit && target.hp <= 0;
       const detail = {
         attacker: attacker.id,
         target: target.id,
-        damage,
+        weapon: weapon?.id ?? null,
+        damage: roll.damage,
         hp: Math.max(0, target.hp),
-        outcome: killed ? "killed" : "hit",
+        outcome: !roll.hit ? "miss" : killed ? "killed" : "hit",
+        chance: roll.chance,
         room: attacker.room,
       };
 
       // One combat event per round: the room broadcast carries the record, the
       // actor's own line does not, or every hit is counted twice.
-      events.push({ room: attacker.room, text: `${attacker.name} strikes ${target.name} for ${damage}.`, exceptId: attacker.id, combat: detail });
-      events.push({ onlyId: attacker.id, text: `You strike ${target.name} for ${damage}.` });
+      if (roll.hit) {
+        events.push({ room: attacker.room, text: `${attacker.name} strikes ${target.name} for ${roll.damage}.`, exceptId: attacker.id, combat: detail });
+        events.push({ onlyId: attacker.id, text: `You strike ${target.name} for ${roll.damage}.` });
+      } else {
+        events.push({ room: attacker.room, text: `${attacker.name} misses ${target.name}.`, exceptId: attacker.id, combat: detail });
+        events.push({ onlyId: attacker.id, text: `You miss ${target.name}.` });
+      }
 
       if (killed) {
         if (next.npcs.includes(target)) {
           target.dead = true;
           target.room = null;
           events.push({ room: attacker.room, text: `${target.name} dies.` });
+          if (next.actors.includes(attacker)) {
+            awardXp(next, attacker, target.xp ?? Math.max(1, target.maxHp ?? 1), events);
+          }
         } else {
+          // A dead character drops what they carry where they fell and wakes
+          // at the start with their progress intact.
+          for (const object of next.objects) {
+            if (object.holder !== target.id) continue;
+            object.holder = null;
+            object.room = target.room;
+            object.inside = null;
+            object.worn = false;
+          }
+          target.wielding = null;
+          const deathRoom = target.room;
           target.hp = target.maxHp ?? 10;
           target.room = next.start;
           if (!target.visited.includes(next.start)) target.visited.push(next.start);
-          events.push({ onlyId: target.id, text: "You die, and wake at the start." });
+          events.push({ onlyId: target.id, text: "You die, and wake at the start.\r\n" });
+          events.push({ room: deathRoom, text: `${target.name} is dead.`, exceptId: target.id });
+          if (next.actors.includes(attacker)) {
+            awardXp(next, attacker, Math.max(1, (target.level ?? 1) * 10), events);
+          }
         }
-        next.engagements = next.engagements.filter((e) => e !== engagement);
+        next.engagements = next.engagements.filter((e) => e !== engagement && e.attackerId !== target.id && e.targetId !== target.id);
       }
     }
   }
@@ -853,6 +998,7 @@ export function step({ state, rooms, intents }) {
       npc.hp = npc.maxHp;
     }
     next.engagements = [];
+    for (const actor of next.actors) actor.wielding = null;
     next.objects = next.objects.filter((object) => !object.ephemeral);
     for (const object of next.objects) {
       object.holder = null;

@@ -150,7 +150,11 @@
       "period": 8,
       "jitter": 6,
       "behaviour": "wander",
-      "hp": 3
+      "hp": 3,
+      "damage": 2,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 3
     },
     {
       "id": "moth",
@@ -160,7 +164,11 @@
       "period": 14,
       "jitter": 10,
       "behaviour": "wander",
-      "hp": 2
+      "hp": 2,
+      "damage": 2,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 2
     },
     {
       "id": "bard",
@@ -175,7 +183,11 @@
         "The bard hums something older than the walls.",
         "The bard says: every word here is borrowed."
       ],
-      "hp": 8
+      "hp": 8,
+      "damage": 2,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 8
     },
     {
       "id": "guard",
@@ -185,7 +197,11 @@
       "period": 10,
       "jitter": 5,
       "behaviour": "sentinel",
-      "hp": 12
+      "hp": 12,
+      "damage": 2,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 12
     },
     {
       "id": "shopkeeper",
@@ -195,7 +211,26 @@
       "period": 12,
       "jitter": 4,
       "behaviour": "sentinel",
-      "hp": 20
+      "hp": 20,
+      "damage": 2,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 20
+    },
+    {
+      "id": "vault-guardian",
+      "name": "a vault guardian",
+      "room": 4,
+      "home": 4,
+      "period": 8,
+      "jitter": 4,
+      "behaviour": "sentinel",
+      "hp": 8,
+      "damage": 1,
+      "armor": 0,
+      "aggression": 50,
+      "xp": 8,
+      "description": "A stone figure stands where the Vault's shadow falls."
     }
   ],
   "zones": [
@@ -298,7 +333,8 @@
         "food"
       ],
       "bites": 2,
-      "value": 2
+      "value": 2,
+      "heal": 2
     },
     {
       "id": "satchel",
@@ -323,6 +359,45 @@
       "forSale": true,
       "price": 3,
       "value": 1
+    },
+    {
+      "id": "sword",
+      "name": "a short sword",
+      "room": 3,
+      "flags": [
+        "takeable",
+        "weapon"
+      ],
+      "damage": 3,
+      "price": 14,
+      "value": 8,
+      "examine": "The blade is plain, but well kept."
+    },
+    {
+      "id": "club",
+      "name": "a wooden club",
+      "room": 5,
+      "flags": [
+        "takeable",
+        "weapon"
+      ],
+      "damage": 2,
+      "value": 3,
+      "examine": "A stout length of oak with a knotted head."
+    },
+    {
+      "id": "jerkin",
+      "name": "a leather jerkin",
+      "room": 3,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "armor": 1,
+      "price": 10,
+      "value": 5,
+      "examine": "Cracked leather, still serviceable."
     }
   ],
   "climate": {

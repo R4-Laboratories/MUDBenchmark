@@ -61,8 +61,9 @@ acceptance vectors, and ratchets rule debt. Phases A–G of
 [the MUD baseline](docs/MUD-BASELINE.md) are done. The game expansion is
 underway: [the expansion roadmap](docs/EXPANSION.md) covers accounts, the input
 allowance, the two-hour reset, weapons and PvP, levels and quests, guilds, a
-larger world, and an LLM bridge. The foundation (accounts, 250 ms input
-allowance, no item persistence, global chat and safe rooms) is in place.
+larger world, and an LLM bridge. The foundation (accounts, 250 ms input allowance, no item persistence,
+global chat and safe rooms) and combat 2.0 (weapons, armour, healing food,
+flee, PvP, aggressive mobiles and levels) are in place. Quests, guilds, the larger world and the memory-backed bridge follow.
 
 ## Provenance
 
