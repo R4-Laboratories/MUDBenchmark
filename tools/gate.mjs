@@ -26,6 +26,7 @@ import { hashPassword, verifyPassword, validName, validPassword } from "../runti
 import { allowCommand, DEFAULT_INTERVAL_MS } from "../runtime/allowance.mjs";
 import { loadLevels } from "../runtime/levels.mjs";
 import { loadQuests, validateQuestReferences } from "../runtime/quests.mjs";
+import { guildId, validGuildName } from "../runtime/guilds.mjs";
 import { AREA_PERIOD, armorOf, attackRoll, checkpointIdentities, initialState, nextFrom, phaseAt, releaseHeldObjects, step, upgradeState } from "../runtime/world.mjs";
 import { join } from "node:path";
 
@@ -541,7 +542,9 @@ let persistence = { ok: true, why: [] };
   run([{ kind: "login", actorId: "a", key: "alice", token: null, authenticated: true }]);
   state.actors[0].level = 3;
   state.actors[0].xp = 120;
+  state.guilds.wardens = { id: "wardens", name: "Wardens", founder: "alice", created: 0, members: { alice: "leader" }, invites: [] };
   state.actors[0].guild = "wardens";
+  state.actors[0].guildRank = "leader";
   state.actors[0].quests = { active: [{ id: "word", progress: {} }], completed: ["scroll"] };
   run([{ kind: "take", actorId: "a", objectId: "satchel", messages: say("take") }]);
   run([{ kind: "take", actorId: "a", objectId: "cloak", messages: say("take") }]);
@@ -555,14 +558,14 @@ let persistence = { ok: true, why: [] };
   check(object("cloak").inside === "satchel", "a bag lost what was inside it on logout");
   check(state.identities.alice.inventory === undefined, "the identity recorded an inventory it should not keep");
   check(state.identities.alice.level === 3 && state.identities.alice.xp === 120, "progression was not written on logout");
-  check(state.identities.alice.guild === "wardens" && state.identities.alice.quests.completed.includes("scroll"), "guild or quest progress was lost on logout");
+  check(state.identities.alice.guild === "wardens" && state.identities.alice.guildRank === "leader" && state.identities.alice.quests.completed.includes("scroll"), "guild or quest progress was lost on logout");
 
   run([{ kind: "join", actorId: "b", name: "alice" }]);
   run([{ kind: "login", actorId: "b", key: "alice", token: null, authenticated: true }]);
   const returning = state.actors.find((actor) => actor.id === "b");
   check(returning.room === 1, "the returning character did not wake at the start");
   check(returning.level === 3 && returning.xp === 120, "level or experience was not restored on login");
-  check(returning.guild === "wardens" && returning.quests.completed.includes("scroll"), "guild or quest progress was not restored on login");
+  check(returning.guild === "wardens" && returning.guildRank === "leader" && returning.quests.completed.includes("scroll"), "guild or quest progress was not restored on login");
   check(state.objects.every((o) => o.holder !== "b"), "items were restored to a hand across logout");
   check(object("satchel").room === 2 && object("scroll").room === 2, "logout items did not stay in the world");
 
@@ -750,6 +753,70 @@ let quests = { ok: true, why: [] };
   if (!quests.ok) failures.push(`quests are broken: ${quests.why[0]}`);
 }
 
+// Guilds: one name, a roster, ranks, a chat that reaches only members, and a
+// membership that survives a restart.
+let guilds = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, undefined, questTable.quests);
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
+  const check = (condition, why) => { if (!condition) { guilds.ok = false; guilds.why.push(why); } };
+  const actor = (id) => state.actors.find((a) => a.id === id);
+  const lines = (events) => events.filter((event) => event.onlyId !== undefined);
+
+  if (validGuildName("x") || !validGuildName("Iron Wardens") || guildId("Iron Wardens") !== "iron-wardens") {
+    guilds.ok = false;
+    guilds.why.push("guild names or ids are wrong");
+  }
+
+  run([{ kind: "join", actorId: "a", name: "alice" }, { kind: "join", actorId: "b", name: "bob" }, { kind: "join", actorId: "c", name: "carol" }]);
+  run([{ kind: "login", actorId: "a", key: "alice", authenticated: true }, { kind: "login", actorId: "b", key: "bob", authenticated: true }, { kind: "login", actorId: "c", key: "carol", authenticated: true }]);
+
+  run([{ kind: "guildCreate", actorId: "a", name: "Iron Wardens", guildId: "iron-wardens" }]);
+  check(state.guilds["iron-wardens"]?.members.alice === "leader", "a guild was not founded with its leader");
+  check(actor("a").guild === "iron-wardens" && actor("a").guildRank === "leader", "the founder did not join the guild");
+  check(state.identities.alice.guild === "iron-wardens" && state.identities.alice.guildRank === "leader", "the founder's identity did not join");
+
+  run([{ kind: "guildCreate", actorId: "b", name: "Iron Wardens", guildId: "iron-wardens" }]);
+  check(Object.keys(state.guilds).length === 1, "a duplicate guild was created");
+
+  run([{ kind: "guildJoin", actorId: "b", guildId: "iron-wardens" }]);
+  check(state.guilds["iron-wardens"].members.bob === "member" && actor("b").guildRank === "member", "a member did not join");
+
+  const chat = lines(run([{ kind: "guildChat", actorId: "a", messages: { actor: "GA", others: "GO" } }]));
+  check(chat.length === 2 && chat.some((event) => event.text === "GO"), "guild chat did not reach exactly the members");
+
+  run([{ kind: "guildRank", actorId: "a", targetKey: "bob", rank: "officer" }]);
+  check(state.guilds["iron-wardens"].members.bob === "officer" && actor("b").guildRank === "officer", "a rank was not set");
+
+  const invited = lines(run([{ kind: "guildInvite", actorId: "a", targetKey: "carol", targetName: "carol" }]));
+  check(invited.some((event) => /invites you/.test(event.text ?? "")), "an invitation was not delivered");
+  run([{ kind: "guildJoin", actorId: "c", guildId: "iron-wardens" }]);
+  check(Object.keys(state.guilds["iron-wardens"].members).length === 3, "the invited member did not join");
+
+  run([{ kind: "guildLeave", actorId: "a" }]);
+  check(actor("a").guild === null && state.identities.alice.guild === null, "a member did not leave");
+  check(state.guilds["iron-wardens"].members.bob === "leader" && actor("b").guildRank === "leader", "the next leader was not promoted");
+
+  checkpointIdentities(state);
+  const restarted = JSON.parse(JSON.stringify(state));
+  const savedActors = state.actors;
+  restarted.actors = [];
+  releaseHeldObjects(restarted, savedActors);
+  const joined = step({ state: restarted, rooms: world.rooms, intents: [{ kind: "join", actorId: "d", name: "bob" }] });
+  const result = step({ state: joined.state, rooms: world.rooms, intents: [{ kind: "login", actorId: "d", key: "bob", authenticated: true }] });
+  state = result.state;
+  check(actor("d")?.guild === "iron-wardens" && actor("d")?.guildRank === "leader", "a restart lost guild membership or rank");
+  check(state.guilds["iron-wardens"]?.members.bob === "leader", "a restart lost the guild roster");
+
+  run([{ kind: "guildDisband", actorId: "d" }]);
+  check(!state.guilds["iron-wardens"], "the guild was not disbanded");
+  check(actor("d").guild === null, "disbanding did not clear the online member");
+  check(state.identities.carol.guild === null, "disbanding did not clear an offline member's identity");
+
+  if (!guilds.ok) failures.push(`guilds are broken: ${guilds.why[0]}`);
+}
+
 // Generated code must match the model it claims to come from.
 const drift = spawnSync(process.execPath, ["tools/mechanize.mjs", "--check"], { encoding: "utf8" });
 const driftOk = drift.status === 0;
@@ -777,6 +844,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"accounts".padEnd(26)}  ${(accounts.ok ? "hash, register" : "BROKEN").padStart(5)}   == names and passwords`);
   console.log(`${"allowance".padEnd(26)}  ${(allowance.ok ? "250 ms" : "BROKEN").padStart(5)}   == one command`);
   console.log(`${"safe".padEnd(26)}  ${(safe.ok ? "2 rooms" : "BROKEN").padStart(5)}   == no combat`);
+  console.log(`${"guilds".padEnd(26)}  ${(guilds.ok ? "create, rank, chat" : "BROKEN").padStart(5)}   == roster and chat`);
   console.log(`${"quests".padEnd(26)}  ${(quests.ok ? "accept, advance, pay" : "BROKEN").padStart(5)}   == facts, once`);
   console.log(`${"aggression".padEnd(26)}  ${(aggression.ok ? "1 duel" : "BROKEN").padStart(5)}   == mobs start fights`);
   console.log(`${"combat2".padEnd(26)}  ${(combat2.ok ? "weapons, armour, xp" : "BROKEN").padStart(5)}   == fight and grow`);

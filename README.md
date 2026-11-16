@@ -63,8 +63,7 @@ underway: [the expansion roadmap](docs/EXPANSION.md) covers accounts, the input
 allowance, the two-hour reset, weapons and PvP, levels and quests, guilds, a
 larger world, and an LLM bridge. The foundation (accounts, 250 ms input allowance, no item persistence,
 global chat and safe rooms) and combat 2.0 (weapons, armour, healing food,
-flee, PvP, aggressive mobiles and levels) are in place. Quests are in (the fact engine, the log, rewards and persistence). Guilds, the
-larger world and the memory-backed bridge follow.
+flee, PvP, aggressive mobiles and levels) are in place. Quests and guilds are in. The larger world and the memory-backed bridge follow.
 
 ## Provenance
 

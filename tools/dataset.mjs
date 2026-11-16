@@ -95,6 +95,20 @@ for (const file of inputs) {
       continue;
     }
 
+    if (span.name === "world.guild") {
+      rows.push({
+        ...common,
+        event: "guild",
+        actor: span["actor.id"] ?? null,
+        action: span["guild.action"] ?? null,
+        guild: span["guild.id"] ?? null,
+        guild_name: span["guild.name"] ?? null,
+        recipients: num(span.recipients),
+        text: span.text ?? null,
+      });
+      continue;
+    }
+
     if (span.name === "world.quest") {
       rows.push({
         ...common,

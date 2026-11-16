@@ -106,7 +106,7 @@ there, lootable, until the reset. A login starts at the safe start room.
 - **The existing Vault/Shrine construct** becomes a quest with a witness
   requirement, not a hard-coded command.
 
-### K — Guilds
+### K — Guilds (done, v0.12.0)
 
 - **Guilds** are data plus state: id, name, founder, members with ranks
   (leader, officer, member), a hall room, a charter, and a bank/till.
@@ -115,7 +115,8 @@ there, lootable, until the reset. A login starts at the safe start room.
   <player> <rank>`, `guild disband`.
 - **Guild chat** is a channel scoped to members, with a span and dataset row.
 - **Guild hall** is a room owned by the guild, safe, with a chest whose contents
-  reset with the world.
+  reset with the world. Instanced halls arrive with the world phase; the roster,
+  ranks and chat are the stable part.
 - **Persistence.** Membership and rank are on the identity; the guild record is
   in the world state and survives restarts.
 

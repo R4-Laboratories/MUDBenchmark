@@ -12,6 +12,7 @@ import { createHash } from "node:crypto";
 import { advance, due as pulseDue, makePulse } from "./generated/Pulses.mjs";
 import { levelForXp, nextLevelXp } from "./levels.mjs";
 import { applyQuestEvent, emptyProgress, normalizeQuestState, questById, questMet } from "./quests.mjs";
+import { RANKS, guildId, rankAtLeast, removeMember, successor, validGuildName } from "./guilds.mjs";
 
 export const TICK_MS = 250;
 
@@ -153,6 +154,7 @@ export function initialState(rooms, npcs = [], objects = [], start = 1, climate 
     channels,
     levels,
     quests,
+    guilds: {},
     mail: [],
     engagements: [],
     npcs: npcs
@@ -208,6 +210,11 @@ export function digestState(state) {
     channels: state.channels ?? [],
     levels: state.levels,
     quests: state.quests ?? [],
+    guilds: Object.fromEntries(Object.entries(state.guilds ?? {}).map(([id, guild]) => [id, {
+      ...guild,
+      members: { ...(guild.members ?? {}) },
+      invites: [...(guild.invites ?? [])],
+    }])),
     mail: (state.mail ?? []).map((letter) => ({ ...letter })),
     engagements: (state.engagements ?? []).map((e) => ({ ...e })),
     objects: [...state.objects].sort((a, b) => a.id.localeCompare(b.id)),
@@ -281,11 +288,13 @@ export function upgradeState(saved, base) {
   // are session state; old saves are stripped of them here.
   const identities = Object.fromEntries(Object.entries(saved.identities ?? base.identities ?? {}).map(([key, identity]) => {
     const { inventory, worn, room, visited, ...rest } = identity;
+    const guilds = saved.guilds && typeof saved.guilds === "object" ? saved.guilds : {};
     return [key, {
       ...rest,
       level: identity.level ?? 1,
       xp: identity.xp ?? 0,
-      guild: identity.guild ?? null,
+      guild: guilds[identity.guild] ? identity.guild : null,
+      guildRank: guilds[identity.guild]?.members?.[key] ?? null,
       quests: identity.quests ?? { active: [], completed: [] },
     }];
   }));
@@ -302,6 +311,7 @@ export function upgradeState(saved, base) {
     channels: base.channels,
     levels: base.levels,
     quests: base.quests,
+    guilds: saved.guilds && typeof saved.guilds === "object" ? saved.guilds : {},
     mail: Array.isArray(saved.mail) ? saved.mail : [],
     pulses,
     npcs,
@@ -347,6 +357,7 @@ export function checkpointIdentities(state) {
       level: actor.level ?? 1,
       xp: actor.xp ?? 0,
       guild: actor.guild ?? null,
+      guildRank: actor.guildRank ?? null,
       quests: actor.quests ?? { active: [], completed: [] },
     };
   }
@@ -364,6 +375,11 @@ export function step({ state, rooms, intents }) {
     channels: state.channels ?? [],
     levels: state.levels,
     quests: state.quests ?? [],
+    guilds: Object.fromEntries(Object.entries(state.guilds ?? {}).map(([id, guild]) => [id, {
+      ...guild,
+      members: { ...(guild.members ?? {}) },
+      invites: [...(guild.invites ?? [])],
+    }])),
     mail: (state.mail ?? []).map((letter) => ({ ...letter })),
     engagements: (state.engagements ?? []).map((e) => ({ ...e })),
     npcs: state.npcs.map((n) => ({ ...n, clock: { ...n.clock } })),
@@ -421,6 +437,7 @@ export function step({ state, rooms, intents }) {
           level: 1,
           xp: 0,
           guild: null,
+          guildRank: null,
           quests: { active: [], completed: [] },
           wielding: null,
         });
@@ -440,6 +457,7 @@ export function step({ state, rooms, intents }) {
       actor.level = 1;
       actor.xp = 0;
       actor.guild = null;
+      actor.guildRank = null;
       actor.quests = { active: [], completed: [] };
       actor.maxHp = 10;
       actor.hp = 10;
@@ -517,6 +535,147 @@ export function step({ state, rooms, intents }) {
       continue;
     }
 
+    if (intent.kind === "guildCreate") {
+      const actor = find(intent.actorId);
+      if (!actor?.key || actor.guild) continue;
+      if (!validGuildName(intent.name) || !intent.guildId || next.guilds[intent.guildId]) continue;
+      next.guilds[intent.guildId] = {
+        id: intent.guildId,
+        name: intent.name.trim(),
+        founder: actor.key,
+        created: next.tick,
+        members: { [actor.key]: "leader" },
+        invites: [],
+      };
+      actor.guild = intent.guildId;
+      actor.guildRank = "leader";
+      next.identities[actor.key] = { ...next.identities[actor.key], guild: actor.guild, guildRank: "leader" };
+      events.push({ onlyId: actor.id, text: `Guild ${intent.name.trim()} founded.\r\n`, guild: { action: "create", id: intent.guildId, name: intent.name.trim() } });
+      continue;
+    }
+
+    if (intent.kind === "guildJoin") {
+      const actor = find(intent.actorId);
+      if (!actor?.key || actor.guild) continue;
+      const guild = next.guilds[intent.guildId];
+      if (!guild) continue;
+      guild.members[actor.key] = "member";
+      guild.invites = (guild.invites ?? []).filter((key) => key !== actor.key);
+      actor.guild = guild.id;
+      actor.guildRank = "member";
+      next.identities[actor.key] = { ...next.identities[actor.key], guild: guild.id, guildRank: "member" };
+      events.push({ onlyId: actor.id, text: `You join ${guild.name}.\r\n`, guild: { action: "join", id: guild.id, name: guild.name } });
+      for (const member of next.actors) {
+        if (member.id === actor.id || member.guild !== guild.id) continue;
+        events.push({ onlyId: member.id, text: `${actor.name} joins ${guild.name}.\r\n` });
+      }
+      continue;
+    }
+
+    if (intent.kind === "guildLeave") {
+      const actor = find(intent.actorId);
+      if (!actor?.key) continue;
+      const guild = next.guilds[actor.guild];
+      if (!guild) { actor.guild = null; actor.guildRank = null; continue; }
+      const wasLeader = guild.members[actor.key] === "leader";
+      removeMember(guild, actor.key);
+      actor.guild = null;
+      actor.guildRank = null;
+      next.identities[actor.key] = { ...next.identities[actor.key], guild: null, guildRank: null };
+      if (Object.keys(guild.members).length === 0) {
+        delete next.guilds[guild.id];
+        events.push({ onlyId: actor.id, text: `You leave ${guild.name}. It has no members left.\r\n`, guild: { action: "disband", id: guild.id, name: guild.name } });
+      } else {
+        events.push({ onlyId: actor.id, text: `You leave ${guild.name}.\r\n`, guild: { action: "leave", id: guild.id, name: guild.name } });
+        if (wasLeader) {
+          const heir = successor(guild.members, actor.key);
+          if (heir) {
+            guild.members[heir] = "leader";
+            const online = next.actors.find((member) => member.key === heir);
+            if (online) {
+              online.guildRank = "leader";
+              events.push({
+                onlyId: online.id,
+                text: `You are now the leader of ${guild.name}.\r\n`,
+                guild: { action: "promote", id: guild.id, name: guild.name },
+              });
+            }
+            next.identities[heir] = { ...next.identities[heir], guild: guild.id, guildRank: "leader" };
+          }
+        }
+        for (const member of next.actors) {
+          if (member.id === actor.id || member.guild !== guild.id) continue;
+          events.push({ onlyId: member.id, text: `${actor.name} leaves ${guild.name}.\r\n` });
+        }
+      }
+      continue;
+    }
+
+    if (intent.kind === "guildRank") {
+      const actor = find(intent.actorId);
+      const guild = next.guilds[actor?.guild];
+      if (!guild || guild.members[actor.key] !== "leader") continue;
+      const targetKey = intent.targetKey;
+      const rank = intent.rank;
+      if (!targetKey || targetKey === actor.key || !guild.members[targetKey] || !RANKS.includes(rank)) continue;
+      if (rank === "leader") {
+        guild.members[actor.key] = "officer";
+        guild.members[targetKey] = "leader";
+        actor.guildRank = "officer";
+        next.identities[actor.key] = { ...next.identities[actor.key], guildRank: "officer" };
+      } else {
+        guild.members[targetKey] = rank;
+      }
+      const online = next.actors.find((member) => member.key === targetKey);
+      if (online) online.guildRank = rank === "leader" ? "leader" : rank;
+      next.identities[targetKey] = { ...next.identities[targetKey], guild: guild.id, guildRank: rank };
+      events.push({ onlyId: actor.id, text: `${targetKey} is now ${rank} of ${guild.name}.\r\n`, guild: { action: "rank", id: guild.id, name: guild.name } });
+      if (online) events.push({ onlyId: online.id, text: `You are now ${rank} of ${guild.name}.\r\n` });
+      continue;
+    }
+
+    if (intent.kind === "guildDisband") {
+      const actor = find(intent.actorId);
+      const guild = next.guilds[actor?.guild];
+      if (!guild || guild.members[actor.key] !== "leader") continue;
+      const memberKeys = new Set(Object.keys(guild.members));
+      for (const key of memberKeys) {
+        if (next.identities[key]) next.identities[key] = { ...next.identities[key], guild: null, guildRank: null };
+        const online = next.actors.find((member) => member.key === key);
+        if (online) { online.guild = null; online.guildRank = null; }
+      }
+      delete next.guilds[guild.id];
+      events.push({ onlyId: actor.id, text: `${guild.name} is disbanded.\r\n`, guild: { action: "disband", id: guild.id, name: guild.name } });
+      for (const member of next.actors) {
+        if (member.id !== actor.id && member.key && memberKeys.has(member.key)) events.push({ onlyId: member.id, text: `${guild.name} is disbanded.\r\n` });
+      }
+      continue;
+    }
+
+    if (intent.kind === "guildInvite") {
+      const actor = find(intent.actorId);
+      const guild = next.guilds[actor?.guild];
+      if (!guild || !rankAtLeast(guild.members[actor.key] ?? "member", "officer")) continue;
+      const targetKey = intent.targetKey;
+      if (!targetKey || guild.members[targetKey]) continue;
+      guild.invites = [...new Set([...(guild.invites ?? []), targetKey])];
+      events.push({ onlyId: actor.id, text: `You invite ${intent.targetName ?? targetKey} to ${guild.name}.\r\n`, guild: { action: "invite", id: guild.id, name: guild.name } });
+      const online = next.actors.find((member) => member.key === targetKey);
+      if (online) events.push({ onlyId: online.id, text: `${actor.name} invites you to ${guild.name}.\r\n` });
+      continue;
+    }
+
+    if (intent.kind === "guildChat") {
+      const actor = find(intent.actorId);
+      const guild = next.guilds[actor?.guild];
+      if (!guild) continue;
+      for (const member of next.actors) {
+        if (member.guild !== guild.id) continue;
+        events.push({ onlyId: member.id, text: member.id === actor.id ? intent.messages.actor : intent.messages.others });
+      }
+      continue;
+    }
+
     if (intent.kind === "login") {
       const actor = find(intent.actorId);
       if (!actor) continue;
@@ -548,7 +707,8 @@ export function step({ state, rooms, intents }) {
         actor.maxHp = 10 + (actor.level - 1) * 2;
         actor.hp = actor.maxHp;
         actor.wielding = null;
-        actor.guild = known.guild ?? null;
+        actor.guild = next.guilds[known.guild] ? known.guild : null;
+        actor.guildRank = actor.guild ? (next.guilds[actor.guild].members[actor.key] ?? null) : null;
         actor.quests = {
           active: [...(known.quests?.active ?? [])],
           completed: [...(known.quests?.completed ?? [])],
@@ -562,6 +722,7 @@ export function step({ state, rooms, intents }) {
           level: actor.level,
           xp: actor.xp,
           guild: actor.guild,
+          guildRank: actor.guildRank,
           quests: actor.quests,
         };
       } else {
@@ -575,6 +736,7 @@ export function step({ state, rooms, intents }) {
         actor.hp = 10;
         actor.wielding = null;
         actor.guild = null;
+        actor.guildRank = null;
         actor.quests = { active: [], completed: [] };
         next.identities[intent.key] = {
           name: actor.name,
@@ -618,6 +780,7 @@ export function step({ state, rooms, intents }) {
           level: actor.level ?? 1,
           xp: actor.xp ?? 0,
           guild: actor.guild ?? null,
+          guildRank: actor.guildRank ?? null,
           quests: actor.quests ?? { active: [], completed: [] },
         };
       }

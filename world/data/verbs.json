@@ -356,6 +356,42 @@
         "noTarget": "Nobody here answers to that.",
         "usage": "Deliver what to whom? deliver <thing> to <name>."
       }
+    },
+    "guild": {
+      "aliases": [
+        "guilds"
+      ],
+      "argument": "subcommand",
+      "messages": {
+        "usage": "guild create <name>, guild join <name>, guild leave, guild who, guild list, guild chat <text>, guild rank <member> <rank>, guild disband.",
+        "noGuild": "You are not in a guild. guild list, or guild create <name>.",
+        "inGuild": "You are already in a guild. guild leave first.",
+        "notFound": "No guild named %s.",
+        "nameTaken": "A guild by that name already exists.",
+        "badName": "Guild names are 2-32 letters, digits, spaces, - or '.",
+        "notLeader": "Only the guild leader can do that.",
+        "notOfficer": "Only a leader or officer can do that.",
+        "who": "%s",
+        "list": "%s",
+        "none": "There are no guilds yet.",
+        "rankUsage": "guild rank <member> <leader|officer|member>.",
+        "inviteUsage": "guild invite <member>.",
+        "member": "They are already in a guild.",
+        "noMember": "No one named %s has been here."
+      }
+    },
+    "guildchat": {
+      "aliases": [
+        "gc",
+        "gchat"
+      ],
+      "argument": "text",
+      "messages": {
+        "actor": "You say to your guild: %s",
+        "others": "[guild] %a: %s",
+        "noGuild": "You are not in a guild.",
+        "empty": "Say what to your guild?"
+      }
     }
   }
 }

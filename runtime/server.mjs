@@ -18,6 +18,7 @@ import { loadChannels, resolveChannel } from "./channels.mjs";
 import { loadSocials, resolveSocial } from "./socials.mjs";
 import { loadLevels, nextLevelXp } from "./levels.mjs";
 import { availableQuests, loadQuests, normalizeQuestState, questById, questLines, validateQuestReferences } from "./quests.mjs";
+import { RANKS, guildId, rankAtLeast, validGuildName } from "./guilds.mjs";
 import { hashPassword, verifyPassword, validName, validPassword } from "./accounts.mjs";
 import { allowCommand as allowInput, DEFAULT_INTERVAL_MS } from "./allowance.mjs";
 
@@ -670,6 +671,119 @@ async function handleCommand(id, line) {
     return;
   }
 
+  const guildByName = (name) => {
+    const wanted = String(name).toLowerCase();
+    return Object.values(state.guilds ?? {}).find((guild) => guild.id === wanted || guild.name.toLowerCase() === wanted) ?? null;
+  };
+  const guildKeyFor = (name) => findActor(name)?.key ?? findIdentity(name)?.[0] ?? null;
+  const guildRoster = (guild) => Object.entries(guild.members ?? {}).map(([key, rank]) =>
+    `${key} (${rank}${state.actors.some((a) => a.key === key) ? ", awake" : ""})`);
+
+  if (named === "guild") {
+    const messages = VERB_TABLE.verbs.guild.messages;
+    const action = rest[0];
+    if (!action) {
+      if (!actor.guild) {
+        const all = Object.values(state.guilds ?? {}).map((guild) => `${guild.name} (${Object.keys(guild.members ?? {}).length})`);
+        return sendTo(id, `${all.length ? render(messages.list, { words: all.join(", ") }) : messages.none}\r\n`);
+      }
+      const guild = state.guilds[actor.guild];
+      if (!guild) return sendTo(id, `${messages.noGuild}\r\n`);
+      return sendTo(id, `${render(messages.who, { words: `${guild.name}: ${guildRoster(guild).join(", ")}` })}\r\n`);
+    }
+    if (action === "list") {
+      const all = Object.values(state.guilds ?? {}).map((guild) => `${guild.name} (${Object.keys(guild.members ?? {}).length})`);
+      return sendTo(id, `${all.length ? render(messages.list, { words: all.join(", ") }) : messages.none}\r\n`);
+    }
+    if (action === "who") {
+      const guild = state.guilds[actor.guild];
+      if (!guild) return sendTo(id, `${messages.noGuild}\r\n`);
+      return sendTo(id, `${render(messages.who, { words: `${guild.name}: ${guildRoster(guild).join(", ")}` })}\r\n`);
+    }
+    if (action === "create") {
+      const name = restRaw.slice(1).join(" ").trim();
+      if (actor.guild) return sendTo(id, `${messages.inGuild}\r\n`);
+      if (!validGuildName(name)) return sendTo(id, `${messages.badName}\r\n`);
+      if (guildByName(name) || state.guilds[guildId(name)]) return sendTo(id, `${messages.nameTaken}\r\n`);
+      pending.push({ kind: "guildCreate", actorId: id, name, guildId: guildId(name) });
+      return;
+    }
+    if (action === "join") {
+      const name = restRaw.slice(1).join(" ").trim();
+      if (actor.guild) return sendTo(id, `${messages.inGuild}\r\n`);
+      const guild = guildByName(name);
+      if (!guild) return sendTo(id, `${render(messages.notFound, { words: name })}\r\n`);
+      pending.push({ kind: "guildJoin", actorId: id, guildId: guild.id });
+      return;
+    }
+    if (action === "leave") {
+      if (!actor.guild) return sendTo(id, `${messages.noGuild}\r\n`);
+      pending.push({ kind: "guildLeave", actorId: id });
+      return;
+    }
+    if (action === "disband") {
+      const guild = state.guilds[actor.guild];
+      if (!guild) return sendTo(id, `${messages.noGuild}\r\n`);
+      if (guild.members[actor.key] !== "leader") return sendTo(id, `${messages.notLeader}\r\n`);
+      pending.push({ kind: "guildDisband", actorId: id });
+      return;
+    }
+    if (action === "rank") {
+      const target = rest[1];
+      const rank = rest[2];
+      const guild = state.guilds[actor.guild];
+      if (!guild) return sendTo(id, `${messages.noGuild}\r\n`);
+      if (guild.members[actor.key] !== "leader") return sendTo(id, `${messages.notLeader}\r\n`);
+      if (!target || !rank || !RANKS.includes(rank)) return sendTo(id, `${messages.rankUsage}\r\n`);
+      const targetKey = guildKeyFor(target);
+      if (!targetKey || !guild.members[targetKey]) return sendTo(id, `${render(messages.noMember, { words: target })}\r\n`);
+      pending.push({ kind: "guildRank", actorId: id, targetKey, rank });
+      return;
+    }
+    if (action === "invite") {
+      const target = rest[1];
+      const guild = state.guilds[actor.guild];
+      if (!guild) return sendTo(id, `${messages.noGuild}\r\n`);
+      if (!rankAtLeast(guild.members[actor.key] ?? "member", "officer")) return sendTo(id, `${messages.notOfficer}\r\n`);
+      if (!target) return sendTo(id, `${messages.inviteUsage}\r\n`);
+      const targetKey = guildKeyFor(target);
+      if (!targetKey) return sendTo(id, `${render(messages.noMember, { words: target })}\r\n`);
+      if (guild.members[targetKey]) return sendTo(id, `${messages.member}\r\n`);
+      pending.push({ kind: "guildInvite", actorId: id, targetKey, targetName: target });
+      return;
+    }
+    if (action === "chat") {
+      const said = restRaw.slice(1).join(" ");
+      const guild = state.guilds[actor.guild];
+      if (!guild) return sendTo(id, `${messages.noGuild}\r\n`);
+      if (!said) return sendTo(id, `${VERB_TABLE.verbs.guildchat.messages.empty}\r\n`);
+      const messages = VERB_TABLE.verbs.guildchat.messages;
+      const recipients = state.actors.filter((member) => member.guild === guild.id).length;
+      pending.push({ kind: "guildChat", actorId: id, messages: {
+        actor: render(messages.actor, { words: said }),
+        others: render(messages.others, { actor: actor.name, words: said }),
+      } });
+      recordSpan("world.guild", { "actor.id": id, "guild.id": guild.id, "guild.action": "chat", "guild.name": guild.name, "recipients": recipients, "text": said.slice(0, 500), "world.tick": state.tick }, 0);
+      return;
+    }
+    return sendTo(id, `${messages.usage}\r\n`);
+  }
+
+  if (named === "guildchat") {
+    const messages = VERB_TABLE.verbs.guildchat.messages;
+    const guild = state.guilds[actor.guild];
+    if (!guild) return sendTo(id, `${messages.noGuild}\r\n`);
+    const said = restRaw.join(" ");
+    if (!said) return sendTo(id, `${messages.empty}\r\n`);
+    const recipients = state.actors.filter((member) => member.guild === guild.id).length;
+    pending.push({ kind: "guildChat", actorId: id, messages: {
+      actor: render(messages.actor, { words: said }),
+      others: render(messages.others, { actor: actor.name, words: said }),
+    } });
+    recordSpan("world.guild", { "actor.id": id, "guild.id": guild.id, "guild.action": "chat", "guild.name": guild.name, "recipients": recipients, "text": said.slice(0, 500), "world.tick": state.tick }, 0);
+    return;
+  }
+
   if (named === "inventory") {
     const carried = state.objects.filter((o) => o.holder === actor.id && !o.eaten);
     const names = carried.map((o) => {
@@ -926,6 +1040,15 @@ function onTick() {
         "world.tick": state.tick,
       }, 0);
     }
+    if (event.guild) {
+      recordSpan("world.guild", {
+        "actor.id": event.onlyId ?? null,
+        "guild.id": event.guild.id,
+        "guild.action": event.guild.action,
+        "guild.name": event.guild.name ?? null,
+        "world.tick": state.tick,
+      }, 0);
+    }
     if (event.quest) {
       recordSpan("world.quest", {
         "actor.id": event.onlyId ?? null,
@@ -958,9 +1081,12 @@ function onTick() {
     }
     // Every event is a line. Some are already framed (a login refusal), most
     // are not; without this, "bob leaves north.You say: hello" ran together.
-    const asLine = (text) => (text.endsWith("\r\n") ? text : `${text}\r\n`);
-    if (event.onlyId !== undefined) sendTo(event.onlyId, asLine(event.text));
-    else broadcast(event.room, asLine(event.text), event.exceptId);
+    // Metadata-only events (rare) still carry their span but no line.
+    const asLine = (text) => (typeof text === "string" ? (text.endsWith("\r\n") ? text : `${text}\r\n`) : "");
+    if (typeof event.text === "string") {
+      if (event.onlyId !== undefined) sendTo(event.onlyId, asLine(event.text));
+      else broadcast(event.room, asLine(event.text), event.exceptId);
+    }
   }
 
   // Anyone newly in the world gets welcomed once the tick has placed them.
