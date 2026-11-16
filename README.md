@@ -91,10 +91,19 @@ runtime/        the Node.js world server, telnet and WebSocket
 
 ## Self-improvement
 
-The repository can propose and measure bounded pacing candidates, but it cannot
-write or publish one. `node tools/candidate.mjs --seed <seed>` builds a finite
-inventory inside `world/bounds.json`; `node tools/measure.mjs --candidates
-<file>` runs it against hidden playthroughs and admits a candidate only if it is
-no worse on every measure and better on at least one. `node tools/gate.mjs`
-proves the inventory is deterministic and an out-of-band value is refused.
+The repository proposes, measures and admits bounded pacing candidates. It
+writes exactly one file: `world/data/generated/pacing.json`, and only after the
+candidate passes the full gate with that file applied.
+
+```sh
+node tools/candidate.mjs --seed <seed> --out candidates.json
+node tools/measure.mjs --candidates candidates.json --out result.json
+node tools/publish.mjs --candidates candidates.json --result result.json
+```
+
+`world/bounds.json` records what may move and its band. `tools/scenarios.mjs`
+holds the hidden playthroughs; `tools/measure.mjs` admits a candidate only if it
+is no worse on every measure and better on at least one; `tools/publish.mjs`
+re-measures, composes the candidate onto the current overlay, runs the gate, and
+defaults to a dry run. `.github/workflows/loop.yml` is the scheduled tick, and
 `docs/SELF-IMPROVEMENT.md` records the bounds and what is still human.

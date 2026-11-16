@@ -1,0 +1,81 @@
+# The self-improvement tick.
+#
+# One candidate inventory per run, measured against the hidden playthroughs.
+# If one dominates, the publisher writes `world/data/generated/pacing.json`,
+# runs the gate with it applied, and opens a `loop/...` pull request. It never
+# pushes to main. The existing automerge workflow switches on auto-merge when
+# the pull request opens, and branch protection waits for the gate.
+#
+# Pause: set the repository variable MUDBENCH_LOOP_PAUSED to `true`.
+# Credential: a GitHub App installed on this repository, with
+#   MUDBENCH_APP_ID  (repository variable)
+#   MUDBENCH_APP_PRIVATE_KEY (repository secret)
+# The default Actions token cannot open a pull request that triggers workflows,
+# so the App is not optional.
+
+name: Loop
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "dry-run checks the candidate without a branch; write leaves the file; push opens a PR"
+        type: choice
+        options: [dry-run, write, push]
+        default: dry-run
+  schedule:
+    - cron: '17 */6 * * *'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: loop
+  cancel-in-progress: false
+
+jobs:
+  propose:
+    name: propose, measure, publish
+    if: vars.MUDBENCH_LOOP_PAUSED != 'true' && vars.MUDBENCH_APP_ID != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Mint the publisher token
+        id: app
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.MUDBENCH_APP_ID }}
+          private-key: ${{ secrets.MUDBENCH_APP_PRIVATE_KEY }}
+
+      - name: Point git at the App
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: gh auth setup-git
+
+      - name: Build and measure one inventory
+        env:
+          SEED: ${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          node tools/candidate.mjs --seed "$SEED" --out /tmp/candidates.json
+          node tools/measure.mjs --candidates /tmp/candidates.json --out /tmp/result.json
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          set -euo pipefail
+          MODE="${{ inputs.mode }}"
+          if [ -z "$MODE" ]; then MODE="push"; fi
+          git config user.name "mudbench-loop[bot]"
+          git config user.email "mudbench-loop[bot]@users.noreply.github.com"
+          node tools/publish.mjs --candidates /tmp/candidates.json --result /tmp/result.json --"$MODE"

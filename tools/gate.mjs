@@ -15,7 +15,9 @@
 //
 // Usage: node tools/gate.mjs [--json]
 
-import { readFileSync, readdirSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { spawnSync } from "node:child_process";
 import { loadWorld } from "../runtime/worlddata.mjs";
 import { describe as renderRoom, examine } from "../runtime/view.mjs";
@@ -984,6 +986,52 @@ if (!driftOk) {
   failures.push(`mechanized code drifted from the model: ${(drift.stderr || drift.stdout || "").trim().split("\n")[0]}`);
 }
 
+// The generated pacing file is the loop's only write surface. It is bound to
+// the world it was measured against, may move only four numeric fields, and a
+// stale value is refused rather than half-applied.
+let pacing = { ok: true, why: [] };
+{
+  const dir = mkdtempSync(join(tmpdir(), "mudbench-pacing-"));
+  const worldText = readFileSync(join(root, "world/data/world.json"), "utf8");
+  const worldPath = join(dir, "world.json");
+  writeFileSync(worldPath, worldText);
+  mkdirSync(join(dir, "generated"), { recursive: true });
+  const hash = createHash("sha256").update(worldText).digest("hex");
+  const file = {
+    schema: "mudbenchmark/pacing/1",
+    candidate: "test-candidate",
+    report: "test-report",
+    worldHash: hash,
+    changes: [{ group: "hostile-hp", collection: "npcs", target: "boar", field: "hp", from: 12, to: 14 }],
+  };
+  const write = (value) => writeFileSync(join(dir, "generated/pacing.json"), JSON.stringify(value));
+  const load = () => loadWorld({ mode: "single", path: worldPath });
+  const check = (condition, why) => { if (!condition) { pacing.ok = false; pacing.why.push(why); } };
+
+  write(file);
+  const applied = load();
+  check(applied.errors.length === 0, `a valid pacing file produced ${applied.errors[0]}`);
+  check(applied.npcs.find((npc) => npc.id === "boar").hp === 14, "the generated hp was not applied");
+  check(applied.npcs.find((npc) => npc.id === "boar").maxHp === 14, "maxHp did not follow the generated hp");
+  check(applied.pacing?.candidate === "test-candidate", "the applied pacing was not reported");
+
+  write({ ...file, worldHash: "0".repeat(64) });
+  const ignored = load();
+  check(ignored.pacing === null, "a pacing file for another world was applied");
+  check(ignored.npcs.find((npc) => npc.id === "boar").hp === 12, "an ignored pacing file still moved the world");
+
+  write({ ...file, changes: [{ ...file.changes[0], from: 1 }] });
+  const stale = load();
+  check(stale.errors.some((error) => error.includes("but the world has")), "a stale generated value was not refused");
+
+  write({ ...file, changes: [{ ...file.changes[0], field: "room" }] });
+  const field = load();
+  check(field.errors.some((error) => error.includes("not writable")), "a generated field outside the surface was not refused");
+
+  rmSync(dir, { recursive: true, force: true });
+  if (!pacing.ok) failures.push(`the pacing surface is broken: ${pacing.why[0]}`);
+}
+
 // The candidate loop: a finite, seeded inventory measured on hidden
 // playthroughs. The gate proves the three properties the loop claims: the same
 // seed gives the same inventory, a value outside a band is refused by name, and
@@ -1049,6 +1097,7 @@ if (process.argv.includes("--json")) {
   }
   console.log(`${"mechanizedDrift".padEnd(26)}  ${(driftOk ? "clean" : "DRIFT").padStart(5)}   == clean`);
   console.log(`${"loop".padEnd(26)}  ${(loop.ok ? String(loop.count) : "BROKEN").padStart(5)}   == ${loop.ok ? `${loop.admitted} admitted, bounded` : "no verdict"}`);
+  console.log(`${"pacing".padEnd(26)}  ${(pacing.ok ? "14 hp" : "BROKEN").padStart(5)}   == applied, bound, refused`);
   console.log(`${"llms".padEnd(26)}  ${(llms.ok ? "verbs, rooms" : "STALE").padStart(5)}   == generated contract`);
   console.log(`${"claims".padEnd(26)}  ${(claimsCheck.status === 0 ? "levels ok" : "STALE").padStart(5)}   == build, open, some-true`);
   console.log(`${"commandsDoc".padEnd(26)}  ${(commandsCheck.status === 0 ? "current" : "STALE").padStart(5)}   == generated reference`);

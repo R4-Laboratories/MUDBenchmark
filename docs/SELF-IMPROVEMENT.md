@@ -100,8 +100,11 @@ mudbench-deploy --status   →   release v0.23.0
 switches on auto-merge when it opens. A change that is not green cannot land,
 and a change that is green lands without anyone asking.
 
-S0 and S1 are in place. The loop can propose a bounded inventory and measure it
-against hidden playthroughs. It cannot write, open a PR, merge or publish.
+S0, S1 and the write surface of S2 are in place. The loop can propose, measure,
+admit and apply a candidate to `world/data/generated/pacing.json` in a dry run
+that runs the full gate. The publisher can open a `loop/...` PR, but the GitHub
+App that makes that PR trigger workflows is not installed yet, so no loop PR has
+been opened and the scheduled job stays off until `MUDBENCH_APP_ID` exists.
 
 ---
 
@@ -158,6 +161,44 @@ node tools/measure.mjs --candidates candidates.json --out result.json
   name only the boar, because only the boar has a scenario. The wolf, ghoul and
   smuggler join when their scenarios exist. A target without a judge is a place
   a loop could improve a number nobody watches.
+
+### What S2 does, precisely
+
+- **One file.** The publisher writes `world/data/generated/pacing.json` and
+  nothing else. It refuses a working tree with any other change.
+- **Composition, not stacking.** The file stores absolute values against the
+  raw world. A second candidate replaces a field; it does not apply two
+  multipliers in a row. The loader derives `maxHp` from `hp`, so a generated
+  file never carries `maxHp`.
+- **Fresh admission.** The publisher re-measures the inventory itself. A stale
+  or edited report cannot name a winner the current world did not admit.
+- **Gate first.** It writes the file, runs `node tools/gate.mjs` with the
+  candidate applied, and restores the old file if the gate fails.
+- **PR only.** `--push` creates `loop/<candidate>-<hash>`, opens a pull request
+  and enables auto-merge. It never pushes to `main`.
+- **Settle is silent.** When the inventory has no winner, the publisher refuses
+  and opens nothing. In the first end-to-end test the second tick settled: the
+  applied candidate is a fixed point, not a step toward another change.
+- **Pause and opt-in.** `MUDBENCH_LOOP_PAUSED=true` stops the scheduled job, and
+  the job also stays off until `MUDBENCH_APP_ID` is set.
+
+## Turning the loop on
+
+1. Create a GitHub App owned by the repository owner. Give it **Contents:
+   read and write** and **Pull requests: read and write**, and install it on
+   this repository only.
+2. Add `MUDBENCH_APP_ID` as a repository variable and
+   `MUDBENCH_APP_PRIVATE_KEY` as a repository secret.
+3. Leave `MUDBENCH_LOOP_PAUSED` unset. The scheduled job is also inert until
+   the App ID exists, so a missing secret cannot produce a nightly red run.
+4. Run the **Loop** workflow by hand with `dry-run`. It measures, writes the
+   pacing file, runs the full gate with it applied, prints it, and restores it.
+5. Run it with `push`. It opens a `loop/...` pull request; the gate and
+   automerge workflows take over. To stop it, set
+   `MUDBENCH_LOOP_PAUSED=true`.
+
+The first real pull request is the acceptance test for S2. Until it exists,
+"the loop can publish" is a tested tool, not a demonstrated outcome.
 
 ## What the references actually contribute
 
@@ -301,6 +342,7 @@ schedule ─▶ candidate (bounded) ─▶ measure on fixed scenarios
 - Publish on a failed gate, a stale main or a missing receipt.
 - Claim an improvement when the frontier is settled.
 - Run arbitrary generated code, imports, shell commands or network calls.
+- Write a file outside `world/data/generated/`.
 - Hold a model provider key on the game server.
 
 ## Near-term recommendation

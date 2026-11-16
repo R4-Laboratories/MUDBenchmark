@@ -8,6 +8,7 @@
 // level no role can reach, or a room nobody can walk to is a broken world, and
 // a broken world should not accept a connection.
 
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -19,15 +20,83 @@ const DEFAULT_PATH = join(HERE, "..", "world", "data", "world.json");
 
 const LEVELS = 4; // roles and notice levels are both 0..3, per Perception.lex.tex
 
+// A generated pacing file is the loop's only write surface. It is bound to the
+// exact world it was measured against, may move only four numeric fields, and
+// must state the value it replaces. Anything else is a broken artifact: the
+// world refuses to boot rather than run a half-applied candidate.
+const PACING_SCHEMA = "mudbenchmark/pacing/1";
+const PACING_FIELDS = {
+  npcs: new Set(["hp", "period", "damage"]),
+  objects: new Set(["price"]),
+};
+
+function applyPacing({ text, raw, path, errors }) {
+  const generatedPath = join(dirname(path), "generated", "pacing.json");
+  let generatedText;
+  try {
+    generatedText = readFileSync(generatedPath, "utf8");
+  } catch (error) {
+    if (error.code === "ENOENT") return null;
+    errors.push(`cannot read ${generatedPath}: ${error.message}`);
+    return null;
+  }
+
+  let file;
+  try {
+    file = JSON.parse(generatedText);
+  } catch (error) {
+    errors.push(`${generatedPath} is not JSON: ${error.message}`);
+    return null;
+  }
+  if (file.schema !== PACING_SCHEMA) {
+    errors.push(`${generatedPath} has schema ${file.schema}, not ${PACING_SCHEMA}`);
+    return null;
+  }
+
+  // A pacing file built for another world is ignored, not applied. This is what
+  // lets the seven-room control use the same data directory without inheriting
+  // a candidate measured on the thirty-three-room world.
+  const worldHash = createHash("sha256").update(text).digest("hex");
+  if (file.worldHash !== worldHash) return null;
+
+  for (const change of file.changes ?? []) {
+    const fields = PACING_FIELDS[change.collection];
+    if (!fields || !fields.has(change.field)) {
+      errors.push(`generated pacing changes ${change.collection}.${change.field}, which is not writable`);
+      continue;
+    }
+    const entry = (raw[change.collection] ?? []).find((candidate) => candidate.id === change.target);
+    if (!entry) {
+      errors.push(`generated pacing names ${change.target}, which does not exist`);
+      continue;
+    }
+    if (entry[change.field] !== change.from) {
+      errors.push(`generated pacing says ${change.target}.${change.field} is ${change.from}, but the world has ${entry[change.field]}`);
+      continue;
+    }
+    if (!Number.isInteger(change.to)) {
+      errors.push(`generated pacing sets ${change.target}.${change.field} to a non-integer`);
+      continue;
+    }
+    entry[change.field] = change.to;
+  }
+
+  return { candidate: file.candidate ?? null, report: file.report ?? null, changes: file.changes ?? [] };
+}
+
 export function loadWorld({ mode = "single", path = DEFAULT_PATH } = {}) {
   const errors = [];
   let raw;
+  let text;
 
   try {
-    raw = JSON.parse(readFileSync(path, "utf8"));
+    text = readFileSync(path, "utf8");
+    raw = JSON.parse(text);
   } catch (error) {
     return { rooms: {}, start: 1, errors: [`cannot read ${path}: ${error.message}`] };
   }
+
+  const pacing = applyPacing({ text, raw, path, errors });
 
   const rooms = {};
   for (const [id, room] of Object.entries(raw.rooms ?? {})) {
@@ -250,5 +319,5 @@ export function loadWorld({ mode = "single", path = DEFAULT_PATH } = {}) {
     if (!rooms[task[key]]) errors.push(`task.${key} names room ${task[key]}, which does not exist`);
   }
 
-  return { rooms, start, task, npcs, objects, shops, zones, climate, errors };
+  return { rooms, start, task, npcs, objects, shops, zones, climate, pacing, errors };
 }
