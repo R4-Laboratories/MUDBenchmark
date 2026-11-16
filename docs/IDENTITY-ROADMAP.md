@@ -425,7 +425,8 @@ artifact and cited in the release notes.
 *Implemented:* `world/src/Identity.lex.tex` defines `credentialHolds` and
 `admitted` and proves eight refusal theorems (passwordless record, no
 credential, unauthenticated, foreign audience, outside the window, stale log,
-malformed id, expired). The app facet's kind 7 is a nine-byte request carrying
+malformed id, expired), each with every other check true — the one-false case
+the threshold must refuse. The app facet's kind 7 is a nine-byte request carrying
 the two credential kinds and six 0/1 flags; the vectors include every one-false
 case and a non-0/1 flag. `runtime/identity.mjs` is the JavaScript twin;
 `world/data/identity-vectors.json` is the fixture. The gate decodes each
