@@ -12,6 +12,7 @@ Environment=DECOY_MODE=corroborated
 Environment=RESPAWN_AT_START=false
 Environment=STATE_FILE=%h/.mudbench/state/world.json
 Environment=PRISM_ORIGINS=https://play.r4labs.org
+Environment=IDENTITY_FILE=%h/.mudbench/state/identities.json
 ExecStart=/usr/bin/node server.mjs
 Restart=on-failure
 RestartSec=3

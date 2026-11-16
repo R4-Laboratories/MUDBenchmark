@@ -116,6 +116,7 @@ sed -i "s|^WorkingDirectory=.*|WorkingDirectory=$DEST/runtime|" "$UNIT_WORLD"
 # server is the same; the unit is explicit so a future default cannot move it.
 ensure_env "$UNIT_WORLD" STATE_FILE "$HOME/.mudbench/state/world.json"
 ensure_env "$UNIT_WORLD" PRISM_ORIGINS "https://play.r4labs.org"
+ensure_env "$UNIT_WORLD" IDENTITY_FILE "$HOME/.mudbench/state/identities.json"
 mkdir -p "$HOME/.mudbench/state"
 if [[ ! -f "$HOME/.mudbench/state/world.json" && -f /tmp/mudbench-world.json ]]; then
   cp /tmp/mudbench-world.json "$HOME/.mudbench/state/world.json"

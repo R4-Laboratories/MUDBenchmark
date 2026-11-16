@@ -13,8 +13,11 @@ N5 is partial (`navigator.storage.persist()` plus honest copy). **X1 is
 implemented in v0.28**: `adopt` with a password or legacy token, progression
 and keyed-record merge, tombstone, old-login refusal, second-claim refusal,
 checkpoint survival, and a gate test. `casey` remains a deliberate owner action
-because it is token-only. N3's full vector set, X2 log pinning, X3 linking, X4
-heartbeat, X5 identity kernel and X6 release-on-merge remain.
+because it is token-only. **X2 is implemented in v0.29**: the server pins each
+Prism's public log in `identities.json`, refuses a presented log that omits a
+stored record, merges a newer log, and the pin survives a restart; the gate
+links and revokes a device to prove it. X3 linking, X4 heartbeat, X5 identity
+kernel and X6 release-on-merge remain.
 
 The question is narrow: **is a Prism id actually a player account yet?** The
 answer is that the signature path is real and the account is real, but the

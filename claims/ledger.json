@@ -93,6 +93,12 @@
       "level": "build",
       "statement": "A legacy name is adopted once by a Prism account after the server checks its password or token; the reducer merges level, XP, guild, quests and mail keys and tombstones the old credentials; a second claim and the old login are refused, and the claim survives a checkpoint.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-10",
+      "level": "build",
+      "statement": "A Prism login pins the public log it admitted; a presented log that omits a stored record is refused; a revocation presented by a surviving device is merged and survives a restart; after that the revoked device's pre-revocation log is refused.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

@@ -37,6 +37,7 @@ import { buildCandidates } from "./candidate.mjs";
 import { buildSystemPrompt, buildUserPrompt, parseBrain, requestFor, replyFrom, trimHistory } from "../runtime/web/ai.mjs";
 import { verifyPrismSession } from "../runtime/prism-auth.mjs";
 import { loadStateFile, saveStateFile } from "../runtime/state.mjs";
+import { acceptLinkRequest, completeLink, createLinkOffer, createPrism, linkCode, requestLink, revokeDevice, signAction } from "../runtime/web/prism-id.mjs";
 import { measureCandidates } from "./measure.mjs";
 
 const root = process.cwd();
@@ -285,6 +286,66 @@ let prismLogin = { ok: true, why: [] };
   if (upgraded.identities["old-name"]?.kind !== "legacy") prismLogin.why.push("upgradeState did not type an old identity");
 
   if (prismLogin.why.length) { prismLogin.ok = false; failures.push(`Prism login is broken: ${prismLogin.why[0]}`); }
+}
+
+// X2: the pinned public log refuses a revoked device's pre-revocation log.
+let identityPin = { ok: true, why: [] };
+{
+  const check = (condition, why) => { if (!condition) { identityPin.ok = false; identityPin.why.push(why); } };
+  const origin = "https://play.r4labs.org";
+  const now = Date.now();
+  const owner = await createPrism({});
+  const joining = await createPrism({});
+  const offer = await createLinkOffer(owner, { now, ttl: 300000 });
+  const request = await requestLink(joining.device, offer.offer);
+  const code = await linkCode(offer.offer.secret, request.device);
+  const accepted = await acceptLinkRequest(owner, offer.pending, request, { now, confirmCode: code });
+  const linked = await completeLink(joining.device, offer.offer, accepted.response);
+  const before = [...accepted.session.log.values()];
+  const revoked = await revokeDevice(accepted.session, joining.device.id, { rotate: false });
+  const after = [...revoked.log.values()];
+  const sign = (session) => signAction(session, "prism/session/1", {
+    sessionKey: "x".repeat(87),
+    expires: now + 10 * 60 * 1000,
+  }, { audience: origin, now });
+  // The envelope is fresh for each call.
+  const verify = async (session, records, pinned) => verifyPrismSession(
+    { app: origin, envelope: await sign(session), records },
+    { origin, now, pinned },
+  );
+
+  const first = await verify(linked, [...linked.log.values()], { records: before });
+  check(first.ok, `the linked device was refused before the revocation was seen: ${first.reason}`);
+  const survivor = await verify(revoked, after, { records: before });
+  check(survivor.ok, `the surviving device was refused after the revocation: ${survivor.reason}`);
+  check(survivor.records.length >= after.length, "the merged log lost the revocation");
+  const pinned = { records: survivor.records, root: survivor.root };
+  const old = await verify(linked, [...linked.log.values()], pinned);
+  check(!old.ok, "the revoked device's pre-revocation log was accepted after the pin");
+  check(/omits a record/i.test(old.reason ?? ""), "the refusal did not name the omitted record");
+
+  // The pin survives a restart and still refuses the old log.
+  const dir = mkdtempSync(join(tmpdir(), "mudbench-identities-"));
+  const file = join(dir, "identities.json");
+  saveStateFile(file, { schema: "mudbenchmark/identities/1", prisms: { [owner.prism]: pinned } });
+  const loaded = loadStateFile(file, { initial: () => ({ schema: "mudbenchmark/identities/1", prisms: {} }), restore: (raw) => raw });
+  const afterRestart = await verify(linked, [...linked.log.values()], loaded.prisms[owner.prism]);
+  check(!afterRestart.ok, "the pin did not survive a restart");
+  rmSync(dir, { recursive: true, force: true });
+
+  // A tampered signing record cannot be admitted.
+  const forged = JSON.parse(JSON.stringify(before));
+  const genesis = forged[0];
+  const signatureKey = Object.keys(genesis).find((key) => /sig/i.test(key));
+  if (signatureKey) {
+    genesis[signatureKey] = `${genesis[signatureKey].slice(0, -2)}${genesis[signatureKey].endsWith("AA") ? "BB" : "AA"}`;
+  } else {
+    genesis.body = { ...genesis.body, kind: 99 };
+  }
+  const tampered = await verify(linked, forged, { records: before });
+  check(!tampered.ok, "a tampered log was accepted");
+
+  if (identityPin.why.length) { identityPin.ok = false; failures.push(`the pinned log is broken: ${identityPin.why[0]}`); }
 }
 
 // X1: a legacy name is adopted once, keyed records move, and the old login dies.
@@ -1278,6 +1339,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"prismLogin".padEnd(26)}  ${(prismLogin.ok ? "1 account" : "BROKEN").padStart(5)}   == id, no password`);
   console.log(`${"state".padEnd(26)}  ${(durableState.ok ? "5 checks" : "BROKEN").padStart(5)}   == atomic, backup, fail-loud`);
   console.log(`${"claim".padEnd(26)}  ${(claim.ok ? "1 alias" : "BROKEN").padStart(5)}   == tombstone, mail, guild`);
+  console.log(`${"pinned".padEnd(26)}  ${(identityPin.ok ? "revoked" : "BROKEN").padStart(5)}   == old log refused`);
   console.log(`${"llms".padEnd(26)}  ${(llms.ok ? "verbs, rooms" : "STALE").padStart(5)}   == generated contract`);
   console.log(`${"claims".padEnd(26)}  ${(claimsCheck.status === 0 ? "levels ok" : "STALE").padStart(5)}   == build, open, some-true`);
   console.log(`${"commandsDoc".padEnd(26)}  ${(commandsCheck.status === 0 ? "current" : "STALE").padStart(5)}   == generated reference`);

@@ -71,11 +71,18 @@ are not needed; a reconnect signs a fresh session. A short-lived, age-pruned
 but the server does not yet use it for per-command signatures: the login is a
 short-lived bearer credential (five-minute window, ten-minute expiry).
 
-**Removed devices are not yet refused.** `verifyAction` checks the log the
-client presents. A device removed elsewhere can still present its
-pre-revocation log and sign in; the server has no pinned log to compare it
-with. Server-side log pinning is the next identity step (X2 in the roadmap).
-Do not claim revocation until that lands. The relay is not consulted.
+**Removed devices are refused once the revocation is pinned.** The server keeps
+the public log it has admitted for each Prism id in `identities.json`, next to
+the world state, with the same atomic write, backups and fail-loud load. A
+presented log must contain every stored record; a newer log may add records.
+When a device is revoked, the surviving device's next login presents the newer
+log, the server merges and stores the revocation, and the revoked device's
+pre-revocation log is refused from then on.
+
+The limit is inherent to a no-relay design: until the server has seen the newer
+log it cannot know a device was revoked. The protection is eventual at the next
+legitimate login, not instant. Device linking in the browser is X3; the server
+mechanism and its gate are in place.
 
 ## What is implemented
 
@@ -85,7 +92,9 @@ Do not claim revocation until that lands. The relay is not consulted.
   non-extractable P-256 session key, and signs `prism/session/1` for the page
   origin.
 - `runtime/prism-auth.mjs` — the server verifier: session key and expiry,
-  `logFromRecords`, `verifyAction`, and a short-lived replay set.
+  `logFromRecords`, `verifyAction`, a short-lived replay set, and the pinned
+  public log (a presented log may add records, never omit one). The pinned logs
+  live in `identities.json`, separate from the tick state.
 - `server.mjs` — the WebSocket `prism <base64url session>` command. The upgrade
   request's `Origin` is the audience; a successful login creates or restores an
   account keyed by the id and names it `prism:<first 8 hex>`.
@@ -179,6 +188,12 @@ and tombstoned, a second claim and the old login are refused, the claim survives
 a checkpoint, and the account resumes under the old name. A live server test
 covered both the password and token claim paths.
 
+The gate proves the pinned log: a linked device can sign in; the surviving
+device signs in after a revocation; the merged log contains the revocation; the
+revoked device's pre-revocation log is refused; the pin survives a file write
+and load; a tampered log is refused. A live server test reproduced the same
+sequence and refused the old log again after a restart.
+
 Not yet proven by the gate: a tampered signature, an unknown device, a replay
 across a restart, a second connection resuming (today it is refused), device
 linking, recovery, revocation, and a production browser through the tunnel.
@@ -189,8 +204,9 @@ linking, recovery, revocation, and a production browser through the tunnel.
 2. **Display.** `prism:<first 8 hex>`; the full id is the account key.
 3. **Frame.** The game loads the identity module directly (`/prism-id.mjs`) and
    does not vendor the full frame yet. Linking and recovery are later work.
-4. **Relay.** The relay is not consulted. A device removed elsewhere can
-   present its old log until server-side log pinning (X2) lands.
+4. **Relay.** The relay is not consulted. The server pins the public log it has
+   seen; a device removed elsewhere is refused once a surviving device has
+   logged in with the newer log. Before that, the no-relay design cannot know.
 5. **Legacy.** The name/password form remains for telnet, CLI and older
    accounts. The one-time `adopt` claim is built; it accepts a password or a
    legacy token, and `casey` is left to its owner.

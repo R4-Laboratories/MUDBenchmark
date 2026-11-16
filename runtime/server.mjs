@@ -33,9 +33,10 @@ const WEB_PORT = Number(process.env.WEB_PORT ?? 8090);
 // Identities and progress must not live on tmpfs. The default is a durable
 // directory outside the release artifact; the unit and the deploy set it too.
 const STATE_FILE = process.env.STATE_FILE ?? joinPath(homedir(), ".mudbench", "state", "world.json");
+const IDENTITY_FILE = process.env.IDENTITY_FILE ?? joinPath(homedir(), ".mudbench", "state", "identities.json");
 const TRACE_FILE = process.env.TRACE_FILE ?? "/tmp/mudbench-trace.jsonl";
 const PRISM_ORIGINS = (process.env.PRISM_ORIGINS ?? "").split(",").map((value) => value.trim()).filter(Boolean);
-const PRISM_LOGIN_MAX = 65536;
+const PRISM_LOGIN_MAX = 262144;
 const PRISM_RECORDS_MAX = 64;
 const COMMAND_INTERVAL_MS = Number(process.env.COMMAND_INTERVAL_MS ?? DEFAULT_INTERVAL_MS);
 
@@ -155,6 +156,36 @@ function saveState() {
     lastSave = Date.now();
   } catch (error) {
     console.error(`state not saved: ${error.message}`);
+  }
+}
+
+// The pinned public Prism logs. This is deliberately not a field of `state`:
+// `step` clones an explicit list, so a new top-level field would be dropped on
+// the next tick. The same atomic write, backups and fail-loud load apply.
+function loadIdentityStore() {
+  try {
+    return loadStateFile(IDENTITY_FILE, {
+      initial: () => ({ schema: "mudbenchmark/identities/1", prisms: {} }),
+      restore: (raw) => {
+        if (raw?.schema !== "mudbenchmark/identities/1" || typeof raw.prisms !== "object") {
+          throw new Error("the identity store has an unknown schema");
+        }
+        return { schema: raw.schema, prisms: raw.prisms ?? {} };
+      },
+    });
+  } catch (error) {
+    console.error(`identity: ${error.message}`);
+    process.exit(1);
+  }
+}
+
+const identityStore = loadIdentityStore();
+
+function saveIdentityStore() {
+  try {
+    saveStateFile(IDENTITY_FILE, identityStore);
+  } catch (error) {
+    console.error(`identity not saved: ${error.message}`);
   }
 }
 
@@ -325,8 +356,18 @@ async function handleCommand(id, line) {
     if (!Array.isArray(parsed.records) || parsed.records.length > PRISM_RECORDS_MAX) {
       return sendTo(id, "Prism sign-in refused: the log is too large.\r\n");
     }
-    const verdict = await verifyPrismSession(parsed, { origin });
+    const prismId = parsed.envelope?.body?.prism;
+    const pinned = prismId ? identityStore.prisms[prismId] ?? null : null;
+    const verdict = await verifyPrismSession(parsed, { origin, pinned });
     if (!verdict.ok) return sendTo(id, `Prism sign-in refused: ${verdict.reason}.\r\n`);
+    if (!pinned || pinned.root !== verdict.root) {
+      identityStore.prisms[verdict.prism] = {
+        records: verdict.records,
+        root: verdict.root,
+        updated: new Date().toISOString(),
+      };
+      saveIdentityStore();
+    }
     if (state.actors.some((candidate) => candidate.id !== id && candidate.key === verdict.prism)) {
       return sendTo(id, "That Prism id is already signed in.\r\n");
     }
@@ -1478,6 +1519,8 @@ const web = http.createServer((req, res) => {
       phase: phaseAt(state.tick, state.climate),
       weather: state.climate.weather[state.weather]?.id ?? null,
       identities: Object.keys(state.identities ?? {}).length,
+      pinned: Object.keys(identityStore.prisms).length,
+      identity: { file: IDENTITY_FILE },
       state: {
         file: STATE_FILE,
         saved_at: lastSave ? new Date(lastSave).toISOString() : null,
@@ -1490,7 +1533,7 @@ const web = http.createServer((req, res) => {
   res.end("not found");
 });
 
-const wss = new WebSocketServer({ server: web, maxPayload: 256 * 1024 });
+const wss = new WebSocketServer({ server: web, maxPayload: 1024 * 1024 });
 wss.on("connection", (ws, req) => {
   if (transports.size >= MAX_CLIENTS) {
     ws.send("The world is full.\n");

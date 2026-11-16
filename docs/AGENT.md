@@ -199,7 +199,9 @@ message is `prism <base64url session>`. The account is keyed by the id and
 displayed as `prism:<first 8 hex>`. The id is browser-local today: clearing
 site data or losing the browser loses the character, because device linking and
 recovery are not built yet. The AI has its own Prism id in the same browser;
-**Reset identity** starts a new character.
+**Reset identity** starts a new character. A device revoked elsewhere is
+refused once a surviving device has logged in with the newer public log; the
+server pins that log in `identities.json`.
 
 A legacy account can be adopted once by a signed-in Prism id: **Claim an old
 name** in the signed-in panel, or the wire command

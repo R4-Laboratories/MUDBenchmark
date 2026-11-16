@@ -1,13 +1,16 @@
-// Verify a Prism id session on the server.
+// Verify a Prism id session on the server, and pin the public log.
 //
 // A Prism id is public; the login is the signed `prism/session/1` action the
 // id's device makes for this origin. The pinned module is stitch's, copied
 // byte for byte; `prism-id.lock.json` names the commit and the module hash.
 //
-// This verifies; it does not create ids. Creation and device keys live in the
-// browser, in `runtime/web/prism-auth.mjs`.
+// The server remembers the public log it has admitted for each id. A presented
+// log that omits a record the server has already seen is refused: that is how
+// a device revoked elsewhere stops working once another device has logged in
+// with the newer log. The server never holds a private key and never invents a
+// record; it stores and merges the public records the protocol admits.
 
-import { logFromRecords, verifyAction } from "./web/prism-id.mjs";
+import { admitRecords, logFromRecords, logRoot, verifyAction } from "./web/prism-id.mjs";
 
 const MAX_SESSION_MS = 15 * 60 * 1000;
 const WINDOW_MS = 5 * 60 * 1000;
@@ -15,9 +18,8 @@ const MAX_RECORDS = 64;
 const SESSION_ACTION = "prism/session/1";
 
 // The action nonce is single use inside its window. The map is pruned by age,
-// not by an arbitrary count: a restart inside the window still permits one
-// replay, so the window is kept short and the log pinning (the next step)
-// addresses the remaining gap.
+// not by an arbitrary count; a restart inside the window still permits one
+// replay, so the window is kept short.
 const replay = new Map();
 const seen = {
   has: (key) => replay.has(key),
@@ -34,7 +36,7 @@ export function prismDisplay(prism) {
   return `prism:${hex.slice(0, 8)}`;
 }
 
-export async function verifyPrismSession(session, { origin, now = Date.now() } = {}) {
+export async function verifyPrismSession(session, { origin, now = Date.now(), pinned = null } = {}) {
   const { app, envelope, records } = session ?? {};
   if (typeof app !== "string" || !origin || app !== origin) {
     return { ok: false, reason: "the session names another origin" };
@@ -66,6 +68,29 @@ export async function verifyPrismSession(session, { origin, now = Date.now() } =
     return { ok: false, reason: "the Prism log does not parse" };
   }
 
+  // The pin is the set of records already admitted for this id. Every one must
+  // still be present; a newer log may add records, never drop them. The merge
+  // refuses a second retirement or a fork.
+  const held = Array.isArray(pinned) ? pinned : pinned?.records;
+  if (Array.isArray(held) && held.length) {
+    let known;
+    try {
+      known = await logFromRecords(held);
+    } catch {
+      return { ok: false, reason: "the pinned Prism log does not parse" };
+    }
+    for (const id of known.keys()) {
+      if (!log.has(id)) {
+        return { ok: false, reason: "the presented log omits a record the server has already seen" };
+      }
+    }
+    try {
+      log = await admitRecords(body.prism, known, log);
+    } catch (error) {
+      return { ok: false, reason: `the pinned Prism log does not merge: ${error.message}` };
+    }
+  }
+
   pruneReplay(now);
   let verdict;
   try {
@@ -80,6 +105,13 @@ export async function verifyPrismSession(session, { origin, now = Date.now() } =
   }
   if (!verdict.allowed) return { ok: false, reason: verdict.reason };
 
+  let root;
+  try {
+    root = await logRoot(log);
+  } catch {
+    return { ok: false, reason: "the Prism log has no root" };
+  }
+
   return {
     ok: true,
     prism: body.prism,
@@ -87,5 +119,7 @@ export async function verifyPrismSession(session, { origin, now = Date.now() } =
     device: verdict.device,
     deviceId: envelope.signer ?? null,
     expires,
+    records: [...log.values()],
+    root,
   };
 }
