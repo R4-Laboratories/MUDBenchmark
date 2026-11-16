@@ -56,3 +56,24 @@ the honest denominator.
   mobiles are aggressive, but they are not on the route.
 - The world is fresh per arm; items taken by one run do not decide another.
 - The two-hour reset does not fire during a batch.
+
+
+## The route/answer control
+
+`--control` restores the original prompt (no route, claim-oriented) and keeps
+`--world` to choose a world file. The seven-room control world is committed as
+`world/data/world.7.json`; the server reads `WORLD_PATH` and, for that control,
+`SKIP_QUEST_VALIDATION=1` because the seven-room world predates the new quests.
+
+```sh
+MODEL_API_KEY_FILE=$HOME/.config/mudbench-model.key \
+  node tools/bench-arms.mjs --runs 6 --arms single,corroborated \
+  --control --world "$PWD/world/data/world.7.json"
+```
+
+This control is **not yet concluded**. The shakedown run used the original
+prompt, wandered through the old rooms, took items, and did not answer; the
+harness now requires an actual `answer` command before it calls a run solved,
+so a `claim` at the Vault cannot end the run. The next run is the comparison
+that decides whether the null result is the route instruction, the larger world,
+or the model.

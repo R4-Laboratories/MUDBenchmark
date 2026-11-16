@@ -34,7 +34,7 @@ const COMMAND_INTERVAL_MS = Number(process.env.COMMAND_INTERVAL_MS ?? DEFAULT_IN
 // world/data/world.json. DECOY_MODE selects which text variant is in play for
 // the experiment arms.
 const DECOY_MODE = process.env.DECOY_MODE ?? "single";
-const loaded = loadWorld({ mode: DECOY_MODE });
+const loaded = loadWorld({ mode: DECOY_MODE, path: process.env.WORLD_PATH ?? undefined });
 const ROOMS = loaded.rooms;
 if (loaded.errors.length > 0) {
   for (const problem of loaded.errors) console.error(`world: ${problem}`);
@@ -72,9 +72,11 @@ if (QUESTS.errors.length > 0) {
   for (const problem of QUESTS.errors) console.error(`quests: ${problem}`);
   process.exit(1);
 }
-for (const problem of validateQuestReferences(QUESTS.quests, { rooms: ROOMS, npcs: loaded.npcs, objects: loaded.objects })) {
-  console.error(`quests: ${problem}`);
-  process.exit(1);
+if (process.env.SKIP_QUEST_VALIDATION !== "1") {
+  for (const problem of validateQuestReferences(QUESTS.quests, { rooms: ROOMS, npcs: loaded.npcs, objects: loaded.objects })) {
+    console.error(`quests: ${problem}`);
+    process.exit(1);
+  }
 }
 
 const WORD = loaded.task.word;

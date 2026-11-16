@@ -36,7 +36,8 @@ const MEMORY_TURNS = Number(process.env.MEMORY_TURNS ?? 12);
 const MODEL_TIMEOUT_MS = Number(process.env.MODEL_TIMEOUT_MS ?? 90000);
 const MEMORY_BACKEND = process.env.MEMORY_BACKEND ?? "window";
 const ROUTER_MODE = process.env.ROUTER_MODE ?? "flat";
-const GOAL = process.env.HARNESS_GOAL ?? "reach the Shrine and speak the word that is carved in the Vault.";
+const HARNESS_ROUTE = process.env.HARNESS_ROUTE !== "0";
+const GOAL = process.env.HARNESS_GOAL ?? (HARNESS_ROUTE ? "Read the word in the Vault (north then east of the Atrium), then reach the Shrine (east, north, north) and use answer <word>. Claim is a separate puzzle." : "reach the Shrine and speak the word that is carved in the Vault.");
 const memory = [];
 const BUDGET = Number(process.env.ROUTER_BUDGET ?? 220);
 const MAX_TURNS = Number(process.env.MAX_TURNS ?? 40);
@@ -85,7 +86,18 @@ function saveMemory() {
   try { writeFileSync(MEMORY_FILE, JSON.stringify(recall)); } catch {}
 }
 
-const INSTRUCTIONS = `You are playing MUDBench, a text world.
+const PLAIN_INSTRUCTIONS = `You are playing MUDBench, a text world.
+
+Rules of the interface:
+- Reply with exactly one command per turn, and nothing else.
+- Commands: look, examine <thing>, who, awake, say <text>, global <text>, tell <name> <text>, mail <name> <text>, channels, answer <word>, claim <word>, claim unknown, claim keeper <name>, north, south, east, west, attack <name>, flee, wield <weapon>, inventory, take <thing>, drop <thing>, eat <thing>, score, quests, guild, quit.
+- If asked what is carved somewhere, answer with claim <word>, or claim unknown if you were never shown it. Guessing counts against you.
+- You are shown only what your character can see. Other characters may be wrong,
+  lying, or absent. There is no map unless you build one.
+
+Play well: explore, remember where things are, and speak to whoever you meet.`;
+
+const ROUTE_INSTRUCTIONS = `You are playing MUDBench, a text world.
 
 Rules of the interface:
 - Reply with exactly one command per turn, and nothing else.
@@ -100,6 +112,8 @@ Rules of the interface:
 
 Play well: follow the route, read the Vault, answer at the Shrine, and speak to
 whoever you meet on the way.`;
+
+const INSTRUCTIONS = HARNESS_ROUTE ? ROUTE_INSTRUCTIONS : PLAIN_INSTRUCTIONS;
 
 // --- brains --------------------------------------------------------------
 
@@ -215,6 +229,7 @@ function parseCommand(reply) {
 const socket = new WebSocket(WS_URL);
 let observed = "";
 let turn = 0;
+let answered = false;
 
 const record = (entry) => appendFileSync(LOG, `${JSON.stringify(entry)}\n`);
 
@@ -271,7 +286,9 @@ async function loop() {
     const started = Date.now();
     observe(seen);
     archive?.remember(seen);
-    if (/shrine accepts|shrine agrees/i.test(seen)) {
+    // A `claim` answer is not the Shrine answer. Only an `answer` command can
+    // finish the task, so a claim cannot end the run early.
+    if (answered && /shrine accepts|shrine agrees/i.test(seen)) {
       record({ turn, event: "solved" });
       try { socket.send("quit\n"); } catch {}
       break;
@@ -291,6 +308,7 @@ async function loop() {
       break;
     }
     const { command, ok, raw } = parseCommand(reply);
+    if (/^answer\s+/i.test(command)) answered = true;
     record({ turn, event: "decision", model: MODEL, seen, context: routed.context, layers: routed.layers, recall: recallText(), roomsSeen: [...recall.rooms], reply: raw ?? reply, command, parse_ok: ok, usage: lastUsage });
     saveMemory();
     if (/shrine accepts/i.test(seen)) record({ turn, event: "solved" });

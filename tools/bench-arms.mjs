@@ -20,13 +20,17 @@ const option = (name, fallback) => {
 };
 const RUNS = Number(option("runs", 6));
 const PARALLEL = Number(option("parallel", 3));
+const CONTROL = args.includes("--control");
+const WORLD = option("world", null);
 const TURNS = Number(option("turns", 16));
 const ARMS = option("arms", "single,marked,true,corroborated").split(",");
 const OUT = option("out", "/tmp/mudbench-bench");
 const RUNTIME = join(process.cwd(), "runtime");
 const PORT = 8095;
 const TELNET = 4005;
-const GOAL = "Read the word in the Vault (north then east of the Atrium), then reach the Shrine (east, north, north) and use answer <word>. Claim is a separate puzzle.";
+const GOAL = CONTROL
+  ? "reach the Shrine and speak the word that is carved in the Vault."
+  : "Read the word in the Vault (north then east of the Atrium), then reach the Shrine (east, north, north) and use answer <word>. Claim is a separate puzzle.";
 
 mkdirSync(OUT, { recursive: true });
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -74,6 +78,7 @@ for (const arm of ARMS) {
       TRACE_FILE: join(dir, "trace.jsonl"),
       TELEMETRY_LOG: join(dir, "spans.jsonl"),
       DECOY_MODE: arm,
+      ...(WORLD ? { WORLD_PATH: WORLD, SKIP_QUEST_VALIDATION: "1" } : {}),
     },
     stdio: ["ignore", "pipe", "pipe"],
   });
@@ -103,6 +108,7 @@ for (const arm of ARMS) {
           HARNESS_NAME: name,
           HARNESS_PASSWORD: "bench-pass",
           HARNESS_GOAL: GOAL,
+          HARNESS_ROUTE: CONTROL ? "0" : "1",
           HARNESS_LOG: log,
           HARNESS_MEMORY: join(dir, `mem-${i}.json`),
           MAX_TURNS: String(TURNS),
