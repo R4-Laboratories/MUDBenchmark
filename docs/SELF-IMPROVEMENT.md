@@ -182,6 +182,19 @@ node tools/measure.mjs --candidates candidates.json --out result.json
 - **Pause and opt-in.** `MUDBENCH_LOOP_PAUSED=true` stops the scheduled job, and
   the job also stays off until `MUDBENCH_APP_ID` is set.
 
+### The gap between merge and deploy
+
+The publisher opens a pull request; auto-merge lands it on `main`. The game
+deploys **releases**, not `main`. A merged candidate is therefore on `main` and
+in the next tagged release, but not on the box until a tag exists.
+
+The next piece is a `workflow_run` job that fires when the Gate workflow
+completes successfully on `main`, checks that the merge touched
+`world/data/generated/pacing.json`, and creates a `v<current>-loop.<n>` tag with
+the App token. The existing release job and the pull-based deploy then run
+unchanged. Until that exists, the loop's authority ends at `main`; a person
+tags the release.
+
 ## Turning the loop on
 
 1. Create a GitHub App owned by the repository owner. Give it **Contents:
