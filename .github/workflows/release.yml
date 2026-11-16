@@ -61,9 +61,11 @@ jobs:
           SHA: ${{ inputs.sha }}
         run: |
           set -euo pipefail
-          RUN_ID=$(gh run list --workflow gate.yml --commit "$SHA" --status success --limit 1 --json databaseId --jq '.[0].databaseId')
+          # The latest run on the SHA must be green, not merely an earlier one.
+          # A re-run that went red is a red gate even if a previous attempt passed.
+          RUN_ID=$(gh run list --workflow gate.yml --commit "$SHA" --limit 1 --json databaseId,conclusion --jq '.[0] | select(.conclusion == "success") | .databaseId')
           if [ -z "$RUN_ID" ]; then
-            echo "::error::No successful Gate run for $SHA. Push the commit, let the Gate finish, then release."
+            echo "::error::The latest Gate run for $SHA is not green (or there is none). Fix it, then release."
             exit 1
           fi
           echo "RUN_ID=$RUN_ID" >> "$GITHUB_ENV"
