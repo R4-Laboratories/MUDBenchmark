@@ -66,8 +66,8 @@ underway: [the expansion roadmap](docs/EXPANSION.md) covers accounts, the input
 allowance, the two-hour reset, weapons and PvP, levels and quests, guilds, a
 larger world, and an LLM bridge. The foundation (accounts, 250 ms input allowance, no item persistence,
 global chat and safe rooms) and combat 2.0 (weapons, armour, healing food,
-flee, PvP, aggressive mobiles and levels) are in place. The world now has 33 connected rooms across five zones, a login gate, shops,
-quests and guilds. The LLM bridge supports prime-router as a provider or a corpus archive, with a
+flee, PvP, aggressive mobiles and levels) are in place. The world now has 33 connected rooms across five zones, a clean room-block shell,
+a one-file local agent, a login gate, shops, quests, guilds and a PvP Ring. The LLM bridge supports prime-router as a provider or a corpus archive, with a
 bounded memory window. The web shell has register/login and an agent handoff
 panel, `/llms.txt` is generated from the game tables, and `docs/COMMANDS.md` is
 generated and checked. More world content is additive.

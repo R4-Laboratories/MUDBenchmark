@@ -485,7 +485,6 @@ export function step({ state, rooms, intents }) {
         guild: null,
         quests: { active: [], completed: [] },
       };
-      events.push({ onlyId: actor.id, text: `Welcome, ${actor.name}.\r\n` });
       continue;
     }
 

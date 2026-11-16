@@ -17,7 +17,6 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | Verb | Aliases | Argument |
 | --- | --- | --- |
 | `attack` | `kill`, `hit` | actor |
-| `awake` | `online` | none |
 | `buy` | `purchase` | object |
 | `channels` | `chan` | none |
 | `close` | `shut` | object |
@@ -48,6 +47,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `tell` | `whisper` | actor text |
 | `unwield` | `sheathe` | none |
 | `wear` | `don` | object |
+| `who` | `awake`, `online` | none |
 | `wield` | `equip` | object |
 
 ## Channels

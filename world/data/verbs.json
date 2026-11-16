@@ -268,16 +268,6 @@
         "none": "No channels are open to you."
       }
     },
-    "awake": {
-      "aliases": [
-        "online"
-      ],
-      "argument": "none",
-      "messages": {
-        "list": "Awake: %s.",
-        "alone": "You are the only one awake."
-      }
-    },
     "wield": {
       "aliases": [
         "equip"
@@ -421,6 +411,17 @@
         "declined": "You decline %s's challenge.",
         "noChallenge": "You have no pending challenge.",
         "noDuel": "You are not in a duel."
+      }
+    },
+    "who": {
+      "aliases": [
+        "awake",
+        "online"
+      ],
+      "argument": "none",
+      "messages": {
+        "list": "Online: %s",
+        "alone": "You are the only one online."
       }
     }
   }

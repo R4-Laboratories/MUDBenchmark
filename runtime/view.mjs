@@ -13,22 +13,29 @@
 export function describe({ room, role = 0, others = [], beasts = [], objects = [], tick = 0, phase = null, weather = null, cleared }) {
   const exits = Object.keys(room.exits ?? {}).join(", ") || "none";
   const lines = [``, `[${room.name}]`, room.text];
-  if (room.safe) lines.push("This is a safe place.");
-  else if (room.arena) lines.push("This is the Ring. Duels are agreed here; death does not take your goods.");
-  else lines.push("Contested ground: players may attack here.");
-  if (phase || weather) lines.push([phase ? `It is ${phase}.` : null, weather].filter(Boolean).join(" "));
-  if (Array.isArray(room.ambient) && room.ambient.length) lines.push(room.ambient[tick % room.ambient.length]);
+
+  // Time and weather are atmosphere, not a status panel.
+  if (phase || weather) lines.push(`${phase ? phase[0].toUpperCase() + phase.slice(1) : "The day"}.${weather ? ` ${weather}` : ""}`);
 
   for (const notice of room.notices ?? []) {
     if (cleared ? cleared(role, notice.level) : false) lines.push(notice.text);
   }
 
-  lines.push(others.length ? `You are not alone: ${others.join(", ")}.` : `You are alone.`);
-  if (beasts.length) lines.push(`Here also: ${beasts.join(", ")}.`);
-  if (objects.length) lines.push(`You can see: ${objects.join(", ")}.`);
-  lines.push(`Exits: ${exits}.`, `Tick ${tick}.`, ``);
-  return lines.join("\r\n");
+  if (Array.isArray(room.ambient) && room.ambient.length) lines.push(room.ambient[tick % room.ambient.length]);
+
+  const people = [...others, ...beasts];
+  if (people.length) {
+    lines.push("Here:");
+    for (const name of people) lines.push(`  ${name}`);
+  }
+  if (objects.length) {
+    lines.push("Objects:");
+    for (const name of objects) lines.push(`  ${name}`);
+  }
+  lines.push(`Exits: ${exits}.`);
+  return `${lines.join("\r\n")}\r\n`;
 }
+
 
 
 /**

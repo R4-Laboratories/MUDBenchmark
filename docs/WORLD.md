@@ -58,8 +58,8 @@ a rotating basis.
 
 A wandering mobile filters its exits to rooms in its own zone, so the boar stays
 in the wilds and the market stays a market. Aggression is skipped in safe rooms.
-Unsafe rooms say `Contested ground: players may attack here.`; safe rooms say
-`This is a safe place.`
+Safety and arena rules stay in the data and the reducer; the room block shows
+the place, its people, its objects and its exits, not a status banner.
 
 ## The Ring
 

@@ -45,9 +45,24 @@
     font: inherit; cursor: pointer; box-shadow: 0 4px 16px #0008;
   }
   #latest:hover { background: #388bfd; }
+  #log .line { min-height: 1.7em; }
   #log .me { color: var(--accent); }
   #log .sys { color: var(--muted); }
   #log .err { color: #ff7b72; }
+  #log .room {
+    color: var(--accent); font-weight: 600; letter-spacing: .04em;
+    margin-top: 24px; padding-top: 12px; border-top: 1px solid var(--line);
+  }
+  #log .room:first-child { margin-top: 0; border-top: 0; }
+  #log .desc { color: var(--text); margin-top: 2px; }
+  #log .scene { color: #a9b6c5; font-style: italic; margin-top: 4px; }
+  #log .label {
+    color: var(--muted); margin-top: 12px; font-size: .78em;
+    letter-spacing: .16em; text-transform: uppercase;
+  }
+  #log .item { padding-left: 18px; color: #d7dee8; }
+  #log .exits { color: var(--muted); margin-top: 10px; }
+  #log .event { color: #b8c4d2; }
   #entry { display: flex; border-top: 1px solid var(--line); }
   #entry input {
     flex: 1; background: transparent; border: 0; outline: 0;
@@ -132,6 +147,7 @@
         <p>You are <strong id="signed-name">…</strong>. The character keeps level, XP, guild and quests; items stay in the world.</p>
         <div class="row">
           <button type="button" id="help">Help</button>
+          <button type="button" id="who">Who</button>
           <button type="button" id="quit">Quit</button>
         </div>
       </section>
@@ -216,11 +232,28 @@
     log.scrollTop = log.scrollHeight;
   });
 
+  const addLine = (text, cls) => {
+    const line = document.createElement("div");
+    line.className = `line${cls ? ` ${cls}` : ""}`;
+    line.textContent = text;
+    log.appendChild(line);
+  };
+
   const append = (text, cls) => {
-    const span = document.createElement("span");
-    if (cls) span.className = cls;
-    span.textContent = String(text).replace(/\r/g, "").replace(/\n+$/, "") + "\n";
-    log.appendChild(span);
+    const clean = String(text).replace(/\r/g, "").replace(/\n+$/, "");
+    const lines = clean.split("\n");
+    for (const line of lines) {
+      if (!line.trim()) { addLine("", "spacer"); continue; }
+      let kind = cls ?? "event";
+      if (/^\[.*\]$/.test(line.trim())) kind = "room";
+      else if (/^(Here|Objects):$/i.test(line.trim())) kind = "label";
+      else if (/^  /.test(line)) kind = "item";
+      else if (/^Exits:/i.test(line.trim())) kind = "exits";
+      else if (/^(Night|Dawn|Day|Dusk)\./.test(line.trim())) kind = "scene";
+      else if (/^(Welcome|Account|Signing|You must sign|That name|No such|Usage|Goodbye|Connected|New here)/i.test(line.trim())) kind = "sys";
+      else if (!cls && !/^\[/.test(line.trim())) kind = "desc";
+      addLine(line, kind);
+    }
     // Keep the reader at the newest line unless they have deliberately
     // scrolled up; in that case offer a jump instead of yanking them down.
     requestAnimationFrame(() => {
@@ -309,6 +342,7 @@
     });
   }
   document.getElementById("help").addEventListener("click", () => send("help", "help"));
+  document.getElementById("who").addEventListener("click", () => send("who", "who"));
   document.getElementById("quit").addEventListener("click", () => send("quit", "quit"));
 
   document.getElementById("entry").addEventListener("submit", (event) => {

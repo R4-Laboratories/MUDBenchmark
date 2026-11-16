@@ -362,9 +362,11 @@ async function handleCommand(id, line) {
     return sendTo(id, text ? `${text}\r\n` : `You see no ${target} here.\r\n`);
   }
 
-  if (verb === "who") {
-    const names = actorsIn(actor.room).map((a) => a.name);
-    return sendTo(id, `Present: ${names.join(", ")}\r\n`);
+  if (verb === "who" || verb === "awake" || verb === "online") {
+    const online = state.actors.filter((candidate) => candidate.key);
+    if (online.length === 0) return sendTo(id, "No one is online.\r\n");
+    const lines = online.map((candidate) => `${candidate.name}${candidate.level > 1 ? ` (level ${candidate.level})` : ""}${candidate.id === id ? " (you)" : ""}`);
+    return sendTo(id, `Online (${online.length}):\r\n  ${lines.join("\r\n  ")}\r\n`);
   }
 
   if (verb === "answer") {
@@ -536,12 +538,6 @@ async function handleCommand(id, line) {
     const messages = VERB_TABLE.verbs.channels.messages;
     const open = CHANNELS.channels.filter((entry) => (actor.role ?? 0) >= entry.minRole).map((entry) => entry.name);
     return sendTo(id, `${open.length ? render(messages.list, { words: open.join(", ") }) : messages.none}\r\n`);
-  }
-
-  if (named === "awake") {
-    const messages = VERB_TABLE.verbs.awake.messages;
-    const names = state.actors.map((a) => a.name);
-    return sendTo(id, `${names.length === 1 ? messages.alone : render(messages.list, { words: names.join(", ") })}\r\n`);
   }
 
   if (named === "attack") {
@@ -1180,11 +1176,10 @@ function onTick() {
     const actor = actorById(id);
     if (!actor) continue;
     transport.welcomed = true;
+    // A guest gets the login banner. A signed-in actor gets the room from the
+    // login/register post-intent, exactly once.
     if (!actor.key) {
       transport.send("Welcome to MUDBench.\r\nRegister <name> <password>, or login <name> <password>.\r\n");
-    } else {
-      transport.send(`Welcome to MUDBench, ${actor.name}.\r\n`);
-      transport.send(describe(actor.room, id));
     }
   }
 
