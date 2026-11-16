@@ -50,11 +50,10 @@ The shop keeps the change; it pays half value; the reset puts the stock back.
 **F. Communication.** *Done.* Channels with role locks, cross-room tells, mail
 that waits for an identity, and data-driven socials. See `docs/COMMUNICATION.md`.
 
-**G. Accounts and persistence.** *Done.* Characters survive a logout and a
-restart with their room, visited set, role, inventory and worn things; a bag
-keeps its contents. Checkpoints sync online hands, duplicate sign-ins are
-refused, and the area reset no longer repossesses carried objects. See
-`docs/PERSISTENCE.md`.
+**G. Accounts and persistence.** *Superseded by the expansion.* The baseline
+kept rooms and inventories; the game now keeps only progression — level, XP,
+guild and quests — while objects belong to the world until the two-hour reset.
+See `docs/EXPANSION.md` and `docs/PERSISTENCE.md`.
 
 ## What every phase must carry
 

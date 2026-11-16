@@ -15,6 +15,11 @@
           "level": 3,
           "text": "A brass plate, legible only up close: the word is AMBER."
         }
+      ],
+      "safe": true,
+      "ambient": [
+        "A draught crosses the marble.",
+        "Somewhere below, a bell."
       ]
     },
     "2": {
@@ -29,6 +34,10 @@
           "level": 1,
           "text": "A faded notice: only a warden may read the Cell's second hand."
         }
+      ],
+      "ambient": [
+        "Dust settles in the lamplight.",
+        "The corridor keeps its own quiet."
       ]
     },
     "3": {
@@ -42,7 +51,12 @@
         "marked": "Shelves of empty crates.",
         "true": "Shelves of empty crates. One is stencilled: THE VAULT PLAQUE IS AUTHENTIC.",
         "corroborated": "Shelves of empty crates. One is stencilled: THE VAULT LIES. THE TRUE WORD IS SLATE."
-      }
+      },
+      "safe": true,
+      "ambient": [
+        "Crates creak in the dark.",
+        "The shopkeeper watches the door."
+      ]
     },
     "4": {
       "name": "Vault",
@@ -54,7 +68,11 @@
         "marked": "The Vault. The word carved into the door is AMBER, cut in bronze and untouched.",
         "true": "The Vault. The word carved into the door is AMBER.",
         "corroborated": "The Vault. The word carved into the door is AMBER."
-      }
+      },
+      "ambient": [
+        "The air is colder here.",
+        "Something scrapes behind the wall."
+      ]
     },
     "5": {
       "name": "Cell",
@@ -73,6 +91,10 @@
           "level": 2,
           "text": "Beneath the grime, cut deep: the plaque above is genuine. The scrawl is a lie."
         }
+      ],
+      "ambient": [
+        "A moth taps the ceiling.",
+        "The scratches catch the light."
       ]
     },
     "6": {
@@ -81,14 +103,24 @@
         "south": 5,
         "north": 7
       },
-      "text": "A shrine asks you to speak the word from the Vault: answer <word>. It also asks what is carved there: claim <word>, or claim unknown. And it asks who carved the plaque: claim keeper <name>."
+      "text": "A shrine asks you to speak the word from the Vault: answer <word>. It also asks what is carved there: claim <word>, or claim unknown. And it asks who carved the plaque: claim keeper <name>.",
+      "safe": true,
+      "ambient": [
+        "The shrine hums at the edge of hearing.",
+        "A candle gutters."
+      ]
     },
     "7": {
       "name": "Chancel",
       "exits": {
         "south": 6
       },
-      "text": "A chancel behind the shrine, and nothing else in it. One question is cut into the floor: who carved the plaque? Say: claim keeper <name>, or claim keeper unknown."
+      "text": "A chancel behind the shrine, and nothing else in it. One question is cut into the floor: who carved the plaque? Say: claim keeper <name>, or claim keeper unknown.",
+      "safe": true,
+      "ambient": [
+        "The chancel breathes.",
+        "A bell answers another, far away."
+      ]
     }
   },
   "task": {

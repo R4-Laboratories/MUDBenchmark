@@ -13,9 +13,13 @@ import { advance, due as pulseDue, makePulse } from "./generated/Pulses.mjs";
 
 export const TICK_MS = 250;
 
+// Two hours at 250 ms. The world reset is a world event, not a heartbeat:
+// objects and mobiles return home, characters keep their progress.
+export const AREA_PERIOD = 28_800;
+
 export const PULSES = {
   mobile: 4,
-  area: 240,
+  area: AREA_PERIOD,
 };
 
 export const CHECKPOINT = 240;
@@ -91,7 +95,7 @@ export function initialState(rooms, npcs = [], objects = [], start = 1, climate 
     pulses: {
       mobile: makePulse({ period: 4, remaining: 4 }),
       violence: makePulse({ period: 4, remaining: 4 }),
-      area: makePulse({ period: 240, remaining: 240 }),
+      area: makePulse({ period: AREA_PERIOD, remaining: AREA_PERIOD }),
       weather: makePulse({ period: climate.weatherPeriod, remaining: climate.weatherPeriod }),
     },
   };
@@ -152,6 +156,14 @@ export function upgradeState(saved, base) {
       : { ...pulse };
   }
 
+  // A save carries its old pulse periods. The reset is a world setting, not a
+  // saved one: move the area pulse to the current period without losing where
+  // it was in its countdown.
+  if (pulses.area) {
+    pulses.area.period = AREA_PERIOD;
+    pulses.area.remaining = Math.min(pulses.area.remaining, AREA_PERIOD);
+  }
+
   const climate = saved.climate?.weather?.length ? saved.climate : base.climate;
   const weather = Number.isInteger(saved.weather) && climate.weather[saved.weather] ? saved.weather : 0;
 
@@ -175,11 +187,18 @@ export function upgradeState(saved, base) {
     return { ...n, ...old, hp: old.hp ?? maxHp, maxHp, dead: old.dead ?? false };
   });
 
-  const identities = Object.fromEntries(Object.entries(saved.identities ?? base.identities ?? {}).map(([key, identity]) => [key, {
-    ...identity,
-    inventory: Array.isArray(identity.inventory) ? identity.inventory : [],
-    worn: Array.isArray(identity.worn) ? identity.worn : [],
-  }]));
+  // Only progression survives this release. Room, visited set and inventory
+  // are session state; old saves are stripped of them here.
+  const identities = Object.fromEntries(Object.entries(saved.identities ?? base.identities ?? {}).map(([key, identity]) => {
+    const { inventory, worn, room, visited, ...rest } = identity;
+    return [key, {
+      ...rest,
+      level: identity.level ?? 1,
+      xp: identity.xp ?? 0,
+      guild: identity.guild ?? null,
+      quests: identity.quests ?? { active: [], completed: [] },
+    }];
+  }));
 
   return {
     ...base,
@@ -207,24 +226,10 @@ export function upgradeState(saved, base) {
  */
 export function releaseHeldObjects(state, actors = []) {
   const roomOf = new Map(actors.map((actor) => [actor.id, actor.room]));
-  const claimed = new Set();
-  for (const identity of Object.values(state.identities ?? {})) {
-    for (const objectId of identity.inventory ?? []) claimed.add(objectId);
-  }
   for (const object of state.objects) {
     if (object.holder === null || object.holder === undefined) continue;
-    if (claimed.has(object.id)) {
-      // The identity saved this object; it will be restored to their hands on
-      // the next login. Do not leave a second copy on the floor.
-      object.holder = null;
-      object.room = null;
-      object.inside = null;
-      object.worn = false;
-      continue;
-    }
-    // A holder with no actor record is an orphan: an older release dropped the
-    // actor but kept the object in their hand, and no one can ever reach it.
-    // It goes home rather than vanishing.
+    // A restart drops the actor; the object falls where they stood, or goes
+    // home if even that record is gone. Nothing is restored to a hand.
     object.room = roomOf.has(object.holder) ? roomOf.get(object.holder) : (object.home ?? state.start);
     object.holder = null;
     object.inside = null;
@@ -241,15 +246,16 @@ export function releaseHeldObjects(state, actors = []) {
 export function checkpointIdentities(state) {
   for (const actor of state.actors ?? []) {
     if (!actor.key) continue;
-    const held = (state.objects ?? []).filter((object) => object.holder === actor.id && !object.eaten);
+    const identity = state.identities[actor.key] ?? {};
+    const { inventory, worn, room, visited, ...rest } = identity;
     state.identities[actor.key] = {
-      ...(state.identities[actor.key] ?? {}),
+      ...rest,
       name: actor.name,
-      room: actor.room,
-      visited: [...actor.visited],
       role: actor.role ?? 0,
-      inventory: held.map((object) => object.id),
-      worn: held.filter((object) => object.worn).map((object) => object.id),
+      level: actor.level ?? 1,
+      xp: actor.xp ?? 0,
+      guild: actor.guild ?? null,
+      quests: actor.quests ?? { active: [], completed: [] },
     };
   }
   return state;
@@ -267,7 +273,14 @@ export function step({ state, rooms, intents }) {
     mail: (state.mail ?? []).map((letter) => ({ ...letter })),
     engagements: (state.engagements ?? []).map((e) => ({ ...e })),
     npcs: state.npcs.map((n) => ({ ...n, clock: { ...n.clock } })),
-    actors: state.actors.map((a) => ({ ...a, visited: [...a.visited] })),
+    actors: state.actors.map((a) => ({
+      ...a,
+      visited: [...a.visited],
+      quests: {
+        active: [...(a.quests?.active ?? [])],
+        completed: [...(a.quests?.completed ?? [])],
+      },
+    })),
     objects: state.objects.map((o) => ({ ...o })),
     identities: { ...state.identities },
     // Clone every pulse generically: a hand-written list silently dropped the
@@ -305,8 +318,61 @@ export function step({ state, rooms, intents }) {
   for (const intent of intents) {
     if (intent.kind === "join") {
       if (!find(intent.actorId)) {
-        next.actors.push({ id: intent.actorId, name: intent.name, room: next.start, visited: [next.start], key: null, role: 0, hp: 10, maxHp: 10 });
+        next.actors.push({
+          id: intent.actorId,
+          name: intent.name,
+          room: next.start,
+          visited: [next.start],
+          key: null,
+          role: 0,
+          hp: 10,
+          maxHp: 10,
+          level: 1,
+          xp: 0,
+          guild: null,
+          quests: { active: [], completed: [] },
+        });
       }
+      continue;
+    }
+
+    if (intent.kind === "register") {
+      if (next.identities[intent.key]) continue;
+      const actor = find(intent.actorId);
+      if (!actor) continue;
+      actor.key = intent.key;
+      actor.name = intent.key;
+      actor.room = next.start;
+      actor.visited = [next.start];
+      actor.role = 0;
+      actor.level = 1;
+      actor.xp = 0;
+      actor.guild = null;
+      actor.quests = { active: [], completed: [] };
+      next.identities[intent.key] = {
+        name: actor.name,
+        role: 0,
+        passwordHash: intent.passwordHash,
+        salt: intent.salt,
+        tokenHash: null,
+        level: 1,
+        xp: 0,
+        guild: null,
+        quests: { active: [], completed: [] },
+      };
+      events.push({ onlyId: actor.id, text: `Welcome, ${actor.name}.\r\n` });
+      continue;
+    }
+
+    if (intent.kind === "password") {
+      const actor = find(intent.actorId);
+      if (!actor?.key || !next.identities[actor.key]) continue;
+      next.identities[actor.key] = {
+        ...next.identities[actor.key],
+        passwordHash: intent.passwordHash,
+        salt: intent.salt,
+      };
+      events.push({ onlyId: actor.id, text: "Password changed.\r\n" });
       continue;
     }
 
@@ -322,51 +388,56 @@ export function step({ state, rooms, intents }) {
         ? createHash("sha256").update(intent.token, "utf8").digest("hex")
         : null;
 
-      // A name belongs to whoever holds its key. Without a matching key the
-      // login is refused, so a name cannot be taken by typing it.
-      if (known && known.tokenHash !== hash) {
+      // The server has already verified a password or a legacy key. An intent
+      // that did not come through that door still has to present the token.
+      if (!intent.authenticated && known && known.tokenHash !== hash) {
         events.push({ onlyId: actor.id, text: "That name is taken, and the key does not match.\r\n" });
         continue;
       }
 
       actor.key = intent.key;
       if (known) {
-        actor.visited = Array.isArray(known.visited) ? [...known.visited] : [next.start];
         actor.name = known.name ?? intent.key;
-        actor.room = intent.respawn ? next.start : (rooms[known.room] ? known.room : next.start);
+        // No position persistence: every login begins at the safe start.
+        actor.room = next.start;
+        actor.visited = [next.start];
         actor.role = known.role ?? 0;
-        if (!actor.visited.includes(actor.room)) actor.visited.push(actor.room);
-        // What the character was carrying comes back to their hands, including
-        // a container and whatever is still inside it.
-        for (const objectId of known.inventory ?? []) {
-          const object = next.objects.find((o) => o.id === objectId);
-          if (!object || object.eaten || object.inside !== null) continue;
-          if (object.holder !== null || object.room !== null) continue;
-          object.holder = actor.id;
-          object.worn = (known.worn ?? []).includes(objectId);
-        }
+        actor.level = known.level ?? 1;
+        actor.xp = known.xp ?? 0;
+        actor.guild = known.guild ?? null;
+        actor.quests = {
+          active: [...(known.quests?.active ?? [])],
+          completed: [...(known.quests?.completed ?? [])],
+        };
+        // Do not restore inventory: what the character carried was dropped
+        // where they logged out and belongs to the world until the reset.
         next.identities[intent.key] = {
           ...known,
           name: actor.name,
-          room: actor.room,
-          visited: [...actor.visited],
           role: actor.role,
-          inventory: Array.isArray(known.inventory) ? known.inventory : [],
-          worn: Array.isArray(known.worn) ? known.worn : [],
+          level: actor.level,
+          xp: actor.xp,
+          guild: actor.guild,
+          quests: actor.quests,
         };
       } else {
         actor.name = intent.key;
+        actor.room = next.start;
+        actor.visited = [next.start];
+        actor.role = intent.role ?? 0;
+        actor.level = 1;
+        actor.xp = 0;
+        actor.guild = null;
+        actor.quests = { active: [], completed: [] };
         next.identities[intent.key] = {
           name: actor.name,
-          room: actor.room,
-          visited: [...actor.visited],
-          // A role is granted once, at creation, and travels with the identity.
-          role: intent.role ?? 0,
+          role: actor.role,
           tokenHash: hash,
-          inventory: [],
-          worn: [],
+          level: 1,
+          xp: 0,
+          guild: null,
+          quests: { active: [], completed: [] },
         };
-        actor.role = intent.role ?? 0;
       }
       for (const letter of next.mail) {
         if (letter.toKey !== actor.key || letter.read) continue;
@@ -379,39 +450,27 @@ export function step({ state, rooms, intents }) {
     if (intent.kind === "leave") {
       const actor = find(intent.actorId);
       if (!actor) continue;
+      // Items are mortal: they fall where the character stood and belong to
+      // the world until the two-hour reset. Only progression is written down.
+      for (const object of next.objects) {
+        if (object.holder !== actor.id) continue;
+        object.holder = null;
+        object.room = actor.room;
+        object.inside = null;
+        object.worn = false;
+      }
       if (actor.key) {
-        const inventory = [];
-        const worn = [];
-        for (const object of next.objects) {
-          if (object.holder !== actor.id) continue;
-          inventory.push(object.id);
-          if (object.worn) worn.push(object.id);
-          object.holder = null;
-          object.room = null;
-          object.inside = null;
-          object.worn = false;
-        }
-        // Merge, never replace: the token hash and the role must survive a
-        // disconnect, or the returning player cannot sign in again.
+        const identity = next.identities[actor.key] ?? {};
+        const { inventory, worn, room, visited, ...rest } = identity;
         next.identities[actor.key] = {
-          ...next.identities[actor.key],
+          ...rest,
           name: actor.name,
-          room: actor.room,
-          visited: [...actor.visited],
-          role: actor.role,
-          inventory,
-          worn,
+          role: actor.role ?? 0,
+          level: actor.level ?? 1,
+          xp: actor.xp ?? 0,
+          guild: actor.guild ?? null,
+          quests: actor.quests ?? { active: [], completed: [] },
         };
-      } else {
-        // A guest has no record to restore to, so their things fall where they
-        // stood rather than disappearing with them.
-        for (const object of next.objects) {
-          if (object.holder !== actor.id) continue;
-          object.holder = null;
-          object.room = actor.room;
-          object.inside = null;
-          object.worn = false;
-        }
       }
       events.push({ room: actor.room, text: `${actor.name} vanishes.`, exceptId: actor.id });
       next.actors = next.actors.filter((a) => a.id !== intent.actorId);
@@ -434,6 +493,7 @@ export function step({ state, rooms, intents }) {
     // Objects, as the old codebases had them: a thing has a place, or a holder,
     // never both, and moving it is the only operation that changes that.
     if (intent.kind === "attack") {
+      if (rooms[actor.room]?.safe) continue;
       const target = next.npcs.find((n) => n.id === intent.targetId)
         ?? next.actors.find((a) => a.id === intent.targetId);
       if (!target || target.dead || target.room !== actor.room) continue;
@@ -732,7 +792,12 @@ export function step({ state, rooms, intents }) {
   }
 
   if (violenceDue) {
-    const living = next.engagements.filter((engagement) => {
+    const contested = next.engagements.filter((engagement) => {
+      const attacker = next.actors.find((a) => a.id === engagement.attackerId);
+      return attacker && !rooms[attacker.room]?.safe;
+    });
+    next.engagements = contested;
+    const living = contested.filter((engagement) => {
       const attacker = next.actors.find((a) => a.id === engagement.attackerId);
       const target = next.actors.find((a) => a.id === engagement.targetId)
         ?? next.npcs.find((n) => n.id === engagement.targetId);
@@ -790,11 +855,6 @@ export function step({ state, rooms, intents }) {
     next.engagements = [];
     next.objects = next.objects.filter((object) => !object.ephemeral);
     for (const object of next.objects) {
-      if (object.holder !== null) continue;
-      if (object.inside !== null) {
-        const container = next.objects.find((candidate) => candidate.id === object.inside);
-        if (container && container.holder !== null) continue;
-      }
       object.holder = null;
       object.room = object.home;
       object.inside = object.homeInside;
@@ -806,7 +866,7 @@ export function step({ state, rooms, intents }) {
       object.forSale = object.home !== null && (object.price ?? 0) > 0;
     }
     for (const room of Object.keys(rooms)) {
-      events.push({ room: Number(room), text: "A bell rings somewhere below." });
+      events.push({ room: Number(room), text: "The world shudders. Everything returns to where it began." });
     }
   }
 

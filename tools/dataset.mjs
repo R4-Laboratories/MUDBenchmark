@@ -135,6 +135,18 @@ for (const file of inputs) {
       continue;
     }
 
+    if (span.name === "world.input") {
+      rows.push({
+        ...common,
+        event: "input",
+        actor: span["actor.id"] ?? null,
+        action: span.command ?? null,
+        verdict: span.refused ?? null,
+        wait_ms: num(span.since_ms),
+      });
+      continue;
+    }
+
     if (span.name === "world.say" || span.name === "world.channel" || span.name === "world.tell" || span.name === "world.mail") {
       rows.push({
         ...common,

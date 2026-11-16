@@ -7,7 +7,7 @@
 import net from "node:net";
 import http from "node:http";
 import { readFileSync, writeFileSync, renameSync, appendFileSync } from "node:fs";
-import { randomBytes } from "node:crypto";
+import { createHash } from "node:crypto";
 import { WebSocketServer } from "ws";
 import { recordSpan, digest } from "./telemetry.mjs";
 import { step, initialState, digestState, phaseAt, upgradeState, releaseHeldObjects, checkpointIdentities, TICK_MS } from "./world.mjs";
@@ -16,12 +16,15 @@ import { describe as renderRoom } from "./view.mjs";
 import { loadVerbs, render, resolve } from "./verbs.mjs";
 import { loadChannels, resolveChannel } from "./channels.mjs";
 import { loadSocials, resolveSocial } from "./socials.mjs";
+import { hashPassword, verifyPassword, validName, validPassword } from "./accounts.mjs";
+import { allowCommand as allowInput, DEFAULT_INTERVAL_MS } from "./allowance.mjs";
 
 const HOLO_URL = process.env.HOLO_URL ?? "http://127.0.0.1:8082";
 const TELNET_PORT = Number(process.env.TELNET_PORT ?? 4000);
 const WEB_PORT = Number(process.env.WEB_PORT ?? 8090);
 const STATE_FILE = process.env.STATE_FILE ?? "/tmp/mudbench-world.json";
 const TRACE_FILE = process.env.TRACE_FILE ?? "/tmp/mudbench-trace.jsonl";
+const COMMAND_INTERVAL_MS = Number(process.env.COMMAND_INTERVAL_MS ?? DEFAULT_INTERVAL_MS);
 
 // The world is data: rooms, exits, notices and the task live in
 // world/data/world.json. DECOY_MODE selects which text variant is in play for
@@ -62,9 +65,6 @@ const WORD_LEVELS = Object.values(ROOMS).flatMap((room) =>
 );
 const VAULT = loaded.task.vault;
 const SHRINE = loaded.task.shrine;
-// Experiment control: restore a returning player's history but not its room.
-const RESPAWN_AT_START = process.env.RESPAWN_AT_START === "true";
-
 const transports = new Map(); // id -> { send, close, welcomed }
 const pending = [];
 const deferred = new Map(); // id -> lines typed before the actor existed
@@ -227,37 +227,74 @@ async function handleCommand(id, line) {
   const rest = restRaw.map((part) => part.toLowerCase());
   const actor = actorById(id);
 
+  // The input allowance: one accepted command per interval, shared by every
+  // transport. A model and a human type on the same clock.
+  const transport = transports.get(id);
+  const now = Date.now();
+  if (transport && !allowInput(transport.lastCommandAt, now, COMMAND_INTERVAL_MS)) {
+    recordSpan("world.input", {
+      "actor.id": id,
+      "command": verb,
+      "refused": "too-fast",
+      "since_ms": now - transport.lastCommandAt,
+      "world.tick": state.tick,
+    }, 0);
+    return sendTo(id, "You must wait a moment.\r\n");
+  }
+  if (transport) transport.lastCommandAt = now;
+
   if (verb === "quit") {
     sendTo(id, "Goodbye.\r\n");
     pending.push({ kind: "leave", actorId: id });
     return;
   }
 
+  if (verb === "register") {
+    const key = rest[0];
+    const password = restRaw.slice(1).join(" ");
+    if (!validName(key)) return sendTo(id, "Names are 1-24 letters, digits, - or _.\r\n");
+    if (!validPassword(password)) return sendTo(id, "Passwords are at least 6 characters.\r\n");
+    if (state.identities[key]) return sendTo(id, "That name is taken.\r\n");
+    if (state.actors.some((candidate) => candidate.id !== id && candidate.key === key)) {
+      return sendTo(id, "That name is already signed in.\r\n");
+    }
+    const { salt, hash } = hashPassword(password);
+    pending.push({ kind: "register", actorId: id, key, passwordHash: hash, salt });
+    return sendTo(id, `Account ${key} created. Welcome.\r\n`);
+  }
+
   if (verb === "login") {
     const key = rest[0];
-    const grant = rest.find((part) => part.startsWith("role:"));
-    const token = rest.slice(1).find((part) => !part.startsWith("role:"));
-    const role = grant ? Number(grant.slice(5)) : undefined;
-    if (grant && (!Number.isInteger(role) || role < 0 || role > 3)) {
-      return sendTo(id, "Roles run from 0 to 3: role:2\r\n");
-    }
-    if (!key || !/^[a-z0-9_-]{1,24}$/i.test(key)) {
-      return sendTo(id, "Usage: login <name> [key]. Names are 1-24 letters, digits, - or _.\r\n");
-    }
+    const secret = restRaw.slice(1).join(" ");
+    if (!validName(key)) return sendTo(id, "Names are 1-24 letters, digits, - or _.\r\n");
+    if (!secret) return sendTo(id, "Usage: login <name> <password>. New here? register <name> <password>.\r\n");
     if (state.actors.some((candidate) => candidate.id !== id && candidate.key === key)) {
       return sendTo(id, "That name is already signed in.\r\n");
     }
     const known = state.identities[key];
-    if (known && !token) {
-      return sendTo(id, "That name is taken. Sign in with: login <name> <key>\r\n");
-    }
-    // A first login mints a key; the state stores only its hash.
-    const secret = token ?? randomBytes(16).toString("hex");
-    pending.push({ kind: "login", actorId: id, key, token: secret, role, respawn: RESPAWN_AT_START });
-    if (!known) {
-      return sendTo(id, `New identity ${key}${role === undefined ? "" : ` as role ${role}`}.\r\nYour key is: ${secret}\r\nKeep it; it cannot be recovered.\r\n`);
-    }
+    if (!known) return sendTo(id, "No such name. New here? register <name> <password>.\r\n");
+    const passwordOk = known.passwordHash
+      ? verifyPassword(secret, known.salt, known.passwordHash)
+      : (known.tokenHash ? createHash("sha256").update(secret, "utf8").digest("hex") === known.tokenHash : false);
+    if (!passwordOk) return sendTo(id, "That name and password do not match.\r\n");
+    pending.push({ kind: "login", actorId: id, key, authenticated: true, respawn: false });
     return sendTo(id, `Signing in as ${key}.\r\n`);
+  }
+
+  if (verb === "password") {
+    const oldSecret = restRaw[0] ?? "";
+    const newSecret = restRaw.slice(1).join(" ");
+    if (!actor?.key) return sendTo(id, "Sign in first.\r\n");
+    const known = state.identities[actor.key];
+    if (!known) return sendTo(id, "No account to change.\r\n");
+    const oldOk = known.passwordHash
+      ? verifyPassword(oldSecret, known.salt, known.passwordHash)
+      : (known.tokenHash ? createHash("sha256").update(oldSecret, "utf8").digest("hex") === known.tokenHash : false);
+    if (!oldOk) return sendTo(id, "The old password does not match.\r\n");
+    if (!validPassword(newSecret)) return sendTo(id, "Passwords are at least 6 characters.\r\n");
+    const { salt, hash } = hashPassword(newSecret);
+    pending.push({ kind: "password", actorId: id, passwordHash: hash, salt });
+    return sendTo(id, "Changing your password.\r\n");
   }
 
   // A command typed before the join tick lands is queued, not refused: the
@@ -455,6 +492,7 @@ async function handleCommand(id, line) {
 
   if (named === "attack") {
     const messages = VERB_TABLE.verbs.attack.messages;
+    if (ROOMS[actor.room]?.safe) return sendTo(id, `${messages.safe}\r\n`);
     const needle = words.toLowerCase();
     const target = [...actorsIn(actor.room).filter((a) => a.id !== id), ...npcsIn(actor.room)]
       .find((c) => c.name.toLowerCase().includes(needle) || c.name.toLowerCase().includes(`a ${needle}`));

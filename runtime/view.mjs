@@ -13,7 +13,9 @@
 export function describe({ room, role = 0, others = [], beasts = [], objects = [], tick = 0, phase = null, weather = null, cleared }) {
   const exits = Object.keys(room.exits ?? {}).join(", ") || "none";
   const lines = [``, `[${room.name}]`, room.text];
+  if (room.safe) lines.push("This is a safe place.");
   if (phase || weather) lines.push([phase ? `It is ${phase}.` : null, weather].filter(Boolean).join(" "));
+  if (Array.isArray(room.ambient) && room.ambient.length) lines.push(room.ambient[tick % room.ambient.length]);
 
   for (const notice of room.notices ?? []) {
     if (cleared ? cleared(role, notice.level) : false) lines.push(notice.text);

@@ -33,7 +33,7 @@
   </header>
   <div id="log"></div>
   <form id="entry">
-    <input id="cmd" autocomplete="off" autofocus placeholder="look · who · say <text> · n/s/e/w · answer <word> · login <name>">
+    <input id="cmd" autocomplete="off" autofocus placeholder="register <name> <password> · login <name> <password> · look · say <text> · global <text> · n/s/e/w">
   </form>
 <script>
   const log = document.getElementById("log");
@@ -54,7 +54,7 @@
     // cannot open a ws:// socket, so a tunnel needs wss://.
     const scheme = location.protocol === "https:" ? "wss:" : "ws:";
     socket = new WebSocket(`${scheme}//${location.host}`);
-    socket.onopen = () => { state.textContent = "connected"; };
+    socket.onopen = () => { state.textContent = "connected"; append("New here? register <name> <password>. Returning? login <name> <password>.", "sys"); };
     socket.onclose = () => { state.textContent = "disconnected"; setTimeout(connect, 1500); };
     socket.onerror = () => { state.textContent = "error"; };
     socket.onmessage = (event) => append(event.data);

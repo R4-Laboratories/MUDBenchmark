@@ -3,9 +3,26 @@
   "note": "A channel is a room that is not a place: everyone tuned to it hears, wherever they stand. Role is the only lock.",
   "channels": [
     {
+      "id": "global",
+      "name": "global",
+      "aliases": [
+        "global",
+        "all",
+        "ooc"
+      ],
+      "minRole": 0,
+      "messages": {
+        "actor": "You say to everyone: %s",
+        "others": "[global] %a: %s"
+      }
+    },
+    {
       "id": "gossip",
       "name": "gossip",
-      "aliases": ["gossip", "chat"],
+      "aliases": [
+        "gossip",
+        "chat"
+      ],
       "minRole": 0,
       "messages": {
         "actor": "You say on gossip: %s",
@@ -15,7 +32,10 @@
     {
       "id": "trade",
       "name": "trade",
-      "aliases": ["trade", "market"],
+      "aliases": [
+        "trade",
+        "market"
+      ],
       "minRole": 0,
       "messages": {
         "actor": "You say on trade: %s",
@@ -25,7 +45,10 @@
     {
       "id": "wizards",
       "name": "wizards",
-      "aliases": ["wiz", "wizards"],
+      "aliases": [
+        "wiz",
+        "wizards"
+      ],
       "minRole": 3,
       "messages": {
         "actor": "You say on wizards: %s",

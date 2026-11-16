@@ -58,10 +58,11 @@ limits.
 The world runs. Telnet and WebSocket share one authority; the rules are modelled
 in LexLean and proved in Lean; the gate re-proves the model, replays the
 acceptance vectors, and ratchets rule debt. Phases A–G of
-[the MUD baseline](docs/MUD-BASELINE.md) are done: data-driven verbs, mobiles
-with behaviours, combat, item properties, a clock and weather, a shop,
-communication, and persistent characters. The next work is hardening and the
-benchmark itself.
+[the MUD baseline](docs/MUD-BASELINE.md) are done. The game expansion is
+underway: [the expansion roadmap](docs/EXPANSION.md) covers accounts, the input
+allowance, the two-hour reset, weapons and PvP, levels and quests, guilds, a
+larger world, and an LLM bridge. The foundation (accounts, 250 ms input
+allowance, no item persistence, global chat and safe rooms) is in place.
 
 ## Provenance
 

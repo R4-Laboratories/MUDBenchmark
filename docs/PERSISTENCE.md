@@ -1,89 +1,69 @@
 # Persistence
 
-A character is an identity, not a connection. The identity outlives the actor:
-it owns the name, the room, the rooms visited, the role, and now the things in
-the character's hands. The actor is the body the server lends it for one
-session.
+A character is an account and a history of play. It is not a body, a room or a
+bag. This is the model after the expansion began; it deliberately replaces the
+Phase G model, which persisted inventory and position.
 
 ## What survives
 
 | Thing | Where it lives | Restored |
 | --- | --- | --- |
-| name, key hash, role | `state.identities[key]` | on login |
-| room | the identity, written on logout and on every checkpoint | on login, unless `RESPAWN_AT_START` |
-| visited rooms | the identity | on login |
-| inventory | object ids in `identity.inventory` | on login |
-| worn things | object ids in `identity.worn` | on login |
-| bag contents | the objects' `inside` links, unchanged | when the bag returns |
-| mail | `state.mail`, keyed by identity | delivered on login |
-| world | objects, mobiles, weather, climate | from the checkpoint |
+| account name, password hash, salt, role | `state.identities[key]` | on login |
+| level and experience | the identity | on login |
+| guild membership and rank | the identity | on login |
+| quests active and completed | the identity | on login |
+| mail | `state.mail`, keyed by identity | on login |
+| world objects and mobiles | the checkpoint | until the two-hour reset |
 
-Progress is currently the role and the set of rooms visited. The task's claims
-and answers are recorded as spans, not as per-character state; that is a
-benchmark concern and a later decision, not a persistence primitive.
+## What does not survive
 
-## Logging out
+| Thing | On logout | On login |
+| --- | --- | --- |
+| room | forgotten | the safe start room |
+| visited set | forgotten | only the start room |
+| inventory | dropped in the room the character stood in | empty |
+| worn things | dropped, no longer worn | empty |
 
-On `leave`, every object whose `holder` is the actor is recorded in the
-identity's inventory, and its `worn` flag is recorded separately. The object's
-holder, room and inside links are cleared; a carried bag keeps its contents
-because those objects point at the bag, not at the actor.
+The dropped objects remain exactly where they fell, lootable, until the
+two-hour reset. A player who logs out in the Vault leaves their sword in the
+Vault; another player can take it; the reset returns it to its home.
 
-A guest who never signed in has no identity to restore to, so their things fall
-on the floor of the room they stood in. Better a cloak on the floor than a cloak
-in a hole.
+## The two-hour reset
 
-## Logging in
+At 28,800 ticks (two hours at 250 ms) the world resets:
 
-The saved room is restored, then every inventory object is put back in the
-actor's hand if it is still available — not eaten, not in a room, not inside
-something, not held by someone else. A bag keeps its contents. A worn thing is
-worn again.
+- every object returns to its home room and container, closed and unlit as it
+  started;
+- ephemeral objects (minted coins) disappear;
+- every mobile returns home, revives at full health, and drops its engagements;
+- shops restock because their stock is ordinary objects;
+- every actor is told: `The world shudders. Everything returns to where it
+  began.`
 
-A second connection cannot sign in as a name that is already online. The server
-refuses before it announces the sign-in; the reducer refuses again if the intent
-still arrives. The duplicate connection remains a guest, not a second body.
+An object held at reset returns home too. The reset is the world's, not the
+character's: level, XP, guild, quests and mail survive it.
 
-## Checkpoints and crashes
+## Checkpoints
 
-`saveState` calls `checkpointIdentities` before writing: every online actor's
-hands are written into their identity. A hard restart therefore loses at most
-the ticks since the last checkpoint, and the next login restores the inventory
-from the identity rather than looking for objects on the floor.
+`saveState` calls `checkpointIdentities`: every online actor's progression is
+written into their identity. Room, visited set and hands are not written. A
+hard restart therefore restores accounts and progress, drops every actor, and
+lets the next login begin at the start.
 
-On load, `releaseHeldObjects` distinguishes two cases:
+## Accounts
 
-- an object claimed by an identity's inventory is cleared, not dropped; login
-  will restore it;
-- an orphan whose holder is gone is released in the room they stood in, or at
-  its home if even that record is gone.
+A password is scrypt-hashed with a per-account salt. The reducer never sees a
+password; the server verifies the credential and sends an authenticated login
+intent. Legacy token identities still sign in with their key, and `password
+<old> <new>` upgrades one to a password.
 
-## The area reset
+## Safe rooms
 
-The old MUD reset returns the world to its starting arrangement. It must not
-reach into a player's hands. The reset now skips:
+A room with `safe: true` refuses an attack, clears an engagement that reaches
+it, and shows `This is a safe place.` The Atrium, Storeroom, Shrine and Chancel
+are safe.
 
-- any object with a holder (carried or worn);
-- any object inside a container that has a holder (a bag carried by someone).
+## What is still open
 
-Everything else goes home: floor objects, bag contents in room containers, shop
-stock, eaten food, dead mobiles. A bought thing stays bought; unsold stock stays
-on the shelf.
-
-That was a real defect before this phase: every 240 ticks the reset stripped
-every player's inventory and returned it to the object's home. The gate now
-carries a bag through a reset and requires it to stay put.
-
-## Configuration
-
-`RESPAWN_AT_START=true` is for tests that need every login at room 1. It is
-false by default and in the deploy unit, so a returning character wakes where
-they left. Death still wakes an actor at the start room; that is a different
-path and does not touch the inventory.
-
-## What is not here yet
-
-Container nesting beyond one level, item durability, a mail reader that lists
-without delivering, and progress beyond visited/role. The next persistence
-decision should come from a dataset question — what a character's history needs
-to answer — not from a storage feature list.
+Death penalties, PvP loot rules and quest-item binding are Phase I–J decisions.
+The current rule is the simple one: objects are mortal, characters are not.

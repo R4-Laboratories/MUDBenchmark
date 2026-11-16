@@ -22,7 +22,9 @@ import { describe as renderRoom } from "../runtime/view.mjs";
 import { loadVerbs } from "../runtime/verbs.mjs";
 import { loadChannels } from "../runtime/channels.mjs";
 import { loadSocials } from "../runtime/socials.mjs";
-import { checkpointIdentities, initialState, nextFrom, phaseAt, releaseHeldObjects, step, upgradeState } from "../runtime/world.mjs";
+import { hashPassword, verifyPassword, validName, validPassword } from "../runtime/accounts.mjs";
+import { allowCommand, DEFAULT_INTERVAL_MS } from "../runtime/allowance.mjs";
+import { AREA_PERIOD, checkpointIdentities, initialState, nextFrom, phaseAt, releaseHeldObjects, step, upgradeState } from "../runtime/world.mjs";
 import { join } from "node:path";
 
 const root = process.cwd();
@@ -96,6 +98,65 @@ for (const alias of socialTable.byAlias.keys()) {
   if (verbTable.byAlias.has(alias)) failures.push(`social alias "${alias}" shadows a verb`);
 }
 
+// Accounts are hashes, not words; the reducer only sees an authenticated
+// identity, never a password.
+let accounts = { ok: true, why: [] };
+{
+  const { salt, hash } = hashPassword("correct horse");
+  if (!verifyPassword("correct horse", salt, hash)) { accounts.ok = false; accounts.why.push("a correct password was refused"); }
+  if (verifyPassword("wrong horse", salt, hash)) { accounts.ok = false; accounts.why.push("a wrong password was accepted"); }
+  if (!validName("alice-1") || validName("a b") || !validPassword("sixsix") || validPassword("short")) {
+    accounts.ok = false;
+    accounts.why.push("name or password validation is wrong");
+  }
+
+  const world = loadWorld({ mode: "single" });
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels);
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
+  run([{ kind: "join", actorId: "a", name: "agent" }]);
+  run([{ kind: "register", actorId: "a", key: "alice", passwordHash: hash, salt }]);
+  if (state.identities.alice?.passwordHash !== hash) { accounts.ok = false; accounts.why.push("register did not write the password hash"); }
+  if (state.identities.alice?.room !== undefined || state.identities.alice?.inventory !== undefined) { accounts.ok = false; accounts.why.push("register wrote session state"); }
+  run([{ kind: "join", actorId: "b", name: "agent" }]);
+  run([{ kind: "login", actorId: "b", key: "alice", authenticated: true }]);
+  if (state.actors.find((actor) => actor.id === "b")?.level !== 1) { accounts.ok = false; accounts.why.push("login did not set progression defaults"); }
+  run([{ kind: "password", actorId: "a", passwordHash: "new-hash", salt: "new-salt" }]);
+  if (state.identities.alice.passwordHash !== "new-hash") { accounts.ok = false; accounts.why.push("password change did not take"); }
+  if (!accounts.ok) failures.push(`accounts are broken: ${accounts.why[0]}`);
+}
+
+// One accepted command per 250 ms, on every transport.
+let allowance = { ok: true, why: [] };
+{
+  if (DEFAULT_INTERVAL_MS !== 250) { allowance.ok = false; allowance.why.push("the default interval is not 250 ms"); }
+  if (!allowCommand(0, 1000)) { allowance.ok = false; allowance.why.push("the first command was refused"); }
+  if (allowCommand(1000, 1100)) { allowance.ok = false; allowance.why.push("a command 100 ms later was accepted"); }
+  if (allowCommand(1000, 1249)) { allowance.ok = false; allowance.why.push("a command 249 ms later was accepted"); }
+  if (!allowCommand(1000, 1250)) { allowance.ok = false; allowance.why.push("a command 250 ms later was refused"); }
+  if (!allowance.ok) failures.push(`the input allowance is broken: ${allowance.why[0]}`);
+}
+
+// A safe room refuses combat; an unsafe one begins it. The two-hour reset is
+// the world's clock, not a heartbeat.
+let safe = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  if (!world.rooms[1].safe || world.rooms[2].safe) { safe.ok = false; safe.why.push("the safe flags are wrong"); }
+  const npcs = world.npcs.map((npc) => (npc.id === "guard" ? { ...npc, room: 1, home: 1 } : npc));
+  let state = initialState(world.rooms, npcs, world.objects, world.start, world.climate, channelTable.channels);
+  if (state.pulses.area.period !== AREA_PERIOD || AREA_PERIOD !== 28_800) { safe.ok = false; safe.why.push("the area reset is not two hours"); }
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
+  run([{ kind: "join", actorId: "a", name: "alice" }]);
+  run([{ kind: "attack", actorId: "a", targetId: "guard" }]);
+  if (state.engagements.length !== 0) { safe.ok = false; safe.why.push("an attack began in a safe room"); }
+  state.actors[0].room = 2;
+  const guard = state.npcs.find((npc) => npc.id === "guard");
+  guard.room = 2;
+  run([{ kind: "attack", actorId: "a", targetId: "guard" }]);
+  if (state.engagements.length !== 1) { safe.ok = false; safe.why.push("an attack in an unsafe room did not begin"); }
+  if (!safe.ok) failures.push(`safe rooms are broken: ${safe.why[0]}`);
+}
+
 // Combat must actually resolve: an attack on a 12 hp guard kills it, round by
 // round, and the damage reported sums to exactly its hit points. A duplicated
 // span would double the sum, a missing round would fall short of it.
@@ -108,9 +169,10 @@ const oldDirs = new Set([0, 1, 2, 3].map((k) => nextFrom(oldSeed + k, 4)));
 {
   const world = loadWorld({ mode: "single" });
   const guardHome = world.npcs.find((npc) => npc.id === "guard");
-  const npcs = world.npcs.map((npc) => (npc.id === "guard" ? { ...npc, room: 1, home: 1 } : npc));
+  const npcs = world.npcs.map((npc) => (npc.id === "guard" ? { ...npc, room: 2, home: 2 } : npc));
   let state = initialState(world.rooms, npcs, world.objects, world.start);
   state = step({ state, rooms: world.rooms, intents: [{ kind: "join", actorId: "gate", name: "gate" }] }).state;
+  state.actors[0].room = 2;
   state = step({ state, rooms: world.rooms, intents: [{ kind: "attack", actorId: "gate", targetId: "guard" }] }).state;
 
   for (let i = 0; i < 40; i += 1) {
@@ -192,9 +254,10 @@ let items = { ok: true, why: [] };
   run([{ kind: "eat", actorId: "gate", objectId: "bread", messages: say("eat") }]);
   check(object("bread").eaten, "a finished loaf is still in the world");
 
-  // The old MUD reset: walk the clock to the area pulse and require everything
-  // to be home, including what was eaten.
-  for (let i = 0; i < 260; i += 1) run([]);
+  // The old MUD reset: force the two-hour pulse and require everything home.
+  state.pulses.area = { period: 1, remaining: 1 };
+  run([]);
+  state.pulses.area = { period: AREA_PERIOD, remaining: AREA_PERIOD };
   check(!object("bread").eaten && object("bread").room === 5, "the area reset did not restore the eaten loaf");
   check(object("chest").inside === null && object("copper").inside === "chest", "the area reset did not return the coin to the chest");
   check(object("chest").open === false, "the area reset left the chest open");
@@ -286,10 +349,12 @@ let resume = { ok: true, why: [] };
   const upgraded = upgradeState(saved, base);
   if (upgraded.tick !== 12345) { resume.ok = false; resume.why.push("the tick was not preserved"); }
   if (!upgraded.pulses.violence) { resume.ok = false; resume.why.push("the violence pulse was not restored"); }
+  if (upgraded.pulses.area.period !== AREA_PERIOD) { resume.ok = false; resume.why.push("the area pulse did not migrate to two hours"); }
   if (!upgraded.climate?.weather?.length) { resume.ok = false; resume.why.push("the climate was not restored"); }
   if (!upgraded.mail?.some((letter) => letter.id === "mail-old")) { resume.ok = false; resume.why.push("mail was lost on resume"); }
   if (!Array.isArray(upgraded.channels) || upgraded.channels.length === 0) { resume.ok = false; resume.why.push("channels were not restored"); }
-  if (!Array.isArray(upgraded.identities.old?.inventory) || !Array.isArray(upgraded.identities.old?.worn)) { resume.ok = false; resume.why.push("an old identity did not gain an inventory"); }
+  if (upgraded.identities.old?.level !== 1 || upgraded.identities.old?.xp !== 0 || upgraded.identities.old?.guild !== null) { resume.ok = false; resume.why.push("an old identity did not gain the progression fields"); }
+  if ("inventory" in (upgraded.identities.old ?? {}) || "room" in (upgraded.identities.old ?? {})) { resume.ok = false; resume.why.push("an old identity kept session state"); }
   if (!Array.isArray(upgraded.engagements)) { resume.ok = false; resume.why.push("engagements were not restored"); }
   const chest = upgraded.objects.find((o) => o.id === "chest");
   if (!chest || chest.home === undefined) { resume.ok = false; resume.why.push("a newly added object is missing after resume"); }
@@ -306,10 +371,9 @@ let resume = { ok: true, why: [] };
   const heldScroll = dropped.objects.find((o) => o.id === "scroll");
   heldScroll.holder = "lost";
   heldScroll.room = null;
-  dropped.identities.lost = { inventory: ["scroll"], worn: [] };
   releaseHeldObjects(dropped, dropped.actors);
-  if (heldCoin.holder !== null || heldCoin.room !== 3) { resume.ok = false; resume.why.push("a vanished player's inventory was not released where they stood"); }
-  if (heldScroll.holder !== null || heldScroll.room !== null) { resume.ok = false; resume.why.push("a claimed object was left on the floor instead of restored later"); }
+  if (heldCoin.holder !== null || heldCoin.room !== 3) { resume.ok = false; resume.why.push("a vanished player's coin was not released where they stood"); }
+  if (heldScroll.holder !== null || heldScroll.room !== 3) { resume.ok = false; resume.why.push("a vanished player's scroll was not released where they stood"); }
 
   try {
     let state = upgraded;
@@ -367,11 +431,13 @@ let shop = { ok: true, why: [] };
   check(object("cloak").eaten, "a sold cloak is still in the world");
   check(minted.length === 3 && minted.every((c) => c.value === 1), `selling a 6-value cloak paid ${minted.length} coins`);
 
-  // Reset: unsold stock stays on the shelf, a bought thing stays bought, sold
-  // things go home, and minted coins are swept up.
-  for (let i = 0; i < 260; i += 1) run([]);
-  check(object("lamp").holder === "gate" && !object("lamp").forSale, "the reset took the bought lamp back");
-  check(object("torch").room === 3 && object("torch").forSale, "the reset did not leave unsold stock on the shelf");
+  // Reset: every object goes home, stock returns, sold things return, minted
+  // coins are swept up.
+  state.pulses.area = { period: 1, remaining: 1 };
+  run([]);
+  state.pulses.area = { period: AREA_PERIOD, remaining: AREA_PERIOD };
+  check(object("lamp").room === 3 && object("lamp").forSale, "the reset did not return the lamp to the shop");
+  check(object("torch").room === 3 && object("torch").forSale, "the reset did not return the torch to the shelf");
   check(!object("cloak").eaten && object("cloak").room === 1, "the reset did not return the sold cloak");
   check(state.objects.every((o) => !o.ephemeral), "the reset left minted coins in the world");
   if (!shop.ok) failures.push(`the shop is broken: ${shop.why[0]}`);
@@ -409,6 +475,8 @@ let comms = { ok: true, why: [], said: 0, told: 0, mailed: 0, gestured: 0 };
 
   const gossip = lines(run([{ kind: "channel", actorId: "a", channelId: "gossip", messages: { actor: "CA", others: "CO" } }]));
   check(gossip.length === 3, `gossip reached ${gossip.length} of 3 awake actors`);
+  const global = lines(run([{ kind: "channel", actorId: "a", channelId: "global", messages: { actor: "GA", others: "GO" } }]));
+  check(global.length === 3, `global reached ${global.length} of 3 awake actors`);
 
   const wizard = lines(run([{ kind: "channel", actorId: "a", channelId: "wizards", messages: { actor: "WA", others: "WO" } }]));
   check(wizard.length === 3, "a role-3 actor could not use the wizards channel");
@@ -433,6 +501,7 @@ let comms = { ok: true, why: [], said: 0, told: 0, mailed: 0, gestured: 0 };
   const delivered = lines(run([{ kind: "login", actorId: "b2", key: "bob", token: null }]));
   check(delivered.some((e) => e.text.includes("second")), "a letter did not arrive on login");
 
+  run([{ kind: "move", actorId: "b2", dir: "north", to: 2 }]);
   run([{ kind: "move", actorId: "a", dir: "north", to: 2 }]);
   const wave = lines(run([{ kind: "social", actorId: "a", targetId: "b2", messages: {
     actor: "WA", others: "WO", target: "WT", targeted: "WYOU", targetOthers: "WTO", self: "WS", selfOthers: "WSO",
@@ -465,7 +534,11 @@ let persistence = { ok: true, why: [] };
   const check = (condition, why) => { if (!condition) { persistence.ok = false; persistence.why.push(why); } };
 
   run([{ kind: "join", actorId: "a", name: "alice" }]);
-  run([{ kind: "login", actorId: "a", key: "alice", token: null }]);
+  run([{ kind: "login", actorId: "a", key: "alice", token: null, authenticated: true }]);
+  state.actors[0].level = 3;
+  state.actors[0].xp = 120;
+  state.actors[0].guild = "wardens";
+  state.actors[0].quests = { active: ["slate"], completed: ["first"] };
   run([{ kind: "take", actorId: "a", objectId: "satchel", messages: say("take") }]);
   run([{ kind: "take", actorId: "a", objectId: "cloak", messages: say("take") }]);
   run([{ kind: "put", actorId: "a", objectId: "cloak", containerId: "satchel", messages: say("put") }]);
@@ -473,39 +546,48 @@ let persistence = { ok: true, why: [] };
   run([{ kind: "take", actorId: "a", objectId: "scroll", messages: say("take") }]);
   run([{ kind: "leave", actorId: "a" }]);
 
-  check(object("satchel").holder === null && object("satchel").room === null, "a bag was left in a room after logout");
-  check(object("scroll").holder === null && object("scroll").room === null, "a carried scroll was left in a room after logout");
+  check(object("satchel").holder === null && object("satchel").room === 2, "a bag was not left where the character stood");
+  check(object("scroll").holder === null && object("scroll").room === 2, "a carried scroll was not left where the character stood");
   check(object("cloak").inside === "satchel", "a bag lost what was inside it on logout");
-  check((state.identities.alice.inventory ?? []).includes("satchel"), "the identity did not record the bag");
-  check((state.identities.alice.inventory ?? []).includes("scroll"), "the identity did not record the scroll");
+  check(state.identities.alice.inventory === undefined, "the identity recorded an inventory it should not keep");
+  check(state.identities.alice.level === 3 && state.identities.alice.xp === 120, "progression was not written on logout");
+  check(state.identities.alice.guild === "wardens" && state.identities.alice.quests.completed.includes("first"), "guild or quest progress was lost on logout");
 
   run([{ kind: "join", actorId: "b", name: "alice" }]);
-  run([{ kind: "login", actorId: "b", key: "alice", token: null }]);
-  check(state.actors.find((actor) => actor.id === "b").room === 2, "the returning character did not wake where they left");
-  check(object("satchel").holder === "b", "the bag did not return to the hand");
-  check(object("scroll").holder === "b", "the scroll did not return to the hand");
-  check(object("cloak").inside === "satchel", "the bag did not keep its contents");
+  run([{ kind: "login", actorId: "b", key: "alice", token: null, authenticated: true }]);
+  const returning = state.actors.find((actor) => actor.id === "b");
+  check(returning.room === 1, "the returning character did not wake at the start");
+  check(returning.level === 3 && returning.xp === 120, "level or experience was not restored on login");
+  check(returning.guild === "wardens" && returning.quests.completed.includes("first"), "guild or quest progress was not restored on login");
+  check(state.objects.every((o) => o.holder !== "b"), "items were restored to a hand across logout");
+  check(object("satchel").room === 2 && object("scroll").room === 2, "logout items did not stay in the world");
 
   run([{ kind: "join", actorId: "c", name: "alice" }]);
-  const second = run([{ kind: "login", actorId: "c", key: "alice", token: null }]);
+  const second = run([{ kind: "login", actorId: "c", key: "alice", token: null, authenticated: true }]);
   check(second.some((event) => /already signed in/.test(event.text)), "a second sign-in with the same name was allowed");
-  check(state.actors.find((actor) => actor.id === "c").key === null, "the second sign-in took the identity anyway");
 
-  for (let i = 0; i < 260; i += 1) run([]);
-  check(object("satchel").holder === "b" && object("scroll").holder === "b", "the area reset took a held item");
-  check(object("cloak").inside === "satchel", "the area reset took an item out of a held bag");
+  state.pulses.area = { period: 1, remaining: 1 };
+  run([]);
+  state.pulses.area = { period: AREA_PERIOD, remaining: AREA_PERIOD };
+  check(object("satchel").room === 1 && object("cloak").room === 1, "the reset did not return the dropped bag and cloak home");
+  check(object("scroll").room === 2, "the reset did not return the dropped scroll home");
+  check(object("cloak").inside === null, "the reset left an item inside a bag");
 
   checkpointIdentities(state);
+  check(state.identities.alice.level === 3 && state.identities.alice.quests.active.includes("slate"), "checkpoint lost progression");
+  check(!("room" in state.identities.alice) && !("visited" in state.identities.alice), "checkpoint wrote session state");
   const restarted = JSON.parse(JSON.stringify(state));
   const savedActors = state.actors;
   restarted.actors = [];
   releaseHeldObjects(restarted, savedActors);
-  check(restarted.objects.find((o) => o.id === "satchel").holder === null, "a saved bag was left held by a vanished actor");
   const joined = step({ state: restarted, rooms: world.rooms, intents: [{ kind: "join", actorId: "d", name: "alice" }] });
-  const result = step({ state: joined.state, rooms: world.rooms, intents: [{ kind: "login", actorId: "d", key: "alice", token: null }] });
+  const result = step({ state: joined.state, rooms: world.rooms, intents: [{ kind: "login", actorId: "d", key: "alice", token: null, authenticated: true }] });
   state = result.state;
-  check(object("satchel").holder === "d" && object("scroll").holder === "d", "a restart lost the inventory");
-  check(object("cloak").inside === "satchel", "a restart lost the contents of the bag");
+  const afterRestart = state.actors.find((actor) => actor.id === "d");
+  check(afterRestart.room === 1, "a restart did not start the character at the start room");
+  check(afterRestart.level === 3 && afterRestart.xp === 120, "a restart lost level or experience");
+  check(afterRestart.guild === "wardens" && afterRestart.quests.active.includes("slate"), "a restart lost guild or quest progress");
+  check(state.objects.every((o) => o.holder !== "d"), "a restart restored items to a hand");
 
   if (!persistence.ok) failures.push(`persistence is broken: ${persistence.why[0]}`);
 }
@@ -534,10 +616,13 @@ if (process.argv.includes("--json")) {
   console.log(`${"mechanizedDrift".padEnd(26)}  ${(driftOk ? "clean" : "DRIFT").padStart(5)}   == clean`);
   console.log(`${"worldArms".padEnd(26)}  ${(worldProblems.length === 0 ? "4 ok" : "BROKEN").padStart(5)}   == walkable`);
   console.log(`${"renderer".padEnd(26)}  ${(shown.includes("SECRET-NOTICE") && !hidden.includes("SECRET-NOTICE") ? "2 ok" : "BROKEN").padStart(5)}   == hides/shows`);
+  console.log(`${"accounts".padEnd(26)}  ${(accounts.ok ? "hash, register" : "BROKEN").padStart(5)}   == names and passwords`);
+  console.log(`${"allowance".padEnd(26)}  ${(allowance.ok ? "250 ms" : "BROKEN").padStart(5)}   == one command`);
+  console.log(`${"safe".padEnd(26)}  ${(safe.ok ? "2 rooms" : "BROKEN").padStart(5)}   == no combat`);
   console.log(`${"combat".padEnd(26)}  ${(combat.outcome === "killed" ? `${combat.rounds} rounds` : "BROKEN").padStart(5)}   == kills`);
   console.log(`${"resume".padEnd(26)}  ${(resume.ok ? "1 save" : "BROKEN").padStart(5)}   == old checkpoint loads`);
   console.log(`${"climate".padEnd(26)}  ${(climate.ok ? `${climate.changes} changes` : "BROKEN").padStart(5)}   == day, night, weather`);
-  console.log(`${"persistence".padEnd(26)}  ${(persistence.ok ? "rooms, hands, bags" : "BROKEN").padStart(5)}   == survives logout/restart`);
+  console.log(`${"persistence".padEnd(26)}  ${(persistence.ok ? "progress, no hands" : "BROKEN").padStart(5)}   == survives logout/restart`);
   console.log(`${"commsTable".padEnd(26)}  ${(verbTable.errors.length + channelTable.errors.length + socialTable.errors.length === 0 ? `${channelTable.byAlias.size + socialTable.byAlias.size} keys` : "BROKEN").padStart(5)}   == resolves`);
   console.log(`${"comms".padEnd(26)}  ${(comms.ok ? `${comms.said}/${comms.told}/${comms.mailed}/${comms.gestured} ok` : "BROKEN").padStart(5)}   == say, tell, mail, social`);
   console.log(`${"shop".padEnd(26)}  ${(shop.ok ? "buy, sell, reset" : "BROKEN").padStart(5)}   == honest trade`);

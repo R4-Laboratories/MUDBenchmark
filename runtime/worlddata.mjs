@@ -41,11 +41,23 @@ export function loadWorld({ mode = "single", path = DEFAULT_PATH } = {}) {
       errors.push(`room ${id} has no text for mode "${mode}"`);
       continue;
     }
+    if (room.safe !== undefined && typeof room.safe !== "boolean") {
+      errors.push(`room ${id} has a non-boolean safe flag`);
+    }
+    if (room.details !== undefined && (typeof room.details !== "object" || Array.isArray(room.details))) {
+      errors.push(`room ${id} has details that are not an object`);
+    }
+    if (room.ambient !== undefined && !Array.isArray(room.ambient)) {
+      errors.push(`room ${id} has ambient lines that are not a list`);
+    }
     rooms[numeric] = {
       name: room.name ?? `Room ${id}`,
       exits: room.exits ?? {},
       text,
       notices: room.notices ?? [],
+      safe: room.safe === true,
+      details: room.details ?? {},
+      ambient: room.ambient ?? [],
     };
   }
 

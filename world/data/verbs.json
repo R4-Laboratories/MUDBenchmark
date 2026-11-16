@@ -60,7 +60,8 @@
         "actor": "You attack %t.",
         "others": "%a attacks %t!",
         "missing": "There is no %s here.",
-        "self": "Attacking yourself is not a plan."
+        "self": "Attacking yourself is not a plan.",
+        "safe": "This is a safe place. No blade is drawn here."
       }
     },
     "put": {

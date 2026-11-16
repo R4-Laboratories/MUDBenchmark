@@ -10,7 +10,7 @@ are addressed to people or identities and cross rooms freely.
 | --- | --- | --- | --- |
 | `say <words>` | everyone in the room | none | `verbs.json` |
 | `tell <name> <words>` | one actor, anywhere | none | `verbs.json` |
-| `gossip`/`trade`/`wiz <words>` | every awake actor | none | `channels.json` |
+| `global`/`gossip`/`trade`/`wiz <words>` | every awake actor (role-locked for `wiz`) | none | `channels.json` |
 | `mail <name> <words>` | an identity, online or not | queued until read | `verbs.json` |
 | `wave`/`nod`/`bow`/... | the room, one line each | none | `socials.json` |
 

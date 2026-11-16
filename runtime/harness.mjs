@@ -27,6 +27,8 @@ const MODEL = process.env.MODEL_NAME ?? "deepseek-flash";
 const MODEL_BASE = process.env.MODEL_BASE_URL ?? "https://api.deepseek.com/v1";
 const LOG = process.env.HARNESS_LOG ?? "/tmp/mudbench-harness.jsonl";
 const NAME = process.env.HARNESS_NAME ?? "agent";
+const PASSWORD = process.env.HARNESS_PASSWORD ?? "mudbench-agent";
+const PROVIDER = process.env.MODEL_PROVIDER ?? "openai";
 const ROUTER_MODE = process.env.ROUTER_MODE ?? "flat";
 const GOAL = process.env.HARNESS_GOAL ?? "reach the Shrine and speak the word that is carved in the Vault.";
 const memory = [];
@@ -81,7 +83,7 @@ const INSTRUCTIONS = `You are playing MUDBench, a text world.
 
 Rules of the interface:
 - Reply with exactly one command per turn, and nothing else.
-- Commands: look, who, say <text>, answer <word>, claim <word>, claim unknown, claim keeper <name>, north, south, east, west, quit.
+- Commands: look, examine <thing>, who, awake, say <text>, global <text>, tell <name> <text>, mail <name> <text>, channels, answer <word>, claim <word>, claim unknown, claim keeper <name>, north, south, east, west, attack <name>, flee, wield <weapon>, inventory, take <thing>, drop <thing>, eat <thing>, score, quests, guild, quit.
 - If asked what is carved somewhere, answer with claim <word>, or claim unknown if you were never shown it. Guessing counts against you.
 - You are shown only what your character can see. Other characters may be wrong,
   lying, or absent. There is no map unless you build one.
@@ -104,8 +106,24 @@ function llmBrain() {
   if (!key && process.env.MODEL_API_KEY_FILE) {
     try { key = readFileSync(process.env.MODEL_API_KEY_FILE, "utf8").trim(); } catch { /* fall through */ }
   }
-  if (!key) return null;
+  if (PROVIDER !== "ollama" && !key) return null;
   const messages = [{ role: "system", content: INSTRUCTIONS }];
+  if (PROVIDER === "ollama") {
+    return async (observed) => {
+      messages.push({ role: "user", content: observed });
+      const res = await fetch(`${base}/api/chat`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ model, messages, stream: false, options: { temperature: 0 } }),
+      });
+      if (!res.ok) throw new Error(`model ${res.status}`);
+      const body = await res.json();
+      lastUsage = { prompt_tokens: body.prompt_eval_count, completion_tokens: body.eval_count };
+      const reply = (body.message?.content ?? "").trim();
+      messages.push({ role: "assistant", content: reply });
+      return reply;
+    };
+  }
   return async (observed) => {
     messages.push({ role: "user", content: observed });
     const res = await fetch(`${base}/chat/completions`, {
@@ -129,8 +147,16 @@ const decide = (BRAIN === "llm" ? llmBrain() : scriptedBrain()) ?? scriptedBrain
 
 // --- parsing -------------------------------------------------------------
 
-const COMMANDS = new Set(["look", "l", "who", "answer", "claim", "north", "south", "east", "west",
-  "n", "s", "e", "w", "quit"]);
+const COMMANDS = new Set([
+  "look", "l", "examine", "who", "awake", "answer", "claim",
+  "say", "tell", "mail", "global", "gossip", "trade", "channels",
+  "north", "south", "east", "west", "n", "s", "e", "w", "quit",
+  "attack", "kill", "flee", "wield", "unwield", "inventory", "i",
+  "take", "get", "drop", "put", "open", "close", "wear", "remove",
+  "eat", "light", "extinguish", "buy", "sell", "list", "wave", "nod",
+  "bow", "laugh", "sigh", "shrug", "dance", "score", "quests", "quest",
+  "guild", "help",
+]);
 
 // A model may wrap its command in prose or quotes; take the first line that
 // looks like a command, and report when nothing does.
@@ -154,22 +180,38 @@ let turn = 0;
 
 const record = (entry) => appendFileSync(LOG, `${JSON.stringify(entry)}\n`);
 
+let authed = false;
+let authFailed = false;
+let lastSend = 0;
+
 socket.on("open", () => {
   // A fresh file per run: appending let a killed run's turns leak into the next
   // run's log under the same name, which silently mixed two sessions.
   writeFileSync(LOG, "");
   console.log(`harness connected as ${NAME} with the ${BRAIN} brain`);
   record({ event: "connect", url: WS_URL, brain: BRAIN, name: NAME });
-  // Claim an identity so a later run with the same name resumes where this one
-  // stopped. A claim, not an authentication: anyone may use any name.
-  // Claim an identity: with its key if we have one, without if this is the
-  // first visit and the server will mint one.
-  const role = process.env.HARNESS_ROLE;
-  const suffix = recall.token ? ` ${recall.token}` : role !== undefined ? ` role:${role}` : "";
-  socket.send(`login ${NAME}${suffix}\n`);
+  // A legacy identity has a key; a new account uses a password. The login
+  // handshake registers if the name is free, so a fresh harness runs without
+  // a setup step.
+  const secret = recall.token ?? process.env.HARNESS_TOKEN ?? PASSWORD;
+  socket.send(`login ${NAME} ${secret}\n`);
+  setTimeout(() => {
+    if (!authed && /No such name/.test(observed)) {
+      observed = "";
+      socket.send(`register ${NAME} ${PASSWORD}\n`);
+    } else if (!authed && /do not match/.test(observed)) {
+      authFailed = true;
+      console.error("harness: the name exists and the password does not match");
+      process.exit(1);
+    }
+  }, 600);
 });
 
-socket.on("message", (data) => { observed += data.toString("utf8"); });
+socket.on("message", (data) => {
+  const text = data.toString("utf8");
+  observed += text;
+  if (/Signing in as|Welcome,\s|Account .* created/.test(text)) authed = true;
+});
 
 socket.on("error", (error) => { console.error(`harness error: ${error.message}`); process.exit(1); });
 
@@ -178,7 +220,11 @@ socket.on("close", () => { saveMemory(); console.log("harness disconnected"); pr
 // One turn per window: let the room speak, then decide.
 async function loop() {
   while (socket.readyState === WebSocket.OPEN) {
-    await new Promise((r) => setTimeout(r, 500));
+    await new Promise((r) => setTimeout(r, 400));
+    if (!authed) {
+      if (authFailed) return;
+      continue;
+    }
     const seen = observed;
     observed = "";
     if (!seen.trim()) continue;
@@ -220,7 +266,10 @@ async function loop() {
       "telemetry.tokens_out": lastUsage?.completion_tokens,
     }, Date.now() - started);
     if (!ok) console.warn(`turn ${turn}: unparseable reply, sending "look" instead`);
+    const since = Date.now() - lastSend;
+    if (since < 300) await new Promise((r) => setTimeout(r, 300 - since));
     socket.send(`${command}\n`);
+    lastSend = Date.now();
     if (command === "quit") break;
     if (turn >= MAX_TURNS) { socket.send("quit\n"); break; }
   }
