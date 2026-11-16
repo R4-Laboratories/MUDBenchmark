@@ -1,6 +1,6 @@
 # The world
 
-Thirty-two rooms in five zones, arranged so a new player can walk out of the
+Thirty-three rooms in five zones, arranged so a new player can walk out of the
 Atrium and keep going. The Vault and Shrine remain exactly where the benchmark
 expects them.
 
@@ -38,8 +38,9 @@ expects them.
 | 28 | The Rat Warren | undercroft | no | w 26, n 29 |
 | 29 | The Smuggler's Cache | undercroft | no | w 27, s 28 |
 | 30 | The Harbor Quay | harbor | no | n 19, e 31 |
-| 31 | The Docks | harbor | no | w 30, n 32 |
+| 31 | The Docks | harbor | no | w 30, n 32, down 33 |
 | 32 | The Lighthouse | harbor | no | s 31 |
+| 33 | The Ring | harbor | no (arena) | up 31 |
 
 Every exit has a way back. Every room has a long description, at least one
 `details` entry for `look <thing>`, and at least one ambient line that shows on
@@ -53,12 +54,19 @@ a rotating basis.
 | town | 8–14, 24 | smith, innkeeper, market woman, guild clerk |
 | wilds | 15–23 | boar, wolf, ghoul |
 | undercroft | 25–29 | sewer rat, smuggler |
-| harbor | 30–32 | dockhand, lighthouse keeper |
+| harbor | 30–33 | dockhand, lighthouse keeper, ring keeper |
 
 A wandering mobile filters its exits to rooms in its own zone, so the boar stays
 in the wilds and the market stays a market. Aggression is skipped in safe rooms.
 Unsafe rooms say `Contested ground: players may attack here.`; safe rooms say
 `This is a safe place.`
+
+## The Ring
+
+A consensual PvP arena beneath the Docks. `duel <name>` challenges; the target
+runs `duel accept` or `duel decline`. An active duel engages both sides and
+death takes no goods; leaving the Ring forfeits. Unsafe rooms outside the Ring
+remain open PvP, and death there still drops everything held.
 
 ## Shops
 

@@ -23,6 +23,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `close` | `shut` | object |
 | `deliver` | `handin` | object to actor |
 | `drop` | `discard` | object |
+| `duel` | `challenge` | actor |
 | `eat` | `taste` | object |
 | `extinguish` | `douse`, `snuff` | object |
 | `flee` | `run` | none |
@@ -118,6 +119,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 28 | The Rat Warren | undercroft | no | west 26, north 29 |
 | 29 | The Smuggler's Cache | undercroft | no | west 27, south 28 |
 | 30 | The Harbor Quay | harbor | no | north 19, east 31 |
-| 31 | The Docks | harbor | no | west 30, north 32 |
+| 31 | The Docks | harbor | no | west 30, north 32, down 33 |
 | 32 | The Lighthouse | harbor | no | south 31 |
+| 33 | The Ring | harbor | no | up 31 |
 

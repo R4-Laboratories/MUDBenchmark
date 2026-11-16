@@ -54,7 +54,7 @@ world, so the two-hour reset does not erase it.
 
 - `quests` / `journal` — active quests with `[x]`/`[ ]` objectives, completed
   quests, and what is available at this level.
-- `quest accept <id>` — level-gated, not repeatable, not already active.
+- `quest accept <id>` — level- and prerequisite-gated, not repeatable, not already active.
 - `quest abandon <id>` — removes it; progress is lost.
 - `deliver <thing> to <name>` — gives the object to a mobile and advances a
   deliver objective.
@@ -72,7 +72,10 @@ the next `quests` command and in the completion that follows.
 1. **The True Word** — enter the Vault, answer the true word at the Shrine.
 2. **A Curled Scroll** — carry the scroll out of the Corridor.
 3. **Bread for the Shop** — deliver a loaf to the shopkeeper.
-4. **The Vault Guardian** — level 2; defeat the stone figure.
+4. **The Vault Guardian** — level 2; requires The True Word; defeat the figure.
+5. **The Smuggler's Cache** — level 3; requires The Vault Guardian.
+6. **The Lighthouse Lens** — level 2; carry the brass telescope from the
+   lighthouse to the docks.
 
 ## Not here yet
 

@@ -812,6 +812,11 @@ let quests = { ok: true, why: [] };
   run([{ kind: "join", actorId: "a", name: "alice" }]);
   run([{ kind: "login", actorId: "a", key: "alice", token: null, authenticated: true }]);
 
+  state.actors[0].level = 2;
+  run([{ kind: "questAccept", actorId: "a", questId: "guardian" }]);
+  check(!questState().active.some((entry) => entry.id === "guardian"), "a quest whose prerequisite was unearned was accepted");
+  state.actors[0].level = 1;
+
   run([{ kind: "questAccept", actorId: "a", questId: "scroll" }]);
   check(questState().active.some((entry) => entry.id === "scroll"), "a quest was not accepted");
   run([{ kind: "move", actorId: "a", dir: "north", to: 2 }]);
@@ -919,6 +924,47 @@ let guilds = { ok: true, why: [] };
   if (!guilds.ok) failures.push(`guilds are broken: ${guilds.why[0]}`);
 }
 
+// Duels are consensual in the Ring, and death there takes no goods.
+let duels = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels);
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
+  const check = (condition, why) => { if (!condition) { duels.ok = false; duels.why.push(why); } };
+  run([{ kind: "join", actorId: "a", name: "alice" }, { kind: "join", actorId: "b", name: "bob" }, { kind: "join", actorId: "c", name: "carol" }]);
+  run([{ kind: "login", actorId: "a", key: "alice", authenticated: true }, { kind: "login", actorId: "b", key: "bob", authenticated: true }, { kind: "login", actorId: "c", key: "carol", authenticated: true }]);
+  state.actors.forEach((actor) => { actor.room = 33; });
+
+  run([{ kind: "duelChallenge", actorId: "a", targetId: "b" }]);
+  check(state.duels.some((duel) => duel.state === "pending"), "a challenge did not become pending");
+  run([{ kind: "duelAccept", actorId: "b" }]);
+  check(state.duels.some((duel) => duel.state === "active"), "a challenge was not accepted");
+  check(state.engagements.length === 2, "an accepted duel did not engage both sides");
+
+  const torch = state.objects.find((object) => object.id === "torch");
+  state.objects.find((object) => object.id === "torch").holder = "b";
+  state.objects.find((object) => object.id === "torch").room = null;
+  state.objects.find((object) => object.id === "torch").heldRoom = 33;
+  state.actors.find((actor) => actor.id === "b").hp = 1;
+  run([{ kind: "attack", actorId: "a", targetId: "b" }]);
+  for (let i = 0; i < 120; i += 1) run([]);
+  const fallen = state.actors.find((actor) => actor.id === "b");
+  const kept = state.objects.find((object) => object.id === "torch");
+  check(fallen.room === 1, "a defeated duellist did not wake at the start");
+  check(kept.holder === "b", "the Ring took the defeated duellist's goods");
+
+  state.actors.forEach((actor) => { actor.room = 33; });
+  const before = state.engagements.length;
+  run([{ kind: "attack", actorId: "a", targetId: "c" }]);
+  check(state.engagements.length === before, "an arena attack began without a duel");
+
+  run([{ kind: "duelChallenge", actorId: "a", targetId: "c" }]);
+  run([{ kind: "duelDecline", actorId: "c" }]);
+  check(!state.duels.some((duel) => duel.state === "pending" && duel.targetId === "c"), "a decline left the challenge pending");
+
+  if (!duels.ok) failures.push(`duels are broken: ${duels.why[0]}`);
+}
+
 // Generated code must match the model it claims to come from.
 const drift = spawnSync(process.execPath, ["tools/mechanize.mjs", "--check"], { encoding: "utf8" });
 const driftOk = drift.status === 0;
@@ -951,6 +997,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"allowance".padEnd(26)}  ${(allowance.ok ? "250 ms" : "BROKEN").padStart(5)}   == one command`);
   console.log(`${"memory".padEnd(26)}  ${(memory.ok ? `${DEFAULT_TURNS} turns` : "BROKEN").padStart(5)}   == rolling window`);
   console.log(`${"safe".padEnd(26)}  ${(safe.ok ? "2 rooms" : "BROKEN").padStart(5)}   == no combat`);
+  console.log(`${"duels".padEnd(26)}  ${(duels.ok ? "Ring rules" : "BROKEN").padStart(5)}   == consent and no loot`);
   console.log(`${"guilds".padEnd(26)}  ${(guilds.ok ? "create, rank, chat" : "BROKEN").padStart(5)}   == roster and chat`);
   console.log(`${"quests".padEnd(26)}  ${(quests.ok ? "accept, advance, pay" : "BROKEN").padStart(5)}   == facts, once`);
   console.log(`${"aggression".padEnd(26)}  ${(aggression.ok ? "1 duel" : "BROKEN").padStart(5)}   == mobs start fights`);

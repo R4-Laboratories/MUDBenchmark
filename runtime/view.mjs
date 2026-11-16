@@ -14,6 +14,7 @@ export function describe({ room, role = 0, others = [], beasts = [], objects = [
   const exits = Object.keys(room.exits ?? {}).join(", ") || "none";
   const lines = [``, `[${room.name}]`, room.text];
   if (room.safe) lines.push("This is a safe place.");
+  else if (room.arena) lines.push("This is the Ring. Duels are agreed here; death does not take your goods.");
   else lines.push("Contested ground: players may attack here.");
   if (phase || weather) lines.push([phase ? `It is ${phase}.` : null, weather].filter(Boolean).join(" "));
   if (Array.isArray(room.ambient) && room.ambient.length) lines.push(room.ambient[tick % room.ambient.length]);

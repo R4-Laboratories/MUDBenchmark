@@ -54,6 +54,13 @@ restart; items do not.
 
 `score` shows level, XP to the next level, hit points, armour, weapon and guild.
 
+## The Ring and open PvP
+
+The Ring beneath the Docks is an arena. `duel <name>` challenges; `duel accept`
+starts a two-way engagement, `duel decline` refuses, and leaving forfeits. An
+arena death takes no goods. Every other unsafe room is open PvP: attacking a
+player is allowed, and death drops everything held where they fell.
+
 ## Safe rooms and PvP
 
 An attack in a safe room is refused; a fight that reaches one is cleared.

@@ -109,6 +109,18 @@ for (const file of inputs) {
       continue;
     }
 
+    if (span.name === "world.duel") {
+      rows.push({
+        ...common,
+        event: "duel",
+        actor: span["actor.id"] ?? null,
+        action: span["duel.action"] ?? null,
+        a: span["duel.a"] ?? null,
+        b: span["duel.b"] ?? null,
+      });
+      continue;
+    }
+
     if (span.name === "world.talk") {
       rows.push({
         ...common,

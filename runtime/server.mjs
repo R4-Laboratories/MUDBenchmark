@@ -152,7 +152,12 @@ function sendTo(id, text) {
 }
 
 function broadcast(room, text, exceptId) {
-  for (const a of actorsIn(room)) if (a.id !== exceptId) sendTo(a.id, text);
+  for (const a of actorsIn(room)) {
+    // A guest has not signed in and is not playing. Do not let NPCs, weather or
+    // other players scroll the login screen before authentication.
+    if (!a.key || a.id === exceptId) continue;
+    sendTo(a.id, text);
+  }
 }
 
 function describe(room, selfId) {
@@ -673,6 +678,8 @@ async function handleCommand(id, line) {
     const stateQ = normalizeQuestState(actor.quests, QUESTS.quests);
     if (action === "accept") {
       if ((actor.level ?? 1) < quest.level) return sendTo(id, `${render(messages.locked, { words: String(quest.level) })}\r\n`);
+      const missing = (quest.requires ?? []).find((required) => !stateQ.completed.includes(required));
+      if (missing) return sendTo(id, `${render(messages.requires, { words: questById(QUESTS.quests, missing)?.name ?? missing })}\r\n`);
       if (stateQ.completed.includes(quest.id)) return sendTo(id, `${messages.complete}\r\n`);
       if (stateQ.active.some((entry) => entry.id === quest.id)) return sendTo(id, `${messages.active}\r\n`);
       pending.push({ kind: "questAccept", actorId: id, questId: quest.id });
@@ -822,6 +829,35 @@ async function handleCommand(id, line) {
     const line = lines[nextFrom(state.tick + npc.id.length, lines.length)];
     recordSpan("world.talk", { "actor.id": id, "npc.id": npc.id, "room.id": actor.room, "text": line.slice(0, 500), "world.tick": state.tick }, 0);
     return sendTo(id, `${render(messages.actor, { words: `${npc.name} says: ${line}` })}\r\n`);
+  }
+
+  if (named === "duel") {
+    const messages = VERB_TABLE.verbs.duel.messages;
+    const action = rest[0];
+    const inRing = ROOMS[actor.room]?.arena === true;
+    if (action === "accept" || action === "decline") {
+      if (!inRing) return sendTo(id, `${messages.notArena}\r\n`);
+      const challenge = state.duels.find((duel) => duel.state === "pending" && duel.targetId === id);
+      if (!challenge) return sendTo(id, `${messages.noChallenge}\r\n`);
+      pending.push({ kind: action === "accept" ? "duelAccept" : "duelDecline", actorId: id });
+      return;
+    }
+    if (!action) {
+      const active = state.duels.find((duel) => duel.state === "active" && [duel.challengerId, duel.targetId].includes(id));
+      const pending = state.duels.find((duel) => duel.state === "pending" && duel.targetId === id);
+      if (active) return sendTo(id, "The duel is live. Fight, or leave the Ring.\r\n");
+      if (pending) return sendTo(id, "A challenge waits. duel accept, or duel decline.\r\n");
+      return sendTo(id, `${messages.noDuel}\r\n`);
+    }
+    if (!inRing) return sendTo(id, `${messages.notArena}\r\n`);
+    const target = findActor(action, (candidate) => candidate.room === actor.room && candidate.id !== id);
+    if (!target) return sendTo(id, `${render(messages.missing, { words: action })}\r\n`);
+    if (state.duels.some((duel) => [duel.challengerId, duel.targetId].includes(id) || [duel.challengerId, duel.targetId].includes(target.id))) {
+      return sendTo(id, `${messages.busy}\r\n`);
+    }
+    // The reducer announces the challenge; sending here too would duplicate it.
+    pending.push({ kind: "duelChallenge", actorId: id, targetId: target.id });
+    return;
   }
 
   if (named === "inventory") {
@@ -1077,6 +1113,15 @@ function onTick() {
         "weather.from": event.weather.from,
         "weather.to": event.weather.to,
         "room.id": event.room,
+        "world.tick": state.tick,
+      }, 0);
+    }
+    if (event.duel) {
+      recordSpan("world.duel", {
+        "actor.id": event.onlyId ?? null,
+        "duel.action": event.duel.action,
+        "duel.a": event.duel.a ?? null,
+        "duel.b": event.duel.b ?? null,
         "world.tick": state.tick,
       }, 0);
     }

@@ -341,7 +341,8 @@
         "active": "That quest is already active.",
         "complete": "That quest is already complete.",
         "accepted": "Quest accepted: %s.",
-        "abandoned": "Quest abandoned: %s."
+        "abandoned": "Quest abandoned: %s.",
+        "requires": "You must finish %s first."
       }
     },
     "deliver": {
@@ -402,6 +403,24 @@
         "actor": "%s",
         "others": "%a speaks with %t.",
         "missing": "There is no %s here to talk to."
+      }
+    },
+    "duel": {
+      "aliases": [
+        "challenge"
+      ],
+      "argument": "actor",
+      "messages": {
+        "usage": "Duels are fought in the Ring beneath the Docks: duel <name>, then duel accept or duel decline.",
+        "notArena": "Duels are fought in the Ring, beneath the Docks.",
+        "missing": "There is no %s here.",
+        "self": "You cannot duel yourself.",
+        "busy": "One of you is already in a duel.",
+        "challenged": "You challenge %s. They must accept or decline.",
+        "accepted": "You accept %s's challenge.",
+        "declined": "You decline %s's challenge.",
+        "noChallenge": "You have no pending challenge.",
+        "noDuel": "You are not in a duel."
       }
     }
   }

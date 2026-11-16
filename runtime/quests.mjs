@@ -41,6 +41,9 @@ export function loadQuests({ path = DEFAULT_PATH } = {}) {
     const rewards = quest.rewards ?? {};
     if (rewards.xp !== undefined && (!Number.isInteger(rewards.xp) || rewards.xp < 0)) errors.push(`quest ${quest.id} has invalid xp`);
     if (rewards.object !== undefined && typeof rewards.object !== "string") errors.push(`quest ${quest.id} has an invalid object reward`);
+    if (quest.requires !== undefined && (!Array.isArray(quest.requires) || quest.requires.some((id) => typeof id !== "string"))) {
+      errors.push(`quest ${quest.id} has invalid prerequisites`);
+    }
     quests.push({ ...quest, objectives, rewards });
   }
   return { quests, errors };
@@ -142,6 +145,7 @@ export function availableQuests(quests, actor) {
   const state = normalizeQuestState(actor.quests, quests);
   return quests.filter((quest) =>
     (actor.level ?? 1) >= quest.level &&
+    (quest.requires ?? []).every((id) => state.completed.includes(id)) &&
     !state.completed.includes(quest.id) &&
     !state.active.some((entry) => entry.id === quest.id));
 }

@@ -158,6 +158,7 @@ export function initialState(rooms, npcs = [], objects = [], start = 1, climate 
     levels,
     quests,
     guilds: {},
+    duels: [],
     mail: [],
     engagements: [],
     npcs: npcs
@@ -219,6 +220,7 @@ export function digestState(state) {
       members: { ...(guild.members ?? {}) },
       invites: [...(guild.invites ?? [])],
     }])),
+    duels: (state.duels ?? []).map((duel) => ({ ...duel })),
     mail: (state.mail ?? []).map((letter) => ({ ...letter })),
     engagements: (state.engagements ?? []).map((e) => ({ ...e })),
     objects: [...state.objects].sort((a, b) => a.id.localeCompare(b.id)),
@@ -316,6 +318,7 @@ export function upgradeState(saved, base) {
     levels: base.levels,
     quests: base.quests,
     guilds: saved.guilds && typeof saved.guilds === "object" ? saved.guilds : {},
+    duels: [],
     mail: Array.isArray(saved.mail) ? saved.mail : [],
     pulses,
     npcs,
@@ -388,6 +391,7 @@ export function step({ state, rooms, intents }) {
       members: { ...(guild.members ?? {}) },
       invites: [...(guild.invites ?? [])],
     }])),
+    duels: (state.duels ?? []).map((duel) => ({ ...duel })),
     mail: (state.mail ?? []).map((letter) => ({ ...letter })),
     engagements: (state.engagements ?? []).map((e) => ({ ...e })),
     npcs: state.npcs.map((n) => ({ ...n, clock: { ...n.clock } })),
@@ -504,6 +508,7 @@ export function step({ state, rooms, intents }) {
       if (intent.kind === "questAccept") {
         if (!quest || (actor.level ?? 1) < quest.level) continue;
         const stateQ = normalizeQuestState(actor.quests, next.quests);
+        if (!(quest.requires ?? []).every((id) => stateQ.completed.includes(id))) continue;
         if (stateQ.completed.includes(quest.id) || stateQ.active.some((entry) => entry.id === quest.id)) continue;
         stateQ.active.push({ id: quest.id, progress: emptyProgress() });
         actor.quests = stateQ;
@@ -684,6 +689,42 @@ export function step({ state, rooms, intents }) {
       continue;
     }
 
+    if (intent.kind === "duelChallenge") {
+      const actor = find(intent.actorId);
+      const target = next.actors.find((a) => a.id === intent.targetId);
+      if (!actor || !target || target.id === actor.id) continue;
+      if (!rooms[actor.room]?.arena || target.room !== actor.room) continue;
+      if (next.duels.some((duel) => [duel.challengerId, duel.targetId].includes(actor.id) || [duel.challengerId, duel.targetId].includes(target.id))) continue;
+      next.duels.push({ challengerId: actor.id, targetId: target.id, state: "pending", tick: next.tick });
+      events.push({ room: actor.room, text: `${actor.name} challenges ${target.name} to a duel.`, exceptId: actor.id });
+      events.push({ onlyId: actor.id, text: `You challenge ${target.name}. They must accept or decline.\r\n` });
+      events.push({ onlyId: target.id, text: `${actor.name} challenges you. Type duel accept, or duel decline.\r\n` });
+      continue;
+    }
+
+    if (intent.kind === "duelAccept" || intent.kind === "duelDecline") {
+      const actor = find(intent.actorId);
+      if (!actor) continue;
+      const duel = next.duels.find((entry) => entry.state === "pending" && entry.targetId === actor.id);
+      if (!duel) continue;
+      next.duels = next.duels.filter((entry) => entry !== duel);
+      const challenger = next.actors.find((a) => a.id === duel.challengerId);
+      if (!challenger || challenger.room !== actor.room || !rooms[actor.room]?.arena) continue;
+      if (intent.kind === "duelDecline") {
+        events.push({ room: actor.room, text: `${actor.name} declines ${challenger.name}'s challenge.`, exceptId: actor.id });
+        events.push({ onlyId: actor.id, text: `You decline ${challenger.name}'s challenge.\r\n` });
+        events.push({ onlyId: challenger.id, text: `${actor.name} declines your challenge.\r\n` });
+      } else {
+        next.duels.push({ challengerId: challenger.id, targetId: actor.id, state: "active", tick: next.tick });
+        next.engagements.push({ attackerId: challenger.id, targetId: actor.id });
+        next.engagements.push({ attackerId: actor.id, targetId: challenger.id });
+        events.push({ room: actor.room, text: `The duel between ${challenger.name} and ${actor.name} begins!`, duel: { action: "begin", a: challenger.id, b: actor.id } });
+        events.push({ onlyId: challenger.id, text: "The Ring is yours. Fight.\r\n" });
+        events.push({ onlyId: actor.id, text: "The Ring is yours. Fight.\r\n" });
+      }
+      continue;
+    }
+
     if (intent.kind === "login") {
       const actor = find(intent.actorId);
       if (!actor) continue;
@@ -769,6 +810,11 @@ export function step({ state, rooms, intents }) {
       const actor = find(intent.actorId);
       if (!actor) continue;
       actor.wielding = null;
+      if (next.duels.some((duel) => [duel.challengerId, duel.targetId].includes(actor.id))) {
+        next.duels = next.duels.filter((duel) => ![duel.challengerId, duel.targetId].includes(actor.id));
+        next.engagements = next.engagements.filter((e) => e.attackerId !== actor.id && e.targetId !== actor.id);
+        events.push({ room: actor.room, text: `${actor.name} leaves the Ring. The duel ends.`, exceptId: actor.id });
+      }
       // Items are mortal: they fall where the character stood and belong to
       // the world until the two-hour reset. Only progression is written down.
       for (const object of next.objects) {
@@ -804,6 +850,11 @@ export function step({ state, rooms, intents }) {
     if (intent.kind === "move") {
       if (rooms[actor.room]?.exits?.[intent.dir] !== intent.to) continue;
       const from = actor.room;
+      if (next.duels.some((duel) => [duel.challengerId, duel.targetId].includes(actor.id))) {
+        next.duels = next.duels.filter((duel) => ![duel.challengerId, duel.targetId].includes(actor.id));
+        next.engagements = next.engagements.filter((e) => e.attackerId !== actor.id && e.targetId !== actor.id);
+        events.push({ room: from, text: `${actor.name} leaves the Ring. The duel ends.`, exceptId: actor.id });
+      }
       events.push({ room: from, text: `${actor.name} leaves ${intent.dir}.`, exceptId: actor.id });
       actor.room = intent.to;
       if (!actor.visited.includes(actor.room)) actor.visited.push(actor.room);
@@ -819,6 +870,12 @@ export function step({ state, rooms, intents }) {
       const target = next.npcs.find((n) => n.id === intent.targetId)
         ?? next.actors.find((a) => a.id === intent.targetId);
       if (!target || target.dead || target.room !== actor.room) continue;
+      if (rooms[actor.room]?.arena) {
+        const duel = next.duels.some((entry) => entry.state === "active" &&
+          ((entry.challengerId === actor.id && entry.targetId === target.id) ||
+           (entry.challengerId === target.id && entry.targetId === actor.id)));
+        if (!duel) continue;
+      }
       if (next.engagements.some((e) => e.attackerId === actor.id && e.targetId === target.id)) continue;
       next.engagements.push({ attackerId: actor.id, targetId: target.id });
       // A fight is two-way: the target engages the attacker on the same round.
@@ -1193,7 +1250,7 @@ export function step({ state, rooms, intents }) {
     const contested = next.engagements.filter((engagement) => {
       const attacker = attackerOf(engagement);
       const target = targetOf(engagement);
-      return attacker && target && !attacker.dead && rooms[attacker.room] && !rooms[attacker.room].safe && !target.dead && target.hp > 0;
+      return attacker && target && !attacker.dead && target.room === attacker.room && rooms[attacker.room] && !rooms[attacker.room].safe && !target.dead && target.hp > 0;
     });
     next.engagements = contested;
 
@@ -1250,22 +1307,27 @@ export function step({ state, rooms, intents }) {
           }
         } else {
           // A dead character drops what they carry where they fell and wakes
-          // at the start with their progress intact.
-          for (const object of next.objects) {
-            if (object.holder !== target.id) continue;
-            object.holder = null;
-            object.room = target.room;
-            object.inside = null;
-            object.heldRoom = null;
-            object.worn = false;
-          }
-          target.wielding = null;
+          // at the start with their progress intact. The Ring is different:
+          // a duel takes no goods.
           const deathRoom = target.room;
+          if (!rooms[deathRoom]?.arena) {
+            for (const object of next.objects) {
+              if (object.holder !== target.id) continue;
+              object.holder = null;
+              object.room = deathRoom;
+              object.inside = null;
+              object.heldRoom = null;
+              object.worn = false;
+            }
+            target.wielding = null;
+          }
           target.hp = target.maxHp ?? 10;
           target.room = next.start;
           if (!target.visited.includes(next.start)) target.visited.push(next.start);
-          events.push({ onlyId: target.id, text: "You die, and wake at the start.\r\n" });
-          events.push({ room: deathRoom, text: `${target.name} is dead.`, exceptId: target.id });
+          const inRing = rooms[deathRoom]?.arena === true;
+          events.push({ onlyId: target.id, text: inRing ? "You fall. The Ring takes no goods.\r\n" : "You die, and wake at the start.\r\n" });
+          events.push({ room: deathRoom, text: inRing ? `${target.name} falls in the Ring.` : `${target.name} is dead.`, exceptId: target.id });
+          next.duels = next.duels.filter((duel) => ![duel.challengerId, duel.targetId].includes(target.id));
           if (next.actors.includes(attacker)) {
             awardXp(next, attacker, Math.max(1, (target.level ?? 1) * 10), events);
           }
@@ -1286,6 +1348,7 @@ export function step({ state, rooms, intents }) {
       npc.hp = npc.maxHp;
     }
     next.engagements = [];
+    next.duels = [];
     for (const actor of next.actors) actor.wielding = null;
     next.objects = next.objects.filter((object) => !object.ephemeral);
     for (const object of next.objects) {

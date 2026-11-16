@@ -567,7 +567,8 @@
       "safe": false,
       "exits": {
         "west": 30,
-        "north": 32
+        "north": 32,
+        "down": 33
       },
       "details": {
         "crane": "The crane is rusted and empty.",
@@ -594,6 +595,25 @@
       "ambient": [
         "The wind pulls at the tower.",
         "A bell buoy rings somewhere out in the dark."
+      ]
+    },
+    "33": {
+      "name": "The Ring",
+      "text": "A round pit of sand and old blood beneath the docks. A rope rail divides the fighting floor from the spectators' ledge, and a slate board records the last few names. The Docks are up.",
+      "safe": false,
+      "arena": true,
+      "exits": {
+        "up": 31
+      },
+      "details": {
+        "sand": "The sand is raked between fights. Dark patches remain.",
+        "rail": "The rope rail is splintered in two places.",
+        "board": "The slate board lists the last winners in chalk."
+      },
+      "ambient": [
+        "The crowd is quiet.",
+        "Sand grits underfoot.",
+        "Someone coughs on the ledge."
       ]
     }
   },
@@ -963,6 +983,28 @@
         "Something came in with the last tide and did not leave.",
         "The telescope is yours if you can use it."
       ]
+    },
+    {
+      "id": "ring-keeper",
+      "name": "the ring keeper",
+      "room": 33,
+      "home": 33,
+      "period": 170,
+      "jitter": 5,
+      "behaviour": "sentinel",
+      "zone": "harbor",
+      "hp": 25,
+      "damage": 0,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 0,
+      "description": "The ring keeper leans on the rail with a ledger under one arm.",
+      "examine": "She has a fighter's broken nose and a bookmaker's patience.",
+      "dialogue": [
+        "A duel is agreed before it is fought. duel <name>, then let them accept.",
+        "No blades outside the Ring. Inside, no one takes your goods.",
+        "The board remembers the winners. It does not remember the reasons."
+      ]
     }
   ],
   "zones": [
@@ -1025,7 +1067,8 @@
       "rooms": [
         30,
         31,
-        32
+        32,
+        33
       ]
     }
   ],
@@ -1362,6 +1405,16 @@
       ],
       "value": 15,
       "examine": "A brass telescope, dented at the tube but clear."
+    },
+    {
+      "id": "ring-board",
+      "name": "a slate scoreboard",
+      "room": 33,
+      "flags": [
+        "fixed",
+        "readable"
+      ],
+      "examine": "The last winners: Moth, Vane, Red Jory, and a name scratched out."
     }
   ],
   "climate": {

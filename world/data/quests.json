@@ -42,7 +42,10 @@
       "rewards": {
         "xp": 80
       },
-      "complete": "The guardian returns to stone."
+      "complete": "The guardian returns to stone.",
+      "requires": [
+        "word"
+      ]
     },
     {
       "id": "scroll",
@@ -157,7 +160,10 @@
       "rewards": {
         "xp": 80
       },
-      "complete": "The cache is quiet."
+      "complete": "The cache is quiet.",
+      "requires": [
+        "guardian"
+      ]
     },
     {
       "id": "telescope",

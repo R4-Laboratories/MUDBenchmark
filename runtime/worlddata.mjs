@@ -44,6 +44,9 @@ export function loadWorld({ mode = "single", path = DEFAULT_PATH } = {}) {
     if (room.safe !== undefined && typeof room.safe !== "boolean") {
       errors.push(`room ${id} has a non-boolean safe flag`);
     }
+    if (room.arena !== undefined && typeof room.arena !== "boolean") {
+      errors.push(`room ${id} has a non-boolean arena flag`);
+    }
     if (room.details !== undefined && (typeof room.details !== "object" || Array.isArray(room.details))) {
       errors.push(`room ${id} has details that are not an object`);
     }
@@ -56,6 +59,7 @@ export function loadWorld({ mode = "single", path = DEFAULT_PATH } = {}) {
       text,
       notices: room.notices ?? [],
       safe: room.safe === true,
+      arena: room.arena === true,
       details: room.details ?? {},
       ambient: room.ambient ?? [],
     };
