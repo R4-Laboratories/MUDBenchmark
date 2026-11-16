@@ -16,8 +16,10 @@ no matter what the surrounding process does.
 | `Perception` | `Observer {role, room}`, `Notice {room, level}` | `perceives_decides` — an observer sees a notice exactly when co-located and cleared | verified |
 | `Identity` | `credentialHolds presented stored`, `admitted` over eight inputs | Eight refusal theorems — a kind mismatch, an unauthenticated proof, a foreign audience, an out-of-window or expired session, a stale log, a malformed id and a missing credential are each refused | verified |
 
-Each theorem is proved by `simplify` over its own definitions plus `Nat.beq_eq`,
-with `propext` as the only axiom. Nothing is `sorry`-ed and nothing is deferred.
+Most theorems are proved by `simplify` over their own definitions plus
+`Nat.beq_eq`, with `propext` as the only axiom. The `Identity` refusals are
+closed and proved by `decide`; the kernel uses no axioms at all. Nothing is
+`sorry`-ed and nothing is deferred.
 
 `Identity` is the X5 admission kernel. The eight refusal theorems hold with
 every other check true, which is what the one-false vectors in the app facet
