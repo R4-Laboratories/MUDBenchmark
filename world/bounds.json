@@ -1,0 +1,85 @@
+{
+  "schema": "mudbenchmark/bounds/1",
+  "note": "Family A only: a candidate changes a number inside a fixed band. It never changes a rule, a room, a quest fact or a command. A value outside its band is refused before the candidate is measured. A target is listed only when a hidden scenario measures it; the wolf, ghoul, smuggler and wilds timing join when their scenarios exist.",
+  "limits": {
+    "maxChanges": 32,
+    "maxCandidates": 64
+  },
+  "groups": [
+    {
+      "id": "temple-period",
+      "collection": "npcs",
+      "ids": [
+        "rat",
+        "moth"
+      ],
+      "fields": [
+        "period"
+      ],
+      "multipliers": [
+        0.75,
+        1.25
+      ],
+      "min": 20,
+      "max": 120,
+      "integer": true
+    },
+    {
+      "id": "hostile-hp",
+      "collection": "npcs",
+      "ids": [
+        "boar"
+      ],
+      "fields": [
+        "hp",
+        "maxHp"
+      ],
+      "multipliers": [
+        0.8,
+        1.2
+      ],
+      "min": 4,
+      "max": 60,
+      "integer": true
+    },
+    {
+      "id": "hostile-damage",
+      "collection": "npcs",
+      "ids": [
+        "boar"
+      ],
+      "fields": [
+        "damage"
+      ],
+      "min": 0,
+      "max": 6,
+      "integer": true,
+      "deltas": [
+        -1,
+        1
+      ]
+    },
+    {
+      "id": "shop-price",
+      "collection": "objects",
+      "ids": [
+        "lamp",
+        "torch",
+        "sword",
+        "jerkin",
+        "lantern",
+        "stew"
+      ],
+      "fields": [
+        "price"
+      ],
+      "multipliers": [
+        0.8,
+        1.25
+      ],
+      "min": 1,
+      "max": 40,
+      "integer": true
+    }
+  ]
+}

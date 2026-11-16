@@ -226,8 +226,10 @@ const isCleared = (role, level) => CLEARANCE[role]?.[level] ?? false;
 
 // --- the verified decision ----------------------------------------------
 
-async function admit({ kind, room, origin = 0, destination = 0 }) {
-  const payload = String.fromCharCode(kind, room, origin, destination, 0, 0, 0);
+async function admit({ kind, room, origin = 0, destination = 0, held = 0, amount = 0, free = 0 }) {
+  // The seven bytes are the model's transition record, in its order:
+  // kind, room, origin, destination, held, amount, free.
+  const payload = String.fromCharCode(kind, room, origin, destination, held, amount, free);
   const res = await fetch(`${HOLO_URL}/_hologram/intent`, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -278,6 +280,14 @@ async function handleCommand(id, line) {
     if (leaving?.close) setTimeout(() => leaving.close(), 75);
     else pending.push({ kind: "leave", actorId: id });
     return;
+  }
+
+  if (verb === "wait") {
+    // An explicit do-nothing, useful to an agent that wants to hold its turn.
+    // It is a verified transition even though the current rule always admits.
+    const verdict = await admit({ kind: 0, room: actor?.room ?? 0 });
+    if (verdict !== "admissible") return sendTo(id, "You cannot wait here.\r\n");
+    return sendTo(id, "You wait.\r\n");
   }
 
   if (verb === "register") {
@@ -472,6 +482,11 @@ async function handleCommand(id, line) {
     const messages = VERB_TABLE.verbs.say.messages;
     const said = restRaw.join(" ");
     if (!said) return sendTo(id, `${messages.empty}\r\n`);
+    // Speaking is a verified transition. The current rule admits everyone, but
+    // the runtime asks anyway: when silence becomes a rule (dead, muted, in a
+    // duel), it lands in one place rather than in a second implementation.
+    const verdict = await admit({ kind: 4, room: actor.room });
+    if (verdict !== "admissible") return sendTo(id, "You cannot speak.\r\n");
     pending.push({ kind: "say", actorId: id, text: said, messages: {
       actor: render(messages.actor, { words: said }),
       others: render(messages.others, { actor: actor.name, words: said }),
@@ -1004,10 +1019,26 @@ async function handleCommand(id, line) {
     if (toIndex < 1 || toIndex === rest.length - 1) return sendTo(id, `${messages.noTarget}\r\n`);
     const needle = rest.slice(0, toIndex).join(" ");
     const target = rest.slice(toIndex + 1).join(" ").toLowerCase();
-    const object = findObject(needle, (o) => o.holder === actor.id);
+    // Look the object up wherever it is, then let the model decide whether it
+    // may move: the giver must hold it and the receiver must be able to take
+    // it. A lookup that already filtered on the holder would supply the answer.
+    const object = findObject(needle, (o) => (o.holder === id || o.room === actor.room) && !o.inside && !o.eaten);
     if (!object) return sendTo(id, `${render(messages.missing, { words: needle })}\r\n`);
     const recipient = actorsIn(actor.room).find((a) => a.id !== id && a.name.toLowerCase().includes(target));
     if (!recipient) return sendTo(id, `${messages.nobody}\r\n`);
+    const verdict = await admit({
+      kind: 2,
+      room: actor.room,
+      origin: actor.room,
+      destination: actor.room,
+      held: object.holder === id ? 1 : 0,
+      amount: 1,
+      free: recipient.dead ? 0 : 1,
+    });
+    if (verdict !== "admissible") {
+      if (object.holder !== id) return sendTo(id, `${render(messages.missing, { words: needle })}\r\n`);
+      return sendTo(id, `${render(messages.cannot, { target: recipient.name })}\r\n`);
+    }
     pending.push({ kind: "give", actorId: id, objectId: object.id, toId: recipient.id, messages: {
       actor: render(messages.actor, { object: object.name, target: recipient.name }),
       others: render(messages.others, { actor: actor.name, object: object.name, target: recipient.name }),

@@ -77,3 +77,20 @@ harness now requires an actual `answer` command before it calls a run solved,
 so a `claim` at the Vault cannot end the run. The next run is the comparison
 that decides whether the null result is the route instruction, the larger world,
 or the model.
+
+## The candidate loop's judge is not this benchmark
+
+The corroboration benchmark asks a research question: can a model be misled by
+what a room says? It is open, its expanded run is a null, and the seven-room
+control is not concluded. Nothing in the candidate loop depends on that answer.
+
+A pacing candidate is judged by the four hidden playthroughs in
+`tools/scenarios.mjs`: the opening tour, the boar fight, both quests and a
+liveliness watch. Those runs use the reducer directly, involve no model and no
+provider key, and are deterministic from the same world. The corroboration
+arms, route, prompt, seeds and scoring are protected files: a candidate may not
+change them, and the loop never reads them.
+
+That separation is deliberate. The benchmark is a question about agents; the
+loop is a question about the game. Optimizing one with the other's measure would
+make both answers worthless.

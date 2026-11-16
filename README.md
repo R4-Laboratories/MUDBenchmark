@@ -88,3 +88,13 @@ prism/          the Prism admission app (prism MCP), not the world model
 world/          the PrismPM project: LexLean model of the world and hosting
 runtime/        the Node.js world server, telnet and WebSocket
 ```
+
+## Self-improvement
+
+The repository can propose and measure bounded pacing candidates, but it cannot
+write or publish one. `node tools/candidate.mjs --seed <seed>` builds a finite
+inventory inside `world/bounds.json`; `node tools/measure.mjs --candidates
+<file>` runs it against hidden playthroughs and admits a candidate only if it is
+no worse on every measure and better on at least one. `node tools/gate.mjs`
+proves the inventory is deterministic and an out-of-band value is refused.
+`docs/SELF-IMPROVEMENT.md` records the bounds and what is still human.

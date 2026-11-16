@@ -44,26 +44,33 @@ not exist.
 
 ## What the audit actually found
 
-Of the app facet's verified rules, **one is exercised in play**:
+Of the app facet's verified rules, one was exercised in play when this audit was
+written:
 
-| Rule | Kind | State |
+| Rule | Kind | Then |
 |---|---|---|
 | clearance | 6 | used at boot, decides what a room shows |
 | move | 1 | called, but the server supplies the witness — vacuous |
-| transfer | 2 | no command reaches it |
-| speak | 4 | no call reaches it |
-| wait | 0 | no call reaches it |
+| transfer | 2 | no command reached it |
+| speak | 4 | no call reached it |
+| wait | 0 | no call reached it |
 
-So the model verifies five rules and the world runs one. The honest statement is
+So the model verified five rules and the world ran one. The honest statement was
 **"we proved the rules we could, and wired the one the game needs to show
 information asymmetry"** — not "the world runs verified rules".
 
-## The debt that replaced it
+## The three rules, closed
 
-Not "rules implemented twice", but **rules proved and never asked**:
+`v0.23.0` asks every kind the facet can decide:
 
-- transfer has a proved bound and no way to transfer anything
-- speak and wait are admissible by definition and nothing calls them
+- `wait` is a command. The server asks kind 0 before answering.
+- `say` asks kind 4 before a word reaches the room.
+- `give` asks kind 2 with `held` and `free` read from the world, not from the
+  lookup that found the object. The model refuses a transfer of something the
+  giver does not hold, or to a receiver who cannot take it. The server no longer
+  filters on the holder before the call, because that would supply the answer.
 
-That belongs in the ratchet as a number that may fall: `unusedRules`. Until it
-does, the model's coverage overstates the game's behaviour.
+`unusedRules` is 0, and the gate fails if any of kinds 0, 1, 2, 4 or 6 loses its
+call site. The move rule (kind 1) remains vacuous in the sense RD-1 describes:
+the server still supplies the witness. That is a design fact recorded above, not
+a hidden claim.

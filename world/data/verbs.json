@@ -36,7 +36,8 @@
         "target": "%a gives you %o.",
         "missing": "You are not carrying a %s.",
         "noTarget": "Give it to whom? give <thing> to <name>.",
-        "nobody": "Nobody here answers to that."
+        "nobody": "Nobody here answers to that.",
+        "cannot": "%t cannot take it."
       }
     },
     "inventory": {
@@ -422,6 +423,13 @@
       "messages": {
         "list": "Online: %s",
         "alone": "You are the only one online."
+      }
+    },
+    "wait": {
+      "aliases": [],
+      "argument": "none",
+      "messages": {
+        "actor": "You wait."
       }
     }
   }

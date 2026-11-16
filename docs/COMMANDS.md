@@ -46,6 +46,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `talk` | `greet` | actor |
 | `tell` | `whisper` | actor text |
 | `unwield` | `sheathe` | none |
+| `wait` | — | none |
 | `wear` | `don` | object |
 | `who` | `awake`, `online` | none |
 | `wield` | `equip` | object |

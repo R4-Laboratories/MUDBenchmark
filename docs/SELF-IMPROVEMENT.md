@@ -30,7 +30,8 @@ node tools/gate.mjs
 
 | metric | value | bound |
 |---|---|---|
-| ruleDebt | 4 | <= 4 |
+| ruleDebt | 0 | <= 0 |
+| unusedRules | 0 | <= 0 |
 | modelModules | 7 | >= 7 |
 | provedTheorems | 7 | >= 7 |
 | acceptanceVectors | 9 | >= 9 |
@@ -88,41 +89,75 @@ impossible to hide decline.
 
 ## Status
 
-`v0.1.0` is published and deployed. wick runs the release artifact, not a build
-directory, so the number on the box is a tag someone can point at:
+`v0.23.0` is published and deployed. wick runs the release artifact, not a
+build directory, so the number on the box is a tag someone can point at:
 
 ```
-mudbench-deploy --status   →   release v0.1.0
+mudbench-deploy --status   →   release v0.23.0
 ```
 
 `main` requires both gate jobs before a merge, and a same-repo pull request
 switches on auto-merge when it opens. A change that is not green cannot land,
 and a change that is green lands without anyone asking.
 
+S0 and S1 are in place. The loop can propose a bounded inventory and measure it
+against hidden playthroughs. It cannot write, open a PR, merge or publish.
+
 ---
 
 # From a gate to a bounded self-improvement loop
 
-Status: **roadmap, not enabled.** The current loop proposes; it does not rewrite
-the game. This section records how to get from here to a loop that can propose,
-measure, admit and publish bounded changes without letting the game rewrite its
-own judges.
+Status: **S0 and S1 are in place; S2 onward is not enabled.** The loop can
+propose and measure. It cannot write a file, open a PR, merge or publish. This
+section records what is built and how to get from here to a loop that admits and
+publishes bounded changes without letting the game rewrite its own judges.
 
 ## What we already have
 
 | Part | Current state |
 | --- | --- |
 | deterministic reducer | `step(state, intents, rooms)`; replay from spans |
-| ratchet | `ruleDebt` 0; `unusedRules` 3; model modules, theorems, vectors bounded |
+| ratchet | `ruleDebt` 0; `unusedRules` 0; model modules, theorems, vectors bounded |
 | gate | model verify/build/vectors, world, renderer, combat, items, comms, quests, guilds, map, UI, claims |
 | claims | build/open/some-true; `docs/CLAIMS.md` generated; queries for behavioural results |
 | release | tagged release with holo + runtime; `v*` only |
 | deployment | pull-based; vector replay before flip; health check and rollback |
 | improvement tick | `tools/tick.mjs` names the next debt item; it does not edit |
+| bounds | `world/bounds.json`: four pacing groups, each target with a band |
+| candidate inventory | `tools/candidate.mjs`: 14 seeded candidates, no write permission |
+| measure | `tools/measure.mjs` + `tools/scenarios.mjs`: four hidden playthroughs |
+| admission | component-wise dominance over a hash-bound report; no winner is a settlement |
 
-That is a strong *evaluation* loop. It is not self-improvement until a candidate
-can be generated, measured and admitted without a person doing the mechanical
-part — and it should not be until the bounds are stable.
+That is a strong *evaluation* loop. S1 adds the proposing and measuring half.
+It is still not self-improvement in the publishing sense: a person (or, in S2, a
+publisher) has to act on an admitted report. Nothing writes to the world.
+
+### What S1 does, precisely
+
+```
+node tools/candidate.mjs --seed <seed> --out candidates.json
+node tools/measure.mjs --candidates candidates.json --out result.json
+```
+
+- **The inventory is finite.** Every single-group perturbation at the recorded
+  multipliers, plus a seeded selection of pairs. The seed chooses the pairs and
+  their order; it never chooses a value, and a value outside its band is refused
+  before measurement.
+- **The judges are hidden.** `candidate.mjs` does not import `scenarios.mjs`.
+  A proposer cannot select a variant because it suits the test.
+- **The measures are playthroughs.** An opening tour (coin, bread, shop, meal),
+  a fight with the boar, both quests walked end to end, and a fifteen-hundred
+  tick watch on the temple. Every scenario is deterministic.
+- **Admission is dominance, not a weighted score.** A candidate must be no worse
+  on every component and better on at least one. A tie or a trade-off is a
+  refusal. A ranking is only used to pick among candidates that already
+  dominate.
+- **No winner is a result.** When nothing dominates, the report says `settled`
+  and names no improvement. That is the frontier rule, not a failure.
+- **The targets are the measured ones.** `hostile-hp` and `hostile-damage`
+  name only the boar, because only the boar has a scenario. The wolf, ghoul and
+  smuggler join when their scenarios exist. A target without a judge is a place
+  a loop could improve a number nobody watches.
 
 ## What the references actually contribute
 

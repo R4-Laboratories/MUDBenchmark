@@ -31,6 +31,8 @@ import { DEFAULT_TURNS, trimMessages } from "../runtime/memory.mjs";
 import { buildLlms } from "../runtime/llms.mjs";
 import { AREA_PERIOD, armorOf, attackRoll, checkpointIdentities, initialState, nextFrom, phaseAt, releaseHeldObjects, step, upgradeState } from "../runtime/world.mjs";
 import { join } from "node:path";
+import { buildCandidates } from "./candidate.mjs";
+import { measureCandidates } from "./measure.mjs";
 
 const root = process.cwd();
 const ratchet = JSON.parse(readFileSync(join(root, "world/ratchet.json"), "utf8"));
@@ -51,6 +53,16 @@ const measured = {
 };
 
 const failures = [];
+
+// Every kind the app facet can decide must be asked by a command. The ratchet
+// says unusedRules is zero; this is what makes that statement checkable rather
+// than prose. A call site is the whole claim: if the line goes, the rule is
+// unreached again.
+const serverSource = readFileSync(join(root, "runtime/server.mjs"), "utf8");
+const askedKinds = new Set([...serverSource.matchAll(/admit\(\{\s*kind: (\d+)/g)].map((match) => Number(match[1])));
+for (const kind of [0, 1, 2, 4, 6]) {
+  if (!askedKinds.has(kind)) failures.push(`the model's kind ${kind} is not asked by any command`);
+}
 
 for (const [key, ceiling] of Object.entries(ratchet.mustNotGrow)) {
   if (measured[key] > ceiling) {
@@ -972,8 +984,50 @@ if (!driftOk) {
   failures.push(`mechanized code drifted from the model: ${(drift.stderr || drift.stdout || "").trim().split("\n")[0]}`);
 }
 
+// The candidate loop: a finite, seeded inventory measured on hidden
+// playthroughs. The gate proves the three properties the loop claims: the same
+// seed gives the same inventory, a value outside a band is refused by name, and
+// a winner is a candidate the measure actually admitted.
+let loop = { ok: true, why: [], count: 0, admitted: 0, winner: null };
+{
+  const first = buildCandidates({ seed: "gate" });
+  const second = buildCandidates({ seed: "gate" });
+  if (first.hash !== second.hash) loop.why.push("the same seed produced two different inventories");
+  if (first.candidates.length === 0) loop.why.push("the inventory is empty");
+  loop.count = first.candidates.length;
+
+  const report = measureCandidates(first);
+  loop.admitted = report.results.filter((result) => result.status === "admitted").length;
+  loop.winner = report.winner?.id ?? null;
+  if (report.results.some((result) => !["admitted", "refused"].includes(result.status))) {
+    loop.why.push("a candidate has no verdict");
+  }
+  if (report.winner && !report.results.some((result) => result.id === report.winner.id && result.status === "admitted")) {
+    loop.why.push("the winner is not an admitted candidate");
+  }
+
+  const planted = JSON.parse(JSON.stringify(first));
+  planted.candidates = [
+    { id: "planted-band", changes: [{ group: "hostile-hp", collection: "npcs", target: "boar", field: "hp", from: 12, to: 9999 }] },
+    { id: "planted-target", changes: [{ group: "hostile-hp", collection: "npcs", target: "wolf", field: "hp", from: 16, to: 17 }] },
+    { id: "planted-stale", changes: [{ group: "hostile-hp", collection: "npcs", target: "boar", field: "hp", from: 1, to: 13 }] },
+  ];
+  const refused = measureCandidates(planted).results;
+  for (const id of ["planted-band", "planted-target", "planted-stale"]) {
+    if (refused.find((result) => result.id === id)?.status !== "refused") loop.why.push(`${id} was not refused`);
+  }
+  if (!(refused.find((result) => result.id === "planted-band")?.reason ?? "").includes("outside")) {
+    loop.why.push("the out-of-band refusal did not name the band");
+  }
+
+  if (loop.why.length) {
+    loop.ok = false;
+    failures.push(`the candidate loop is broken: ${loop.why[0]}`);
+  }
+}
+
 if (process.argv.includes("--json")) {
-  process.stdout.write(`${JSON.stringify({ measured, ratchet, failures }, null, 2)}\n`);
+  process.stdout.write(`${JSON.stringify({ measured, ratchet, loop, failures }, null, 2)}\n`);
 } else {
   console.log("metric                      value   bound");
   console.log("--------------------------  -----   -----");
@@ -987,6 +1041,7 @@ if (process.argv.includes("--json")) {
     console.log(`${key.padEnd(26)}  ${String(measured[key]).padStart(5)}   == ${exact}`);
   }
   console.log(`${"mechanizedDrift".padEnd(26)}  ${(driftOk ? "clean" : "DRIFT").padStart(5)}   == clean`);
+  console.log(`${"loop".padEnd(26)}  ${(loop.ok ? String(loop.count) : "BROKEN").padStart(5)}   == ${loop.ok ? `${loop.admitted} admitted, bounded` : "no verdict"}`);
   console.log(`${"llms".padEnd(26)}  ${(llms.ok ? "verbs, rooms" : "STALE").padStart(5)}   == generated contract`);
   console.log(`${"claims".padEnd(26)}  ${(claimsCheck.status === 0 ? "levels ok" : "STALE").padStart(5)}   == build, open, some-true`);
   console.log(`${"commandsDoc".padEnd(26)}  ${(commandsCheck.status === 0 ? "current" : "STALE").padStart(5)}   == generated reference`);
