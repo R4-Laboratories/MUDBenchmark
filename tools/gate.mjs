@@ -86,6 +86,10 @@ const hidden = renderRoom({ room: noticeRoom, role: 0, cleared: (role, level) =>
 if (!shown.includes("SECRET-NOTICE")) failures.push("the room renderer drops a notice it was cleared for");
 if (hidden.includes("SECRET-NOTICE")) failures.push("the room renderer shows a notice it was not cleared for");
 
+// The claims ledger must be well-formed and its generated page current.
+const claimsCheck = spawnSync(process.execPath, ["tools/claims.mjs", "--check"], { encoding: "utf8" });
+if (claimsCheck.status !== 0) failures.push(`claims are stale: ${(claimsCheck.stderr || "").trim().split("\n")[0]}`);
+
 // The generated command reference must match the tables.
 const commandsCheck = spawnSync(process.execPath, ["tools/commands.mjs", "--check"], { encoding: "utf8" });
 if (commandsCheck.status !== 0) failures.push(`docs/COMMANDS.md is stale: ${(commandsCheck.stderr || "").trim().split("\n")[0]}`);
@@ -934,6 +938,7 @@ if (process.argv.includes("--json")) {
   }
   console.log(`${"mechanizedDrift".padEnd(26)}  ${(driftOk ? "clean" : "DRIFT").padStart(5)}   == clean`);
   console.log(`${"llms".padEnd(26)}  ${(llms.ok ? "verbs, rooms" : "STALE").padStart(5)}   == generated contract`);
+  console.log(`${"claims".padEnd(26)}  ${(claimsCheck.status === 0 ? "levels ok" : "STALE").padStart(5)}   == build, open, some-true`);
   console.log(`${"commandsDoc".padEnd(26)}  ${(commandsCheck.status === 0 ? "current" : "STALE").padStart(5)}   == generated reference`);
   console.log(`${"worldMap".padEnd(26)}  ${(worldMap.ok ? `${worldMap.rooms} rooms` : "BROKEN").padStart(5)}   == exits, details, examine`);
   console.log(`${"worldArms".padEnd(26)}  ${(worldProblems.length === 0 ? "4 ok" : "BROKEN").padStart(5)}   == walkable`);

@@ -51,7 +51,9 @@ The project is gated by a shrink-only ratchet and a six-hour workflow:
 ## Results
 
 [First results](docs/RESULT.md) — what the world has measured, with controls and
-limits.
+limits. [Claims](docs/CLAIMS.md) is the honesty-level ledger: every claim is
+`build` (with a gate), `open` (with a query, sample size and seed) or
+`some-true` (with an authority).
 
 ## Status
 
