@@ -98,3 +98,186 @@ mudbench-deploy --status   →   release v0.1.0
 `main` requires both gate jobs before a merge, and a same-repo pull request
 switches on auto-merge when it opens. A change that is not green cannot land,
 and a change that is green lands without anyone asking.
+
+---
+
+# From a gate to a bounded self-improvement loop
+
+Status: **roadmap, not enabled.** The current loop proposes; it does not rewrite
+the game. This section records how to get from here to a loop that can propose,
+measure, admit and publish bounded changes without letting the game rewrite its
+own judges.
+
+## What we already have
+
+| Part | Current state |
+| --- | --- |
+| deterministic reducer | `step(state, intents, rooms)`; replay from spans |
+| ratchet | `ruleDebt` 0; `unusedRules` 3; model modules, theorems, vectors bounded |
+| gate | model verify/build/vectors, world, renderer, combat, items, comms, quests, guilds, map, UI, claims |
+| claims | build/open/some-true; `docs/CLAIMS.md` generated; queries for behavioural results |
+| release | tagged release with holo + runtime; `v*` only |
+| deployment | pull-based; vector replay before flip; health check and rollback |
+| improvement tick | `tools/tick.mjs` names the next debt item; it does not edit |
+
+That is a strong *evaluation* loop. It is not self-improvement until a candidate
+can be generated, measured and admitted without a person doing the mechanical
+part — and it should not be until the bounds are stable.
+
+## What the references actually contribute
+
+### `lexlean-r4`
+
+- A finite candidate inventory: CURRENT plus a bounded set of generated
+  variants, with an explicit selection rule and tie-breaking.
+- Guarded application: `applyProposal` validates the whole state, the binding,
+  the candidate bounds and the epoch before changing one field; any refusal
+  returns the complete original state.
+- Proof receipts: a candidate is only admitted when the kernel and the
+  acceptance controls pass; the receipt is recorded, not asserted.
+- A scheduled engine tick with a pinned SDK, a tip check, a settled cache, a
+  single concurrency group and a pause switch.
+- `frontier.toml` and a finite frontier that settles rather than manufacturing
+  progress.
+
+### `uor-cs1.618`
+
+- Bounded source families with a fixed grammar; no arbitrary code or imports.
+- Independent evaluators with a training corpus and held-out variants; the
+  author never sees the evaluator corpus.
+- An admission kernel compiled from Prism with four obligations: protected
+  fidelity, measured benefit, resource bounds and completed application checks.
+- Protected files: the loop cannot edit its evaluators, tests, workflow,
+  policy or admission Wasm.
+- A hash-bound publisher that owns a named, small set of generated files,
+  rejects a changed main, fast-forwards, and explicitly dispatches deployment.
+- A settlement rule: when the frontier is exhausted, a tick makes no commit and
+  claims no improvement.
+- A pause variable and a revert path through normal deployment.
+
+We take the mechanism, not the scale.
+
+## Preconditions: what "stable bound" means here
+
+Self-improvement starts only when all of these hold:
+
+1. **The rules are closed.** `ruleDebt` 0 and every public failure is typed,
+   modeled and negative-tested. `unusedRules` is either 0 or each remaining rule
+   is documented as unreachable by construction.
+2. **The world is deterministic and replayable.** A span trace reproduces the
+   state; a checkpoint upgrade is tested; a release can roll back.
+3. **The bounds are explicit.** Tick budget, client cap, object/mobile counts,
+   mail/quest/guild caps, economy limits, route and room counts. A candidate
+   that exceeds a bound is refused before evaluation.
+4. **The judges are protected.** `tools/gate.mjs`, `tools/claims.mjs`,
+   `tools/bench-arms.mjs`, `tools/queries/`, the workflows, `world/ratchet.json`
+   and the SDK lock are not writable by the loop.
+5. **The claims are honest.** Every behavioural claim is `open` with a query,
+   sample size and seed; no candidate is allowed to change the claim it is
+   measured against.
+6. **The publication boundary is small and named.** A publisher owns a short
+   list of generated files; everything else is human-owned.
+7. **A pause and a revert exist.** One repository variable stops ticks; a
+   failed gate cannot publish; a revert goes through the normal release and
+   deploy path.
+
+## Candidate families, in order of risk
+
+| Family | What changes | How it is judged | When |
+| --- | --- | --- | --- |
+| **A. Mechanical pacing** | NPC period/jitter, object respawn values, shop prices, quest XP, mob damage/hp within bands | fixed scenarios + dataset queries + resource bounds | first |
+| **B. Content templates** | room descriptions from a bounded grammar, dialogue lines, quest text | schema, protected facts, readability/lexical checks, human review | after A |
+| **C. Procedural layout** | new rooms/zones from a fixed map grammar | reachability, reciprocal exits, safe-zone rules, quest solvability | after B |
+| **D. Rule/code rewriting** | reducer or generated model code | full proof, vectors, replay, no rule debt | last, maybe never |
+
+The first family is deliberately boring: a candidate changes a **number in a
+bounded band**, not a rule. It can be evaluated against the same world, the same
+gate and the same dataset, and it cannot invent a new mechanic.
+
+## The loop
+
+```
+schedule ─▶ candidate (bounded) ─▶ measure on fixed scenarios
+        ─▶ admission (gate + bounds + claims) ─▶ publisher (owned files)
+        ─▶ release ─▶ deploy (pull, replay, health, rollback)
+        ─▶ evidence (hash-bound record) ─▶ settle or next candidate
+```
+
+### S0 — Stabilize (the work before any automation)
+
+- Close `unusedRules` or document each as unreachable.
+- Add the typed-refusal table and negative tests for every verb.
+- Finish the benchmark control question (`docs/BENCHMARK.md`): route vs world
+  vs model. Do not let a self-improvement loop optimize an unsettled measure.
+- Make the tick/checkpoint/rollback path boring.
+
+### S1 — Candidate harness, no writes
+
+- `tools/candidate.mjs` proposes a finite set of bounded variants for family A.
+- `tools/measure.mjs` runs the fixed scenarios and the claims queries.
+- The output is a candidate report with a hash, not a commit.
+- Acceptance: a planted bad candidate is rejected by a named bound; a good one
+  is reproducible from its seed.
+
+### S2 — Admission and a dry-run publisher
+
+- An admission policy, preferably a small LexLean/Prism kernel, consumes:
+  protected fidelity, measured benefit, resource bounds and completed gate.
+- The publisher writes only `world/data/generated/*.json` to a branch and opens
+  a PR. It never pushes to `main`.
+- Acceptance: a candidate that changes a protected file is refused; a candidate
+  that fails the gate is refused; a stale main is not rebased.
+
+### S3 — Scheduled proposals
+
+- A GitHub Actions tick (off the hour), pinned SDK, state file, evidence
+  artifacts, a single concurrency group and a pause variable.
+- It opens a PR at most once per tick; a settled frontier opens nothing.
+- Acceptance: a red gate blocks; a settled tick is silent; the pause variable
+  stops it.
+
+### S4 — Human-gated auto-merge
+
+- Only after S2/S3 have run clean for a sustained period.
+- The automerge path already proven on PR #1 is reused, but the admission
+  kernel and the protected-file check run before it.
+- Acceptance: a planted bad candidate cannot merge; a rollback is rehearsed.
+
+### S5 — Typed content authorship
+
+- Bounded recipes for dialogue, descriptions and quests; no arbitrary code.
+- Independent readability/fact checks; protected lore facts (the Vault word,
+  the Shrine answer, safe rooms) cannot be changed.
+- Human review remains for voice and taste.
+
+### S6 — Rule evolution
+
+- Only when `ruleDebt` is 0, the model is fully verified, and every candidate
+  carries a proof or is refused.
+- A rule change is a new model revision, not a generated patch to the runtime.
+
+## What the loop must never do
+
+- Edit its own gate, evaluator, claims ledger, workflow, admission policy or
+  publisher.
+- Change the benchmark's task, arms, seed or scoring to make a candidate look
+  better.
+- Grant itself currency, items, levels, guild rank or admin role.
+- Publish on a failed gate, a stale main or a missing receipt.
+- Claim an improvement when the frontier is settled.
+- Run arbitrary generated code, imports, shell commands or network calls.
+- Hold a model provider key on the game server.
+
+## Near-term recommendation
+
+Do **S0** and **S1** first, in that order:
+
+1. Finish the control benchmark and close the remaining rule-debt/refusal
+   items.
+2. Build the candidate/measure harness for mechanical pacing with a fixed
+   scenario corpus and no write permission.
+3. Only then add admission and a dry-run publisher.
+
+This keeps the current game shippable while the loop learns to propose. A
+self-improving game that can rewrite its judges is not a game; it is an
+unbounded experiment. The bound is the feature.
