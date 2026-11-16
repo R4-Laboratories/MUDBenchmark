@@ -95,6 +95,18 @@ for (const file of inputs) {
       continue;
     }
 
+    if (span.name === "world.quest") {
+      rows.push({
+        ...common,
+        event: "quest",
+        actor: span["actor.id"] ?? null,
+        action: span["quest.action"] ?? null,
+        quest: span["quest.id"] ?? null,
+        quest_name: span["quest.name"] ?? null,
+      });
+      continue;
+    }
+
     if (span.name === "world.flee") {
       rows.push({
         ...common,

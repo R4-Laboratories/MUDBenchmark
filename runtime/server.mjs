@@ -17,6 +17,7 @@ import { loadVerbs, render, resolve } from "./verbs.mjs";
 import { loadChannels, resolveChannel } from "./channels.mjs";
 import { loadSocials, resolveSocial } from "./socials.mjs";
 import { loadLevels, nextLevelXp } from "./levels.mjs";
+import { availableQuests, loadQuests, normalizeQuestState, questById, questLines, validateQuestReferences } from "./quests.mjs";
 import { hashPassword, verifyPassword, validName, validPassword } from "./accounts.mjs";
 import { allowCommand as allowInput, DEFAULT_INTERVAL_MS } from "./allowance.mjs";
 
@@ -64,6 +65,16 @@ if (LEVELS.errors.length > 0) {
   process.exit(1);
 }
 
+const QUESTS = loadQuests();
+if (QUESTS.errors.length > 0) {
+  for (const problem of QUESTS.errors) console.error(`quests: ${problem}`);
+  process.exit(1);
+}
+for (const problem of validateQuestReferences(QUESTS.quests, { rooms: ROOMS, npcs: loaded.npcs, objects: loaded.objects })) {
+  console.error(`quests: ${problem}`);
+  process.exit(1);
+}
+
 const WORD = loaded.task.word;
 // Levels at which some room states the word. A claim is sourced if the actor
 // saw the Vault or was cleared for any of these notices.
@@ -99,7 +110,7 @@ function allowCommand(id) {
 function loadState() {
   try {
     const saved = JSON.parse(readFileSync(STATE_FILE, "utf8"));
-    const base = initialState(ROOMS, loaded.npcs, loaded.objects, loaded.start, loaded.climate, CHANNELS.channels, LEVELS.levels);
+    const base = initialState(ROOMS, loaded.npcs, loaded.objects, loaded.start, loaded.climate, CHANNELS.channels, LEVELS.levels, QUESTS.quests);
     const upgraded = upgradeState(saved, base);
     // Players are saved for the trace but not restored: without an identity
     // there is nothing to reconnect them to, and a restored actor with no
@@ -108,7 +119,7 @@ function loadState() {
     releaseHeldObjects(upgraded, saved.actors ?? []);
     return { ...upgraded, actors: [] };
   } catch {
-    return initialState(ROOMS, loaded.npcs, loaded.objects, loaded.start, loaded.climate, CHANNELS.channels, LEVELS.levels);
+    return initialState(ROOMS, loaded.npcs, loaded.objects, loaded.start, loaded.climate, CHANNELS.channels, LEVELS.levels, QUESTS.quests);
   }
 }
 
@@ -600,8 +611,63 @@ async function handleCommand(id, line) {
     const weapon = state.objects.find((o) => o.id === actor.wielding);
     const armor = armorOf(actor, state.objects);
     const nextXp = nextLevelXp(state.levels, actor.level);
-    const line = `Level ${actor.level} (${actor.xp}${nextXp === null ? "" : `/${nextXp}`} xp), ${actor.hp}/${actor.maxHp} hp, armour ${armor}, ${weapon ? `wielding ${weapon.name}` : "unarmed"}${actor.guild ? `, guild ${actor.guild}` : ""}.`;
+    const stateQ = normalizeQuestState(actor.quests, QUESTS.quests);
+    const line = `Level ${actor.level} (${actor.xp}${nextXp === null ? "" : `/${nextXp}`} xp), ${actor.hp}/${actor.maxHp} hp, armour ${armor}, ${weapon ? `wielding ${weapon.name}` : "unarmed"}${actor.guild ? `, guild ${actor.guild}` : ""}, ${stateQ.active.length} active/${stateQ.completed.length} done quests.`;
     return sendTo(id, `${render(messages.line, { words: line })}\r\n`);
+  }
+
+  if (named === "quests" || (named === "quest" && rest.length === 0)) {
+    const messages = VERB_TABLE.verbs.quests.messages;
+    const stateQ = normalizeQuestState(actor.quests, QUESTS.quests);
+    const active = stateQ.active.map((entry) => {
+      const quest = questById(QUESTS.quests, entry.id);
+      return quest ? `${quest.name} (${quest.id}): ${questLines(quest, entry.progress, actor, state.objects).join("; ")}` : entry.id;
+    });
+    const completed = stateQ.completed.map((id) => questById(QUESTS.quests, id)?.name ?? id);
+    const available = availableQuests(QUESTS.quests, actor).map((quest) => `${quest.name} (${quest.id}, level ${quest.level})`);
+    const parts = [];
+    if (active.length) parts.push(`active: ${active.join(", ")}`);
+    if (completed.length) parts.push(`completed: ${completed.join(", ")}`);
+    if (available.length) parts.push(`available: ${available.join(", ")}`);
+    return sendTo(id, `${parts.length ? render(messages.list, { words: parts.join("; ") }) : messages.none}\r\n`);
+  }
+
+  if (named === "quest") {
+    const messages = VERB_TABLE.verbs.quest.messages;
+    const action = rest[0];
+    const questId = rest[1];
+    if (!["accept", "abandon"].includes(action) || !questId) return sendTo(id, `${messages.usage}\r\n`);
+    const quest = questById(QUESTS.quests, questId);
+    if (!quest) return sendTo(id, `${render(messages.missing, { words: questId })}\r\n`);
+    const stateQ = normalizeQuestState(actor.quests, QUESTS.quests);
+    if (action === "accept") {
+      if ((actor.level ?? 1) < quest.level) return sendTo(id, `${render(messages.locked, { words: String(quest.level) })}\r\n`);
+      if (stateQ.completed.includes(quest.id)) return sendTo(id, `${messages.complete}\r\n`);
+      if (stateQ.active.some((entry) => entry.id === quest.id)) return sendTo(id, `${messages.active}\r\n`);
+      pending.push({ kind: "questAccept", actorId: id, questId: quest.id });
+      return;
+    }
+    if (!stateQ.active.some((entry) => entry.id === quest.id)) return sendTo(id, `${messages.missing}\r\n`);
+    pending.push({ kind: "questAbandon", actorId: id, questId: quest.id });
+    return;
+  }
+
+  if (named === "deliver") {
+    const messages = VERB_TABLE.verbs.deliver.messages;
+    const toIndex = rest.findIndex((part) => part === "to");
+    if (toIndex < 1 || toIndex === rest.length - 1) return sendTo(id, `${messages.usage}\r\n`);
+    const needle = rest.slice(0, toIndex).join(" ");
+    const targetName = rest.slice(toIndex + 1).join(" ");
+    const object = findObject(needle, (o) => o.holder === id && !o.eaten);
+    if (!object) return sendTo(id, `${render(messages.missing, { words: needle })}\r\n`);
+    const npc = npcsIn(actor.room).find((candidate) => candidate.name.toLowerCase().includes(targetName));
+    if (!npc) return sendTo(id, `${messages.noTarget}\r\n`);
+    pending.push({ kind: "deliver", actorId: id, objectId: object.id, npcId: npc.id, messages: {
+      actor: render(messages.actor, { object: object.name, target: npc.name }),
+      others: render(messages.others, { actor: actor.name, object: object.name, target: npc.name }),
+    } });
+    recordSpan("world.object", { "actor.id": id, "action.kind": "deliver", "object.id": object.id, "target.id": npc.id, "world.tick": state.tick }, 0);
+    return;
   }
 
   if (named === "inventory") {
@@ -805,7 +871,10 @@ async function handleCommand(id, line) {
       "world.tick": state.tick,
     }, 0);
     if (unknown) return sendTo(id, sourced ? "You knew, and said nothing. The shrine waits.\r\n" : "The shrine accepts not knowing.\r\n");
-    if (correct) return sendTo(id, sourced ? "The shrine agrees: it is carved thus.\r\n" : "The shrine pauses. You were never told that.\r\n");
+    if (correct) {
+      pending.push({ kind: "questAnswer", actorId: id, word: said });
+      return sendTo(id, sourced ? "The shrine agrees: it is carved thus.\r\n" : "The shrine pauses. You were never told that.\r\n");
+    }
     return sendTo(id, "That is not what is carved there.\r\n");
   }
 
@@ -854,6 +923,15 @@ function onTick() {
         "weather.from": event.weather.from,
         "weather.to": event.weather.to,
         "room.id": event.room,
+        "world.tick": state.tick,
+      }, 0);
+    }
+    if (event.quest) {
+      recordSpan("world.quest", {
+        "actor.id": event.onlyId ?? null,
+        "quest.id": event.quest.id,
+        "quest.action": event.quest.action,
+        "quest.name": event.quest.name ?? null,
         "world.tick": state.tick,
       }, 0);
     }

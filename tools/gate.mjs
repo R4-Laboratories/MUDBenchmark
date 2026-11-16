@@ -25,6 +25,7 @@ import { loadSocials } from "../runtime/socials.mjs";
 import { hashPassword, verifyPassword, validName, validPassword } from "../runtime/accounts.mjs";
 import { allowCommand, DEFAULT_INTERVAL_MS } from "../runtime/allowance.mjs";
 import { loadLevels } from "../runtime/levels.mjs";
+import { loadQuests, validateQuestReferences } from "../runtime/quests.mjs";
 import { AREA_PERIOD, armorOf, attackRoll, checkpointIdentities, initialState, nextFrom, phaseAt, releaseHeldObjects, step, upgradeState } from "../runtime/world.mjs";
 import { join } from "node:path";
 
@@ -89,8 +90,10 @@ if (verbTable.errors.length > 0) failures.push(`verbs are invalid: ${verbTable.e
 // Channels and socials must resolve, and none may shadow a verb or each other.
 const channelTable = loadChannels();
 const socialTable = loadSocials();
+const questTable = loadQuests();
 if (channelTable.errors.length > 0) failures.push(`channels are invalid: ${channelTable.errors[0]}`);
 if (socialTable.errors.length > 0) failures.push(`socials are invalid: ${socialTable.errors[0]}`);
+if (questTable.errors.length > 0) failures.push(`quests are invalid: ${questTable.errors[0]}`);
 for (const alias of channelTable.byAlias.keys()) {
   if (verbTable.byAlias.has(alias)) failures.push(`channel alias "${alias}" shadows a verb`);
   if (socialTable.byAlias.has(alias)) failures.push(`channel alias "${alias}" shadows a social`);
@@ -524,7 +527,7 @@ let comms = { ok: true, why: [], said: 0, told: 0, mailed: 0, gestured: 0 };
 let persistence = { ok: true, why: [] };
 {
   const world = loadWorld({ mode: "single" });
-  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels);
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, undefined, questTable.quests);
   const say = (text) => ({ actor: text, others: text });
   const run = (intents) => {
     const result = step({ state, rooms: world.rooms, intents });
@@ -539,7 +542,7 @@ let persistence = { ok: true, why: [] };
   state.actors[0].level = 3;
   state.actors[0].xp = 120;
   state.actors[0].guild = "wardens";
-  state.actors[0].quests = { active: ["slate"], completed: ["first"] };
+  state.actors[0].quests = { active: [{ id: "word", progress: {} }], completed: ["scroll"] };
   run([{ kind: "take", actorId: "a", objectId: "satchel", messages: say("take") }]);
   run([{ kind: "take", actorId: "a", objectId: "cloak", messages: say("take") }]);
   run([{ kind: "put", actorId: "a", objectId: "cloak", containerId: "satchel", messages: say("put") }]);
@@ -552,14 +555,14 @@ let persistence = { ok: true, why: [] };
   check(object("cloak").inside === "satchel", "a bag lost what was inside it on logout");
   check(state.identities.alice.inventory === undefined, "the identity recorded an inventory it should not keep");
   check(state.identities.alice.level === 3 && state.identities.alice.xp === 120, "progression was not written on logout");
-  check(state.identities.alice.guild === "wardens" && state.identities.alice.quests.completed.includes("first"), "guild or quest progress was lost on logout");
+  check(state.identities.alice.guild === "wardens" && state.identities.alice.quests.completed.includes("scroll"), "guild or quest progress was lost on logout");
 
   run([{ kind: "join", actorId: "b", name: "alice" }]);
   run([{ kind: "login", actorId: "b", key: "alice", token: null, authenticated: true }]);
   const returning = state.actors.find((actor) => actor.id === "b");
   check(returning.room === 1, "the returning character did not wake at the start");
   check(returning.level === 3 && returning.xp === 120, "level or experience was not restored on login");
-  check(returning.guild === "wardens" && returning.quests.completed.includes("first"), "guild or quest progress was not restored on login");
+  check(returning.guild === "wardens" && returning.quests.completed.includes("scroll"), "guild or quest progress was not restored on login");
   check(state.objects.every((o) => o.holder !== "b"), "items were restored to a hand across logout");
   check(object("satchel").room === 2 && object("scroll").room === 2, "logout items did not stay in the world");
 
@@ -575,7 +578,7 @@ let persistence = { ok: true, why: [] };
   check(object("cloak").inside === null, "the reset left an item inside a bag");
 
   checkpointIdentities(state);
-  check(state.identities.alice.level === 3 && state.identities.alice.quests.active.includes("slate"), "checkpoint lost progression");
+  check(state.identities.alice.level === 3 && state.identities.alice.quests.active.some((q) => q.id === "word"), "checkpoint lost progression");
   check(!("room" in state.identities.alice) && !("visited" in state.identities.alice), "checkpoint wrote session state");
   const restarted = JSON.parse(JSON.stringify(state));
   const savedActors = state.actors;
@@ -587,7 +590,7 @@ let persistence = { ok: true, why: [] };
   const afterRestart = state.actors.find((actor) => actor.id === "d");
   check(afterRestart.room === 1, "a restart did not start the character at the start room");
   check(afterRestart.level === 3 && afterRestart.xp === 120, "a restart lost level or experience");
-  check(afterRestart.guild === "wardens" && afterRestart.quests.active.includes("slate"), "a restart lost guild or quest progress");
+  check(afterRestart.guild === "wardens" && afterRestart.quests.active.some((q) => q.id === "word"), "a restart lost guild or quest progress");
   check(state.objects.every((o) => o.holder !== "d"), "a restart restored items to a hand");
 
   if (!persistence.ok) failures.push(`persistence is broken: ${persistence.why[0]}`);
@@ -685,6 +688,68 @@ let aggression = { ok: true, why: [] };
   if (!aggression.ok) failures.push(`aggression is broken: ${aggression.why[0]}`);
 }
 
+// Quests advance from facts, complete once, and pay once.
+let quests = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  for (const problem of validateQuestReferences(questTable.quests, { rooms: world.rooms, npcs: world.npcs, objects: world.objects })) {
+    quests.ok = false;
+    quests.why.push(problem);
+  }
+  const npcs = world.npcs.filter((npc) => npc.id !== "vault-guardian");
+  let state = initialState(world.rooms, npcs, world.objects, world.start, world.climate, channelTable.channels, undefined, questTable.quests);
+  const say = (text) => ({ actor: text, others: text });
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
+  const object = (id) => state.objects.find((o) => o.id === id);
+  const check = (condition, why) => { if (!condition) { quests.ok = false; quests.why.push(why); } };
+  const questState = () => state.actors[0].quests;
+
+  run([{ kind: "join", actorId: "a", name: "alice" }]);
+  run([{ kind: "login", actorId: "a", key: "alice", token: null, authenticated: true }]);
+
+  run([{ kind: "questAccept", actorId: "a", questId: "scroll" }]);
+  check(questState().active.some((entry) => entry.id === "scroll"), "a quest was not accepted");
+  run([{ kind: "move", actorId: "a", dir: "north", to: 2 }]);
+  run([{ kind: "take", actorId: "a", objectId: "scroll", messages: say("take") }]);
+  check(questState().completed.includes("scroll"), "a collect quest did not complete when the item was held");
+  check(questState().active.length === 0, "a completed quest stayed active");
+  check(state.actors[0].xp >= 15, "a quest did not pay experience");
+  run([{ kind: "questAccept", actorId: "a", questId: "scroll" }]);
+  check(questState().active.length === 0, "a completed quest could be accepted again");
+
+  run([{ kind: "questAccept", actorId: "a", questId: "word" }]);
+  check(questState().active.some((entry) => entry.id === "word"), "the word quest was not accepted");
+  run([{ kind: "move", actorId: "a", dir: "east", to: 4 }]);
+  run([{ kind: "questAnswer", actorId: "a", word: "amber" }]);
+  check(questState().completed.includes("word"), "the answer objective did not complete the word quest");
+  check(state.actors[0].xp >= 65, "the word quest reward was not paid");
+
+  state.actors[0].level = 1;
+  run([{ kind: "questAccept", actorId: "a", questId: "guardian" }]);
+  check(!questState().active.some((entry) => entry.id === "guardian"), "a level-locked quest was accepted");
+  state.actors[0].level = 2;
+  run([{ kind: "questAccept", actorId: "a", questId: "guardian" }]);
+  check(questState().active.some((entry) => entry.id === "guardian"), "a level-2 quest was refused to a level-2 actor");
+
+  run([{ kind: "questAccept", actorId: "a", questId: "bread" }]);
+  state.actors[0].room = 5;
+  run([{ kind: "take", actorId: "a", objectId: "bread", messages: say("take") }]);
+  state.actors[0].room = 3;
+  run([{ kind: "deliver", actorId: "a", objectId: "bread", npcId: "shopkeeper", messages: say("deliver") }]);
+  check(questState().completed.includes("bread"), "a deliver quest did not complete");
+  check(object("bread").eaten, "a delivered object was not consumed");
+
+  state.npcs.push({ id: "vault-guardian", name: "a vault guardian", room: 4, home: 4, period: 1, jitter: 0, behaviour: "sentinel", hp: 1, maxHp: 8, damage: 0, armor: 0, aggression: 0, xp: 8 });
+  state.actors[0].room = 4;
+  run([{ kind: "attack", actorId: "a", targetId: "vault-guardian" }]);
+  for (let i = 0; i < 40; i += 1) run([]);
+  check(questState().completed.includes("guardian"), "a kill quest did not complete");
+  const xpAfterQuests = state.actors[0].xp;
+  check(xpAfterQuests >= 155, `quest rewards totalled ${xpAfterQuests} instead of at least 155`);
+
+  if (!quests.ok) failures.push(`quests are broken: ${quests.why[0]}`);
+}
+
 // Generated code must match the model it claims to come from.
 const drift = spawnSync(process.execPath, ["tools/mechanize.mjs", "--check"], { encoding: "utf8" });
 const driftOk = drift.status === 0;
@@ -712,6 +777,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"accounts".padEnd(26)}  ${(accounts.ok ? "hash, register" : "BROKEN").padStart(5)}   == names and passwords`);
   console.log(`${"allowance".padEnd(26)}  ${(allowance.ok ? "250 ms" : "BROKEN").padStart(5)}   == one command`);
   console.log(`${"safe".padEnd(26)}  ${(safe.ok ? "2 rooms" : "BROKEN").padStart(5)}   == no combat`);
+  console.log(`${"quests".padEnd(26)}  ${(quests.ok ? "accept, advance, pay" : "BROKEN").padStart(5)}   == facts, once`);
   console.log(`${"aggression".padEnd(26)}  ${(aggression.ok ? "1 duel" : "BROKEN").padStart(5)}   == mobs start fights`);
   console.log(`${"combat2".padEnd(26)}  ${(combat2.ok ? "weapons, armour, xp" : "BROKEN").padStart(5)}   == fight and grow`);
   console.log(`${"combat".padEnd(26)}  ${(combat.outcome === "killed" ? `${combat.rounds} rounds` : "BROKEN").padStart(5)}   == kills`);

@@ -1,0 +1,87 @@
+{
+  "schema": "mudbenchmark/quests/1",
+  "note": "An objective is a fact about the world, not a script. The engine advances it from events; the text is the giver's.",
+  "quests": [
+    {
+      "id": "word",
+      "name": "The True Word",
+      "level": 1,
+      "giver": "the shrine",
+      "description": "Find what the Vault really says, then answer at the Shrine.",
+      "objectives": [
+        {
+          "kind": "visit",
+          "room": 4,
+          "text": "Enter the Vault"
+        },
+        {
+          "kind": "answer",
+          "word": "amber",
+          "text": "Answer the true word at the Shrine"
+        }
+      ],
+      "rewards": {
+        "xp": 50
+      },
+      "complete": "The shrine accepts the true word."
+    },
+    {
+      "id": "guardian",
+      "name": "The Vault Guardian",
+      "level": 2,
+      "giver": "the shrine",
+      "description": "The stone figure in the Vault has begun to move. Put it back to rest.",
+      "objectives": [
+        {
+          "kind": "kill",
+          "npc": "vault-guardian",
+          "count": 1,
+          "text": "Defeat the vault guardian"
+        }
+      ],
+      "rewards": {
+        "xp": 80
+      },
+      "complete": "The guardian returns to stone."
+    },
+    {
+      "id": "scroll",
+      "name": "A Curled Scroll",
+      "level": 1,
+      "giver": "the shrine",
+      "description": "A scroll has been left in the Corridor. Bring it into the light.",
+      "objectives": [
+        {
+          "kind": "collect",
+          "object": "scroll",
+          "count": 1,
+          "text": "Carry the curled scroll"
+        }
+      ],
+      "rewards": {
+        "xp": 15
+      },
+      "complete": "The scroll is yours."
+    },
+    {
+      "id": "bread",
+      "name": "Bread for the Shop",
+      "level": 1,
+      "giver": "the shopkeeper",
+      "description": "Bring a loaf from the Cell to the shopkeeper in the Storeroom.",
+      "objectives": [
+        {
+          "kind": "deliver",
+          "npc": "shopkeeper",
+          "object": "bread",
+          "count": 1,
+          "text": "Deliver a loaf to the shopkeeper"
+        }
+      ],
+      "rewards": {
+        "xp": 10
+      },
+      "complete": "The shopkeeper takes the loaf."
+    }
+  ]
+}

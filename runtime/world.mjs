@@ -11,6 +11,7 @@
 import { createHash } from "node:crypto";
 import { advance, due as pulseDue, makePulse } from "./generated/Pulses.mjs";
 import { levelForXp, nextLevelXp } from "./levels.mjs";
+import { applyQuestEvent, emptyProgress, normalizeQuestState, questById, questMet } from "./quests.mjs";
 
 export const TICK_MS = 250;
 
@@ -86,6 +87,46 @@ function awardXp(state, actor, amount, events) {
   }
 }
 
+/**
+ * Advance every active quest from one event, complete any whose facts are now
+ * true, and pay the reward once. Progress is data on the actor; completed ids
+ * are never replayed.
+ */
+function advanceQuests(state, actor, event, events) {
+  if (!state.quests?.length) return;
+  const current = normalizeQuestState(actor.quests, state.quests);
+  if (current.active.length === 0) { actor.quests = current; return; }
+  const active = [];
+  let changed = false;
+  for (const entry of current.active) {
+    const quest = questById(state.quests, entry.id);
+    if (!quest) { changed = true; continue; }
+    const before = JSON.stringify(entry.progress);
+    const progress = applyQuestEvent(quest, entry.progress, event, actor, state.objects);
+    if (JSON.stringify(progress) !== before) changed = true;
+    if (questMet(quest, progress, actor, state.objects)) {
+      awardXp(state, actor, quest.rewards?.xp ?? 0, events);
+      const reward = quest.rewards?.object ? state.objects.find((object) => object.id === quest.rewards.object) : null;
+      if (reward && !reward.eaten) {
+        reward.holder = actor.id;
+        reward.room = null;
+        reward.inside = null;
+        reward.worn = false;
+      }
+      current.completed.push(quest.id);
+      events.push({
+        onlyId: actor.id,
+        text: `Quest complete: ${quest.name}.\r\n${quest.complete ?? ""}\r\n`,
+        quest: { action: "complete", id: quest.id, name: quest.name },
+      });
+      changed = true;
+    } else {
+      active.push({ id: entry.id, progress });
+    }
+  }
+  if (changed) actor.quests = { active, completed: current.completed };
+}
+
 const DEFAULT_CLIMATE = {
   dayLength: 720,
   weatherPeriod: 120,
@@ -102,7 +143,7 @@ export function phaseAt(tick, climate = DEFAULT_CLIMATE) {
   return (climate.phases.find((phase) => hour >= phase.from && hour <= phase.to) ?? { id: "day" }).id;
 }
 
-export function initialState(rooms, npcs = [], objects = [], start = 1, climate = DEFAULT_CLIMATE, channels = [], levels = DEFAULT_LEVELS) {
+export function initialState(rooms, npcs = [], objects = [], start = 1, climate = DEFAULT_CLIMATE, channels = [], levels = DEFAULT_LEVELS, quests = []) {
   return {
     tick: 0,
     cycle: 0,
@@ -111,6 +152,7 @@ export function initialState(rooms, npcs = [], objects = [], start = 1, climate 
     weather: 0,
     channels,
     levels,
+    quests,
     mail: [],
     engagements: [],
     npcs: npcs
@@ -165,6 +207,7 @@ export function digestState(state) {
     weather: state.weather,
     channels: state.channels ?? [],
     levels: state.levels,
+    quests: state.quests ?? [],
     mail: (state.mail ?? []).map((letter) => ({ ...letter })),
     engagements: (state.engagements ?? []).map((e) => ({ ...e })),
     objects: [...state.objects].sort((a, b) => a.id.localeCompare(b.id)),
@@ -258,6 +301,7 @@ export function upgradeState(saved, base) {
     engagements: Array.isArray(saved.engagements) ? saved.engagements : [],
     channels: base.channels,
     levels: base.levels,
+    quests: base.quests,
     mail: Array.isArray(saved.mail) ? saved.mail : [],
     pulses,
     npcs,
@@ -319,16 +363,14 @@ export function step({ state, rooms, intents }) {
     weather: state.weather,
     channels: state.channels ?? [],
     levels: state.levels,
+    quests: state.quests ?? [],
     mail: (state.mail ?? []).map((letter) => ({ ...letter })),
     engagements: (state.engagements ?? []).map((e) => ({ ...e })),
     npcs: state.npcs.map((n) => ({ ...n, clock: { ...n.clock } })),
     actors: state.actors.map((a) => ({
       ...a,
       visited: [...a.visited],
-      quests: {
-        active: [...(a.quests?.active ?? [])],
-        completed: [...(a.quests?.completed ?? [])],
-      },
+      quests: normalizeQuestState(a.quests, state.quests ?? []),
     })),
     objects: state.objects.map((o) => ({ ...o })),
     identities: { ...state.identities },
@@ -429,6 +471,52 @@ export function step({ state, rooms, intents }) {
       continue;
     }
 
+    if (intent.kind === "questAccept" || intent.kind === "questAbandon") {
+      const actor = find(intent.actorId);
+      if (!actor?.key) continue;
+      const quest = questById(next.quests, intent.questId);
+      if (intent.kind === "questAccept") {
+        if (!quest || (actor.level ?? 1) < quest.level) continue;
+        const stateQ = normalizeQuestState(actor.quests, next.quests);
+        if (stateQ.completed.includes(quest.id) || stateQ.active.some((entry) => entry.id === quest.id)) continue;
+        stateQ.active.push({ id: quest.id, progress: emptyProgress() });
+        actor.quests = stateQ;
+        events.push({ onlyId: actor.id, text: `Quest accepted: ${quest.name}.\r\n`, quest: { action: "accept", id: quest.id, name: quest.name } });
+        advanceQuests(next, actor, { kind: "visit", room: actor.room }, events);
+        advanceQuests(next, actor, { kind: "collect" }, events);
+      } else {
+        const stateQ = normalizeQuestState(actor.quests, next.quests);
+        const remaining = stateQ.active.filter((entry) => entry.id !== intent.questId);
+        if (remaining.length !== stateQ.active.length) {
+          actor.quests = { ...stateQ, active: remaining };
+          events.push({ onlyId: actor.id, text: `Quest abandoned: ${quest?.name ?? intent.questId}.\r\n`, quest: { action: "abandon", id: intent.questId, name: quest?.name ?? intent.questId } });
+        }
+      }
+      continue;
+    }
+
+    if (intent.kind === "questAnswer") {
+      const actor = find(intent.actorId);
+      if (!actor) continue;
+      advanceQuests(next, actor, { kind: "answer", word: intent.word }, events);
+      continue;
+    }
+
+    if (intent.kind === "deliver") {
+      const actor = find(intent.actorId);
+      if (!actor) continue;
+      const object = next.objects.find((o) => o.id === intent.objectId);
+      const npc = next.npcs.find((n) => n.id === intent.npcId && n.room === actor.room && !n.dead);
+      if (!object || object.holder !== actor.id || object.eaten || !npc) continue;
+      object.eaten = true;
+      object.holder = null;
+      object.room = null;
+      events.push({ room: actor.room, text: intent.messages.others, exceptId: actor.id });
+      events.push({ onlyId: actor.id, text: intent.messages.actor });
+      advanceQuests(next, actor, { kind: "deliver", npc: npc.id, object: object.id }, events);
+      continue;
+    }
+
     if (intent.kind === "login") {
       const actor = find(intent.actorId);
       if (!actor) continue;
@@ -498,6 +586,7 @@ export function step({ state, rooms, intents }) {
           quests: { active: [], completed: [] },
         };
       }
+      advanceQuests(next, actor, { kind: "visit", room: actor.room }, events);
       for (const letter of next.mail) {
         if (letter.toKey !== actor.key || letter.read) continue;
         letter.read = true;
@@ -547,6 +636,7 @@ export function step({ state, rooms, intents }) {
       actor.room = intent.to;
       if (!actor.visited.includes(actor.room)) actor.visited.push(actor.room);
       events.push({ room: intent.to, text: `${actor.name} arrives.`, exceptId: actor.id });
+      advanceQuests(next, actor, { kind: "visit", room: actor.room }, events);
       continue;
     }
 
@@ -851,6 +941,12 @@ export function step({ state, rooms, intents }) {
     }
   }
 
+  // Carrying something is a fact, not an event: after every intent, check the
+  // collect objectives for actors who have active quests.
+  for (const actor of next.actors) {
+    if ((actor.quests?.active ?? []).length) advanceQuests(next, actor, { kind: "collect" }, events);
+  }
+
   // Hierarchical clocks: every NPC runs its own countdown, so a rat on a slow
   // clock does not move when the world ticks — it moves when *its* clock does.
   // Jitter is drawn from the tick and the id, so a replay wanders identically.
@@ -960,6 +1056,7 @@ export function step({ state, rooms, intents }) {
           events.push({ room: attacker.room, text: `${target.name} dies.` });
           if (next.actors.includes(attacker)) {
             awardXp(next, attacker, target.xp ?? Math.max(1, target.maxHp ?? 1), events);
+            advanceQuests(next, attacker, { kind: "kill", npc: target.id }, events);
           }
         } else {
           // A dead character drops what they carry where they fell and wakes

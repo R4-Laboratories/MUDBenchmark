@@ -320,6 +320,42 @@
       "messages": {
         "line": "%s"
       }
+    },
+    "quests": {
+      "aliases": [
+        "journal"
+      ],
+      "argument": "none",
+      "messages": {
+        "list": "Quests: %s.",
+        "none": "No quests yet. Type quest accept <id> to begin one."
+      }
+    },
+    "quest": {
+      "aliases": [],
+      "argument": "subcommand",
+      "messages": {
+        "usage": "quest accept <id>, quest abandon <id>, or quests.",
+        "missing": "No such quest: %s.",
+        "locked": "You must be level %s for that quest.",
+        "active": "That quest is already active.",
+        "complete": "That quest is already complete.",
+        "accepted": "Quest accepted: %s.",
+        "abandoned": "Quest abandoned: %s."
+      }
+    },
+    "deliver": {
+      "aliases": [
+        "handin"
+      ],
+      "argument": "object to actor",
+      "messages": {
+        "actor": "You deliver %o to %t.",
+        "others": "%a delivers %o to %t.",
+        "missing": "You are not carrying a %s.",
+        "noTarget": "Nobody here answers to that.",
+        "usage": "Deliver what to whom? deliver <thing> to <name>."
+      }
     }
   }
 }

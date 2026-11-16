@@ -90,7 +90,7 @@ there, lootable, until the reset. A login starts at the safe start room.
 - **Mobiles fight back.** Aggressive mobiles begin engagements on their own
   clock when a player is in the room; a `wimpy` threshold can auto-flee.
 
-### J — Progression and quests
+### J — Progression and quests (done, v0.11.0)
 
 - **Experience and levels.** XP from kills, quests and first visits; the level
   table is data. A level-up raises maximum hit points, heals, and announces.
