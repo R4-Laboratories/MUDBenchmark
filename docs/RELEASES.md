@@ -94,6 +94,11 @@ Rehearsed 2026-11-16:
   serve in production, the unauthenticated `stream on` guard works, and a local
   headless run proved Go live, the public feed, audience chat and stop
   (MB-33/34);
+- v0.42.1 (patch) released from `f2ba6f7`; the harness exits when a run ends,
+  the watch page does not echo a sender's own chat, and the seven-room control
+  is recorded (5/6 single, 4/6 corroborated, 1/6 wrong-first vs 0/6). The first
+  v0.42.1 deploy rolled back on a startup race in the asset probe; the probe
+  now retries for up to 16 seconds, and the re-deploy passed;
 - a SHA with no green Gate run (`a78f57e`) refused before the tag was created;
 - the timer pulled v0.34.0; v0.33.0 was deployed and verified (101 accounts,
   101 characters), then v0.34.0 restored;

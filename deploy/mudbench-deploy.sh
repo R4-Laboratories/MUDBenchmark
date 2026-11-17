@@ -151,13 +151,20 @@ done
 
 assets_ok=false
 lock_hash=$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["output"]["sha256"])' "$DEST/runtime/web/prism-id.lock.json" 2>/dev/null || true)
-live_hash=$(curl -fsS -m 5 http://127.0.0.1:8090/prism-id.mjs 2>/dev/null | sha256sum | awk '{print $1}')
-if curl -fsS -m 5 http://127.0.0.1:8090/ 2>/dev/null | grep -q 'id="prism-login"' \
-   && [[ -n "$lock_hash" && "$live_hash" == "$lock_hash" ]] \
-   && curl -fsS -m 5 http://127.0.0.1:8090/ai.mjs >/dev/null 2>&1 \
-   && curl -fsS -m 5 http://127.0.0.1:8090/recovery-kit.mjs >/dev/null 2>&1; then
-  assets_ok=true
-fi
+# The world restart is asynchronous; a single probe immediately after the flip
+# can catch the old process or a half-open listener. Give it the same retry
+# window as the holo check before rolling back a good release.
+for _ in 1 2 3 4 5 6 7 8; do
+  live_hash=$(curl -fsS -m 5 http://127.0.0.1:8090/prism-id.mjs 2>/dev/null | sha256sum | awk '{print $1}')
+  if curl -fsS -m 5 http://127.0.0.1:8090/ 2>/dev/null | grep -q 'id="prism-login"' \
+     && [[ -n "$lock_hash" && "$live_hash" == "$lock_hash" ]] \
+     && curl -fsS -m 5 http://127.0.0.1:8090/ai.mjs >/dev/null 2>&1 \
+     && curl -fsS -m 5 http://127.0.0.1:8090/recovery-kit.mjs >/dev/null 2>&1; then
+    assets_ok=true
+    break
+  fi
+  sleep 2
+done
 
 if [[ "$holo_ok" == "true" && "$assets_ok" == "true" ]] \
    && systemctl --user is-active --quiet mudbench-holo.service \
