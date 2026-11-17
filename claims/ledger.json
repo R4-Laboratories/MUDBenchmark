@@ -297,6 +297,12 @@
       "level": "build",
       "statement": "The Lantern Quarter adds seven connected rooms, three NPCs, four objects, three personal quests and a Mages' Guild ledger quest. The world is 40 rooms and 13 quests; the Mages' Guild has guild XP and level, and a completed guild quest adds its guildXp. The gate covers the room connections, the spellwright errand, the familiar charm reward, guild quest completion and guild XP.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-44",
+      "level": "some-true",
+      "statement": "Production v0.47.0 serves 40 rooms, 22 mobiles and 38 objects. The Mages' Guild is room 34 above the Atrium; the smith sells the new gear; the Lantern Quarter connects from Market Square; the world has 13 quests including the guild ledger quest. Accounts remain 104 and characters 105, and /watch, /world, /live and the AI fast mode are present.",
+      "authority": "wick production v0.47.0 2026-11-17; /world and /health; release 44178099900; gate 44176587612"
     }
   ]
 }
