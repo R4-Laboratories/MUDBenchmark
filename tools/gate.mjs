@@ -34,12 +34,13 @@ import { buildLlms } from "../runtime/llms.mjs";
 import { AREA_PERIOD, armorOf, attackRoll, checkpointIdentities, initialState, nextFrom, phaseAt, releaseHeldObjects, step, upgradeState } from "../runtime/world.mjs";
 import { join } from "node:path";
 import { buildCandidates } from "./candidate.mjs";
-import { buildSystemPrompt, buildUserPrompt, parseBrain, requestFor, replyFrom, trimHistory } from "../runtime/web/ai.mjs";
+import { PROVIDERS, buildSystemPrompt, buildUserPrompt, parseBrain, requestFor, replyFrom, trimHistory } from "../runtime/web/ai.mjs";
 import { verifyPrismSession, verifyPersonaOwner } from "../runtime/prism-auth.mjs";
 import { decodeIdentityRequest, identityAdmits } from "../runtime/identity.mjs";
 import { loadStateFile, saveStateFile } from "../runtime/state.mjs";
 import { acceptLinkRequest, completeLink, createDevice, createLinkOffer, createPrism, createRecovery, linkCode, recoverPrism, requestLink, revokeDevice, signAction, verifyAction } from "../runtime/web/prism-id.mjs";
 import { openKit, sealKit } from "../runtime/web/recovery-kit.mjs";
+import { readSpanTail, redactSpans, summarizeSpans } from "../runtime/spans.mjs";
 import { measureCandidates } from "./measure.mjs";
 
 const root = process.cwd();
@@ -124,6 +125,7 @@ if (!/id="login"/.test(web) || !/id="register"/.test(web) || !/id="prism-login"/
 let webAI = { ok: true, why: [] };
 {
   const check = (condition, why) => { if (!condition) { webAI.ok = false; webAI.why.push(why); } };
+  check(!PROVIDERS.ollama?.needsKey && !PROVIDERS.custom?.needsKey && !PROVIDERS["prime-router"]?.needsKey, "a local provider requires a key");
   const good = parseBrain("THOUGHT: The Vault is north.\nREPLY: On my way.\nCOMMAND: north");
   check(good.command === "north", "the parser lost a labelled command");
   check(good.thought.includes("Vault"), "the parser lost the thought");
@@ -381,6 +383,34 @@ let identityKernel = { ok: true, why: [] };
   const receiptText = `${JSON.stringify(receipt, null, 2)}\n`;
   if (!existsSync(receiptPath) || readFileSync(receiptPath, "utf8") !== receiptText) writeFileSync(receiptPath, receiptText);
   if (identityKernel.why.length) { identityKernel.ok = false; failures.push(`the identity kernel is broken: ${identityKernel.why[0]}`); }
+}
+
+// L4: the span summary is the benchmark view; command text is redacted.
+let spanView = { ok: true, why: [] };
+{
+  const check = (condition, why) => { if (!condition) { spanView.ok = false; spanView.why.push(why); } };
+  const lines = [
+    JSON.stringify({ name: "world.input", at: "2026-11-17T00:00:00.000Z", duration_ms: 0, "actor.id": 7, text: "look", "world.tick": 10 }),
+    JSON.stringify({ name: "world.move", at: "2026-11-17T00:00:00.100Z", duration_ms: 12, "actor.id": 7, "room.id": 1, "world.tick": 11 }),
+    JSON.stringify({ name: "world.input", at: "2026-11-17T00:00:00.200Z", duration_ms: 0, "actor.id": 7, text: "who", "world.tick": 12 }),
+    JSON.stringify({ name: "world.input", at: "2026-11-17T00:00:00.300Z", duration_ms: 0, "actor.id": 7, text: "north", refused: "too-fast", "world.tick": 12 }),
+  ];
+  const summary = summarizeSpans(lines, { recent: 10 });
+  check(summary.count === 4, "the span count is wrong");
+  check(summary.ticks.min === 10 && summary.ticks.max === 12, "the tick range is wrong");
+  check(summary.kinds["world.input"] === 3 && summary.kinds["world.move"] === 1, "the span kinds are wrong");
+  check(summary.commands.length === 2 && summary.commands[0].text === "look" && summary.commands[1].tick === 12, "the accepted commands are wrong");
+  check(summary.latency.count === 1 && summary.latency.max_ms === 12, "the latency summary is wrong");
+  check(summary.actors.length === 1 && summary.rooms.length === 1, "the actor or room set is wrong");
+  const redacted = redactSpans(summary);
+  check(redacted.commands === 2 && redacted.actors === 1 && redacted.recent.length === 2, "the redacted summary is wrong");
+  check(!JSON.stringify(redacted).includes("look"), "the redacted summary leaked a command");
+  const dir = mkdtempSync(join(tmpdir(), "mudbench-spans-"));
+  const file = join(dir, "spans.jsonl");
+  writeFileSync(file, `${lines.join("\n")}\n`);
+  const tail = readSpanTail(file, { recent: 10 });
+  check(tail.count === 4 && tail.commands.length === 2 && tail.ticks.max === 12, "reading the span tail lost spans");
+  if (spanView.why.length) { spanView.ok = false; failures.push(`the span summary is broken: ${spanView.why[0]}`); }
 }
 
 // R2: a human can hand one character to the AI persona; the owner stays human.
@@ -1628,7 +1658,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"mechanizedDrift".padEnd(26)}  ${(driftOk ? "clean" : "DRIFT").padStart(5)}   == clean`);
   console.log(`${"loop".padEnd(26)}  ${(loop.ok ? String(loop.count) : "BROKEN").padStart(5)}   == ${loop.ok ? `${loop.admitted} admitted, bounded` : "no verdict"}`);
   console.log(`${"pacing".padEnd(26)}  ${(pacing.ok ? "14 hp" : "BROKEN").padStart(5)}   == applied, bound, refused`);
-  console.log(`${"webAI".padEnd(26)}  ${(webAI.ok ? "5 checks" : "BROKEN").padStart(5)}   == parse, prompt, requests`);
+  console.log(`${"webAI".padEnd(26)}  ${(webAI.ok ? "6 checks" : "BROKEN").padStart(5)}   == parse, prompt, requests, local`);
   console.log(`${"prismId".padEnd(26)}  ${(prismSession.ok ? "signed" : "BROKEN").padStart(5)}   == session verifier`);
   console.log(`${"prismLogin".padEnd(26)}  ${(prismLogin.ok ? "account" : "BROKEN").padStart(5)}   == id, character`);
   console.log(`${"state".padEnd(26)}  ${(durableState.ok ? "5 checks" : "BROKEN").padStart(5)}   == atomic, backup, fail-loud`);
@@ -1639,6 +1669,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"persona".padEnd(26)}  ${(persona.ok ? "owner" : "BROKEN").padStart(5)}   == human, tombstone`);
   console.log(`${"recovery".padEnd(26)}  ${(recovery.ok ? "kit" : "BROKEN").padStart(5)}   == new device, old refused`);
   console.log(`${"handoff".padEnd(26)}  ${(handoff.ok ? "delegated" : "BROKEN").padStart(5)}   == owner kept`);
+  console.log(`${"spans".padEnd(26)}  ${(spanView.ok ? "summary" : "BROKEN").padStart(5)}   == ticks, commands, redacted`);
   console.log(`${"identity".padEnd(26)}  ${(identityKernel.ok ? "10 vectors" : "BROKEN").padStart(5)}   == model and JS`);
   console.log(`${"llms".padEnd(26)}  ${(llms.ok ? "verbs, rooms" : "STALE").padStart(5)}   == generated contract`);
   console.log(`${"claims".padEnd(26)}  ${(claimsCheck.status === 0 ? "levels ok" : "STALE").padStart(5)}   == build, open, some-true`);

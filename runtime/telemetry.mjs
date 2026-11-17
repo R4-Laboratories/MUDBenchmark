@@ -11,6 +11,7 @@ import { randomBytes, createHash } from "node:crypto";
 
 const ENDPOINT = process.env.OTEL_EXPORTER_OTLP_ENDPOINT;
 const LOG = process.env.TELEMETRY_LOG ?? "/tmp/mudbench-spans.jsonl";
+export const TELEMETRY_LOG = LOG;
 const SERVICE = process.env.OTEL_SERVICE_NAME ?? "mudbench";
 
 const hex = (bytes) => randomBytes(bytes).toString("hex");
@@ -71,7 +72,7 @@ export function recordSpan(name, attributes = {}, durationMs = 0) {
   }
 
   // Readable fallback: same names, flat.
-  const flat = { name, duration_ms: Math.round(durationMs) };
+  const flat = { name, at: new Date(start).toISOString(), duration_ms: Math.round(durationMs) };
   for (const { key, value } of span.attributes) {
     flat[key] = Object.values(value)[0];
   }

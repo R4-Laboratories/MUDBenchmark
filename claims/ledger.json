@@ -177,6 +177,18 @@
       "level": "some-true",
       "statement": "A browser human handed alice to the AI persona; the AI played alice while the human played bob; the Model tab and transcript showed alice, the persona and the human owner; the revoke returned alice and the AI could not recreate or log in as it.",
       "authority": "headless Chromium handoff run 2026-11-17 against a mock OpenAI-compatible provider"
+    },
+    {
+      "id": "MB-24",
+      "level": "build",
+      "statement": "Every accepted command records a world.input span with its tick; the same tick is sent in a hidden #tick; the span summary returns counts, tick range, latency, actors and rooms and redacts command text; the gate verifies the summary and the redaction.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-25",
+      "level": "some-true",
+      "statement": "A browser run starred a thought; the transcript carried the highlight and per-turn ticks; the Bench read /spans and showed the tick range; the highlight's tick and command matched the server's world.input span; a local provider needed no key.",
+      "authority": "headless Chromium stream run 2026-11-17 against a mock OpenAI-compatible provider"
     }
   ]
 }

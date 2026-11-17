@@ -527,12 +527,22 @@ and the 87-character check.
 *Acceptance:* a stolen login token replayed on a second connection is refused;
 a command without a valid signature is refused; the 250 ms budget is unaffected.
 
-**L4. Stream polish (candidate 2).** *(browser + runtime)*
+**L4. Stream polish (candidate 2).** *(browser + runtime)* — **implemented in v0.38.**
 Highlights, a benchmark view over spans, transcript identity and tick range,
 better local-model UX. Many pieces exist; this is the remainder.
 *Acceptance:* a run's transcript and the server's spans agree on commands and
 ticks; a highlight is reproducible from the spans; a local model can be chosen
 without a key.
+
+*Implemented:* every accepted command records a `world.input` span with its
+tick; the same tick goes to the client in a hidden `#tick`, so the transcript
+turn and the span agree. A starred thought is a highlight carrying turn, tick,
+command, thought, room, persona and owner; the Run tab lists it and the
+transcript carries it. The Bench tab reads `GET /spans` (counts, tick range,
+latency, actors, rooms, kinds and recent command ticks; command text is
+redacted). The AI setup shows the local-provider status, and Ollama, custom and
+Prime Router need no key. Rehearsed in v0.38: a highlight matched the server's
+`world.input` span at the same tick and command; MB-24/25.
 
 **L5. S2 publisher/admission and the full release decision (candidate 3).**
 *(loop + CI + prismpm)*

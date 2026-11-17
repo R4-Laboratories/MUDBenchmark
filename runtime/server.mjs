@@ -11,7 +11,8 @@ import { homedir } from "node:os";
 import { join as joinPath } from "node:path";
 import { createHash } from "node:crypto";
 import { WebSocketServer } from "ws";
-import { recordSpan, digest } from "./telemetry.mjs";
+import { recordSpan, digest, TELEMETRY_LOG } from "./telemetry.mjs";
+import { readSpanTail, redactSpans } from "./spans.mjs";
 import { step, initialState, digestState, phaseAt, upgradeState, releaseHeldObjects, checkpointIdentities, armorOf, nextFrom, TICK_MS } from "./world.mjs";
 import { loadWorld } from "./worlddata.mjs";
 import { describe as renderRoom, examine } from "./view.mjs";
@@ -354,6 +355,15 @@ async function handleCommand(id, line) {
     return sendTo(id, "You must wait a moment.\r\n");
   }
   if (transport) transport.lastCommandAt = now;
+  // The accepted command and its tick. The same tick goes to the client in a
+  // hidden line, so the transcript's turn and the span agree exactly.
+  recordSpan("world.input", {
+    "actor.id": id,
+    "text": raw.slice(0, 500),
+    "text.length": raw.length,
+    "world.tick": state.tick,
+  }, 0);
+  sendTo(id, `#tick ${state.tick}\r\n`);
 
   if (verb === "quit") {
     const session = accountSessions.get(id);
@@ -1724,6 +1734,15 @@ const web = http.createServer((req, res) => {
     res.end(body);
     return;
   }
+  if (pathname === "/spans") {
+    // Aggregates only: the command text stays in the server's span log.
+    const limit = Math.min(200, Math.max(1, Number(new URL(req.url, "http://localhost").searchParams.get("limit")) || 100));
+    const summary = redactSpans(readSpanTail(TELEMETRY_LOG, { recent: limit }));
+    res.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
+    res.end(JSON.stringify({ ...summary, file: TELEMETRY_LOG }));
+    return;
+  }
+
   if (pathname === "/health") {
     res.writeHead(200, { "content-type": "application/json" });
     res.end(JSON.stringify({

@@ -169,7 +169,12 @@
   .pane { flex: 1; min-height: 0; overflow-y: auto; }
   #mind { display: flex; flex-direction: column; gap: 8px; }
   .thought { border-left: 2px solid var(--accent); padding: 6px 10px; background: #0b0f14; font-size: 13px; line-height: 1.5; }
-  .thought .meta { color: var(--muted); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 4px; }
+  .thought .meta { color: var(--muted); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+  .thought .meta .highlight { margin-left: auto; background: transparent; color: var(--muted); border: 1px solid var(--line); padding: 0 6px; font-size: 13px; cursor: pointer; text-transform: none; letter-spacing: 0; }
+  .thought .meta .highlight:disabled { color: #d29922; cursor: default; }
+  .highlight-row { border-left: 2px solid #d29922; padding: 5px 8px; margin: 6px 0; font-size: 12px; }
+  #bench-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
+  #bench-kinds { max-height: 160px; }
   #run-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
   .stat { border: 1px solid var(--line); padding: 6px 8px; font-size: 11px; color: var(--muted); }
   .stat b { display: block; color: var(--text); font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
@@ -376,6 +381,7 @@
             <button type="button" id="ai-find">Find</button>
           </div>
           <datalist id="ai-models"></datalist>
+          <p class="small muted" id="ai-local">Local providers need no key. Start Ollama and click Find.</p>
         </div>
         <div class="field" id="ai-key-field">
           <label for="ai-key">API key <span class="muted">(this browser only)</span></label>
@@ -428,6 +434,7 @@
             <button type="button" class="tab active" data-tab="mind">Mind</button>
             <button type="button" class="tab" data-tab="run">Run</button>
             <button type="button" class="tab" data-tab="model">Model</button>
+            <button type="button" class="tab" data-tab="bench">Bench</button>
           </div>
           <div id="mind-pane" class="pane"><div id="mind"></div></div>
           <div id="model-pane" class="pane" hidden>
@@ -437,8 +444,16 @@
             <div class="model-block"><h3>Model returned</h3><pre id="model-reply"></pre></div>
             <div class="model-block"><h3>Sent to the game</h3><pre id="model-command"></pre></div>
           </div>
+          <div id="bench-pane" class="pane" hidden>
+            <div id="bench-stats"></div>
+            <div class="row"><button type="button" id="span-refresh">Refresh server spans</button></div>
+            <p class="small muted">Aggregates only; the Model tab shows the AI's commands. A highlight is in range when its tick is inside the server's tick range.</p>
+            <div id="bench-recent"></div>
+            <pre id="bench-kinds"></pre>
+          </div>
           <div id="run-pane" class="pane" hidden>
             <div id="run-stats"></div>
+            <div id="highlights"></div>
             <div class="row">
               <button type="button" id="ai-transcript">Download transcript</button>
               <button type="button" id="ai-copy">Copy JSON</button>
@@ -526,6 +541,11 @@
   const modelContext = document.getElementById("model-context");
   const modelReply = document.getElementById("model-reply");
   const modelCommand = document.getElementById("model-command");
+  const benchStats = document.getElementById("bench-stats");
+  const benchKinds = document.getElementById("bench-kinds");
+  const benchRecent = document.getElementById("bench-recent");
+  const spanRefresh = document.getElementById("span-refresh");
+  const aiLocal = document.getElementById("ai-local");
   const directorForm = document.getElementById("director-form");
   const directorInput = document.getElementById("director-input");
   const liveName = document.getElementById("live-name");
@@ -564,6 +584,7 @@
     lastCommand: "", startedAt: null, recent: [], nudge: false, lastError: null,
     character: "scout", lastRequest: null, lastReply: null, lastParsed: null, lastLatency: 0,
     persona: null, owner: null, personaAudience: null, tickFrom: null, lastTick: null,
+    highlights: [],
   };
   const shortId = (id) => (id ? `${id.slice(0, 15)}…` : "—");
 
@@ -659,6 +680,7 @@
         try { renderCharacters(JSON.parse(charactersLine[1])); } catch {}
         return;
       }
+      if (/^#tick \d+\r?\n?$/.test(text)) return;
       append(text);
       if (/signed in elsewhere/i.test(text)) {
         playAuth = null;
@@ -1195,11 +1217,13 @@
     aiTitle.textContent = "AI";
     aiSub.textContent = `${PROVIDERS[aiProvider.value].label} · ${aiModel.value || "no model"}`;
     aiIdentity.textContent = "Sign in with your Prism id, then start the AI: it becomes a persona owned by you. Without a human sign-in it uses its own account.";
+    detectLocalModels();
   }
 
   aiProvider.addEventListener("change", () => {
     applyProvider(aiProvider.value, true);
     aiKey.value = PROVIDERS[aiProvider.value].needsKey ? savedKey : "";
+    detectLocalModels();
   });
   for (const field of [aiBase, aiModel, aiCharacter]) field.addEventListener("change", () => persistConfig(false));
 
@@ -1258,17 +1282,31 @@
   }
 
   async function detectLocalModels() {
-    if (aiProvider.value !== "ollama" || !aiBase.value.trim()) return;
+    if (aiProvider.value !== "ollama") {
+      aiLocal.textContent = PROVIDERS[aiProvider.value]?.needsKey
+        ? "This provider needs a key."
+        : "This provider needs no key.";
+      return;
+    }
+    if (!aiBase.value.trim()) {
+      aiLocal.textContent = "Set the Ollama base URL.";
+      return;
+    }
+    aiLocal.textContent = "Looking for local Ollama models…";
     try {
       const res = await fetch(`${aiBase.value.trim().replace(/\/+$/, "")}/models`, { signal: AbortSignal.timeout(2500) });
-      if (!res.ok) return;
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
       const body = await res.json();
       const models = (body.data ?? []).map((entry) => entry.id).filter(Boolean).sort();
-      if (!models.length) return;
+      if (!models.length) {
+        aiLocal.textContent = "Ollama is up but lists no models; pull one first.";
+        return;
+      }
       fillModels(models);
+      aiLocal.textContent = `Ollama: ${models.length} model${models.length === 1 ? "" : "s"} found; no key needed.`;
       showHint(`Ollama is up: ${models.length} model${models.length === 1 ? "" : "s"} found.`, false);
     } catch {
-      // Leave the hint alone; the setup explains how to start Ollama.
+      aiLocal.textContent = "Ollama is not answering; the provider hint explains how to start it.";
     }
   }
 
@@ -1359,6 +1397,7 @@
     AI.personaAudience = session.personaAudience ?? null;
     AI.tickFrom = null;
     AI.lastTick = null;
+    AI.highlights = [];
     AI.name = "";
     AI.running = true;
     AI.paused = false;
@@ -1387,6 +1426,7 @@
     liveThought.textContent = "";
     AI.startedAt = new Date().toISOString();
     clearTimeout(AI.reconnect);
+    renderHighlights();
 
     persistConfig(true);
     log.innerHTML = "";
@@ -1479,6 +1519,13 @@
     const meta = document.createElement("div");
     meta.className = "meta";
     meta.textContent = `Turn ${turn} · ${new Date().toLocaleTimeString()}`;
+    const star = document.createElement("button");
+    star.type = "button";
+    star.className = "highlight";
+    star.title = "Highlight this thought";
+    star.textContent = "☆";
+    star.addEventListener("click", () => addHighlight(turn, text, star));
+    meta.appendChild(star);
     const body = document.createElement("div");
     body.textContent = text;
     wrap.append(meta, body);
@@ -1487,6 +1534,97 @@
     liveThought.textContent = text.slice(0, 140);
     AI.thoughts.push({ turn, text, at: new Date().toISOString() });
   }
+
+  function addHighlight(turn, text, button) {
+    if (AI.highlights.some((entry) => entry.turn === turn)) return;
+    const transcript = [...AI.transcript].reverse().find((entry) => entry.turn === turn) ?? {};
+    AI.highlights.push({
+      turn,
+      tick: transcript.tick ?? AI.lastTick,
+      command: transcript.command ?? AI.lastCommand,
+      thought: text,
+      room: AI.room,
+      persona: AI.persona,
+      owner: AI.owner,
+      at: new Date().toISOString(),
+    });
+    if (button) {
+      button.textContent = "★";
+      button.disabled = true;
+    }
+    renderHighlights();
+    updateModelInspector();
+  }
+
+  function renderHighlights() {
+    const out = document.getElementById("highlights");
+    if (!out) return;
+    out.innerHTML = "";
+    if (!AI.highlights.length) {
+      const empty = document.createElement("p");
+      empty.className = "small muted";
+      empty.textContent = "No highlights yet. Star a thought in Mind.";
+      out.appendChild(empty);
+      return;
+    }
+    for (const highlight of AI.highlights) {
+      const row = document.createElement("div");
+      row.className = "highlight-row";
+      const head = document.createElement("div");
+      head.textContent = `Turn ${highlight.turn} · tick ${highlight.tick ?? "—"} · ${highlight.command ?? "—"}`;
+      const body = document.createElement("div");
+      body.className = "small muted";
+      body.textContent = highlight.thought;
+      row.append(head, body);
+      out.appendChild(row);
+    }
+  }
+
+  async function refreshSpans() {
+    benchStats.innerHTML = "";
+    benchKinds.textContent = "";
+    benchRecent.innerHTML = "";
+    try {
+      const res = await fetch("/spans", { signal: AbortSignal.timeout(3000) });
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+      const data = await res.json();
+      const inRange = AI.highlights.filter((entry) =>
+        Number.isInteger(entry.tick) && data.ticks?.min != null
+        && entry.tick >= data.ticks.min && entry.tick <= data.ticks.max).length;
+      const cells = [
+        ["Spans", String(data.count ?? 0)],
+        ["Ticks", data.ticks?.min != null ? `${data.ticks.min} → ${data.ticks.max}` : "—"],
+        ["Commands", String(data.commands ?? 0)],
+        ["Avg latency", data.latency?.avg_ms ? `${data.latency.avg_ms} ms` : "—"],
+        ["Actors", String(data.actors ?? 0)],
+        ["Rooms", String(data.rooms ?? 0)],
+        ["Highlights", `${inRange}/${AI.highlights.length} in range`],
+      ];
+      for (const [label, value] of cells) {
+        const cell = document.createElement("div");
+        cell.className = "stat";
+        cell.textContent = label;
+        const strong = document.createElement("b");
+        strong.textContent = value;
+        cell.appendChild(strong);
+        benchStats.appendChild(cell);
+      }
+      const kinds = Object.entries(data.kinds ?? {}).sort((a, b) => b[1] - a[1]);
+      benchKinds.textContent = kinds.length
+        ? kinds.map(([name, count]) => `${String(count).padStart(5)}  ${name}`).join("\n")
+        : "No spans yet.";
+      for (const entry of (data.recent ?? []).slice(-8).reverse()) {
+        const row = document.createElement("div");
+        row.className = "small muted";
+        row.textContent = `tick ${entry.tick ?? "—"}${entry.at ? ` · ${entry.at}` : ""}`;
+        benchRecent.appendChild(row);
+      }
+    } catch (error) {
+      benchKinds.textContent = `Spans unavailable: ${error.message}`;
+    }
+  }
+
+  spanRefresh.addEventListener("click", () => refreshSpans());
 
   function updateRunStats() {
     const avg = AI.latencies.length
@@ -1605,6 +1743,14 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
     };
     ws.onmessage = (event) => {
       const text = String(event.data);
+      const tickLine = text.match(/^#tick (\d+)\r?\n?$/);
+      if (tickLine) {
+        AI.lastTick = Number(tickLine[1]);
+        const last = AI.transcript[AI.transcript.length - 1];
+        if (last && last.tick == null) last.tick = AI.lastTick;
+        updateModelInspector();
+        return;
+      }
       const charactersLine = text.match(/^#characters (.*)\r?\n?$/);
       if (charactersLine) {
         if (AI.running && !AI.authed) {
@@ -1748,7 +1894,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         else addThought(turn, `No reasoning returned; the model chose ${parsed.command}.`, true);
         AI.transcript.push({
           turn, observation, director, thought: parsed.thought, reply: parsed.reply,
-          command: parsed.command, latency_ms: latency, usage: usage ?? null,
+          command: parsed.command, tick: null, latency_ms: latency, usage: usage ?? null,
           stuck: true, at: new Date().toISOString(),
         });
         AI.paused = true;
@@ -1766,6 +1912,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         thought: parsed.thought,
         reply: parsed.reply,
         command: parsed.command,
+        tick: null,
         latency_ms: latency,
         usage: usage ?? null,
         at: new Date().toISOString(),
@@ -1832,6 +1979,8 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       document.getElementById("mind-pane").hidden = tab.dataset.tab !== "mind";
       document.getElementById("run-pane").hidden = tab.dataset.tab !== "run";
       document.getElementById("model-pane").hidden = tab.dataset.tab !== "model";
+      document.getElementById("bench-pane").hidden = tab.dataset.tab !== "bench";
+      if (tab.dataset.tab === "bench") refreshSpans();
     });
   }
 
@@ -1847,6 +1996,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       model: AI.config?.model ?? null,
       character: AI.name,
       goal: DEFAULT_GOAL,
+      highlights: AI.highlights,
       turns: AI.transcript,
     }, null, 2);
   }
@@ -1886,6 +2036,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
   });
 
   renderSetup();
+  renderHighlights();
   updateRunStats();
 
   if (autoStart) {

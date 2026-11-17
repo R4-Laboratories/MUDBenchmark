@@ -22,6 +22,26 @@ provider's endpoint.
 | OpenAI-compatible (custom) | any `/v1` endpoint | optional |
 | Prime Router (hypersphere, local) | `http://localhost:8000` | none |
 
+### Watching what the AI sees and does
+
+The live panel has four tabs:
+
+- **Mind** — the private thoughts. The star on a thought records a highlight:
+  turn, tick, command, thought, room, persona and owner.
+- **Run** — turn/command/token/latency stats, the highlight list, and the
+  transcript download or copy.
+- **Model** — the exact system and user prompt, the trimmed context, the raw
+  reply, the parsed command, and the persona, owner and tick range.
+- **Bench** — a benchmark over the server's span log: span count, tick range,
+  command count, latency, actors, rooms, span kinds and recent command ticks.
+  It is aggregates only; the command text stays on the server and in the Model
+  tab.
+
+Every accepted command is one `world.input` span with its tick. The same tick
+arrives in a hidden `#tick` line, so a transcript turn and its span agree
+exactly. `GET /spans` is the aggregate endpoint; `docs/STREAM.md` has the
+schema.
+
 ### Ollama, the free local path
 
 ```sh
