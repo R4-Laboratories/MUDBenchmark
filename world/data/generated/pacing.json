@@ -1,0 +1,24 @@
+{
+  "schema": "mudbenchmark/pacing/1",
+  "candidate": "c-0f5ec925e602",
+  "report": "ffe5504767cab07ddebc8a1a33bd2330f3ea0807962fc3b7e5899907aed5127e",
+  "worldHash": "af73f522b5baa1bcc9056211eaebf1fd2cb75a19c697e40bc7ab1f31613068c2",
+  "changes": [
+    {
+      "group": "temple-period",
+      "collection": "npcs",
+      "target": "moth",
+      "field": "period",
+      "from": 60,
+      "to": 75
+    },
+    {
+      "group": "temple-period",
+      "collection": "npcs",
+      "target": "rat",
+      "field": "period",
+      "from": 40,
+      "to": 50
+    }
+  ]
+}
