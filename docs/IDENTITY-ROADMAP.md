@@ -512,6 +512,19 @@ AI's next login; retiring the persona clears its delegations.
 alice, the persona and the human owner; revoke returns alice and the AI cannot
 recreate it; the owner never changes. Rehearsed in v0.37 (MB-22/23).
 
+**R4. Owner-authorized rebind.** *(runtime + operator tool)* — **implemented in v0.41.**
+A legacy account with neither a password nor a token cannot be adopted, because
+there is nothing to prove ownership with. The operator holds one owner token on
+the world unit and, on the loopback console only, either issues a one-time
+delivery token (stored as a SHA-256 hash) or moves the character onto an
+existing Prism account. Token mode leaves the account separate; Prism mode
+retires it with a `mergedInto` tombstone. Both keep the character's progression.
+*Acceptance:* a credentialless account is listed; a wrong owner token is
+refused; a token account logs in with the issued token and can be adopted; a
+Prism rebind moves the character and retires the legacy account; a credentialed
+or online account is refused; the public WebSocket cannot reach the command.
+Rehearsed in v0.41 (MB-30/31).
+
 **L2. Relay / instant revocation.** *(runtime; optional)*
 Only if "revoked at next login" is too slow: run `createRelayBus` server-side
 (or self-host) and pass `bus` to `heardLog`. Login must not depend on the

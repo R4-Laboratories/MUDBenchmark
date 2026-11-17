@@ -1013,6 +1013,48 @@ export function step({ state, rooms, intents }) {
       continue;
     }
 
+    // R4: an owner-authorized rebind for a legacy account with no credential.
+    // A token gives the account an ordinary login without moving the
+    // character. A Prism target moves the character and retires the legacy
+    // account with a tombstone, exactly like `claimLegacy`, but without a
+    // credential to prove. The policy is in runtime/rebind.mjs; this block
+    // repeats the checks because the intent queue is the last gate.
+    if (intent.kind === "rebindLegacy") {
+      const legacyAccount = next.accounts[intent.legacyKey];
+      const character = next.identities[intent.legacyKey];
+      if (!legacyAccount || legacyAccount.kind !== "legacy") continue;
+      if (legacyAccount.retired || legacyAccount.mergedInto) continue;
+      if (legacyAccount.passwordHash || legacyAccount.tokenHash) continue;
+      if (!character || character.owner !== intent.legacyKey || character.retired) continue;
+      // A live actor still points at the old account. Refuse rather than
+      // moving the record out from under a character in the world.
+      if (next.actors.some((candidate) => candidate.key === intent.legacyKey)) continue;
+      const at = intent.at ?? next.tick;
+
+      if (intent.mode === "token") {
+        if (typeof intent.tokenHash !== "string" || !/^[0-9a-f]{64}$/.test(intent.tokenHash)) continue;
+        legacyAccount.tokenHash = intent.tokenHash;
+        legacyAccount.rebound = { mode: "token", at, by: "owner" };
+        continue;
+      }
+
+      if (intent.mode === "prism") {
+        const target = next.accounts[intent.prism];
+        if (!target || target.kind !== "prism" || target.retired) continue;
+        if ((target.characters ?? []).includes(intent.legacyKey)) continue;
+        next.identities[intent.legacyKey] = { ...character, kind: "character", owner: intent.prism };
+        target.characters = [...(target.characters ?? []), intent.legacyKey];
+        legacyAccount.retired = true;
+        legacyAccount.mergedInto = intent.prism;
+        legacyAccount.characters = [];
+        legacyAccount.passwordHash = null;
+        legacyAccount.salt = null;
+        legacyAccount.tokenHash = null;
+        legacyAccount.rebound = { mode: "prism", to: intent.prism, at, by: "owner" };
+        continue;
+      }
+    }
+
     if (intent.kind === "leave") {
       const actor = find(intent.actorId);
       if (!actor) continue;

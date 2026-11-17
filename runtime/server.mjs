@@ -27,6 +27,7 @@ import { hashPassword, verifyPassword, validName, validPassword } from "./accoun
 import { allowCommand as allowInput, DEFAULT_INTERVAL_MS } from "./allowance.mjs";
 import { verifyPrismSession, verifyPersonaOwner, verifySessionKey, prismDisplay } from "./prism-auth.mjs";
 import { CREDENTIAL, identityAdmits } from "./identity.mjs";
+import { normalizePrismId, ownerAllowed, rebindPlan } from "./rebind.mjs";
 import { loadStateFile, saveStateFile } from "./state.mjs";
 
 const HOLO_URL = process.env.HOLO_URL ?? "http://127.0.0.1:8082";
@@ -41,6 +42,9 @@ const PRISM_ORIGINS = (process.env.PRISM_ORIGINS ?? "").split(",").map((value) =
 const PRISM_LOGIN_MAX = 262144;
 const PRISM_RECORDS_MAX = 64;
 const COMMAND_INTERVAL_MS = Number(process.env.COMMAND_INTERVAL_MS ?? DEFAULT_INTERVAL_MS);
+// The owner console's only authority. Unset means every rebind is refused;
+// there is no empty-token fallback.
+const OWNER_TOKEN = process.env.MUDBENCH_OWNER_TOKEN ?? "";
 
 // The world is data: rooms, exits, notices and the task live in
 // world/data/world.json. DECOY_MODE selects which text variant is in play for
@@ -238,6 +242,13 @@ function sendTo(id, text) {
   if (t) t.send(text);
 }
 
+// The owner console answers in one machine-readable line. The operator tool
+// parses it; a human sees the same JSON. Secrets never appear in it: a token
+// rebind carries only a hash, and a Prism rebind carries the public id.
+function sendRebind(id, payload) {
+  return sendTo(id, `#rebind ${JSON.stringify(payload)}\r\n`);
+}
+
 function broadcast(room, text, exceptId) {
   for (const a of actorsIn(room)) {
     // A guest has not signed in and is not playing. Do not let NPCs, weather or
@@ -359,6 +370,70 @@ async function handleCommand(id, line) {
     session.challenge.last = counter;
     session.challenge.confirmed = true;
     return sendCharacters(id, session);
+  }
+
+  // R4: the owner console. A legacy account with no credential is rebound to a
+  // one-time token or to an existing Prism account. The owner token is the only
+  // authority, and the command is telnet-only: a public page's socket carries
+  // an origin and can never reach this path.
+  if (verb === "rebind") {
+    const transport = transports.get(id);
+    if (transport?.origin) {
+      return sendRebind(id, { ok: false, why: "owner rebind is only on the local console" });
+    }
+    if (!OWNER_TOKEN) {
+      return sendRebind(id, { ok: false, why: "owner rebind is not configured" });
+    }
+    if (rest[0] === "list") {
+      const owner = restRaw.slice(1).join(" ");
+      if (!ownerAllowed(owner, OWNER_TOKEN)) {
+        return sendRebind(id, { ok: false, why: "the owner token does not match" });
+      }
+      const accounts = Object.entries(state.accounts ?? {})
+        .filter(([, account]) => account.kind === "legacy")
+        .map(([name, account]) => ({
+          name,
+          characters: account.characters ?? [],
+          levels: (account.characters ?? []).map((character) => state.identities[character]?.level ?? null),
+          retired: Boolean(account.retired || account.mergedInto),
+          mergedInto: account.mergedInto ?? null,
+          hasPassword: Boolean(account.passwordHash),
+          hasToken: Boolean(account.tokenHash),
+          credentialless: !account.retired && !account.mergedInto && !account.passwordHash && !account.tokenHash,
+          rebound: account.rebound ?? null,
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+      return sendRebind(id, { ok: true, accounts });
+    }
+    const name = restRaw[0];
+    const mode = rest[1];
+    const value = restRaw[2];
+    const owner = restRaw.slice(3).join(" ");
+    if (!ownerAllowed(owner, OWNER_TOKEN)) {
+      return sendRebind(id, { ok: false, why: "the owner token does not match" });
+    }
+    if (!name || !mode || !value) {
+      return sendRebind(id, { ok: false, why: "usage: rebind <name> token <hash> | rebind <name> prism <id>" });
+    }
+    const account = state.accounts?.[name];
+    const target = mode === "prism" ? state.accounts?.[normalizePrismId(value)] : null;
+    const plan = rebindPlan(account, { mode, name, tokenHash: value, prism: value }, target);
+    if (!plan.ok) {
+      return sendRebind(id, { ok: false, why: plan.why, account: name, mode });
+    }
+    if (plan.mode === "prism" && state.actors.some((candidate) => candidate.key === name)) {
+      return sendRebind(id, { ok: false, why: "the character is online; quit it first", account: name, mode });
+    }
+    pending.push({
+      kind: "rebindLegacy",
+      legacyKey: name,
+      mode: plan.mode,
+      tokenHash: plan.tokenHash ?? null,
+      prism: plan.prism ?? null,
+    });
+    const payload = { ok: true, queued: true, account: name, mode: plan.mode };
+    if (plan.mode === "prism") payload.to = plan.prism;
+    return sendRebind(id, payload);
   }
 
   // The input allowance: one accepted command per interval, shared by every
@@ -1533,7 +1608,7 @@ function onTick() {
   const intents = pending.splice(0);
   // A login or registration must hit the disk before the next checkpoint; a
   // kill -9 must not erase an account created seconds ago.
-  const identityChanged = intents.some((intent) => ["login", "register", "password", "claim", "claimLegacy", "createCharacter", "ownAccount", "retireAccount", "handoffCharacter", "revokeHandoff"].includes(intent.kind));
+  const identityChanged = intents.some((intent) => ["login", "register", "password", "claim", "claimLegacy", "rebindLegacy", "createCharacter", "ownAccount", "retireAccount", "handoffCharacter", "revokeHandoff"].includes(intent.kind));
   const result = step({ state, rooms: ROOMS, intents });
   state = result.state;
 

@@ -43,6 +43,7 @@ import { openKit, sealKit } from "../runtime/web/recovery-kit.mjs";
 import { readSpanTail, redactSpans, summarizeSpans } from "../runtime/spans.mjs";
 import { admissionAdmits, decodeAdmissionRequest } from "./admission.mjs";
 import { measureCandidates } from "./measure.mjs";
+import { normalizePrismId, ownerAllowed, rebindPlan, tokenHash } from "../runtime/rebind.mjs";
 
 const root = process.cwd();
 const ratchet = JSON.parse(readFileSync(join(root, "world/ratchet.json"), "utf8"));
@@ -790,6 +791,74 @@ let claim = { ok: true, why: [] };
   check(upgraded.accounts[legacyKey]?.retired === true && upgraded.accounts[legacyKey]?.mergedInto === prismKey, "the tombstone did not survive a checkpoint");
 
   if (claim.why.length) { claim.ok = false; failures.push(`the legacy claim is broken: ${claim.why[0]}`); }
+}
+
+// R4: the owner can rebind a credentialless legacy account, once, to a token
+// or to a Prism account. A credentialed or online account is refused.
+let rebind = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, world.levels, questTable.quests);
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
+  const check = (condition, why) => { if (!condition) { rebind.ok = false; rebind.why.push(why); } };
+  const prismKey = `sha256:${"c".repeat(64)}`;
+  const token = "operator-delivered-token";
+  const hash = tokenHash(token);
+
+  const ghost = () => ({ kind: "legacy", name: "ghost", characters: ["ghost"], passwordHash: null, salt: null, tokenHash: null, retired: false, mergedInto: null });
+  const wanderer = () => ({ kind: "legacy", name: "wanderer", characters: ["wanderer"], passwordHash: null, salt: null, tokenHash: null, retired: false, mergedInto: null });
+  const character = (name) => ({ kind: "character", owner: name, name, role: 0, level: 4, xp: 350, guild: null, guildRank: null, quests: { active: [], completed: ["word"] } });
+  state.accounts.ghost = ghost();
+  state.identities.ghost = character("ghost");
+  state.accounts.wanderer = wanderer();
+  state.identities.wanderer = character("wanderer");
+  state.accounts[prismKey] = { kind: "prism", name: prismKey, characters: ["keeper"], claimedFrom: null, passwordHash: null, salt: null, tokenHash: null, retired: false, mergedInto: null };
+  state.identities.keeper = { ...character("keeper"), owner: prismKey };
+
+  // The policy refuses a credentialed account, a bad hash, a bad id, and a
+  // missing target before the reducer ever runs.
+  check(rebindPlan(ghost(), { mode: "token", name: "ghost", tokenHash: hash }).ok, "the policy refused a credentialless token rebind");
+  check(!rebindPlan({ ...ghost(), passwordHash: "h" }, { mode: "token", name: "ghost", tokenHash: hash }).ok, "the policy accepted a password account");
+  check(!rebindPlan(ghost(), { mode: "token", name: "ghost", tokenHash: "short" }).ok, "the policy accepted a malformed token hash");
+  check(rebindPlan(ghost(), { mode: "prism", name: "ghost", prism: prismKey.slice(7) }, state.accounts[prismKey]).ok, "the policy refused a bare Prism id");
+  check(!rebindPlan(ghost(), { mode: "prism", name: "ghost", prism: prismKey }, null).ok, "the policy accepted an unknown target");
+  check(normalizePrismId(prismKey) === prismKey && normalizePrismId("nope") === null, "the Prism id normalizer is wrong");
+  check(ownerAllowed("secret", "secret") && !ownerAllowed("secret", "secreu") && !ownerAllowed("", "") && !ownerAllowed(undefined, "x"), "the owner token comparison is wrong");
+
+  // Token mode: the hash is stored, the account survives, the character does
+  // not move, and a second rebind is refused because a credential now exists.
+  run([{ kind: "rebindLegacy", legacyKey: "ghost", mode: "token", tokenHash: hash }]);
+  check(state.accounts.ghost?.tokenHash === hash, "the token hash was not stored");
+  check(state.accounts.ghost?.rebound?.mode === "token" && state.accounts.ghost?.rebound?.at === 1, "the token rebind was not recorded");
+  check(state.accounts.ghost?.retired === false && state.accounts.ghost?.mergedInto === null, "the token rebind retired the account");
+  check(state.identities.ghost?.owner === "ghost" && state.identities.ghost?.level === 4, "the token rebind moved or reset the character");
+  run([{ kind: "rebindLegacy", legacyKey: "ghost", mode: "prism", prism: prismKey }]);
+  check(state.accounts.ghost?.retired === false, "a second rebind moved a token account");
+  check(!state.accounts[prismKey]?.characters?.includes("ghost"), "a second rebind added the character to the target");
+
+  // Prism mode refuses while the character is online, then moves it and
+  // retires the legacy account once the character leaves.
+  run([{ kind: "join", actorId: "w", name: "w" }]);
+  run([{ kind: "login", actorId: "w", key: "wanderer", account: "wanderer", authenticated: true }]);
+  run([{ kind: "rebindLegacy", legacyKey: "wanderer", mode: "prism", prism: prismKey }]);
+  check(state.accounts.wanderer?.retired === false, "an online character was moved");
+  run([{ kind: "leave", actorId: "w" }]);
+  run([{ kind: "rebindLegacy", legacyKey: "wanderer", mode: "prism", prism: prismKey }]);
+  check(state.accounts.wanderer?.retired === true && state.accounts.wanderer?.mergedInto === prismKey, "the Prism rebind did not tombstone the legacy account");
+  check(state.accounts.wanderer?.characters?.length === 0 && state.accounts.wanderer?.passwordHash === null && state.accounts.wanderer?.tokenHash === null, "the Prism rebind left a credential or a character behind");
+  check(state.accounts.wanderer?.rebound?.mode === "prism" && state.accounts.wanderer?.rebound?.to === prismKey, "the Prism rebind was not recorded");
+  check(state.identities.wanderer?.owner === prismKey && state.identities.wanderer?.level === 4 && state.identities.wanderer?.xp === 350, "the Prism rebind lost progression");
+  check(state.identities.wanderer?.quests?.completed?.includes("word"), "the Prism rebind lost quests");
+  check(state.accounts[prismKey]?.characters?.includes("wanderer") && state.accounts[prismKey]?.characters?.includes("keeper"), "the target account did not gain the character");
+
+  // The tombstone and the token hash survive a checkpoint and upgrade.
+  const checkpointed = checkpointIdentities(state);
+  const upgraded = upgradeState(checkpointed, initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, world.levels, questTable.quests));
+  check(upgraded.accounts.wanderer?.retired === true && upgraded.accounts.wanderer?.mergedInto === prismKey, "the Prism tombstone did not survive a restart");
+  check(upgraded.accounts.ghost?.tokenHash === hash && upgraded.accounts.ghost?.rebound?.mode === "token", "the token hash did not survive a restart");
+  check(upgraded.identities.wanderer?.owner === prismKey, "the rebind owner did not survive a restart");
+
+  if (rebind.why.length) { rebind.ok = false; failures.push(`the legacy rebind is broken: ${rebind.why[0]}`); }
 }
 
 // The state file is atomic, backed up, and fail-loud.
@@ -1743,6 +1812,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"prismLogin".padEnd(26)}  ${(prismLogin.ok ? "account" : "BROKEN").padStart(5)}   == id, character`);
   console.log(`${"state".padEnd(26)}  ${(durableState.ok ? "5 checks" : "BROKEN").padStart(5)}   == atomic, backup, fail-loud`);
   console.log(`${"claim".padEnd(26)}  ${(claim.ok ? "adds char" : "BROKEN").padStart(5)}   == owner, tombstone`);
+  console.log(`${"rebind".padEnd(26)}  ${(rebind.ok ? "token, prism" : "BROKEN").padStart(5)}   == owner, online, once`);
   console.log(`${"pinned".padEnd(26)}  ${(identityPin.ok ? "revoked" : "BROKEN").padStart(5)}   == old log refused`);
   console.log(`${"takeover".padEnd(26)}  ${(takeover.ok ? "1 actor" : "BROKEN").padStart(5)}   == leave then login`);
   console.log(`${"characters".padEnd(26)}  ${(characters.ok ? "2 chars" : "BROKEN").padStart(5)}   == create, switch`);

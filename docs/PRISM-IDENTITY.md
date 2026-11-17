@@ -4,8 +4,9 @@ Status: **implemented in the browser and the server; device linking, takeover
 and reconnect exist; the admission decision is proved in the model (X5); the AI
 is a persona owned by the human's account (L1); an encrypted recovery kit
 restores the account on a new device; a session-key challenge makes a stolen
-login token inert (L3).** The legacy password form remains for telnet, CLI and
-older accounts. This records
+login token inert (L3); an owner-authorized rebind gives a credentialless
+legacy account a token or moves its character onto a Prism account (R4).** The
+legacy password form remains for telnet, CLI and older accounts. This records
 the two identity protocols, the one this project uses, and the exact server
 change.
 
@@ -122,6 +123,13 @@ span or tick. Game commands keep the same allowance.
   name**; the server checks the old password or token, and the reducer merges
   level, XP, guild, quests and mail keys and tombstones the old record. One
   claim per Prism id; the old login refuses with "This account moved".
+- `rebind` — the operator path for a legacy account that has **no** credential.
+  The owner token is read from `MUDBENCH_OWNER_TOKEN` on the world unit, and the
+  command is accepted only on the loopback telnet console, never on the public
+  WebSocket. `rebind <name> token <sha256>` stores only a token hash;
+  `rebind <name> prism <prism-id>` moves the character and tombstones the legacy
+  account. `tools/rebind.mjs` drives both modes and writes a new token once,
+  mode 600.
 - `index.html` — **Use my Prism id** is the primary sign-in; the name/password
   form is under **Use a name and password instead**. The AI has its own Prism id
   in the same browser and a **Reset identity** button.
@@ -215,6 +223,43 @@ A character is the in-game name and the record that owns progression:
   is not merged into another character. One claim per Prism account.
 - The migration from v0.32 gives every existing identity one account and one
   character. Items stay world state and are not persisted by the character.
+
+## Owner-authorized rebind
+
+A legacy account with neither a password nor a token cannot use `adopt`: there
+is nothing to prove ownership with, and the operator should not invent a
+password for someone else. `k1`, `public-test` and `agent` were in exactly that
+state. The operator holds one owner token, set on the world unit as
+`MUDBENCH_OWNER_TOKEN` (the deploy host keeps it in
+`~/.mudbench/owner.env`, mode 600), and the local console accepts:
+
+```
+rebind list <owner-token>
+rebind <name> token <sha256-hash> <owner-token>
+rebind <name> prism <prism-id> <owner-token>
+```
+
+- **Token mode.** `tools/rebind.mjs --name <name> --token --out <file>`
+  generates a 256-bit token, hashes it locally, sends only the hash, writes the
+  plaintext once with mode 600, and confirms the stored hash by reading the
+  account back. The account then logs in with `login <name> <token>`. The same
+  token authorises `adopt <name> <token>` into a Prism account, which retires
+  the legacy record. Delivering the token is a one-time act; the hash stays.
+- **Prism mode.** `--name <name> --prism <prism-id>` moves the character to an
+  existing Prism account at once. The character keeps its level, XP, guild,
+  quests and mail keys; the legacy account is retired with a `mergedInto`
+  tombstone and its characters and credentials are cleared. No secret is
+  created.
+- **Refusals.** A rebind refuses an account that already has a credential (it
+  uses `login` then `adopt`), a retired or moved account, an unknown target, a
+  malformed id or hash, and a character that is online. The owner token is
+  compared in constant time; an unset token refuses every rebind. The command
+  runs before the 250 ms game budget and writes no `world.input` span; the
+  `rebound` record on the account is the audit.
+- **Reachability.** The public page's WebSocket carries an `Origin`, and the
+  handler refuses `rebind` there. Only the loopback telnet console, reached
+  through SSH, can run it. A stolen game session cannot rebind anything; a
+  stolen owner token still needs the host's loopback console.
 
 ## Recovery kit
 
@@ -397,4 +442,6 @@ Not yet proven by the gate: a tampered signature and an unknown device.
    logged in with the newer log. Before that, the no-relay design cannot know.
 5. **Legacy.** The name/password form remains for telnet, CLI and older
    accounts. The one-time `adopt` claim is built; it accepts a password or a
-   legacy token, and `casey` is left to its owner.
+   legacy token, and `casey` is left to its owner. An account with neither
+   credential uses the owner-authorized `rebind`: a token for a separate login,
+   or a direct move onto a Prism account.

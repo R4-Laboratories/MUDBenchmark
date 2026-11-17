@@ -213,6 +213,12 @@
       "level": "some-true",
       "statement": "A browser completed the session-key challenge; a stolen fresh session token on a second socket was challenged and refused play and characters; a forged signature and a reused counter were refused; the AI completed its own challenge and alice and scout were online.",
       "authority": "headless Chromium L3 run 2026-11-17"
+    },
+    {
+      "id": "MB-30",
+      "level": "build",
+      "statement": "An owner-authorized rebind gives a legacy account with no password and no token either a one-time token hash or a move of its character onto an existing Prism account. The owner token is compared in constant time, an unset token refuses, the command is refused on the public WebSocket, a credentialed or retired account is refused, a token rebind stores only the SHA-256 hash and leaves the character in place, a Prism rebind keeps progression and retires the legacy account with a mergedInto tombstone, and an online character is refused; the gate proves both modes, the refusals, and a checkpoint restart.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

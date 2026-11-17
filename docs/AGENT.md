@@ -261,6 +261,14 @@ character becomes another character on the Prism account, keeping its own
 level, guild, quests and mail; the old account is retired. One claim per Prism
 account.
 
+An account with **no** credential cannot be adopted. The operator resolves it
+with the owner-authorized `rebind` on the loopback console, never on the public
+socket: `rebind <name> token <sha256>` gives it a token login (the operator tool
+writes the plaintext once), and `rebind <name> prism <prism-id>` moves its
+character onto an existing Prism account. The owner token is
+`MUDBENCH_OWNER_TOKEN` on the world unit; an unset token refuses every rebind.
+A credentialed account still uses `login` then `adopt`.
+
 The name/password form remains under **Use a name and password instead** for
 telnet, CLI clients and older accounts: `register <name> <password>` creates a
 legacy account with one character; `login <name> <password>` returns;
