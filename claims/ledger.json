@@ -321,6 +321,12 @@
       "level": "some-true",
       "statement": "Production v0.48.0 serves 44 rooms, 24 mobiles, 40 objects and 15 quests. The Undervault is reachable through a searchable secret stair from the High Walk; the Mirror Pool and Wardstone quests are present; mage rank advancement and guild XP are live. Accounts remain 104 and characters 105. /watch, /world, /live, the AI fast mode and the durable redacted telemetry log are present.",
       "authority": "wick production v0.48.0 2026-11-17; /world and /health; release 44194019247; gate 44192314674"
+    },
+    {
+      "id": "MB-48",
+      "level": "build",
+      "statement": "The Spellwright sells scrolls of spark, mend and shield. A mage can `study` a scroll to learn its spell and consume it; any character can `recite` a scroll to cast it once and consume it. Scrolls carry a validated spell id, the cast uses the same effect code as a memorized cast, and the gate covers study, recite, consumption and spellbook persistence.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

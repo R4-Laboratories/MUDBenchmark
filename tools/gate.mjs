@@ -1143,6 +1143,15 @@ let magic = { ok: true, why: [] };
   checkpointIdentities(state);
   check(state.identities.mira?.spellbook?.includes("detect"), "training did not survive a checkpoint");
   check(maxManaFor(actor) === 3 + 5 * 2 + 4, "the mages mana bonus is wrong");
+  state.objects.push({ id: "scroll-light-test", name: "a scroll of light", holder: "m", room: null, eaten: false, flags: ["takeable", "readable"], spell: "light" });
+  run([{ kind: "study", actorId: "m", objectId: "scroll-light-test" }]);
+  actor = state.actors.find((entry) => entry.id === "m");
+  check(actor.spellbook.includes("light") && state.objects.find((o) => o.id === "scroll-light-test")?.eaten === true, "study did not learn and consume the scroll");
+  state.objects.push({ id: "scroll-mend-test", name: "a scroll of mending", holder: "m", room: null, eaten: false, flags: ["takeable", "readable"], spell: "mend" });
+  actor.hp = 5;
+  run([{ kind: "recite", actorId: "m", objectId: "scroll-mend-test" }]);
+  actor = state.actors.find((entry) => entry.id === "m");
+  check(actor.hp > 5 && state.objects.find((o) => o.id === "scroll-mend-test")?.eaten === true, "recite did not cast and consume the scroll");
   if (magic.why.length) { magic.ok = false; failures.push(`magic is broken: ${magic.why[0]}`); }
 }
 
@@ -2183,7 +2192,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"telemetry".padEnd(26)}  ${(telemetry.ok ? "trends" : "BROKEN").padStart(5)}   == ai, world, clients`);
   console.log(`${"aliases".padEnd(26)}  ${(aliases.ok ? "short" : "BROKEN").padStart(5)}   == get, eq, status`);
   console.log(`${"equipment".padEnd(26)}  ${(equipment.ok ? "8 slots" : "BROKEN").padStart(5)}   == wear, wield, replace`);
-  console.log(`${"magic".padEnd(26)}  ${(magic.ok ? "6 spells" : "BROKEN").padStart(5)}   == mana, cast, train`);
+  console.log(`${"magic".padEnd(26)}  ${(magic.ok ? "6 spells+scrolls" : "BROKEN").padStart(5)}   == mana, cast, study`);
   console.log(`${"lantern".padEnd(26)}  ${(lantern.ok ? "44 rooms" : "BROKEN").padStart(5)}   == errand, charm, secret`);
   console.log(`${"pinned".padEnd(26)}  ${(identityPin.ok ? "revoked" : "BROKEN").padStart(5)}   == old log refused`);
   console.log(`${"takeover".padEnd(26)}  ${(takeover.ok ? "1 actor" : "BROKEN").padStart(5)}   == leave then login`);

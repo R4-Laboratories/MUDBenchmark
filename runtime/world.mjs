@@ -83,11 +83,38 @@ function awardXp(state, actor, amount, events) {
   }
 }
 
-/**
- * Advance every active quest from one event, complete any whose facts are now
- * true, and pay the reward once. Progress is data on the actor; completed ids
- * are never replayed.
- */
+function applySpell(state, actor, spell, target, events) {
+  if (spell.effect === "damage" && target) {
+    const damage = 1 + nextFrom(state.tick * 7 + actor.room, spell.damage ?? 4);
+    target.hp = (target.hp ?? 0) - damage;
+    events.push({ room: actor.room, text: `${actor.name} speaks a word; ${target.name} is struck by a spark.`, exceptId: actor.id });
+    events.push({ onlyId: actor.id, text: `Your spark strikes ${target.name} for ${damage}.` });
+    if (target.hp <= 0) {
+      target.dead = true;
+      target.hp = 0;
+      events.push({ room: actor.room, text: `${target.name} falls.` });
+      awardXp(state, actor, target.xp ?? spell.xp ?? 0, events);
+    }
+  } else if (spell.effect === "heal") {
+    const amount = spell.heal + Math.floor((actor.level ?? 1) / 2);
+    actor.hp = Math.min(actor.maxHp, (actor.hp ?? 0) + amount);
+    events.push({ onlyId: actor.id, text: `You mend ${amount} health.\r\n` });
+  } else if (spell.effect === "shield") {
+    actor.armorBonus = (actor.armorBonus ?? 0) + (spell.armor ?? 0);
+    actor.buffUntil = state.tick + (spell.ticks ?? 120);
+    events.push({ onlyId: actor.id, text: "A shield settles around you.\r\n" });
+  } else if (spell.effect === "recall") {
+    actor.room = state.start;
+    actor.visited = [...new Set([...(actor.visited ?? []), state.start])];
+    events.push({ onlyId: actor.id, text: "The guild's road folds; you are back in the Atrium.\r\n" });
+  } else if (spell.effect === "light") {
+    events.push({ onlyId: actor.id, text: "A cold light follows you.\r\n" });
+  } else if (spell.effect === "detect") {
+    events.push({ onlyId: actor.id, text: "You read the room for what it is hiding.\r\n" });
+  }
+  events.push({ onlyId: actor.id, text: `You cast ${spell.name}.\r\n` });
+}
+
 function advanceQuests(state, actor, event, events) {
   if (!state.quests?.length) return;
   const current = normalizeQuestState(actor.quests, state.quests);
@@ -1226,35 +1253,36 @@ export function step({ state, rooms, intents }) {
       if (target && target.room !== actor.room) continue;
       actor.mana = mana - spell.mana;
       actor.maxMana = maxManaFor(actor);
-      if (spell.effect === "damage" && target) {
-        const damage = 1 + nextFrom(next.tick * 7 + actor.room, spell.damage ?? 4);
-        target.hp = (target.hp ?? 0) - damage;
-        events.push({ room: actor.room, text: `${actor.name} speaks a word; ${target.name} is struck by a spark.`, exceptId: actor.id });
-        events.push({ onlyId: actor.id, text: `Your spark strikes ${target.name} for ${damage}.` });
-        if (target.hp <= 0) {
-          target.dead = true;
-          target.hp = 0;
-          events.push({ room: actor.room, text: `${target.name} falls.` });
-          awardXp(next, actor, target.xp ?? spell.xp ?? 0, events);
-        }
-      } else if (spell.effect === "heal") {
-        const amount = spell.heal + Math.floor((actor.level ?? 1) / 2);
-        actor.hp = Math.min(actor.maxHp, (actor.hp ?? 0) + amount);
-        events.push({ onlyId: actor.id, text: `You mend ${amount} health.\r\n` });
-      } else if (spell.effect === "shield") {
-        actor.armorBonus = (actor.armorBonus ?? 0) + (spell.armor ?? 0);
-        actor.buffUntil = next.tick + (spell.ticks ?? 120);
-        events.push({ onlyId: actor.id, text: `A shield settles around you.\r\n` });
-      } else if (spell.effect === "recall") {
-        actor.room = next.start;
-        actor.visited = [...new Set([...(actor.visited ?? []), next.start])];
-        events.push({ onlyId: actor.id, text: "The guild's road folds; you are back in the Atrium.\r\n" });
-      } else if (spell.effect === "light") {
-        events.push({ onlyId: actor.id, text: "A cold light follows you.\r\n" });
-      } else if (spell.effect === "detect") {
-        events.push({ onlyId: actor.id, text: "You read the room for what it is hiding.\r\n" });
+      applySpell(next, actor, spell, target, events);
+      continue;
+    }
+
+    if (intent.kind === "study" || intent.kind === "recite") {
+      const object = next.objects.find((entry) => entry.id === intent.objectId);
+      if (!object || object.holder !== actor.id || object.eaten) continue;
+      const spell = spellById(object.spell ?? intent.spellId);
+      if (!spell) continue;
+      if (intent.kind === "study") {
+        if (actor.guild !== "mages" || (actor.level ?? 1) < spell.level) continue;
+        if ((actor.spellbook ?? []).includes(spell.id)) continue;
+        actor.spellbook = [...(actor.spellbook ?? []), spell.id];
+        actor.maxMana = maxManaFor(actor);
+        object.eaten = true;
+        object.holder = null;
+        object.room = null;
+        events.push({ onlyId: actor.id, text: `You study the scroll and learn ${spell.name}.\r\n` });
+        continue;
       }
-      events.push({ onlyId: actor.id, text: `You cast ${spell.name}.\r\n` });
+      const target = intent.targetId
+        ? (next.npcs.find((npc) => npc.id === intent.targetId) ?? next.actors.find((entry) => entry.id === intent.targetId))
+        : null;
+      if (spell.target === "npc" && !target) continue;
+      if (target && target.room !== actor.room) continue;
+      object.eaten = true;
+      object.holder = null;
+      object.room = null;
+      applySpell(next, actor, spell, target, events);
+      events.push({ onlyId: actor.id, text: `The scroll crumbles as ${spell.name} takes hold.\r\n` });
       continue;
     }
 

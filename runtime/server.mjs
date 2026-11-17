@@ -1029,7 +1029,7 @@ async function handleCommand(id, line) {
     if (!actor?.key) {
       return sendTo(id, "MUDBench is a persistent world for people and agents.\r\nSign in with your Prism id, or register <name> <password> / login <name> <password>.\r\nThen type help for the commands.\r\n");
     }
-    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: get/g, drop/dr, inventory/i, score/sc, quests/q, who/wh, gossip/gos, guildchat/gc.\r\nMagic: spells, train <spell> at the Mages' Guild, cast <spell> [on <target>], search. Guild: guild join/leave/who/list/chat, guild advance (Mages).\r\nWorld: world or status (online, levels, guilds, reset).\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
+    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: get/g, drop/dr, inventory/i, score/sc, quests/q, who/wh, gossip/gos, guildchat/gc.\r\nMagic: spells, train <spell> at the Mages' Guild, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search. Guild: guild join/leave/who/list/chat, guild advance (Mages).\r\nWorld: world or status (online, levels, guilds, reset).\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
   }
 
   // A command typed before the join tick lands is queued, not refused: the
@@ -1172,6 +1172,35 @@ async function handleCommand(id, line) {
       "spell.action": "cast",
       "spell.id": spell.id,
       "spell.mana": spell.mana,
+      "target.id": target?.id ?? null,
+      "world.tick": state.tick,
+    }, 0);
+    return;
+  }
+
+  if (verb === "study" || verb === "recite") {
+    const onIndex = rest.indexOf("on");
+    const needle = (onIndex > 0 ? restRaw.slice(0, onIndex) : restRaw).join(" ");
+    const object = findObject(needle, (entry) => entry.holder === id && !entry.eaten && Boolean(entry.spell));
+    if (!object) return sendTo(id, `You have no ${needle || "scroll"}.\r\n`);
+    const spell = spellById(object.spell);
+    if (!spell) return sendTo(id, "The scroll is unreadable.\r\n");
+    if (verb === "study" && actor.guild !== "mages") return sendTo(id, "Only a mage can study a spell from a scroll. Try recite.\r\n");
+    if (verb === "study" && (actor.level ?? 1) < spell.level) return sendTo(id, `You are not ready for ${spell.name}; it needs level ${spell.level}.\r\n`);
+    let target = null;
+    if (spell.target === "npc") {
+      const targetName = rest[1] === "on" ? restRaw.slice(2).join(" ") : restRaw.slice(1).join(" ");
+      target = state.npcs
+        .filter((npc) => !npc.dead && npc.room === actor.room)
+        .find((npc) => npc.name.toLowerCase().includes(String(targetName).toLowerCase()));
+      if (!target) return sendTo(id, `There is no ${targetName || "target"} here.\r\n`);
+    }
+    pending.push({ kind: verb, actorId: id, objectId: object.id, spellId: spell.id, targetId: target?.id ?? null });
+    recordSpan("world.spell", {
+      "actor.id": id,
+      "spell.action": verb,
+      "spell.id": spell.id,
+      "object.id": object.id,
       "target.id": target?.id ?? null,
       "world.tick": state.tick,
     }, 0);

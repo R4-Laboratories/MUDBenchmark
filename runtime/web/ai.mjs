@@ -77,7 +77,7 @@ open <thing>, close <thing>, wear <thing>, remove <thing>, eat <thing>, light <t
 buy <thing>, sell <thing>, list, wait, wave, nod, bow, laugh, sigh, shrug, dance, score,
 equipment, quests, quest accept <id>, quest abandon <id>, deliver <thing> to <name>,
 guild create <name>, guild join <name>, guild leave, guild who, guild list, guild chat <text>,
-guild rank <member> <rank>, guild disband, talk <name>, spells, train <spell>, cast <spell> [on <target>], search, world, help`;
+guild rank <member> <rank>, guild disband, talk <name>, spells, train <spell>, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search, world, help`;
 
 const VERBS = new Set([
   "look", "l", "examine", "x", "ex", "who", "wh", "awake", "aw", "answer", "claim", "say", "tell", "mail",
@@ -86,7 +86,7 @@ const VERBS = new Set([
   "i", "inv", "equipment", "eq", "take", "get", "g", "grab", "drop", "dr", "put", "open", "close",
   "wear", "remove", "eat", "light", "extinguish", "buy", "sell", "list", "wait", "wave", "nod", "bow",
   "laugh", "sigh", "shrug", "dance", "score", "sc", "stats", "quests", "q", "j", "quest", "guild", "gc",
-  "gchat", "deliver", "talk", "spells", "train", "cast", "search", "sr", "world", "status", "help", "h", "?",
+  "gchat", "deliver", "talk", "spells", "train", "cast", "study", "recite", "search", "sr", "world", "status", "help", "h", "?",
 ]);
 
 export const DEFAULT_GOAL =

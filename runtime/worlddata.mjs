@@ -12,6 +12,7 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { spellById } from "./magic.mjs";
 
 // Resolved against this module, not the process working directory: the service
 // runs with its cwd inside runtime/, and relative paths there would lie.
@@ -237,6 +238,9 @@ export function loadWorld({ mode = "single", path = DEFAULT_PATH } = {}) {
     }
     if (flags.includes("light") && typeof (object.lit ?? false) !== "boolean") {
       errors.push(`light ${object.id} has a non-boolean lit`);
+    }
+    if (object.spell !== undefined && !spellById(object.spell)) {
+      errors.push(`object ${object.id} names unknown spell ${object.spell}`);
     }
     objects.push({ ...object, flags });
   }

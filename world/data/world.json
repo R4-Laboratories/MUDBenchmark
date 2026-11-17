@@ -1897,7 +1897,8 @@
       "forSale": true,
       "price": 12,
       "value": 6,
-      "examine": "A single spell is written in a careful hand. The margins are full of warnings."
+      "examine": "A single spell is written in a careful hand. The margins are full of warnings.",
+      "spell": "spark"
     },
     {
       "id": "candle",
@@ -1932,6 +1933,34 @@
       "value": 12,
       "examine": "A heavy iron key with an eye-shaped bow.",
       "forSale": false
+    },
+    {
+      "id": "scroll-mend",
+      "name": "a scroll of mending",
+      "room": 37,
+      "flags": [
+        "takeable",
+        "readable"
+      ],
+      "forSale": true,
+      "price": 18,
+      "value": 9,
+      "spell": "mend",
+      "examine": "A short healing formula, repeated in three hands."
+    },
+    {
+      "id": "scroll-shield",
+      "name": "a scroll of shielding",
+      "room": 37,
+      "flags": [
+        "takeable",
+        "readable"
+      ],
+      "forSale": true,
+      "price": 30,
+      "value": 15,
+      "spell": "shield",
+      "examine": "A ward written around a circle of chalk."
     }
   ],
   "climate": {
