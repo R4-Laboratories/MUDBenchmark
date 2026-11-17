@@ -13,7 +13,7 @@ and the AI prompt/router state layer.
 | Release | Work | Acceptance |
 | --- | --- | --- |
 | M3 | **done** — Equipment slots (`world/data/slots.json`): head, body, hands, feet, cloak, neck, mainhand, offhand; `equip`/`unequip`/`equipment`; gear in shops and quest rewards | slot swap, two-handed clears offhand, armour sum, weapon damage, drop/death/reset clears gear |
-| M4 | **done** — Magic: `world/data/spells.json`, mana, `cast`/`spells`/`study`/`train`, scrolls, the Mages' Guild and an archmage trainer | spark/mend/light/shield/detect/recall; mana refill and regen; spellbook persists; non-mages can recite scrolls; rank gates |
+| M4 | **done except scroll study/recite** — Magic: mana, `cast`/`spells`/`train`, the Mages' Guild and an archmage trainer; `study`/`recite` for spell scrolls remains | spark/mend/light/shield/detect/recall; mana refill and regen; spellbook persists; rank gates |
 | M5 | **first two slices done** — The Lantern Quarter / Undervault: 11 rooms, 2 zones, 5 quests, 5 mobiles, 6 objects, one secret stair; the full 25-room/10-quest target remains | 44 rooms, 15 quests, every exit reciprocal, all references valid, scripted `errand`/`familiar`/`mirror` walks |
 | M6 | **first quest and ranks done** — Guild quests and progression: guild XP/level, one ledger quest, apprentice→adept→magician advancement; more guild quests and perks remain | guild quest acceptance by rank, guild XP from quests, rank advancement, restart persistence |
 | M7 | Second content slice: another 25 rooms / 8 quests using the same template | same map/quest/reference gates |
