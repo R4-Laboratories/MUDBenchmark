@@ -12,6 +12,7 @@ export const PROVIDERS = {
     base: "http://localhost:11434/v1",
     model: "qwen2.5:7b",
     needsKey: false,
+    keyMode: "none",
     hint: "Run `ollama serve`, then `ollama pull qwen2.5:7b`. Use a 7B or larger model for coherent play; tiny models tend to repeat. If this page is not on localhost, start Ollama with OLLAMA_ORIGINS=https://play.r4labs.org (or *).",
   },
   openai: {
@@ -19,6 +20,7 @@ export const PROVIDERS = {
     base: "https://api.openai.com/v1",
     model: "gpt-4o-mini",
     needsKey: true,
+    keyMode: "required",
     hint: "The key stays in this browser and is sent only to api.openai.com.",
   },
   anthropic: {
@@ -26,6 +28,7 @@ export const PROVIDERS = {
     base: "https://api.anthropic.com/v1",
     model: "claude-sonnet-4-5",
     needsKey: true,
+    keyMode: "required",
     hint: "The key stays in this browser and is sent only to api.anthropic.com. The direct-browser header is set for you.",
   },
   custom: {
@@ -33,16 +36,38 @@ export const PROVIDERS = {
     base: "http://localhost:8080/v1",
     model: "local-model",
     needsKey: false,
-    hint: "Any endpoint with an OpenAI-compatible /v1/chat/completions. A key is optional.",
+    keyMode: "optional",
+    hint: "Any OpenAI-compatible /v1/chat/completions endpoint. Add a key if the gateway needs one; it stays in this browser.",
   },
   "prime-router": {
     label: "Prime Router (hypersphere, local)",
     base: "http://localhost:8000",
     model: "prime",
     needsKey: false,
+    keyMode: "none",
     hint: "Run Prime Router locally on :8000. It adds the hypersphere injection before the model call.",
   },
 };
+
+// Accept the URL a provider's docs actually show: a bare host, a base with a
+// trailing slash, or the full chat endpoint. The client always appends the
+// path itself, so normalize before it does.
+export function normalizeBase(input) {
+  let value = String(input ?? "").trim();
+  if (!value) return "";
+  if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(value)) {
+    const local = /^(localhost|127\.|\[::1\])/i.test(value);
+    value = `${local ? "http" : "https"}://${value}`;
+  }
+  try {
+    const url = new URL(value);
+    let path = url.pathname.replace(/\/+$/, "");
+    path = path.replace(/\/(chat\/completions|messages)$/i, "");
+    return `${url.origin}${path}`;
+  } catch {
+    return value.replace(/\/+$/, "");
+  }
+}
 
 export const COMMANDS = `look, look <thing>, examine <thing>, who, say <text>, global <text>,
 tell <name> <text>, mail <name> <text>, channels, answer <word>, claim <word>,
@@ -157,7 +182,7 @@ export function trimHistory(messages, pairs = 8) {
 }
 
 export function requestFor(provider, config, system, messages) {
-  const base = String(config.base ?? "").replace(/\/+$/, "");
+  const base = normalizeBase(config.base);
   if (provider === "anthropic") {
     return {
       url: `${base}/messages`,

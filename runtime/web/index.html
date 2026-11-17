@@ -384,6 +384,10 @@
           <datalist id="ai-models"></datalist>
           <p class="small muted" id="ai-local">Local providers need no key. Start Ollama and click Find.</p>
         </div>
+        <div class="field">
+          <label><input type="checkbox" id="ai-fast"> Fast mode</label>
+          <p class="small muted">Shorter history, fewer tokens, a 45-second deadline, and a safe fallback to <code>look</code> instead of pausing.</p>
+        </div>
         <div class="field" id="ai-key-field">
           <label for="ai-key">API key <span class="muted">(this browser only)</span></label>
           <input id="ai-key" type="password" autocomplete="off" placeholder="sk-…">
@@ -476,7 +480,7 @@
 <script type="module">
   import {
     PROVIDERS, DEFAULT_GOAL, buildSystemPrompt, buildUserPrompt,
-    parseBrain, requestFor, replyFrom, trimHistory,
+    parseBrain, requestFor, replyFrom, trimHistory, normalizeBase,
   } from "/ai.mjs";
   import { signIn as prismSignIn, reset as prismReset, load as loadSession, save as saveSession, personaSignIn, personaRetire, nextPersonaEpoch, createRecoveryKit, restoreRecoveryKit, characterHandoff, characterRevoke, signChallenge } from "/prism-auth.mjs";
   import { createLinkOffer, parseLinkUri, requestLink, acceptLinkRequest, completeLink, linkCode, revokeDevice, resolvePrism, linkQr } from "/prism-id.mjs";
@@ -522,6 +526,7 @@
   const aiCharacter = document.getElementById("ai-character");
   const aiKey = document.getElementById("ai-key");
   const aiKeyField = document.getElementById("ai-key-field");
+  const aiFast = document.getElementById("ai-fast");
   const aiIdentity = document.getElementById("ai-identity");
   const aiHint = document.getElementById("ai-hint");
   const aiStart = document.getElementById("ai-start");
@@ -560,7 +565,24 @@
 
   const CONFIG_KEY = "mudbench-ai-config";
   const KEY_KEY = "mudbench-ai-key";
+  const KEY_PREFIX = "mudbench-ai-key:";
   const PASS_KEY = "mudbench-ai-passwords";
+  const keyOrigin = (base) => {
+    try { return new URL(normalizeBase(base)).origin; } catch { return null; }
+  };
+  const keyFor = (base) => {
+    const origin = keyOrigin(base);
+    if (!origin) return "";
+    try { return localStorage.getItem(`${KEY_PREFIX}${origin}`) ?? ""; } catch { return ""; }
+  };
+  const saveKeyFor = (base, key) => {
+    const origin = keyOrigin(base);
+    if (!origin) return;
+    try {
+      if (key) localStorage.setItem(`${KEY_PREFIX}${origin}`, key);
+      else localStorage.removeItem(`${KEY_PREFIX}${origin}`);
+    } catch {}
+  };
   const loadJSON = (key, fallback) => {
     try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; }
   };
@@ -588,7 +610,7 @@
     lastCommand: "", startedAt: null, recent: [], nudge: false, lastError: null,
     character: "scout", lastRequest: null, lastReply: null, lastParsed: null, lastLatency: 0,
     persona: null, owner: null, personaAudience: null, tickFrom: null, lastTick: null,
-    highlights: [], streaming: false,
+    highlights: [], streaming: false, timeouts: 0,
   };
   const shortId = (id) => (id ? `${id.slice(0, 15)}…` : "—");
 
@@ -1189,16 +1211,13 @@
     aiProvider.appendChild(option);
   }
 
-  const savedConfig = loadJSON(CONFIG_KEY, null);
-  const savedKey = (() => { try { return localStorage.getItem(KEY_KEY) ?? ""; } catch { return ""; } })();
-
   function applyProvider(id, reset = true) {
     const provider = PROVIDERS[id] ?? PROVIDERS.ollama;
     if (reset) {
       aiBase.value = provider.base;
       aiModel.value = provider.model;
     }
-    aiKeyField.hidden = !provider.needsKey;
+    aiKeyField.hidden = (provider.keyMode ?? (provider.needsKey ? "required" : "none")) === "none";
     aiHint.textContent = provider.hint;
     aiHint.className = "small muted";
     if (!reset) return;
@@ -1208,27 +1227,35 @@
   function persistConfig(includeKey = false) {
     const config = {
       provider: aiProvider.value,
-      base: aiBase.value.trim(),
+      base: normalizeBase(aiBase.value.trim()),
       model: aiModel.value.trim(),
       character: aiCharacter.value.trim(),
+      fast: aiFast.checked,
     };
     saveJSON(CONFIG_KEY, config);
-    if (includeKey) {
-      try {
-        if (aiKey.value.trim()) localStorage.setItem(KEY_KEY, aiKey.value.trim());
-        else localStorage.removeItem(KEY_KEY);
-      } catch {}
-    }
+    if (includeKey && aiKey.value.trim()) saveKeyFor(config.base, aiKey.value.trim());
   }
 
   function renderSetup() {
     const config = loadJSON(CONFIG_KEY, {}) ?? {};
-    const key = (() => { try { return localStorage.getItem(KEY_KEY) ?? ""; } catch { return ""; } })();
     aiProvider.value = config.provider ?? "ollama";
     aiBase.value = config.base ?? PROVIDERS[aiProvider.value].base;
     aiModel.value = config.model ?? PROVIDERS[aiProvider.value].model;
     aiCharacter.value = config.character ?? "scout";
-    if (key && PROVIDERS[aiProvider.value].needsKey) aiKey.value = key;
+    aiFast.checked = Boolean(config.fast);
+    aiKey.value = "";
+    // A pre-v0.44 key was global. Move it only when the active preset is a
+    // known host whose origin matches; never attach it to an arbitrary custom
+    // endpoint just because that field happens to be selected.
+    try {
+      const legacy = localStorage.getItem(KEY_KEY);
+      const provider = PROVIDERS[aiProvider.value];
+      if (legacy && ["openai", "anthropic"].includes(aiProvider.value)
+          && keyOrigin(provider.base) === keyOrigin(aiBase.value)) {
+        saveKeyFor(aiBase.value, legacy);
+        localStorage.removeItem(KEY_KEY);
+      }
+    } catch {}
     applyProvider(aiProvider.value, false);
     aiTitle.textContent = "AI";
     aiSub.textContent = `${PROVIDERS[aiProvider.value].label} · ${aiModel.value || "no model"}`;
@@ -1238,10 +1265,10 @@
 
   aiProvider.addEventListener("change", () => {
     applyProvider(aiProvider.value, true);
-    aiKey.value = PROVIDERS[aiProvider.value].needsKey ? savedKey : "";
+    aiKey.value = keyFor(aiBase.value);
     detectLocalModels();
   });
-  for (const field of [aiBase, aiModel, aiCharacter]) field.addEventListener("change", () => persistConfig(false));
+  for (const field of [aiBase, aiModel, aiCharacter, aiFast]) field.addEventListener("change", () => persistConfig(false));
 
   aiReset.addEventListener("click", async () => {
     if (AI.owner) {
@@ -1281,9 +1308,10 @@
   });
 
   aiForget.addEventListener("click", () => {
+    saveKeyFor(aiBase.value, "");
     try { localStorage.removeItem(KEY_KEY); } catch {}
     aiKey.value = "";
-    aiHint.textContent = "The key was removed from this browser.";
+    aiHint.textContent = "The saved key for this host was removed from this browser.";
     aiHint.className = "small muted";
   });
 
@@ -1333,8 +1361,8 @@
       aiHint.className = "small muted";
       return;
     }
-    const base = aiBase.value.trim().replace(/\/+$/, "");
-    const key = aiKey.value.trim();
+    const base = normalizeBase(aiBase.value.trim());
+    const key = aiKey.value.trim() || keyFor(base);
     const headers = provider === "anthropic"
       ? { "x-api-key": key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" }
       : (key ? { authorization: `Bearer ${key}` } : {});
@@ -1352,7 +1380,7 @@
       aiHint.className = "small muted";
       persistConfig(false);
     } catch (error) {
-      aiHint.textContent = `Could not list models: ${error.message}. Check the base URL${PROVIDERS[provider].needsKey ? " and key" : ""}.`;
+      aiHint.textContent = `Could not list models: ${error.message}. Check the base URL${(PROVIDERS[provider].keyMode ?? (PROVIDERS[provider].needsKey ? "required" : "none")) === "required" ? " and key" : ""}.`;
       aiHint.className = "small err";
     }
   });
@@ -1364,19 +1392,24 @@
 
   async function startAI() {
     const provider = aiProvider.value;
+    const base = normalizeBase(aiBase.value.trim());
+    const key = aiKey.value.trim() || keyFor(base);
+    const fast = aiFast.checked;
     const config = {
       provider,
-      base: aiBase.value.trim(),
+      base,
       model: aiModel.value.trim(),
-      key: aiKey.value.trim(),
-      temperature: 0.7,
-      maxTokens: 400,
+      key,
+      temperature: fast ? 0 : 0.7,
+      maxTokens: fast ? 200 : 400,
+      fast,
     };
     if (!config.base || !config.model) {
       showHint("Set a base URL and a model first.", true);
       return;
     }
-    if (PROVIDERS[provider].needsKey && !config.key) {
+    const keyMode = PROVIDERS[provider].keyMode ?? (PROVIDERS[provider].needsKey ? "required" : "none");
+    if (keyMode === "required" && !config.key) {
       showHint("This provider needs an API key.", true);
       return;
     }
@@ -1423,6 +1456,7 @@
     AI.observed = "";
     AI.turn = 0;
     AI.commands = 0;
+    AI.timeouts = 0;
     AI.latencies = [];
     AI.usage = { prompt: 0, completion: 0 };
     AI.history = [];
@@ -1930,7 +1964,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         note: AI.nudge ? "You repeated a command. Do something different: move, examine, take, talk, or check your inventory." : "",
       });
       AI.nudge = false;
-      const messages = trimHistory([...AI.history, { role: "user", content: user }], 8);
+      const messages = trimHistory([...AI.history, { role: "user", content: user }], AI.config.fast ? 4 : 8);
       const request = requestFor(AI.config.provider, { ...AI.config, name: AI.name || "ai" }, system, messages);
       AI.lastRequest = { system, messages, provider: AI.config.provider, model: AI.config.model, at: new Date().toISOString() };
       updateModelInspector();
@@ -1938,7 +1972,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         method: "POST",
         headers: request.headers,
         body: JSON.stringify(request.body),
-        signal: AbortSignal.timeout(120000),
+        signal: AbortSignal.timeout(AI.config.fast ? 45000 : 120000),
       });
       if (!res.ok) {
         const detail = (await res.text()).slice(0, 240);
@@ -2020,10 +2054,11 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       if (AI.socket?.readyState === WebSocket.OPEN) AI.socket.send(`${parsed.command}\n`);
       else throw new Error("The AI is not connected.");
       AI.lastError = null;
+      AI.timeouts = 0;
       setAIStatus("live");
     } catch (error) {
       const message = error?.name === "TimeoutError"
-        ? "The model did not answer within two minutes."
+        ? `The model did not answer within ${AI.config?.fast ? 45 : 120} seconds.`
         : error.message;
       sendMetric({
         kind: "ai.turn",
@@ -2035,6 +2070,16 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         turn,
         tick: AI.lastTick,
       });
+      if (error?.name === "TimeoutError" && AI.timeouts < 2) {
+        AI.timeouts += 1;
+        addChat("system", `${message} Sending look and continuing.`);
+        AI.lastError = String(message);
+        setAIStatus("timeout");
+        if (AI.socket?.readyState === WebSocket.OPEN) AI.socket.send("look\n");
+        if (AI.streaming) publishStream({ kind: "status", text: "timeout; falling back to look", tick: AI.lastTick });
+        scheduleTurn(1200);
+        return;
+      }
       addChat("system", `Brain error: ${message}`);
       if (String(message).includes("Failed to fetch")) {
         addChat("system", PROVIDERS[AI.config.provider].hint);

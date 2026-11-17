@@ -255,6 +255,18 @@
       "level": "build",
       "statement": "The telemetry foundation records client connections and disconnects, login/register sessions, every accepted or refused command, AI turn metrics (provider, model, latency, prompt/completion/thinking tokens, parse, command, timeout/error) from the browser and harness, and a world snapshot every 240 ticks with online actors, levels, XP, equipment, quest counts, guilds, totals and the two-hour reset. `world`/`GET /world` expose the same server-wide status. `tools/trends.mjs` aggregates the spans into descriptive trends. Secret command text, private speech bodies, tick intents and baseline credentials are redacted before writing; no thought, prompt, reply, provider key, password or token is recorded, and `/spans` stays redacted.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-37",
+      "level": "some-true",
+      "statement": "Production v0.43.0 writes the span log to a durable ~/.mudbench/telemetry directory, serves /world without character keys, passwords, tokens or Prism ids, and serves /spans as redacted aggregates. The baseline and world.tick spans are sanitized; a local live run produced world.client, world.session, ai.turn and world.snapshot records. The pre-policy logs were scrubbed before the switch: 1,947,842 spans (313 changed) and 39,665 trace rows were archived without the raw credentials.",
+      "authority": "wick production v0.43.0 2026-11-17; durable telemetry dir; scrub archive spans-scrubbed-2026-11-17.jsonl and trace-scrubbed-2026-11-17.jsonl; local telemetry rehearsal"
+    },
+    {
+      "id": "MB-38",
+      "level": "build",
+      "statement": "The browser AI accepts OpenAI-compatible and Anthropic-compatible endpoints through presets and a custom provider whose key is optional; it normalizes bare hosts, bases and full chat URLs without appending a second path, stores keys per origin rather than in one global slot, and never sends a saved key to another host. A fast mode uses four history pairs, 200 output tokens, temperature 0, a 45-second deadline, two look fallbacks and then a pause. The gate checks URL normalization, key modes, request shapes, the custom keyless request and history trimming.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

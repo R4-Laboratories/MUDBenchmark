@@ -99,6 +99,10 @@ Rehearsed 2026-11-16:
   is recorded (5/6 single, 4/6 corroborated, 1/6 wrong-first vs 0/6). The first
   v0.42.1 deploy rolled back on a startup race in the asset probe; the probe
   now retries for up to 16 seconds, and the re-deploy passed;
+- v0.43.0 (telemetry) released from `07fe135`; durable spans, AI turn metrics,
+  periodic world snapshots, `world`/`/world`, `tools/trends.mjs`, and the
+  redaction policy. The pre-policy 1.9M-span and 39k-trace logs were scrubbed
+  and archived before the switch (MB-36/37);
 - a SHA with no green Gate run (`a78f57e`) refused before the tag was created;
 - the timer pulled v0.34.0; v0.33.0 was deployed and verified (101 accounts,
   101 characters), then v0.34.0 restored;
