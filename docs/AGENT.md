@@ -215,8 +215,10 @@ cannot out-click a human, and a human cannot out-click a model.
 The browser signs in with a **Prism id**: **Use my Prism id**. The id is
 created and kept in the browser's IndexedDB, no password is sent, and the server
 verifies a signed `prism/session/1` action against the id's public log. The wire
-message is `prism <base64url session>`. The Prism id is the **account**, shown
-as `prism:<first 8 hex>`. The account owns characters; the character name is
+message is `prism <base64url session>`. The session then answers a server nonce
+with `prism/session-key/1 <nonce> <counter>`; `characters`, `play` and `create`
+are refused until the signed challenge passes, so a stolen session token alone
+cannot play. The Prism id is the **account**, shown as `prism:<first 8 hex>`. The account owns characters; the character name is
 the in-game name. After signing in the page lists them: `play <name>` enters
 one, `create <name>` adds one. A second `play` for a character already online
 takes it over. The id is browser-local: clearing site data or losing the

@@ -41,6 +41,33 @@ export function prismDisplay(prism) {
 // log is already pinned by an ordinary game sign-in; the action is verified
 // against that pin, so the AI session carries only the persona log and the
 // signed action, never the human's other personas.
+// Verify the session-key challenge: the client signs `prism/session-key/1
+// <nonce> <counter>` with the private key whose public half is in the signed
+// session. A stolen login token alone cannot produce this signature.
+export async function verifySessionKey(sessionKey, nonce, counter, signature) {
+  if (typeof sessionKey !== "string" || !/^[\w-]{87}$/.test(sessionKey)) return false;
+  if (typeof nonce !== "string" || !nonce || nonce.length > 128) return false;
+  if (!Number.isInteger(counter) || counter < 0) return false;
+  if (typeof signature !== "string" || !signature) return false;
+  try {
+    const key = await crypto.subtle.importKey(
+      "raw",
+      Buffer.from(sessionKey, "base64url"),
+      { name: "ECDSA", namedCurve: "P-256" },
+      false,
+      ["verify"],
+    );
+    return await crypto.subtle.verify(
+      { name: "ECDSA", hash: "SHA-256" },
+      key,
+      Buffer.from(signature, "base64url"),
+      Buffer.from(`prism/session-key/1 ${nonce} ${counter}`, "utf8"),
+    );
+  } catch {
+    return false;
+  }
+}
+
 export async function verifyPersonaOwner(owner, { origin, persona, action = "prism/persona-owner/1", now = Date.now(), pinned = null } = {}) {
   const envelope = owner?.envelope;
   const body = envelope?.body;
@@ -180,6 +207,7 @@ export async function verifyPrismSession(session, { origin, now = Date.now(), pi
     device: verdict.device,
     deviceId: envelope.signer ?? null,
     expires,
+    sessionKey,
     records: [...log.values()],
     root,
   };

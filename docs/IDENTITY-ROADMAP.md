@@ -519,13 +519,23 @@ relay. If ntfy.sh is used, document its 30-minute warm retention and metadata.
 *Acceptance:* revoke on A; B is refused within one login; the relay being down
 does not block login; the relay sees only an opaque topic and framed bytes.
 
-**L3. Session-key challenge.** *(browser + runtime; only if chosen)*
+**L3. Session-key challenge.** *(browser + runtime; only if chosen)* — **implemented in v0.40.**
 Retain the private key for the page lifetime; the server sends a nonce after
 the WebSocket opens; the client signs `prism/session-key/1 <nonce> <counter>`;
 the server verifies and refuses a reused counter. Otherwise delete the field
 and the 87-character check.
 *Acceptance:* a stolen login token replayed on a second connection is refused;
 a command without a valid signature is refused; the 250 ms budget is unaffected.
+
+*Implemented:* the browser retains the P-256 session key for the page lifetime;
+the server sends a nonce after the Prism session; the client signs
+`prism/session-key/1 <nonce> <counter>`; `verifySessionKey` checks it, a reused
+counter is refused, and the account commands are gated on the confirmation. The
+handshake is exempt from the 250 ms budget and is not a span/tick. The AI has
+its own retained key and challenge. Rehearsed in v0.40: a stolen session token
+on a second socket was challenged and refused `play`/`characters`; a forged
+signature and a reused counter were refused; alice and scout were online.
+MB-28/29.
 
 **L4. Stream polish (candidate 2).** *(browser + runtime)* — **implemented in v0.38.**
 Highlights, a benchmark view over spans, transcript identity and tick range,

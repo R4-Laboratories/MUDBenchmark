@@ -9,7 +9,7 @@ import http from "node:http";
 import { readFileSync, statSync, writeFileSync, appendFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join as joinPath } from "node:path";
-import { createHash } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { WebSocketServer } from "ws";
 import { recordSpan, digest, TELEMETRY_LOG } from "./telemetry.mjs";
 import { readSpanTail, redactSpans } from "./spans.mjs";
@@ -25,7 +25,7 @@ import { RANKS, guildId, rankAtLeast, validGuildName } from "./guilds.mjs";
 import { buildLlms } from "./llms.mjs";
 import { hashPassword, verifyPassword, validName, validPassword } from "./accounts.mjs";
 import { allowCommand as allowInput, DEFAULT_INTERVAL_MS } from "./allowance.mjs";
-import { verifyPrismSession, verifyPersonaOwner, prismDisplay } from "./prism-auth.mjs";
+import { verifyPrismSession, verifyPersonaOwner, verifySessionKey, prismDisplay } from "./prism-auth.mjs";
 import { CREDENTIAL, identityAdmits } from "./identity.mjs";
 import { loadStateFile, saveStateFile } from "./state.mjs";
 
@@ -121,6 +121,10 @@ function sendCharacters(id, session) {
   const label = session.kind === "prism" ? prismDisplay(session.key) : session.key;
   sendTo(id, `Account ${label}. Characters: ${characters.length ? characters.join(", ") : "(none yet)"}.\r\n`);
   sendTo(id, `#characters ${JSON.stringify({ account: label, characters, tick: state.tick, owner: session.owner ?? null, delegated: handed })}\r\n`);
+}
+
+function sessionConfirmed(session) {
+  return !session?.challenge || session.challenge.confirmed === true;
 }
 
 function takeover(key, newId) {
@@ -340,6 +344,23 @@ async function handleCommand(id, line) {
   const rest = restRaw.map((part) => part.toLowerCase());
   const actor = actorById(id);
 
+  // The session-key answer is a login handshake, not a game command. It is
+  // exempt from the 250 ms input budget and from the span/tick record.
+  if (verb === "session-key") {
+    const session = accountSessions.get(id);
+    if (!session?.challenge) return sendTo(id, "No session challenge is open.\r\n");
+    const counter = Number(restRaw[0]);
+    const signature = restRaw[1] ?? "";
+    if (!Number.isInteger(counter) || counter <= session.challenge.last) {
+      return sendTo(id, "The session counter was reused.\r\n");
+    }
+    const ok = await verifySessionKey(session.challenge.key, session.challenge.nonce, counter, signature);
+    if (!ok) return sendTo(id, "The session signature is invalid.\r\n");
+    session.challenge.last = counter;
+    session.challenge.confirmed = true;
+    return sendCharacters(id, session);
+  }
+
   // The input allowance: one accepted command per interval, shared by every
   // transport. A model and a human type on the same clock.
   const transport = transports.get(id);
@@ -442,7 +463,13 @@ async function handleCommand(id, line) {
     }
     // The Prism id is the account, not the character. The client chooses a
     // character next; the account session survives a character switch.
-    const accountSession = { key: verdict.prism, kind: "prism", owner: owner?.owner ?? null };
+    const nonce = randomBytes(16).toString("base64url");
+    const accountSession = {
+      key: verdict.prism,
+      kind: "prism",
+      owner: owner?.owner ?? null,
+      challenge: { nonce, key: verdict.sessionKey, last: -1, confirmed: false },
+    };
     accountSessions.set(id, accountSession);
     recordSpan("world.prism", {
       "actor.id": id,
@@ -454,7 +481,8 @@ async function handleCommand(id, line) {
       "world.tick": state.tick,
     }, 0);
     sendTo(id, `Signed in as ${prismDisplay(verdict.prism)}.\r\n`);
-    sendCharacters(id, accountSession);
+    // Do not show the account until the client proves it holds the session key.
+    sendTo(id, `#challenge ${nonce}\r\n`);
     return;
   }
 
@@ -469,6 +497,7 @@ async function handleCommand(id, line) {
   if (verb === "characters") {
     const session = accountSessions.get(id);
     if (!session) return sendTo(id, "Sign in with your Prism id first.\r\n");
+    if (!sessionConfirmed(session)) return sendTo(id, "Confirm your session first.\r\n");
     return sendCharacters(id, session);
   }
 
@@ -554,6 +583,7 @@ async function handleCommand(id, line) {
   if (verb === "play") {
     const session = accountSessions.get(id);
     if (!session) return sendTo(id, "Sign in with your Prism id first.\r\n");
+    if (!sessionConfirmed(session)) return sendTo(id, "Confirm your session first.\r\n");
     const name = rest[0];
     if (!name) return sendTo(id, "Usage: play <character>.\r\n");
     if (actor?.key === name) return sendTo(id, `You are already playing ${name}.\r\n`);
@@ -576,6 +606,7 @@ async function handleCommand(id, line) {
   if (verb === "create") {
     const session = accountSessions.get(id);
     if (!session || session.kind !== "prism") return sendTo(id, "Sign in with a Prism id to create a character.\r\n");
+    if (!sessionConfirmed(session)) return sendTo(id, "Confirm your session first.\r\n");
     if (state.accounts[session.key]?.retired) return sendTo(id, "This persona is retired.\r\n");
     const name = rest[0];
     if (!validName(name)) return sendTo(id, "Names are 1-24 letters, digits, - or _.\r\n");

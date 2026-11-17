@@ -35,7 +35,7 @@ import { AREA_PERIOD, armorOf, attackRoll, checkpointIdentities, initialState, n
 import { join } from "node:path";
 import { buildCandidates } from "./candidate.mjs";
 import { PROVIDERS, buildSystemPrompt, buildUserPrompt, parseBrain, requestFor, replyFrom, trimHistory } from "../runtime/web/ai.mjs";
-import { verifyPrismSession, verifyPersonaOwner } from "../runtime/prism-auth.mjs";
+import { verifyPrismSession, verifyPersonaOwner, verifySessionKey } from "../runtime/prism-auth.mjs";
 import { decodeIdentityRequest, identityAdmits } from "../runtime/identity.mjs";
 import { loadStateFile, saveStateFile } from "../runtime/state.mjs";
 import { acceptLinkRequest, completeLink, createDevice, createLinkOffer, createPrism, createRecovery, linkCode, recoverPrism, requestLink, revokeDevice, signAction, verifyAction } from "../runtime/web/prism-id.mjs";
@@ -830,6 +830,31 @@ let prismSession = { ok: true, why: [] };
   const expired = await verifyPrismSession(fixture, { origin: fixture.app, now: fixture.envelope.body.payload.expires + 1 });
   if (expired.ok) prismSession.why.push("an expired session was accepted");
   if (prismSession.why.length) { prismSession.ok = false; failures.push(`the Prism verifier is broken: ${prismSession.why[0]}`); }
+}
+
+// L3: the session key challenge. A stolen token without the private key cannot
+// answer; a signature for another nonce or counter is refused.
+let sessionChallenge = { ok: true, why: [] };
+{
+  const check = (condition, why) => { if (!condition) { sessionChallenge.ok = false; sessionChallenge.why.push(why); } };
+  const origin = "https://play.r4labs.org";
+  const now = Date.now();
+  const session = await createPrism({});
+  const keys = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, false, ["sign", "verify"]);
+  const raw = Buffer.from(await crypto.subtle.exportKey("raw", keys.publicKey)).toString("base64url");
+  const envelope = await signAction(session, "prism/session/1", { sessionKey: raw, expires: now + 10 * 60 * 1000 }, { audience: origin, now });
+  const verdict = await verifyPrismSession({ app: origin, envelope, records: [...session.log.values()] }, { origin, now });
+  check(verdict.ok && verdict.sessionKey === raw, "the verifier did not return the session key");
+  const nonce = "gate-session-nonce";
+  const message = `prism/session-key/1 ${nonce} 0`;
+  const signature = Buffer.from(await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, keys.privateKey, Buffer.from(message))).toString("base64url");
+  check(await verifySessionKey(verdict.sessionKey, nonce, 0, signature), "a valid session-key signature was refused");
+  check(!(await verifySessionKey(verdict.sessionKey, nonce, 1, signature)), "a session-key signature was accepted for another counter");
+  check(!(await verifySessionKey(verdict.sessionKey, "other-nonce", 0, signature)), "a session-key signature was accepted for another nonce");
+  const thief = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, false, ["sign", "verify"]);
+  const thiefSignature = Buffer.from(await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, thief.privateKey, Buffer.from(message))).toString("base64url");
+  check(!(await verifySessionKey(verdict.sessionKey, nonce, 0, thiefSignature)), "a stolen token answered with another key");
+  if (sessionChallenge.why.length) { sessionChallenge.ok = false; failures.push(`the session-key challenge is broken: ${sessionChallenge.why[0]}`); }
 }
 
 // One accepted command per 250 ms, on every transport.
@@ -1714,6 +1739,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"pacing".padEnd(26)}  ${(pacing.ok ? "14 hp" : "BROKEN").padStart(5)}   == applied, bound, refused`);
   console.log(`${"webAI".padEnd(26)}  ${(webAI.ok ? "6 checks" : "BROKEN").padStart(5)}   == parse, prompt, requests, local`);
   console.log(`${"prismId".padEnd(26)}  ${(prismSession.ok ? "signed" : "BROKEN").padStart(5)}   == session verifier`);
+  console.log(`${"sessionKey".padEnd(26)}  ${(sessionChallenge.ok ? "signed" : "BROKEN").padStart(5)}   == nonce, counter, key`);
   console.log(`${"prismLogin".padEnd(26)}  ${(prismLogin.ok ? "account" : "BROKEN").padStart(5)}   == id, character`);
   console.log(`${"state".padEnd(26)}  ${(durableState.ok ? "5 checks" : "BROKEN").padStart(5)}   == atomic, backup, fail-loud`);
   console.log(`${"claim".padEnd(26)}  ${(claim.ok ? "adds char" : "BROKEN").padStart(5)}   == owner, tombstone`);

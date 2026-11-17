@@ -16,6 +16,7 @@ const DB_NAME = "mudbench-prism";
 const DB_VERSION = 1;
 const STORE = "identities";
 const memory = new Map();
+const sessionKeys = new Map();
 let memoryOnly = false;
 
 export const storageMode = () => (memoryOnly ? "memory" : "indexeddb");
@@ -86,6 +87,19 @@ async function remove(store) {
   } catch {}
 }
 
+// The session key is retained for the page lifetime. The server's nonce is
+// signed with it; the private key never leaves the page.
+export async function signChallenge(store = "default", nonce, counter = 0) {
+  const key = sessionKeys.get(store);
+  if (!key || typeof nonce !== "string" || !nonce || !Number.isInteger(counter)) return null;
+  const signature = await crypto.subtle.sign(
+    { name: "ECDSA", hash: "SHA-256" },
+    key,
+    new TextEncoder().encode(`prism/session-key/1 ${nonce} ${counter}`),
+  );
+  return { counter, signature: b64u(signature) };
+}
+
 export async function identity(store = "default") {
   const session = await read(store);
   return session?.prism ?? null;
@@ -111,15 +125,17 @@ export async function signIn(store = "default", app = location.origin) {
     await write(store, session);
   }
 
-  // The session key is a real non-extractable P-256 key. The game server does
-  // not need it for the login action, but the protocol expects it and a later
-  // per-command signature can use it.
+  // The session key is a real non-extractable P-256 key. It is retained for
+  // the login challenge: the server sends a nonce, and this key signs
+  // `prism/session-key/1 <nonce> <counter>`. Per-command signatures remain a
+  // later step.
   const keys = await crypto.subtle.generateKey(
     { name: "ECDSA", namedCurve: "P-256" },
     false,
     ["sign", "verify"],
   );
   const raw = await crypto.subtle.exportKey("raw", keys.publicKey);
+  sessionKeys.set(store, keys.privateKey);
   const now = Date.now();
   const expires = now + 10 * 60 * 1000;
   const envelope = await Prism.signAction(
@@ -139,6 +155,7 @@ export async function signIn(store = "default", app = location.origin) {
 }
 
 export async function reset(store = "default") {
+  sessionKeys.delete(store);
   await remove(store);
 }
 
@@ -246,6 +263,7 @@ export async function personaSignIn(store = "default", app = location.origin) {
     ["sign", "verify"],
   );
   const raw = await crypto.subtle.exportKey("raw", keys.publicKey);
+  sessionKeys.set("ai", keys.privateKey);
   const now = Date.now();
   const envelope = await Prism.signAction(
     { prism: persona, device: session.personaDevices.get(audience) },

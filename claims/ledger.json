@@ -201,6 +201,18 @@
       "level": "some-true",
       "statement": "The loop's admitted pacing candidate c-4abd39bfc4ff was committed as a118a66 with all five obligations recorded inside pacing.json, gated, released as v0.39.1-loop.manual, deployed, rolled back to v0.39.0 and restored; the loop's first real commit 2f0d8ce was released as v0.36.0-loop.3.1; a planted bad candidate is refused; the loop's release goes through X6.",
       "authority": "loop release v0.36.0-loop.3.1 (run 43998878538); candidate c-4abd39bfc4ff at a118a66, gate 44007393225, release v0.39.1-loop.manual (run 44008531253); deploy rollback v0.39.0 and restore; gate admission planted vector"
+    },
+    {
+      "id": "MB-28",
+      "level": "build",
+      "statement": "A Prism session carries a P-256 session key; after the session is verified the server sends a nonce; a signature over prism/session-key/1 <nonce> <counter> is verified with that key; a signature for another nonce, counter or key is refused; the account commands are gated on the confirmation; the handshake is exempt from the 250 ms input budget.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-29",
+      "level": "some-true",
+      "statement": "A browser completed the session-key challenge; a stolen fresh session token on a second socket was challenged and refused play and characters; a forged signature and a reused counter were refused; the AI completed its own challenge and alice and scout were online.",
+      "authority": "headless Chromium L3 run 2026-11-17"
     }
   ]
 }

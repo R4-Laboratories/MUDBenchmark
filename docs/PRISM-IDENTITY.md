@@ -3,8 +3,9 @@
 Status: **implemented in the browser and the server; device linking, takeover
 and reconnect exist; the admission decision is proved in the model (X5); the AI
 is a persona owned by the human's account (L1); an encrypted recovery kit
-restores the account on a new device.** The legacy password form remains for
-telnet, CLI and older accounts. This records
+restores the account on a new device; a session-key challenge makes a stolen
+login token inert (L3).** The legacy password form remains for telnet, CLI and
+older accounts. This records
 the two identity protocols, the one this project uses, and the exact server
 change.
 
@@ -87,22 +88,36 @@ log it cannot know a device was revoked. The protection is eventual at the next
 legitimate login, not instant. Device linking in the browser is X3; the server
 mechanism and its gate are in place.
 
+## Session-key challenge
+
+The signed session carries a P-256 public session key; the browser retains the
+private key for the page lifetime. After the server verifies the Prism session,
+it sends a nonce (`#challenge <nonce>`); the browser signs
+`prism/session-key/1 <nonce> <counter>` and sends `session-key <counter>
+<signature>`. The server verifies it with the session key, refuses a counter
+that is reused, and only then shows the account: `characters`, `play` and
+`create` are refused until the challenge passes. A stolen `prism …` token alone
+cannot answer it, because the private key never leaves the page.
+
+The handshake is exempt from the 250 ms game budget and is not a `world.input`
+span or tick. Game commands keep the same allowance.
+
 ## What is implemented
 
 - `runtime/web/prism-id.mjs` — the pinned Stitch module, copied byte for byte;
   `prism-id.lock.json` names the source commit and the module hash.
 - `runtime/web/prism-auth.mjs` — creates or loads the id in IndexedDB, makes a
-  non-extractable P-256 session key, and signs `prism/session/1` for the page
-  origin.
+  non-extractable P-256 session key, signs `prism/session/1` for the page
+  origin, and retains the key for the `prism/session-key/1` challenge.
 - `runtime/prism-auth.mjs` — the server verifier: session key and expiry,
   `logFromRecords`, `verifyAction`, a short-lived replay set, and the pinned
   public log (a presented log may add records, never omit one). The pinned logs
   live in `identities.json`, separate from the tick state.
 - `server.mjs` — the WebSocket `prism <base64url session>` command. The upgrade
   request's `Origin` is the audience; a successful sign-in is the **account**,
-  and the client then chooses a character. `characters` lists them, `play
-  <name>` enters one and `create <name>` adds one. The character name is the
-  in-game name; the account label is `prism:<first 8 hex>`.
+  then a session-key challenge, and only then a character. `characters` lists
+  them, `play <name>` enters one and `create <name>` adds one. The character
+  name is the in-game name; the account label is `prism:<first 8 hex>`.
 - `adopt` — the one-time legacy claim. The signed-in panel has **Claim an old
   name**; the server checks the old password or token, and the reducer merges
   level, XP, guild, quests and mail keys and tombstones the old record. One
@@ -361,8 +376,14 @@ alice while the human played bob; the Model tab and transcript showed alice,
 the persona and the human owner; the revoke returned alice and the AI could not
 recreate or log in as it. MB-22 and MB-23 record the claims.
 
-Not yet proven by the gate: a tampered signature, an unknown device, and a
-replay across a restart.
+L3 was run headless: a fresh session token was captured and replayed on a
+second socket; the server challenged it, refused `play alice` and `characters`
+with "Confirm your session first", and refused a forged signature. The open
+connection's identical session-key answer was refused as a reused counter. The
+AI completed its own challenge and alice and scout were online. MB-28 and MB-29
+record the claims.
+
+Not yet proven by the gate: a tampered signature and an unknown device.
 
 ## Decisions taken
 

@@ -81,6 +81,8 @@ Rehearsed 2026-11-16:
 - the first admitted pacing candidate `c-4abd39bfc4ff` was committed as
   `a118a66` with its admission record, released as `v0.39.1-loop.manual`,
   deployed, rolled back to `v0.39.0` and restored;
+- v0.40.0 (session-key challenge) released from the L3 commit; an open tab
+  needs a reload to pick up the challenge client;
 - a SHA with no green Gate run (`a78f57e`) refused before the tag was created;
 - the timer pulled v0.34.0; v0.33.0 was deployed and verified (101 accounts,
   101 characters), then v0.34.0 restored;

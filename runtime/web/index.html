@@ -475,7 +475,7 @@
     PROVIDERS, DEFAULT_GOAL, buildSystemPrompt, buildUserPrompt,
     parseBrain, requestFor, replyFrom, trimHistory,
   } from "/ai.mjs";
-  import { signIn as prismSignIn, reset as prismReset, load as loadSession, save as saveSession, personaSignIn, personaRetire, nextPersonaEpoch, createRecoveryKit, restoreRecoveryKit, characterHandoff, characterRevoke } from "/prism-auth.mjs";
+  import { signIn as prismSignIn, reset as prismReset, load as loadSession, save as saveSession, personaSignIn, personaRetire, nextPersonaEpoch, createRecoveryKit, restoreRecoveryKit, characterHandoff, characterRevoke, signChallenge } from "/prism-auth.mjs";
   import { createLinkOffer, parseLinkUri, requestLink, acceptLinkRequest, completeLink, linkCode, revokeDevice, resolvePrism, linkQr } from "/prism-id.mjs";
 
   const log = document.getElementById("log");
@@ -673,8 +673,20 @@
       if (playEnabled && mode === "play") setTimeout(connectPlay, 1500);
     };
     playSocket.onerror = () => { state.textContent = "error"; state.className = ""; };
-    playSocket.onmessage = (event) => {
+    playSocket.onmessage = async (event) => {
       const text = String(event.data);
+      const challengeLine = text.match(/^#challenge ([\w-]+)\r?\n?$/);
+      if (challengeLine) {
+        try {
+          const signed = await signChallenge("default", challengeLine[1], 0);
+          if (signed && playSocket?.readyState === WebSocket.OPEN) {
+            playSocket.send(`session-key ${signed.counter} ${signed.signature}\n`);
+          }
+        } catch (error) {
+          append(`Session key: ${error.message}`, "err");
+        }
+        return;
+      }
       const charactersLine = text.match(/^#characters (.*)\r?\n?$/);
       if (charactersLine) {
         try { renderCharacters(JSON.parse(charactersLine[1])); } catch {}
@@ -1741,8 +1753,22 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       setAIStatus("error");
       addChat("system", "The AI's connection failed.");
     };
-    ws.onmessage = (event) => {
+    ws.onmessage = async (event) => {
       const text = String(event.data);
+      const challengeLine = text.match(/^#challenge ([\w-]+)\r?\n?$/);
+      if (challengeLine) {
+        try {
+          const signed = await signChallenge("ai", challengeLine[1], 0);
+          if (signed && ws.readyState === WebSocket.OPEN) {
+            ws.send(`session-key ${signed.counter} ${signed.signature}\n`);
+            setAIStatus("verifying session");
+          }
+        } catch (error) {
+          setAIStatus("error");
+          addChat("system", `Session key: ${error.message}`);
+        }
+        return;
+      }
       const tickLine = text.match(/^#tick (\d+)\r?\n?$/);
       if (tickLine) {
         AI.lastTick = Number(tickLine[1]);
