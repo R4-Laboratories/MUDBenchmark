@@ -75,6 +75,12 @@ an `open` claim in `claims/ledger.json`; only a gate-tested checker becomes a
 
 - Production should set `TELEMETRY_LOG` to a durable directory, not `/tmp`.
 - The span log is server-side. `/spans` is the public redacted view.
+- `login`, `register`, `password`, `adopt`, `prism`, `session-key`, `rebind` and
+  `metric` inputs are recorded as verb + length + policy only. `tell`, `mail`
+  and guild chat keep metadata, not bodies. `world.tick` intents and the
+  `world.baseline` state are sanitized before writing; the trace file is too.
+- `tools/scrub-telemetry.mjs --file <log> --in-place` rewrites logs written
+  before the policy; it preserves counts and timings.
 - Do not add prompts, thoughts, replies, keys or private message text to
   spans. If a trend needs a private message, record its length or hash, not the
   text.

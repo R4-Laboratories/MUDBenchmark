@@ -253,7 +253,7 @@
     {
       "id": "MB-36",
       "level": "build",
-      "statement": "The telemetry foundation records client connections and disconnects, login/register sessions, every accepted or refused command, AI turn metrics (provider, model, latency, prompt/completion/thinking tokens, parse, command, timeout/error) from the browser and harness, and a world snapshot every 240 ticks with online actors, levels, XP, equipment, quest counts, guilds, totals and the two-hour reset. `world`/`GET /world` expose the same server-wide status. `tools/trends.mjs` aggregates the spans into descriptive trends. No thought, prompt, reply, provider key, password or token is recorded; `/spans` stays redacted.",
+      "statement": "The telemetry foundation records client connections and disconnects, login/register sessions, every accepted or refused command, AI turn metrics (provider, model, latency, prompt/completion/thinking tokens, parse, command, timeout/error) from the browser and harness, and a world snapshot every 240 ticks with online actors, levels, XP, equipment, quest counts, guilds, totals and the two-hour reset. `world`/`GET /world` expose the same server-wide status. `tools/trends.mjs` aggregates the spans into descriptive trends. Secret command text, private speech bodies, tick intents and baseline credentials are redacted before writing; no thought, prompt, reply, provider key, password or token is recorded, and `/spans` stays redacted.",
       "gate": "tools/gate.mjs"
     }
   ]

@@ -31,6 +31,7 @@ import { normalizePrismId, ownerAllowed, rebindPlan } from "./rebind.mjs";
 import { normalizeStreamEvent, publicStreamText } from "./stream.mjs";
 import { normalizeAiTurn, aiTurnAttributes } from "./metrics.mjs";
 import { worldStatus, worldStatusText } from "./worldstatus.mjs";
+import { redactCommand, sanitizeIntent, sanitizeState } from "./telemetry-policy.mjs";
 import { loadStateFile, saveStateFile } from "./state.mjs";
 
 const HOLO_URL = process.env.HOLO_URL ?? "http://127.0.0.1:8082";
@@ -587,10 +588,13 @@ async function handleCommand(id, line) {
   if (transport) transport.lastCommandAt = now;
   // The accepted command and its tick. The same tick goes to the client in a
   // hidden line, so the transcript's turn and the span agree exactly.
+  const redacted = redactCommand(raw);
   recordSpan("world.input", {
     "actor.id": id,
-    "text": raw.slice(0, 500),
-    "text.length": raw.length,
+    "command.verb": redacted.verb,
+    "text": redacted.text,
+    "text.length": redacted.length,
+    "text.policy": redacted.policy,
     "world.tick": state.tick,
   }, 0);
   sendTo(id, `#tick ${state.tick}\r\n`);
@@ -1130,7 +1134,6 @@ async function handleCommand(id, line) {
     recordSpan("world.tell", {
       "actor.id": id,
       "target.id": target.id,
-      "text": said.slice(0, 500),
       "text.length": said.length,
       "world.tick": state.tick,
     }, 0);
@@ -1155,7 +1158,6 @@ async function handleCommand(id, line) {
     recordSpan("world.mail", {
       "actor.id": id,
       "target.key": toKey,
-      "text": said.slice(0, 500),
       "text.length": said.length,
       "delivered": online,
       "world.tick": state.tick,
@@ -1425,7 +1427,7 @@ async function handleCommand(id, line) {
         actor: render(messages.actor, { words: said }),
         others: render(messages.others, { actor: actor.name, words: said }),
       } });
-      recordSpan("world.guild", { "actor.id": id, "guild.id": guild.id, "guild.action": "chat", "guild.name": guild.name, "recipients": recipients, "text": said.slice(0, 500), "world.tick": state.tick }, 0);
+      recordSpan("world.guild", { "actor.id": id, "guild.id": guild.id, "guild.action": "chat", "guild.name": guild.name, "recipients": recipients, "text.length": said.length, "world.tick": state.tick }, 0);
       return;
     }
     return sendTo(id, `${messages.usage}\r\n`);
@@ -1442,7 +1444,7 @@ async function handleCommand(id, line) {
       actor: render(messages.actor, { words: said }),
       others: render(messages.others, { actor: actor.name, words: said }),
     } });
-    recordSpan("world.guild", { "actor.id": id, "guild.id": guild.id, "guild.action": "chat", "guild.name": guild.name, "recipients": recipients, "text": said.slice(0, 500), "world.tick": state.tick }, 0);
+    recordSpan("world.guild", { "actor.id": id, "guild.id": guild.id, "guild.action": "chat", "guild.name": guild.name, "recipients": recipients, "text.length": said.length, "world.tick": state.tick }, 0);
     return;
   }
 
@@ -1892,18 +1894,21 @@ function onTick() {
 
   // The trace written into the span stream, not a second file: from these a run
   // can be reconstructed with nothing but the record.
+  const safeIntents = intents.map(sanitizeIntent);
+  const safeState = sanitizeState(state);
+  const stateHash = digestState(safeState);
   recordSpan("world.tick", {
     "world.tick": state.tick,
-    "state.hash": digestState(state),
-    "world.intents": JSON.stringify(intents),
+    "state.hash": stateHash,
+    "world.intents": JSON.stringify(safeIntents),
     "event.count": result.events.length,
   }, 0);
 
   try {
     appendFileSync(TRACE_FILE, `${JSON.stringify({
       tick: state.tick,
-      intents,
-      hash: digestState(state),
+      intents: safeIntents,
+      hash: stateHash,
     })}\n`);
   } catch {
     // tracing is diagnostic; never let it stop the world
@@ -2183,11 +2188,11 @@ heartbeat.unref?.();
 
 server.listen(TELNET_PORT, "127.0.0.1", () => {
   try {
-    writeFileSync(TRACE_FILE, `${JSON.stringify({ rooms: ROOMS, baseline: state })}\n`);
+    writeFileSync(TRACE_FILE, `${JSON.stringify({ rooms: ROOMS, baseline: sanitizeState(state) })}\n`);
   } catch {}
   recordSpan("world.baseline", {
     "world.tick": state.tick,
-    "world.state": JSON.stringify(state),
+    "world.state": JSON.stringify(sanitizeState(state)),
     "world.rooms": JSON.stringify(ROOMS),
   }, 0);
   console.log(`telnet on :${TELNET_PORT}`);

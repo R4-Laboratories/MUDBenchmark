@@ -49,6 +49,7 @@ import { normalizeStreamEvent, publicStreamText } from "../runtime/stream.mjs";
 import { normalizeAiTurn, aiTurnAttributes } from "../runtime/metrics.mjs";
 import { summarizeTrends } from "../runtime/trends.mjs";
 import { worldStatus, worldStatusText } from "../runtime/worldstatus.mjs";
+import { redactCommand, sanitizeIntent, sanitizeState, scrubSecrets, scrubSpan } from "../runtime/telemetry-policy.mjs";
 
 const root = process.cwd();
 const ratchet = JSON.parse(readFileSync(join(root, "world/ratchet.json"), "utf8"));
@@ -955,6 +956,33 @@ let stream = { ok: true, why: [] };
 let telemetry = { ok: true, why: [] };
 {
   const check = (condition, why) => { if (!condition) { telemetry.ok = false; telemetry.why.push(why); } };
+  const login = redactCommand("login ghost hunter2");
+  check(login.text === null && login.policy === "secret" && !/hunter2/.test(JSON.stringify(login)), "a login command kept its secret");
+  const say = redactCommand("say hello");
+  check(say.text === "say hello" && say.policy === "public", "a public say was redacted");
+  const tell = redactCommand("tell bob a secret");
+  check(tell.text === null && tell.policy === "metadata" && tell.length > 0, "a tell kept its body");
+  const intent = sanitizeIntent({ kind: "register", passwordHash: "h", salt: "s", token: "t" });
+  check(intent.passwordHash === "[redacted]" && intent.salt === "[redacted]" && intent.token === "[redacted]", "an intent kept a credential");
+  const cleanState = sanitizeState({ accounts: { a: { passwordHash: "h", salt: "s", tokenHash: "t" } }, mail: [{ text: "secret" }] });
+  const cleanText = JSON.stringify(cleanState);
+  check(!/passwordHash\":\"h|salt\":\"s|tokenHash\":\"t|secret/.test(cleanText), "a state snapshot kept a credential or mail body");
+  check(cleanState.mail[0].textLength === 6, "a mail body length was lost");
+  check(!/hunter2|sk-[A-Za-z0-9]|Bearer [A-Za-z0-9]/.test(scrubSecrets("password: hunter2 key=sk-12345678 Bearer abc.def")), "scrubSecrets left a secret");
+  const dirty = {
+    name: "world.input",
+    text: "login ghost hunter2",
+  };
+  const scrubInput = scrubSpan(dirty);
+  check(!JSON.stringify(scrubInput).includes("hunter2") && scrubInput["command.verb"] === "login" && scrubInput["text.policy"] === "secret", "scrubSpan left a login secret");
+  const scrubTick = scrubSpan({ name: "world.tick", "world.intents": JSON.stringify([{ kind: "register", passwordHash: "h", salt: "s" }]) });
+  check(!/passwordHash\":\"h|salt\":\"s/.test(scrubTick["world.intents"]), "scrubSpan left a credential in intents");
+  const scrubBaseline = scrubSpan({ name: "world.baseline", "world.state": JSON.stringify({ accounts: { a: { passwordHash: "h", salt: "s", tokenHash: "t" } } }) });
+  check(!/passwordHash\":\"h|salt\":\"s|tokenHash\":\"t/.test(scrubBaseline["world.state"]), "scrubSpan left a credential in the baseline");
+  const serverSource = readFileSync(join(root, "runtime/server.mjs"), "utf8");
+  check(/redactCommand\(raw\)/.test(serverSource), "the input span does not call redactCommand");
+  check(/JSON.stringify\(sanitizeState\(state\)\)/.test(serverSource), "the baseline span does not sanitize state");
+  check(/intents\.map\(sanitizeIntent\)/.test(serverSource), "the tick span does not sanitize intents");
   const metric = normalizeAiTurn({
     kind: "ai.turn", provider: "openai", model: "test", latency_ms: 1234,
     prompt_tokens: 100, completion_tokens: 20, thinking_tokens: 15,

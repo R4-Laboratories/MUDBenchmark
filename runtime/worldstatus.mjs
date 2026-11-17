@@ -22,7 +22,6 @@ export function worldStatus(state, rooms) {
       const gear = equipment(state, actor);
       return {
         name: actor.name,
-        key: actor.key,
         room: rooms[actor.room]?.name ?? String(actor.room),
         level: actor.level ?? 1,
         xp: actor.xp ?? 0,
@@ -45,7 +44,6 @@ export function worldStatus(state, rooms) {
     .map((guild) => ({
       id: guild.id,
       name: guild.name,
-      founder: guild.founder ?? null,
       members: Object.keys(guild.members ?? {}).length,
     }))
     .sort((a, b) => b.members - a.members || a.name.localeCompare(b.name));
