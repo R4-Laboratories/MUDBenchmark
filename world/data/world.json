@@ -10,7 +10,8 @@
       "exits": {
         "north": 2,
         "east": 3,
-        "south": 8
+        "south": 8,
+        "up": 34
       },
       "details": {
         "plaque": "The plaque reads: the Vault keeps the word.",
@@ -150,7 +151,8 @@
         "north": 1,
         "east": 9,
         "west": 10,
-        "south": 11
+        "south": 11,
+        "up": 35
       },
       "details": {
         "fountain": "The fountain is a bearded face with water spilling from its mouth. Coins lie in the basin.",
@@ -615,6 +617,124 @@
         "Sand grits underfoot.",
         "Someone coughs on the ledge."
       ]
+    },
+    "34": {
+      "name": "The Mages' Guild",
+      "text": "A round hall of dark stone and colder light. Shelves of bound books climb to a ceiling lost in shadow; a brass orrery turns without a hand; the stair back to the Atrium waits at the edge of the circle.",
+      "safe": true,
+      "exits": {
+        "down": 1
+      },
+      "details": {
+        "orrery": "The brass rings turn through a sky that is not the one above the Atrium. One ring is missing its moon.",
+        "books": "The spines are worn smooth. Most are catalogs of spells nobody has cast in years.",
+        "stair": "The stair descends into the Atrium's cold marble."
+      },
+      "ambient": [
+        "The orrery clicks through another degree.",
+        "A page turns somewhere in the dark."
+      ]
+    },
+    "35": {
+      "name": "The Lantern Stair",
+      "text": "A narrow stair climbs from the market into a district of coloured glass and old smoke. Lanterns hang at uneven heights, and the air smells of ink and warm metal.",
+      "safe": true,
+      "exits": {
+        "down": 8,
+        "north": 36
+      },
+      "details": {
+        "lanterns": "Each lantern holds a different colour; none of them flicker.",
+        "stair": "The market is a warm noise below."
+      },
+      "ambient": [
+        "A lantern turns on its chain.",
+        "Someone laughs in a room you cannot see."
+      ]
+    },
+    "36": {
+      "name": "The Arcade of Sigils",
+      "text": "A covered arcade of small shops and painted signs. The stone underfoot is worn into a shallow curve; a stair of green glass rises to the north, and a shop of dark wood waits east.",
+      "safe": true,
+      "exits": {
+        "south": 35,
+        "east": 37,
+        "west": 38,
+        "north": 39
+      },
+      "details": {
+        "signs": "Most are shop signs. One is a warning in a script you do not know.",
+        "glass": "The stair is green glass, warm underfoot."
+      },
+      "ambient": [
+        "A shop bell rings once.",
+        "The arcade smells of rain and spices."
+      ]
+    },
+    "37": {
+      "name": "The Spellwright's Shop",
+      "text": "Shelves of scrolls, jars and carefully labelled dust fill a room that is smaller than it looks. The spellwright watches from behind a counter with a ledger open under one hand.",
+      "safe": true,
+      "exits": {
+        "west": 36
+      },
+      "details": {
+        "ledger": "Every page is a list of names and prices. Most names are crossed out.",
+        "jars": "The jars are labelled in a careful, tiny hand."
+      },
+      "ambient": [
+        "A jar ticks softly.",
+        "The spellwright turns a page."
+      ]
+    },
+    "38": {
+      "name": "The Familiar Yard",
+      "text": "A walled yard of warm flagstones and empty perches. A charm lies on the fountain rim; the water is perfectly still.",
+      "safe": true,
+      "exits": {
+        "east": 36
+      },
+      "details": {
+        "fountain": "The water reflects a sky with two moons.",
+        "perches": "The perches are empty, but the ropes are new."
+      },
+      "ambient": [
+        "A wing beats somewhere above.",
+        "The fountain does not ripple."
+      ]
+    },
+    "39": {
+      "name": "The Aviary",
+      "text": "A high room open to the sky, full of perches and the soft rustle of feathers. An owl watches from the highest beam, and a stair of pale stone climbs east.",
+      "safe": true,
+      "exits": {
+        "south": 36,
+        "east": 40
+      },
+      "details": {
+        "owl": "The owl is old and very still.",
+        "perches": "The perches are worn smooth by claws."
+      },
+      "ambient": [
+        "The owl blinks.",
+        "A feather turns on the air."
+      ]
+    },
+    "40": {
+      "name": "The High Walk",
+      "text": "A narrow walk above the arcade, open to the weather and the roofs of the district. A cold candle waits on the rail; the market is a lantern-lit patchwork far below.",
+      "safe": true,
+      "exits": {
+        "west": 39
+      },
+      "details": {
+        "candle": "The candle is cold but the wick is black.",
+        "roofs": "The roofs are close enough to touch, and none of them are straight."
+      },
+      "ambient": [
+        "The wind moves through the walk.",
+        "A lantern below goes out."
+      ]
     }
   },
   "task": {
@@ -1005,6 +1125,99 @@
         "No blades outside the Ring. Inside, no one takes your goods.",
         "The board remembers the winners. It does not remember the reasons."
       ]
+    },
+    {
+      "id": "archmage",
+      "name": "the archmage",
+      "room": 34,
+      "home": 34,
+      "period": 180,
+      "jitter": 4,
+      "behaviour": "sentinel",
+      "zone": "arcanum",
+      "hp": 40,
+      "damage": 0,
+      "armor": 2,
+      "aggression": 0,
+      "xp": 0,
+      "description": "The archmage stands beside the orrery, sleeves stained with ink and ash.",
+      "examine": "A tall figure with a brass ring on one finger and a patient, predatory gaze.",
+      "dialogue": [
+        "The Mages' Guild takes those who can read what is not written. Join, and the first spell is yours.",
+        "Spark, mend, light, shield, detect, recall. Each has a price and a rank.",
+        "The orrery is a clock. It is also a warning."
+      ]
+    },
+    {
+      "id": "spellwright",
+      "name": "the spellwright",
+      "room": 37,
+      "home": 37,
+      "period": 160,
+      "jitter": 4,
+      "behaviour": "sentinel",
+      "zone": "lantern",
+      "hp": 18,
+      "damage": 0,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 0,
+      "description": "A thin woman with ink-stained cuffs and a careful smile.",
+      "examine": "Her hands are steady; her eyes are not.",
+      "dialogue": [
+        "Scrolls are cheaper than lessons. Lessons are cheaper than mistakes.",
+        "The archmage sends me the students who break things.",
+        "A note went missing from the stair. I would like it back."
+      ]
+    },
+    {
+      "id": "apprentice",
+      "name": "an apprentice",
+      "room": 36,
+      "home": 36,
+      "period": 150,
+      "jitter": 5,
+      "behaviour": "sentinel",
+      "zone": "lantern",
+      "hp": 12,
+      "damage": 0,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 0,
+      "description": "A young apprentice carries a stack of chalk and a look of permanent worry.",
+      "examine": "Chalk dust on the sleeves, a charm tucked into the collar.",
+      "dialogue": [
+        "The yard is safe. The fountain is not.",
+        "I lost my charm by the fountain.",
+        "The owl knows more than it says."
+      ]
+    },
+    {
+      "id": "owl",
+      "name": "an owl",
+      "room": 39,
+      "home": 39,
+      "period": 120,
+      "jitter": 8,
+      "behaviour": "speaker",
+      "zone": "lantern",
+      "hp": 6,
+      "damage": 0,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 0,
+      "description": "A pale owl, large as a cat, watches from the highest beam.",
+      "examine": "Its eyes are two small moons.",
+      "phrases": [
+        "The owl turns its head without moving its body.",
+        "The owl says: the high walk sees what the arcade hides.",
+        "The owl says: bring a light, not a blade."
+      ],
+      "dialogue": [
+        "The high walk sees what the arcade hides.",
+        "A candle on the rail is worth more than a crown.",
+        "The mirror below remembers every face."
+      ]
     }
   ],
   "zones": [
@@ -1069,6 +1282,25 @@
         31,
         32,
         33
+      ]
+    },
+    {
+      "id": "arcanum",
+      "name": "The Arcanum",
+      "rooms": [
+        34
+      ]
+    },
+    {
+      "id": "lantern",
+      "name": "The Lantern Quarter",
+      "rooms": [
+        35,
+        36,
+        37,
+        38,
+        39,
+        40
       ]
     }
   ],
@@ -1148,12 +1380,14 @@
       "name": "a grey cloak",
       "room": 1,
       "flags": [
+        "armor",
         "takeable",
         "wearable"
       ],
-      "slot": "body",
+      "slot": "cloak",
       "value": 6,
-      "examine": "A grey cloak of heavy wool. It smells of rain."
+      "examine": "A grey cloak of heavy wool. It smells of rain.",
+      "armor": 1
     },
     {
       "id": "bread",
@@ -1206,7 +1440,8 @@
       "price": 14,
       "value": 8,
       "examine": "The blade is plain, but well kept. The smith will not part with it cheaply.",
-      "forSale": true
+      "forSale": true,
+      "slot": "mainhand"
     },
     {
       "id": "club",
@@ -1218,7 +1453,8 @@
       ],
       "damage": 2,
       "value": 3,
-      "examine": "A stout length of oak with a knotted head."
+      "examine": "A stout length of oak with a knotted head.",
+      "slot": "mainhand"
     },
     {
       "id": "jerkin",
@@ -1233,7 +1469,8 @@
       "price": 10,
       "value": 5,
       "examine": "Cracked leather, still serviceable.",
-      "forSale": true
+      "forSale": true,
+      "slot": "body"
     },
     {
       "id": "lantern",
@@ -1415,6 +1652,132 @@
         "readable"
       ],
       "examine": "The last winners: Moth, Vane, Red Jory, and a name scratched out."
+    },
+    {
+      "room": 9,
+      "flags": [
+        "takeable",
+        "wearable"
+      ],
+      "forSale": true,
+      "examine": "Worked iron and leather, kept in good order.",
+      "id": "helmet",
+      "name": "an iron helmet",
+      "slot": "head",
+      "armor": 2,
+      "price": 12,
+      "value": 6
+    },
+    {
+      "room": 9,
+      "flags": [
+        "takeable",
+        "wearable"
+      ],
+      "forSale": true,
+      "examine": "Worked iron and leather, kept in good order.",
+      "id": "boots",
+      "name": "a pair of leather boots",
+      "slot": "feet",
+      "armor": 1,
+      "price": 10,
+      "value": 5
+    },
+    {
+      "room": 9,
+      "flags": [
+        "takeable",
+        "wearable"
+      ],
+      "forSale": true,
+      "examine": "Worked iron and leather, kept in good order.",
+      "id": "gloves",
+      "name": "a pair of leather gloves",
+      "slot": "hands",
+      "armor": 1,
+      "price": 8,
+      "value": 4
+    },
+    {
+      "room": 9,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "forSale": true,
+      "examine": "Worked iron and leather, kept in good order.",
+      "id": "shield",
+      "name": "a round shield",
+      "slot": "offhand",
+      "armor": 2,
+      "price": 15,
+      "value": 7
+    },
+    {
+      "room": 9,
+      "flags": [
+        "takeable",
+        "weapon"
+      ],
+      "forSale": true,
+      "examine": "Worked iron and leather, kept in good order.",
+      "id": "greatsword",
+      "name": "a two-handed greatsword",
+      "slot": "mainhand",
+      "twoHanded": true,
+      "damage": 5,
+      "price": 30,
+      "value": 15,
+      "armor": 0
+    },
+    {
+      "id": "note",
+      "name": "a folded note",
+      "room": 35,
+      "flags": [
+        "takeable",
+        "readable"
+      ],
+      "value": 1,
+      "examine": "The note is addressed to the spellwright. The seal is broken.",
+      "forSale": false
+    },
+    {
+      "id": "charm",
+      "name": "a familiar charm",
+      "room": 38,
+      "flags": [
+        "takeable"
+      ],
+      "value": 4,
+      "examine": "A small bone charm on a leather cord. It is warm.",
+      "forSale": false
+    },
+    {
+      "id": "spell-scroll",
+      "name": "a spell scroll",
+      "room": 37,
+      "flags": [
+        "takeable",
+        "readable"
+      ],
+      "forSale": true,
+      "price": 12,
+      "value": 6,
+      "examine": "A single spell is written in a careful hand. The margins are full of warnings."
+    },
+    {
+      "id": "candle",
+      "name": "a cold candle",
+      "room": 40,
+      "flags": [
+        "takeable",
+        "light"
+      ],
+      "value": 2,
+      "examine": "A candle of pale wax. The wick is black but the wax is cold.",
+      "forSale": false
     }
   ],
   "climate": {

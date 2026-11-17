@@ -86,19 +86,23 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `ghoul` | The Crypt Ghoul | 3 | Defeat the crypt ghoul | 100 xp |
 | `smuggler` | The Smuggler's Cache | 3 | Defeat the smuggler | 80 xp |
 | `telescope` | The Lighthouse Lens | 2 | Carry the brass telescope | 30 xp |
+| `errand` | A Message for the Spellwright | 1 | Deliver the note to the spellwright | 25 xp |
+| `familiar` | The Apprentice's Charm | 2 | Enter the Familiar Yard; Carry the familiar charm | 40 xp |
+| `roof` | The High Walk | 3 | Reach the High Walk; Kill a rat | 60 xp |
+| `guild-ledger` | The Guild's Ledger | 3 | Carry the spell scroll to the archmage | 60 xp |
 
 ## Rooms
 
 | Id | Room | Zone | Safe | Exits |
 | --- | --- | --- | --- | --- |
-| 1 | The Atrium | temple | yes | north 2, east 3, south 8 |
+| 1 | The Atrium | temple | yes | north 2, east 3, south 8, up 34 |
 | 2 | The Corridor | temple | no | south 1, east 4 |
 | 3 | The Storeroom | temple | yes | west 1, north 5 |
 | 4 | The Vault | temple | no | west 2 |
 | 5 | The Cell | temple | no | south 3, north 6, down 25 |
 | 6 | The Shrine | temple | yes | south 5, north 7 |
 | 7 | The Chancel | temple | yes | south 6 |
-| 8 | Market Square | town | yes | north 1, east 9, west 10, south 11 |
+| 8 | Market Square | town | yes | north 1, east 9, west 10, south 11, up 35 |
 | 9 | The Smithy | town | yes | west 8 |
 | 10 | The Gilded Rat | town | yes | east 8, up 12, north 24 |
 | 11 | The King's Road | town | no | north 8, south 15, east 16, west 17 |
@@ -124,4 +128,11 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 31 | The Docks | harbor | no | west 30, north 32, down 33 |
 | 32 | The Lighthouse | harbor | no | south 31 |
 | 33 | The Ring | harbor | no | up 31 |
+| 34 | The Mages' Guild | arcanum | yes | down 1 |
+| 35 | The Lantern Stair | lantern | yes | down 8, north 36 |
+| 36 | The Arcade of Sigils | lantern | yes | south 35, east 37, west 38, north 39 |
+| 37 | The Spellwright's Shop | lantern | yes | west 36 |
+| 38 | The Familiar Yard | lantern | yes | east 36 |
+| 39 | The Aviary | lantern | yes | south 36, east 40 |
+| 40 | The High Walk | lantern | yes | west 39 |
 

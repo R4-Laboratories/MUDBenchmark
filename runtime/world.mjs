@@ -12,7 +12,11 @@ import { createHash } from "node:crypto";
 import { advance, due as pulseDue, makePulse } from "./generated/Pulses.mjs";
 import { levelForXp, nextLevelXp } from "./levels.mjs";
 import { applyQuestEvent, emptyProgress, normalizeQuestState, questById, questMet } from "./quests.mjs";
-import { RANKS, guildId, rankAtLeast, removeMember, successor, validGuildName } from "./guilds.mjs";
+import { RANKS, guildId, guildLevelFor, rankAtLeast, removeMember, successor, validGuildName } from "./guilds.mjs";
+import { armorOf, slotOf, weaponOf } from "./equipment.mjs";
+import { maxManaFor, spellById } from "./magic.mjs";
+
+export { armorOf } from "./equipment.mjs";
 
 export const TICK_MS = 250;
 
@@ -67,18 +71,6 @@ export function attackRoll({ tick, attackerId, weaponDamage = 0, targetArmor = 0
 }
 
 /** The armour a character is wearing, from the objects currently on them. */
-export function armorOf(actor, objects) {
-  return objects
-    .filter((object) => object.holder === actor.id && object.worn && (object.flags ?? []).includes("armor"))
-    .reduce((total, object) => total + (object.armor ?? 0), 0);
-}
-
-const weaponOf = (actor, objects) => {
-  const object = objects.find((candidate) => candidate.id === actor.wielding);
-  if (!object || object.holder !== actor.id || object.eaten) return null;
-  return (object.flags ?? []).includes("weapon") ? object : null;
-};
-
 function awardXp(state, actor, amount, events) {
   actor.xp = (actor.xp ?? 0) + amount;
   const level = levelForXp(state.levels ?? DEFAULT_LEVELS, actor.xp);
@@ -118,6 +110,15 @@ function advanceQuests(state, actor, event, events) {
         reward.worn = false;
       }
       current.completed.push(quest.id);
+      if (quest.rewards?.guildXp && actor.guild && state.guilds?.[actor.guild]) {
+        const guild = state.guilds[actor.guild];
+        guild.xp = (guild.xp ?? 0) + quest.rewards.guildXp;
+        const level = guildLevelFor(guild.xp);
+        if (level > (guild.level ?? 1)) {
+          guild.level = level;
+          events.push({ room: actor.room, text: `${guild.name} reaches guild level ${level}.` });
+        }
+      }
       events.push({
         onlyId: actor.id,
         text: `Quest complete: ${quest.name}.\r\n${quest.complete ?? ""}\r\n`,
@@ -433,6 +434,8 @@ export function checkpointIdentities(state) {
       guild: actor.guild ?? null,
       guildRank: actor.guildRank ?? null,
       quests: actor.quests ?? { active: [], completed: [] },
+      spellbook: [...(actor.spellbook ?? [])],
+      maxMana: actor.maxMana ?? maxManaFor(actor),
     };
   }
   return state;
@@ -517,6 +520,7 @@ export function step({ state, rooms, intents }) {
           guildRank: null,
           quests: { active: [], completed: [] },
           wielding: null,
+          mana: 5, maxMana: 5, spellbook: [], armorBonus: 0, buffUntil: null,
         });
       }
       continue;
@@ -588,6 +592,11 @@ export function step({ state, rooms, intents }) {
       actor.maxHp = 10;
       actor.hp = 10;
       actor.wielding = null;
+      actor.mana = 5;
+      actor.maxMana = 5;
+      actor.spellbook = [];
+      actor.armorBonus = 0;
+      actor.buffUntil = null;
       next.accounts[intent.key] = {
         kind: "legacy",
         name: intent.key,
@@ -608,6 +617,7 @@ export function step({ state, rooms, intents }) {
         guild: null,
         guildRank: null,
         quests: { active: [], completed: [] },
+        spellbook: [], maxMana: 5,
       };
       continue;
     }
@@ -698,11 +708,13 @@ export function step({ state, rooms, intents }) {
       if (!actor?.key || actor.guild) continue;
       const guild = next.guilds[intent.guildId];
       if (!guild) continue;
-      guild.members[actor.key] = "member";
+      const rank = guild.ranks?.[0] ?? "member";
+      guild.members[actor.key] = rank;
       guild.invites = (guild.invites ?? []).filter((key) => key !== actor.key);
       actor.guild = guild.id;
-      actor.guildRank = "member";
-      next.identities[actor.key] = { ...next.identities[actor.key], guild: guild.id, guildRank: "member" };
+      actor.guildRank = rank;
+      actor.maxMana = maxManaFor(actor);
+      next.identities[actor.key] = { ...next.identities[actor.key], guild: guild.id, guildRank: rank };
       events.push({ onlyId: actor.id, text: `You join ${guild.name}.\r\n`, guild: { action: "join", id: guild.id, name: guild.name } });
       for (const member of next.actors) {
         if (member.id === actor.id || member.guild !== guild.id) continue;
@@ -911,6 +923,11 @@ export function step({ state, rooms, intents }) {
       actor.maxHp = 10 + (actor.level - 1) * 2;
       actor.hp = actor.maxHp;
       actor.wielding = null;
+      actor.maxMana = known.maxMana ?? maxManaFor(known);
+      actor.mana = actor.maxMana;
+      actor.spellbook = [...(known.spellbook ?? [])];
+      actor.armorBonus = 0;
+      actor.buffUntil = null;
       actor.guild = next.guilds[known.guild] ? known.guild : null;
       actor.guildRank = actor.guild ? (next.guilds[actor.guild].members[actor.key] ?? null) : null;
       actor.quests = {
@@ -1140,6 +1157,12 @@ export function step({ state, rooms, intents }) {
       const object = next.objects.find((o) => o.id === intent.objectId);
       if (!object || object.holder !== actor.id || object.eaten) continue;
       if (!(object.flags ?? []).includes("weapon")) continue;
+      if (object.twoHanded) {
+        for (const other of next.objects) {
+          if (other.holder === actor.id && other.worn && slotOf(other) === "offhand") other.worn = false;
+        }
+      }
+      object.slot = "mainhand";
       actor.wielding = object.id;
       events.push({ room: actor.room, text: `${actor.name} wields ${object.name}.`, exceptId: actor.id });
       events.push({ onlyId: actor.id, text: `You wield ${object.name}.` });
@@ -1151,6 +1174,62 @@ export function step({ state, rooms, intents }) {
       actor.wielding = null;
       events.push({ room: actor.room, text: `${actor.name} lowers their weapon.`, exceptId: actor.id });
       events.push({ onlyId: actor.id, text: "You lower your weapon." });
+      continue;
+    }
+
+    if (intent.kind === "train") {
+      if (!actor?.key) continue;
+      const spell = spellById(intent.spellId);
+      if (!spell || actor.guild !== "mages" || (actor.level ?? 1) < spell.level) continue;
+      const book = actor.spellbook ?? [];
+      if (book.includes(spell.id)) continue;
+      actor.spellbook = [...book, spell.id];
+      actor.maxMana = maxManaFor(actor);
+      events.push({ onlyId: actor.id, text: `You learn ${spell.name}.\r\n` });
+      continue;
+    }
+
+    if (intent.kind === "cast") {
+      const spell = spellById(intent.spellId);
+      if (!spell || !(actor.spellbook ?? []).includes(spell.id)) continue;
+      const mana = actor.mana ?? maxManaFor(actor);
+      if (mana < spell.mana) continue;
+      const target = intent.targetId
+        ? (next.npcs.find((npc) => npc.id === intent.targetId) ?? next.actors.find((entry) => entry.id === intent.targetId))
+        : null;
+      if (spell.target === "npc" && !target) continue;
+      if (target && target.room !== actor.room) continue;
+      actor.mana = mana - spell.mana;
+      actor.maxMana = maxManaFor(actor);
+      if (spell.effect === "damage" && target) {
+        const damage = 1 + nextFrom(next.tick * 7 + actor.room, spell.damage ?? 4);
+        target.hp = (target.hp ?? 0) - damage;
+        events.push({ room: actor.room, text: `${actor.name} speaks a word; ${target.name} is struck by a spark.`, exceptId: actor.id });
+        events.push({ onlyId: actor.id, text: `Your spark strikes ${target.name} for ${damage}.` });
+        if (target.hp <= 0) {
+          target.dead = true;
+          target.hp = 0;
+          events.push({ room: actor.room, text: `${target.name} falls.` });
+          awardXp(next, actor, target.xp ?? spell.xp ?? 0, events);
+        }
+      } else if (spell.effect === "heal") {
+        const amount = spell.heal + Math.floor((actor.level ?? 1) / 2);
+        actor.hp = Math.min(actor.maxHp, (actor.hp ?? 0) + amount);
+        events.push({ onlyId: actor.id, text: `You mend ${amount} health.\r\n` });
+      } else if (spell.effect === "shield") {
+        actor.armorBonus = (actor.armorBonus ?? 0) + (spell.armor ?? 0);
+        actor.buffUntil = next.tick + (spell.ticks ?? 120);
+        events.push({ onlyId: actor.id, text: `A shield settles around you.\r\n` });
+      } else if (spell.effect === "recall") {
+        actor.room = next.start;
+        actor.visited = [...new Set([...(actor.visited ?? []), next.start])];
+        events.push({ onlyId: actor.id, text: "The guild's road folds; you are back in the Atrium.\r\n" });
+      } else if (spell.effect === "light") {
+        events.push({ onlyId: actor.id, text: "A cold light follows you.\r\n" });
+      } else if (spell.effect === "detect") {
+        events.push({ onlyId: actor.id, text: "You read the room for what it is hiding.\r\n" });
+      }
+      events.push({ onlyId: actor.id, text: `You cast ${spell.name}.\r\n` });
       continue;
     }
 
@@ -1263,7 +1342,20 @@ export function step({ state, rooms, intents }) {
       const object = next.objects.find((o) => o.id === intent.objectId);
       if (!object || object.holder !== actor.id || object.eaten) continue;
       if (!(object.flags ?? []).includes("wearable")) continue;
-      object.worn = intent.kind === "wear";
+      if (intent.kind === "wear") {
+        const slot = slotOf(object);
+        for (const other of next.objects) {
+          if (other.id !== object.id && other.holder === actor.id && other.worn && slotOf(other) === slot) {
+            other.worn = false;
+          }
+        }
+        object.slot = slot;
+        object.worn = true;
+        if (slot === "mainhand") actor.wielding = object.id;
+      } else {
+        object.worn = false;
+        if (actor.wielding === object.id) actor.wielding = null;
+      }
       events.push({ room: actor.room, text: intent.messages.others, exceptId: actor.id });
       events.push({ onlyId: actor.id, text: intent.messages.actor });
       continue;
@@ -1614,6 +1706,17 @@ export function step({ state, rooms, intents }) {
     }
     for (const room of Object.keys(rooms)) {
       events.push({ room: Number(room), text: "The world shudders. Everything returns to where it began." });
+    }
+  }
+
+  for (const actor of next.actors) {
+    if (actor.buffUntil && next.tick >= actor.buffUntil) {
+      actor.buffUntil = null;
+      actor.armorBonus = 0;
+      events.push({ onlyId: actor.id, text: "Your ward fades.\r\n" });
+    }
+    if (actor.mana !== undefined && next.tick % 20 === 0) {
+      actor.mana = Math.min(actor.maxMana ?? maxManaFor(actor), actor.mana + 1);
     }
   }
 

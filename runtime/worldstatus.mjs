@@ -27,6 +27,9 @@ export function worldStatus(state, rooms) {
         xp: actor.xp ?? 0,
         hp: actor.hp ?? null,
         maxHp: actor.maxHp ?? null,
+        mana: actor.mana ?? null,
+        maxMana: actor.maxMana ?? null,
+        spells: [...(actor.spellbook ?? [])],
         guild: actor.guild ?? null,
         guildRank: actor.guildRank ?? null,
         quests: {
@@ -89,7 +92,8 @@ export function worldStatusText(status) {
     for (const actor of status.actors) {
       const guild = actor.guild ? ` · guild ${actor.guild}` : "";
       const gear = actor.wielded ? ` · wielding ${actor.wielded}` : "";
-      lines.push(`  ${actor.name} — level ${actor.level}, ${actor.xp} xp, ${actor.room}${guild}${gear}`);
+      const mana = actor.maxMana ? ` · mana ${actor.mana}/${actor.maxMana}` : "";
+      lines.push(`  ${actor.name} — level ${actor.level}, ${actor.xp} xp, ${actor.room}${mana}${guild}${gear}`);
     }
   }
   if (status.guilds.length) {

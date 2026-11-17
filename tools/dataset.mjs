@@ -104,6 +104,19 @@ for (const file of inputs) {
       continue;
     }
 
+    if (span.name === "world.spell") {
+      rows.push({
+        ...common,
+        event: "spell",
+        actor: span["actor.id"] ?? null,
+        action: span["spell.action"] ?? null,
+        spell: span["spell.id"] ?? null,
+        mana: num(span["spell.mana"]),
+        target: span["target.id"] ?? null,
+      });
+      continue;
+    }
+
     if (span.name === "world.transition") {
       rows.push({
         ...common,

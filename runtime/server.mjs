@@ -14,6 +14,8 @@ import { WebSocketServer } from "ws";
 import { recordSpan, digest, TELEMETRY_LOG } from "./telemetry.mjs";
 import { readSpanTail, redactSpans } from "./spans.mjs";
 import { step, initialState, digestState, phaseAt, upgradeState, releaseHeldObjects, checkpointIdentities, armorOf, nextFrom, TICK_MS } from "./world.mjs";
+import { equipmentText } from "./equipment.mjs";
+import { maxManaFor, spellById, spellLine, trainableSpells } from "./magic.mjs";
 import { loadWorld } from "./worlddata.mjs";
 import { describe as renderRoom, examine } from "./view.mjs";
 import { loadVerbs, render, resolve } from "./verbs.mjs";
@@ -197,6 +199,22 @@ function loadState() {
 }
 
 let state = loadState();
+if (!state.guilds) state.guilds = {};
+if (!state.guilds.mages) {
+  state.guilds.mages = {
+    id: "mages",
+    name: "The Mages' Guild",
+    founder: "archmage",
+    created: state.tick,
+    members: {},
+    invites: [],
+    ranks: ["apprentice", "adept", "magician", "archmage"],
+    hall: 34,
+    trainer: "archmage",
+    xp: 0,
+    level: 1,
+  };
+}
 let lastSave = (() => { try { return statSync(STATE_FILE).mtimeMs; } catch { return 0; } })();
 
 function saveState() {
@@ -467,6 +485,9 @@ function selfState(actor) {
     next_xp: nextLevelXp(state.levels, actor.level ?? 1),
     hp: actor.hp ?? null,
     max_hp: actor.maxHp ?? null,
+    mana: actor.mana ?? maxManaFor(actor),
+    max_mana: actor.maxMana ?? maxManaFor(actor),
+    spells: [...(actor.spellbook ?? [])],
     guild: actor.guild ?? null,
     guild_rank: actor.guildRank ?? null,
     quests: {
@@ -1007,7 +1028,7 @@ async function handleCommand(id, line) {
     if (!actor?.key) {
       return sendTo(id, "MUDBench is a persistent world for people and agents.\r\nSign in with your Prism id, or register <name> <password> / login <name> <password>.\r\nThen type help for the commands.\r\n");
     }
-    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: get/g, drop/dr, inventory/i, score/sc, quests/q, who/wh, gossip/gos, guildchat/gc.\r\nWorld: world or status (online, levels, guilds, reset).\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
+    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: get/g, drop/dr, inventory/i, score/sc, quests/q, who/wh, gossip/gos, guildchat/gc.\r\nMagic: spells, train <spell> at the Mages' Guild, cast <spell> [on <target>].\r\nWorld: world or status (online, levels, guilds, reset).\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
   }
 
   // A command typed before the join tick lands is queued, not refused: the
@@ -1040,9 +1061,7 @@ async function handleCommand(id, line) {
   }
 
   if (verb === "equipment") {
-    const worn = state.objects.filter((object) => object.holder === id && object.worn).map((object) => object.name);
-    const wielded = state.objects.find((object) => object.id === actor.wielding);
-    return sendTo(id, `Armour ${armorOf(actor, state.objects)}. Wielding ${wielded?.name ?? "nothing"}. Worn: ${worn.length ? worn.join(", ") : "nothing"}.\r\n`);
+    return sendTo(id, `${equipmentText(actor, state.objects)}\r\n`);
   }
 
   if (verb === "answer") {
@@ -1093,6 +1112,56 @@ async function handleCommand(id, line) {
     return entries.find(([, identity]) => identity.name.toLowerCase() === want)
       ?? entries.find(([, identity]) => identity.name.toLowerCase().includes(want));
   };
+
+  if (verb === "spells") {
+    const known = (actor.spellbook ?? []).map((id) => spellById(id)).filter(Boolean);
+    const trainable = trainableSpells(actor);
+    const parts = [
+      `Mana ${actor.mana ?? maxManaFor(actor)}/${actor.maxMana ?? maxManaFor(actor)}.`,
+      `Known: ${known.length ? known.map((spell) => `${spell.name} (${spell.mana})`).join(", ") : "none"}.`,
+    ];
+    if (trainable.length) parts.push(`Trainable: ${trainable.map((spell) => `${spell.name} (${spell.level})`).join(", ")}.`);
+    return sendTo(id, `${parts.join(" ")}\r\n`);
+  }
+
+  if (verb === "train") {
+    if (actor.room !== 34) return sendTo(id, "The archmage trains students in the Mages' Guild.\r\n");
+    const guild = state.guilds[actor.guild];
+    if (!guild || guild.id !== "mages") return sendTo(id, "You must join the Mages' Guild first: guild join mages.\r\n");
+    const spell = spellById(rest[0]);
+    if (!spell) return sendTo(id, "Usage: train <spell>. Try spells.\r\n");
+    if ((actor.level ?? 1) < spell.level) return sendTo(id, `You are not ready for ${spell.name}; it needs level ${spell.level}.\r\n`);
+    if ((actor.spellbook ?? []).includes(spell.id)) return sendTo(id, `You already know ${spell.name}.\r\n`);
+    pending.push({ kind: "train", actorId: id, spellId: spell.id });
+    recordSpan("world.spell", { "actor.id": id, "spell.action": "train", "spell.id": spell.id, "world.tick": state.tick }, 0);
+    return sendTo(id, `${spell.train ?? "The archmage nods."} You learn ${spell.name}.\r\n`);
+  }
+
+  if (verb === "cast") {
+    const spell = spellById(rest[0]);
+    if (!spell) return sendTo(id, "Usage: cast <spell> [on <target>]. Try spells.\r\n");
+    if (!(actor.spellbook ?? []).includes(spell.id)) return sendTo(id, `You do not know ${spell.name}.\r\n`);
+    const mana = actor.mana ?? maxManaFor(actor);
+    if (mana < spell.mana) return sendTo(id, `You need ${spell.mana} mana; you have ${mana}.\r\n`);
+    let target = null;
+    if (spell.target === "npc") {
+      const targetName = rest[1] === "on" ? restRaw.slice(2).join(" ") : restRaw.slice(1).join(" ");
+      target = state.npcs
+        .filter((npc) => !npc.dead && npc.room === actor.room)
+        .find((npc) => npc.name.toLowerCase().includes(String(targetName).toLowerCase()));
+      if (!target) return sendTo(id, `There is no ${targetName || "target"} here.\r\n`);
+    }
+    pending.push({ kind: "cast", actorId: id, spellId: spell.id, targetId: target?.id ?? null });
+    recordSpan("world.spell", {
+      "actor.id": id,
+      "spell.action": "cast",
+      "spell.id": spell.id,
+      "spell.mana": spell.mana,
+      "target.id": target?.id ?? null,
+      "world.tick": state.tick,
+    }, 0);
+    return;
+  }
 
   const channel = named === null ? resolveChannel(CHANNELS, verb) : null;
   if (channel) {
@@ -1376,7 +1445,7 @@ async function handleCommand(id, line) {
     const armor = armorOf(actor, state.objects);
     const nextXp = nextLevelXp(state.levels, actor.level);
     const stateQ = normalizeQuestState(actor.quests, QUESTS.quests);
-    const line = `Level ${actor.level} (${actor.xp}${nextXp === null ? "" : `/${nextXp}`} xp), ${actor.hp}/${actor.maxHp} hp, armour ${armor}, ${weapon ? `wielding ${weapon.name}` : "unarmed"}${actor.guild ? `, guild ${actor.guild}` : ""}, ${stateQ.active.length} active/${stateQ.completed.length} done quests.`;
+    const line = `Level ${actor.level} (${actor.xp}${nextXp === null ? "" : `/${nextXp}`} xp), ${actor.hp}/${actor.maxHp} hp, mana ${actor.mana ?? maxManaFor(actor)}/${actor.maxMana ?? maxManaFor(actor)}, armour ${armor}, ${weapon ? `wielding ${weapon.name}` : "unarmed"}${actor.guild ? `, guild ${actor.guild}` : ""}, ${stateQ.active.length} active/${stateQ.completed.length} done quests.`;
     return sendTo(id, `${render(messages.line, { words: line })}\r\n`);
   }
 
@@ -1403,6 +1472,14 @@ async function handleCommand(id, line) {
     if (!["accept", "abandon"].includes(action) || !questId) return sendTo(id, `${messages.usage}\r\n`);
     const quest = questById(QUESTS.quests, questId);
     if (!quest) return sendTo(id, `${render(messages.missing, { words: questId })}\r\n`);
+    if (quest.scope === "guild") {
+      const guild = state.guilds[actor.guild];
+      if (!guild || guild.id !== quest.guild) return sendTo(id, `This quest belongs to ${quest.guild}.\r\n`);
+      const ranks = guild.ranks ?? RANKS;
+      if (quest.rank && !rankAtLeast(actor.guildRank, quest.rank, ranks)) {
+        return sendTo(id, `This quest needs guild rank ${quest.rank}.\r\n`);
+      }
+    }
     const stateQ = normalizeQuestState(actor.quests, QUESTS.quests);
     if (action === "accept") {
       if ((actor.level ?? 1) < quest.level) return sendTo(id, `${render(messages.locked, { words: String(quest.level) })}\r\n`);
@@ -1463,7 +1540,7 @@ async function handleCommand(id, line) {
     if (action === "who") {
       const guild = state.guilds[actor.guild];
       if (!guild) return sendTo(id, `${messages.noGuild}\r\n`);
-      return sendTo(id, `${render(messages.who, { words: `${guild.name}: ${guildRoster(guild).join(", ")}` })}\r\n`);
+      return sendTo(id, `${render(messages.who, { words: `${guild.name} (level ${guild.level ?? 1}, ${guild.xp ?? 0} xp): ${guildRoster(guild).join(", ")}` })}\r\n`);
     }
     if (action === "create") {
       const name = restRaw.slice(1).join(" ").trim();
@@ -1478,6 +1555,10 @@ async function handleCommand(id, line) {
       if (actor.guild) return sendTo(id, `${messages.inGuild}\r\n`);
       const guild = guildByName(name);
       if (!guild) return sendTo(id, `${render(messages.notFound, { words: name })}\r\n`);
+      if (guild.id === "mages") {
+        if (actor.room !== 34) return sendTo(id, "The Mages' Guild meets above the Atrium.\r\n");
+        if ((actor.level ?? 1) < 3) return sendTo(id, "The archmage accepts students of level 3 and above.\r\n");
+      }
       pending.push({ kind: "guildJoin", actorId: id, guildId: guild.id });
       return;
     }
@@ -1855,7 +1936,7 @@ function onTick() {
   const intents = pending.splice(0);
   // A login or registration must hit the disk before the next checkpoint; a
   // kill -9 must not erase an account created seconds ago.
-  const identityChanged = intents.some((intent) => ["login", "register", "password", "claim", "claimLegacy", "rebindLegacy", "createCharacter", "ownAccount", "retireAccount", "handoffCharacter", "revokeHandoff"].includes(intent.kind));
+  const identityChanged = intents.some((intent) => ["login", "register", "password", "claim", "claimLegacy", "rebindLegacy", "createCharacter", "ownAccount", "retireAccount", "handoffCharacter", "revokeHandoff", "train"].includes(intent.kind));
   const result = step({ state, rooms: ROOMS, intents });
   state = result.state;
   for (const intent of intents) {

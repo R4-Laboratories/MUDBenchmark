@@ -279,6 +279,24 @@
       "level": "build",
       "statement": "The server accepts AberMUD-style short forms (l, x/ex, g/get/grab, dr, i/inv, eq, sc, q/j, wh, aw, h/?, gos/goss, gc/gchat, status/time) and exposes an `equipment` view with armour, wielded item and worn items. After each accepted command it sends a hidden `#state` JSON line with world reset/online/phase/weather and the actor level, XP to next, HP, quests, inventory count, guild/rank, wielded and worn items. The browser AI and harness use that state in the prompt and R4 router. The gate checks the aliases, equipment view and state layer.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-41",
+      "level": "build",
+      "statement": "Gear uses eight equipment slots (head, body, hands, feet, cloak, neck, mainhand, offhand). Wearing a second item in a slot replaces the first, a two-handed weapon clears the offhand, armour sums occupied armor values plus a temporary shield bonus, and equipment lists every slot. The smith sells head, feet, hands, offhand and two-handed gear. The gate covers wear/wield/replace and the equipment map.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-42",
+      "level": "build",
+      "statement": "Magic has six spells (spark, mend, light, shield, detect, recall), a mana pool with regeneration, a spellbook that persists on the character, `spells`, `train` and `cast` commands, and a Mages' Guild room above the Atrium with an archmage trainer. Joining requires level 3 and the guild room; training adds the spell; cast spends mana and applies damage, healing, shield, light, detect or recall. The gate covers damage, mana, healing, shield expiry, recall, training and checkpoint survival.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-43",
+      "level": "build",
+      "statement": "The Lantern Quarter adds seven connected rooms, three NPCs, four objects, three personal quests and a Mages' Guild ledger quest. The world is 40 rooms and 13 quests; the Mages' Guild has guild XP and level, and a completed guild quest adds its guildXp. The gate covers the room connections, the spellwright errand, the familiar charm reward, guild quest completion and guild XP.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

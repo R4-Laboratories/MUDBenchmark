@@ -10,7 +10,21 @@ export function guildId(name) {
   return name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 32);
 }
 
-export const rankAtLeast = (rank, wanted) => RANKS.indexOf(rank) <= RANKS.indexOf(wanted);
+export const rankAtLeast = (rank, wanted, ranks = RANKS) => {
+  const have = ranks.indexOf(rank);
+  const need = ranks.indexOf(wanted);
+  return have >= 0 && need >= 0 && have <= need;
+};
+
+export const GUILD_LEVELS = [0, 100, 300, 600, 1000];
+
+export function guildLevelFor(xp) {
+  let level = 1;
+  for (let index = 1; index < GUILD_LEVELS.length; index += 1) {
+    if (xp >= GUILD_LEVELS[index]) level = index + 1;
+  }
+  return level;
+}
 
 /** The next leader: the earliest officer, otherwise the earliest member. */
 export function successor(members, leavingKey) {

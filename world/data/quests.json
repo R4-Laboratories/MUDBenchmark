@@ -183,6 +183,101 @@
         "xp": 30
       },
       "complete": "The docks have their glass."
+    },
+    {
+      "id": "errand",
+      "name": "A Message for the Spellwright",
+      "level": 1,
+      "giver": "the apprentice",
+      "description": "A folded note waits on the Lantern Stair. Take it to the spellwright in the Arcade.",
+      "objectives": [
+        {
+          "kind": "deliver",
+          "npc": "spellwright",
+          "object": "note",
+          "count": 1,
+          "text": "Deliver the note to the spellwright"
+        }
+      ],
+      "rewards": {
+        "xp": 25
+      },
+      "complete": "The spellwright reads the note and nods."
+    },
+    {
+      "id": "familiar",
+      "name": "The Apprentice's Charm",
+      "level": 2,
+      "giver": "an apprentice",
+      "description": "The apprentice lost a charm by the fountain in the Familiar Yard.",
+      "objectives": [
+        {
+          "kind": "visit",
+          "room": 38,
+          "text": "Enter the Familiar Yard"
+        },
+        {
+          "kind": "collect",
+          "object": "charm",
+          "count": 1,
+          "text": "Carry the familiar charm"
+        }
+      ],
+      "rewards": {
+        "xp": 40,
+        "object": "candle"
+      },
+      "complete": "The charm is warm in your hand."
+    },
+    {
+      "id": "roof",
+      "name": "The High Walk",
+      "level": 3,
+      "giver": "an owl",
+      "description": "The owl says the High Walk sees what the arcade hides. Climb to it, and deal with the rat that has been stealing from the perches.",
+      "objectives": [
+        {
+          "kind": "visit",
+          "room": 40,
+          "text": "Reach the High Walk"
+        },
+        {
+          "kind": "kill",
+          "npc": "rat",
+          "count": 1,
+          "text": "Kill a rat"
+        }
+      ],
+      "rewards": {
+        "xp": 60
+      },
+      "complete": "The owl blinks once, slowly.",
+      "requires": [
+        "familiar"
+      ]
+    },
+    {
+      "id": "guild-ledger",
+      "name": "The Guild's Ledger",
+      "level": 3,
+      "giver": "the archmage",
+      "description": "The archmage needs the spell scroll from the Spellwright back in the guild ledger.",
+      "scope": "guild",
+      "guild": "mages",
+      "rank": "apprentice",
+      "objectives": [
+        {
+          "kind": "collect",
+          "object": "spell-scroll",
+          "count": 1,
+          "text": "Carry the spell scroll to the archmage"
+        }
+      ],
+      "rewards": {
+        "xp": 60,
+        "guildXp": 40
+      },
+      "complete": "The archmage enters the scroll in the ledger."
     }
   ]
 }

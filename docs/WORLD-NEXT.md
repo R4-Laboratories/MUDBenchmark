@@ -1,17 +1,20 @@
 # The next world expansion
 
-This is the queued AberMUD-style content and systems track. The foundation is
-already in v0.46: short command forms, `equipment`, `world`/`status`, the
-hidden `#state` line, and the AI prompt/router state layer.
+This was the queued AberMUD-style content and systems track. The v0.47 slice
+has landed: eight equipment slots, six spells and the Mages' Guild, seven
+Lantern Quarter rooms, three personal quests and a guild ledger quest. The
+world is now 40 rooms and 13 quests. The foundation from v0.46 remains:
+short command forms, `equipment`, `world`/`status`, the hidden `#state` line,
+and the AI prompt/router state layer.
 
 ## Order
 
 | Release | Work | Acceptance |
 | --- | --- | --- |
-| M3 | Equipment slots (`world/data/slots.json`): head, body, hands, feet, cloak, neck, mainhand, offhand; `equip`/`unequip`/`equipment`; gear in shops and quest rewards | slot swap, two-handed clears offhand, armour sum, weapon damage, drop/death/reset clears gear |
-| M4 | Magic: `world/data/spells.json`, mana, `cast`/`spells`/`study`/`train`, scrolls, the Mages' Guild and an archmage trainer | spark/mend/light/shield/detect/recall; mana refill and regen; spellbook persists; non-mages can recite scrolls; rank gates |
-| M5 | **The Lantern Quarter / Undervault**: 25 rooms, 2 zones, 10 quests, 9 mobiles, ~25 objects, one shop, 5 custom actions, one hidden room | 58 rooms, 19 quests, every exit reciprocal, all references valid, scripted `errand`/`sigils`/`mirror` walks |
-| M6 | Guild quests and progression: guild XP/levels/perks, 3 mages guild quests, repeat-after-reset | guild quest acceptance by rank, guild XP from quests, level-up announcement, restart persistence |
+| M3 | **done** — Equipment slots (`world/data/slots.json`): head, body, hands, feet, cloak, neck, mainhand, offhand; `equip`/`unequip`/`equipment`; gear in shops and quest rewards | slot swap, two-handed clears offhand, armour sum, weapon damage, drop/death/reset clears gear |
+| M4 | **done** — Magic: `world/data/spells.json`, mana, `cast`/`spells`/`study`/`train`, scrolls, the Mages' Guild and an archmage trainer | spark/mend/light/shield/detect/recall; mana refill and regen; spellbook persists; non-mages can recite scrolls; rank gates |
+| M5 | **first slice done** — The Lantern Quarter / Undervault: 25 rooms, 2 zones, 10 quests, 9 mobiles, ~25 objects, one shop, 5 custom actions, one hidden room | 58 rooms, 19 quests, every exit reciprocal, all references valid, scripted `errand`/`sigils`/`mirror` walks |
+| M6 | **first quest done** — Guild quests and progression: guild XP/levels/perks, 3 mages guild quests, repeat-after-reset | guild quest acceptance by rank, guild XP from quests, level-up announcement, restart persistence |
 | M7 | Second content slice: another 25 rooms / 8 quests using the same template | same map/quest/reference gates |
 
 ## Rules that keep the model green
@@ -44,7 +47,7 @@ hidden `#state` line, and the AI prompt/router state layer.
 
 ## Immediate next step
 
-M3 is the smallest useful slice: add the slot data and gear fields, make
-`equip`/`unequip` use them, teach `score`/`equipment` to show the slots, and
-give the smith and one quest real gear. It depends on nothing that is not
-already deployed.
+The next content slice is the rest of the Lantern Quarter/Undervault: more
+rooms, hidden exits, custom actions, and the full quest chain. The magic and
+equipment systems are already in place, so the content can use them without
+another rules change.

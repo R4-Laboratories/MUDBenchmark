@@ -51,6 +51,8 @@ import { normalizeAiTurn, aiTurnAttributes } from "../runtime/metrics.mjs";
 import { summarizeTrends } from "../runtime/trends.mjs";
 import { worldStatus, worldStatusText } from "../runtime/worldstatus.mjs";
 import { redactCommand, sanitizeIntent, sanitizeState, scrubSecrets, scrubSpan } from "../runtime/telemetry-policy.mjs";
+import { equipmentOf, equipmentText } from "../runtime/equipment.mjs";
+import { maxManaFor } from "../runtime/magic.mjs";
 
 const root = process.cwd();
 const ratchet = JSON.parse(readFileSync(join(root, "world/ratchet.json"), "utf8"));
@@ -1064,6 +1066,112 @@ let aliases = { ok: true, why: [] };
   if (aliases.why.length) { aliases.ok = false; failures.push(`the command aliases are broken: ${aliases.why[0]}`); }
 }
 
+// Equipment slots are a view of worn objects; a two-handed weapon clears the
+// offhand, a second item in a slot replaces the first, and armour is the sum.
+let equipment = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, world.levels, questTable.quests);
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
+  const check = (condition, why) => { if (!condition) { equipment.ok = false; equipment.why.push(why); } };
+  state.actors.push({ id: "a", key: "alice", account: "alice", name: "alice", room: 1, visited: [1], level: 1, xp: 0, maxHp: 10, hp: 10, wielding: null, guild: null, guildRank: null, quests: { active: [], completed: [] } });
+  const gear = (id, name, slot, extra = {}) => ({ id, name, holder: "a", room: null, worn: false, eaten: false, flags: ["takeable", "wearable"], slot, ...extra });
+  state.objects.push(gear("helmet-test", "an iron helmet", "head", { armor: 2 }));
+  state.objects.push(gear("cap-test", "a cloth cap", "head", { armor: 1 }));
+  state.objects.push(gear("shield-test", "a round shield", "offhand", { armor: 2, worn: true }));
+  state.objects.push(gear("greatsword-test", "a greatsword", "mainhand", { damage: 5, twoHanded: true, flags: ["takeable", "weapon"] }));
+  const messages = { actor: "equipped", others: "equipped" };
+  run([{ kind: "wear", actorId: "a", objectId: "helmet-test", messages }]);
+  let actor = state.actors.find((entry) => entry.id === "a");
+  check(state.objects.find((o) => o.id === "helmet-test")?.worn === true, "wear did not set the head slot");
+  check(armorOf(actor, state.objects) === 4, "armour did not include head and offhand");
+  run([{ kind: "wear", actorId: "a", objectId: "cap-test", messages }]);
+  check(state.objects.find((o) => o.id === "cap-test")?.worn === true && state.objects.find((o) => o.id === "helmet-test")?.worn === false, "a second head item did not replace the first");
+  run([{ kind: "wield", actorId: "a", objectId: "greatsword-test", messages }]);
+  actor = state.actors.find((entry) => entry.id === "a");
+  check(actor?.wielding === "greatsword-test", "the two-handed weapon was not wielded");
+  check(state.objects.find((o) => o.id === "shield-test")?.worn === false, "the two-handed weapon did not clear the offhand");
+  const slots = equipmentOf(actor, state.objects);
+  check(slots.mainhand?.id === "greatsword-test" && slots.head?.id === "cap-test" && slots.offhand === null, "the equipment map is wrong");
+  check(equipmentText(actor, state.objects).includes("mainhand") && equipmentText(actor, state.objects).includes("a greatsword"), "the equipment text is wrong");
+  run([{ kind: "remove", actorId: "a", objectId: "cap-test", messages }]);
+  check(state.objects.find((o) => o.id === "cap-test")?.worn === false, "remove did not clear the slot");
+  if (equipment.why.length) { equipment.ok = false; failures.push(`the equipment slots are broken: ${equipment.why[0]}`); }
+}
+
+// Magic: a known spell spends mana and applies its effect, a trainer adds a
+// spellbook entry, and the shield is an armour bonus that expires.
+let magic = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, world.levels, questTable.quests);
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
+  const check = (condition, why) => { if (!condition) { magic.ok = false; magic.why.push(why); } };
+  state.actors.push({ id: "m", key: "mira", account: "mira", name: "mira", room: 1, visited: [1], level: 5, xp: 400, maxHp: 18, hp: 18, maxMana: 20, mana: 20, spellbook: ["spark", "mend", "shield", "recall"], guild: "mages", guildRank: "apprentice", wielding: null, quests: { active: [], completed: [] } });
+  state.npcs.push({ id: "rat-magic", name: "a test rat", room: 1, home: 1, hp: 10, maxHp: 10, damage: 0, armor: 0, aggression: 0, xp: 0, dead: false });
+  run([{ kind: "cast", actorId: "m", spellId: "spark", targetId: "rat-magic" }]);
+  let actor = state.actors.find((entry) => entry.id === "m");
+  let rat = state.npcs.find((npc) => npc.id === "rat-magic");
+  check(rat && rat.hp < 10, "spark did not damage the target");
+  check(actor?.mana === 17, "spark did not spend three mana");
+  actor.hp = 5;
+  run([{ kind: "cast", actorId: "m", spellId: "mend" }]);
+  actor = state.actors.find((entry) => entry.id === "m");
+  check(actor.hp > 5, "mend did not heal");
+  run([{ kind: "cast", actorId: "m", spellId: "shield" }]);
+  actor = state.actors.find((entry) => entry.id === "m");
+  check((actor.armorBonus ?? 0) === 2 && actor.buffUntil > state.tick, "shield did not add a timed armour bonus");
+  check(armorOf(actor, state.objects) >= 2, "the shield bonus is not in armourOf");
+  actor.room = 9;
+  actor.mana = 20;
+  run([{ kind: "cast", actorId: "m", spellId: "recall" }]);
+  actor = state.actors.find((entry) => entry.id === "m");
+  check(actor.room === 1, "recall did not return to the start");
+  const before = actor.spellbook.length;
+  run([{ kind: "train", actorId: "m", spellId: "detect" }]);
+  actor = state.actors.find((entry) => entry.id === "m");
+  check(actor.spellbook.length === before + 1 && actor.spellbook.includes("detect"), "training did not add the spell");
+  checkpointIdentities(state);
+  check(state.identities.mira?.spellbook?.includes("detect"), "training did not survive a checkpoint");
+  check(maxManaFor(actor) === 3 + 5 * 2 + 4, "the mages mana bonus is wrong");
+  if (magic.why.length) { magic.ok = false; failures.push(`magic is broken: ${magic.why[0]}`); }
+}
+
+// The first Lantern Quarter slice: rooms are connected, the note/errand and
+// familiar charm use only the existing quest facts, and the new gear/spells
+// have a place to live.
+let lantern = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, world.levels, questTable.quests);
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
+  const check = (condition, why) => { if (!condition) { lantern.ok = false; lantern.why.push(why); } };
+  check(world.rooms[35]?.exits?.down === 8 && world.rooms[8]?.exits?.up === 35, "the Lantern Stair is not connected to Market Square");
+  check(world.rooms[37]?.exits?.west === 36 && world.rooms[36]?.exits?.east === 37, "the Spellwright's Shop is not connected");
+  check(world.rooms[40]?.exits?.west === 39 && world.rooms[39]?.exits?.east === 40, "the High Walk is not connected");
+  state.actors.push({ id: "l", key: "lina", account: "lina", name: "lina", room: 37, visited: [1, 35, 36, 37], level: 5, xp: 400, maxHp: 18, hp: 18, maxMana: 17, mana: 17, spellbook: [], guild: null, guildRank: null, wielding: null, quests: { active: [], completed: [] } });
+  state.objects.find((o) => o.id === "note").holder = "l";
+  run([{ kind: "questAccept", actorId: "l", questId: "errand" }]);
+  run([{ kind: "deliver", actorId: "l", objectId: "note", npcId: "spellwright", messages: { actor: "delivered", others: "delivered" } }]);
+  let actor = state.actors.find((entry) => entry.id === "l");
+  check(actor?.quests?.completed?.includes("errand"), "the spellwright errand did not complete");
+  actor.room = 38;
+  state.objects.find((o) => o.id === "charm").holder = "l";
+  run([{ kind: "questAccept", actorId: "l", questId: "familiar" }]);
+  actor = state.actors.find((entry) => entry.id === "l");
+  check(actor?.quests?.completed?.includes("familiar"), "the familiar charm did not complete");
+  check(state.objects.find((o) => o.id === "candle")?.holder === "l", "the familiar reward did not reach the actor");
+  state.guilds.mages = { id: "mages", name: "The Mages' Guild", founder: "archmage", created: 0, members: { lina: "apprentice" }, invites: [], ranks: ["apprentice", "adept", "magician", "archmage"], xp: 0, level: 1 };
+  actor.guild = "mages";
+  actor.guildRank = "apprentice";
+  state.objects.find((o) => o.id === "spell-scroll").holder = "l";
+  run([{ kind: "questAccept", actorId: "l", questId: "guild-ledger" }]);
+  actor = state.actors.find((entry) => entry.id === "l");
+  check(actor?.quests?.completed?.includes("guild-ledger"), "the guild ledger quest did not complete");
+  check((state.guilds.mages.xp ?? 0) === 40, "the guild quest did not add guild XP");
+  if (lantern.why.length) { lantern.ok = false; failures.push(`the Lantern Quarter is broken: ${lantern.why[0]}`); }
+}
+
 // The state file is atomic, backed up, and fail-loud.
 let durableState = { ok: true, why: [] };
 {
@@ -2052,6 +2160,9 @@ if (process.argv.includes("--json")) {
   console.log(`${"stream".padEnd(26)}  ${(stream.ok ? "public" : "BROKEN").padStart(5)}   == filters, events, watch`);
   console.log(`${"telemetry".padEnd(26)}  ${(telemetry.ok ? "trends" : "BROKEN").padStart(5)}   == ai, world, clients`);
   console.log(`${"aliases".padEnd(26)}  ${(aliases.ok ? "short" : "BROKEN").padStart(5)}   == get, eq, status`);
+  console.log(`${"equipment".padEnd(26)}  ${(equipment.ok ? "8 slots" : "BROKEN").padStart(5)}   == wear, wield, replace`);
+  console.log(`${"magic".padEnd(26)}  ${(magic.ok ? "6 spells" : "BROKEN").padStart(5)}   == mana, cast, train`);
+  console.log(`${"lantern".padEnd(26)}  ${(lantern.ok ? "40 rooms" : "BROKEN").padStart(5)}   == errand, charm`);
   console.log(`${"pinned".padEnd(26)}  ${(identityPin.ok ? "revoked" : "BROKEN").padStart(5)}   == old log refused`);
   console.log(`${"takeover".padEnd(26)}  ${(takeover.ok ? "1 actor" : "BROKEN").padStart(5)}   == leave then login`);
   console.log(`${"characters".padEnd(26)}  ${(characters.ok ? "2 chars" : "BROKEN").padStart(5)}   == create, switch`);
