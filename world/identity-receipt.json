@@ -1,7 +1,7 @@
 {
   "schema": "mudbenchmark/identity-receipt/1",
   "kernel": "sha256:f916597457214e074b7bb392128452558fc7f867287d8d4712e215cf5abf6705",
-  "app": "sha256:d2c7aeb3bcb72e11e62cf534504d2ac03a7e53e4295a37c161413c696c974b84",
+  "app": "sha256:452c1171ba101e9c95c8a82a683fd1c11fa6cae08494f8d94bab376e4992e87a",
   "fixtures": "sha256:c8b80ab906257bf0f0cd697fd01287c9eda07a2e87e11f1ca746a96e6b76ce49",
   "verdicts": [
     {

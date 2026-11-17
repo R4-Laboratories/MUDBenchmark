@@ -11,11 +11,10 @@
 # Enable: set the repository variable MUDBENCH_LOOP to `on`.
 # Pause: set it to `off` (or delete it). The default is off.
 #
-# If main requires status checks, GitHub rejects the direct push because the
-# gate checks are not attached to it. lexlean-r4's main is unprotected, which is
-# why the same push lands there. The two no-app fixes are recorded in
-# docs/SELF-IMPROVEMENT.md: allow the bot to push, or dispatch the gate on a
-# branch and merge that pull request.
+# The publisher admits and gates before the direct push. The push triggers Gate
+# on the commit; release.yml requires that latest green run, downloads its
+# artifact, creates the tag and publishes. A red candidate is refused before the
+# push. docs/SELF-IMPROVEMENT.md records the branch decision.
 
 name: Loop
 
@@ -87,19 +86,31 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           node tools/publish.mjs --candidates /tmp/candidates.json --result /tmp/result.json --"$MODE"
 
-      - name: Tag the tick and dispatch its release
+      - name: Release the tick through the gated X6 path
         if: steps.tip.outputs.current == 'true' && steps.publish.outputs.committed == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SHA: ${{ steps.publish.outputs.sha }}
         run: |
           set -euo pipefail
+          # The push triggered Gate on main. Wait for the latest run on this
+          # exact SHA; release.yml requires the same green run and downloads its
+          # artifact. A red or missing Gate cannot create the tag.
+          for _ in $(seq 1 60); do
+            row=$(gh run list --workflow gate.yml --commit "$SHA" --limit 1 --json databaseId,status,conclusion --jq '.[0] // empty | "\(.databaseId) \(.status) \(.conclusion)"')
+            status=$(printf '%s' "$row" | awk '{print $2}')
+            conclusion=$(printf '%s' "$row" | awk '{print $3}')
+            if [ "$status" = "completed" ]; then
+              if [ "$conclusion" != "success" ]; then
+                echo "::error::Gate on $SHA is $conclusion"
+                exit 1
+              fi
+              break
+            fi
+            sleep 15
+          done
           BASE=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1 || true)
           BASE=${BASE:-v0.0.0}
           TAG="${BASE}-loop.${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}"
-          git tag "$TAG"
-          git push origin "$TAG"
-          # A tag pushed with GITHUB_TOKEN does not trigger a workflow. Dispatch
-          # is the documented exception, and it preserves the tag as the ref, so
-          # the release job runs against the exact committed tree.
-          gh workflow run gate.yml --ref "$TAG"
-          echo "::notice::dispatched the release for $TAG" >> "$GITHUB_STEP_SUMMARY"
+          gh workflow run release.yml --ref main -f sha="$SHA" -f tag="$TAG" -f notes="Loop pacing tick $TAG."
+          echo "::notice::dispatched $TAG through release.yml for $SHA" >> "$GITHUB_STEP_SUMMARY"

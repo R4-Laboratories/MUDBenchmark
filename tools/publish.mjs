@@ -23,6 +23,7 @@ import { execFileSync } from "node:child_process";
 import { appendFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { measureCandidates } from "./measure.mjs";
+import { admissionAdmits } from "./admission.mjs";
 
 const ROOT = process.cwd();
 const GENERATED = join(ROOT, "world/data/generated/pacing.json");
@@ -83,6 +84,36 @@ if (provided.winner?.id !== fresh.winner.id) {
 
 const winner = candidates.candidates.find((entry) => entry.id === fresh.winner.id);
 if (!winner) stop(`the winner ${fresh.winner.id} is absent from the inventory`);
+
+// The admission policy, before anything is written. The five obligations are
+// independent facts: the candidate's identity binds the inventory, the report
+// and the world; it is no worse on every measured component; it is better on at
+// least one; every change is inside its bound; and the gate must still complete.
+const bounds = JSON.parse(readFileSync(join(ROOT, "world/bounds.json"), "utf8"));
+const boundsOk = fresh.winner.changes.every((change) => {
+  const group = bounds.groups.find((entry) => entry.id === change.group);
+  return Boolean(group)
+    && group.collection === change.collection
+    && group.ids.includes(change.target)
+    && group.fields.includes(change.field)
+    && Number.isInteger(change.to)
+    && change.to >= group.min
+    && change.to <= group.max;
+});
+const measured = fresh.results.find((entry) => entry.id === fresh.winner.id);
+const baseline = fresh.baseline?.components ?? {};
+const components = measured?.components ?? {};
+const keys = Object.keys(baseline);
+const fidelity = keys.length > 0 && keys.every((key) => components[key] >= baseline[key] - 1e-9);
+const benefit = keys.some((key) => components[key] > baseline[key] + 1e-9);
+const identity = Boolean(candidates.hash)
+  && candidates.hash === provided.candidates
+  && fresh.hash === provided.hash
+  && fresh.winner.id === provided.winner?.id
+  && candidates.worldHash === sha(worldText);
+const admission = { identity, fidelity, benefit, bounds: boundsOk, checks: false };
+const missing = Object.entries(admission).filter(([key, value]) => key !== "checks" && !value).map(([key]) => key);
+if (missing.length) stop(`the admission policy refused this candidate: ${missing.join(", ")}`);
 
 // Compose onto the current overlay. The generated file always stores absolute
 // values against the raw world, so `from` is the raw value even when a previous
@@ -148,15 +179,36 @@ try {
 }
 process.stderr.write(gate);
 
+// The gate completed. Record the admission inside the one generated file; the
+// loader ignores the record, and the file now carries its own identity claim.
+const admissionReceipt = existsSync(join(ROOT, "world/admission-receipt.json"))
+  ? JSON.parse(readFileSync(join(ROOT, "world/admission-receipt.json"), "utf8"))
+  : null;
+const admissionRecord = {
+  policy: "mudbenchmark/admission/1",
+  ...admission,
+  checks: true,
+  candidate: winner.id,
+  report: fresh.hash,
+  worldHash: candidates.worldHash,
+  kernel: admissionReceipt?.kernel ?? null,
+};
+if (!admissionAdmits(admissionRecord)) {
+  restore();
+  stop("the admission policy refused the completed candidate");
+}
+const finalText = `${JSON.stringify({ ...generated, admission: admissionRecord }, null, 2)}\n`;
+writeFileSync(GENERATED, finalText);
+
 if (mode === "dry-run") {
   restore();
-  process.stdout.write(text);
-  console.error(`dry run: ${winner.id} passed the gate; the file was restored`);
+  process.stdout.write(finalText);
+  console.error(`dry run: ${winner.id} admitted and passed the gate; the file was restored`);
   process.exit(0);
 }
 
 if (mode === "write") {
-  process.stdout.write(text);
+  process.stdout.write(finalText);
   console.error(`wrote ${GENERATED}; ${changes.length} change(s) from ${winner.id}`);
   process.exit(0);
 }

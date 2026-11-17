@@ -3,7 +3,8 @@
 A release is a tag. wick's deploy timer pulls the newest release every ten
 minutes, replays its acceptance vectors, flips both units, and rolls back if
 either fails. A release contains the holo (the rules), its manifest, the
-identity receipt, and the runtime tarball. The tag is the version on the box.
+identity receipt, the admission receipt, and the runtime tarball. The tag is the
+version on the box.
 
 ## One action
 
@@ -21,12 +22,20 @@ gh workflow run release.yml --ref main \
 3. downloads that run's artifact — the holo the Gate built, proved and
    replayed, its manifest and the identity receipt;
 4. creates the tag;
-5. publishes the release with the artifact, the runtime and the receipt.
+5. publishes the release with the artifact, the runtime, the identity receipt
+   and the admission receipt.
 
 A missing, pending or red Gate run stops the workflow before the tag exists, so
 a red commit cannot become a release. The tag push uses `GITHUB_TOKEN`, which
 does not trigger a second Gate run; the artifact that is published is the one
 the Gate already tested.
+
+## The loop's path
+
+The loop's tick commits the admitted pacing candidate, waits for the main
+`Gate` run on that exact SHA, and dispatches this same `release.yml` with a
+`v<current>-loop.<n>` tag. The loop's release is therefore the one-action path,
+not a second one. `docs/SELF-IMPROVEMENT.md` records the branch decision.
 
 ## The older tag path
 
@@ -65,6 +74,10 @@ Rehearsed 2026-11-16:
   loop's pacing tick;
 - v0.38.0 (stream polish) released from `552d805`; the deploy serves
   `/spans`;
+- v0.39.0 (admission kernel) released from the L5 commit; the release carries
+  both receipts;
+- the loop's first real commit `2f0d8ce` was released as `v0.36.0-loop.3.1`
+  and pulled by the deploy timer;
 - a SHA with no green Gate run (`a78f57e`) refused before the tag was created;
 - the timer pulled v0.34.0; v0.33.0 was deployed and verified (101 accounts,
   101 characters), then v0.34.0 restored;

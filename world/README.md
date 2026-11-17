@@ -15,18 +15,24 @@ no matter what the surrounding process does.
 | `Pulses` | `Pulse {period, remaining}`, recursive `minus` | `advance_at_zero` — a pulse at zero rearms to its period | verified |
 | `Perception` | `Observer {role, room}`, `Notice {room, level}` | `perceives_decides` — an observer sees a notice exactly when co-located and cleared | verified |
 | `Identity` | `credentialHolds presented stored`, `admitted` over eight inputs | Eight refusal theorems — a kind mismatch, an unauthenticated proof, a foreign audience, an out-of-window or expired session, a stale log, a malformed id and a missing credential are each refused | verified |
+| `Admission` | `Candidate {identity, fidelity, benefit, bounds, checks}` | Six theorems — each obligation false refuses; all five hold admits | verified |
 
 Most theorems are proved by `simplify` over their own definitions plus
 `Nat.beq_eq`, with `propext` as the only axiom. The `Identity` refusals are
 closed and proved by `decide`; the kernel uses no axioms at all. Nothing is
 `sorry`-ed and nothing is deferred.
 
-`Identity` is the X5 admission kernel. The eight refusal theorems hold with
+`Identity` is the X5 identity kernel. The eight refusal theorems hold with
 every other check true, which is what the one-false vectors in the app facet
 test. The kind-7 wire form (kind, presented, stored, six 0/1 flags) is in
 `MudBench`; `../runtime/identity.mjs` is the JavaScript twin and
 `../tools/gate.mjs` replays the fixtures through both, then writes
 `identity-receipt.json`.
+
+`Admission` is the L5 candidate kernel. Its six theorems cover the five
+obligations (identity, fidelity, benefit, bounds, checks) with kind 8;
+`../tools/admission.mjs` is the JavaScript twin, the publisher asks it, and the
+gate writes `admission-receipt.json`.
 
 `Fanout` is the load-bearing one. "A viewer sees an event exactly when they
 share a room" is the formal statement of *no omniscience* in

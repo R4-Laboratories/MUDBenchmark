@@ -81,7 +81,7 @@ function applyPacing({ text, raw, path, errors }) {
     entry[change.field] = change.to;
   }
 
-  return { candidate: file.candidate ?? null, report: file.report ?? null, changes: file.changes ?? [] };
+  return { candidate: file.candidate ?? null, report: file.report ?? null, changes: file.changes ?? [], admission: file.admission ?? null };
 }
 
 export function loadWorld({ mode = "single", path = DEFAULT_PATH } = {}) {

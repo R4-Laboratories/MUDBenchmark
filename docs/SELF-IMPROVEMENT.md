@@ -32,9 +32,9 @@ node tools/gate.mjs
 |---|---|---|
 | ruleDebt | 0 | <= 0 |
 | unusedRules | 0 | <= 0 |
-| modelModules | 8 | >= 8 |
-| provedTheorems | 15 | >= 15 |
-| acceptanceVectors | 19 | >= 19 |
+| modelModules | 9 | >= 9 |
+| provedTheorems | 21 | >= 21 |
+| acceptanceVectors | 25 | >= 25 |
 | classicalChoiceAxioms | 0 | == 0 |
 
 ## The tick
@@ -182,10 +182,18 @@ node tools/measure.mjs --candidates candidates.json --out result.json
   or edited report cannot name a winner the current world did not admit.
 - **Gate first.** It writes the file, runs `node tools/gate.mjs` with the
   candidate applied, and restores the old file if the gate fails.
-- **Commit, then release.** `--commit` runs the gate on this tree, commits the
-  one file, and pushes to `main`. The workflow then tags
-  `v<current>-loop.<n>` and dispatches `gate.yml` on that tag. The tag push
-  itself would not trigger a workflow; dispatch is the documented exception.
+- **Admission kernel.** `world/src/Admission.lex.tex` proves a candidate is
+  admitted only when five obligations hold: its identity binds the inventory,
+  report and world; it is no worse on every measured component; it is better on
+  at least one; every change is inside its bound; and the gate completed.
+  `tools/admission.mjs` is the JavaScript twin. The publisher asks it before it
+  writes and records the decision inside `pacing.json`; the gate replays the
+  kind-8 vectors through both and writes `world/admission-receipt.json`, which
+  the release publishes.
+- **Commit, then release.** `--commit` runs the gate and admission on this
+  tree, commits the one file, and pushes to `main`. The workflow waits for the
+  `Gate` run on that exact SHA and dispatches X6's `release.yml`, which
+  downloads the tested artifact and publishes the tag.
 - **PR fallback.** `--push` creates `loop/<candidate>-<hash>` and opens a pull
   request. It never pushes to `main`; it is for a person who wants the review
   path.
@@ -194,39 +202,34 @@ node tools/measure.mjs --candidates candidates.json --out result.json
   applied candidate is a fixed point, not a step toward another change.
 - **Opt-in and pause.** The job runs only when `MUDBENCH_LOOP=on`; set it to `off` to stop it.
 
-### The one difference from lexlean-r4
+### The branch decision
 
-lexlean-r4's `main` is unprotected. Its engine job runs the gate, commits, and
-pushes `HEAD:refs/heads/main` with `GITHUB_TOKEN`. That is why it needs no App.
+`main` is unprotected, so the loop's direct push lands after the publisher's
+in-job admission and gate. The push triggers a `Gate` run on the commit; X6's
+`release.yml` requires that latest run to be green and downloads its artifact.
+A red candidate therefore cannot be released, and a planted bad candidate is
+refused by the admission before it is pushed. The `--push` path remains for a
+review pull request.
 
-MUDBench's `main` has two required status checks. A direct push by the Actions
-bot is rejected because those checks are attached to pull requests, not to the
-push. The loop's gate run is real, but branch protection does not count it.
-
-Two no-app fixes:
-
-1. **Match lexlean-r4.** Remove the required status checks from `main`, or add
-   the Actions app as a bypass actor. The loop's in-job gate and the push gate
-   still run; they no longer block the bot.
-2. **Keep the checks.** The loop pushes a branch, dispatches `gate.yml` on that
-   branch, waits for the check runs, and merges the pull request with
-   `GITHUB_TOKEN`. More moving parts, no protection change.
-
-The first is the r4 mechanism. The second preserves the human gate.
+The other design — required checks, a loop branch, a dispatched Gate and a
+merge — preserves the human gate but adds moving parts. It is recorded here as
+the alternative, not the chosen path.
 
 ## Turning the loop on
 
 1. Set the repository variable `MUDBENCH_LOOP=on`. The default is off.
-2. Choose the push path: allow the Actions bot to push to `main`, or use the
-   branch-dispatch-merge path.
-3. Run the **Loop** workflow by hand with `dry-run`. It measures, writes the
-   pacing file, runs the full gate with it applied, prints it, and restores it.
-4. Run it with `commit`. It commits the pacing file, pushes to `main`, tags
-   `v<current>-loop.<n>`, and dispatches the release. To stop it, set
-   `MUDBENCH_LOOP=off`.
+2. Run the **Loop** workflow by hand with `dry-run`. It measures, writes the
+   pacing file, runs the admission and the full gate with it applied, prints it,
+   and restores it.
+3. Run it with `commit`. It admits and gates the candidate, commits and pushes
+   the one file, waits for the main `Gate` on that exact SHA, and dispatches
+   X6's `release.yml` for the loop tag.
+4. Stop it with `MUDBENCH_LOOP=off`.
 
-The first real commit is the acceptance test for S2. Until it exists, "the loop
-can publish" is a tested tool, not a demonstrated outcome.
+The first real commit is `2f0d8ce` (pacing candidate), released as
+`v0.36.0-loop.3.1` and pulled by the deploy timer. The next commit carries the
+admission record inside `pacing.json`; the L5 rehearsal publishes one through
+the admission and releases it with X6.
 
 ## What the references actually contribute
 

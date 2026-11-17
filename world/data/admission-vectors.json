@@ -1,0 +1,42 @@
+{
+  "schema": "mudbenchmark/admission-vectors/1",
+  "note": "The kind-8 requests and the verdict the proved Admission kernel must give. tools/gate.mjs decodes each request with tools/admission.mjs, checks the same request and response in world/src/MudBench.lex.tex, and writes world/admission-receipt.json.",
+  "vectors": [
+    {
+      "name": "every obligation holds",
+      "request": "08010101010100",
+      "response": "61646d69737369626c65",
+      "expected": "admissible"
+    },
+    {
+      "name": "unknown candidate identity",
+      "request": "08000101010100",
+      "response": "72656675736564",
+      "expected": "refused"
+    },
+    {
+      "name": "protected fidelity regressed",
+      "request": "08010001010100",
+      "response": "72656675736564",
+      "expected": "refused"
+    },
+    {
+      "name": "no measured benefit",
+      "request": "08010100010100",
+      "response": "72656675736564",
+      "expected": "refused"
+    },
+    {
+      "name": "outside the resource bounds",
+      "request": "08010101000100",
+      "response": "72656675736564",
+      "expected": "refused"
+    },
+    {
+      "name": "the gate did not complete",
+      "request": "08010101010000",
+      "response": "72656675736564",
+      "expected": "refused"
+    }
+  ]
+}

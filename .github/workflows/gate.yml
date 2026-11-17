@@ -79,6 +79,7 @@ jobs:
             world/.prism/build/*/MUDBench.holo
             world/.prism/build/*/manifest.json
             world/identity-receipt.json
+            world/admission-receipt.json
           retention-days: 30
 
   release:
@@ -105,10 +106,13 @@ jobs:
           HOLO=$(find artifact -name 'MUDBench.holo' | head -1)
           MANIFEST=$(find artifact -name 'manifest.json' | head -1)
           RECEIPT=$(find artifact -name 'identity-receipt.json' | head -1)
+          ADMISSION=$(find artifact -name 'admission-receipt.json' | head -1)
           test -n "$RECEIPT"
+          test -n "$ADMISSION"
           KERNEL=$(sed -n 's/.*"kernel": "\(sha256:[0-9a-f]*\)".*/\1/p' "$RECEIPT")
-          gh release create "$TAG" "$HOLO" "$MANIFEST" "$RECEIPT" runtime.tar.gz \
+          AKERNEL=$(sed -n 's/.*"kernel": "\(sha256:[0-9a-f]*\)".*/\1/p' "$ADMISSION")
+          gh release create "$TAG" "$HOLO" "$MANIFEST" "$RECEIPT" "$ADMISSION" runtime.tar.gz \
             --repo "$GITHUB_REPOSITORY" \
             --title "$TAG" \
-            --notes "Built, proved and replayed by the gate before publication. Identity kernel $KERNEL; every kind-7 verdict is in identity-receipt.json." \
+            --notes "Built, proved and replayed by the gate before publication. Identity kernel $KERNEL; every kind-7 verdict is in identity-receipt.json. Admission kernel $AKERNEL; every admission verdict is in admission-receipt.json." \
             --verify-tag

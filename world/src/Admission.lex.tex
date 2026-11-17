@@ -1,0 +1,80 @@
+\begin{lexlean}{Admission}
+\useglossary{lexlean.std.bool@1.2.0}
+\title{Boolean}
+\begin{semanticmodule}
+structure{
+  name: Candidate,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: identity, type: Bool},
+    {name: fidelity, type: Bool},
+    {name: benefit, type: Bool},
+    {name: bounds, type: Bool},
+    {name: checks, type: Bool}
+  ]
+}
+
+definition{
+  name: candidateAdmitted,
+  parameters: [candidate : Candidate],
+  result: Bool,
+  body: (if (project candidate identity) then
+    (if (project candidate fidelity) then
+      (if (project candidate benefit) then
+        (if (project candidate bounds) then (project candidate checks) else false)
+      else false)
+    else false)
+  else false),
+  axioms: []
+}
+
+theorem{
+  name: identity_never,
+  parameters: [],
+  statement: ((candidateAdmitted (record Candidate {identity := false, fidelity := true, benefit := true, bounds := true, checks := true})) = false),
+  proof: decide{},
+  axioms: []
+}
+
+theorem{
+  name: fidelity_never,
+  parameters: [],
+  statement: ((candidateAdmitted (record Candidate {identity := true, fidelity := false, benefit := true, bounds := true, checks := true})) = false),
+  proof: decide{},
+  axioms: []
+}
+
+theorem{
+  name: benefit_never,
+  parameters: [],
+  statement: ((candidateAdmitted (record Candidate {identity := true, fidelity := true, benefit := false, bounds := true, checks := true})) = false),
+  proof: decide{},
+  axioms: []
+}
+
+theorem{
+  name: bounds_never,
+  parameters: [],
+  statement: ((candidateAdmitted (record Candidate {identity := true, fidelity := true, benefit := true, bounds := false, checks := true})) = false),
+  proof: decide{},
+  axioms: []
+}
+
+theorem{
+  name: checks_never,
+  parameters: [],
+  statement: ((candidateAdmitted (record Candidate {identity := true, fidelity := true, benefit := true, bounds := true, checks := false})) = false),
+  proof: decide{},
+  axioms: []
+}
+
+theorem{
+  name: all_hold,
+  parameters: [],
+  statement: ((candidateAdmitted (record Candidate {identity := true, fidelity := true, benefit := true, bounds := true, checks := true})) = true),
+  proof: decide{},
+  axioms: []
+}
+\end{semanticmodule}
+\end{lexlean}

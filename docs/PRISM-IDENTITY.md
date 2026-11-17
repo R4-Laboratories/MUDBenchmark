@@ -157,6 +157,11 @@ The admission decision is proved, not only implemented:
   same request and response in the model, plants a flipped vector to prove the
   check fails, and writes the receipt; the release carries it.
 
+A second proved kernel, `Admission`, is the self-improvement loop's candidate
+policy. It consumes five obligations — the candidate's identity, protected
+fidelity, measured benefit, resource bounds and the completed gate — and its
+receipt travels with the release. `docs/SELF-IMPROVEMENT.md` owns the loop.
+
 ## The account and its characters
 
 The Prism id is the account. It is a small record in `state.accounts`:

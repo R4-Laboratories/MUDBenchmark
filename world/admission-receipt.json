@@ -1,0 +1,43 @@
+{
+  "schema": "mudbenchmark/admission-receipt/1",
+  "kernel": "sha256:cc0cd971f1090692e7fad9ad7b23a3a35dada64168de74110b321d3e31c30258",
+  "app": "sha256:452c1171ba101e9c95c8a82a683fd1c11fa6cae08494f8d94bab376e4992e87a",
+  "fixtures": "sha256:32680f1970a4ef6e5e57fad458ac526f8c626d42db261451641a363dce1a6796",
+  "verdicts": [
+    {
+      "name": "every obligation holds",
+      "request": "08010101010100",
+      "verdict": "admissible"
+    },
+    {
+      "name": "unknown candidate identity",
+      "request": "08000101010100",
+      "verdict": "refused"
+    },
+    {
+      "name": "protected fidelity regressed",
+      "request": "08010001010100",
+      "verdict": "refused"
+    },
+    {
+      "name": "no measured benefit",
+      "request": "08010100010100",
+      "verdict": "refused"
+    },
+    {
+      "name": "outside the resource bounds",
+      "request": "08010101000100",
+      "verdict": "refused"
+    },
+    {
+      "name": "the gate did not complete",
+      "request": "08010101010000",
+      "verdict": "refused"
+    }
+  ],
+  "checks": {
+    "js": "6/6",
+    "model": "6/6",
+    "planted": "refused"
+  }
+}

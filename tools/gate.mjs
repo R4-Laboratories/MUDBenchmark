@@ -41,6 +41,7 @@ import { loadStateFile, saveStateFile } from "../runtime/state.mjs";
 import { acceptLinkRequest, completeLink, createDevice, createLinkOffer, createPrism, createRecovery, linkCode, recoverPrism, requestLink, revokeDevice, signAction, verifyAction } from "../runtime/web/prism-id.mjs";
 import { openKit, sealKit } from "../runtime/web/recovery-kit.mjs";
 import { readSpanTail, redactSpans, summarizeSpans } from "../runtime/spans.mjs";
+import { admissionAdmits, decodeAdmissionRequest } from "./admission.mjs";
 import { measureCandidates } from "./measure.mjs";
 
 const root = process.cwd();
@@ -411,6 +412,57 @@ let spanView = { ok: true, why: [] };
   const tail = readSpanTail(file, { recent: 10 });
   check(tail.count === 4 && tail.commands.length === 2 && tail.ticks.max === 12, "reading the span tail lost spans");
   if (spanView.why.length) { spanView.ok = false; failures.push(`the span summary is broken: ${spanView.why[0]}`); }
+}
+
+// L5: the admission kernel and its JS twin agree on every candidate vector.
+let admission = { ok: true, why: [] };
+{
+  const check = (condition, why) => { if (!condition) { admission.ok = false; admission.why.push(why); } };
+  const digest = (text) => createHash("sha256").update(text).digest("hex");
+  const fixtureText = readFileSync(join(root, "world/data/admission-vectors.json"), "utf8");
+  const fixture = JSON.parse(fixtureText);
+  const vectors = fixture.vectors ?? [];
+  const modelText = readFileSync(join(root, "world/src/MudBench.lex.tex"), "utf8");
+  const modelVectors = new Map(
+    [...modelText.matchAll(/AcceptanceVector \{request := 0x([0-9a-f]+), response := 0x([0-9a-f]+)\}/g)]
+      .map((match) => [match[1], match[2]]),
+  );
+  let jsMatched = 0;
+  let modelMatched = 0;
+  for (const vector of vectors) {
+    const flags = decodeAdmissionRequest([...Buffer.from(vector.request, "hex")]);
+    check(flags !== null, `${vector.name}: the request is not a kind-8 admission`);
+    if (!flags) continue;
+    const jsVerdict = admissionAdmits(flags) ? "admissible" : "refused";
+    if (jsVerdict === vector.expected) jsMatched++;
+    else check(false, `${vector.name}: JS says ${jsVerdict}, the fixture says ${vector.expected}`);
+    if (Buffer.from(vector.response, "hex").toString("utf8") !== vector.expected) {
+      check(false, `${vector.name}: the response bytes do not spell ${vector.expected}`);
+    }
+    if (modelVectors.get(vector.request) === vector.response) modelMatched++;
+    else check(false, `${vector.name}: the model does not carry ${vector.request} -> ${vector.response}`);
+  }
+  check(vectors.length >= 6, "the admission fixture lost vectors");
+  check(jsMatched === vectors.length, "the JS admission twin did not match every vector");
+  check(modelMatched === vectors.length, "the model did not carry every admission vector");
+  const planted = { ...vectors[0], expected: vectors[0].expected === "admissible" ? "refused" : "admissible" };
+  const plantedFlags = decodeAdmissionRequest([...Buffer.from(planted.request, "hex")]);
+  const plantedVerdict = admissionAdmits(plantedFlags) ? "admissible" : "refused";
+  check(plantedVerdict !== planted.expected, "a planted bad admission vector was not caught");
+  const publisher = readFileSync(join(root, "tools/publish.mjs"), "utf8");
+  check(/admissionAdmits/.test(publisher), "the publisher does not ask the admission policy");
+  const receipt = {
+    schema: "mudbenchmark/admission-receipt/1",
+    kernel: `sha256:${digest(readFileSync(join(root, "world/src/Admission.lex.tex")))}`,
+    app: `sha256:${digest(modelText)}`,
+    fixtures: `sha256:${digest(fixtureText)}`,
+    verdicts: vectors.map((vector) => ({ name: vector.name, request: vector.request, verdict: vector.expected })),
+    checks: { js: `${jsMatched}/${vectors.length}`, model: `${modelMatched}/${vectors.length}`, planted: "refused" },
+  };
+  const receiptPath = join(root, "world/admission-receipt.json");
+  const receiptText = `${JSON.stringify(receipt, null, 2)}\n`;
+  if (!existsSync(receiptPath) || readFileSync(receiptPath, "utf8") !== receiptText) writeFileSync(receiptPath, receiptText);
+  if (admission.why.length) { admission.ok = false; failures.push(`the admission kernel is broken: ${admission.why[0]}`); }
 }
 
 // R2: a human can hand one character to the AI persona; the owner stays human.
@@ -1563,6 +1615,7 @@ let pacing = { ok: true, why: [] };
     report: "test-report",
     worldHash: hash,
     changes: [{ group: "hostile-hp", collection: "npcs", target: "boar", field: "hp", from: 12, to: 14 }],
+    admission: { identity: true, fidelity: true, benefit: true, bounds: true, checks: true },
   };
   const write = (value) => writeFileSync(join(dir, "generated/pacing.json"), JSON.stringify(value));
   const load = () => loadWorld({ mode: "single", path: worldPath });
@@ -1574,6 +1627,7 @@ let pacing = { ok: true, why: [] };
   check(applied.npcs.find((npc) => npc.id === "boar").hp === 14, "the generated hp was not applied");
   check(applied.npcs.find((npc) => npc.id === "boar").maxHp === 14, "maxHp did not follow the generated hp");
   check(applied.pacing?.candidate === "test-candidate", "the applied pacing was not reported");
+  check(applied.pacing?.admission?.identity === true, "the applied admission record was not reported");
 
   write({ ...file, worldHash: "0".repeat(64) });
   const ignored = load();
@@ -1670,6 +1724,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"recovery".padEnd(26)}  ${(recovery.ok ? "kit" : "BROKEN").padStart(5)}   == new device, old refused`);
   console.log(`${"handoff".padEnd(26)}  ${(handoff.ok ? "delegated" : "BROKEN").padStart(5)}   == owner kept`);
   console.log(`${"spans".padEnd(26)}  ${(spanView.ok ? "summary" : "BROKEN").padStart(5)}   == ticks, commands, redacted`);
+  console.log(`${"admission".padEnd(26)}  ${(admission.ok ? "6 vectors" : "BROKEN").padStart(5)}   == model and JS`);
   console.log(`${"identity".padEnd(26)}  ${(identityKernel.ok ? "10 vectors" : "BROKEN").padStart(5)}   == model and JS`);
   console.log(`${"llms".padEnd(26)}  ${(llms.ok ? "verbs, rooms" : "STALE").padStart(5)}   == generated contract`);
   console.log(`${"claims".padEnd(26)}  ${(claimsCheck.status === 0 ? "levels ok" : "STALE").padStart(5)}   == build, open, some-true`);

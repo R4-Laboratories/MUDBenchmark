@@ -113,13 +113,16 @@ jobs:
           HOLO=$(find artifact -name 'MUDBench.holo' | head -1)
           MANIFEST=$(find artifact -name 'manifest.json' | head -1)
           RECEIPT=$(find artifact -name 'identity-receipt.json' | head -1)
+          ADMISSION=$(find artifact -name 'admission-receipt.json' | head -1)
           test -n "$HOLO"
           test -n "$MANIFEST"
           test -n "$RECEIPT"
+          test -n "$ADMISSION"
           KERNEL=$(sed -n 's/.*"kernel": "\(sha256:[0-9a-f]*\)".*/\1/p' "$RECEIPT")
-          gh release create "$TAG" "$HOLO" "$MANIFEST" "$RECEIPT" runtime.tar.gz \
+          AKERNEL=$(sed -n 's/.*"kernel": "\(sha256:[0-9a-f]*\)".*/\1/p' "$ADMISSION")
+          gh release create "$TAG" "$HOLO" "$MANIFEST" "$RECEIPT" "$ADMISSION" runtime.tar.gz \
             --repo "$GITHUB_REPOSITORY" \
             --title "$TAG" \
-            --notes "Released from ${{ inputs.sha }} by the Gate run $RUN_URL. Identity kernel $KERNEL; every kind-7 verdict is in identity-receipt.json.${NOTES:+ $NOTES}" \
+            --notes "Released from ${{ inputs.sha }} by the Gate run $RUN_URL. Identity kernel $KERNEL; every kind-7 verdict is in identity-receipt.json. Admission kernel $AKERNEL; every admission verdict is in admission-receipt.json.${NOTES:+ $NOTES}" \
             --verify-tag
           echo "released $TAG from ${{ inputs.sha }} (Gate $RUN_ID)" >> "$GITHUB_STEP_SUMMARY"

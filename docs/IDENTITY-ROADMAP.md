@@ -545,12 +545,24 @@ Prime Router need no key. Rehearsed in v0.38: a highlight matched the server's
 `world.input` span at the same tick and command; MB-24/25.
 
 **L5. S2 publisher/admission and the full release decision (candidate 3).**
-*(loop + CI + prismpm)*
+*(loop + CI + prismpm)* — **implemented in v0.39.**
 The loop's first real commit, the admission kernel, the branch-protection/push
 decision, and an identity claim in the admission. The release-on-merge half is
 already X6.
 *Acceptance:* the loop's commit is admitted, gated, released, deployed and
 rolled back once; a planted bad candidate cannot merge.
+
+*Implemented:* `world/src/Admission.lex.tex` proves the five obligations
+(candidate identity, protected fidelity, measured benefit, resource bounds,
+completed gate) with six closed theorems; the app facet kind 8 carries the five
+flags; `tools/admission.mjs` is the JS twin; the gate replays the vectors and
+writes `world/admission-receipt.json`; the publisher embeds the admission record
+inside `pacing.json` and refuses a planted bad candidate. The loop's release now
+waits for the main `Gate` on the exact SHA and dispatches X6's `release.yml`;
+the direct push remains, with the admission and gate before it. The first real
+loop commit `2f0d8ce` was released as `v0.36.0-loop.3.1`; the L5 rehearsal
+commits a pacing candidate through the admission, releases it with X6, deploys
+it, and rolls it back once. MB-26/27.
 
 ### Dependency summary
 

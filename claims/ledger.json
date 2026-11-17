@@ -189,6 +189,18 @@
       "level": "some-true",
       "statement": "A browser run starred a thought; the transcript carried the highlight and per-turn ticks; the Bench read /spans and showed the tick range; the highlight's tick and command matched the server's world.input span; a local provider needed no key.",
       "authority": "headless Chromium stream run 2026-11-17 against a mock OpenAI-compatible provider"
+    },
+    {
+      "id": "MB-26",
+      "level": "build",
+      "statement": "The Admission kernel proves a candidate is admitted only when its identity binds the inventory, report and world, it is no worse on every measured component, it is better on at least one, every change is inside its bound, and the gate completed; the kind-8 vectors agree with the JavaScript twin; a planted bad vector fails; the gate writes the admission receipt and the publisher embeds the decision in pacing.json.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-27",
+      "level": "some-true",
+      "statement": "The loop's first real commit 2f0d8ce was released as v0.36.0-loop.3.1 and pulled by the deploy timer; the loop now waits for the main Gate on the exact SHA and releases through X6; a planted bad candidate is refused; the rollback was rehearsed.",
+      "authority": "loop release v0.36.0-loop.3.1 (run 43998878538); publisher dry-run c-4abd39bfc4ff; gate admission planted vector; deploy rollback v0.33.0/v0.34.0"
     }
   ]
 }
