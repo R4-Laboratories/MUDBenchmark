@@ -83,6 +83,9 @@ Rehearsed 2026-11-16:
   deployed, rolled back to `v0.39.0` and restored;
 - v0.40.0 (session-key challenge) released from the L3 commit; an open tab
   needs a reload to pick up the challenge client;
+- v0.41.0 (owner-authorized rebind) released from `202bbdc`; `k1`,
+  `public-test` and `agent` moved to `prism:4c40ff2d`, the three legacy
+  accounts retired, and the world stayed at 105 accounts / 106 characters;
 - a SHA with no green Gate run (`a78f57e`) refused before the tag was created;
 - the timer pulled v0.34.0; v0.33.0 was deployed and verified (101 accounts,
   101 characters), then v0.34.0 restored;

@@ -525,6 +525,16 @@ Prism rebind moves the character and retires the legacy account; a credentialed
 or online account is refused; the public WebSocket cannot reach the command.
 Rehearsed in v0.41 (MB-30/31).
 
+*Implemented:* `runtime/rebind.mjs` holds the policy; the reducer repeats the
+checks; the server accepts `rebind list`, `rebind <name> token <hash>` and
+`rebind <name> prism <id>` only on the loopback telnet console, with the owner
+token compared in constant time. Token mode stores only a SHA-256 hash and
+`tools/rebind.mjs` writes the plaintext once with mode 600; Prism mode moves the
+character and tombstones the legacy account. On production v0.41.0 the three
+credentialless accounts `k1`, `public-test` and `agent` were moved to
+`prism:4c40ff2d`; the target lists all three, the legacy records are retired,
+and the world stayed at 105 accounts and 106 characters. MB-30/31.
+
 **L2. Relay / instant revocation.** *(runtime; optional)*
 Only if "revoked at next login" is too slow: run `createRelayBus` server-side
 (or self-host) and pass `bus` to `heardLog`. Login must not depend on the

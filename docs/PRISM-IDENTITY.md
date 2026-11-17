@@ -428,6 +428,17 @@ connection's identical session-key answer was refused as a reused counter. The
 AI completed its own challenge and alice and scout were online. MB-28 and MB-29
 record the claims.
 
+R4 was run on production v0.41.0. The owner console listed exactly `k1`,
+`public-test` and `agent` as credentialless. Each was moved to
+`prism:4c40ff2d`; the three legacy accounts are retired with a `mergedInto`
+tombstone and a `rebound` record, their characters are owned by the target and
+still level 1, and the target account lists `prism:4c40ff2d`, `case`, `k1`,
+`public-test` and `agent`. `casey` still has its legacy token. The world stayed
+at 105 accounts and 106 characters, and no credentialless legacy account is
+left. MB-30 and MB-31 record the claims. The target's character list was
+verified from the state and the account logic, not from a signed-in browser
+holding that Prism key.
+
 Not yet proven by the gate: a tampered signature and an unknown device.
 
 ## Decisions taken

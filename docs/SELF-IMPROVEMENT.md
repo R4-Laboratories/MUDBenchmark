@@ -89,11 +89,11 @@ impossible to hide decline.
 
 ## Status
 
-`v0.40.0` is published and deployed. wick runs the release artifact, not a
+`v0.41.0` is published and deployed. wick runs the release artifact, not a
 build directory, so the number on the box is a tag someone can point at:
 
 ```
-mudbench-deploy --status   →   release v0.40.0
+mudbench-deploy --status   →   release v0.41.0
 ```
 
 `main` has no required status checks, so the loop's direct push lands. The Gate
