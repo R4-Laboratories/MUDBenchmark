@@ -24,7 +24,7 @@ const socialOf = (events) =>
  * each. Weights are deliberately simple and inspectable: a routing decision a
  * reader cannot check is a routing decision nobody can trust.
  */
-export function layersFor({ events, memory, goal, recall }) {
+export function layersFor({ events, memory, goal, recall, world = null }) {
   const hasExit = /exits:/i.test(events);
   const hasSpeaker = /says|arrives|leaves|not alone/i.test(events);
   const hasHistory = memory.length > 0;
@@ -39,6 +39,7 @@ export function layersFor({ events, memory, goal, recall }) {
   // What this identity knows from earlier sessions. Identical in both modes:
   // memory is not what is being routed, it is what is being remembered.
   if (recall) layers.splice(1, 0, { name: "recall", text: recall, weight: 6 });
+  if (world) layers.splice(1, 0, { name: "world", text: world, weight: 5 });
   return layers;
 }
 
@@ -47,8 +48,8 @@ export function layersFor({ events, memory, goal, recall }) {
  * `flat` keeps every layer in declaration order; `routed` orders by weight and
  * stops when the budget would be exceeded, always keeping at least one layer.
  */
-export function assemble({ events, memory = [], goal = "map the world and speak to whoever you meet.", mode = "flat", budget = 220, recall = null }) {
-  const layers = layersFor({ events, memory, goal, recall });
+export function assemble({ events, memory = [], goal = "map the world and speak to whoever you meet.", mode = "flat", budget = 220, recall = null, world = null }) {
+  const layers = layersFor({ events, memory, goal, recall, world });
 
   // Cache-aware split. Some layers are the same every turn; they go first, in a
   // fixed order, so consecutive turns share one long prompt prefix and the

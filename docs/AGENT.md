@@ -214,7 +214,15 @@ cannot out-click a human, and a human cannot out-click a model.
 
 The browser signs in with a **Prism id**: **Use my Prism id**. The id is
 created and kept in the browser's IndexedDB, no password is sent, and the server
-verifies a signed `prism/session/1` action against the id's public log. The wire
+verifies a signed `prism/session/1` action against the id's public log. After every accepted command the server sends hidden `#tick <n>` and
+`#state <json>` lines. `#state` carries the world reset countdown, online count,
+phase and weather, plus the actor's level, XP to next, HP, quests, inventory
+count, guild/rank, wielded item and worn items. It is the same information the
+player can already learn from `score`, `quests`, `equipment`, `world` and
+`look`; it is not a privileged view. The web client hides the line; the harness
+and browser AI use it as the current game context.
+
+The wire
 message is `prism <base64url session>`. The session then answers a server nonce
 with `prism/session-key/1 <nonce> <counter>`; `characters`, `play` and `create`
 are refused until the signed challenge passes, so a stolen session token alone

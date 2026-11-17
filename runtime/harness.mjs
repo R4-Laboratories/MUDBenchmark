@@ -231,6 +231,25 @@ function tickFrom(text) {
   return match ? Number(match[1]) : null;
 }
 
+function gameStateFrom(text) {
+  const match = String(text).match(/^#state (.*)$/m);
+  if (!match) return null;
+  try { return JSON.parse(match[1]); } catch { return null; }
+}
+
+function stateText(game) {
+  if (!game?.world) return null;
+  const world = game.world;
+  const self = game.self;
+  const lines = [
+    `WORLD: ${world.online} online · ${world.phase} · ${world.weather ?? "clear"} · reset in ${Math.max(0, Math.round((world.reset_seconds ?? 0) / 60))}m`,
+  ];
+  if (self) {
+    lines.push(`YOU: level ${self.level} · ${self.xp}/${self.next_xp ?? "?"} xp · ${self.hp ?? "?"}/${self.max_hp ?? "?"} hp · ${self.quests?.active ?? 0} active / ${self.quests?.completed ?? 0} done quests · ${self.inventory ?? 0} items${self.wielding ? ` · wielding ${self.wielding}` : ""}`);
+  }
+  return lines.join("\n");
+}
+
 function parseCommand(reply) {
   const lines = String(reply).split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
   for (const line of lines) {
@@ -313,7 +332,8 @@ async function loop() {
       finish(0);
       return;
     }
-    const routed = assemble({ events: seen, memory, goal: GOAL, mode: ROUTER_MODE, budget: BUDGET, recall: recallText() });
+    const game = gameStateFrom(seen);
+    const routed = assemble({ events: seen, memory, goal: GOAL, mode: ROUTER_MODE, budget: BUDGET, recall: recallText(), world: stateText(game) });
     if (process.env.ROUTER_TRACE) {
       console.log(`[${routed.mode}] layers=${routed.layers.join(",")} tokens=${routed.tokens}`);
       console.log(routed.context);

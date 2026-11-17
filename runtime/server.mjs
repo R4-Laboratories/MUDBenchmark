@@ -443,13 +443,63 @@ async function admit({ kind, room, origin = 0, destination = 0, held = 0, amount
 const DIRECTIONS = { n: "north", s: "south", e: "east", w: "west", u: "up", d: "down",
   north: "north", south: "south", east: "east", west: "west", up: "up", down: "down" };
 
+// The short forms AberMUD players type. Movement already has its own; these are
+// the common actions. `g` is get/take, so `gos`/`goss` are the gossip channel.
+const ALIASES = {
+  l: "look", x: "examine", ex: "examine",
+  g: "take", get: "take", grab: "take", dr: "drop", discard: "drop",
+  i: "inventory", inv: "inventory", eq: "equipment",
+  sc: "score", stats: "score", q: "quests", j: "quests", journal: "quests",
+  wh: "who", aw: "awake", online: "who",
+  h: "help", "?": "help",
+  gos: "gossip", goss: "gossip", gc: "guildchat", gchat: "guildchat",
+  status: "world", time: "world",
+};
+
+// One compact, hidden line per accepted command. It carries only what the
+// actor can already learn from score, quests, equipment, world and look.
+function selfState(actor) {
+  const status = worldStatus(state, ROOMS);
+  const self = actor?.key ? {
+    name: actor.name,
+    level: actor.level ?? 1,
+    xp: actor.xp ?? 0,
+    next_xp: nextLevelXp(state.levels, actor.level ?? 1),
+    hp: actor.hp ?? null,
+    max_hp: actor.maxHp ?? null,
+    guild: actor.guild ?? null,
+    guild_rank: actor.guildRank ?? null,
+    quests: {
+      active: actor.quests?.active?.length ?? 0,
+      completed: actor.quests?.completed?.length ?? 0,
+    },
+    inventory: state.objects.filter((object) => object.holder === actor.id && !object.worn).length,
+    wielding: state.objects.find((object) => object.id === actor.wielding)?.name ?? null,
+    worn: state.objects.filter((object) => object.holder === actor.id && object.worn).map((object) => object.name),
+  } : null;
+  return {
+    schema: "mudbenchmark/state/1",
+    tick: state.tick,
+    cycle: state.cycle ?? 0,
+    world: {
+      online: status.online,
+      phase: status.phase,
+      weather: status.weather,
+      reset_seconds: status.reset.seconds,
+      leaders: status.top,
+    },
+    self,
+  };
+}
+
 async function handleCommand(id, line) {
   const raw = line.trim();
   if (!raw) return;
   // Commands are case-insensitive; what a player says is not. Keep the words
   // as typed and lowercase only the parts used for matching.
   const parts = raw.split(/\s+/);
-  const verb = parts[0].toLowerCase();
+  const entered = parts[0].toLowerCase();
+  const verb = ALIASES[entered] ?? entered;
   const restRaw = parts.slice(1);
   const rest = restRaw.map((part) => part.toLowerCase());
   const actor = actorById(id);
@@ -642,6 +692,7 @@ async function handleCommand(id, line) {
     "world.tick": state.tick,
   }, 0);
   sendTo(id, `#tick ${state.tick}\r\n`);
+  sendTo(id, `#state ${JSON.stringify(selfState(actor))}\r\n`);
 
   if (verb === "quit") {
     const session = accountSessions.get(id);
@@ -956,7 +1007,7 @@ async function handleCommand(id, line) {
     if (!actor?.key) {
       return sendTo(id, "MUDBench is a persistent world for people and agents.\r\nSign in with your Prism id, or register <name> <password> / login <name> <password>.\r\nThen type help for the commands.\r\n");
     }
-    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look, look <thing>, examine <thing>.\r\nWorld: world (online, levels, guilds, reset).\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
+    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: get/g, drop/dr, inventory/i, score/sc, quests/q, who/wh, gossip/gos, guildchat/gc.\r\nWorld: world or status (online, levels, guilds, reset).\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
   }
 
   // A command typed before the join tick lands is queued, not refused: the
@@ -986,6 +1037,12 @@ async function handleCommand(id, line) {
     if (online.length === 0) return sendTo(id, "No one is online.\r\n");
     const lines = online.map((candidate) => `${candidate.name}${candidate.level > 1 ? ` (level ${candidate.level})` : ""}${candidate.id === id ? " (you)" : ""}`);
     return sendTo(id, `Online (${online.length}):\r\n  ${lines.join("\r\n  ")}\r\n`);
+  }
+
+  if (verb === "equipment") {
+    const worn = state.objects.filter((object) => object.holder === id && object.worn).map((object) => object.name);
+    const wielded = state.objects.find((object) => object.id === actor.wielding);
+    return sendTo(id, `Armour ${armorOf(actor, state.objects)}. Wielding ${wielded?.name ?? "nothing"}. Worn: ${worn.length ? worn.join(", ") : "nothing"}.\r\n`);
   }
 
   if (verb === "answer") {

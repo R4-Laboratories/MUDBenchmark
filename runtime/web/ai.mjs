@@ -75,17 +75,18 @@ claim unknown, north, south, east, west, up, down (n/s/e/w/u/d), attack <name>,
 flee, wield <weapon>, unwield, inventory, take <thing>, drop <thing>, put <thing> in <thing>,
 open <thing>, close <thing>, wear <thing>, remove <thing>, eat <thing>, light <thing>,
 buy <thing>, sell <thing>, list, wait, wave, nod, bow, laugh, sigh, shrug, dance, score,
-quests, quest accept <id>, quest abandon <id>, deliver <thing> to <name>,
+equipment, quests, quest accept <id>, quest abandon <id>, deliver <thing> to <name>,
 guild create <name>, guild join <name>, guild leave, guild who, guild list, guild chat <text>,
-guild rank <member> <rank>, guild disband, talk <name>, help`;
+guild rank <member> <rank>, guild disband, talk <name>, world, help`;
 
 const VERBS = new Set([
-  "look", "l", "examine", "x", "who", "awake", "answer", "claim", "say", "tell", "mail",
-  "global", "gossip", "trade", "channels", "north", "south", "east", "west", "up", "down",
+  "look", "l", "examine", "x", "ex", "who", "wh", "awake", "aw", "answer", "claim", "say", "tell", "mail",
+  "global", "gossip", "gos", "goss", "trade", "channels", "north", "south", "east", "west", "up", "down",
   "n", "s", "e", "w", "u", "d", "attack", "kill", "flee", "wield", "unwield", "inventory",
-  "i", "take", "get", "drop", "put", "open", "close", "wear", "remove", "eat", "light",
-  "extinguish", "buy", "sell", "list", "wait", "wave", "nod", "bow", "laugh", "sigh",
-  "shrug", "dance", "score", "quests", "quest", "guild", "gc", "gchat", "deliver", "talk", "help",
+  "i", "inv", "equipment", "eq", "take", "get", "g", "grab", "drop", "dr", "put", "open", "close",
+  "wear", "remove", "eat", "light", "extinguish", "buy", "sell", "list", "wait", "wave", "nod", "bow",
+  "laugh", "sigh", "shrug", "dance", "score", "sc", "stats", "quests", "q", "j", "quest", "guild", "gc",
+  "gchat", "deliver", "talk", "world", "status", "help", "h", "?",
 ]);
 
 export const DEFAULT_GOAL =
@@ -120,14 +121,21 @@ ${COMMANDS}
 Goal: ${goal}`;
 }
 
-export function buildUserPrompt({ turn = 1, observation = "", director = [], note = "" } = {}) {
+export function buildUserPrompt({ turn = 1, observation = "", director = [], state = null, note = "" } = {}) {
   const steering = director.length
     ? director.map((line) => `- ${line}`).join("\n")
     : "none";
+  const world = state?.world
+    ? `WORLD: ${state.world.online} online · ${state.world.phase} · ${state.world.weather ?? "clear"} · reset in ${Math.max(0, Math.round((state.world.reset_seconds ?? 0) / 60))}m`
+    : "";
+  const self = state?.self
+    ? `YOU: level ${state.self.level} · ${state.self.xp}/${state.self.next_xp ?? "?"} xp · ${state.self.hp ?? "?"}/${state.self.max_hp ?? "?"} hp · ${state.self.quests?.active ?? 0} active / ${state.self.quests?.completed ?? 0} done quests · ${state.self.inventory ?? 0} items${state.self.guild ? ` · ${state.self.guild}${state.self.guild_rank ? ` (${state.self.guild_rank})` : ""}` : ""}${state.self.wielding ? ` · wielding ${state.self.wielding}` : ""}`
+    : "";
+  const sheet = [world, self].filter(Boolean).join("\n");
   return `TURN ${turn}
 GAME:
 ${observation.trim() || "(no new text)"}
-
+${sheet ? `\nSTATE:\n${sheet}\n` : ""}
 DIRECTOR:
 ${steering}
 ${note ? `\nNOTE: ${note}\n` : ""}

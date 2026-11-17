@@ -31,6 +31,7 @@ import { loadQuests, validateQuestReferences } from "../runtime/quests.mjs";
 import { guildId, validGuildName } from "../runtime/guilds.mjs";
 import { DEFAULT_TURNS, trimMessages } from "../runtime/memory.mjs";
 import { buildLlms } from "../runtime/llms.mjs";
+import { assemble } from "../runtime/router.mjs";
 import { AREA_PERIOD, armorOf, attackRoll, checkpointIdentities, initialState, nextFrom, phaseAt, releaseHeldObjects, step, upgradeState } from "../runtime/world.mjs";
 import { join } from "node:path";
 import { buildCandidates } from "./candidate.mjs";
@@ -154,6 +155,17 @@ let webAI = { ok: true, why: [] };
   check(system.includes("scout") && system.includes("COMMAND:"), "the system prompt lost the name or format");
   const user = buildUserPrompt({ turn: 2, observation: "[The Atrium]", director: ["go north"] });
   check(user.includes("TURN 2") && user.includes("go north"), "the user prompt lost the turn or direction");
+  const stateUser = buildUserPrompt({
+    turn: 3,
+    observation: "[The Atrium]",
+    state: {
+      world: { online: 2, phase: "day", weather: "rain", reset_seconds: 3600 },
+      self: { level: 4, xp: 300, next_xp: 500, hp: 12, max_hp: 14, quests: { active: 1, completed: 2 }, inventory: 3, wielding: "a short sword", guild: "mages", guild_rank: "adept" },
+    },
+  });
+  check(stateUser.includes("WORLD: 2 online") && stateUser.includes("YOU: level 4"), "the user prompt lost the world/self state");
+  const routed = assemble({ events: "[The Atrium]\nExits: north.", world: "WORLD: 2 online · day" });
+  check(routed.layers.includes("world") && routed.context.includes("WORLD: 2 online"), "the router lost the world layer");
   const openai = requestFor("openai", { base: "https://api.openai.com/v1", model: "m", key: "k", name: "scout" }, "sys", [{ role: "user", content: "hi" }]);
   check(openai.url.endsWith("/chat/completions") && openai.headers.authorization === "Bearer k", "the OpenAI request shape is wrong");
   const anthropic = requestFor("anthropic", { base: "https://api.anthropic.com/v1", model: "m", key: "k" }, "sys", [{ role: "user", content: "hi" }]);
@@ -1037,6 +1049,19 @@ let telemetry = { ok: true, why: [] };
   check(worldStatusText(status).includes("alice") && worldStatusText(status).includes("level 4"), "the human world status is missing the actor");
 
   if (telemetry.why.length) { telemetry.ok = false; failures.push(`the telemetry foundation is broken: ${telemetry.why[0]}`); }
+}
+
+// The short forms players type, and the equipment view they expose.
+let aliases = { ok: true, why: [] };
+{
+  const check = (condition, why) => { if (!condition) { aliases.ok = false; aliases.why.push(why); } };
+  const serverText = readFileSync(join(root, "runtime/server.mjs"), "utf8");
+  check(/l: "look"/.test(serverText) && /x: "examine"/.test(serverText), "look/examine aliases are missing");
+  check(/g: "take"/.test(serverText) && /dr: "drop"/.test(serverText), "get/drop aliases are missing");
+  check(/eq: "equipment"/.test(serverText) && /verb === "equipment"/.test(serverText), "the equipment alias or view is missing");
+  check(/status: "world"/.test(serverText) && /time: "world"/.test(serverText), "the world status aliases are missing");
+  check(/armorOf\(actor, state\.objects\)/.test(serverText), "equipment does not pass the world objects to armorOf");
+  if (aliases.why.length) { aliases.ok = false; failures.push(`the command aliases are broken: ${aliases.why[0]}`); }
 }
 
 // The state file is atomic, backed up, and fail-loud.
@@ -2016,7 +2041,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"mechanizedDrift".padEnd(26)}  ${(driftOk ? "clean" : "DRIFT").padStart(5)}   == clean`);
   console.log(`${"loop".padEnd(26)}  ${(loop.ok ? String(loop.count) : "BROKEN").padStart(5)}   == ${loop.ok ? `${loop.admitted} admitted, bounded` : "no verdict"}`);
   console.log(`${"pacing".padEnd(26)}  ${(pacing.ok ? "14 hp" : "BROKEN").padStart(5)}   == applied, bound, refused`);
-  console.log(`${"webAI".padEnd(26)}  ${(webAI.ok ? "19 checks" : "BROKEN").padStart(5)}   == parse, prompt, urls, keys, shapes`);
+  console.log(`${"webAI".padEnd(26)}  ${(webAI.ok ? "22 checks" : "BROKEN").padStart(5)}   == parse, prompt, urls, keys, state`);
   console.log(`${"prismId".padEnd(26)}  ${(prismSession.ok ? "signed" : "BROKEN").padStart(5)}   == session verifier`);
   console.log(`${"sessionKey".padEnd(26)}  ${(sessionChallenge.ok ? "signed" : "BROKEN").padStart(5)}   == nonce, counter, key`);
   console.log(`${"prismLogin".padEnd(26)}  ${(prismLogin.ok ? "account" : "BROKEN").padStart(5)}   == id, character`);
@@ -2026,6 +2051,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"delete".padEnd(26)}  ${(deletion.ok ? "bare only" : "BROKEN").padStart(5)}   == no refs, no progress`);
   console.log(`${"stream".padEnd(26)}  ${(stream.ok ? "public" : "BROKEN").padStart(5)}   == filters, events, watch`);
   console.log(`${"telemetry".padEnd(26)}  ${(telemetry.ok ? "trends" : "BROKEN").padStart(5)}   == ai, world, clients`);
+  console.log(`${"aliases".padEnd(26)}  ${(aliases.ok ? "short" : "BROKEN").padStart(5)}   == get, eq, status`);
   console.log(`${"pinned".padEnd(26)}  ${(identityPin.ok ? "revoked" : "BROKEN").padStart(5)}   == old log refused`);
   console.log(`${"takeover".padEnd(26)}  ${(takeover.ok ? "1 actor" : "BROKEN").padStart(5)}   == leave then login`);
   console.log(`${"characters".padEnd(26)}  ${(characters.ok ? "2 chars" : "BROKEN").padStart(5)}   == create, switch`);

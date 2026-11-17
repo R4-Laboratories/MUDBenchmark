@@ -273,6 +273,12 @@
       "level": "build",
       "statement": "The public watch layer supports owner-starred highlight clips with a copy action, two-option audience polls started and closed by the streamer, one vote per viewer with live counts and the result delivered to the AI, and an owner chat-off/chat-on toggle. Highlight text passes the same private-line filter as public text; poll and vote frames are separate from game commands; chat and votes share a 1.5-second per-connection limit. The gate covers the highlight event kind, poll/chat server paths and watch-page rendering; a live server rehearsal counted a vote, delivered the poll result and rendered a highlight.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-40",
+      "level": "build",
+      "statement": "The server accepts AberMUD-style short forms (l, x/ex, g/get/grab, dr, i/inv, eq, sc, q/j, wh, aw, h/?, gos/goss, gc/gchat, status/time) and exposes an `equipment` view with armour, wielded item and worn items. After each accepted command it sends a hidden `#state` JSON line with world reset/online/phase/weather and the actor level, XP to next, HP, quests, inventory count, guild/rank, wielded and worn items. The browser AI and harness use that state in the prompt and R4 router. The gate checks the aliases, equipment view and state layer.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

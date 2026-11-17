@@ -108,6 +108,8 @@ Rehearsed 2026-11-16:
   mode with a look fallback (MB-38);
 - v0.45.0 (watch v2) adds highlight clips, audience polls and a chat toggle to
   the public watch page (MB-39);
+- v0.46.0 (commands and state) adds AberMUD short forms, an `equipment` view
+  and the hidden `#state` line used by the AI prompt and R4 router (MB-40);
 - a SHA with no green Gate run (`a78f57e`) refused before the tag was created;
 - the timer pulled v0.34.0; v0.33.0 was deployed and verified (101 accounts,
   101 characters), then v0.34.0 restored;

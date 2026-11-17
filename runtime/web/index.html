@@ -618,7 +618,7 @@
     lastCommand: "", startedAt: null, recent: [], nudge: false, lastError: null,
     character: "scout", lastRequest: null, lastReply: null, lastParsed: null, lastLatency: 0,
     persona: null, owner: null, personaAudience: null, tickFrom: null, lastTick: null,
-    highlights: [], streaming: false, timeouts: 0, lastPoll: null,
+    highlights: [], streaming: false, timeouts: 0, lastPoll: null, state: null,
   };
   const shortId = (id) => (id ? `${id.slice(0, 15)}…` : "—");
 
@@ -726,6 +726,7 @@
         try { renderCharacters(JSON.parse(charactersLine[1])); } catch {}
         return;
       }
+      if (/^#state /.test(text)) return;
       if (/^#tick \d+\r?\n?$/.test(text)) return;
       append(text);
       if (/signed in elsewhere/i.test(text)) {
@@ -1474,6 +1475,7 @@
     AI.recent = [];
     AI.nudge = false;
     AI.lastPoll = null;
+    AI.state = null;
     AI.lastError = null;
     AI.room = "";
     AI.lastCommand = "";
@@ -1877,6 +1879,11 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         }
         return;
       }
+      const stateLine = text.match(/^#state (.*)\r?\n?$/);
+      if (stateLine) {
+        try { AI.state = JSON.parse(stateLine[1]); } catch {}
+        return;
+      }
       const tickLine = text.match(/^#tick (\d+)\r?\n?$/);
       if (tickLine) {
         AI.lastTick = Number(tickLine[1]);
@@ -1996,6 +2003,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         turn,
         observation,
         director,
+        state: AI.state,
         note: AI.nudge ? "You repeated a command. Do something different: move, examine, take, talk, or check your inventory." : "",
       });
       AI.nudge = false;
