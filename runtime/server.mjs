@@ -28,6 +28,7 @@ import { allowCommand as allowInput, DEFAULT_INTERVAL_MS } from "./allowance.mjs
 import { verifyPrismSession, verifyPersonaOwner, verifySessionKey, prismDisplay } from "./prism-auth.mjs";
 import { CREDENTIAL, identityAdmits } from "./identity.mjs";
 import { normalizePrismId, ownerAllowed, rebindPlan } from "./rebind.mjs";
+import { normalizeStreamEvent, publicStreamText } from "./stream.mjs";
 import { loadStateFile, saveStateFile } from "./state.mjs";
 
 const HOLO_URL = process.env.HOLO_URL ?? "http://127.0.0.1:8082";
@@ -104,6 +105,9 @@ const WORD_LEVELS = Object.values(ROOMS).flatMap((room) =>
 const VAULT = loaded.task.vault;
 const SHRINE = loaded.task.shrine;
 const transports = new Map(); // id -> { send, close, welcomed }
+const spectators = new Set(); // public /watch sockets
+let live = null; // { actorId, name, account, room, tick, startedAt, status, events }
+let nextViewer = 1;
 const pending = [];
 const accountSessions = new Map(); // id -> { key, kind: "prism" | "legacy" }
 
@@ -146,6 +150,7 @@ let nextId = 1;
 
 // Guards that must exist before this is reachable by anyone but us.
 const MAX_CLIENTS = Number(process.env.MAX_CLIENTS ?? 40);
+const MAX_SPECTATORS = Number(process.env.MAX_SPECTATORS ?? 200);
 const RATE_WINDOW_MS = 5000;
 const RATE_MAX = 12;
 const buckets = new Map();
@@ -247,6 +252,85 @@ function sendTo(id, text) {
 // rebind carries only a hash, and a Prism rebind carries the public id.
 function sendRebind(id, payload) {
   return sendTo(id, `#rebind ${JSON.stringify(payload)}\r\n`);
+}
+
+// --- the public watch layer ----------------------------------------------
+
+function publicLive() {
+  if (!live) return null;
+  return {
+    status: live.status,
+    name: live.name,
+    room: live.room,
+    tick: live.tick,
+    startedAt: live.startedAt,
+    viewers: spectators.size,
+    events: live.events.slice(-80),
+  };
+}
+
+function broadcastStream(payload) {
+  const text = `#stream ${JSON.stringify(payload)}\n`;
+  for (const socket of spectators) {
+    try { if (socket.readyState === 1) socket.send(text); } catch {}
+  }
+}
+
+function broadcastViewers() {
+  broadcastStream({ type: "viewers", viewers: spectators.size });
+}
+
+function startLive(id) {
+  const actor = actorById(id);
+  if (!actor?.key) return null;
+  if (live && live.actorId !== id) return null;
+  if (live) return live;
+  live = {
+    actorId: id,
+    name: actor.name,
+    account: actor.account ?? actor.key,
+    room: ROOMS[actor.room]?.name ?? String(actor.room),
+    tick: state.tick,
+    startedAt: new Date().toISOString(),
+    status: "live",
+    events: [],
+  };
+  broadcastStream({ type: "live", live: publicLive() });
+  return live;
+}
+
+function stopLive(id = null) {
+  if (!live) return false;
+  if (id != null && live.actorId !== id) return false;
+  live = null;
+  broadcastStream({ type: "off" });
+  return true;
+}
+
+function publishLive(id, event) {
+  if (!live || live.actorId !== id) return false;
+  if (event.kind === "text") {
+    const publicText = publicStreamText(event.text);
+    if (!publicText) return false;
+    event = { ...event, text: publicText };
+  }
+  if (!event.text && event.kind !== "status") return false;
+  if (event.kind === "room") live.room = event.text;
+  if (event.tick != null) live.tick = event.tick;
+  if (event.kind === "status") live.status = event.text;
+  const published = { ...event, at: new Date().toISOString() };
+  live.events.push(published);
+  if (live.events.length > 120) live.events.splice(0, live.events.length - 120);
+  broadcastStream({
+    type: "event",
+    event: published,
+    name: live.name,
+    room: live.room,
+    tick: live.tick,
+    status: live.status,
+    viewers: spectators.size,
+  });
+  return true;
 }
 
 function broadcast(room, text, exceptId) {
@@ -434,6 +518,41 @@ async function handleCommand(id, line) {
     const payload = { ok: true, queued: true, account: name, mode: plan.mode };
     if (plan.mode === "prism") payload.to = plan.prism;
     return sendRebind(id, payload);
+  }
+
+  // The public watch layer is opt-in and read-only. The streamer presses Go
+  // live in the AI panel; only that authenticated actor can publish events.
+  // Spectator chat is handled on the /live socket, not as a game command.
+  if (verb === "stream") {
+    if (!actor?.key) return sendTo(id, "Sign in to start a stream.\r\n");
+    const action = rest[0];
+    if (action === "on") {
+      if (live && live.actorId !== id) return sendTo(id, "Another run is live right now.\r\n");
+      if (!startLive(id)) return sendTo(id, "The stream could not start.\r\n");
+      sendTo(id, "#stream-state on\r\n");
+      return sendTo(id, "Public stream on: /watch\r\n");
+    }
+    if (action === "off") {
+      if (stopLive(id)) {
+        sendTo(id, "#stream-state off\r\n");
+        return sendTo(id, "Public stream off.\r\n");
+      }
+      return sendTo(id, "This run is not live.\r\n");
+    }
+    if (action === "event") {
+      if (!live || live.actorId !== id) return sendTo(id, "This run is not live.\r\n");
+      let event = null;
+      try {
+        event = normalizeStreamEvent(JSON.parse(restRaw.slice(1).join(" ")));
+      } catch {}
+      // A filtered text chunk or a malformed frame is not a player error; the
+      // streamer is a client. Drop it silently rather than echoing an error
+      // back into the text the client publishes.
+      if (!event) return;
+      publishLive(id, event);
+      return;
+    }
+    return sendTo(id, "Usage: stream on | stream off | stream event <json>.\r\n");
   }
 
   // The input allowance: one accepted command per interval, shared by every
@@ -1597,8 +1716,14 @@ async function handleCommand(id, line) {
 // The limiter is charged once per non-empty line, when it arrives. Replays of
 // lines that were deferred before the actor existed are not charged again.
 async function handle(id, line) {
-  if (!line.trim()) return;
-  if (!allowCommand(id)) return sendTo(id, "Slow down.\r\n");
+  const raw = line.trim();
+  if (!raw) return;
+  // The login handshake, the owner console and the stream telemetry are not
+  // game commands. They have their own checks and must not consume the player's
+  // global line budget: a busy AI publishes several stream events per turn.
+  if (!/^(stream|session-key|rebind)\b/i.test(raw) && !allowCommand(id)) {
+    return sendTo(id, "Slow down.\r\n");
+  }
   return handleCommand(id, line);
 }
 
@@ -1611,6 +1736,7 @@ function onTick() {
   const identityChanged = intents.some((intent) => ["login", "register", "password", "claim", "claimLegacy", "rebindLegacy", "createCharacter", "ownAccount", "retireAccount", "handoffCharacter", "revokeHandoff"].includes(intent.kind));
   const result = step({ state, rooms: ROOMS, intents });
   state = result.state;
+  if (live && !state.actors.some((actor) => actor.id === live.actorId)) stopLive();
 
   for (const event of result.events) {
     // An NPC's action is gameplay data, not just text delivered to a room.
@@ -1772,6 +1898,7 @@ const server = net.createServer((socket) => {
     transports.delete(id);
     buckets.delete(id);
     accountSessions.delete(id);
+    stopLive(id);
     pending.push({ kind: "leave", actorId: id });
   });
 });
@@ -1789,6 +1916,17 @@ const web = http.createServer((req, res) => {
     } catch {
       res.writeHead(500, { "content-type": "text/plain" });
       res.end("client missing");
+    }
+    return;
+  }
+  if (pathname === "/watch" || pathname === "/watch.html") {
+    try {
+      const html = readFileSync(new URL("./web/watch.html", import.meta.url));
+      res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" });
+      res.end(html);
+    } catch {
+      res.writeHead(500, { "content-type": "text/plain" });
+      res.end("watch page missing");
     }
     return;
   }
@@ -1877,6 +2015,48 @@ const web = http.createServer((req, res) => {
 
 const wss = new WebSocketServer({ server: web, maxPayload: 1024 * 1024 });
 wss.on("connection", (ws, req) => {
+  const requestUrl = new URL(req.url ?? "/", "http://localhost");
+  if (requestUrl.pathname === "/live" || requestUrl.searchParams.get("watch") === "1") {
+    if (spectators.size >= MAX_SPECTATORS) {
+      ws.send("The stream is full.\n");
+      ws.close();
+      return;
+    }
+    const viewer = `viewer-${nextViewer++}`;
+    spectators.add(ws);
+    ws.isAlive = true;
+    ws.on("pong", () => { ws.isAlive = true; });
+    ws.send(`#stream ${JSON.stringify({ type: "snapshot", live: live ? publicLive() : null, viewers: spectators.size })}\n`);
+    broadcastViewers();
+    let lastChat = 0;
+    ws.on("message", (data) => {
+      for (const line of data.toString("utf8").split("\n")) {
+        const raw = line.trim();
+        if (!raw) continue;
+        if (!/^chat\s+/i.test(raw)) {
+          ws.send(`#stream ${JSON.stringify({ type: "error", why: "viewers can only chat" })}\n`);
+          continue;
+        }
+        const now = Date.now();
+        if (now - lastChat < 1500) {
+          ws.send(`#stream ${JSON.stringify({ type: "error", why: "slow down" })}\n`);
+          continue;
+        }
+        lastChat = now;
+        const text = raw.replace(/^chat\s+/i, "").trim().slice(0, 240);
+        if (!text) continue;
+        const message = { from: viewer, text, at: new Date().toISOString() };
+        broadcastStream({ type: "chat", ...message });
+        if (live) sendTo(live.actorId, `#stream-chat ${JSON.stringify(message)}\n`);
+      }
+    });
+    ws.on("error", () => {});
+    ws.on("close", () => {
+      spectators.delete(ws);
+      broadcastViewers();
+    });
+    return;
+  }
   if (transports.size >= MAX_CLIENTS) {
     ws.send("The world is full.\n");
     ws.close();
@@ -1903,6 +2083,7 @@ wss.on("connection", (ws, req) => {
     transports.delete(id);
     buckets.delete(id);
     accountSessions.delete(id);
+    stopLive(id);
     pending.push({ kind: "leave", actorId: id });
   });
 });

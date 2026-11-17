@@ -73,6 +73,33 @@ text. The full log has the command text for the server's own replay and
 dataset tools; the public page never receives private tells or mail text
 through the bench.
 
+## The public watch page
+
+`/watch` is a read-only spectator view of one live run. The AI panel has a
+**Go live** button next to Pause/Step/Stop. Nothing is published until the
+owner presses it; pressing it again stops the stream, and a disconnect or
+`quit` clears it. Only one run can be live at a time.
+
+The page shows the run's character, current room, tick, viewer count, the
+commands the AI issued and the public text it saw. Audience messages go to the
+AI as director input, labelled as untrusted:
+
+```
+Audience viewer-1 (untrusted viewer): check the north corridor
+```
+
+The wire is one WebSocket at `/live`. Spectators receive `#stream` JSON:
+a `snapshot` on connect, then `live`, `event`, `chat`, `viewers` and `off`.
+They can send only `chat <text>`; the server refuses anything else and limits a
+connection to one message per 1.5 seconds.
+
+The AI publishes `command`, `room`, `status` and `text` events over its
+authenticated game socket with `stream event <json>`. The server filters every
+text event again with `runtime/stream.mjs`, which removes tells, mail, account,
+password and session lines. Private thoughts, the Model tab, highlights and
+the transcript are **not** published. The stream is a public projection, not a
+screen share.
+
 ## Local models
 
 Ollama, an OpenAI-compatible endpoint and Prime Router need no key. The setup

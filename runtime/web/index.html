@@ -154,6 +154,7 @@
   .msg { border: 1px solid var(--line); background: #0b0f14; padding: 8px 10px; font-size: 13px; line-height: 1.5; }
   .msg.you { border-color: #1f6feb88; }
   .msg.ai { border-color: #7ee78766; }
+  .msg.viewer { border-color: #93c5fd66; }
   .msg.system { border-color: #f0883e66; color: var(--muted); }
   .msg .who { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
   #director-form { display: flex; gap: 6px; margin-top: 8px; }
@@ -421,9 +422,11 @@
           <div class="row">
             <button type="button" id="ai-pause">Pause</button>
             <button type="button" id="ai-step">Step</button>
+            <button type="button" id="ai-stream">Go live</button>
             <button type="button" id="ai-stop">Stop</button>
           </div>
         </div>
+        <p class="small muted" style="margin:0 0 8px"><a href="/watch" target="_blank" rel="noopener" style="color: var(--accent)">Public watch page</a> — press Go live to publish this run. Audience chat reaches the AI as director input.</p>
         <div id="chat" aria-live="polite"></div>
         <form id="director-form">
           <input id="director-input" autocomplete="off" placeholder="Steer the AI…" aria-label="Director message">
@@ -527,6 +530,7 @@
   const aiReset = document.getElementById("ai-reset");
   const aiPause = document.getElementById("ai-pause");
   const aiStep = document.getElementById("ai-step");
+  const aiStream = document.getElementById("ai-stream");
   const aiStop = document.getElementById("ai-stop");
   const aiTitle = document.getElementById("ai-title");
   const aiSub = document.getElementById("ai-sub");
@@ -584,7 +588,7 @@
     lastCommand: "", startedAt: null, recent: [], nudge: false, lastError: null,
     character: "scout", lastRequest: null, lastReply: null, lastParsed: null, lastLatency: 0,
     persona: null, owner: null, personaAudience: null, tickFrom: null, lastTick: null,
-    highlights: [],
+    highlights: [], streaming: false,
   };
   const shortId = (id) => (id ? `${id.slice(0, 15)}…` : "—");
 
@@ -1472,11 +1476,13 @@
     // character stayed in the world.
     const socket = AI.socket;
     if (socket?.readyState === WebSocket.OPEN) {
+      if (AI.streaming) { try { socket.send("stream off\n"); } catch {} }
       try { socket.send("quit\n"); } catch {}
       setTimeout(() => { try { socket.close(); } catch {} }, 100);
     } else {
       try { socket?.close(); } catch {}
     }
+    setStreaming(false);
     AI.socket = null;
     AI.authed = false;
     document.body.classList.remove("ai-running");
@@ -1495,6 +1501,17 @@
     livebar.classList.toggle("live", text === "live" || text === "thinking");
   }
 
+  function setStreaming(next) {
+    AI.streaming = next;
+    aiStream.textContent = next ? "Stop stream" : "Go live";
+    aiStream.classList.toggle("live", next);
+  }
+
+  function publishStream(event) {
+    if (!AI.streaming || AI.socket?.readyState !== WebSocket.OPEN) return;
+    AI.socket.send(`stream event ${JSON.stringify(event)}\n`);
+  }
+
   function updateLiveBar() {
     liveName.textContent = AI.name || "AI";
     liveRoom.textContent = AI.room ? `· ${AI.room}` : "";
@@ -1509,6 +1526,7 @@
     AI.paused = next;
     updatePause();
     setAIStatus(next ? "paused" : "live");
+    if (AI.streaming) publishStream({ kind: "status", text: next ? "paused" : "live", tick: AI.lastTick });
     if (!next) scheduleTurn(250);
   }
 
@@ -1517,7 +1535,7 @@
     wrap.className = `msg ${who}`;
     const label = document.createElement("div");
     label.className = "who";
-    label.textContent = who === "you" ? "You" : who === "ai" ? (AI.name || "AI") : "System";
+    label.textContent = who === "you" ? "You" : who === "ai" ? (AI.name || "AI") : who === "viewer" ? "Viewer" : "System";
     const body = document.createElement("div");
     body.textContent = text;
     wrap.append(label, body);
@@ -1744,6 +1762,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
     };
     ws.onclose = () => {
       AI.authed = false;
+      setStreaming(false);
       if (AI.running) {
         setAIStatus("reconnecting");
         AI.reconnect = setTimeout(connectAI, 2000);
@@ -1755,6 +1774,21 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
     };
     ws.onmessage = async (event) => {
       const text = String(event.data);
+      const streamState = text.match(/^#stream-state (on|off)\r?\n?$/);
+      if (streamState) {
+        setStreaming(streamState[1] === "on");
+        if (AI.streaming && AI.room) publishStream({ kind: "room", text: AI.room, tick: AI.lastTick });
+        return;
+      }
+      const streamChat = text.match(/^#stream-chat (.*)\r?\n?$/);
+      if (streamChat) {
+        try {
+          const message = JSON.parse(streamChat[1]);
+          addChat("viewer", message.text);
+          AI.director.push(`Audience ${message.from}: ${message.text}`);
+        } catch {}
+        return;
+      }
       const challengeLine = text.match(/^#challenge ([\w-]+)\r?\n?$/);
       if (challengeLine) {
         try {
@@ -1809,6 +1843,13 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       }
       AI.observed += text;
       append(text);
+      if (AI.streaming) publishStream({ kind: "text", text, tick: AI.lastTick });
+      if (/Public stream on/i.test(text)) setStreaming(true);
+      if (/Public stream off/i.test(text)) setStreaming(false);
+      if (/Another run is live right now|stream could not start/i.test(text)) {
+        setStreaming(false);
+        addChat("system", text.trim());
+      }
 
       if (/Prism sign-in refused/i.test(text)) {
         AI.paused = true;
@@ -1843,6 +1884,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         AI.room = room[1];
         updateLiveBar();
         updateRunStats();
+        if (AI.streaming) publishStream({ kind: "room", text: room[1], tick: AI.lastTick });
       }
       scheduleTurn(650);
     };
@@ -1871,6 +1913,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
     const director = [...AI.director];
     setAIStatus("thinking");
     updateRunStats();
+    if (AI.streaming) publishStream({ kind: "status", text: "thinking", tick: AI.lastTick });
 
     const started = performance.now();
     try {
@@ -1951,6 +1994,10 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
 
       AI.commands += 1;
       addLine(`> ${parsed.command}`, "ai-cmd");
+      if (AI.streaming) {
+        publishStream({ kind: "command", text: parsed.command, turn, tick: AI.lastTick });
+        publishStream({ kind: "status", text: "live", tick: AI.lastTick });
+      }
       if (AI.socket?.readyState === WebSocket.OPEN) AI.socket.send(`${parsed.command}\n`);
       else throw new Error("The AI is not connected.");
       AI.lastError = null;
@@ -1967,6 +2014,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       AI.lastError = String(message);
       updatePause();
       setAIStatus("error");
+      if (AI.streaming) publishStream({ kind: "status", text: "error", tick: AI.lastTick });
     } finally {
       AI.busy = false;
       updateRunStats();
@@ -1976,6 +2024,19 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
   aiStart.addEventListener("click", startAI);
   aiStop.addEventListener("click", () => stopAI());
   aiPause.addEventListener("click", () => setPaused(!AI.paused));
+  aiStream.addEventListener("click", () => {
+    if (!AI.authed) {
+      addChat("system", "Start the AI first, then open the public stream.");
+      return;
+    }
+    if (AI.streaming) {
+      AI.socket?.send("stream off\n");
+      addChat("system", "Turning the public stream off.");
+    } else {
+      AI.socket?.send("stream on\n");
+      addChat("system", "Opening the public stream at /watch.");
+    }
+  });
   aiStep.addEventListener("click", async () => {
     AI.paused = true;
     updatePause();

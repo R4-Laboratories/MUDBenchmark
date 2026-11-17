@@ -45,6 +45,7 @@ import { admissionAdmits, decodeAdmissionRequest } from "./admission.mjs";
 import { measureCandidates } from "./measure.mjs";
 import { normalizePrismId, ownerAllowed, rebindPlan, tokenHash } from "../runtime/rebind.mjs";
 import { deleteLegacy } from "./delete-legacy.mjs";
+import { normalizeStreamEvent, publicStreamText } from "../runtime/stream.mjs";
 
 const root = process.cwd();
 const ratchet = JSON.parse(readFileSync(join(root, "world/ratchet.json"), "utf8"));
@@ -914,6 +915,36 @@ let deletion = { ok: true, why: [] };
   check(!deleteLegacy(state, "casey").ok, "a held object was deleted with the character");
 
   if (deletion.why.length) { deletion.ok = false; failures.push(`the baseline delete is broken: ${deletion.why[0]}`); }
+}
+
+// The public watch layer filters private lines before anything is broadcast,
+// and accepts only the four public event kinds.
+let stream = { ok: true, why: [] };
+{
+  const check = (condition, why) => { if (!condition) { stream.ok = false; stream.why.push(why); } };
+  const raw = "The Vault is cold.\nA guard tells you a secret.\nYou tell the guard hello.\nPassword changed.\n#tick 4\nExits: north.";
+  const publicText = publicStreamText(raw);
+  check(publicText.includes("The Vault is cold"), "a public room line was filtered");
+  check(publicText.includes("Exits: north"), "a public exit line was filtered");
+  check(!/tells you/i.test(publicText), "a private tell was published");
+  check(!/You tell/i.test(publicText), "the streamer's tell was published");
+  check(!/Password/i.test(publicText), "a password line was published");
+  check(!/#tick/.test(publicText), "a hidden tick line was published");
+  check(normalizeStreamEvent({ kind: "command", text: "look", tick: 4 })?.text === "look", "a command event was refused");
+  check(normalizeStreamEvent({ kind: "room", text: "The Vault" })?.text === "The Vault", "a room event was refused");
+  check(normalizeStreamEvent({ kind: "status", text: "live" })?.text === "live", "a status event was refused");
+  check(normalizeStreamEvent({ kind: "text", text: "A guard tells you x" }) === null, "a private-only text event was accepted");
+  check(normalizeStreamEvent({ kind: "secret", text: "x" }) === null, "an unknown event kind was accepted");
+  check(normalizeStreamEvent({ kind: "command", text: "x".repeat(500) })?.text.length === 240, "a command was not bounded");
+  const serverText = readFileSync(join(root, "runtime/server.mjs"), "utf8");
+  check(/pathname === "\/live"/.test(serverText), "the server has no /live spectator socket");
+  check(/#stream-state/.test(serverText), "the server does not confirm stream state");
+  check(/\^\(stream\|session-key\|rebind\)/.test(serverText), "control verbs still consume the player rate limit");
+  const page = readFileSync(join(root, "runtime/web/index.html"), "utf8");
+  check(/id="ai-stream"/.test(page) && /#stream-chat/.test(page), "the AI panel has no Go live path");
+  const watch = readFileSync(join(root, "runtime/web/watch.html"), "utf8");
+  check(/WebSocket\(`\$\{scheme\}\/\/\$\{location\.host\}\/live`\)/.test(watch), "the watch page does not connect to /live");
+  if (stream.why.length) { stream.ok = false; failures.push(`the public stream is broken: ${stream.why[0]}`); }
 }
 
 // The state file is atomic, backed up, and fail-loud.
@@ -1896,6 +1927,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"claim".padEnd(26)}  ${(claim.ok ? "adds char" : "BROKEN").padStart(5)}   == owner, tombstone`);
   console.log(`${"rebind".padEnd(26)}  ${(rebind.ok ? "token, prism" : "BROKEN").padStart(5)}   == owner, online, once`);
   console.log(`${"delete".padEnd(26)}  ${(deletion.ok ? "bare only" : "BROKEN").padStart(5)}   == no refs, no progress`);
+  console.log(`${"stream".padEnd(26)}  ${(stream.ok ? "public" : "BROKEN").padStart(5)}   == filters, events, watch`);
   console.log(`${"pinned".padEnd(26)}  ${(identityPin.ok ? "revoked" : "BROKEN").padStart(5)}   == old log refused`);
   console.log(`${"takeover".padEnd(26)}  ${(takeover.ok ? "1 actor" : "BROKEN").padStart(5)}   == leave then login`);
   console.log(`${"characters".padEnd(26)}  ${(characters.ok ? "2 chars" : "BROKEN").padStart(5)}   == create, switch`);

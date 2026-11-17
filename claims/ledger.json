@@ -231,6 +231,12 @@
       "level": "some-true",
       "statement": "On production v0.41.0 the bare legacy account casey was deleted at owner request after the three rebinds. The offline delete tool archived the state file, removed the casey account and character, and the world restarted at 104 accounts and 105 characters; login casey refuses with 'No such name', and the target account still lists prism:4c40ff2d, case, k1, public-test and agent.",
       "authority": "wick production v0.41.0, deletion 2026-11-17T16:08:08Z; archive world-before-delete-casey-2026-11-17T16-08-08-602Z.json; state .1 backup"
+    },
+    {
+      "id": "MB-33",
+      "level": "build",
+      "statement": "A live AI run can be published to a read-only /watch page only after the owner presses Go live; the server accepts one live run, allows only that authenticated actor to publish command, room, status and text events, re-filters every text event for tells, mail, account, password and session lines, broadcasts snapshot/event/chat/viewers/off to spectators, refuses every spectator command except chat, and rate-limits chat. Audience messages reach the AI as untrusted director input. The gate checks the public filter, event kinds, bounds, server route, client path and watch connection.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }
