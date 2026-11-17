@@ -1,8 +1,9 @@
 # Prism identity as the player account
 
 Status: **implemented in the browser and the server; device linking, takeover
-and reconnect exist; the admission decision is proved in the model (X5).** The
-legacy password form remains for telnet, CLI and older accounts. This records
+and reconnect exist; the admission decision is proved in the model (X5); the AI
+is a persona owned by the human's account (L1).** The legacy password form
+remains for telnet, CLI and older accounts. This records
 the two identity protocols, the one this project uses, and the exact server
 change.
 
