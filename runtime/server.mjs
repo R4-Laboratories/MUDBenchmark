@@ -2026,7 +2026,7 @@ wss.on("connection", (ws, req) => {
     spectators.add(ws);
     ws.isAlive = true;
     ws.on("pong", () => { ws.isAlive = true; });
-    ws.send(`#stream ${JSON.stringify({ type: "snapshot", live: live ? publicLive() : null, viewers: spectators.size })}\n`);
+    ws.send(`#stream ${JSON.stringify({ type: "snapshot", viewer, live: live ? publicLive() : null, viewers: spectators.size })}\n`);
     broadcastViewers();
     let lastChat = 0;
     ws.on("message", (data) => {

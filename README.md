@@ -52,7 +52,7 @@ The project is gated by a shrink-only ratchet and a six-hour workflow:
 
 [First results](docs/RESULT.md) — what the world measured in the seven-room world,
 with controls and limits. [Expanded-world replication](docs/RESULT-EXPANDED.md)
-records the 24-run null result: corroboration did not change first answers. [Claims](docs/CLAIMS.md) is the honesty-level ledger: every claim is
+records the 24-run null result: corroboration did not change first answers. The seven-room control (2026-11-17) did not reproduce the original 4/6 wrong-first result: 0/6 single, 1/6 corroborated. [Claims](docs/CLAIMS.md) is the honesty-level ledger: every claim is
 `build` (with a gate), `open` (with a query, sample size and seed) or
 `some-true` (with an authority).
 

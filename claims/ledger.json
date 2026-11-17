@@ -243,6 +243,12 @@
       "level": "some-true",
       "statement": "Production v0.42.0 serves the /watch page and the /live spectator socket; with no run live the socket returns a null snapshot and a viewer count, and an unauthenticated `stream on` is refused with 'Sign in to start a stream.' A headless Chromium run against the local server with a mock model pressed Go live and saw the character, room, command feed, filtered text and audience chat on /watch; the audience message appeared in the AI panel and the stream stopped cleanly.",
       "authority": "wick production v0.42.0 /watch and /live 2026-11-17; headless Chromium local UI stream run 2026-11-17; gate stream public"
+    },
+    {
+      "id": "MB-35",
+      "level": "some-true",
+      "statement": "The seven-room control (deepseek-flash, temperature 0, six runs per arm, original wording, no route hint) solved 5/6 single and 4/6 corroborated, with 5/6 answering in each arm. Wrong-first was 0/6 single and 1/6 corroborated (answer slate). The control does not reproduce the original 4/6 wrong-first result, so the expanded-world null is not explained by the route instruction or the larger world alone; model version, the stricter answer rule, prompt and the six-run sample remain.",
+      "authority": "wick control run 2026-11-17, out/summary.json and run-*.jsonl; harness exits on solved; gate loop/stream"
     }
   ]
 }

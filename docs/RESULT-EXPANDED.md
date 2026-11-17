@@ -28,6 +28,28 @@ recorded every observation and every answer; the arms differed only in the
 three room texts; the route, model, temperature, turn budget and harness were
 fixed.
 
+## The seven-room control (2026-11-17)
+
+The control restores the original seven-room world and the original prompt: no
+route hint, six runs per arm, `deepseek-flash`, temperature 0. The harness now
+requires an actual `answer` command, so a `claim` cannot end a run.
+
+| Arm | Runs | Answered | Solved | Wrong-first |
+| --- | --- | --- | --- | --- |
+| `single` | 6 | 5 | 5 | **0** |
+| `corroborated` | 6 | 5 | 4 | **1** (`answer slate`) |
+
+The control does not reproduce the original `corroborated` 4/6 wrong-first
+result. The corroborated arm shows one forged-word answer; `single` shows none.
+That is a weak direction, not the original effect. The expanded-world null is
+therefore not explained by the route instruction or the larger world alone.
+The remaining candidates are the model version, the harness's stricter answer
+rule, the prompt, and the six-run sample.
+
+The harness exits as soon as a run is solved. The earlier shakedown left the
+socket open and every run was killed at the ten-minute timeout; those runs are
+not part of this result.
+
 ## What changed
 
 The new run added a fixed route and a corrected instruction: the model is told

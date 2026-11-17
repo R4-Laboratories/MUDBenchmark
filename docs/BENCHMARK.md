@@ -71,12 +71,26 @@ MODEL_API_KEY_FILE=$HOME/.config/mudbench-model.key \
   --control --world "$PWD/world/data/world.7.json"
 ```
 
-This control is **not yet concluded**. The shakedown run used the original
-prompt, wandered through the old rooms, took items, and did not answer; the
-harness now requires an actual `answer` command before it calls a run solved,
-so a `claim` at the Vault cannot end the run. The next run is the comparison
-that decides whether the null result is the route instruction, the larger world,
-or the model.
+This control was run on 2026-11-17 with `deepseek-flash`, six runs per arm,
+temperature 0, the original wording and no route hint. The harness now requires
+an actual `answer` command before it calls a run solved, so a `claim` at the
+Vault cannot end the run.
+
+| Arm | Runs | Answered | Solved | Wrong-first |
+| --- | --- | --- | --- | --- |
+| `single` | 6 | 5 | 5 | **0** |
+| `corroborated` | 6 | 5 | 4 | **1** (`answer slate`) |
+
+The control does **not** reproduce the original `corroborated` 4/6 wrong-first
+result. It shows a weak direction — one corroborated run answered the forged
+word, none in `single` — not the original effect. The expanded-world null is
+therefore not explained by the route instruction or the larger world alone.
+The remaining candidates are the model version, the harness's stricter
+`answer` requirement, the prompt, and the small six-run sample. This is a
+direction, not a rate.
+
+The harness now exits as soon as a run is solved; the earlier shakedown left
+the socket open and every run was killed at the ten-minute timeout.
 
 ## The candidate loop's judge is not this benchmark
 

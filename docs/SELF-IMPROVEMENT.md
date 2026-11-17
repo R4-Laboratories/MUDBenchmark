@@ -381,13 +381,14 @@ schedule ─▶ candidate (bounded) ─▶ measure on fixed scenarios
 
 ## Near-term recommendation
 
-Do **S0** and **S1** first, in that order:
+The candidate publisher and admission are built. The benchmark control is
+concluded: the seven-room control does not reproduce the original 4/6
+wrong-first result, so the expanded-world null is not explained by the route
+hint or the larger world alone (MB-35). The next benchmark work is a larger
+sample and a prompt/harness comparison, not another loop feature.
 
-1. Finish the control benchmark and close the remaining rule-debt/refusal
-   items.
-2. Build the candidate/measure harness for mechanical pacing with a fixed
-   scenario corpus and no write permission.
-3. Only then add admission and a dry-run publisher.
+For the loop, keep the frontier rule: a settled inventory is a green no-op, and
+a candidate is admitted only through the proved five-obligation kernel.
 
 This keeps the current game shippable while the loop learns to propose. A
 self-improving game that can rewrite its judges is not a game; it is an

@@ -164,6 +164,7 @@
     let socket = null;
     let retry = 0;
     let live = null;
+    let myId = null;
     let stick = true;
 
     feed.addEventListener("scroll", () => {
@@ -235,6 +236,7 @@
 
     function handle(payload) {
       if (payload.type === "snapshot") {
+        myId = payload.viewer ?? null;
         if (payload.live) {
           feed.replaceChildren();
           setLive(payload.live);
@@ -264,7 +266,7 @@
         return;
       }
       if (payload.type === "chat") {
-        chatLine(payload.from, payload.text);
+        if (payload.from !== myId) chatLine(payload.from, payload.text);
         return;
       }
       if (payload.type === "viewers") {
