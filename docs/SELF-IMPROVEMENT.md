@@ -164,7 +164,9 @@ node tools/measure.mjs --candidates candidates.json --out result.json
   refusal. A ranking is only used to pick among candidates that already
   dominate.
 - **No winner is a result.** When nothing dominates, the report says `settled`
-  and names no improvement. That is the frontier rule, not a failure.
+  and names no improvement. That is the frontier rule, not a failure. The
+  publisher exits 0 and writes `committed=false`, so the release step is skipped
+  and a settled tick is green.
 - **The targets are the measured ones.** `hostile-hp` and `hostile-damage`
   name only the boar, because only the boar has a scenario. The wolf, ghoul and
   smuggler join when their scenarios exist. A target without a judge is a place

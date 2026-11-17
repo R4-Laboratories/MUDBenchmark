@@ -45,6 +45,15 @@ function stop(message) {
   process.exit(1);
 }
 
+// A settled inventory is a result, not a refusal: no candidate dominates the
+// current world, so nothing is written and the tick is green. The loop's
+// release step reads `committed`; false skips it.
+function settle(message) {
+  console.error(`publish: ${message}`);
+  if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, "committed=false\n");
+  process.exit(0);
+}
+
 const candidatesPath = option("candidates", null);
 const resultPath = option("result", null);
 if (!candidatesPath || !resultPath) {
@@ -76,7 +85,7 @@ if (fresh.hash !== provided.hash) {
   stop("the result is not a fresh measurement of this inventory");
 }
 if (!fresh.winner) {
-  stop("the inventory settled: no candidate dominates the current world");
+  settle("the inventory settled: no candidate dominates the current world");
 }
 if (provided.winner?.id !== fresh.winner.id) {
   stop(`the report names ${provided.winner?.id ?? "no winner"}, but a fresh measurement names ${fresh.winner.id}`);

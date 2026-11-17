@@ -1838,6 +1838,33 @@ let loop = { ok: true, why: [], count: 0, admitted: 0, winner: null };
     loop.why.push("a report bound to another world was measured anyway");
   }
 
+  // A settled inventory is a result, not a failure: the publisher exits 0,
+  // writes `committed=false`, and the loop's release step is skipped.
+  const settledInventory = JSON.parse(JSON.stringify(first));
+  settledInventory.candidates = [{ id: "settled-noop", changes: [] }];
+  const settledReport = measureCandidates(settledInventory);
+  if (settledReport.winner) loop.why.push("the settled fixture has a winner");
+  const settledDir = mkdtempSync(join(tmpdir(), "mudbench-settled-"));
+  const settledCandidates = join(settledDir, "candidates.json");
+  const settledResult = join(settledDir, "result.json");
+  const settledOutput = join(settledDir, "output");
+  writeFileSync(settledCandidates, `${JSON.stringify(settledInventory)}\n`);
+  writeFileSync(settledResult, `${JSON.stringify(settledReport)}\n`);
+  writeFileSync(settledOutput, "");
+  const settledRun = spawnSync(process.execPath, ["tools/publish.mjs", "--candidates", settledCandidates, "--result", settledResult, "--dry-run"], {
+    cwd: root,
+    encoding: "utf8",
+    env: { ...process.env, GITHUB_OUTPUT: settledOutput },
+  });
+  if (settledRun.status !== 0) {
+    loop.why.push(`a settled inventory exited ${settledRun.status}: ${(settledRun.stderr ?? "").slice(0, 160)}`);
+  }
+  if (!/settled/.test(settledRun.stderr ?? "")) loop.why.push("the settled publisher did not say settled");
+  if (!/committed=false/.test(readFileSync(settledOutput, "utf8"))) {
+    loop.why.push("the settled publisher did not report committed=false");
+  }
+  rmSync(settledDir, { recursive: true, force: true });
+
   if (loop.why.length) {
     loop.ok = false;
     failures.push(`the candidate loop is broken: ${loop.why[0]}`);
