@@ -502,6 +502,16 @@ characters are not duplicated.
 character; a wrong passphrase or tampered kit is refused; the old device is
 refused; the account count is unchanged. Rehearsed in v0.36 (MB-20/21).
 
+**R3. Character handoff.** *(browser + runtime)* — **implemented in v0.37.**
+The human signs a `prism/character-handoff/1` action naming one of their
+characters and the AI persona. The character keeps its human owner and gains a
+delegate; the AI's list includes it; the human can play another character at
+the same time. `prism/character-revoke/1` clears the delegate and refuses the
+AI's next login; retiring the persona clears its delegations.
+*Acceptance:* alice (AI) and bob (human) online together; the transcript names
+alice, the persona and the human owner; revoke returns alice and the AI cannot
+recreate it; the owner never changes. Rehearsed in v0.37 (MB-22/23).
+
 **L2. Relay / instant revocation.** *(runtime; optional)*
 Only if "revoked at next login" is too slow: run `createRelayBus` server-side
 (or self-host) and pass `bus` to `heardLog`. Login must not depend on the

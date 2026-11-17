@@ -425,7 +425,7 @@ export function checkpointIdentities(state) {
     state.identities[actor.key] = {
       ...rest,
       kind: "character",
-      owner: actor.account ?? rest.owner ?? actor.key,
+      owner: rest.owner ?? actor.account ?? actor.key,
       name: actor.name,
       role: actor.role ?? 0,
       level: actor.level ?? 1,
@@ -560,6 +560,13 @@ export function step({ state, rooms, intents }) {
         tombstones.push(tombstone);
       }
       account.characters = tombstones;
+      // A retired persona loses every delegation it held. The human keeps the
+      // character and its progression; only the delegate is cleared.
+      for (const [name, character] of Object.entries(next.identities)) {
+        if (character.delegate !== intent.accountKey || character.owner === intent.accountKey) continue;
+        const { delegate, delegatedAt, delegatedBy, ...rest } = character;
+        next.identities[name] = { ...rest };
+      }
       continue;
     }
 
@@ -881,7 +888,9 @@ export function step({ state, rooms, intents }) {
         events.push({ onlyId: actor.id, text: "That account is not available.\r\n" });
         continue;
       }
-      if (known.owner !== accountKey || !account.characters.includes(intent.key)) {
+      const owns = known.owner === accountKey;
+      const delegated = known.delegate === accountKey && known.owner !== accountKey;
+      if ((!owns && !delegated) || (owns && !account.characters.includes(intent.key))) {
         events.push({ onlyId: actor.id, text: "That character is not on this account.\r\n" });
         continue;
       }
@@ -913,7 +922,7 @@ export function step({ state, rooms, intents }) {
       next.identities[intent.key] = {
         ...known,
         kind: "character",
-        owner: accountKey,
+        owner: known.owner ?? accountKey,
         name: actor.name,
         role: actor.role,
         level: actor.level,
@@ -950,6 +959,29 @@ export function step({ state, rooms, intents }) {
         role: 0, level: 1, xp: 0, guild: null, guildRank: null,
         quests: { active: [], completed: [] },
       };
+      continue;
+    }
+
+    if (intent.kind === "handoffCharacter") {
+      const character = next.identities[intent.characterKey];
+      const account = next.accounts[intent.persona];
+      if (!character || character.owner !== intent.owner || character.retired) continue;
+      if (!account || account.kind !== "prism" || account.owner !== intent.owner || account.ai !== true || account.retired) continue;
+      if (character.delegate && character.delegate !== intent.persona) continue;
+      next.identities[intent.characterKey] = {
+        ...character,
+        delegate: intent.persona,
+        delegatedAt: intent.at ?? next.tick,
+        delegatedBy: intent.owner,
+      };
+      continue;
+    }
+
+    if (intent.kind === "revokeHandoff") {
+      const character = next.identities[intent.characterKey];
+      if (!character || character.owner !== intent.owner || character.delegate !== intent.persona) continue;
+      const { delegate, delegatedAt, delegatedBy, ...rest } = character;
+      next.identities[intent.characterKey] = { ...rest };
       continue;
     }
 

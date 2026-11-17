@@ -165,6 +165,18 @@
       "level": "some-true",
       "statement": "A signed-in browser exported a recovery kit; a fresh browser profile with no Prism storage restored it, found alice and played her; the old profile was taken over and its stale log refused; the account count stayed one.",
       "authority": "headless Chromium two-profile recovery run 2026-11-17"
+    },
+    {
+      "id": "MB-22",
+      "level": "build",
+      "statement": "A human-signed handoff action names a character and the AI persona; the character keeps its human owner and gains a delegate; the persona can log in as the delegated character; the owner survives logout and checkpoint; revoke clears the delegate and refuses the next login; retiring the persona clears its delegations.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-23",
+      "level": "some-true",
+      "statement": "A browser human handed alice to the AI persona; the AI played alice while the human played bob; the Model tab and transcript showed alice, the persona and the human owner; the revoke returned alice and the AI could not recreate or log in as it.",
+      "authority": "headless Chromium handoff run 2026-11-17 against a mock OpenAI-compatible provider"
     }
   ]
 }

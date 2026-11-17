@@ -294,6 +294,20 @@
           <div class="row"><button type="button" id="recovery-download">Download recovery kit</button></div>
           <p class="small muted" id="recovery-status"></p>
         </details>
+        <details class="small muted" id="handoff-box">
+          <summary>Hand off a character to the AI</summary>
+          <p>Let your AI persona play one of your characters. The character keeps your name and progress; you can play another at the same time. Revoking stops the AI's next login as that character.</p>
+          <div class="field">
+            <label for="handoff-character">Character</label>
+            <select id="handoff-character"></select>
+          </div>
+          <p class="small muted" id="handoff-persona">Start the AI with your Prism id first.</p>
+          <div class="row">
+            <button type="button" id="handoff-button">Hand off</button>
+            <button type="button" id="handoff-revoke">Revoke</button>
+          </div>
+          <p class="small muted" id="handoff-status"></p>
+        </details>
         <details class="small muted">
           <summary>Claim an old name</summary>
           <p>Add an old name as a character on this Prism account. Use its password or legacy token. It keeps its own level, guild and quests; one claim per Prism account.</p>
@@ -446,7 +460,7 @@
     PROVIDERS, DEFAULT_GOAL, buildSystemPrompt, buildUserPrompt,
     parseBrain, requestFor, replyFrom, trimHistory,
   } from "/ai.mjs";
-  import { signIn as prismSignIn, reset as prismReset, load as loadSession, save as saveSession, personaSignIn, personaRetire, nextPersonaEpoch, createRecoveryKit, restoreRecoveryKit } from "/prism-auth.mjs";
+  import { signIn as prismSignIn, reset as prismReset, load as loadSession, save as saveSession, personaSignIn, personaRetire, nextPersonaEpoch, createRecoveryKit, restoreRecoveryKit, characterHandoff, characterRevoke } from "/prism-auth.mjs";
   import { createLinkOffer, parseLinkUri, requestLink, acceptLinkRequest, completeLink, linkCode, revokeDevice, resolvePrism, linkQr } from "/prism-id.mjs";
 
   const log = document.getElementById("log");
@@ -471,6 +485,11 @@
   const restorePass = document.getElementById("restore-pass");
   const recoveryRestore = document.getElementById("recovery-restore");
   const restoreStatus = document.getElementById("restore-status");
+  const handoffCharacter = document.getElementById("handoff-character");
+  const handoffPersona = document.getElementById("handoff-persona");
+  const handoffButton = document.getElementById("handoff-button");
+  const handoffRevoke = document.getElementById("handoff-revoke");
+  const handoffStatus = document.getElementById("handoff-status");
   const signed = document.getElementById("signed");
   const signedName = document.getElementById("signed-name");
   const latest = document.getElementById("latest");
@@ -534,7 +553,7 @@
   let playEnabled = true;
   let authed = false;
   let stick = true;
-  let characterState = { account: "", characters: [] };
+  let characterState = { account: "", characters: [], delegated: {} };
 
   const AI = {
     socket: null, config: null, identity: null, name: "",
@@ -728,6 +747,7 @@
     characterState = {
       account: info?.account ?? "",
       characters: [...(info?.characters ?? [])],
+      delegated: { ...(info?.delegated ?? {}) },
     };
     accountName.textContent = characterState.account || "Prism account";
     characterList.innerHTML = "";
@@ -754,7 +774,71 @@
     characterHint.textContent = characterState.characters.length
       ? "Pick a character, or create another. Switching takes over that character."
       : "Choose a name; it is the name other players see.";
+    renderHandoff();
   }
+
+  function renderHandoff() {
+    const own = characterState.characters ?? [];
+    const selected = handoffCharacter.value;
+    handoffCharacter.innerHTML = "";
+    for (const name of own) {
+      const option = document.createElement("option");
+      option.value = name;
+      option.textContent = characterState.delegated?.[name] ? `${name} (AI)` : name;
+      handoffCharacter.appendChild(option);
+    }
+    if (selected && own.includes(selected)) handoffCharacter.value = selected;
+    const owned = Boolean(AI.owner && AI.persona);
+    handoffPersona.textContent = owned
+      ? `AI persona ${shortId(AI.persona)} (owned by ${shortId(AI.owner)}).`
+      : "Start the AI with your Prism id first.";
+    handoffButton.disabled = !owned || !own.length;
+    handoffRevoke.disabled = !characterState.delegated?.[handoffCharacter.value];
+  }
+
+  handoffCharacter.addEventListener("change", () => renderHandoff());
+  handoffButton.addEventListener("click", async () => {
+    const name = handoffCharacter.value;
+    const persona = AI.persona;
+    if (!name || !persona || !AI.owner) {
+      handoffStatus.textContent = "Start the AI with your Prism id first.";
+      handoffStatus.className = "small err";
+      return;
+    }
+    handoffStatus.textContent = `Handing ${name} to the AI…`;
+    handoffStatus.className = "small muted";
+    try {
+      const action = await characterHandoff("default", location.origin, name, persona);
+      if (!action) throw new Error("Sign in with your Prism id first.");
+      send(`handoff ${b64uJson(action)}`, `handoff ${name} [owner hidden]`);
+      handoffStatus.textContent = `Handed ${name}. Set the AI's Character name to ${name} and start it.`;
+      handoffStatus.className = "small muted";
+    } catch (error) {
+      handoffStatus.textContent = `Handoff: ${error.message}`;
+      handoffStatus.className = "small err";
+    }
+  });
+  handoffRevoke.addEventListener("click", async () => {
+    const name = handoffCharacter.value;
+    const persona = characterState.delegated?.[name];
+    if (!name || !persona) {
+      handoffStatus.textContent = "That character is not handed to an AI persona.";
+      handoffStatus.className = "small err";
+      return;
+    }
+    handoffStatus.textContent = `Revoking ${name}…`;
+    handoffStatus.className = "small muted";
+    try {
+      const action = await characterRevoke("default", location.origin, name, persona);
+      if (!action) throw new Error("Sign in with your Prism id first.");
+      send(`revoke-handoff ${b64uJson(action)}`, `revoke-handoff ${name} [owner hidden]`);
+      handoffStatus.textContent = `Revoked ${name}. The AI's next login is refused.`;
+      handoffStatus.className = "small muted";
+    } catch (error) {
+      handoffStatus.textContent = `Revoke: ${error.message}`;
+      handoffStatus.className = "small err";
+    }
+  });
 
   createCharacterForm.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -767,7 +851,7 @@
   signOut.addEventListener("click", () => {
     playAuth = null;
     prismSession = null;
-    characterState = { account: "", characters: [] };
+    characterState = { account: "", characters: [], delegated: {} };
     charactersPanel.hidden = true;
     signed.style.display = "none";
     account.style.display = "block";
@@ -1050,6 +1134,7 @@
       if (!playSocket || playSocket.readyState === WebSocket.CLOSED) connectPlay();
       state.textContent = "connected";
       state.className = "live";
+      renderHandoff();
     }
   }
 
@@ -1330,9 +1415,15 @@
     AI.busy = false;
     clearTimeout(AI.quiet);
     clearTimeout(AI.reconnect);
-    if (AI.socket?.readyState === WebSocket.OPEN) {
-      try { AI.socket.send("quit\n"); } catch {}
-      setTimeout(() => { try { AI.socket.close(); } catch {} }, 100);
+    // Capture the socket before clearing it: the timeout used to read
+    // AI.socket after it was null, so the old socket stayed open and its
+    // character stayed in the world.
+    const socket = AI.socket;
+    if (socket?.readyState === WebSocket.OPEN) {
+      try { socket.send("quit\n"); } catch {}
+      setTimeout(() => { try { socket.close(); } catch {} }, 100);
+    } else {
+      try { socket?.close(); } catch {}
     }
     AI.socket = null;
     AI.authed = false;
@@ -1552,6 +1643,14 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         updatePause();
         setAIStatus("error");
         addChat("system", text.trim());
+        return;
+      }
+      if (/That name is taken\.|No character named/i.test(text)) {
+        AI.paused = true;
+        AI.busy = false;
+        updatePause();
+        setAIStatus("choose another character");
+        addChat("system", "The AI's character is unavailable; set another Character name and start it.");
         return;
       }
       const signedAs = text.match(/Signing in as ([^\r\n.]+)\./i);

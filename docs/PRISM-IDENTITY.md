@@ -246,6 +246,25 @@ that owner action.
 - Without a human sign-in the AI falls back to its own account and the panel
   says so; sign in with your Prism id and restart it to own it.
 
+## Character handoff
+
+The AI persona owns its own characters, and a signed-in human can also hand it
+one of theirs:
+
+- the human signs a `prism/character-handoff/1` action naming the character and
+  the AI persona; the server verifies it against the human's pinned log and
+  checks that both the character and the persona belong to the human;
+- the character keeps its **human owner** and gains a `delegate` (the persona);
+  its level, guild, quests and mail stay;
+- the AI's character list includes the delegated character; the human can play
+  another character at the same time (alice the AI, bob the human);
+- the transcript carries the character `alice`, the persona and the human
+  owner;
+- `prism/character-revoke/1` clears the delegation; the AI's next login as that
+  character is refused, and the human can take it back;
+- retiring the persona clears every delegation it held;
+- a character has one delegate; a second handoff must revoke first.
+
 ## The frame
 
 The frame (`frame/frame.mjs`) and `prism-id.mjs` are pinned and copied
@@ -331,6 +350,11 @@ refused with "the presented log omits a record"; the account count stayed one.
 The gate also proves a wrong passphrase and a tampered kit are refused, a new
 device recovers from the paper share, and the old device's action is refused.
 MB-20 and MB-21 record the claims.
+
+R3 was run headless: the human handed alice to the AI persona; the AI played
+alice while the human played bob; the Model tab and transcript showed alice,
+the persona and the human owner; the revoke returned alice and the AI could not
+recreate or log in as it. MB-22 and MB-23 record the claims.
 
 Not yet proven by the gate: a tampered signature, an unknown device, and a
 replay across a restart.

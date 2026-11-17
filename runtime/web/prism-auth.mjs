@@ -142,6 +142,34 @@ export async function reset(store = "default") {
   await remove(store);
 }
 
+// ---------------------------------------------------------------- character handoff
+
+// The human signs a character handoff (or its revocation) naming one character
+// and the AI persona. The server verifies it against the human's pinned log.
+export async function characterHandoff(store = "default", app = location.origin, character, persona) {
+  const session = await read(store);
+  if (!session?.prism || !character || !persona) return null;
+  const envelope = await Prism.signAction(
+    session,
+    "prism/character-handoff/1",
+    { character, persona, audience: app },
+    { audience: app, now: Date.now() },
+  );
+  return { envelope };
+}
+
+export async function characterRevoke(store = "default", app = location.origin, character, persona) {
+  const session = await read(store);
+  if (!session?.prism || !character || !persona) return null;
+  const envelope = await Prism.signAction(
+    session,
+    "prism/character-revoke/1",
+    { character, persona, audience: app },
+    { audience: app, now: Date.now() },
+  );
+  return { envelope };
+}
+
 // ---------------------------------------------------------------- recovery kit
 
 // Export an encrypted kit: a one-of-one paper recovery share plus the public

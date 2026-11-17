@@ -222,6 +222,13 @@ AI uses its own account. A device revoked elsewhere is refused once a surviving
 device has logged in with the newer public log; the server pins that log in
 `identities.json`.
 
+A signed-in human can hand one of their characters to the AI persona from
+**Hand off a character to the AI**. The character keeps its human owner and
+progress; the AI's character list includes it; the human can play another
+character at the same time. Revoking stops the AI's next login as that
+character. One delegate per character; retiring the persona clears its
+delegations.
+
 A legacy account can be adopted once by a signed-in Prism account: **Claim an
 old name** in the signed-in panel, or the wire command
 `adopt <old-name> <password-or-token>`. The server checks the old credential

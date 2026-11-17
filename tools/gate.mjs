@@ -383,6 +383,61 @@ let identityKernel = { ok: true, why: [] };
   if (identityKernel.why.length) { identityKernel.ok = false; failures.push(`the identity kernel is broken: ${identityKernel.why[0]}`); }
 }
 
+// R2: a human can hand one character to the AI persona; the owner stays human.
+let handoff = { ok: true, why: [] };
+{
+  const check = (condition, why) => { if (!condition) { handoff.ok = false; handoff.why.push(why); } };
+  const world = loadWorld({ mode: "single" });
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, world.levels, questTable.quests);
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
+  const humanKey = `sha256:${"1".repeat(64)}`;
+  const personaKey = `sha256:${"2".repeat(64)}`;
+  const origin = "https://play.r4labs.org";
+  run([{ kind: "join", actorId: "h", name: "h" }]);
+  run([
+    { kind: "createCharacter", accountKey: humanKey, name: "alice", actorId: "h" },
+    { kind: "login", actorId: "h", key: "alice", account: humanKey, authenticated: true, prism: true },
+  ]);
+  run([{ kind: "join", actorId: "p", name: "p" }]);
+  run([
+    { kind: "ownAccount", accountKey: personaKey, owner: humanKey, audience: origin, device: "d" },
+    { kind: "createCharacter", accountKey: personaKey, name: "scout", actorId: "p" },
+    { kind: "login", actorId: "p", key: "scout", account: personaKey, authenticated: true, prism: true },
+  ]);
+  run([{ kind: "handoffCharacter", characterKey: "alice", owner: humanKey, persona: personaKey, at: 5 }]);
+  check(state.identities.alice?.delegate === personaKey, "the handoff did not set the delegate");
+  check(state.identities.alice?.owner === humanKey, "the handoff changed the owner");
+  // The human leaves alice before the AI takes the delegated character over.
+  run([{ kind: "leave", actorId: "h" }, { kind: "leave", actorId: "p" }, { kind: "join", actorId: "p2", name: "p2" }]);
+  run([{ kind: "login", actorId: "p2", key: "alice", account: personaKey, authenticated: true, prism: true }]);
+  const delegatedActor = state.actors.find((actor) => actor.id === "p2");
+  check(delegatedActor?.name === "alice" && delegatedActor?.account === personaKey, "the persona did not log in as the delegated character");
+  check(state.identities.alice?.owner === humanKey && state.identities.alice?.delegate === personaKey, "the delegated login changed the character");
+  run([{ kind: "leave", actorId: "p2" }]);
+  check(state.identities.alice?.owner === humanKey && state.identities.alice?.delegate === personaKey, "the leave changed the delegated character");
+  run([{ kind: "revokeHandoff", characterKey: "alice", owner: humanKey, persona: personaKey }]);
+  check(!state.identities.alice?.delegate, "the revoke did not clear the delegate");
+  run([{ kind: "join", actorId: "p3", name: "p3" }]);
+  run([{ kind: "login", actorId: "p3", key: "alice", account: personaKey, authenticated: true, prism: true }]);
+  check(state.actors.find((actor) => actor.id === "p3")?.key !== "alice", "the persona logged in after the revoke");
+  run([{ kind: "handoffCharacter", characterKey: "alice", owner: humanKey, persona: personaKey, at: 6 }]);
+  run([{ kind: "retireAccount", accountKey: personaKey, owner: humanKey, at: 7 }]);
+  check(!state.identities.alice?.delegate, "retiring the persona left the delegation");
+
+  const human = await createPrism({});
+  const now = Date.now();
+  const action = await signAction(human, "prism/character-handoff/1",
+    { character: "alice", persona: personaKey, audience: origin }, { audience: origin, now });
+  const verdict = await verifyPersonaOwner({ envelope: action },
+    { origin, persona: personaKey, action: "prism/character-handoff/1", pinned: [...human.log.values()], now });
+  check(verdict.ok && verdict.owner === human.prism, "the signed handoff action was not verified");
+  const wrong = await verifyPersonaOwner({ envelope: action },
+    { origin, persona: personaKey, action: "prism/character-revoke/1", pinned: [...human.log.values()], now });
+  check(!wrong.ok, "a handoff action was accepted as a revoke");
+
+  if (handoff.why.length) { handoff.ok = false; failures.push(`handoff is broken: ${handoff.why[0]}`); }
+}
+
 // Recovery: an encrypted kit recovers the id on a new device and revokes the old.
 let recovery = { ok: true, why: [] };
 {
@@ -1583,6 +1638,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"characters".padEnd(26)}  ${(characters.ok ? "2 chars" : "BROKEN").padStart(5)}   == create, switch`);
   console.log(`${"persona".padEnd(26)}  ${(persona.ok ? "owner" : "BROKEN").padStart(5)}   == human, tombstone`);
   console.log(`${"recovery".padEnd(26)}  ${(recovery.ok ? "kit" : "BROKEN").padStart(5)}   == new device, old refused`);
+  console.log(`${"handoff".padEnd(26)}  ${(handoff.ok ? "delegated" : "BROKEN").padStart(5)}   == owner kept`);
   console.log(`${"identity".padEnd(26)}  ${(identityKernel.ok ? "10 vectors" : "BROKEN").padStart(5)}   == model and JS`);
   console.log(`${"llms".padEnd(26)}  ${(llms.ok ? "verbs, rooms" : "STALE").padStart(5)}   == generated contract`);
   console.log(`${"claims".padEnd(26)}  ${(claimsCheck.status === 0 ? "levels ok" : "STALE").padStart(5)}   == build, open, some-true`);

@@ -109,10 +109,17 @@ const accountSessions = new Map(); // id -> { key, kind: "prism" | "legacy" }
 function sendCharacters(id, session) {
   if (!session) return;
   const account = state.accounts?.[session.key];
-  const characters = account?.characters ?? [];
+  const own = account?.characters ?? [];
+  const delegated = Object.entries(state.identities ?? {})
+    .filter(([, character]) => character.delegate === session.key && character.owner !== session.key && !character.retired)
+    .map(([name]) => name);
+  const characters = [...new Set([...own, ...delegated])];
+  const handed = Object.fromEntries(Object.entries(state.identities ?? {})
+    .filter(([, character]) => character.owner === session.key && character.delegate && !character.retired)
+    .map(([name, character]) => [name, character.delegate]));
   const label = session.kind === "prism" ? prismDisplay(session.key) : session.key;
   sendTo(id, `Account ${label}. Characters: ${characters.length ? characters.join(", ") : "(none yet)"}.\r\n`);
-  sendTo(id, `#characters ${JSON.stringify({ account: label, characters, tick: state.tick, owner: session.owner ?? null })}\r\n`);
+  sendTo(id, `#characters ${JSON.stringify({ account: label, characters, tick: state.tick, owner: session.owner ?? null, delegated: handed })}\r\n`);
 }
 
 function takeover(key, newId) {
@@ -455,6 +462,54 @@ async function handleCommand(id, line) {
     return sendCharacters(id, session);
   }
 
+  if (verb === "handoff" || verb === "revoke-handoff") {
+    // The human's signed action names one of their characters and the AI
+    // persona. The character keeps its human owner; the persona becomes its
+    // delegate. The action is verified against the human's pinned log.
+    const token = restRaw[0];
+    if (!token) return sendTo(id, `Usage: ${verb} <owner-action>.\r\n`);
+    let ownerAction;
+    try {
+      ownerAction = JSON.parse(Buffer.from(token, "base64url").toString("utf8"));
+    } catch {
+      return sendTo(id, "The handoff action is malformed.\r\n");
+    }
+    const payload = ownerAction?.envelope?.body?.payload;
+    const name = payload?.character;
+    const persona = payload?.persona;
+    const ownerId = ownerAction?.envelope?.body?.prism;
+    const ownerOrigin = transports.get(id)?.origin ?? null;
+    if (!name || !persona || !ownerId || !ownerOrigin) return sendTo(id, "The handoff action is incomplete.\r\n");
+    const action = verb === "handoff" ? "prism/character-handoff/1" : "prism/character-revoke/1";
+    const ownerVerdict = await verifyPersonaOwner(ownerAction, {
+      origin: ownerOrigin,
+      persona,
+      action,
+      pinned: identityStore.prisms[ownerId] ?? null,
+    });
+    if (!ownerVerdict.ok) return sendTo(id, `Handoff refused: ${ownerVerdict.reason}.\r\n`);
+    const character = state.identities[name];
+    if (!character || character.owner !== ownerVerdict.owner) {
+      return sendTo(id, "Handoff refused: that character is not yours.\r\n");
+    }
+    if (verb === "handoff") {
+      const account = state.accounts?.[persona];
+      if (!account || account.kind !== "prism" || account.owner !== ownerVerdict.owner || account.ai !== true || account.retired) {
+        return sendTo(id, "Handoff refused: that AI persona is not yours.\r\n");
+      }
+      if (character.delegate && character.delegate !== persona) {
+        return sendTo(id, "Handoff refused: that character is handed to another persona.\r\n");
+      }
+      pending.push({ kind: "handoffCharacter", characterKey: name, owner: ownerVerdict.owner, persona, at: state.tick });
+      setTimeout(() => sendCharacters(id, accountSessions.get(id)), 350);
+      return sendTo(id, `Handing ${name} to ${prismDisplay(persona)}.\r\n`);
+    }
+    if (character.delegate !== persona) return sendTo(id, "No handoff to revoke.\r\n");
+    pending.push({ kind: "revokeHandoff", characterKey: name, owner: ownerVerdict.owner, persona, at: state.tick });
+    setTimeout(() => sendCharacters(id, accountSessions.get(id)), 350);
+    return sendTo(id, `Revoking ${name}'s handoff.\r\n`);
+  }
+
   if (verb === "retire-persona") {
     // The owner action is the authority; no signed-in actor is required. It is
     // signed by the human's Prism device and verified against the pin the
@@ -494,7 +549,9 @@ async function handleCommand(id, line) {
     if (actor?.key === name) return sendTo(id, `You are already playing ${name}.\r\n`);
     const account = state.accounts?.[session.key];
     const character = state.identities[name];
-    if (!account || account.retired || !account.characters?.includes(name) || !character || character.owner !== session.key) {
+    const owns = character?.owner === session.key;
+    const delegated = character?.delegate === session.key && character?.owner !== session.key;
+    if (!account || account.retired || !character || (!owns && !delegated) || (owns && !account.characters?.includes(name))) {
       return sendTo(id, `No character named ${name} on this account.\r\n`);
     }
     takeover(name, id);
@@ -1435,7 +1492,7 @@ function onTick() {
   const intents = pending.splice(0);
   // A login or registration must hit the disk before the next checkpoint; a
   // kill -9 must not erase an account created seconds ago.
-  const identityChanged = intents.some((intent) => ["login", "register", "password", "claim", "claimLegacy", "createCharacter", "ownAccount", "retireAccount"].includes(intent.kind));
+  const identityChanged = intents.some((intent) => ["login", "register", "password", "claim", "claimLegacy", "createCharacter", "ownAccount", "retireAccount", "handoffCharacter", "revokeHandoff"].includes(intent.kind));
   const result = step({ state, rooms: ROOMS, intents });
   state = result.state;
 
