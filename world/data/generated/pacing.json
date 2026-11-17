@@ -1,9 +1,17 @@
 {
   "schema": "mudbenchmark/pacing/1",
-  "candidate": "c-0f5ec925e602",
-  "report": "ffe5504767cab07ddebc8a1a33bd2330f3ea0807962fc3b7e5899907aed5127e",
+  "candidate": "c-4abd39bfc4ff",
+  "report": "7c0b3f5d4668e19d2c083a292327774ce4d88e31a460c5bbe3ab57facf31e778",
   "worldHash": "af73f522b5baa1bcc9056211eaebf1fd2cb75a19c697e40bc7ab1f31613068c2",
   "changes": [
+    {
+      "group": "hostile-hp",
+      "collection": "npcs",
+      "target": "boar",
+      "field": "hp",
+      "from": 12,
+      "to": 14
+    },
     {
       "group": "temple-period",
       "collection": "npcs",
@@ -20,5 +28,17 @@
       "from": 40,
       "to": 50
     }
-  ]
+  ],
+  "admission": {
+    "policy": "mudbenchmark/admission/1",
+    "identity": true,
+    "fidelity": true,
+    "benefit": true,
+    "bounds": true,
+    "checks": true,
+    "candidate": "c-4abd39bfc4ff",
+    "report": "7c0b3f5d4668e19d2c083a292327774ce4d88e31a460c5bbe3ab57facf31e778",
+    "worldHash": "af73f522b5baa1bcc9056211eaebf1fd2cb75a19c697e40bc7ab1f31613068c2",
+    "kernel": "sha256:cc0cd971f1090692e7fad9ad7b23a3a35dada64168de74110b321d3e31c30258"
+  }
 }
