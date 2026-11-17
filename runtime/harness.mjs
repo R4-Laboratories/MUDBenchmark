@@ -86,6 +86,20 @@ function saveMemory() {
   try { writeFileSync(MEMORY_FILE, JSON.stringify(recall)); } catch {}
 }
 
+// A solved run, a brain error and MAX_TURNS all leave the game socket open
+// after `quit`; the harness used to wait for a close that never came and was
+// killed at the ten-minute timeout. Finish explicitly instead.
+let exitCode = 0;
+let finished = false;
+function finish(code = 0) {
+  if (finished) return;
+  finished = true;
+  exitCode = code;
+  saveMemory();
+  try { socket.close(); } catch {}
+  setTimeout(() => process.exit(exitCode), 250);
+}
+
 const PLAIN_INSTRUCTIONS = `You are playing MUDBench, a text world.
 
 Rules of the interface:
@@ -268,14 +282,14 @@ socket.on("message", (data) => {
 
 socket.on("error", (error) => { console.error(`harness error: ${error.message}`); process.exit(1); });
 
-socket.on("close", () => { saveMemory(); console.log("harness disconnected"); process.exit(0); });
+socket.on("close", () => { saveMemory(); console.log("harness disconnected"); process.exit(exitCode); });
 
 // One turn per window: let the room speak, then decide.
 async function loop() {
   while (socket.readyState === WebSocket.OPEN) {
     await new Promise((r) => setTimeout(r, 400));
     if (!authed) {
-      if (authFailed) return;
+      if (authFailed) { finish(1); return; }
       continue;
     }
     const seen = observed;
@@ -291,7 +305,8 @@ async function loop() {
     if (answered && /shrine accepts|shrine agrees/i.test(seen)) {
       record({ turn, event: "solved" });
       try { socket.send("quit\n"); } catch {}
-      break;
+      finish(0);
+      return;
     }
     const routed = assemble({ events: seen, memory, goal: GOAL, mode: ROUTER_MODE, budget: BUDGET, recall: recallText() });
     if (process.env.ROUTER_TRACE) {
@@ -305,7 +320,8 @@ async function loop() {
     } catch (error) {
       record({ turn, event: "brain-error", message: error.message, seen });
       try { socket.send("quit\n"); } catch {}
-      break;
+      finish(1);
+      return;
     }
     const { command, ok, raw } = parseCommand(reply);
     if (/^answer\s+/i.test(command)) answered = true;
@@ -334,9 +350,10 @@ async function loop() {
     if (since < 300) await new Promise((r) => setTimeout(r, 300 - since));
     socket.send(`${command}\n`);
     lastSend = Date.now();
-    if (command === "quit") break;
-    if (turn >= MAX_TURNS) { socket.send("quit\n"); break; }
+    if (command === "quit") { finish(0); return; }
+    if (turn >= MAX_TURNS) { socket.send("quit\n"); finish(0); return; }
   }
+  finish(0);
 }
 
 socket.on("open", () => { loop(); });

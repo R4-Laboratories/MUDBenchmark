@@ -1896,6 +1896,11 @@ let loop = { ok: true, why: [], count: 0, admitted: 0, winner: null };
   }
   rmSync(settledDir, { recursive: true, force: true });
 
+  const harness = readFileSync(join(root, "runtime/harness.mjs"), "utf8");
+  if (!/function finish\(/.test(harness) || !/finish\(0\)/.test(harness)) {
+    loop.why.push("the harness can still hang after a solved run");
+  }
+
   if (loop.why.length) {
     loop.ok = false;
     failures.push(`the candidate loop is broken: ${loop.why[0]}`);
