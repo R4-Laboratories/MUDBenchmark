@@ -315,6 +315,12 @@
       "level": "build",
       "statement": "The Mages' Guild exposes `guild advance`: apprentice to adept requires level 5 and two known spells; adept to magician requires level 8, four known spells and the guild ledger; archmage is NPC-only. Advancement updates the actor and guild roster and persists on the identity. Guild quest completion adds guild XP, and guild level is computed from XP and shown in `guild who`. The gate covers guild quest XP and rank advancement.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-47",
+      "level": "some-true",
+      "statement": "Production v0.48.0 serves 44 rooms, 24 mobiles, 40 objects and 15 quests. The Undervault is reachable through a searchable secret stair from the High Walk; the Mirror Pool and Wardstone quests are present; mage rank advancement and guild XP are live. Accounts remain 104 and characters 105. /watch, /world, /live, the AI fast mode and the durable redacted telemetry log are present.",
+      "authority": "wick production v0.48.0 2026-11-17; /world and /health; release 44194019247; gate 44192314674"
     }
   ]
 }
