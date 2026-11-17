@@ -196,9 +196,18 @@ let worldMap = { ok: true, why: [], rooms: 0 };
     if (!Array.isArray(room.ambient) || room.ambient.length === 0) { worldMap.ok = false; worldMap.why.push(`room ${id} has no ambient line`); }
     for (const [direction, target] of Object.entries(room.exits ?? {})) {
       const back = opposite[direction];
-      if (!back || world.rooms[target]?.exits?.[back] !== Number(id)) {
+      const backRoom = world.rooms[target];
+      if (!back || (backRoom?.exits?.[back] !== Number(id) && backRoom?.secretExits?.[back] !== Number(id))) {
         worldMap.ok = false;
         worldMap.why.push(`exit ${id} ${direction} -> ${target} has no way back`);
+      }
+    }
+    for (const [direction, target] of Object.entries(room.secretExits ?? {})) {
+      const back = opposite[direction];
+      const backRoom = world.rooms[target];
+      if (!world.rooms[target] || (backRoom?.exits?.[back] !== Number(id) && backRoom?.secretExits?.[back] !== Number(id))) {
+        worldMap.ok = false;
+        worldMap.why.push(`secret ${id} ${direction} -> ${target} has no way back`);
       }
     }
   }
@@ -1169,6 +1178,19 @@ let lantern = { ok: true, why: [] };
   actor = state.actors.find((entry) => entry.id === "l");
   check(actor?.quests?.completed?.includes("guild-ledger"), "the guild ledger quest did not complete");
   check((state.guilds.mages.xp ?? 0) === 40, "the guild quest did not add guild XP");
+  run([{ kind: "guildAdvance", actorId: "l", guildId: "mages", rank: "adept" }]);
+  actor = state.actors.find((entry) => entry.id === "l");
+  check(actor?.guildRank === "adept" && state.guilds.mages.members.lina === "adept", "guild advance did not raise the rank");
+  check(state.objects.find((o) => o.id === "spell-scroll").holder === "l", "the spell scroll was not held for the guild quest");
+  actor.room = 40;
+  run([{ kind: "move", actorId: "l", dir: "down", to: 41 }]);
+  check(actor.room === 40, "the secret exit was usable before it was found");
+  run([{ kind: "search", actorId: "l", room: 40, dirs: ["down"] }]);
+  actor = state.actors.find((entry) => entry.id === "l");
+  check(actor.found?.includes("40:down"), "search did not record the secret exit");
+  run([{ kind: "move", actorId: "l", dir: "down", to: 41 }]);
+  actor = state.actors.find((entry) => entry.id === "l");
+  check(actor.room === 41, "the secret exit did not lead to the Mirror Pool");
   if (lantern.why.length) { lantern.ok = false; failures.push(`the Lantern Quarter is broken: ${lantern.why[0]}`); }
 }
 
@@ -2162,7 +2184,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"aliases".padEnd(26)}  ${(aliases.ok ? "short" : "BROKEN").padStart(5)}   == get, eq, status`);
   console.log(`${"equipment".padEnd(26)}  ${(equipment.ok ? "8 slots" : "BROKEN").padStart(5)}   == wear, wield, replace`);
   console.log(`${"magic".padEnd(26)}  ${(magic.ok ? "6 spells" : "BROKEN").padStart(5)}   == mana, cast, train`);
-  console.log(`${"lantern".padEnd(26)}  ${(lantern.ok ? "40 rooms" : "BROKEN").padStart(5)}   == errand, charm`);
+  console.log(`${"lantern".padEnd(26)}  ${(lantern.ok ? "44 rooms" : "BROKEN").padStart(5)}   == errand, charm, secret`);
   console.log(`${"pinned".padEnd(26)}  ${(identityPin.ok ? "revoked" : "BROKEN").padStart(5)}   == old log refused`);
   console.log(`${"takeover".padEnd(26)}  ${(takeover.ok ? "1 actor" : "BROKEN").padStart(5)}   == leave then login`);
   console.log(`${"characters".padEnd(26)}  ${(characters.ok ? "2 chars" : "BROKEN").padStart(5)}   == create, switch`);

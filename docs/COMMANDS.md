@@ -90,6 +90,8 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `familiar` | The Apprentice's Charm | 2 | Enter the Familiar Yard; Carry the familiar charm | 40 xp |
 | `roof` | The High Walk | 3 | Reach the High Walk; Kill a rat | 60 xp |
 | `guild-ledger` | The Guild's Ledger | 3 | Carry the spell scroll to the archmage | 60 xp |
+| `mirror` | What the Mirror Keeps | 4 | Enter the Mirror Pool; Carry a mirror shard | 80 xp |
+| `wardstone` | The Wardstone | 5 | Defeat the warden; Carry the ward key | 120 xp |
 
 ## Rooms
 
@@ -135,4 +137,8 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 38 | The Familiar Yard | lantern | yes | east 36 |
 | 39 | The Aviary | lantern | yes | south 36, east 40 |
 | 40 | The High Walk | lantern | yes | west 39 |
+| 41 | The Mirror Pool | undervault | no | up 40, north 42 |
+| 42 | The Sunken Vault | undervault | no | south 41, east 43 |
+| 43 | The Wardstone | undervault | no | west 42, north 44 |
+| 44 | The Deep Door | undervault | no | south 43 |
 

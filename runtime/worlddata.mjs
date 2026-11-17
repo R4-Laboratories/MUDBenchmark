@@ -125,21 +125,40 @@ export function loadWorld({ mode = "single", path = DEFAULT_PATH } = {}) {
     rooms[numeric] = {
       name: room.name ?? `Room ${id}`,
       exits: room.exits ?? {},
+      secretExits: room.secretExits ?? {},
       text,
       notices: room.notices ?? [],
       safe: room.safe === true,
       arena: room.arena === true,
       details: room.details ?? {},
+      secrets: room.secrets ?? {},
       ambient: room.ambient ?? [],
     };
   }
 
-  // Exits must land somewhere.
+  // Exits must land somewhere. A secret exit is still a real edge: it must not
+  // duplicate a visible direction and it needs a way back.
   for (const [id, room] of Object.entries(rooms)) {
     for (const [direction, target] of Object.entries(room.exits)) {
       if (!rooms[target]) {
         errors.push(`room ${id} exits ${direction} to ${target}, which does not exist`);
       }
+    }
+    for (const [direction, target] of Object.entries(room.secretExits)) {
+      if (!rooms[target]) {
+        errors.push(`room ${id} has a secret ${direction} to ${target}, which does not exist`);
+      }
+      if (room.exits[direction] !== undefined) {
+        errors.push(`room ${id} has both a visible and a secret exit ${direction}`);
+      }
+      const back = rooms[target];
+      const reverse = { north: "south", south: "north", east: "west", west: "east", up: "down", down: "up" }[direction];
+      if (!back || (back.exits[reverse] !== Number(id) && back.secretExits[reverse] !== Number(id))) {
+        errors.push(`room ${id} secret ${direction} to ${target} has no way back`);
+      }
+    }
+    if (room.secrets !== undefined && (typeof room.secrets !== "object" || Array.isArray(room.secrets))) {
+      errors.push(`room ${id} has secrets that are not an object`);
     }
   }
 
@@ -303,7 +322,7 @@ export function loadWorld({ mode = "single", path = DEFAULT_PATH } = {}) {
   const queue = [start];
   while (queue.length) {
     const id = queue.shift();
-    for (const target of Object.values(rooms[id]?.exits ?? {})) {
+    for (const target of [...Object.values(rooms[id]?.exits ?? {}), ...Object.values(rooms[id]?.secretExits ?? {})]) {
       if (rooms[target] && !seen.has(target)) {
         seen.add(target);
         queue.push(target);

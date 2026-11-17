@@ -723,6 +723,19 @@ export function step({ state, rooms, intents }) {
       continue;
     }
 
+    if (intent.kind === "guildAdvance") {
+      const actor = find(intent.actorId);
+      const guild = next.guilds[intent.guildId];
+      if (!actor?.key || !guild || guild.id !== "mages" || actor.guild !== guild.id) continue;
+      const ranks = guild.ranks ?? ["apprentice", "adept", "magician", "archmage"];
+      if (ranks.indexOf(intent.rank) !== ranks.indexOf(actor.guildRank) + 1) continue;
+      actor.guildRank = intent.rank;
+      guild.members[actor.key] = intent.rank;
+      next.identities[actor.key] = { ...next.identities[actor.key], guildRank: intent.rank };
+      events.push({ onlyId: actor.id, text: `The archmage names you ${intent.rank}.\r\n`, guild: { action: "advance", id: guild.id, name: guild.name } });
+      continue;
+    }
+
     if (intent.kind === "guildLeave") {
       const actor = find(intent.actorId);
       if (!actor?.key) continue;
@@ -1113,8 +1126,20 @@ export function step({ state, rooms, intents }) {
     const actor = find(intent.actorId);
     if (!actor) continue;
 
+    if (intent.kind === "search") {
+      const actor = find(intent.actorId);
+      if (!actor) continue;
+      const found = new Set(actor.found ?? []);
+      for (const dir of intent.dirs ?? []) found.add(`${intent.room}:${dir}`);
+      actor.found = [...found];
+      continue;
+    }
+
     if (intent.kind === "move") {
-      if (rooms[actor.room]?.exits?.[intent.dir] !== intent.to) continue;
+      const room = rooms[actor.room];
+      const found = (actor.found ?? []).includes(`${actor.room}:${intent.dir}`);
+      const target = room?.exits?.[intent.dir] ?? (found ? room?.secretExits?.[intent.dir] : undefined);
+      if (target !== intent.to) continue;
       const from = actor.room;
       if (next.duels.some((duel) => [duel.challengerId, duel.targetId].includes(actor.id))) {
         next.duels = next.duels.filter((duel) => ![duel.challengerId, duel.targetId].includes(actor.id));

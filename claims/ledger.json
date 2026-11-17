@@ -303,6 +303,18 @@
       "level": "some-true",
       "statement": "Production v0.47.0 serves 40 rooms, 22 mobiles and 38 objects. The Mages' Guild is room 34 above the Atrium; the smith sells the new gear; the Lantern Quarter connects from Market Square; the world has 13 quests including the guild ledger quest. Accounts remain 104 and characters 105, and /watch, /world, /live and the AI fast mode are present.",
       "authority": "wick production v0.47.0 2026-11-17; /world and /health; release 44178099900; gate 44176587612"
+    },
+    {
+      "id": "MB-45",
+      "level": "build",
+      "statement": "The Undervault adds four connected rooms below the High Walk, reached by a searchable secret stair down from room 40. The map is 44 rooms and 15 quests; the Mirror Pool and Wardstone quests use visit/collect/kill facts; two new mobiles and two objects carry the chain. Search records the hidden direction on the actor, a secret exit is refused before discovery and usable after it, and the map validator checks secret exits and reverse links. The gate covers the secret search/move and the new rooms.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-46",
+      "level": "build",
+      "statement": "The Mages' Guild exposes `guild advance`: apprentice to adept requires level 5 and two known spells; adept to magician requires level 8, four known spells and the guild ledger; archmage is NPC-only. Advancement updates the actor and guild roster and persists on the identity. Guild quest completion adds guild XP, and guild level is computed from XP and shown in `guild who`. The gate covers guild quest XP and rank advancement.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

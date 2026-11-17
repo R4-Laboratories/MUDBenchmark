@@ -278,6 +278,61 @@
         "guildXp": 40
       },
       "complete": "The archmage enters the scroll in the ledger."
+    },
+    {
+      "id": "mirror",
+      "name": "What the Mirror Keeps",
+      "level": 4,
+      "giver": "an owl",
+      "description": "The owl says the High Walk hides a stair of water. Find the Mirror Pool and bring back a shard.",
+      "objectives": [
+        {
+          "kind": "visit",
+          "room": 41,
+          "text": "Enter the Mirror Pool"
+        },
+        {
+          "kind": "collect",
+          "object": "mirror-shard",
+          "count": 1,
+          "text": "Carry a mirror shard"
+        }
+      ],
+      "rewards": {
+        "xp": 80
+      },
+      "complete": "The shard is cold and your reflection is still missing.",
+      "requires": [
+        "roof"
+      ]
+    },
+    {
+      "id": "wardstone",
+      "name": "The Wardstone",
+      "level": 5,
+      "giver": "an owl",
+      "description": "Beyond the pool, a warden keeps a key to a door with no handle.",
+      "objectives": [
+        {
+          "kind": "kill",
+          "npc": "warden",
+          "count": 1,
+          "text": "Defeat the warden"
+        },
+        {
+          "kind": "collect",
+          "object": "ward-key",
+          "count": 1,
+          "text": "Carry the ward key"
+        }
+      ],
+      "rewards": {
+        "xp": 120
+      },
+      "complete": "The warden falls. The key is warm.",
+      "requires": [
+        "mirror"
+      ]
     }
   ]
 }

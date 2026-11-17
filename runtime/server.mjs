@@ -471,7 +471,7 @@ const ALIASES = {
   wh: "who", aw: "awake", online: "who",
   h: "help", "?": "help",
   gos: "gossip", goss: "gossip", gc: "guildchat", gchat: "guildchat",
-  status: "world", time: "world",
+  status: "world", time: "world", sr: "search",
 };
 
 // One compact, hidden line per accepted command. It carries only what the
@@ -488,6 +488,7 @@ function selfState(actor) {
     mana: actor.mana ?? maxManaFor(actor),
     max_mana: actor.maxMana ?? maxManaFor(actor),
     spells: [...(actor.spellbook ?? [])],
+    discovered: [...(actor.found ?? [])],
     guild: actor.guild ?? null,
     guild_rank: actor.guildRank ?? null,
     quests: {
@@ -1028,7 +1029,7 @@ async function handleCommand(id, line) {
     if (!actor?.key) {
       return sendTo(id, "MUDBench is a persistent world for people and agents.\r\nSign in with your Prism id, or register <name> <password> / login <name> <password>.\r\nThen type help for the commands.\r\n");
     }
-    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: get/g, drop/dr, inventory/i, score/sc, quests/q, who/wh, gossip/gos, guildchat/gc.\r\nMagic: spells, train <spell> at the Mages' Guild, cast <spell> [on <target>].\r\nWorld: world or status (online, levels, guilds, reset).\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
+    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: get/g, drop/dr, inventory/i, score/sc, quests/q, who/wh, gossip/gos, guildchat/gc.\r\nMagic: spells, train <spell> at the Mages' Guild, cast <spell> [on <target>], search. Guild: guild join/leave/who/list/chat, guild advance (Mages).\r\nWorld: world or status (online, levels, guilds, reset).\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
   }
 
   // A command typed before the join tick lands is queued, not refused: the
@@ -1042,6 +1043,20 @@ async function handleCommand(id, line) {
 
   if (!actor.key) {
     return sendTo(id, "You must sign in first. register <name> <password>, or login <name> <password>.\r\n");
+  }
+
+  if (verb === "search") {
+    const room = ROOMS[actor.room];
+    const subject = restRaw.join(" ").trim().toLowerCase();
+    if (subject && room.secrets?.[subject]) return sendTo(id, `${room.secrets[subject]}\r\n`);
+    const dirs = Object.keys(room.secretExits ?? {});
+    if (!dirs.length) return sendTo(id, subject ? `You find no ${subject}.\r\n` : "You find nothing hidden here.\r\n");
+    const known = new Set(actor.found ?? []);
+    const fresh = dirs.filter((dir) => !known.has(`${actor.room}:${dir}`));
+    pending.push({ kind: "search", actorId: id, room: actor.room, dirs });
+    return sendTo(id, fresh.length
+      ? `You find a hidden way ${fresh.join(", ")}.\r\n`
+      : `You already know the hidden way ${dirs.join(", ")}.\r\n`);
   }
 
   if (verb === "look" || verb === "l" || verb === "examine" || verb === "x") {
@@ -1567,6 +1582,24 @@ async function handleCommand(id, line) {
       pending.push({ kind: "guildLeave", actorId: id });
       return;
     }
+    if (action === "advance") {
+      const guild = state.guilds[actor.guild];
+      if (!guild || guild.id !== "mages") return sendTo(id, "Only the Mages' Guild advances ranks.\r\n");
+      if (actor.room !== 34) return sendTo(id, "The archmage promotes students in the guild hall.\r\n");
+      const ranks = guild.ranks ?? ["apprentice", "adept", "magician", "archmage"];
+      const next = ranks[ranks.indexOf(actor.guildRank) + 1];
+      if (!next || next === "archmage") return sendTo(id, "There is no higher rank for you here.\r\n");
+      const known = (actor.spellbook ?? []).length;
+      const completed = new Set(actor.quests?.completed ?? []);
+      if (next === "adept" && ((actor.level ?? 1) < 5 || known < 2)) {
+        return sendTo(id, "Adept needs level 5 and two known spells.\r\n");
+      }
+      if (next === "magician" && ((actor.level ?? 1) < 8 || known < 4 || !completed.has("guild-ledger"))) {
+        return sendTo(id, "Magician needs level 8, four known spells and the guild ledger.\r\n");
+      }
+      pending.push({ kind: "guildAdvance", actorId: id, guildId: guild.id, rank: next });
+      return;
+    }
     if (action === "disband") {
       const guild = state.guilds[actor.guild];
       if (!guild) return sendTo(id, `${messages.noGuild}\r\n`);
@@ -1895,7 +1928,9 @@ async function handleCommand(id, line) {
 
   const dir = DIRECTIONS[verb];
   if (dir) {
-    const target = ROOMS[actor.room].exits[dir];
+    const room = ROOMS[actor.room];
+    const found = (actor.found ?? []).includes(`${actor.room}:${dir}`);
+    const target = room.exits[dir] ?? (found ? room.secretExits?.[dir] : undefined);
     if (!target) return sendTo(id, `You cannot go ${dir}.\r\n`);
     const started = Date.now();
     const verdict = await admit({ kind: 1, room: actor.room, origin: actor.room, destination: target });
@@ -1936,7 +1971,7 @@ function onTick() {
   const intents = pending.splice(0);
   // A login or registration must hit the disk before the next checkpoint; a
   // kill -9 must not erase an account created seconds ago.
-  const identityChanged = intents.some((intent) => ["login", "register", "password", "claim", "claimLegacy", "rebindLegacy", "createCharacter", "ownAccount", "retireAccount", "handoffCharacter", "revokeHandoff", "train"].includes(intent.kind));
+  const identityChanged = intents.some((intent) => ["login", "register", "password", "claim", "claimLegacy", "rebindLegacy", "createCharacter", "ownAccount", "retireAccount", "handoffCharacter", "revokeHandoff", "train", "guildAdvance"].includes(intent.kind));
   const result = step({ state, rooms: ROOMS, intents });
   state = result.state;
   for (const intent of intents) {

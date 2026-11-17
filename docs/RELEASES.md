@@ -113,6 +113,9 @@ Rehearsed 2026-11-16:
 - v0.47.0 (first world slice) adds eight equipment slots, six spells and the
   Mages' Guild, seven Lantern Quarter rooms, three personal quests and a guild
   ledger quest; the world is 40 rooms / 13 quests (MB-41/42/43);
+- v0.48.0 (Undervault) adds four rooms below a searchable secret stair, two
+  mobiles, two objects, the Mirror Pool/Wardstone quests, and mage rank
+  advancement; the world is 44 rooms / 15 quests (MB-45/46);
 - a SHA with no green Gate run (`a78f57e`) refused before the tag was created;
 - the timer pulled v0.34.0; v0.33.0 was deployed and verified (101 accounts,
   101 characters), then v0.34.0 restored;

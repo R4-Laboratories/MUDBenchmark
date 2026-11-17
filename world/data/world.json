@@ -734,6 +734,80 @@
       "ambient": [
         "The wind moves through the walk.",
         "A lantern below goes out."
+      ],
+      "secretExits": {
+        "down": 41
+      },
+      "secrets": {
+        "rail": "The rail is warm. A stair of water descends into the dark below.",
+        "stair": "A stair of water, invisible until you look for it."
+      }
+    },
+    "41": {
+      "name": "The Mirror Pool",
+      "text": "A still pool fills a room of black glass. The ceiling is lost in reflection; every lantern you carry appears twice, and neither reflection moves when you do.",
+      "safe": false,
+      "exits": {
+        "up": 40,
+        "north": 42
+      },
+      "details": {
+        "pool": "The water is perfectly still. It reflects a sky with no moon.",
+        "glass": "The black glass is cold and smooth."
+      },
+      "ambient": [
+        "The pool does not ripple.",
+        "Your reflection turns a moment late."
+      ]
+    },
+    "42": {
+      "name": "The Sunken Vault",
+      "text": "A low vault of wet stone, half-filled with black water. Broken shelves lean into the pool; a brass door stands east, and the stair back climbs south.",
+      "safe": false,
+      "exits": {
+        "south": 41,
+        "east": 43
+      },
+      "details": {
+        "shelves": "The shelves held books once. The water has taken the rest.",
+        "door": "The brass door is warm and unmarked."
+      },
+      "ambient": [
+        "Water drips somewhere close.",
+        "The door hums once."
+      ]
+    },
+    "43": {
+      "name": "The Wardstone",
+      "text": "A round chamber around a standing stone carved with a hundred closed eyes. A warden stands between you and the northern door, and the stone hums with a sound you feel in your teeth.",
+      "safe": false,
+      "exits": {
+        "west": 42,
+        "north": 44
+      },
+      "details": {
+        "stone": "The eyes are closed. You are certain they were not a moment ago.",
+        "warden": "The warden is a shape of wet stone and old iron."
+      },
+      "ambient": [
+        "The stone hums.",
+        "The warden does not blink."
+      ]
+    },
+    "44": {
+      "name": "The Deep Door",
+      "text": "A door of black iron at the end of the vault, taller than the room should allow. The wardstone's hum is faint here; the door has no handle, only a keyhole shaped like a closed eye.",
+      "safe": false,
+      "exits": {
+        "south": 43
+      },
+      "details": {
+        "door": "The iron is cold. The keyhole is warm.",
+        "keyhole": "It is shaped like an eye, and it is watching."
+      },
+      "ambient": [
+        "The door waits.",
+        "Something on the other side exhales."
       ]
     }
   },
@@ -1218,6 +1292,54 @@
         "A candle on the rail is worth more than a crown.",
         "The mirror below remembers every face."
       ]
+    },
+    {
+      "id": "mirror-wraith",
+      "name": "a mirror-wraith",
+      "room": 41,
+      "home": 41,
+      "period": 140,
+      "jitter": 5,
+      "behaviour": "sentinel",
+      "zone": "undervault",
+      "hp": 16,
+      "damage": 3,
+      "armor": 1,
+      "aggression": 60,
+      "xp": 35,
+      "loot": [
+        "mirror-shard"
+      ],
+      "description": "A tall shape in the pool, made of reflected light and old anger.",
+      "examine": "It has your face, and it is not your face.",
+      "dialogue": [
+        "You should not have looked.",
+        "The pool keeps what it is given."
+      ]
+    },
+    {
+      "id": "warden",
+      "name": "the warden",
+      "room": 43,
+      "home": 43,
+      "period": 160,
+      "jitter": 4,
+      "behaviour": "sentinel",
+      "zone": "undervault",
+      "hp": 30,
+      "damage": 4,
+      "armor": 2,
+      "aggression": 70,
+      "xp": 70,
+      "loot": [
+        "ward-key"
+      ],
+      "description": "A hulking shape of wet stone and iron, with a key at its belt.",
+      "examine": "The warden was made to keep a door. It has forgotten which.",
+      "dialogue": [
+        "The door does not open.",
+        "The key is mine."
+      ]
     }
   ],
   "zones": [
@@ -1301,6 +1423,16 @@
         38,
         39,
         40
+      ]
+    },
+    {
+      "id": "undervault",
+      "name": "The Undervault",
+      "rooms": [
+        41,
+        42,
+        43,
+        44
       ]
     }
   ],
@@ -1777,6 +1909,28 @@
       ],
       "value": 2,
       "examine": "A candle of pale wax. The wick is black but the wax is cold.",
+      "forSale": false
+    },
+    {
+      "id": "mirror-shard",
+      "name": "a mirror shard",
+      "room": 41,
+      "flags": [
+        "takeable"
+      ],
+      "value": 8,
+      "examine": "A shard of black glass. Your reflection is missing.",
+      "forSale": false
+    },
+    {
+      "id": "ward-key",
+      "name": "a ward key",
+      "room": 43,
+      "flags": [
+        "takeable"
+      ],
+      "value": 12,
+      "examine": "A heavy iron key with an eye-shaped bow.",
       "forSale": false
     }
   ],
