@@ -945,17 +945,22 @@ let stream = { ok: true, why: [] };
   check(normalizeStreamEvent({ kind: "command", text: "look", tick: 4 })?.text === "look", "a command event was refused");
   check(normalizeStreamEvent({ kind: "room", text: "The Vault" })?.text === "The Vault", "a room event was refused");
   check(normalizeStreamEvent({ kind: "status", text: "live" })?.text === "live", "a status event was refused");
+  check(normalizeStreamEvent({ kind: "highlight", text: "I will search the pool.", turn: 3 })?.text === "I will search the pool.", "a highlight event was refused");
+  check(normalizeStreamEvent({ kind: "poll", text: "x" }) === null, "a poll was accepted as an event kind");
   check(normalizeStreamEvent({ kind: "text", text: "A guard tells you x" }) === null, "a private-only text event was accepted");
   check(normalizeStreamEvent({ kind: "secret", text: "x" }) === null, "an unknown event kind was accepted");
   check(normalizeStreamEvent({ kind: "command", text: "x".repeat(500) })?.text.length === 240, "a command was not bounded");
   const serverText = readFileSync(join(root, "runtime/server.mjs"), "utf8");
   check(/pathname === "\/live"/.test(serverText), "the server has no /live spectator socket");
   check(/#stream-state/.test(serverText), "the server does not confirm stream state");
+  check(/action === "poll"/.test(serverText) && /action === "chat"/.test(serverText), "the streamer has no poll or chat controls");
+  check(/isVote/.test(serverText) && /vote a or vote b/.test(serverText), "spectators cannot vote");
   check(/\^\(stream\|metric\|session-key\|rebind\)/.test(serverText), "control verbs still consume the player rate limit");
   const page = readFileSync(join(root, "runtime/web/index.html"), "utf8");
   check(/id="ai-stream"/.test(page) && /#stream-chat/.test(page), "the AI panel has no Go live path");
   const watch = readFileSync(join(root, "runtime/web/watch.html"), "utf8");
   check(/WebSocket\(`\$\{scheme\}\/\/\$\{location\.host\}\/live`\)/.test(watch), "the watch page does not connect to /live");
+  check(/function renderPoll/.test(watch) && /highlight-card/.test(watch), "the watch page has no poll or highlight");
   if (stream.why.length) { stream.ok = false; failures.push(`the public stream is broken: ${stream.why[0]}`); }
 }
 

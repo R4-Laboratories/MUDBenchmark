@@ -431,6 +431,11 @@
           </div>
         </div>
         <p class="small muted" style="margin:0 0 8px"><a href="/watch" target="_blank" rel="noopener" style="color: var(--accent)">Public watch page</a> — press Go live to publish this run. Audience chat reaches the AI as director input.</p>
+        <div class="row" id="stream-tools">
+          <button type="button" id="stream-poll">Start poll</button>
+          <button type="button" id="stream-poll-close">Close poll</button>
+          <button type="button" id="stream-chat-toggle">Chat off</button>
+        </div>
         <div id="chat" aria-live="polite"></div>
         <form id="director-form">
           <input id="director-input" autocomplete="off" placeholder="Steer the AI…" aria-label="Director message">
@@ -536,6 +541,9 @@
   const aiPause = document.getElementById("ai-pause");
   const aiStep = document.getElementById("ai-step");
   const aiStream = document.getElementById("ai-stream");
+  const streamPoll = document.getElementById("stream-poll");
+  const streamPollClose = document.getElementById("stream-poll-close");
+  const streamChatToggle = document.getElementById("stream-chat-toggle");
   const aiStop = document.getElementById("ai-stop");
   const aiTitle = document.getElementById("ai-title");
   const aiSub = document.getElementById("ai-sub");
@@ -610,7 +618,7 @@
     lastCommand: "", startedAt: null, recent: [], nudge: false, lastError: null,
     character: "scout", lastRequest: null, lastReply: null, lastParsed: null, lastLatency: 0,
     persona: null, owner: null, personaAudience: null, tickFrom: null, lastTick: null,
-    highlights: [], streaming: false, timeouts: 0,
+    highlights: [], streaming: false, timeouts: 0, lastPoll: null,
   };
   const shortId = (id) => (id ? `${id.slice(0, 15)}…` : "—");
 
@@ -1465,6 +1473,7 @@
     AI.thoughts = [];
     AI.recent = [];
     AI.nudge = false;
+    AI.lastPoll = null;
     AI.lastError = null;
     AI.room = "";
     AI.lastCommand = "";
@@ -1539,6 +1548,7 @@
     AI.streaming = next;
     aiStream.textContent = next ? "Stop stream" : "Go live";
     aiStream.classList.toggle("live", next);
+    if (!next && streamChatToggle) streamChatToggle.textContent = "Chat off";
   }
 
   function publishStream(event) {
@@ -1617,6 +1627,9 @@
       owner: AI.owner,
       at: new Date().toISOString(),
     });
+    if (AI.streaming) {
+      publishStream({ kind: "highlight", text, turn, tick: transcript.tick ?? AI.lastTick });
+    }
     if (button) {
       button.textContent = "★";
       button.disabled = true;
@@ -1823,8 +1836,30 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       if (streamChat) {
         try {
           const message = JSON.parse(streamChat[1]);
-          addChat("viewer", message.text);
+          addChat("viewer", `${message.from}: ${message.text}`);
           AI.director.push(`Audience ${message.from}: ${message.text}`);
+        } catch {}
+        return;
+      }
+      const streamPoll = text.match(/^#stream-poll (.*)\r?\n?$/);
+      if (streamPoll) {
+        try {
+          const poll = JSON.parse(streamPoll[1]);
+          if (AI.lastPoll !== poll.question) {
+            AI.lastPoll = poll.question;
+            addChat("system", `Audience poll: ${poll.question} — A ${poll.options.a}, B ${poll.options.b}.`);
+          }
+        } catch {}
+        return;
+      }
+      const streamPollResult = text.match(/^#stream-poll-result (.*)\r?\n?$/);
+      if (streamPollResult) {
+        try {
+          const poll = JSON.parse(streamPollResult[1]);
+          const line = `Audience poll "${poll.question}" closed: A ${poll.options.a} ${poll.votes.a}, B ${poll.options.b} ${poll.votes.b}.`;
+          addChat("viewer", line);
+          AI.director.push(line);
+          AI.lastPoll = null;
         } catch {}
         return;
       }
@@ -2110,6 +2145,29 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       AI.socket?.send("stream on\n");
       addChat("system", "Opening the public stream at /watch.");
     }
+  });
+  streamPoll.addEventListener("click", () => {
+    if (!AI.streaming) { addChat("system", "Go live first."); return; }
+    const question = prompt("Poll question");
+    if (!question) return;
+    const a = prompt("Option A");
+    if (!a) return;
+    const b = prompt("Option B");
+    if (!b) return;
+    AI.socket?.send(`stream poll ${question} | ${a} | ${b}\n`);
+    addChat("system", "Poll opened.");
+  });
+  streamPollClose.addEventListener("click", () => {
+    if (!AI.streaming) { addChat("system", "Go live first."); return; }
+    AI.socket?.send("stream poll close\n");
+    addChat("system", "Closing the poll.");
+  });
+  streamChatToggle.addEventListener("click", () => {
+    if (!AI.streaming) { addChat("system", "Go live first."); return; }
+    const off = streamChatToggle.textContent === "Chat off";
+    AI.socket?.send(`stream chat ${off ? "off" : "on"}\n`);
+    streamChatToggle.textContent = off ? "Chat on" : "Chat off";
+    addChat("system", `Audience chat ${off ? "off" : "on"}.`);
   });
   aiStep.addEventListener("click", async () => {
     AI.paused = true;

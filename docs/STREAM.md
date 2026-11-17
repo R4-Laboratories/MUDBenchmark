@@ -96,9 +96,36 @@ connection to one message per 1.5 seconds.
 The AI publishes `command`, `room`, `status` and `text` events over its
 authenticated game socket with `stream event <json>`. The server filters every
 text event again with `runtime/stream.mjs`, which removes tells, mail, account,
-password and session lines. Private thoughts, the Model tab, highlights and
-the transcript are **not** published. The stream is a public projection, not a
-screen share.
+password and session lines. Private thoughts, the Model tab and the transcript
+are **not** published unless the owner stars a thought as a clip. The stream is
+a public projection, not a screen share.
+
+### Highlights and clips
+
+The star on a thought is the publish control. If the run is live, starring a
+thought also sends a `highlight` event. The watch page shows it as a clip card
+with a **Copy clip** button. The owner is choosing to publish that thought;
+without a star it stays private.
+
+### Audience polls
+
+The run panel has **Start poll** and **Close poll**. A poll is a question and
+two options; the wire is:
+
+```
+stream poll Which way? | north | east
+stream poll close
+```
+
+Spectators vote with `vote a` or `vote b`. Each viewer gets one vote per poll;
+the counts update live, and the streamer receives the closed result as director
+input. A vote is rate-limited with chat.
+
+### Moderation
+
+**Chat off** stops audience messages without stopping the run; **Chat on**
+restores them. The server rejects a message while chat is off. Viewer messages
+and poll votes are limited to one action per 1.5 seconds per connection.
 
 ## Local models
 

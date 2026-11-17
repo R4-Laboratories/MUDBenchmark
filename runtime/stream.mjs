@@ -5,7 +5,7 @@
 // private tell or a session line. The stream is opt-in: `stream on` is the
 // consent, and `stream off` or a disconnect clears it.
 
-export const STREAM_EVENT_KINDS = ["command", "text", "room", "status"];
+export const STREAM_EVENT_KINDS = ["command", "text", "room", "status", "highlight"];
 
 // Lines that must never cross the public boundary. The list is deliberately
 // conservative: a missing line is a privacy bug, a filtered public line is a
@@ -49,8 +49,8 @@ export function normalizeStreamEvent(value) {
   const kind = String(value.kind ?? "");
   if (!STREAM_EVENT_KINDS.includes(kind)) return null;
   const text = typeof value.text === "string" ? value.text : "";
-  if (kind === "text") {
-    const publicText = publicStreamText(text).slice(0, 4000);
+  if (kind === "text" || kind === "highlight") {
+    const publicText = publicStreamText(text).slice(0, kind === "text" ? 4000 : 2000);
     if (!publicText) return null;
     return { kind, text: publicText, turn: integer(value.turn), tick: integer(value.tick) };
   }

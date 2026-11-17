@@ -268,7 +268,17 @@ function publicLive() {
     tick: live.tick,
     startedAt: live.startedAt,
     viewers: spectators.size,
+    chat: live.chat !== false,
+    poll: live.poll ? publicPoll(live.poll) : null,
     events: live.events.slice(-80),
+  };
+}
+
+function publicPoll(poll) {
+  return {
+    question: poll.question,
+    options: { a: poll.options.a, b: poll.options.b },
+    votes: { a: poll.votes.a, b: poll.votes.b },
   };
 }
 
@@ -296,6 +306,8 @@ function startLive(id) {
     tick: state.tick,
     startedAt: new Date().toISOString(),
     status: "live",
+    chat: true,
+    poll: null,
     events: [],
   };
   broadcastStream({ type: "live", live: publicLive() });
@@ -541,6 +553,38 @@ async function handleCommand(id, line) {
         return sendTo(id, "Public stream off.\r\n");
       }
       return sendTo(id, "This run is not live.\r\n");
+    }
+    if (action === "chat") {
+      if (!live || live.actorId !== id) return sendTo(id, "This run is not live.\r\n");
+      const mode = rest[1];
+      if (mode !== "on" && mode !== "off") return sendTo(id, "Usage: stream chat on | stream chat off.\r\n");
+      live.chat = mode === "on";
+      broadcastStream({ type: "chat-state", chat: live.chat });
+      return sendTo(id, `Audience chat ${mode}.\r\n`);
+    }
+    if (action === "poll") {
+      if (!live || live.actorId !== id) return sendTo(id, "This run is not live.\r\n");
+      if (rest[1] === "close") {
+        if (!live.poll) return sendTo(id, "No poll is open.\r\n");
+        const result = publicPoll(live.poll);
+        live.poll = null;
+        broadcastStream({ type: "poll", poll: null, result });
+        sendTo(id, `#stream-poll-result ${JSON.stringify(result)}\r\n`);
+        return sendTo(id, `Poll closed: ${result.options.a} ${result.votes.a} · ${result.options.b} ${result.votes.b}.\r\n`);
+      }
+      const parts = restRaw.slice(1).join(" ").split("|").map((part) => part.trim());
+      if (parts.length !== 3 || parts.some((part) => !part)) {
+        return sendTo(id, "Usage: stream poll <question> | <option A> | <option B>.\r\n");
+      }
+      const [question, a, b] = parts;
+      live.poll = {
+        question: question.slice(0, 160),
+        options: { a: a.slice(0, 60), b: b.slice(0, 60) },
+        votes: { a: 0, b: 0 },
+        voters: {},
+      };
+      broadcastStream({ type: "poll", poll: publicPoll(live.poll) });
+      return sendTo(id, `Poll started: ${a} or ${b}?\r\n`);
     }
     if (action === "event") {
       if (!live || live.actorId !== id) return sendTo(id, "This run is not live.\r\n");
@@ -2104,8 +2148,10 @@ wss.on("connection", (ws, req) => {
       for (const line of data.toString("utf8").split("\n")) {
         const raw = line.trim();
         if (!raw) continue;
-        if (!/^chat\s+/i.test(raw)) {
-          ws.send(`#stream ${JSON.stringify({ type: "error", why: "viewers can only chat" })}\n`);
+        const isChat = /^chat\s+/i.test(raw);
+        const isVote = /^vote\s+/i.test(raw);
+        if (!isChat && !isVote) {
+          ws.send(`#stream ${JSON.stringify({ type: "error", why: "viewers can only chat or vote" })}\n`);
           continue;
         }
         const now = Date.now();
@@ -2114,11 +2160,36 @@ wss.on("connection", (ws, req) => {
           continue;
         }
         lastChat = now;
-        const text = raw.replace(/^chat\s+/i, "").trim().slice(0, 240);
-        if (!text) continue;
-        const message = { from: viewer, text, at: new Date().toISOString() };
-        broadcastStream({ type: "chat", ...message });
-        if (live) sendTo(live.actorId, `#stream-chat ${JSON.stringify(message)}\n`);
+        if (isChat) {
+          if (live && live.chat === false) {
+            ws.send(`#stream ${JSON.stringify({ type: "error", why: "audience chat is off" })}\n`);
+            continue;
+          }
+          const text = raw.replace(/^chat\s+/i, "").trim().slice(0, 240);
+          if (!text) continue;
+          const message = { from: viewer, text, at: new Date().toISOString() };
+          broadcastStream({ type: "chat", ...message });
+          if (live) sendTo(live.actorId, `#stream-chat ${JSON.stringify(message)}\n`);
+          continue;
+        }
+        if (!live || !live.poll) {
+          ws.send(`#stream ${JSON.stringify({ type: "error", why: "no poll is open" })}\n`);
+          continue;
+        }
+        const choice = raw.replace(/^vote\s+/i, "").trim().toLowerCase();
+        if (choice !== "a" && choice !== "b") {
+          ws.send(`#stream ${JSON.stringify({ type: "error", why: "vote a or vote b" })}\n`);
+          continue;
+        }
+        if (live.poll.voters[viewer]) {
+          ws.send(`#stream ${JSON.stringify({ type: "error", why: "you already voted" })}\n`);
+          continue;
+        }
+        live.poll.voters[viewer] = choice;
+        live.poll.votes[choice] += 1;
+        const poll = publicPoll(live.poll);
+        broadcastStream({ type: "poll", poll });
+        sendTo(live.actorId, `#stream-poll ${JSON.stringify(poll)}\n`);
       }
     });
     ws.on("error", () => {});

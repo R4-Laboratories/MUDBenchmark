@@ -80,6 +80,16 @@
     .msg .who { color: var(--accent-2); font-size: 12px; }
     .msg.mine .who { color: var(--accent); }
     .msg .body { overflow-wrap: anywhere; }
+    #poll { padding: 10px 14px; border-bottom: 1px solid var(--line); }
+    #poll h3 { margin: 0 0 6px; font-size: 13px; color: var(--accent-2); }
+    #poll .option { display: flex; gap: 8px; align-items: center; margin: 6px 0; }
+    #poll button { flex: 1; text-align: left; background: var(--panel-2); color: var(--text); border: 1px solid var(--line); }
+    #poll button:disabled { opacity: 0.65; }
+    #poll .count { color: var(--muted); font-size: 12px; min-width: 24px; text-align: right; }
+    .highlight-card { border-left: 3px solid var(--warn); background: #17140c; padding: 8px 10px; margin: 10px 0; }
+    .highlight-card .meta { color: var(--muted); font-size: 11px; display: flex; justify-content: space-between; gap: 8px; }
+    .highlight-card .body { margin-top: 4px; white-space: pre-wrap; }
+    .highlight-card button { margin-top: 6px; padding: 4px 8px; font-size: 11px; background: transparent; color: var(--warn); border: 1px solid var(--line); }
     #chat-form { display: flex; gap: 8px; padding: 10px; border-top: 1px solid var(--line); }
     #chat-input {
       flex: 1;
@@ -142,6 +152,7 @@
     </div>
     <aside id="side">
       <h2>Audience chat</h2>
+      <div id="poll" hidden></div>
       <div id="chat" aria-live="polite"></div>
       <form id="chat-form">
         <input id="chat-input" autocomplete="off" maxlength="240" placeholder="No run is live" disabled aria-label="Audience message">
@@ -157,6 +168,7 @@
     const viewers = document.getElementById("viewers");
     const feed = document.getElementById("feed");
     const chat = document.getElementById("chat");
+    const pollBox = document.getElementById("poll");
     const form = document.getElementById("chat-form");
     const input = document.getElementById("chat-input");
     const send = form.querySelector("button");
@@ -165,6 +177,7 @@
     let retry = 0;
     let live = null;
     let myId = null;
+    let myVote = null;
     let stick = true;
 
     feed.addEventListener("scroll", () => {
@@ -201,18 +214,55 @@
       chat.scrollTop = chat.scrollHeight;
     }
 
+    function renderPoll(poll, result = null) {
+      if (!poll && !result) { pollBox.hidden = true; pollBox.replaceChildren(); myVote = null; return; }
+      pollBox.hidden = false;
+      pollBox.replaceChildren();
+      const title = document.createElement("h3");
+      title.textContent = result ? `Poll closed: ${result.question}` : poll.question;
+      pollBox.appendChild(title);
+      for (const key of ["a", "b"]) {
+        const option = document.createElement("div");
+        option.className = "option";
+        const button = document.createElement("button");
+        const label = result ? result.options[key] : poll.options[key];
+        const count = result ? result.votes[key] : poll.votes[key];
+        button.textContent = `${key.toUpperCase()} · ${label}`;
+        button.disabled = Boolean(result) || myVote !== null;
+        button.addEventListener("click", () => {
+          if (!live || myVote || socket?.readyState !== WebSocket.OPEN) return;
+          socket.send(`vote ${key}\n`);
+          myVote = key;
+          renderPoll(poll);
+        });
+        const countNode = document.createElement("span");
+        countNode.className = "count";
+        countNode.textContent = String(count);
+        option.append(button, countNode);
+        pollBox.appendChild(option);
+      }
+      if (myVote && !result) {
+        const note = document.createElement("div");
+        note.className = "muted small";
+        note.textContent = `You voted ${myVote.toUpperCase()}.`;
+        pollBox.appendChild(note);
+      }
+    }
+
     function setLive(next) {
       live = next;
       dot.classList.toggle("live", Boolean(next));
       character.textContent = next ? next.name : "no run";
       room.textContent = next?.room ? `· ${next.room}` : "";
       tick.textContent = next?.tick != null ? `tick ${next.tick}` : "";
-      input.disabled = !next;
-      send.disabled = !next;
-      input.placeholder = next ? "Say something to the run…" : "No run is live";
+      const chatOn = next ? next.chat !== false : false;
+      input.disabled = !next || !chatOn;
+      send.disabled = !next || !chatOn;
+      input.placeholder = !next ? "No run is live" : chatOn ? "Say something to the run…" : "Audience chat is off";
       document.title = next ? `${next.name} — MUDBench Live` : "MUDBench Live";
-      if (!next) return;
+      if (!next) { renderPoll(null); myVote = null; return; }
       document.getElementById("offline")?.remove();
+      if (next.poll) renderPoll(next.poll);
       for (const event of next.events ?? []) renderEvent(event, false);
     }
 
@@ -221,7 +271,30 @@
       if (event.kind === "command") line(`> ${event.text}`, "cmd");
       else if (event.kind === "room") line(`[${event.text}]`, "room");
       else if (event.kind === "status") line(event.text, "status");
-      else {
+      else if (event.kind === "highlight") {
+        const card = document.createElement("div");
+        card.className = "highlight-card";
+        const meta = document.createElement("div");
+        meta.className = "meta";
+        const left = document.createElement("span");
+        left.textContent = `★ turn ${event.turn ?? "—"} · tick ${event.tick ?? "—"}`;
+        const right = document.createElement("span");
+        right.textContent = event.at ? new Date(event.at).toLocaleTimeString() : "";
+        meta.append(left, right);
+        const body = document.createElement("div");
+        body.className = "body";
+        body.textContent = event.text;
+        const copy = document.createElement("button");
+        copy.type = "button";
+        copy.textContent = "Copy clip";
+        copy.addEventListener("click", async () => {
+          const clip = JSON.stringify({ kind: "mudbenchmark/clip/1", live: live?.name ?? null, ...event }, null, 2);
+          try { await navigator.clipboard.writeText(clip); copy.textContent = "Copied"; }
+          catch { copy.textContent = "Copy failed"; }
+        });
+        card.append(meta, body, copy);
+        feed.appendChild(card);
+      } else {
         for (const part of String(event.text).split("\n")) {
           if (!part.trim()) { line("", "desc"); continue; }
           if (/^\[.*\]$/.test(part.trim())) line(part, "room");
@@ -263,6 +336,19 @@
       if (payload.type === "event") {
         setLive({ ...(live ?? {}), name: payload.name, room: payload.room, tick: payload.tick, status: payload.status });
         renderEvent(payload.event);
+        return;
+      }
+      if (payload.type === "poll") {
+        if (live) live.poll = payload.poll;
+        renderPoll(payload.poll, payload.result ?? null);
+        return;
+      }
+      if (payload.type === "chat-state") {
+        if (live) live.chat = payload.chat;
+        const chatOn = payload.chat !== false;
+        input.disabled = !live || !chatOn;
+        send.disabled = !live || !chatOn;
+        input.placeholder = chatOn ? "Say something to the run…" : "Audience chat is off";
         return;
       }
       if (payload.type === "chat") {

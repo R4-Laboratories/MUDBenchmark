@@ -103,6 +103,11 @@ Rehearsed 2026-11-16:
   periodic world snapshots, `world`/`/world`, `tools/trends.mjs`, and the
   redaction policy. The pre-policy 1.9M-span and 39k-trace logs were scrubbed
   and archived before the switch (MB-36/37);
+- v0.44.0 (providers) released from `fa6d87d`; custom OpenAI/Anthropic
+  endpoints, optional keys, per-origin key storage, URL normalization and fast
+  mode with a look fallback (MB-38);
+- v0.45.0 (watch v2) adds highlight clips, audience polls and a chat toggle to
+  the public watch page (MB-39);
 - a SHA with no green Gate run (`a78f57e`) refused before the tag was created;
 - the timer pulled v0.34.0; v0.33.0 was deployed and verified (101 accounts,
   101 characters), then v0.34.0 restored;

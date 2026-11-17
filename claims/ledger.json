@@ -267,6 +267,12 @@
       "level": "build",
       "statement": "The browser AI accepts OpenAI-compatible and Anthropic-compatible endpoints through presets and a custom provider whose key is optional; it normalizes bare hosts, bases and full chat URLs without appending a second path, stores keys per origin rather than in one global slot, and never sends a saved key to another host. A fast mode uses four history pairs, 200 output tokens, temperature 0, a 45-second deadline, two look fallbacks and then a pause. The gate checks URL normalization, key modes, request shapes, the custom keyless request and history trimming.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-39",
+      "level": "build",
+      "statement": "The public watch layer supports owner-starred highlight clips with a copy action, two-option audience polls started and closed by the streamer, one vote per viewer with live counts and the result delivered to the AI, and an owner chat-off/chat-on toggle. Highlight text passes the same private-line filter as public text; poll and vote frames are separate from game commands; chat and votes share a 1.5-second per-connection limit. The gate covers the highlight event kind, poll/chat server paths and watch-page rendering; a live server rehearsal counted a vote, delivered the poll result and rendered a highlight.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }
