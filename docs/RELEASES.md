@@ -59,6 +59,8 @@ Rehearsed 2026-11-16:
 
 - v0.34.0 released from `8b6b241` by one dispatch, Gate run 43973358653;
 - v0.35.0 (L1) released from `296e467` by the same one-action path;
+- v0.36.0 (recovery kit) released from `b48810c` the same way; the deploy
+  asset proof now also checks `/recovery-kit.mjs`;
 - a SHA with no green Gate run (`a78f57e`) refused before the tag was created;
 - the timer pulled v0.34.0; v0.33.0 was deployed and verified (101 accounts,
   101 characters), then v0.34.0 restored;
