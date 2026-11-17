@@ -533,7 +533,10 @@ token compared in constant time. Token mode stores only a SHA-256 hash and
 character and tombstones the legacy account. On production v0.41.0 the three
 credentialless accounts `k1`, `public-test` and `agent` were moved to
 `prism:4c40ff2d`; the target lists all three, the legacy records are retired,
-and the world stayed at 105 accounts and 106 characters. MB-30/31.
+and the world stayed at 105 accounts and 106 characters. The bare token-only
+account `casey` was then deleted at owner request, leaving 104 accounts and 105
+characters; the delete tool refuses progression or references and archives the
+state first. MB-30/31/32.
 
 **L2. Relay / instant revocation.** *(runtime; optional)*
 Only if "revoked at next login" is too slow: run `createRelayBus` server-side

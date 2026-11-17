@@ -433,9 +433,10 @@ R4 was run on production v0.41.0. The owner console listed exactly `k1`,
 `prism:4c40ff2d`; the three legacy accounts are retired with a `mergedInto`
 tombstone and a `rebound` record, their characters are owned by the target and
 still level 1, and the target account lists `prism:4c40ff2d`, `case`, `k1`,
-`public-test` and `agent`. `casey` still has its legacy token. The world stayed
-at 105 accounts and 106 characters, and no credentialless legacy account is
-left. MB-30 and MB-31 record the claims. The target's character list was
+`public-test` and `agent`. `casey` still had its legacy token at that point; it
+was later deleted at owner request for a clean baseline, leaving 104 accounts
+and 105 characters (MB-32). No credentialless legacy account is left. MB-30 and
+MB-31 record the rebind claims. The target's character list was
 verified from the state and the account logic, not from a signed-in browser
 holding that Prism key.
 
@@ -453,6 +454,7 @@ Not yet proven by the gate: a tampered signature and an unknown device.
    logged in with the newer log. Before that, the no-relay design cannot know.
 5. **Legacy.** The name/password form remains for telnet, CLI and older
    accounts. The one-time `adopt` claim is built; it accepts a password or a
-   legacy token, and `casey` is left to its owner. An account with neither
-   credential uses the owner-authorized `rebind`: a token for a separate login,
-   or a direct move onto a Prism account.
+   legacy token. `casey` was deleted at owner request after the rebind run, so
+   the baseline has no token-only orphan. An account with neither credential
+   uses the owner-authorized `rebind`: a token for a separate login, or a direct
+   move onto a Prism account.

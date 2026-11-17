@@ -44,6 +44,7 @@ import { readSpanTail, redactSpans, summarizeSpans } from "../runtime/spans.mjs"
 import { admissionAdmits, decodeAdmissionRequest } from "./admission.mjs";
 import { measureCandidates } from "./measure.mjs";
 import { normalizePrismId, ownerAllowed, rebindPlan, tokenHash } from "../runtime/rebind.mjs";
+import { deleteLegacy } from "./delete-legacy.mjs";
 
 const root = process.cwd();
 const ratchet = JSON.parse(readFileSync(join(root, "world/ratchet.json"), "utf8"));
@@ -859,6 +860,60 @@ let rebind = { ok: true, why: [] };
   check(upgraded.identities.wanderer?.owner === prismKey, "the rebind owner did not survive a restart");
 
   if (rebind.why.length) { rebind.ok = false; failures.push(`the legacy rebind is broken: ${rebind.why[0]}`); }
+}
+
+// The offline baseline delete removes only a bare legacy account. A live
+// character, progression, a second character and any external reference refuse.
+let deletion = { ok: true, why: [] };
+{
+  const check = (condition, why) => { if (!condition) { deletion.ok = false; deletion.why.push(why); } };
+  const bare = () => ({
+    accounts: {
+      casey: { kind: "legacy", name: "casey", characters: ["casey"], passwordHash: null, salt: null, tokenHash: "h", retired: false, mergedInto: null },
+      keeper: { kind: "prism", name: "keeper", characters: ["keeper"], retired: false },
+    },
+    identities: {
+      casey: { kind: "character", owner: "casey", name: "casey", level: 1, xp: 0, guild: null, guildRank: null, quests: { active: [], completed: [] } },
+    },
+    actors: [], mail: [], guilds: {}, duels: [], objects: [],
+  });
+
+  let state = bare();
+  const removed = deleteLegacy(state, "casey");
+  check(removed.ok, `a bare account was refused: ${removed.why}`);
+  check(!state.accounts.casey && !state.identities.casey, "the bare account or character survived");
+  check(removed.counts?.accounts === 1 && removed.counts?.identities === 0, "the delete counts are wrong");
+  check(!deleteLegacy(state, "casey").ok, "a second delete was accepted");
+
+  state = bare();
+  state.actors.push({ id: "live", key: "casey", name: "casey" });
+  check(!deleteLegacy(state, "casey").ok, "an online character was deleted");
+
+  state = bare();
+  state.identities.casey.level = 2;
+  check(!deleteLegacy(state, "casey").ok, "a character with progression was deleted");
+
+  state = bare();
+  state.mail.push({ fromKey: "casey", toKey: "friend" });
+  check(!deleteLegacy(state, "casey").ok, "a character with mail was deleted");
+
+  state = bare();
+  state.guilds.g1 = { founder: "casey", members: { casey: "leader" } };
+  check(!deleteLegacy(state, "casey").ok, "a character in a guild was deleted");
+
+  state = bare();
+  state.accounts.casey.characters.push("other");
+  check(!deleteLegacy(state, "casey").ok, "an account with two characters was deleted");
+
+  state = bare();
+  state.accounts.keeper.characters = ["keeper"];
+  check(!deleteLegacy(state, "keeper").ok, "a Prism account was deleted");
+
+  state = bare();
+  state.objects.push({ holder: "casey" });
+  check(!deleteLegacy(state, "casey").ok, "a held object was deleted with the character");
+
+  if (deletion.why.length) { deletion.ok = false; failures.push(`the baseline delete is broken: ${deletion.why[0]}`); }
 }
 
 // The state file is atomic, backed up, and fail-loud.
@@ -1813,6 +1868,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"state".padEnd(26)}  ${(durableState.ok ? "5 checks" : "BROKEN").padStart(5)}   == atomic, backup, fail-loud`);
   console.log(`${"claim".padEnd(26)}  ${(claim.ok ? "adds char" : "BROKEN").padStart(5)}   == owner, tombstone`);
   console.log(`${"rebind".padEnd(26)}  ${(rebind.ok ? "token, prism" : "BROKEN").padStart(5)}   == owner, online, once`);
+  console.log(`${"delete".padEnd(26)}  ${(deletion.ok ? "bare only" : "BROKEN").padStart(5)}   == no refs, no progress`);
   console.log(`${"pinned".padEnd(26)}  ${(identityPin.ok ? "revoked" : "BROKEN").padStart(5)}   == old log refused`);
   console.log(`${"takeover".padEnd(26)}  ${(takeover.ok ? "1 actor" : "BROKEN").padStart(5)}   == leave then login`);
   console.log(`${"characters".padEnd(26)}  ${(characters.ok ? "2 chars" : "BROKEN").padStart(5)}   == create, switch`);

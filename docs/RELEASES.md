@@ -86,6 +86,10 @@ Rehearsed 2026-11-16:
 - v0.41.0 (owner-authorized rebind) released from `202bbdc`; `k1`,
   `public-test` and `agent` moved to `prism:4c40ff2d`, the three legacy
   accounts retired, and the world stayed at 105 accounts / 106 characters;
+- after v0.41.0, the bare token-only account `casey` was deleted offline at
+  owner request; the state was archived first and the world is now at 104
+  accounts / 105 characters (MB-32). No runtime release was needed for a state
+  deletion;
 - a SHA with no green Gate run (`a78f57e`) refused before the tag was created;
 - the timer pulled v0.34.0; v0.33.0 was deployed and verified (101 accounts,
   101 characters), then v0.34.0 restored;

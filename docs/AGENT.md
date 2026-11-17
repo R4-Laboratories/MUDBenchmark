@@ -269,6 +269,12 @@ character onto an existing Prism account. The owner token is
 `MUDBENCH_OWNER_TOKEN` on the world unit; an unset token refuses every rebind.
 A credentialed account still uses `login` then `adopt`.
 
+A bare legacy account that is no longer wanted can be removed offline with
+`tools/delete-legacy.mjs --state <world.json> --name <account> --confirm`.
+Stop the world first. The tool refuses an online character, progression, a
+second character, mail, a guild, a duel or a held object; it archives the state
+file and writes atomically. It is for baseline cleanup, not a player command.
+
 The name/password form remains under **Use a name and password instead** for
 telnet, CLI clients and older accounts: `register <name> <password>` creates a
 legacy account with one character; `login <name> <password>` returns;
