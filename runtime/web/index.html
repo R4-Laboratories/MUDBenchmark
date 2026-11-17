@@ -1512,6 +1512,11 @@
     AI.socket.send(`stream event ${JSON.stringify(event)}\n`);
   }
 
+  function sendMetric(fields) {
+    if (AI.socket?.readyState !== WebSocket.OPEN) return;
+    AI.socket.send(`metric ${JSON.stringify(fields)}\n`);
+  }
+
   function updateLiveBar() {
     liveName.textContent = AI.name || "AI";
     liveRoom.textContent = AI.room ? `· ${AI.room}` : "";
@@ -1948,6 +1953,20 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       AI.lastReply = { text, usage: usage ?? null, latency_ms: latency, at: new Date().toISOString() };
       AI.lastParsed = parsed;
       updateModelInspector();
+      sendMetric({
+        kind: "ai.turn",
+        provider: AI.config?.provider,
+        model: AI.config?.model,
+        latency_ms: latency,
+        prompt_tokens: usage?.prompt_tokens ?? usage?.input_tokens ?? null,
+        completion_tokens: usage?.completion_tokens ?? usage?.output_tokens ?? null,
+        thinking_tokens: usage?.completion_tokens_details?.reasoning_tokens ?? usage?.output_tokens_details?.reasoning_tokens ?? null,
+        parse_ok: Boolean(parsed.command),
+        command: parsed.command,
+        thought_chars: parsed.thought?.length ?? 0,
+        turn,
+        tick: AI.lastTick,
+      });
 
       AI.history.push({ role: "user", content: user }, { role: "assistant", content: text });
       AI.history = trimHistory(AI.history, 8);
@@ -2006,6 +2025,16 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       const message = error?.name === "TimeoutError"
         ? "The model did not answer within two minutes."
         : error.message;
+      sendMetric({
+        kind: "ai.turn",
+        provider: AI.config?.provider,
+        model: AI.config?.model,
+        latency_ms: Math.round(performance.now() - started),
+        error: String(message),
+        timeout: error?.name === "TimeoutError",
+        turn,
+        tick: AI.lastTick,
+      });
       addChat("system", `Brain error: ${message}`);
       if (String(message).includes("Failed to fetch")) {
         addChat("system", PROVIDERS[AI.config.provider].hint);

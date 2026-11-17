@@ -51,6 +51,43 @@ for (const file of inputs) {
       duration_ms: span.duration_ms ?? null,
     };
 
+    if (span.name === "ai.turn") {
+      rows.push({
+        ...common,
+        event: "ai_turn",
+        provider: span["ai.provider"] ?? null,
+        model: span["ai.model"] ?? null,
+        latency_ms: num(span["ai.latency_ms"]),
+        tokens_in: num(span["ai.prompt_tokens"]),
+        tokens_out: num(span["ai.completion_tokens"]),
+        thinking_tokens: num(span["ai.thinking_tokens"]),
+        parsed: span["ai.parse_ok"] === "true" || span["ai.parse_ok"] === true,
+        action: span["ai.command"] ?? null,
+        thought_chars: num(span["ai.thought_chars"]),
+        timeout: span["ai.timeout"] === "true" || span["ai.timeout"] === true,
+        error: span["ai.error"] ?? null,
+        turn: num(span["ai.turn"]),
+      });
+      continue;
+    }
+
+    if (span.name === "world.snapshot") {
+      rows.push({
+        ...common,
+        event: "snapshot",
+        online: num(span["world.online"]),
+        accounts: num(span["world.accounts"]),
+        characters: num(span["world.characters"]),
+        rooms: num(span["world.rooms"]),
+        npcs: num(span["world.npcs"]),
+        objects: num(span["world.objects"]),
+        reset_seconds: num(span["world.reset_seconds"]),
+        phase: span["world.phase"] ?? null,
+        weather: span["world.weather"] ?? null,
+      });
+      continue;
+    }
+
     if (span.name === "agent.decision") {
       rows.push({
         ...common,

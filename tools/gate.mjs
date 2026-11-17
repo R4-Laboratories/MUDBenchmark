@@ -46,6 +46,9 @@ import { measureCandidates } from "./measure.mjs";
 import { normalizePrismId, ownerAllowed, rebindPlan, tokenHash } from "../runtime/rebind.mjs";
 import { deleteLegacy } from "./delete-legacy.mjs";
 import { normalizeStreamEvent, publicStreamText } from "../runtime/stream.mjs";
+import { normalizeAiTurn, aiTurnAttributes } from "../runtime/metrics.mjs";
+import { summarizeTrends } from "../runtime/trends.mjs";
+import { worldStatus, worldStatusText } from "../runtime/worldstatus.mjs";
 
 const root = process.cwd();
 const ratchet = JSON.parse(readFileSync(join(root, "world/ratchet.json"), "utf8"));
@@ -939,12 +942,60 @@ let stream = { ok: true, why: [] };
   const serverText = readFileSync(join(root, "runtime/server.mjs"), "utf8");
   check(/pathname === "\/live"/.test(serverText), "the server has no /live spectator socket");
   check(/#stream-state/.test(serverText), "the server does not confirm stream state");
-  check(/\^\(stream\|session-key\|rebind\)/.test(serverText), "control verbs still consume the player rate limit");
+  check(/\^\(stream\|metric\|session-key\|rebind\)/.test(serverText), "control verbs still consume the player rate limit");
   const page = readFileSync(join(root, "runtime/web/index.html"), "utf8");
   check(/id="ai-stream"/.test(page) && /#stream-chat/.test(page), "the AI panel has no Go live path");
   const watch = readFileSync(join(root, "runtime/web/watch.html"), "utf8");
   check(/WebSocket\(`\$\{scheme\}\/\/\$\{location\.host\}\/live`\)/.test(watch), "the watch page does not connect to /live");
   if (stream.why.length) { stream.ok = false; failures.push(`the public stream is broken: ${stream.why[0]}`); }
+}
+
+// Telemetry is descriptive: session, AI, world and client records aggregate
+// into trends; the server-wide status is the same shape players and AIs see.
+let telemetry = { ok: true, why: [] };
+{
+  const check = (condition, why) => { if (!condition) { telemetry.ok = false; telemetry.why.push(why); } };
+  const metric = normalizeAiTurn({
+    kind: "ai.turn", provider: "openai", model: "test", latency_ms: 1234,
+    prompt_tokens: 100, completion_tokens: 20, thinking_tokens: 15,
+    parse_ok: true, command: "look", thought_chars: 40, turn: 2, tick: 9,
+  });
+  check(metric?.latency_ms === 1234 && metric?.command === "look", "a valid AI turn metric was refused");
+  check(normalizeAiTurn({ kind: "other", provider: "x" }) === null, "an unknown metric kind was accepted");
+  check(normalizeAiTurn({ kind: "ai.turn", provider: "x", error: "x".repeat(500) })?.error.length === 200, "an error string was not bounded");
+  const attrs = aiTurnAttributes(metric);
+  check(attrs["ai.latency_ms"] === 1234 && attrs["ai.command"] === "look", "the AI turn attributes are wrong");
+
+  const spans = [
+    { name: "world.client", at: "2026-11-17T00:00:00Z", "client.transport": "websocket" },
+    { name: "world.disconnect", at: "2026-11-17T00:01:00Z", duration_ms: 60000, "client.transport": "websocket" },
+    { name: "world.session", at: "2026-11-17T00:00:30Z", "session.kind": "login" },
+    { name: "ai.turn", at: "2026-11-17T00:00:40Z", "ai.latency_ms": 1000, "ai.parse_ok": true, "ai.command": "look", "ai.prompt_tokens": 10, "ai.completion_tokens": 2, "ai.provider": "openai" },
+    { name: "ai.turn", at: "2026-11-17T00:00:45Z", "ai.latency_ms": 3000, "ai.parse_ok": false, "ai.error": "timeout", "ai.timeout": true, "ai.provider": "openai" },
+    { name: "world.input", at: "2026-11-17T00:00:41Z", text: "look" },
+    { name: "world.input", at: "2026-11-17T00:00:42Z", text: "north" },
+    { name: "world.input", at: "2026-11-17T00:00:43Z", text: "slow", refused: "too-fast" },
+    { name: "world.snapshot", at: "2026-11-17T00:01:00Z", "world.online": 1, "world.reset_seconds": 3600, "world.accounts": 2, "world.characters": 2, "world.actors": JSON.stringify([{ name: "alice", level: 4 }]) },
+  ];
+  const trends = summarizeTrends(spans);
+  check(trends.ai.turns === 2 && trends.ai.parsed === 0.5, "the AI trend counts are wrong");
+  check(trends.ai.latency_ms.p50 === 1000 && trends.ai.latency_ms.max === 3000, "the AI latency percentiles are wrong");
+  check(trends.commands.accepted === 2 && trends.commands.refused === 1, "the command trend counts are wrong");
+  check(trends.world.online.latest === 1 && trends.world.levels.max === 4, "the world trend counts are wrong");
+  check(trends.clients.connections === 1 && trends.clients.sessions === 1, "the client trend counts are wrong");
+
+  const statusWorld = loadWorld({ mode: "single" });
+  let statusState = initialState(statusWorld.rooms, statusWorld.npcs, statusWorld.objects, statusWorld.start, statusWorld.climate, channelTable.channels, statusWorld.levels, questTable.quests);
+  statusState.actors.push({ id: "t1", key: "alice", account: "alice", name: "alice", room: statusWorld.start, level: 4, xp: 350, hp: 12, maxHp: 16, guild: null, guildRank: null, quests: { active: [], completed: [] }, wielding: "lamp6" });
+  statusState.objects.push({ id: "lamp6", name: "a brass lamp", holder: "t1", worn: false, room: null });
+  statusState.objects.push({ id: "cloak6", name: "a grey cloak", holder: "t1", worn: true, room: null });
+  const status = worldStatus(statusState, statusWorld.rooms);
+  check(status.online === 1 && status.actors[0]?.level === 4 && status.actors[0]?.wielded === "a brass lamp", "the world status actor is wrong");
+  check(status.actors[0]?.worn?.includes("a grey cloak") && status.actors[0]?.inventory === 1, "the world status equipment count is wrong");
+  check(status.reset.seconds > 0 && status.rooms > 0, "the world status reset or rooms are wrong");
+  check(worldStatusText(status).includes("alice") && worldStatusText(status).includes("level 4"), "the human world status is missing the actor");
+
+  if (telemetry.why.length) { telemetry.ok = false; failures.push(`the telemetry foundation is broken: ${telemetry.why[0]}`); }
 }
 
 // The state file is atomic, backed up, and fail-loud.
@@ -1933,6 +1984,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"rebind".padEnd(26)}  ${(rebind.ok ? "token, prism" : "BROKEN").padStart(5)}   == owner, online, once`);
   console.log(`${"delete".padEnd(26)}  ${(deletion.ok ? "bare only" : "BROKEN").padStart(5)}   == no refs, no progress`);
   console.log(`${"stream".padEnd(26)}  ${(stream.ok ? "public" : "BROKEN").padStart(5)}   == filters, events, watch`);
+  console.log(`${"telemetry".padEnd(26)}  ${(telemetry.ok ? "trends" : "BROKEN").padStart(5)}   == ai, world, clients`);
   console.log(`${"pinned".padEnd(26)}  ${(identityPin.ok ? "revoked" : "BROKEN").padStart(5)}   == old log refused`);
   console.log(`${"takeover".padEnd(26)}  ${(takeover.ok ? "1 actor" : "BROKEN").padStart(5)}   == leave then login`);
   console.log(`${"characters".padEnd(26)}  ${(characters.ok ? "2 chars" : "BROKEN").padStart(5)}   == create, switch`);

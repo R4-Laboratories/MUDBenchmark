@@ -6,13 +6,27 @@
 // the ones in docs/SAFETY-MODEL.md, because a schema that changes shape with
 // the transport is not a schema.
 
-import { appendFileSync } from "node:fs";
+import { appendFileSync, renameSync, statSync } from "node:fs";
 import { randomBytes, createHash } from "node:crypto";
 
 const ENDPOINT = process.env.OTEL_EXPORTER_OTLP_ENDPOINT;
 const LOG = process.env.TELEMETRY_LOG ?? "/tmp/mudbench-spans.jsonl";
 export const TELEMETRY_LOG = LOG;
 const SERVICE = process.env.OTEL_SERVICE_NAME ?? "mudbench";
+const MAX_BYTES = Number(process.env.TELEMETRY_MAX_BYTES ?? 64 * 1024 * 1024);
+let writes = 0;
+
+// Rotate the local JSONL at a fixed size. The archive keeps its timestamp; the
+// next append creates a fresh live file. A full disk must not stop the world.
+function rotateIfNeeded() {
+  writes += 1;
+  if (writes % 5000 !== 0) return;
+  try {
+    if (statSync(LOG).size < MAX_BYTES) return;
+    const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+    renameSync(LOG, `${LOG}.${stamp}`);
+  } catch {}
+}
 
 const hex = (bytes) => randomBytes(bytes).toString("hex");
 const traceId = () => hex(16);
@@ -68,15 +82,17 @@ export function recordSpan(name, attributes = {}, durationMs = 0) {
       headers: { "content-type": "application/json" },
       body,
     }).catch(() => {});
-    return;
   }
 
-  // Readable fallback: same names, flat.
+  // The local JSONL copy is always written, even when an OTLP collector is
+  // configured. The collector is a convenience, not the only record: trend
+  // queries and dataset builds read this file directly.
   const flat = { name, at: new Date(start).toISOString(), duration_ms: Math.round(durationMs) };
   for (const { key, value } of span.attributes) {
     flat[key] = Object.values(value)[0];
   }
   try {
+    rotateIfNeeded();
     appendFileSync(LOG, `${JSON.stringify(flat)}\n`);
   } catch {
     // never let telemetry break a turn

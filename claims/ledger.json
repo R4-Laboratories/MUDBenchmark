@@ -249,6 +249,12 @@
       "level": "some-true",
       "statement": "The seven-room control (deepseek-flash, temperature 0, six runs per arm, original wording, no route hint) solved 5/6 single and 4/6 corroborated, with 5/6 answering in each arm. Wrong-first was 0/6 single and 1/6 corroborated (answer slate). The control does not reproduce the original 4/6 wrong-first result, so the expanded-world null is not explained by the route instruction or the larger world alone; model version, the stricter answer rule, prompt and the six-run sample remain.",
       "authority": "wick control run 2026-11-17, out/summary.json and run-*.jsonl; harness exits on solved; gate loop/stream"
+    },
+    {
+      "id": "MB-36",
+      "level": "build",
+      "statement": "The telemetry foundation records client connections and disconnects, login/register sessions, every accepted or refused command, AI turn metrics (provider, model, latency, prompt/completion/thinking tokens, parse, command, timeout/error) from the browser and harness, and a world snapshot every 240 ticks with online actors, levels, XP, equipment, quest counts, guilds, totals and the two-hour reset. `world`/`GET /world` expose the same server-wide status. `tools/trends.mjs` aggregates the spans into descriptive trends. No thought, prompt, reply, provider key, password or token is recorded; `/spans` stays redacted.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

@@ -226,6 +226,11 @@ const COMMANDS = new Set([
 
 // A model may wrap its command in prose or quotes; take the first line that
 // looks like a command, and report when nothing does.
+function tickFrom(text) {
+  const match = String(text).match(/#tick (\d+)/);
+  return match ? Number(match[1]) : null;
+}
+
 function parseCommand(reply) {
   const lines = String(reply).split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
   for (const line of lines) {
@@ -344,6 +349,19 @@ async function loop() {
       "telemetry.latency_ms": Date.now() - started,
       "telemetry.tokens_in": lastUsage?.prompt_tokens,
       "telemetry.tokens_out": lastUsage?.completion_tokens,
+    }, Date.now() - started);
+    recordSpan("ai.turn", {
+      "ai.provider": PROVIDER,
+      "ai.model": MODEL,
+      "ai.latency_ms": Date.now() - started,
+      "ai.prompt_tokens": lastUsage?.prompt_tokens,
+      "ai.completion_tokens": lastUsage?.completion_tokens,
+      "ai.thinking_tokens": lastUsage?.completion_tokens_details?.reasoning_tokens,
+      "ai.parse_ok": ok,
+      "ai.command": command,
+      "ai.thought_chars": 0,
+      "ai.turn": turn,
+      "world.tick": tickFrom(seen),
     }, Date.now() - started);
     if (!ok) console.warn(`turn ${turn}: unparseable reply, sending "look" instead`);
     const since = Date.now() - lastSend;

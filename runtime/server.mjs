@@ -29,6 +29,8 @@ import { verifyPrismSession, verifyPersonaOwner, verifySessionKey, prismDisplay 
 import { CREDENTIAL, identityAdmits } from "./identity.mjs";
 import { normalizePrismId, ownerAllowed, rebindPlan } from "./rebind.mjs";
 import { normalizeStreamEvent, publicStreamText } from "./stream.mjs";
+import { normalizeAiTurn, aiTurnAttributes } from "./metrics.mjs";
+import { worldStatus, worldStatusText } from "./worldstatus.mjs";
 import { loadStateFile, saveStateFile } from "./state.mjs";
 
 const HOLO_URL = process.env.HOLO_URL ?? "http://127.0.0.1:8082";
@@ -555,6 +557,19 @@ async function handleCommand(id, line) {
     return sendTo(id, "Usage: stream on | stream off | stream event <json>.\r\n");
   }
 
+  // Per-turn AI telemetry from the browser. Numbers and the command only; the
+  // thought, prompt, reply and provider key never reach the server.
+  if (verb === "metric") {
+    if (!actor?.key) return;
+    let metric = null;
+    try {
+      metric = normalizeAiTurn(JSON.parse(restRaw.join(" ")));
+    } catch {}
+    if (!metric) return;
+    recordSpan("ai.turn", aiTurnAttributes(metric), 0);
+    return;
+  }
+
   // The input allowance: one accepted command per interval, shared by every
   // transport. A model and a human type on the same clock.
   const transport = transports.get(id);
@@ -882,6 +897,10 @@ async function handleCommand(id, line) {
     return sendTo(id, "Changing your password.\r\n");
   }
 
+  if (verb === "world") {
+    return sendTo(id, `${worldStatusText(worldStatus(state, ROOMS))}\r\n`);
+  }
+
   if (verb === "help" || verb === "commands") {
     const names = Object.keys(VERB_TABLE.verbs).sort().join(", ");
     const channels = CHANNELS.channels.map((channel) => channel.name).join(", ");
@@ -889,7 +908,7 @@ async function handleCommand(id, line) {
     if (!actor?.key) {
       return sendTo(id, "MUDBench is a persistent world for people and agents.\r\nSign in with your Prism id, or register <name> <password> / login <name> <password>.\r\nThen type help for the commands.\r\n");
     }
-    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look, look <thing>, examine <thing>.\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
+    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look, look <thing>, examine <thing>.\r\nWorld: world (online, levels, guilds, reset).\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
   }
 
   // A command typed before the join tick lands is queued, not refused: the
@@ -1721,7 +1740,7 @@ async function handle(id, line) {
   // The login handshake, the owner console and the stream telemetry are not
   // game commands. They have their own checks and must not consume the player's
   // global line budget: a busy AI publishes several stream events per turn.
-  if (!/^(stream|session-key|rebind)\b/i.test(raw) && !allowCommand(id)) {
+  if (!/^(stream|metric|session-key|rebind)\b/i.test(raw) && !allowCommand(id)) {
     return sendTo(id, "Slow down.\r\n");
   }
   return handleCommand(id, line);
@@ -1736,7 +1755,36 @@ function onTick() {
   const identityChanged = intents.some((intent) => ["login", "register", "password", "claim", "claimLegacy", "rebindLegacy", "createCharacter", "ownAccount", "retireAccount", "handoffCharacter", "revokeHandoff"].includes(intent.kind));
   const result = step({ state, rooms: ROOMS, intents });
   state = result.state;
+  for (const intent of intents) {
+    if (intent.kind !== "login" && intent.kind !== "register") continue;
+    const actor = actorById(intent.actorId);
+    recordSpan("world.session", {
+      "actor.id": intent.actorId,
+      "actor.name": actor?.name ?? intent.key ?? null,
+      "account.key": actor?.account ?? intent.account ?? null,
+      "session.kind": intent.kind,
+      "session.prism": Boolean(intent.prism),
+      "world.tick": state.tick,
+    }, 0);
+  }
   if (live && !state.actors.some((actor) => actor.id === live.actorId)) stopLive();
+  if (result.checkpoint) {
+    const status = worldStatus(state, ROOMS);
+    recordSpan("world.snapshot", {
+      "world.tick": state.tick,
+      "world.online": status.online,
+      "world.accounts": status.accounts,
+      "world.characters": status.characters,
+      "world.rooms": status.rooms,
+      "world.npcs": status.npcs,
+      "world.objects": status.objects,
+      "world.reset_seconds": status.reset.seconds,
+      "world.phase": status.phase,
+      "world.weather": status.weather,
+      "world.actors": JSON.stringify(status.actors),
+      "world.guilds": JSON.stringify(status.guilds),
+    }, 0);
+  }
 
   for (const event of result.events) {
     // An NPC's action is gameplay data, not just text delivered to a room.
@@ -1882,8 +1930,11 @@ const server = net.createServer((socket) => {
   transports.set(id, {
     send: (t) => { if (socket.writable) socket.write(t); },
     close: () => socket.end(),
+    kind: "telnet",
+    openedAt: Date.now(),
     welcomed: false,
   });
+  recordSpan("world.client", { "actor.id": id, "client.transport": "telnet" }, 0);
   socket.on("error", () => {});
   socket.on("data", async (chunk) => {
     buffer += chunk.toString("utf8");
@@ -1895,6 +1946,14 @@ const server = net.createServer((socket) => {
     }
   });
   socket.on("close", () => {
+    const closing = transports.get(id);
+    if (closing) {
+      recordSpan("world.disconnect", {
+        "actor.id": id,
+        "client.transport": closing.kind ?? null,
+        duration_ms: Date.now() - (closing.openedAt ?? Date.now()),
+      }, Date.now() - (closing.openedAt ?? Date.now()));
+    }
     transports.delete(id);
     buckets.delete(id);
     accountSessions.delete(id);
@@ -1978,6 +2037,12 @@ const web = http.createServer((req, res) => {
     res.end(body);
     return;
   }
+  if (pathname === "/world") {
+    res.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
+    res.end(JSON.stringify(worldStatus(state, ROOMS)));
+    return;
+  }
+
   if (pathname === "/spans") {
     // Aggregates only: the command text stays in the server's span log.
     const limit = Math.min(200, Math.max(1, Number(new URL(req.url, "http://localhost").searchParams.get("limit")) || 100));
@@ -2024,6 +2089,7 @@ wss.on("connection", (ws, req) => {
     }
     const viewer = `viewer-${nextViewer++}`;
     spectators.add(ws);
+    recordSpan("stream.viewer", { viewer, event: "join", viewers: spectators.size }, 0);
     ws.isAlive = true;
     ws.on("pong", () => { ws.isAlive = true; });
     ws.send(`#stream ${JSON.stringify({ type: "snapshot", viewer, live: live ? publicLive() : null, viewers: spectators.size })}\n`);
@@ -2053,6 +2119,7 @@ wss.on("connection", (ws, req) => {
     ws.on("error", () => {});
     ws.on("close", () => {
       spectators.delete(ws);
+      recordSpan("stream.viewer", { viewer, event: "leave", viewers: spectators.size }, 0);
       broadcastViewers();
     });
     return;
@@ -2068,11 +2135,14 @@ wss.on("connection", (ws, req) => {
   transports.set(id, {
     send: (t) => { if (ws.readyState === 1) ws.send(t.replace(/\r\n/g, "\n")); },
     close: () => ws.close(),
+    kind: "websocket",
+    openedAt: Date.now(),
     welcomed: false,
     // The Prism session names the page origin it was signed for. The upgrade
     // request carries it; a telnet client has none and cannot use Prism.
     origin: req.headers.origin ?? null,
   });
+  recordSpan("world.client", { "actor.id": id, "client.transport": "websocket", "client.origin": req.headers.origin ?? null }, 0);
   ws.on("error", () => {});
   ws.on("message", async (data) => {
     for (const line of data.toString("utf8").split("\n")) {
@@ -2080,6 +2150,14 @@ wss.on("connection", (ws, req) => {
     }
   });
   ws.on("close", () => {
+    const closing = transports.get(id);
+    if (closing) {
+      recordSpan("world.disconnect", {
+        "actor.id": id,
+        "client.transport": closing.kind ?? null,
+        duration_ms: Date.now() - (closing.openedAt ?? Date.now()),
+      }, Date.now() - (closing.openedAt ?? Date.now()));
+    }
     transports.delete(id);
     buckets.delete(id);
     accountSessions.delete(id);
