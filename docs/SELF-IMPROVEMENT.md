@@ -89,11 +89,11 @@ impossible to hide decline.
 
 ## Status
 
-`v0.38.0` is published and deployed. wick runs the release artifact, not a
+`v0.39.1-loop.manual` is published and deployed. wick runs the release artifact, not a
 build directory, so the number on the box is a tag someone can point at:
 
 ```
-mudbench-deploy --status   →   release v0.38.0
+mudbench-deploy --status   →   release v0.39.1-loop.manual
 ```
 
 `main` has no required status checks, so the loop's direct push lands. The Gate
@@ -227,9 +227,10 @@ the alternative, not the chosen path.
 4. Stop it with `MUDBENCH_LOOP=off`.
 
 The first real commit is `2f0d8ce` (pacing candidate), released as
-`v0.36.0-loop.3.1` and pulled by the deploy timer. The next commit carries the
-admission record inside `pacing.json`; the L5 rehearsal publishes one through
-the admission and releases it with X6.
+`v0.36.0-loop.3.1` and pulled by the deploy timer. The first admitted candidate
+with the L5 record is `c-4abd39bfc4ff`: committed as `a118a66` with all five
+obligations inside `pacing.json`, gated, released as `v0.39.1-loop.manual`,
+deployed, rolled back to `v0.39.0`, and restored.
 
 ## What the references actually contribute
 
