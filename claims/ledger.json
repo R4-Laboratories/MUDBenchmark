@@ -141,6 +141,18 @@
       "level": "some-true",
       "statement": "One release workflow dispatch on a green commit publishes the Gate-tested holo, manifest, identity receipt and runtime; the deploy timer pulls it; a commit with no green Gate run is refused before the tag; the previous release can be deployed and the new one restored.",
       "authority": "release.yml dispatch 2026-11-16 (run 43974588055); red-SHA refusal (run 43974677949); timer pull; rollback v0.33.0 and restore v0.34.0; the timer skips a tag already deployed"
+    },
+    {
+      "id": "MB-18",
+      "level": "build",
+      "statement": "The server verifies a human-signed persona-owner action against the human's pinned log; the persona account stores owner and ai, refuses a second owner, and on retire tombstones the account and its characters while freeing their names; the human's game sign-in filters persona records from the log it sends.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-19",
+      "level": "some-true",
+      "statement": "A browser human account creates an AI persona owned by the same Prism id; the AI plays scout while the human plays alice; the Model tab and transcript carry the persona, owner, tick_from and tick_to; reset retires the persona and its character, and the next start creates a new persona that reuses scout.",
+      "authority": "headless Chromium persona run 2026-11-17 against a mock OpenAI-compatible provider"
     }
   ]
 }

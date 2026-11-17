@@ -208,10 +208,15 @@ The old page shows the notice and can sign in again to take the account back.
 The browser re-signs with a fresh Prism session after a reconnect; the AI does
 too. A socket that stops answering the server's 30-second ping is terminated.
 The server pins the public log; a revoked device is refused after the owner
-signs in again. Recovery is not built yet. The AI has its own Prism id in the same browser;
-**Reset identity** starts a new character. A device revoked elsewhere is
-refused once a surviving device has logged in with the newer public log; the
-server pins that log in `identities.json`.
+signs in again. Recovery is not built yet. When you are signed in, the AI is a persona of your
+Prism id: your device signs a `prism/persona-owner/1` action, the server
+verifies it against your pinned log, and the persona account stores `owner` and
+`ai: true`. The AI panel names the character; you can play another character at
+the same time. **Reset identity** retires the persona and tombstones its
+characters; the next start creates a new persona. Without a human sign-in the
+AI uses its own account. A device revoked elsewhere is refused once a surviving
+device has logged in with the newer public log; the server pins that log in
+`identities.json`.
 
 A legacy account can be adopted once by a signed-in Prism account: **Claim an
 old name** in the signed-in panel, or the wire command

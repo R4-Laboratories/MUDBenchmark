@@ -194,21 +194,32 @@ A character is the in-game name and the record that owns progression:
 - The migration from v0.32 gives every existing identity one account and one
   character. Items stay world state and are not persisted by the character.
 
-## The AI character
+## The AI persona
 
-The AI has its **own Prism id** (the account), created in the same browser
-under the IndexedDB store `ai`, with a **Reset identity** button. The AI panel
-names a character; if the account already has it the AI plays it, otherwise it
-creates it. Another tab or a person can play the same character and take it
-over; the old socket is told and closed. The AI is still a separate account
-from the human, not a persona of it.
+When you are signed in with your Prism id, the AI is a **persona of that
+account**. `ensurePersona(humanSession, origin)` creates a separate Prism id
+for the game host; the human's device signs a `prism/persona-owner/1` action
+naming that persona and the origin. The AI logs in with the persona session and
+that owner action.
 
-The next step is the **persona** path: `ensurePersona(session, audience)` and
-`signPersonaAction(...)` are already exported by the pinned module. One id would
-own both the human and the AI, the director chat stays local, and the server
-would key the AI account by the persona while the base id remains the owner.
-That is a larger change; until it lands, two ids in one browser is the honest
-description.
+- The server verifies the owner action against the human's **pinned log** (the
+  human must have signed in here once), stores `owner` and `ai: true` on the
+  persona account, and refuses a second owner.
+- The AI panel names the character; the persona plays or creates it. The human
+  can play another character at the same time; watching does not quit the
+  human's play socket.
+- The transcript carries `persona`, `owner`, `tick_from` and `tick_to`.
+- **Reset** revokes the persona device locally, signs
+  `prism/persona-retire/1`, and the server tombstones the persona account and
+  its characters. The characters are renamed with a `~<persona suffix>`
+  tombstone so their names are free; the next start uses a new epoch and a new
+  persona.
+- The human's game sign-in filters `prism/persona/1` and
+  `prism/persona-key/1` records from the log it sends, so the server never
+  receives the human's other personas. It does receive the single owner action
+  naming the AI persona.
+- Without a human sign-in the AI falls back to its own account and the panel
+  says so; sign in with your Prism id and restart it to own it.
 
 ## The frame
 
@@ -281,6 +292,12 @@ and played it. The AI account created scout; its Model tab showed the exact
 system and user prompt, the trimmed context, the raw reply, the parsed command,
 the context size and the token totals, and the mock recorded the same character
 name and room text. MB-14, MB-15 and MB-16 record the claims.
+
+L1 was run headless: alice's human account created an AI persona owned by the
+same Prism id; the AI played scout while alice stayed online; the Model tab and
+the transcript carried the persona, owner and tick range; reset retired the
+persona and its character, and the next start created a new persona that reused
+scout. MB-18 and MB-19 record the claims.
 
 Not yet proven by the gate: a tampered signature, an unknown device, a replay
 across a restart, and recovery.

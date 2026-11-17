@@ -37,6 +37,41 @@ export function prismDisplay(prism) {
   return `prism:${hex.slice(0, 8)}`;
 }
 
+// Verify a human-signed persona owner (or retire) action. The human's public
+// log is already pinned by an ordinary game sign-in; the action is verified
+// against that pin, so the AI session carries only the persona log and the
+// signed action, never the human's other personas.
+export async function verifyPersonaOwner(owner, { origin, persona, action = "prism/persona-owner/1", now = Date.now(), pinned = null } = {}) {
+  const envelope = owner?.envelope;
+  const body = envelope?.body;
+  if (body?.action !== action) return { ok: false, reason: "not a persona owner action" };
+  if (body?.payload?.persona !== persona || body?.payload?.audience !== origin) {
+    return { ok: false, reason: "the owner action names another persona or origin" };
+  }
+  if (typeof body.prism !== "string" || !/^sha256:[0-9a-f]{64}$/.test(body.prism)) {
+    return { ok: false, reason: "the owner action names no Prism id" };
+  }
+  const held = Array.isArray(pinned) ? pinned : pinned?.records;
+  if (!Array.isArray(held) || held.length === 0) {
+    return { ok: false, reason: "the owner has not signed in here; sign in with your Prism id first" };
+  }
+  let log;
+  try {
+    log = await logFromRecords(held);
+  } catch {
+    return { ok: false, reason: "the owner's pinned log does not parse" };
+  }
+  pruneReplay(now);
+  let verdict;
+  try {
+    verdict = await verifyAction(body.prism, log, envelope, { audience: origin, now, window: WINDOW_MS, seen });
+  } catch (error) {
+    return { ok: false, reason: `the owner log does not resolve: ${error.message}` };
+  }
+  if (!verdict.allowed) return { ok: false, reason: verdict.reason };
+  return { ok: true, owner: body.prism, device: verdict.device, action };
+}
+
 export async function verifyPrismSession(session, { origin, now = Date.now(), pinned = null } = {}) {
   const { app, envelope, records } = session ?? {};
   // The same eight inputs the proved Identity kernel decides on. The early

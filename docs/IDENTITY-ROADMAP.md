@@ -467,7 +467,7 @@ tag, and the previous release was deployed and the new one restored.
 
 ### Later — v0.29 and beyond
 
-**L1. AI persona ownership.** *(browser + runtime; design sign-off)*
+**L1. AI persona ownership.** *(browser + runtime; design sign-off)* — **implemented in v0.35.**
 `ensurePersona(humanSession, origin)` creates the persona; the AI logs in with
 the persona session plus the human's signed `persona` record; the server
 verifies the owner record (signed by the human id, persona and audience match),
@@ -480,6 +480,17 @@ once; the server cannot read the human's other personas.
 *Depends:* X2, X3, and a decision that the host-visible owner record is
 acceptable (the protocol keeps the owner record private and supports one
 persona per audience).
+
+*Implemented:* the human's device signs `prism/persona-owner/1` naming the
+persona and origin; `verifyPersonaOwner` checks it against the human's pinned
+log; the `ownAccount` reducer stores `owner` and `ai: true` and refuses a second
+owner. `retireAccount` tombstones the persona and renames its characters to
+free their names. The browser creates the persona with `ensurePersona`, signs
+the persona session, keeps the human's play socket alive while watching, filters
+`prism/persona/1`/`persona-key` records from the human's game log, and records
+`persona`/`owner`/`tick_from`/`tick_to` in the transcript. Rehearsed in v0.35:
+alice and AI scout online together; reset retired the persona and a new start
+reused scout. MB-18 and MB-19 record it.
 
 **L2. Relay / instant revocation.** *(runtime; optional)*
 Only if "revoked at next login" is too slow: run `createRelayBus` server-side

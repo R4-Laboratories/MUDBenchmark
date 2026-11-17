@@ -24,7 +24,7 @@ import { RANKS, guildId, rankAtLeast, validGuildName } from "./guilds.mjs";
 import { buildLlms } from "./llms.mjs";
 import { hashPassword, verifyPassword, validName, validPassword } from "./accounts.mjs";
 import { allowCommand as allowInput, DEFAULT_INTERVAL_MS } from "./allowance.mjs";
-import { verifyPrismSession, prismDisplay } from "./prism-auth.mjs";
+import { verifyPrismSession, verifyPersonaOwner, prismDisplay } from "./prism-auth.mjs";
 import { CREDENTIAL, identityAdmits } from "./identity.mjs";
 import { loadStateFile, saveStateFile } from "./state.mjs";
 
@@ -112,7 +112,7 @@ function sendCharacters(id, session) {
   const characters = account?.characters ?? [];
   const label = session.kind === "prism" ? prismDisplay(session.key) : session.key;
   sendTo(id, `Account ${label}. Characters: ${characters.length ? characters.join(", ") : "(none yet)"}.\r\n`);
-  sendTo(id, `#characters ${JSON.stringify({ account: label, characters })}\r\n`);
+  sendTo(id, `#characters ${JSON.stringify({ account: label, characters, tick: state.tick, owner: session.owner ?? null })}\r\n`);
 }
 
 function takeover(key, newId) {
@@ -398,15 +398,42 @@ async function handleCommand(id, line) {
       };
       saveIdentityStore();
     }
+    // A persona session carries a human-signed owner action. The human's log
+    // is already pinned; verify the action against it, and store the owner on
+    // the persona account. The server never receives the human's main log.
+    let owner = null;
+    if (parsed.owner) {
+      const ownerId = parsed.owner?.envelope?.body?.prism;
+      const ownerPinned = ownerId ? identityStore.prisms[ownerId] ?? null : null;
+      const ownerVerdict = await verifyPersonaOwner(parsed.owner, { origin, persona: verdict.prism, pinned: ownerPinned });
+      if (!ownerVerdict.ok) return sendTo(id, `Prism sign-in refused: ${ownerVerdict.reason}.\r\n`);
+      const known = state.accounts?.[verdict.prism];
+      if (known?.owner && known.owner !== ownerVerdict.owner) {
+        return sendTo(id, "Prism sign-in refused: this persona is owned by another account.\r\n");
+      }
+      if (known?.retired) return sendTo(id, "Prism sign-in refused: this persona is retired.\r\n");
+      owner = ownerVerdict;
+      pending.push({
+        kind: "ownAccount",
+        accountKey: verdict.prism,
+        owner: ownerVerdict.owner,
+        audience: origin,
+        device: ownerVerdict.device,
+      });
+    } else if (state.accounts?.[verdict.prism]?.retired) {
+      return sendTo(id, "Prism sign-in refused: this persona is retired.\r\n");
+    }
     // The Prism id is the account, not the character. The client chooses a
     // character next; the account session survives a character switch.
-    const accountSession = { key: verdict.prism, kind: "prism" };
+    const accountSession = { key: verdict.prism, kind: "prism", owner: owner?.owner ?? null };
     accountSessions.set(id, accountSession);
     recordSpan("world.prism", {
       "actor.id": id,
       "prism.id": verdict.prism,
       "prism.device": parsed.envelope?.signer ?? verdict.deviceId ?? null,
       "prism.expires": verdict.expires,
+      "prism.owner": owner?.owner ?? null,
+      "prism.ai": Boolean(owner),
       "world.tick": state.tick,
     }, 0);
     sendTo(id, `Signed in as ${prismDisplay(verdict.prism)}.\r\n`);
@@ -428,6 +455,37 @@ async function handleCommand(id, line) {
     return sendCharacters(id, session);
   }
 
+  if (verb === "retire-persona") {
+    // The owner action is the authority; no signed-in actor is required. It is
+    // signed by the human's Prism device and verified against the pin the
+    // human's ordinary game sign-in already established.
+    const token = restRaw[0];
+    if (!token) return sendTo(id, "Usage: retire-persona <owner-action>.\r\n");
+    let ownerAction;
+    try {
+      ownerAction = JSON.parse(Buffer.from(token, "base64url").toString("utf8"));
+    } catch {
+      return sendTo(id, "The owner action is malformed.\r\n");
+    }
+    const persona = ownerAction?.envelope?.body?.payload?.persona;
+    const ownerId = ownerAction?.envelope?.body?.prism;
+    const ownerOrigin = transports.get(id)?.origin ?? null;
+    if (!persona || !ownerId || !ownerOrigin) return sendTo(id, "The owner action is incomplete.\r\n");
+    const ownerVerdict = await verifyPersonaOwner(ownerAction, {
+      origin: ownerOrigin,
+      persona,
+      action: "prism/persona-retire/1",
+      pinned: identityStore.prisms[ownerId] ?? null,
+    });
+    if (!ownerVerdict.ok) return sendTo(id, `Retire refused: ${ownerVerdict.reason}.\r\n`);
+    const account = state.accounts?.[persona];
+    if (account && account.owner !== ownerVerdict.owner) {
+      return sendTo(id, "Retire refused: the persona is owned by another account.\r\n");
+    }
+    pending.push({ kind: "retireAccount", accountKey: persona, owner: ownerVerdict.owner, at: state.tick });
+    return sendTo(id, "Persona retired.\r\n");
+  }
+
   if (verb === "play") {
     const session = accountSessions.get(id);
     if (!session) return sendTo(id, "Sign in with your Prism id first.\r\n");
@@ -436,7 +494,7 @@ async function handleCommand(id, line) {
     if (actor?.key === name) return sendTo(id, `You are already playing ${name}.\r\n`);
     const account = state.accounts?.[session.key];
     const character = state.identities[name];
-    if (!account || !account.characters?.includes(name) || !character || character.owner !== session.key) {
+    if (!account || account.retired || !account.characters?.includes(name) || !character || character.owner !== session.key) {
       return sendTo(id, `No character named ${name} on this account.\r\n`);
     }
     takeover(name, id);
@@ -451,6 +509,7 @@ async function handleCommand(id, line) {
   if (verb === "create") {
     const session = accountSessions.get(id);
     if (!session || session.kind !== "prism") return sendTo(id, "Sign in with a Prism id to create a character.\r\n");
+    if (state.accounts[session.key]?.retired) return sendTo(id, "This persona is retired.\r\n");
     const name = rest[0];
     if (!validName(name)) return sendTo(id, "Names are 1-24 letters, digits, - or _.\r\n");
     if (state.identities[name] || state.accounts[name]) return sendTo(id, "That name is taken.\r\n");
@@ -1376,7 +1435,7 @@ function onTick() {
   const intents = pending.splice(0);
   // A login or registration must hit the disk before the next checkpoint; a
   // kill -9 must not erase an account created seconds ago.
-  const identityChanged = intents.some((intent) => ["login", "register", "password", "claim", "claimLegacy", "createCharacter"].includes(intent.kind));
+  const identityChanged = intents.some((intent) => ["login", "register", "password", "claim", "claimLegacy", "createCharacter", "ownAccount", "retireAccount"].includes(intent.kind));
   const result = step({ state, rooms: ROOMS, intents });
   state = result.state;
 

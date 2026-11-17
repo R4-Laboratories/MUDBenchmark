@@ -318,7 +318,7 @@
 
       <section class="panel" id="ai-setup">
         <h2>Watch an AI play</h2>
-        <p>The AI gets its own character and plays through this same page. It sees the room text, types one command per turn, and is bound by the same 250&nbsp;ms limit. You steer it in the Director chat; its reasoning appears in Mind. The provider key stays in this browser.</p>
+        <p>The AI plays through this same page. When you are signed in with your Prism id, the AI is a <strong>persona owned by your account</strong>; otherwise it uses its own account. It sees the room text, types one command per turn, and is bound by the same 250&nbsp;ms limit. You steer it in the Director chat; its reasoning appears in Mind. The provider key stays in this browser.</p>
         <div class="field">
           <label for="ai-provider">Brain</label>
           <select id="ai-provider"></select>
@@ -357,7 +357,7 @@
         <details class="small muted">
           <summary>How this works</summary>
           <p>1. Pick a brain. Ollama is free and local; OpenAI and Anthropic need a key.</p>
-          <p>2. The AI gets its own Prism id in this browser on first run; that is the account. It creates or plays the character named above.</p>
+          <p>2. When you are signed in, the AI is a persona of your Prism id; your device signs the owner action. If you are not signed in, it uses its own account.</p>
           <p>3. It sees the same room text you do, types one command per turn, and waits for the server like any player.</p>
           <p>4. Send direction in the Director chat. The AI replies there and its private reasoning appears in Mind.</p>
           <p>The game server never sees the provider key.</p>
@@ -418,7 +418,7 @@
     PROVIDERS, DEFAULT_GOAL, buildSystemPrompt, buildUserPrompt,
     parseBrain, requestFor, replyFrom, trimHistory,
   } from "/ai.mjs";
-  import { signIn as prismSignIn, reset as prismReset, identity as prismIdentity, load as loadSession, save as saveSession } from "/prism-auth.mjs";
+  import { signIn as prismSignIn, reset as prismReset, load as loadSession, save as saveSession, personaSignIn, personaRetire, nextPersonaEpoch } from "/prism-auth.mjs";
   import { createLinkOffer, parseLinkUri, requestLink, acceptLinkRequest, completeLink, linkCode, revokeDevice, resolvePrism, linkQr } from "/prism-id.mjs";
 
   const log = document.getElementById("log");
@@ -508,7 +508,9 @@
     history: [], director: [], transcript: [], thoughts: [], room: "",
     lastCommand: "", startedAt: null, recent: [], nudge: false, lastError: null,
     character: "scout", lastRequest: null, lastReply: null, lastParsed: null, lastLatency: 0,
+    persona: null, owner: null, personaAudience: null, tickFrom: null, lastTick: null,
   };
+  const shortId = (id) => (id ? `${id.slice(0, 15)}…` : "—");
 
   const savedFont = (() => { try { return Number(localStorage.getItem("mudbench-font")) || 16; } catch { return 16; } })();
   const setFont = (size) => {
@@ -934,22 +936,23 @@
     modeAI.classList.toggle("active", mode === "ai");
     document.body.classList.toggle("ai-mode", mode === "ai");
     if (mode === "ai") {
-      playEnabled = false;
-      if (playSocket?.readyState === WebSocket.OPEN) {
-        try { playSocket.send("quit\n"); } catch {}
-        setTimeout(() => { try { playSocket.close(); } catch {} }, 150);
-      }
+      // Keep the human's play socket signed in. The human and the AI can be
+      // online at once; watching must not quit the character.
       account.style.display = "none";
       signed.style.display = "none";
-      if (!AI.running) setAIStatus("ready");
-      renderSetup();
-      if (!AI.running) detectLocalModels();
-      if (AI.running) document.body.classList.add("ai-running");
+      if (!AI.running) {
+        setAIStatus("ready");
+        renderSetup();
+        detectLocalModels();
+      } else {
+        document.body.classList.add("ai-running");
+      }
     } else {
       stopAI(true);
       document.body.classList.remove("ai-mode", "ai-running");
-      account.style.display = "block";
-      signed.style.display = "none";
+      account.style.display = authed ? "none" : "block";
+      signed.style.display = authed ? "block" : "none";
+      charactersPanel.hidden = !characterState.account;
       autoStart = false;
       playEnabled = true;
       if (!playSocket || playSocket.readyState === WebSocket.CLOSED) connectPlay();
@@ -1014,9 +1017,7 @@
     applyProvider(aiProvider.value, false);
     aiTitle.textContent = "AI";
     aiSub.textContent = `${PROVIDERS[aiProvider.value].label} · ${aiModel.value || "no model"}`;
-    prismIdentity("ai").then((id) => {
-      if (id) aiIdentity.textContent = `Prism id ${id.slice(0, 15)}… is in this browser.`;
-    }).catch(() => {});
+    aiIdentity.textContent = "Sign in with your Prism id, then start the AI: it becomes a persona owned by you. Without a human sign-in it uses its own account.";
   }
 
   aiProvider.addEventListener("change", () => {
@@ -1026,10 +1027,37 @@
   for (const field of [aiBase, aiModel, aiCharacter]) field.addEventListener("change", () => persistConfig(false));
 
   aiReset.addEventListener("click", async () => {
+    if (AI.owner) {
+      if (!confirm("Retire this AI persona? Its characters are tombstoned; the next start creates a new persona.")) return;
+      if (playSocket?.readyState !== WebSocket.OPEN) {
+        showHint("Connect the page before retiring the persona.", true);
+        return;
+      }
+      if (AI.running) stopAI();
+      try {
+        const retire = await personaRetire("default", location.origin, AI.persona, AI.personaAudience);
+        if (!retire) throw new Error("Sign in with your Prism id first.");
+        send(`retire-persona ${b64uJson(retire)}`, "retire-persona [owner hidden]");
+        nextPersonaEpoch();
+        AI.identity = null;
+        AI.persona = null;
+        AI.owner = null;
+        AI.personaAudience = null;
+        aiIdentity.textContent = "Persona retired. The next start creates a new persona under your Prism id.";
+        aiTitle.textContent = "AI";
+        showHint("The next AI start creates a new persona; the old one is tombstoned.", false);
+      } catch (error) {
+        showHint(`Persona: ${error.message}`, true);
+      }
+      return;
+    }
     if (!confirm("Reset the AI's Prism id? The current AI character will be orphaned.")) return;
     if (AI.running) stopAI();
     await prismReset("ai");
     AI.identity = null;
+    AI.persona = null;
+    AI.owner = null;
+    AI.personaAudience = null;
     aiIdentity.textContent = "The next start creates a new AI Prism id.";
     aiTitle.textContent = "AI";
     showHint("AI identity reset. The next start is a new character.", false);
@@ -1124,20 +1152,36 @@
     if (AI.socket) { try { AI.socket.close(); } catch {} AI.socket = null; }
 
     setAIStatus("creating id");
-    let session;
+    let session = null;
+    let owned = false;
     try {
-      session = await prismSignIn("ai", location.origin);
+      session = await personaSignIn("default", location.origin);
+      owned = Boolean(session);
     } catch (error) {
-      showHint(`Prism: ${error.message}`, true);
+      showHint(`Persona: ${error.message}`, true);
       setAIStatus("error");
       return;
     }
+    if (!session) {
+      try {
+        session = await prismSignIn("ai", location.origin);
+      } catch (error) {
+        showHint(`Prism: ${error.message}`, true);
+        setAIStatus("error");
+        return;
+      }
+    }
 
-    if (session.storage === "memory") showHint("This window cannot keep the AI id; a reload will create a new one.", true);
-    else if (!session.persisted) showHint("The browser did not grant persistent storage; it may evict the AI id.", false);
+    if (session.storage === "memory") showHint("This window cannot keep the session; a reload will create a new one.", true);
+    else if (!session.persisted) showHint("The browser did not grant persistent storage; it may evict the session.", false);
 
     AI.config = config;
     AI.identity = session;
+    AI.persona = session.persona ?? session.envelope?.body?.prism ?? null;
+    AI.owner = session.ownerPrism ?? null;
+    AI.personaAudience = session.personaAudience ?? null;
+    AI.tickFrom = null;
+    AI.lastTick = null;
     AI.name = "";
     AI.running = true;
     AI.paused = false;
@@ -1174,7 +1218,9 @@
     aiTitle.textContent = "AI";
     aiSub.textContent = `${PROVIDERS[provider].label} · ${config.model}`;
     aiSettings.textContent = `${PROVIDERS[provider].label} · ${config.model} · ${config.base}`;
-    aiIdentity.textContent = "Prism id ready. Signing in…";
+    aiIdentity.textContent = owned
+      ? `Persona ${shortId(session.persona)} owned by ${shortId(session.ownerPrism)}.`
+      : `Own account ${shortId(session.envelope?.body?.prism)}. Sign in with your Prism id, then restart the AI to own it.`;
     updatePause();
     setAIStatus("connecting");
     document.body.classList.add("ai-mode", "ai-running");
@@ -1295,6 +1341,9 @@
       ["Provider", AI.config?.provider ?? "—"],
       ["Model", AI.config?.model ?? "—"],
       ["Character", AI.name || AI.character || "—"],
+      ["Persona", shortId(AI.persona)],
+      ["Owner", AI.owner ? shortId(AI.owner) : "own account"],
+      ["Ticks", AI.tickFrom != null ? `${AI.tickFrom} → ${AI.lastTick ?? "…"}` : "—"],
       ["Turn", String(AI.turn)],
       ["Commands", String(AI.commands)],
       ["Prompt tokens", AI.usage.prompt ? String(AI.usage.prompt) : "—"],
@@ -1341,8 +1390,19 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       setAIStatus("signing in");
       try {
         // A fresh session on every open: a replayed envelope would be refused
-        // by the server's replay set, and a stale one could be expired.
-        AI.identity = await prismSignIn("ai", location.origin);
+        // by the server's replay set, and a stale one could be expired. When
+        // the AI is owned, re-sign the persona, never the AI's own id.
+        let session = null;
+        if (AI.owner) {
+          session = await personaSignIn("default", location.origin);
+          if (!session) throw new Error("Sign in with your Prism id to own the AI.");
+        } else {
+          session = await prismSignIn("ai", location.origin);
+        }
+        AI.identity = session;
+        AI.persona = session.persona ?? session.envelope?.body?.prism ?? AI.persona;
+        AI.owner = session.ownerPrism ?? AI.owner;
+        AI.personaAudience = session.personaAudience ?? AI.personaAudience;
         if (ws.readyState === WebSocket.OPEN) ws.send(`prism ${b64uJson(AI.identity)}\n`);
       } catch (error) {
         setAIStatus("error");
@@ -1367,6 +1427,8 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         if (AI.running && !AI.authed) {
           try {
             const info = JSON.parse(charactersLine[1]);
+            AI.lastTick = Number.isInteger(info.tick) ? info.tick : AI.lastTick;
+            if (AI.tickFrom == null) AI.tickFrom = AI.lastTick;
             const wanted = AI.character || info.characters[0] || "scout";
             const line = info.characters.includes(wanted) ? `play ${wanted}` : `create ${wanted}`;
             // The server's 250 ms input limit covers the sign-in too.
@@ -1582,10 +1644,14 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
     });
   }
 
-  function transcriptJSON() {
+  function transcriptJSON(tickTo = AI.lastTick) {
     return JSON.stringify({
       schema: "mudbench/ai-session/1",
       started_at: AI.startedAt,
+      persona: AI.persona,
+      owner: AI.owner,
+      tick_from: AI.tickFrom,
+      tick_to: tickTo,
       provider: AI.config?.provider ?? null,
       model: AI.config?.model ?? null,
       character: AI.name,
@@ -1594,9 +1660,21 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
     }, null, 2);
   }
 
-  aiTranscript.addEventListener("click", () => {
+  async function latestTick() {
+    try {
+      const res = await fetch("/health", { signal: AbortSignal.timeout(2000) });
+      if (!res.ok) return AI.lastTick;
+      const body = await res.json();
+      return Number.isInteger(body.tick) ? body.tick : AI.lastTick;
+    } catch {
+      return AI.lastTick;
+    }
+  }
+
+  aiTranscript.addEventListener("click", async () => {
     if (!AI.transcript.length) { addChat("system", "No turns to download yet."); return; }
-    const blob = new Blob([transcriptJSON()], { type: "application/json" });
+    const tick = await latestTick();
+    const blob = new Blob([transcriptJSON(tick)], { type: "application/json" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
     link.download = `mudbench-${AI.name}-${Date.now()}.json`;
@@ -1608,7 +1686,8 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
   aiCopy.addEventListener("click", async () => {
     if (!AI.transcript.length) { addChat("system", "No turns to copy yet."); return; }
     try {
-      await navigator.clipboard.writeText(transcriptJSON());
+      const tick = await latestTick();
+      await navigator.clipboard.writeText(transcriptJSON(tick));
       addChat("system", "Transcript JSON copied.");
     } catch {
       addChat("system", "Copy failed; use Download transcript.");

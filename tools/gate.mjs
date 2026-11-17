@@ -35,7 +35,7 @@ import { AREA_PERIOD, armorOf, attackRoll, checkpointIdentities, initialState, n
 import { join } from "node:path";
 import { buildCandidates } from "./candidate.mjs";
 import { buildSystemPrompt, buildUserPrompt, parseBrain, requestFor, replyFrom, trimHistory } from "../runtime/web/ai.mjs";
-import { verifyPrismSession } from "../runtime/prism-auth.mjs";
+import { verifyPrismSession, verifyPersonaOwner } from "../runtime/prism-auth.mjs";
 import { decodeIdentityRequest, identityAdmits } from "../runtime/identity.mjs";
 import { loadStateFile, saveStateFile } from "../runtime/state.mjs";
 import { acceptLinkRequest, completeLink, createLinkOffer, createPrism, linkCode, requestLink, revokeDevice, signAction } from "../runtime/web/prism-id.mjs";
@@ -380,6 +380,47 @@ let identityKernel = { ok: true, why: [] };
   const receiptText = `${JSON.stringify(receipt, null, 2)}\n`;
   if (!existsSync(receiptPath) || readFileSync(receiptPath, "utf8") !== receiptText) writeFileSync(receiptPath, receiptText);
   if (identityKernel.why.length) { identityKernel.ok = false; failures.push(`the identity kernel is broken: ${identityKernel.why[0]}`); }
+}
+
+// L1: a human-signed owner action binds a persona to the human's pinned log.
+let persona = { ok: true, why: [] };
+{
+  const check = (condition, why) => { if (!condition) { persona.ok = false; persona.why.push(why); } };
+  const origin = "https://play.r4labs.org";
+  const now = Date.now();
+  const human = await createPrism({});
+  const personaId = `sha256:${"a".repeat(64)}`;
+  const owner = await signAction(human, "prism/persona-owner/1", { persona: personaId, audience: origin }, { audience: origin, now });
+  const pinned = [...human.log.values()];
+  const good = await verifyPersonaOwner({ envelope: owner }, { origin, persona: personaId, pinned, now });
+  check(good.ok && good.owner === human.prism && good.device, "a human-signed owner action was not accepted");
+  const wrong = await verifyPersonaOwner({ envelope: owner }, { origin, persona: `sha256:${"b".repeat(64)}`, pinned, now });
+  check(!wrong.ok, "an owner action for another persona was accepted");
+  const noPin = await verifyPersonaOwner({ envelope: owner }, { origin, persona: personaId, pinned: null, now });
+  check(!noPin.ok, "an owner action without a pinned human log was accepted");
+
+  const world = loadWorld({ mode: "single" });
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, world.levels, questTable.quests);
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
+  run([{ kind: "join", actorId: "a", name: "a" }]);
+  run([{ kind: "ownAccount", accountKey: personaId, owner: human.prism, audience: origin, device: "device" }]);
+  check(state.accounts[personaId]?.owner === human.prism && state.accounts[personaId]?.ai === true, "ownAccount did not record the owner");
+  run([{ kind: "ownAccount", accountKey: personaId, owner: `sha256:${"b".repeat(64)}`, audience: origin, device: "other" }]);
+  check(state.accounts[personaId]?.owner === human.prism, "a second owner took the persona");
+  run([
+    { kind: "createCharacter", accountKey: personaId, name: "scout", actorId: "a" },
+    { kind: "login", actorId: "a", key: "scout", account: personaId, authenticated: true, prism: true },
+  ]);
+  check(state.identities.scout?.owner === personaId, "the persona character was not created");
+  run([{ kind: "retireAccount", accountKey: personaId, owner: human.prism, at: 9 }]);
+  check(state.accounts[personaId]?.retired === true && state.accounts[personaId]?.retiredAt === 9, "retireAccount did not tombstone the account");
+  const tombstone = `scout~${personaId.slice(-8)}`;
+  check(state.identities[tombstone]?.retired === true && state.identities[tombstone]?.retiredFrom === "scout", "retireAccount left the character orphaned");
+  check(state.identities.scout === undefined, "retireAccount kept the character name");
+  run([{ kind: "retireAccount", accountKey: personaId, owner: `sha256:${"b".repeat(64)}`, at: 10 }]);
+  check(state.accounts[personaId]?.retiredAt === 9, "a non-owner retired the persona");
+
+  if (persona.why.length) { persona.ok = false; failures.push(`personas are broken: ${persona.why[0]}`); }
 }
 
 // X7: an account owns more than one character; the character is the game name.
@@ -1489,6 +1530,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"pinned".padEnd(26)}  ${(identityPin.ok ? "revoked" : "BROKEN").padStart(5)}   == old log refused`);
   console.log(`${"takeover".padEnd(26)}  ${(takeover.ok ? "1 actor" : "BROKEN").padStart(5)}   == leave then login`);
   console.log(`${"characters".padEnd(26)}  ${(characters.ok ? "2 chars" : "BROKEN").padStart(5)}   == create, switch`);
+  console.log(`${"persona".padEnd(26)}  ${(persona.ok ? "owner" : "BROKEN").padStart(5)}   == human, tombstone`);
   console.log(`${"identity".padEnd(26)}  ${(identityKernel.ok ? "10 vectors" : "BROKEN").padStart(5)}   == model and JS`);
   console.log(`${"llms".padEnd(26)}  ${(llms.ok ? "verbs, rooms" : "STALE").padStart(5)}   == generated contract`);
   console.log(`${"claims".padEnd(26)}  ${(claimsCheck.status === 0 ? "levels ok" : "STALE").padStart(5)}   == build, open, some-true`);

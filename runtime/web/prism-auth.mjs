@@ -129,9 +129,100 @@ export async function signIn(store = "default", app = location.origin) {
   );
   let persisted = false;
   try { persisted = (await navigator.storage?.persisted?.()) ?? false; } catch {}
-  return { app, envelope, records: [...session.log.values()], persisted, storage: storageMode() };
+  // The main log now carries the persona ids and audiences. The game server
+  // only needs the device and revocation records; never send the persona
+  // records, so it cannot read the human's other personas.
+  const records = [...session.log.values()].filter((record) =>
+    !["prism/persona/1", "prism/persona-key/1"].includes(record.body?.kind));
+  return { app, envelope, records, persisted, storage: storageMode() };
 }
 
 export async function reset(store = "default") {
   await remove(store);
+}
+
+// ---------------------------------------------------------------- AI personas
+
+const PERSONA_EPOCH = "mudbench-ai-persona-epoch";
+const personaEpoch = () => {
+  try { return Math.max(0, Number(localStorage.getItem(PERSONA_EPOCH)) || 0); } catch { return 0; }
+};
+export const nextPersonaEpoch = () => {
+  const next = personaEpoch() + 1;
+  try { localStorage.setItem(PERSONA_EPOCH, String(next)); } catch {}
+  return next;
+};
+const personaAudience = (app, epoch) => (epoch ? `${app}#persona-${epoch}` : app);
+
+// The AI is a persona of the human's Prism id. The human signs an owner action
+// naming the persona and the game origin; the persona session signs the login.
+// The server verifies the owner action against the human's pinned log. The
+// human's main log never leaves this browser.
+export async function personaSignIn(store = "default", app = location.origin) {
+  let session = await read(store);
+  if (!session?.prism || !session?.log) return null;
+  const epoch = personaEpoch();
+  const audience = personaAudience(app, epoch);
+  session = await Prism.ensurePersona(session, audience);
+  await write(store, session);
+  const { persona, records } = await Prism.personaFor(session, audience);
+  const owner = await Prism.signAction(
+    session,
+    "prism/persona-owner/1",
+    { persona, audience: app, epoch },
+    { audience: app, now: Date.now() },
+  );
+  const keys = await crypto.subtle.generateKey(
+    { name: "ECDSA", namedCurve: "P-256" },
+    false,
+    ["sign", "verify"],
+  );
+  const raw = await crypto.subtle.exportKey("raw", keys.publicKey);
+  const now = Date.now();
+  const envelope = await Prism.signAction(
+    { prism: persona, device: session.personaDevices.get(audience) },
+    "prism/session/1",
+    { sessionKey: b64u(raw), expires: now + 10 * 60 * 1000 },
+    { audience: app, now },
+  );
+  let persisted = false;
+  try { persisted = (await navigator.storage?.persisted?.()) ?? false; } catch {}
+  return {
+    app, envelope, records, owner: { envelope: owner },
+    persona, personaAudience: audience, epoch, ownerPrism: session.prism,
+    persisted, storage: storageMode(),
+  };
+}
+
+// Retire the persona: revoke its device in the persona log, sign the retire
+// action with the human's main session, and forget the device locally. The
+// server tombstones the persona account and its characters; the next start
+// uses a new epoch and a new persona.
+export async function personaRetire(store = "default", app = location.origin, persona, audience) {
+  const session = await read(store);
+  if (!session?.prism || !session?.log || !persona || !audience) return null;
+  const device = session.personaDevices.get(audience);
+  const personaLog = session.personas.get(persona);
+  if (device && personaLog) {
+    try {
+      const personaSession = {
+        prism: persona, device, keyring: new Map(), log: personaLog,
+        shareable: false, personas: new Map(), personaDevices: new Map(),
+      };
+      const revoked = await Prism.revokeDevice(personaSession, device.id, { rotate: false });
+      const personas = new Map(session.personas).set(persona, revoked.log);
+      const personaDevices = new Map(session.personaDevices);
+      personaDevices.delete(audience);
+      await write(store, { ...session, personas, personaDevices });
+    } catch {
+      // The server tombstone is still the authority; a local revoke is best effort.
+    }
+  }
+  const envelope = await Prism.signAction(
+    session,
+    "prism/persona-retire/1",
+    { persona, audience: app },
+    { audience: app, now: Date.now() },
+  );
+  return { envelope };
 }

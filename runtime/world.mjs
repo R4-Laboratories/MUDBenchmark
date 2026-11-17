@@ -522,6 +522,47 @@ export function step({ state, rooms, intents }) {
       continue;
     }
 
+    if (intent.kind === "ownAccount") {
+      let account = next.accounts[intent.accountKey];
+      if (!account) {
+        account = {
+          kind: "prism", name: intent.accountKey, characters: [], claimedFrom: null,
+          passwordHash: null, salt: null, tokenHash: null,
+          retired: false, mergedInto: null,
+        };
+        next.accounts[intent.accountKey] = account;
+      }
+      if (account.kind !== "prism" || account.retired) continue;
+      // A persona has one owner. A second human cannot adopt it.
+      if (account.owner && account.owner !== intent.owner) continue;
+      account.owner = intent.owner;
+      account.ai = true;
+      account.ownerDevice = intent.device ?? null;
+      account.ownerAudience = intent.audience ?? null;
+      continue;
+    }
+
+    if (intent.kind === "retireAccount") {
+      const account = next.accounts[intent.accountKey];
+      if (!account || account.kind !== "prism" || account.owner !== intent.owner) continue;
+      account.retired = true;
+      account.retiredAt = intent.at ?? next.tick;
+      // Keep the characters as tombstones, but free their names so a new
+      // persona can use them. The suffix is not a valid new character name.
+      const suffix = `~${intent.accountKey.slice(-8)}`;
+      const tombstones = [];
+      for (const name of account.characters ?? []) {
+        const character = next.identities[name];
+        if (!character) continue;
+        const tombstone = `${name}${suffix}`;
+        next.identities[tombstone] = { ...character, name: tombstone, retired: true, retiredFrom: name };
+        delete next.identities[name];
+        tombstones.push(tombstone);
+      }
+      account.characters = tombstones;
+      continue;
+    }
+
     if (intent.kind === "register") {
       if (next.identities[intent.key]) continue;
       const actor = find(intent.actorId);
