@@ -240,6 +240,20 @@
           </div>
           <p class="small muted" id="account-hint">New here? Register. Returning? Log in.</p>
         </details>
+        <details class="small muted" id="recovery-restore-box">
+          <summary>Restore from a recovery kit</summary>
+          <p>Use the encrypted file and passphrase you saved. This device becomes the account's device; the old device is revoked.</p>
+          <div class="field">
+            <label for="recovery-file">Kit file</label>
+            <input id="recovery-file" type="file" accept="application/json,.json">
+          </div>
+          <div class="field">
+            <label for="restore-pass">Passphrase</label>
+            <input id="restore-pass" type="password" autocomplete="off">
+          </div>
+          <div class="row"><button type="button" id="recovery-restore">Restore</button></div>
+          <p class="small muted" id="restore-status"></p>
+        </details>
       </section>
 
       <section class="panel" id="characters" hidden>
@@ -266,6 +280,20 @@
           <button type="button" id="who">Who</button>
           <button type="button" id="quit">Quit</button>
         </div>
+        <details class="small muted" id="recovery-kit">
+          <summary>Recovery kit</summary>
+          <p>Download an encrypted backup. It is the only way to restore this account if this browser's storage is lost. Keep the file offline; anyone with it and the passphrase can take the account. Create the kit before starting an AI persona if you want the persona included.</p>
+          <div class="field">
+            <label for="recovery-pass">Passphrase (12+ characters)</label>
+            <input id="recovery-pass" type="password" autocomplete="new-password" minlength="12">
+          </div>
+          <div class="field">
+            <label for="recovery-pass2">Repeat passphrase</label>
+            <input id="recovery-pass2" type="password" autocomplete="new-password" minlength="12">
+          </div>
+          <div class="row"><button type="button" id="recovery-download">Download recovery kit</button></div>
+          <p class="small muted" id="recovery-status"></p>
+        </details>
         <details class="small muted">
           <summary>Claim an old name</summary>
           <p>Add an old name as a character on this Prism account. Use its password or legacy token. It keeps its own level, guild and quests; one claim per Prism account.</p>
@@ -418,7 +446,7 @@
     PROVIDERS, DEFAULT_GOAL, buildSystemPrompt, buildUserPrompt,
     parseBrain, requestFor, replyFrom, trimHistory,
   } from "/ai.mjs";
-  import { signIn as prismSignIn, reset as prismReset, load as loadSession, save as saveSession, personaSignIn, personaRetire, nextPersonaEpoch } from "/prism-auth.mjs";
+  import { signIn as prismSignIn, reset as prismReset, load as loadSession, save as saveSession, personaSignIn, personaRetire, nextPersonaEpoch, createRecoveryKit, restoreRecoveryKit } from "/prism-auth.mjs";
   import { createLinkOffer, parseLinkUri, requestLink, acceptLinkRequest, completeLink, linkCode, revokeDevice, resolvePrism, linkQr } from "/prism-id.mjs";
 
   const log = document.getElementById("log");
@@ -435,6 +463,14 @@
   const characterHint = document.getElementById("character-hint");
   const charactersButton = document.getElementById("characters-button");
   const signOut = document.getElementById("sign-out");
+  const recoveryPass = document.getElementById("recovery-pass");
+  const recoveryPass2 = document.getElementById("recovery-pass2");
+  const recoveryDownload = document.getElementById("recovery-download");
+  const recoveryStatus = document.getElementById("recovery-status");
+  const recoveryFile = document.getElementById("recovery-file");
+  const restorePass = document.getElementById("restore-pass");
+  const recoveryRestore = document.getElementById("recovery-restore");
+  const restoreStatus = document.getElementById("restore-status");
   const signed = document.getElementById("signed");
   const signedName = document.getElementById("signed-name");
   const latest = document.getElementById("latest");
@@ -741,6 +777,62 @@
     try { playSocket?.close(); } catch {}
     // The socket's close handler reconnects; calling connectPlay here as well
     // would leave two sockets racing.
+  });
+
+  recoveryDownload.addEventListener("click", async () => {
+    const pass = recoveryPass.value;
+    if (pass.length < 12) {
+      recoveryStatus.textContent = "Use a passphrase of at least 12 characters.";
+      recoveryStatus.className = "small err";
+      return;
+    }
+    if (pass !== recoveryPass2.value) {
+      recoveryStatus.textContent = "The passphrases do not match.";
+      recoveryStatus.className = "small err";
+      return;
+    }
+    recoveryStatus.textContent = "Building the kit…";
+    recoveryStatus.className = "small muted";
+    try {
+      const kit = await createRecoveryKit("default", pass);
+      if (!kit) throw new Error("Sign in with your Prism id first.");
+      const blob = new Blob([JSON.stringify(kit, null, 2)], { type: "application/json" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `mudbench-recovery-${(prismSession?.prism ?? "account").slice(0, 15)}.json`;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+      recoveryPass.value = "";
+      recoveryPass2.value = "";
+      recoveryStatus.textContent = "Kit downloaded. Keep it offline; the passphrase is not stored.";
+      recoveryStatus.className = "small muted";
+    } catch (error) {
+      recoveryStatus.textContent = `Recovery kit: ${error.message}`;
+      recoveryStatus.className = "small err";
+    }
+  });
+
+  recoveryRestore.addEventListener("click", async () => {
+    const file = recoveryFile.files?.[0];
+    if (!file) {
+      restoreStatus.textContent = "Choose a kit file.";
+      restoreStatus.className = "small err";
+      return;
+    }
+    restoreStatus.textContent = "Opening the kit…";
+    restoreStatus.className = "small muted";
+    try {
+      const kit = JSON.parse(await file.text());
+      await restoreRecoveryKit(kit, restorePass.value);
+      restorePass.value = "";
+      restoreStatus.textContent = "Recovered. Signing in…";
+      restoreStatus.className = "small muted";
+      playAuth = "prism";
+      await signInPrism(false);
+    } catch (error) {
+      restoreStatus.textContent = `Recovery: ${error.message}`;
+      restoreStatus.className = "small err";
+    }
   });
 
   async function signInPrism(announce = true) {

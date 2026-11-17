@@ -1641,7 +1641,7 @@ const web = http.createServer((req, res) => {
     }
     return;
   }
-  if (pathname === "/prism-id.mjs" || pathname === "/prism-auth.mjs") {
+  if (pathname === "/prism-id.mjs" || pathname === "/prism-auth.mjs" || pathname === "/recovery-kit.mjs") {
     try {
       const name = pathname.slice(1);
       const source = readFileSync(new URL(`./web/${name}`, import.meta.url));

@@ -2,8 +2,9 @@
 
 Status: **implemented in the browser and the server; device linking, takeover
 and reconnect exist; the admission decision is proved in the model (X5); the AI
-is a persona owned by the human's account (L1).** The legacy password form
-remains for telnet, CLI and older accounts. This records
+is a persona owned by the human's account (L1); an encrypted recovery kit
+restores the account on a new device.** The legacy password form remains for
+telnet, CLI and older accounts. This records
 the two identity protocols, the one this project uses, and the exact server
 change.
 
@@ -195,6 +196,29 @@ A character is the in-game name and the record that owns progression:
 - The migration from v0.32 gives every existing identity one account and one
   character. Items stay world state and are not persisted by the character.
 
+## Recovery kit
+
+A signed-in account can download an **encrypted recovery kit** from the
+signed-in panel. The kit holds a one-of-one **paper recovery share** and the
+public Prism log (plus any persona logs the session carries), sealed with
+PBKDF2-SHA-256 and AES-GCM under a passphrase of at least 12 characters. The
+server never sees the kit or the share.
+
+On a new browser, **Restore from a recovery kit** takes the file and
+passphrase. The protocol's `recoverPrism` combines the share into the recovery
+device, binds the new browser as a member, and revokes every other device. The
+account and its characters live on the server, so they come back with the id.
+The old browser is refused: its log omits the recovery records, so the pin says
+"the presented log omits a record the server has already seen".
+
+- A wrong passphrase or a tampered file is refused before any recovery.
+- The account is not duplicated; the same Prism id and characters return.
+- Create the kit **before** starting an AI persona if you want the persona
+  included. `ensurePersona` seals the persona recovery to the main recovery
+  device only when that device exists.
+- The kit is a bearer secret. Keep it offline; anyone with the file and the
+  passphrase can take the account.
+
 ## The AI persona
 
 When you are signed in with your Prism id, the AI is a **persona of that
@@ -232,9 +256,9 @@ byte-for-byte in the reference apps. The game can either:
 - load the canonical frame module by its content hash (smaller release, one
   more cross-origin dependency).
 
-The login itself works without the relay for a newly created id. Linking,
-recovery and instant revocation need the relay, and the page's `connect-src`
-must name it.
+The login itself works without the relay for a newly created id. Linking needs
+the relay; recovery is a paper-share kit and does not; instant revocation needs
+the relay, and the page's `connect-src` must name it.
 
 ## Legacy accounts
 
@@ -242,7 +266,7 @@ must name it.
 the Prism id. A new id creates a fresh account. An existing password or token
 account can be adopted once by a signed-in Prism id; the old record is retired
 and its credentials cleared. The browser says the id is browser-local so a
-player is not surprised by its loss.
+player is not surprised by its loss; a recovery kit restores it on a new device.
 
 ## Tests
 
@@ -300,8 +324,16 @@ the transcript carried the persona, owner and tick range; reset retired the
 persona and its character, and the next start created a new persona that reused
 scout. MB-18 and MB-19 record the claims.
 
-Not yet proven by the gate: a tampered signature, an unknown device, a replay
-across a restart, and recovery.
+Recovery was run headless: a signed-in account exported an encrypted kit to a
+new passphrase; a fresh browser profile with no Prism storage restored the kit,
+found alice and played her; the old profile was taken over and its stale log
+refused with "the presented log omits a record"; the account count stayed one.
+The gate also proves a wrong passphrase and a tampered kit are refused, a new
+device recovers from the paper share, and the old device's action is refused.
+MB-20 and MB-21 record the claims.
+
+Not yet proven by the gate: a tampered signature, an unknown device, and a
+replay across a restart.
 
 ## Decisions taken
 

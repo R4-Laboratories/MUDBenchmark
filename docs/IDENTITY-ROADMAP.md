@@ -492,6 +492,16 @@ the persona session, keeps the human's play socket alive while watching, filters
 alice and AI scout online together; reset retired the persona and a new start
 reused scout. MB-18 and MB-19 record it.
 
+**R1. Recovery kit.** *(browser + protocol)* — **implemented in v0.36.**
+A signed-in account exports an encrypted kit (PBKDF2-SHA-256 + AES-GCM) with a
+one-of-one paper recovery share and the public log. `recoverPrism` on a new
+device binds it, revokes every other device, and carries the personas the kit
+sealed. The old browser's stale log is refused by the pin; the account and
+characters are not duplicated.
+*Acceptance:* export, lose the browser, restore on a new profile, play the
+character; a wrong passphrase or tampered kit is refused; the old device is
+refused; the account count is unchanged. Rehearsed in v0.36 (MB-20/21).
+
 **L2. Relay / instant revocation.** *(runtime; optional)*
 Only if "revoked at next login" is too slow: run `createRelayBus` server-side
 (or self-host) and pass `bus` to `heardLog`. Login must not depend on the

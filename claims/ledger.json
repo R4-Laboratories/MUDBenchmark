@@ -153,6 +153,18 @@
       "level": "some-true",
       "statement": "A browser human account creates an AI persona owned by the same Prism id; the AI plays scout while the human plays alice; the Model tab and transcript carry the persona, owner, tick_from and tick_to; reset retires the persona and its character, and the next start creates a new persona that reuses scout.",
       "authority": "headless Chromium persona run 2026-11-17 against a mock OpenAI-compatible provider"
+    },
+    {
+      "id": "MB-20",
+      "level": "build",
+      "statement": "A recovery kit round-trips under PBKDF2-SHA-256 and AES-GCM; a wrong passphrase or a tampered kit is refused; recoverPrism on a new device binds it from a paper share and the old device's action is refused.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-21",
+      "level": "some-true",
+      "statement": "A signed-in browser exported a recovery kit; a fresh browser profile with no Prism storage restored it, found alice and played her; the old profile was taken over and its stale log refused; the account count stayed one.",
+      "authority": "headless Chromium two-profile recovery run 2026-11-17"
     }
   ]
 }

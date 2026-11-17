@@ -154,7 +154,8 @@ lock_hash=$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["outp
 live_hash=$(curl -fsS -m 5 http://127.0.0.1:8090/prism-id.mjs 2>/dev/null | sha256sum | awk '{print $1}')
 if curl -fsS -m 5 http://127.0.0.1:8090/ 2>/dev/null | grep -q 'id="prism-login"' \
    && [[ -n "$lock_hash" && "$live_hash" == "$lock_hash" ]] \
-   && curl -fsS -m 5 http://127.0.0.1:8090/ai.mjs >/dev/null 2>&1; then
+   && curl -fsS -m 5 http://127.0.0.1:8090/ai.mjs >/dev/null 2>&1 \
+   && curl -fsS -m 5 http://127.0.0.1:8090/recovery-kit.mjs >/dev/null 2>&1; then
   assets_ok=true
 fi
 

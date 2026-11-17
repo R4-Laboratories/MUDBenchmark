@@ -208,7 +208,11 @@ The old page shows the notice and can sign in again to take the account back.
 The browser re-signs with a fresh Prism session after a reconnect; the AI does
 too. A socket that stops answering the server's 30-second ping is terminated.
 The server pins the public log; a revoked device is refused after the owner
-signs in again. Recovery is not built yet. When you are signed in, the AI is a persona of your
+signs in again. A **recovery kit** on the signed-in panel downloads an encrypted file holding a
+paper recovery share and the public log. On a new browser, **Restore from a
+recovery kit** binds the new device and revokes the old one; the account and its
+characters return, and the old browser's stale log is refused. Keep the kit
+offline; the passphrase is not stored. When you are signed in, the AI is a persona of your
 Prism id: your device signs a `prism/persona-owner/1` action, the server
 verifies it against your pinned log, and the persona account stores `owner` and
 `ai: true`. The AI panel names the character; you can play another character at

@@ -38,7 +38,8 @@ import { buildSystemPrompt, buildUserPrompt, parseBrain, requestFor, replyFrom, 
 import { verifyPrismSession, verifyPersonaOwner } from "../runtime/prism-auth.mjs";
 import { decodeIdentityRequest, identityAdmits } from "../runtime/identity.mjs";
 import { loadStateFile, saveStateFile } from "../runtime/state.mjs";
-import { acceptLinkRequest, completeLink, createLinkOffer, createPrism, linkCode, requestLink, revokeDevice, signAction } from "../runtime/web/prism-id.mjs";
+import { acceptLinkRequest, completeLink, createDevice, createLinkOffer, createPrism, createRecovery, linkCode, recoverPrism, requestLink, revokeDevice, signAction, verifyAction } from "../runtime/web/prism-id.mjs";
+import { openKit, sealKit } from "../runtime/web/recovery-kit.mjs";
 import { measureCandidates } from "./measure.mjs";
 
 const root = process.cwd();
@@ -380,6 +381,56 @@ let identityKernel = { ok: true, why: [] };
   const receiptText = `${JSON.stringify(receipt, null, 2)}\n`;
   if (!existsSync(receiptPath) || readFileSync(receiptPath, "utf8") !== receiptText) writeFileSync(receiptPath, receiptText);
   if (identityKernel.why.length) { identityKernel.ok = false; failures.push(`the identity kernel is broken: ${identityKernel.why[0]}`); }
+}
+
+// Recovery: an encrypted kit recovers the id on a new device and revokes the old.
+let recovery = { ok: true, why: [] };
+{
+  const check = (condition, why) => { if (!condition) { recovery.ok = false; recovery.why.push(why); } };
+  const origin = "https://play.r4labs.org";
+  const now = Date.now();
+  const passphrase = "correct horse battery staple";
+  const kit = await sealKit({
+    schema: "mudbenchmark/recovery-payload/1",
+    prism: `sha256:${"a".repeat(64)}`,
+    records: [],
+    shares: [],
+  }, passphrase);
+  const opened = await openKit(kit, passphrase);
+  check(opened.prism === `sha256:${"a".repeat(64)}`, "the kit did not open with the right passphrase");
+  let wrong = false;
+  try { await openKit(kit, "wrong passphrase here"); } catch { wrong = true; }
+  check(wrong, "a wrong passphrase opened the kit");
+  const tampered = { ...kit, ciphertext: `${kit.ciphertext.slice(0, -2)}${kit.ciphertext.endsWith("AA") ? "BB" : "AA"}` };
+  let damaged = false;
+  try { await openKit(tampered, passphrase); } catch { damaged = true; }
+  check(damaged, "a tampered kit opened");
+
+  const human = await createPrism({});
+  const made = await createRecovery(human, { threshold: 1, guardians: [{ paper: true }] });
+  check(made.shares?.length === 1 && made.shares[0].guardian === "paper", "the kit did not get one paper share");
+  const device = await createDevice({});
+  const recovered = await recoverPrism({
+    prism: human.prism,
+    records: [...made.session.log.values()],
+    shares: made.shares,
+    device,
+  });
+  const action = await signAction(recovered.session, "prism/session/1",
+    { sessionKey: "x".repeat(87), expires: now + 10 * 60 * 1000 }, { audience: origin, now });
+  const allowed = await verifyAction(human.prism, recovered.session.log, action, { audience: origin, now });
+  check(allowed.allowed, "the recovered device could not sign in");
+  const oldAction = await signAction(human, "prism/session/1",
+    { sessionKey: "y".repeat(87), expires: now + 10 * 60 * 1000 }, { audience: origin, now });
+  const refused = await verifyAction(human.prism, recovered.session.log, oldAction, { audience: origin, now });
+  check(!refused.allowed, "the old device still signed after recovery");
+  let below = false;
+  try {
+    await recoverPrism({ prism: human.prism, records: [...made.session.log.values()], shares: [], device: await createDevice({}) });
+  } catch { below = true; }
+  check(below, "recovery accepted no shares");
+
+  if (recovery.why.length) { recovery.ok = false; failures.push(`recovery is broken: ${recovery.why[0]}`); }
 }
 
 // L1: a human-signed owner action binds a persona to the human's pinned log.
@@ -1531,6 +1582,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"takeover".padEnd(26)}  ${(takeover.ok ? "1 actor" : "BROKEN").padStart(5)}   == leave then login`);
   console.log(`${"characters".padEnd(26)}  ${(characters.ok ? "2 chars" : "BROKEN").padStart(5)}   == create, switch`);
   console.log(`${"persona".padEnd(26)}  ${(persona.ok ? "owner" : "BROKEN").padStart(5)}   == human, tombstone`);
+  console.log(`${"recovery".padEnd(26)}  ${(recovery.ok ? "kit" : "BROKEN").padStart(5)}   == new device, old refused`);
   console.log(`${"identity".padEnd(26)}  ${(identityKernel.ok ? "10 vectors" : "BROKEN").padStart(5)}   == model and JS`);
   console.log(`${"llms".padEnd(26)}  ${(llms.ok ? "verbs, rooms" : "STALE").padStart(5)}   == generated contract`);
   console.log(`${"claims".padEnd(26)}  ${(claimsCheck.status === 0 ? "levels ok" : "STALE").padStart(5)}   == build, open, some-true`);

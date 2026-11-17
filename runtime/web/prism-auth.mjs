@@ -10,6 +10,7 @@
 // public signed session.
 
 import * as Prism from "./prism-id.mjs";
+import { sealKit, openKit, RECOVERY_PAYLOAD_SCHEMA } from "./recovery-kit.mjs";
 
 const DB_NAME = "mudbench-prism";
 const DB_VERSION = 1;
@@ -139,6 +140,45 @@ export async function signIn(store = "default", app = location.origin) {
 
 export async function reset(store = "default") {
   await remove(store);
+}
+
+// ---------------------------------------------------------------- recovery kit
+
+// Export an encrypted kit: a one-of-one paper recovery share plus the public
+// log (and any persona logs the session carries). The server never sees the
+// kit or the share; the new device uses the protocol's recoverPrism.
+export async function createRecoveryKit(store = "default", passphrase) {
+  let session = await read(store);
+  if (!session?.prism || !session?.log) return null;
+  const made = await Prism.createRecovery(session, { threshold: 1, guardians: [{ paper: true }] });
+  session = made.session;
+  await write(store, session);
+  const personas = Object.fromEntries([...(session.personas ?? new Map())].map(([id, log]) => [id, [...log.values()]]));
+  return sealKit({
+    schema: RECOVERY_PAYLOAD_SCHEMA,
+    prism: session.prism,
+    created: new Date().toISOString(),
+    records: [...session.log.values()],
+    shares: made.shares,
+    personas,
+  }, passphrase);
+}
+
+// Restore a kit on this device. recoverPrism binds a new device, revokes every
+// other device and carries any personas the kit kept. The old browser is
+// refused after the recovered device signs in.
+export async function restoreRecoveryKit(kit, passphrase) {
+  const payload = await openKit(kit, passphrase);
+  const device = await Prism.createDevice({});
+  const { session } = await Prism.recoverPrism({
+    prism: payload.prism,
+    records: payload.records,
+    shares: payload.shares,
+    device,
+    personas: payload.personas ?? {},
+  });
+  await write("default", session);
+  return session;
 }
 
 // ---------------------------------------------------------------- AI personas
