@@ -345,6 +345,12 @@
       "level": "some-true",
       "statement": "Production v0.50.0 serves 45 rooms, 24 mobiles and 45 objects. The data-driven action engine is live with turn mirror/push statue/ring bell; the Mirror Pool secret stair and the Mirror's Other Side are in the world; scrolls study/recite, equipment slots, magic, mage ranks, the watch page, provider fast mode and redacted durable telemetry remain present. Accounts 104 and characters 105.",
       "authority": "wick production v0.50.0 2026-11-18; /world and /health; release 44216795338; gate 44215694252"
+    },
+    {
+      "id": "MB-52",
+      "level": "build",
+      "statement": "The Undervault grows to 50 rooms: the Chained Niche, Ossuary of Names, Drowned Library, Sunken Vault and Wardstone Heart, behind a Deep Door that opens only with the ward key. Two mobiles, four objects, the Drowned Ledger and Three Parts of a Sigil quests, and two room actions (unlock deep door, read names) are live. Action requirements now support a carried item as well as a spell, validated at boot and enforced by server and reducer. The world has 17 quests. Gate: actions 5 verbs == reveal, open, key; lantern 50 rooms; worldMap 50.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

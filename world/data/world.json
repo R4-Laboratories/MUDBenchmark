@@ -815,7 +815,14 @@
       "ambient": [
         "The door waits.",
         "Something on the other side exhales."
-      ]
+      ],
+      "secretExits": {
+        "down": 46
+      },
+      "secrets": {
+        "door": "The keyhole is watching. The ward key would fit.",
+        "keyhole": "The eye-shaped keyhole is warm."
+      }
     },
     "45": {
       "name": "The Mirror's Other Side",
@@ -831,6 +838,90 @@
       "ambient": [
         "The reflection turns a moment late.",
         "The bell rings once, silently."
+      ]
+    },
+    "46": {
+      "name": "The Chained Niche",
+      "text": "A narrow room of chains and wet stone. A niche in the far wall is sealed with a chain of black iron; the stair back to the Deep Door climbs north.",
+      "safe": false,
+      "exits": {
+        "up": 44,
+        "east": 47
+      },
+      "details": {
+        "chains": "The chains are cold and slick. None of them are anchored to the floor.",
+        "niche": "The niche is empty except for a mark like a closed eye."
+      },
+      "ambient": [
+        "A chain shifts in the dark.",
+        "Water drips through the ceiling."
+      ]
+    },
+    "47": {
+      "name": "The Ossuary of Names",
+      "text": "Shelves of skulls line a room that smells of old dust and colder water. Each skull has a name cut into the brow; a stone stair climbs north, and the niche waits west.",
+      "safe": false,
+      "exits": {
+        "west": 46,
+        "north": 48
+      },
+      "details": {
+        "skulls": "The names are worn. One reads: the door remembers.",
+        "names": "A hundred names, and one blank brow."
+      },
+      "ambient": [
+        "A skull settles on its shelf.",
+        "The dust does not move."
+      ]
+    },
+    "48": {
+      "name": "The Drowned Library",
+      "text": "A flooded reading room, shelves half-submerged and books swollen shut. A clerk in a tarred coat stands knee-deep in the water, sorting pages that will not dry.",
+      "safe": false,
+      "exits": {
+        "south": 47,
+        "east": 49
+      },
+      "details": {
+        "books": "Every page is blank where the water touched it.",
+        "clerk": "The clerk is not breathing."
+      },
+      "ambient": [
+        "Water laps at the shelves.",
+        "A page turns under the surface."
+      ]
+    },
+    "49": {
+      "name": "The Sunken Vault",
+      "text": "A vault of green water and broken chests. A thin cat sits on the highest chest, watching the ripples; a stair of stone climbs north into a colder dark.",
+      "safe": false,
+      "exits": {
+        "west": 48,
+        "north": 50
+      },
+      "details": {
+        "cat": "The cat is dry. It should not be.",
+        "chests": "The chests are empty, or they were."
+      },
+      "ambient": [
+        "The cat blinks.",
+        "A bubble rises and breaks."
+      ]
+    },
+    "50": {
+      "name": "The Wardstone Heart",
+      "text": "A round chamber of black stone around a heart-shaped wardstone. The stone is cracked; something inside it turns over in its sleep. The only way out is south, back through the drowned vault.",
+      "safe": false,
+      "exits": {
+        "south": 49
+      },
+      "details": {
+        "heart": "The heart is stone, and it is beating.",
+        "crack": "The crack is warm. Light comes out of it."
+      },
+      "ambient": [
+        "The stone beats once.",
+        "The water below goes still."
       ]
     }
   },
@@ -1363,6 +1454,51 @@
         "The door does not open.",
         "The key is mine."
       ]
+    },
+    {
+      "id": "drowned-clerk",
+      "name": "a drowned clerk",
+      "room": 48,
+      "home": 48,
+      "period": 150,
+      "jitter": 5,
+      "behaviour": "sentinel",
+      "zone": "undervault",
+      "hp": 20,
+      "damage": 3,
+      "armor": 0,
+      "aggression": 55,
+      "xp": 40,
+      "loot": [
+        "ledger-page"
+      ],
+      "description": "A clerk in a tarred coat, standing knee-deep in the drowned library.",
+      "examine": "His ledger is full of blank pages.",
+      "dialogue": [
+        "The library is closed.",
+        "Every name is a door."
+      ]
+    },
+    {
+      "id": "vault-cat",
+      "name": "a thin cat",
+      "room": 49,
+      "home": 49,
+      "period": 130,
+      "jitter": 8,
+      "behaviour": "sentinel",
+      "zone": "undervault",
+      "hp": 8,
+      "damage": 1,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 0,
+      "description": "A thin grey cat, dry in a flooded vault.",
+      "examine": "The cat is warm. It should not be.",
+      "dialogue": [
+        "The cat does not answer.",
+        "The cat watches the water."
+      ]
     }
   ],
   "zones": [
@@ -1456,7 +1592,12 @@
         42,
         43,
         44,
-        45
+        45,
+        46,
+        47,
+        48,
+        49,
+        50
       ]
     }
   ],
@@ -2021,6 +2162,51 @@
       "openAtStart": false,
       "value": 0,
       "examine": "A chest of black iron, bound with a closed eye.",
+      "forSale": false
+    },
+    {
+      "id": "ledger-page",
+      "name": "a drowned page",
+      "room": 48,
+      "flags": [
+        "takeable",
+        "readable"
+      ],
+      "value": 6,
+      "examine": "A page of names, half washed away.",
+      "forSale": false
+    },
+    {
+      "id": "sigil-1",
+      "name": "the first sigil",
+      "room": 47,
+      "flags": [
+        "takeable"
+      ],
+      "value": 10,
+      "examine": "A disc of black stone cut with a closed eye.",
+      "forSale": false
+    },
+    {
+      "id": "sigil-2",
+      "name": "the second sigil",
+      "room": 48,
+      "flags": [
+        "takeable"
+      ],
+      "value": 10,
+      "examine": "A disc of black stone cut with an open eye.",
+      "forSale": false
+    },
+    {
+      "id": "sigil-3",
+      "name": "the third sigil",
+      "room": 50,
+      "flags": [
+        "takeable"
+      ],
+      "value": 10,
+      "examine": "A disc of black stone cut with no eye at all.",
       "forSale": false
     }
   ],

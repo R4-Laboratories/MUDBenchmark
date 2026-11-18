@@ -92,6 +92,8 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `guild-ledger` | The Guild's Ledger | 3 | Carry the spell scroll to the archmage | 60 xp |
 | `mirror` | What the Mirror Keeps | 4 | Enter the Mirror Pool; Carry a mirror shard | 80 xp |
 | `wardstone` | The Wardstone | 5 | Defeat the warden; Carry the ward key | 120 xp |
+| `ledger` | The Drowned Ledger | 4 | Defeat the drowned clerk; Recover the drowned page | 100 xp |
+| `sigils` | Three Parts of a Sigil | 5 | Find the first sigil; Find the second sigil; Find the third sigil | 150 xp |
 
 ## Rooms
 
@@ -142,4 +144,9 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 43 | The Wardstone | undervault | no | west 42, north 44 |
 | 44 | The Deep Door | undervault | no | south 43 |
 | 45 | The Mirror's Other Side | undervault | no | up 41 |
+| 46 | The Chained Niche | undervault | no | up 44, east 47 |
+| 47 | The Ossuary of Names | undervault | no | west 46, north 48 |
+| 48 | The Drowned Library | undervault | no | south 47, east 49 |
+| 49 | The Sunken Vault | undervault | no | west 48, north 50 |
+| 50 | The Wardstone Heart | undervault | no | south 49 |
 

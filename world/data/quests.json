@@ -333,6 +333,68 @@
       "requires": [
         "mirror"
       ]
+    },
+    {
+      "id": "ledger",
+      "name": "The Drowned Ledger",
+      "level": 4,
+      "giver": "an owl",
+      "description": "A drowned clerk keeps a page the guild wants. Find it in the Drowned Library.",
+      "objectives": [
+        {
+          "kind": "kill",
+          "npc": "drowned-clerk",
+          "count": 1,
+          "text": "Defeat the drowned clerk"
+        },
+        {
+          "kind": "collect",
+          "object": "ledger-page",
+          "count": 1,
+          "text": "Recover the drowned page"
+        }
+      ],
+      "rewards": {
+        "xp": 100
+      },
+      "complete": "The page is wet, but the names are still legible.",
+      "requires": [
+        "mirror"
+      ]
+    },
+    {
+      "id": "sigils",
+      "name": "Three Parts of a Sigil",
+      "level": 5,
+      "giver": "the archmage",
+      "description": "Three black discs are scattered through the Undervault. The archmage wants them together.",
+      "objectives": [
+        {
+          "kind": "collect",
+          "object": "sigil-1",
+          "count": 1,
+          "text": "Find the first sigil"
+        },
+        {
+          "kind": "collect",
+          "object": "sigil-2",
+          "count": 1,
+          "text": "Find the second sigil"
+        },
+        {
+          "kind": "collect",
+          "object": "sigil-3",
+          "count": 1,
+          "text": "Find the third sigil"
+        }
+      ],
+      "rewards": {
+        "xp": 150
+      },
+      "complete": "The three discs fit together. The eye opens.",
+      "requires": [
+        "ledger"
+      ]
     }
   ]
 }

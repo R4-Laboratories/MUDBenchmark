@@ -3,8 +3,8 @@
 This was the queued AberMUD-style content and systems track. The v0.47/v0.48 slices
 have landed: eight equipment slots, six spells and the Mages' Guild, eleven
 Lantern Quarter/Undervault rooms, five personal quests, a guild ledger quest,
-a searchable secret stair, three data-driven room actions and mage rank advancement. The world is now 45 rooms
-and 15 quests. The foundation from v0.46 remains:
+a searchable secret stair, three data-driven room actions and mage rank advancement. The world is now 50 rooms
+and 17 quests. The foundation from v0.46 remains:
 short command forms, `equipment`, `world`/`status`, the hidden `#state` line,
 and the AI prompt/router state layer.
 
@@ -14,7 +14,7 @@ and the AI prompt/router state layer.
 | --- | --- | --- |
 | M3 | **done** — Equipment slots (`world/data/slots.json`): head, body, hands, feet, cloak, neck, mainhand, offhand; `equip`/`unequip`/`equipment`; gear in shops and quest rewards | slot swap, two-handed clears offhand, armour sum, weapon damage, drop/death/reset clears gear |
 | M4 | **done** — Magic: mana, `cast`/`spells`/`train`/`study`/`recite`, scrolls, the Mages' Guild and an archmage trainer | spark/mend/light/shield/detect/recall; mana refill and regen; spellbook persists; scrolls consume; rank gates |
-| M5 | **first two slices done** — The Lantern Quarter / Undervault: 11 rooms, 2 zones, 5 quests, 5 mobiles, 6 objects, one secret stair, three room actions; the full 25-room/10-quest target remains | 45 rooms, 15 quests, every exit reciprocal, all references valid, scripted `errand`/`familiar`/`mirror` walks |
+| M5 | **first two slices done** — The Lantern Quarter / Undervault: 11 rooms, 2 zones, 5 quests, 5 mobiles, 6 objects, one secret stair, three room actions; the full 25-room/10-quest target remains | 50 rooms, 17 quests, every exit reciprocal, all references valid, scripted `errand`/`familiar`/`mirror` walks |
 | M6 | **first quest and ranks done** — Guild quests and progression: guild XP/level, one ledger quest, apprentice→adept→magician advancement; more guild quests and perks remain | guild quest acceptance by rank, guild XP from quests, rank advancement, restart persistence |
 | M7 | Second content slice: another 25 rooms / 8 quests using the same template | same map/quest/reference gates |
 

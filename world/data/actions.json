@@ -7,10 +7,18 @@
       "verb": "turn",
       "target": "mirror",
       "room": 41,
-      "requires": { "spell": "detect" },
+      "requires": {
+        "spell": "detect"
+      },
       "effects": [
-        { "kind": "revealExit", "dir": "down" },
-        { "kind": "message", "text": "The pool clears. A stair of water descends into the dark." }
+        {
+          "kind": "revealExit",
+          "dir": "down"
+        },
+        {
+          "kind": "message",
+          "text": "The pool clears. A stair of water descends into the dark."
+        }
       ],
       "messages": {
         "actor": "You turn the mirror toward the pool. The water clears.",
@@ -23,8 +31,14 @@
       "target": "statue",
       "room": 43,
       "effects": [
-        { "kind": "open", "object": "ward-chest" },
-        { "kind": "message", "text": "The statue grinds aside. The ward chest opens." }
+        {
+          "kind": "open",
+          "object": "ward-chest"
+        },
+        {
+          "kind": "message",
+          "text": "The statue grinds aside. The ward chest opens."
+        }
       ],
       "messages": {
         "actor": "You push the statue aside. The ward chest opens.",
@@ -37,11 +51,53 @@
       "target": "bell",
       "room": 39,
       "effects": [
-        { "kind": "message", "text": "The bell rings without a clapper. Somewhere below, a door answers." }
+        {
+          "kind": "message",
+          "text": "The bell rings without a clapper. Somewhere below, a door answers."
+        }
       ],
       "messages": {
         "actor": "You ring the bell. It has no clapper, but the room answers.",
         "others": "%a rings the bell. The room answers."
+      }
+    },
+    {
+      "id": "unlock-deep-door",
+      "verb": "unlock",
+      "target": "door",
+      "room": 44,
+      "requires": {
+        "item": "ward-key"
+      },
+      "effects": [
+        {
+          "kind": "revealExit",
+          "dir": "down"
+        },
+        {
+          "kind": "message",
+          "text": "The eye-shaped keyhole closes. A stair of black stone descends."
+        }
+      ],
+      "messages": {
+        "actor": "You turn the ward key. The Deep Door opens downward.",
+        "others": "%a turns a key in the Deep Door; it opens downward."
+      }
+    },
+    {
+      "id": "read-names",
+      "verb": "read",
+      "target": "names",
+      "room": 47,
+      "effects": [
+        {
+          "kind": "message",
+          "text": "The blank brow belongs to the room itself. The name is not written yet."
+        }
+      ],
+      "messages": {
+        "actor": "You read the names. One brow is blank.",
+        "others": "%a studies the names on the skulls."
       }
     }
   ]

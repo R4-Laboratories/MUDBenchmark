@@ -535,6 +535,7 @@ export function step({ state, rooms, intents, actions = [] }) {
       if (!actor || !action) continue;
       if (actor.room !== action.room) continue;
       if (action.requires?.spell && !(actor.spellbook ?? []).includes(action.requires.spell)) continue;
+      if (action.requires?.item && !next.objects.some((object) => object.id === action.requires.item && object.holder === actor.id && !object.eaten)) continue;
       for (const effect of action.effects ?? []) {
         if (effect.kind === "revealExit") {
           const found = new Set(actor.found ?? []);

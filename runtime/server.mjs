@@ -1139,6 +1139,9 @@ async function handleCommand(id, line) {
     if (roomAction.requires?.spell && !(actor.spellbook ?? []).includes(roomAction.requires.spell)) {
       return sendTo(id, `You need to know ${roomAction.requires.spell} to do that.\r\n`);
     }
+    if (roomAction.requires?.item && !state.objects.some((object) => object.id === roomAction.requires.item && object.holder === id && !object.eaten)) {
+      return sendTo(id, `You need ${roomAction.requires.item} to do that.\r\n`);
+    }
     pending.push({ kind: "action", actorId: id, actionId: roomAction.id, messages: roomAction.messages });
     recordSpan("world.action", {
       "actor.id": id,

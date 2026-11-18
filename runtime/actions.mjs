@@ -33,6 +33,9 @@ export function loadActions({ path = DEFAULT_PATH, world = null } = {}) {
       errors.push(`action ${action.id} has no actor/others messages`);
     }
     if (action.requires?.spell && !spellById(action.requires.spell)) errors.push(`action ${action.id} requires unknown spell ${action.requires.spell}`);
+    if (action.requires?.item && world && !world.objects?.some((object) => object.id === action.requires.item)) {
+      errors.push(`action ${action.id} requires item ${action.requires.item}, which does not exist`);
+    }
     if (!Array.isArray(action.effects) || action.effects.length === 0) errors.push(`action ${action.id} has no effects`);
     for (const effect of action.effects ?? []) {
       if (!EFFECTS.has(effect.kind)) {
