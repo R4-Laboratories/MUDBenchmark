@@ -364,6 +364,17 @@
   #tabs .tab:hover { color: var(--text); }
   #tabs .tab.active { color: var(--text); border-bottom-color: var(--accent); }
   .pane { flex: 1; min-height: 0; overflow-y: auto; }
+  #tutor-panel {
+    position: fixed; z-index: 70; top: calc(var(--hdr) + 8px); right: 8px; bottom: 8px;
+    width: min(760px, calc(100vw - 16px)); padding: 0 14px 14px; display: flex; flex-direction: column;
+    border: 1px solid var(--line-2); border-radius: 12px; background: var(--surface); box-shadow: var(--shadow-overlay);
+  }
+  #tutor-panel[hidden] { display: none; }
+  #tutor-panel .observe-head { margin-top: 0; padding-top: 10px; }
+  #tutor-close { height: 22px; width: 22px; padding: 0; background: transparent; color: var(--muted); font-size: 16px; }
+  #tutor-frame { flex: 1; min-height: 0; width: 100%; border: 1px solid var(--line); border-radius: 6px; background: #2b2b2b; }
+  #tutor-frame[hidden] { display: none; }
+  #tutor-setup pre { white-space: pre-wrap; user-select: all; }
   #mind { display: flex; flex-direction: column; gap: 6px; }
   .thought {
     border-left: 2px solid var(--accent); border-radius: 0 6px 6px 0;
@@ -495,11 +506,29 @@
     </div>
     <div class="header-actions">
       <a href="/watch" target="_blank" rel="noopener">Watch live ↗</a>
+      <button type="button" id="tutor-open" title="Open your Tutor terminal" aria-expanded="false" aria-controls="tutor-panel">Tutor</button>
       <button type="button" id="telemetry-open" title="Open telemetry" aria-expanded="false" aria-controls="observe">Telemetry</button>
       <button type="button" id="font-down" title="Smaller text" aria-label="Smaller text">A−</button>
       <button type="button" id="font-up" title="Larger text" aria-label="Larger text">A+</button>
     </div>
   </header>
+  <section id="tutor-panel" aria-label="Tutor terminal" hidden>
+    <div class="observe-head">
+      <span>Tutor</span>
+      <button type="button" id="tutor-close" title="Close" aria-label="Close Tutor">×</button>
+    </div>
+    <p id="tutor-status" class="small muted"></p>
+    <iframe id="tutor-frame" title="Tutor terminal" hidden></iframe>
+    <div id="tutor-setup" hidden>
+      <p class="small muted">Tutor runs on your machine. Paste this once; it installs what is missing and opens this page with your terminal.</p>
+      <pre id="tutor-install"></pre>
+      <p class="small muted">Any time after: <code id="tutor-start"></code></p>
+    </div>
+    <div class="row">
+      <button type="button" id="tutor-recheck" hidden>Check again</button>
+      <button type="button" id="tutor-forget" hidden>Forget this terminal</button>
+    </div>
+  </section>
   <main>
     <section id="terminal">
       <div id="livebar">
@@ -1614,6 +1643,68 @@
     const rail = document.querySelector("aside");
     if (rail) rail.scrollTop = 0;
   });
+  const TUTOR_KEY = "mudbench.tutor-terminal";
+  const TUTOR_URL = /^http:\/\/(127\.0\.0\.1|localhost|\[::1\]):\d{2,5}\/t\/[A-Za-z0-9_-]{16,}\/$/;
+  const TUTOR_INSTALL = "curl -fsSL https://raw.githubusercontent.com/Syntra-Tutor/tutor/main/install.sh | sh";
+  const tutorPanel = document.getElementById("tutor-panel");
+  const tutorOpen = document.getElementById("tutor-open");
+  function tutorUrl() {
+    try { const value = localStorage.getItem(TUTOR_KEY) ?? ""; return TUTOR_URL.test(value) ? value : ""; } catch { return ""; }
+  }
+  async function showTutor() {
+    const status = document.getElementById("tutor-status");
+    const frame = document.getElementById("tutor-frame");
+    const setup = document.getElementById("tutor-setup");
+    const recheck = document.getElementById("tutor-recheck");
+    document.getElementById("tutor-install").textContent = TUTOR_INSTALL;
+    document.getElementById("tutor-start").textContent =
+      `tutor region terminal --user <name> --open ${location.origin}${location.pathname}`;
+    const url = tutorUrl();
+    document.getElementById("tutor-forget").hidden = !url;
+    const stop = (message) => {
+      frame.hidden = true;
+      frame.removeAttribute("src");
+      status.textContent = message;
+      setup.hidden = false;
+      recheck.hidden = !url;
+    };
+    if (!url) return stop("No Tutor terminal is connected yet.");
+    status.textContent = "Checking your Tutor terminal…";
+    try { await fetch(url, { mode: "no-cors", cache: "no-store" }); } catch { return stop("Your Tutor terminal is not running."); }
+    setup.hidden = true;
+    recheck.hidden = true;
+    status.textContent = "Connected to the Tutor terminal on this machine.";
+    frame.hidden = false;
+    if (frame.getAttribute("src") !== url) frame.src = url;
+  }
+  function setTutor(open) {
+    tutorPanel.hidden = !open;
+    tutorOpen.setAttribute("aria-expanded", String(open));
+    if (open) showTutor();
+    else tutorOpen.focus();
+  }
+  tutorOpen.addEventListener("click", () => setTutor(tutorPanel.hidden));
+  document.getElementById("tutor-close").addEventListener("click", () => setTutor(false));
+  document.getElementById("tutor-recheck").addEventListener("click", showTutor);
+  document.getElementById("tutor-forget").addEventListener("click", () => {
+    try { localStorage.removeItem(TUTOR_KEY); } catch {}
+    showTutor();
+  });
+  // `tutor region terminal --open` hands the terminal URL over in the fragment, which is never sent
+  // to a server; keep it in this browser and strip it from the address bar at once.
+  {
+    const handoff = /(?:^#|&)tutor=([^&]+)/.exec(location.hash);
+    if (handoff) {
+      let url = "";
+      try { url = decodeURIComponent(handoff[1]); } catch {}
+      history.replaceState(null, "", location.pathname + location.search);
+      if (TUTOR_URL.test(url)) {
+        try { localStorage.setItem(TUTOR_KEY, url); } catch {}
+        setTutor(true);
+      }
+    }
+  }
+
   const telemetryOpen = document.getElementById("telemetry-open");
   function updateTelemetryAvailability() {
     telemetryOpen.setAttribute("aria-disabled", AI.running ? "false" : "true");
@@ -1662,7 +1753,8 @@
 
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") return;
-    if (document.body.classList.contains("model-focus")) closeModel();
+    if (!tutorPanel.hidden) setTutor(false);
+    else if (document.body.classList.contains("model-focus")) closeModel();
     else if (document.body.classList.contains("telemetry-focus")) setTelemetry(false);
   });
 

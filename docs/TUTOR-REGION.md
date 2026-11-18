@@ -32,3 +32,13 @@ recorded and the player is told Tutor is unavailable.
 Tutor's side (`tutor region serve`) is documented in the Tutor repository.
 `node --test runtime/tutor-region.test.mjs` runs the checks against a stand-in
 Tutor.
+
+## Tutor panel
+
+The **Tutor** button in the header opens a panel that shows the learner's own
+Tutor terminal, which runs on their machine (`tutor region terminal`, see the
+Tutor repository). The terminal's URL contains a secret path. It arrives once,
+in the URL fragment from `tutor region terminal --open <this page>`, is kept in
+this browser's `localStorage` and is removed from the address bar. If the
+terminal is not running the panel shows the one-line install command. This
+page never sends the URL anywhere.
