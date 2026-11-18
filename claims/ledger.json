@@ -327,6 +327,12 @@
       "level": "build",
       "statement": "The Spellwright sells scrolls of spark, mend and shield. A mage can `study` a scroll to learn its spell and consume it; any character can `recite` a scroll to cast it once and consume it. Scrolls carry a validated spell id, the cast uses the same effect code as a memorized cast, and the gate covers study, recite, consumption and spellbook persistence.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-49",
+      "level": "some-true",
+      "statement": "Production v0.49.0 serves 44 rooms, 24 mobiles, 42 objects and 15 quests. Spell scrolls of spark, mend and shield are for sale at the Spellwright; study and recite are live; the Undervault secret stair, Mirror Pool/Wardstone quests, mage rank advancement, equipment slots, the watch page, provider fast mode and redacted durable telemetry remain present. Accounts are 104 and characters 105.",
+      "authority": "wick production v0.49.0 2026-11-18; /world and /health; release 44204730188; gate 44203689019"
     }
   ]
 }
