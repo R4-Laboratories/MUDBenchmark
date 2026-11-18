@@ -375,6 +375,12 @@
       "level": "build",
       "statement": "Telemetry retention has a pure planner and a CLI that keep the live spans/trace, remove archives older than the keep window, and enforce a total-byte cap by deleting the oldest archives first. The CLI defaults to a dry run and never deletes the live files. Prism session freshness is factored into `sessionWithinWindow`; a two-minute-slow clock is accepted and a six-minute skew is refused. The gate covers the retention plan and both skew cases.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-57",
+      "level": "some-true",
+      "statement": "Production v0.53.0 runs the retention dry run over the live telemetry directory: 4 files / 366 MB kept, 0 removed, with the live spans/trace protected. The session window accepts a two-minute-slow clock and refuses six minutes. The world remains 50 rooms / 18 quests with the action engine, guild cycle, scrolls, watch, provider fast mode and redacted durable telemetry.",
+      "authority": "wick production v0.53.0 2026-11-18; retention dry run; release 44225180852; gate 44223351299"
     }
   ]
 }
