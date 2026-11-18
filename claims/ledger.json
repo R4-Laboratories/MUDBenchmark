@@ -477,6 +477,12 @@
       "level": "build",
       "statement": "tools/delete-account.mjs removes either a bare Prism account (no characters, no owner, no guild/mail/duel/actor reference) or a bare pinned Prism log with no account. It defaults to a dry run, archives state and identity store, writes the state atomically and replaces the identity store atomically. The gate covers bare account + pin deletion, pin-only deletion, and refusals for characters, persona owner and mail.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-74",
+      "level": "some-true",
+      "statement": "A real incognito Chrome context loaded production. navigator.storage.persisted() was false, the quota estimate was 10 GiB, IndexedDB opened successfully, and prism-auth storageMode reported indexeddb. This is temporary storage, not a hard failure; the existing sign-in path warns \"may evict\" when persisted is false. The probe did not sign in and created no account or pin.",
+      "authority": "Chrome --incognito headless 2026-11-18; production page; storage/IDB probe"
     }
   ]
 }
