@@ -507,6 +507,12 @@
       "level": "build",
       "statement": "The web shell is a three-panel app: the game stage, a dedicated conversation/Studio center panel, and a right rail whose first card is Model Control. The model card is compact enough to show provider, base URL, model, fast mode and Start together; Start/Forget hide while a run is live. Telemetry opens as a fixed focus drawer from the header. The layout stacks to one column below 980px. The gate checks the required controls, the conversation-before-rail order, and the telemetry control; headless desktop and 900px regression showed no JS errors.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-79",
+      "level": "some-true",
+      "statement": "Production v0.61.0 serves the three-panel interface with Model Control first in the right rail, the AI conversation/Studio as the center panel, and the telemetry focus drawer from the header. Desktop and 900px headless runs showed the model card fully visible, Start/Forget hidden while live, one-column mobile stacking, no horizontal overflow and no JS errors. The watch page still serves 200; accounts 105 / characters 106 / pinned 8.",
+      "authority": "wick production v0.61.0 2026-11-18; /health; headless Chromium 1600x1000 and 900x1000; release 44341596354; gate 44339606025"
     }
   ]
 }
