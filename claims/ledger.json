@@ -441,6 +441,12 @@
       "level": "build",
       "statement": "The guild-quest-2 perk is functional: a character may hold one active guild quest normally and two with the level-4 perk. The server and reducer both enforce the limit, and the gate tests a second guild quest being refused without the perk and accepted with it. `world`/`GET /world` guild entries now include level, XP and perks; `guild who` already shows them.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-68",
+      "level": "some-true",
+      "statement": "Production v0.58.0 enforces one active guild quest normally and two with guild-quest-2, and the world status exposes guild level/XP/perks. The server has 105 accounts / 106 characters, 8 pinned and 60 rooms / 24 quests. All prior systems remain: action engine, magic/scrolls, gear, watch, account cap, retention, audit and corruption/restore drills.",
+      "authority": "wick production v0.58.0 2026-11-18; /health and /world; release 44262388503; gate 44261225869"
     }
   ]
 }
