@@ -171,6 +171,92 @@
         "actor": "You fill the last lantern. The flame steadies.",
         "others": "%a tends the last lantern."
       }
+    },
+    {
+      "id": "touch-quiet-door",
+      "verb": "touch",
+      "target": "door",
+      "room": 60,
+      "requires": {
+        "item": "last-lantern"
+      },
+      "effects": [
+        {
+          "kind": "revealExit",
+          "dir": "east"
+        },
+        {
+          "kind": "message",
+          "text": "The pale wood warms and the seam widens into a door."
+        }
+      ],
+      "messages": {
+        "actor": "You touch the quiet door. The lantern answers, and the seam widens.",
+        "others": "%a touches the quiet door; a seam of light widens."
+      }
+    },
+    {
+      "id": "pump-bellows",
+      "verb": "pump",
+      "target": "bellows",
+      "room": 64,
+      "effects": [
+        {
+          "kind": "heal",
+          "amount": 2
+        },
+        {
+          "kind": "message",
+          "text": "Warm air rushes over you and the ache in your bones fades."
+        }
+      ],
+      "messages": {
+        "actor": "You pump the bellows. Warm air rushes over you.",
+        "others": "%a pumps the bellows; warm air fills the room."
+      }
+    },
+    {
+      "id": "unlock-ember-chest",
+      "verb": "unlock",
+      "target": "chest",
+      "room": 69,
+      "requires": {
+        "item": "ash-key"
+      },
+      "effects": [
+        {
+          "kind": "open",
+          "object": "ember-chest"
+        },
+        {
+          "kind": "message",
+          "text": "The iron band loosens and the chest opens."
+        }
+      ],
+      "messages": {
+        "actor": "You fit the ash key to the chest. The band loosens.",
+        "others": "%a unlocks the iron chest."
+      }
+    },
+    {
+      "id": "enter-first-flame",
+      "verb": "enter",
+      "target": "flame",
+      "room": 70,
+      "effects": [
+        {
+          "kind": "teleport",
+          "room": 61
+        },
+        {
+          "kind": "message",
+          "text": "The first flame folds around you and sets you down at the ashen threshold."
+        }
+      ],
+      "messages": {
+        "actor": "You step into the first flame. Heat folds around you and the chamber is gone.",
+        "others": "%a steps into the first flame and vanishes."
+      }
     }
   ]
 }

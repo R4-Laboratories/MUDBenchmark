@@ -3,8 +3,8 @@
 This was the queued AberMUD-style content and systems track. The v0.47/v0.48 slices
 have landed: eight equipment slots, six spells and the Mages' Guild, eleven
 Lantern Quarter/Undervault rooms, five personal quests, a guild ledger quest,
-a searchable secret stair, three data-driven room actions and mage rank advancement. The world is now 60 rooms
-and 26 quests. The foundation from v0.46 remains:
+a searchable secret stair, three data-driven room actions and mage rank advancement. The world is now 70 rooms
+and 31 quests. The foundation from v0.46 remains:
 short command forms, `equipment`, `world`/`status`, the hidden `#state` line,
 and the AI prompt/router state layer.
 
@@ -17,6 +17,7 @@ and the AI prompt/router state layer.
 | M5 | **first two slices done** — The Lantern Quarter / Undervault: 11 rooms, 2 zones, 5 quests, 5 mobiles, 6 objects, one secret stair, seven room actions; the full 25-room/10-quest target remains | 60 rooms, 26 quests, every exit reciprocal, all references valid, scripted `errand`/`familiar`/`mirror` walks |
 | M6 | **core done** — Guild quests and progression: guild XP/level, ledger/mirror/warden/choir/reliquary/repeatable sigil quests, apprentice→adept→magician advancement, level 2–5 perks including functional trainer-discount and guild-quest-2 limits; more guild quests remain | guild quest acceptance by rank, repeat reset cycle, guild XP, paid training/discount, rank advancement, restart persistence |
 | M7 | **first slice done** — another ten Undervault rooms, four linked quests and two actions; 60 rooms / 26 quests | same map/quest/reference gates |
+| M8 | **done** — The Ember Deep: ten rooms behind the Quiet Door, three mobiles, nine objects, a forge shop, four actions (last-lantern door, bellows, ash-key chest, first-flame shortcut), five quests including the magician-tier Ember Warden guild quest; 70 rooms / 31 quests | quiet-door reveal, full walk to the First Flame, reward payout, chest unlock, flame shortcut, every exit reciprocal |
 
 ## Rules that keep the model green
 
@@ -48,7 +49,7 @@ and the AI prompt/router state layer.
 
 ## Immediate next step
 
-The next content slice is the rest of the Lantern Quarter/Undervault: more
-rooms, hidden exits, custom actions, and the full quest chain. The magic and
-equipment systems are already in place, so the content can use them without
-another rules change.
+The Ember Deep completes the current Undervault arc. The next content work is
+optional depth rather than a missing system: more guild quests, a second
+outdoor region, and more discoverable shortcuts. The magic, equipment, action
+and quest systems are all data-driven, so new content needs no rules change.

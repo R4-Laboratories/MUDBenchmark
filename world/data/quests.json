@@ -666,6 +666,160 @@
       "requires": [
         "guild-warden"
       ]
+    },
+    {
+      "id": "ember-door",
+      "name": "Beyond the Quiet Door",
+      "level": 8,
+      "giver": "the last keeper",
+      "description": "The quiet door remembers the last lantern. Go through, reach the first flame, and bring back a coal.",
+      "requires": [
+        "last"
+      ],
+      "objectives": [
+        {
+          "kind": "visit",
+          "room": 61,
+          "text": "Enter the Ashen Threshold"
+        },
+        {
+          "kind": "visit",
+          "room": 70,
+          "text": "Reach the First Flame"
+        },
+        {
+          "kind": "collect",
+          "object": "first-coal",
+          "count": 1,
+          "text": "Carry the first coal"
+        }
+      ],
+      "rewards": {
+        "xp": 300,
+        "object": "ember-brand"
+      },
+      "complete": "The last keeper turns the coal in their fingers and smiles."
+    },
+    {
+      "id": "ember-forge",
+      "name": "The Cinder Hound",
+      "level": 8,
+      "giver": "the forge master",
+      "description": "A cinder hound has been hunting the slag gardens. The forge master wants its fang.",
+      "requires": [
+        "ember-door"
+      ],
+      "objectives": [
+        {
+          "kind": "kill",
+          "npc": "cinder-hound",
+          "count": 1,
+          "text": "Defeat the cinder hound"
+        },
+        {
+          "kind": "collect",
+          "object": "cinder-fang",
+          "count": 1,
+          "text": "Carry a cinder fang"
+        }
+      ],
+      "rewards": {
+        "xp": 220
+      },
+      "complete": "The forge master sets the fang on the anvil and nods."
+    },
+    {
+      "id": "ember-key",
+      "name": "The Ash Key",
+      "level": 8,
+      "giver": "the forge master",
+      "description": "A key hangs above the ember chapel altar. The forge master says the chest in the vault will open for it.",
+      "requires": [
+        "ember-door"
+      ],
+      "objectives": [
+        {
+          "kind": "visit",
+          "room": 67,
+          "text": "Enter the Ember Chapel"
+        },
+        {
+          "kind": "collect",
+          "object": "ash-key",
+          "count": 1,
+          "text": "Carry the ash key"
+        }
+      ],
+      "rewards": {
+        "xp": 180
+      },
+      "complete": "The forge master looks at the key and says nothing."
+    },
+    {
+      "id": "ember-flame",
+      "name": "The Ember Lantern",
+      "level": 9,
+      "giver": "the last keeper",
+      "description": "Bring the last keeper an ember lantern and a coal from the first flame.",
+      "requires": [
+        "ember-door",
+        "ember-key"
+      ],
+      "objectives": [
+        {
+          "kind": "visit",
+          "room": 70,
+          "text": "Stand at the First Flame"
+        },
+        {
+          "kind": "collect",
+          "object": "ember-lantern",
+          "count": 1,
+          "text": "Carry an ember lantern"
+        },
+        {
+          "kind": "collect",
+          "object": "first-coal",
+          "count": 1,
+          "text": "Carry the first coal"
+        }
+      ],
+      "rewards": {
+        "xp": 400
+      },
+      "complete": "The last keeper hangs the ember lantern beside the last lantern. The room holds two lights now."
+    },
+    {
+      "id": "guild-ember",
+      "name": "The Ember Warden",
+      "level": 9,
+      "giver": "the archmage",
+      "description": "The guild wants the coal guarded by the ember warden at the first flame.",
+      "scope": "guild",
+      "guild": "mages",
+      "rank": "magician",
+      "requires": [
+        "guild-reliquary"
+      ],
+      "objectives": [
+        {
+          "kind": "kill",
+          "npc": "ember-warden",
+          "count": 1,
+          "text": "Defeat the ember warden"
+        },
+        {
+          "kind": "collect",
+          "object": "first-coal",
+          "count": 1,
+          "text": "Carry the first coal"
+        }
+      ],
+      "rewards": {
+        "xp": 260,
+        "guildXp": 140
+      },
+      "complete": "The archmage sets the coal in a bowl of black glass. It does not stop burning."
     }
   ]
 }

@@ -103,6 +103,11 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `last` | The Last Lantern | 8 | Reach the Last Lantern; Carry the last lantern | 180 xp |
 | `guild-choir` | The Choir Bell | 8 | Defeat the choir moth; Carry the black bell | 180 xp |
 | `guild-reliquary` | The Reliquary Lens | 9 | Enter the Sealed Reliquary; Carry the reliquary lens | 200 xp |
+| `ember-door` | Beyond the Quiet Door | 8 | Enter the Ashen Threshold; Reach the First Flame; Carry the first coal | 300 xp |
+| `ember-forge` | The Cinder Hound | 8 | Defeat the cinder hound; Carry a cinder fang | 220 xp |
+| `ember-key` | The Ash Key | 8 | Enter the Ember Chapel; Carry the ash key | 180 xp |
+| `ember-flame` | The Ember Lantern | 9 | Stand at the First Flame; Carry an ember lantern; Carry the first coal | 400 xp |
+| `guild-ember` | The Ember Warden | 9 | Defeat the ember warden; Carry the first coal | 260 xp |
 
 ## Rooms
 
@@ -168,4 +173,14 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 58 | The Sealed Reliquary | undervault | no | west 57, north 59 |
 | 59 | The Last Lantern | undervault | no | south 58, east 60 |
 | 60 | The Quiet Door | undervault | no | west 59 |
+| 61 | The Ashen Threshold | ember | no | west 60, north 62, east 63 |
+| 62 | The Cinder Hall | ember | no | south 61, east 64, north 65 |
+| 63 | The Cold Forge | ember | no | west 61, north 64 |
+| 64 | The Bellows | ember | no | west 62, south 63, north 66 |
+| 65 | The Slag Gardens | ember | no | south 62, east 66, north 67 |
+| 66 | The Glass River | ember | no | west 65, south 64, north 68 |
+| 67 | The Ember Chapel | ember | no | south 65, east 68 |
+| 68 | The Deep Door | ember | no | west 67, south 66, north 69 |
+| 69 | The Vault of Coals | ember | no | south 68, east 70 |
+| 70 | The First Flame | ember | no | west 69 |
 

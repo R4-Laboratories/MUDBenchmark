@@ -1082,18 +1082,208 @@
     },
     "60": {
       "name": "The Quiet Door",
-      "text": "A door of pale wood in a room of soft grey stone. There is no handle, no keyhole and no sound. The last lantern is west, and the door waits.",
+      "text": "A door of pale wood in a room of soft grey stone. There is no handle, no keyhole and no sound, but a seam of warm light runs down the east edge. The last lantern is west, and the door waits.",
       "safe": false,
       "exits": {
         "west": 59
       },
       "details": {
         "door": "The wood is warm. It has no seam.",
-        "stone": "The grey stone is soft underfoot."
+        "stone": "The grey stone is soft underfoot.",
+        "seam": "The seam is warm. It widens when the lantern comes near."
       },
       "ambient": [
         "The door waits.",
+        "Light gathers at the seam.",
         "The room holds its breath."
+      ],
+      "secretExits": {
+        "east": 61
+      }
+    },
+    "61": {
+      "name": "The Ashen Threshold",
+      "text": "A threshold of black sand beneath a leaning arch. The quiet door is west, its pale wood already dimming; a stair of cinders climbs north, and a cold gallery opens east. Ash sifts from a sky of stone.",
+      "safe": false,
+      "exits": {
+        "west": 60,
+        "north": 62,
+        "east": 63
+      },
+      "details": {
+        "arch": "The arch is carved with names worn down to grooves.",
+        "ash": "The ash is warm and fine as flour.",
+        "door": "The pale door has no handle on this side either."
+      },
+      "ambient": [
+        "Ash sifts down.",
+        "The arch ticks as it cools."
+      ]
+    },
+    "62": {
+      "name": "The Cinder Hall",
+      "text": "A long hall of red brick and iron ribs. Cinders drift from the ceiling and settle without heat. A stair descends south to the threshold; the bellows mutter east, and a gallery of slag opens north.",
+      "safe": false,
+      "exits": {
+        "south": 61,
+        "east": 64,
+        "north": 65
+      },
+      "details": {
+        "ribs": "Each iron rib is riveted with a different mark.",
+        "cinders": "They land on your sleeve and leave no burn.",
+        "floor": "The brick is worn in a path toward the forge."
+      },
+      "ambient": [
+        "A cinder turns over in the air.",
+        "The hall breathes warm dust."
+      ]
+    },
+    "63": {
+      "name": "The Cold Forge",
+      "text": "A forge of black iron, cold at the center. The forge master waits beside an anvil; finished work hangs on a rack, and the threshold is west. A stair climbs north toward the hall.",
+      "safe": false,
+      "exits": {
+        "west": 61,
+        "north": 64
+      },
+      "details": {
+        "forge": "The forge is cold, but the anvil is warm.",
+        "anvil": "The anvil is scarred with a hundred small failures.",
+        "rack": "A hammer and a heavy cloak hang within reach."
+      },
+      "ambient": [
+        "The anvil ticks as it cools.",
+        "The forge master watches the coals."
+      ]
+    },
+    "64": {
+      "name": "The Bellows",
+      "text": "A vault of leather lungs and iron arms. The bellows breathe without hands, and warm air moves through the room. The cinder hall is west; the cold forge lies south, and a stair of ash climbs north.",
+      "safe": false,
+      "exits": {
+        "west": 62,
+        "south": 63,
+        "north": 66
+      },
+      "details": {
+        "bellows": "The leather is stitched with copper wire.",
+        "arms": "The arms move in a slow, patient rhythm.",
+        "air": "The air tastes of iron and rain."
+      },
+      "ambient": [
+        "The bellows sigh.",
+        "Warm air crosses your face."
+      ]
+    },
+    "65": {
+      "name": "The Slag Gardens",
+      "text": "A garden of slag and glass flowers. Ridges of cooled lava cross the floor, and something lean moves between them. The cinder hall is south; a glass river shines east, and a stair of ash climbs north.",
+      "safe": false,
+      "exits": {
+        "south": 62,
+        "east": 66,
+        "north": 67
+      },
+      "details": {
+        "flowers": "The flowers are glass, and each holds a bubble of old smoke.",
+        "ridges": "The ridges are sharp enough to cut.",
+        "ash": "A thin trail of prints crosses the garden."
+      },
+      "ambient": [
+        "A glass petal chimes.",
+        "Something breathes between the ridges."
+      ]
+    },
+    "66": {
+      "name": "The Glass River",
+      "text": "A river of black glass runs through a channel of basalt. It is smooth enough to walk on, and warm underfoot. The slag gardens are west; the river bends south to the bellows and north to the deep door.",
+      "safe": false,
+      "exits": {
+        "west": 65,
+        "south": 64,
+        "north": 68
+      },
+      "details": {
+        "river": "Your reflection is thin and far away.",
+        "basalt": "The basalt is banded like tree rings.",
+        "ore": "A lump of ore is caught in a crack."
+      },
+      "ambient": [
+        "The glass creaks underfoot.",
+        "Heat rises from the channel."
+      ]
+    },
+    "67": {
+      "name": "The Ember Chapel",
+      "text": "A chapel of red stone with a single window of hot light. A key hangs from a chain above the altar. The slag gardens are south, and the deep door is east.",
+      "safe": false,
+      "exits": {
+        "south": 65,
+        "east": 68
+      },
+      "details": {
+        "window": "The light beyond the window is not daylight.",
+        "altar": "The altar is a slab of melted stone.",
+        "key": "An iron key hangs just out of reach."
+      },
+      "ambient": [
+        "The window pulses.",
+        "The chain creaks."
+      ]
+    },
+    "68": {
+      "name": "The Deep Door",
+      "text": "A door of basalt banded with iron. Heat leaks from its seams; the glass river is south, the chapel is west, and a vault of coals waits north.",
+      "safe": false,
+      "exits": {
+        "west": 67,
+        "south": 66,
+        "north": 69
+      },
+      "details": {
+        "door": "The iron bands are hot to the touch.",
+        "seams": "Light the colour of a forge leaks through.",
+        "floor": "The floor is scored by something dragged."
+      },
+      "ambient": [
+        "The door ticks with heat.",
+        "A low rumble answers from beyond."
+      ]
+    },
+    "69": {
+      "name": "The Vault of Coals",
+      "text": "A low vault packed with black coals that glow along their cracks. A chest of iron sits against the far wall. The deep door is south; the first flame waits east.",
+      "safe": false,
+      "exits": {
+        "south": 68,
+        "east": 70
+      },
+      "details": {
+        "coals": "Each coal glows along a different crack.",
+        "chest": "The chest is bound with a single iron band.",
+        "walls": "The walls are warm and dry."
+      },
+      "ambient": [
+        "A coal shifts.",
+        "The chest gives off a slow heat."
+      ]
+    },
+    "70": {
+      "name": "The First Flame",
+      "text": "A round chamber around a single flame that burns without fuel. The flame is white at the root and red at the tip. The vault of coals is west, and the flame leans toward you.",
+      "safe": false,
+      "exits": {
+        "west": 69
+      },
+      "details": {
+        "flame": "The flame has no smoke and no shadow.",
+        "floor": "The floor is a ring of cooling stone.",
+        "coal": "A single black coal rests at the flame's root."
+      },
+      "ambient": [
+        "The flame leans.",
+        "The chamber is very still."
       ]
     }
   },
@@ -1741,6 +1931,68 @@
         "The lantern is the last one.",
         "Take it, and the door will know you."
       ]
+    },
+    {
+      "id": "forge-master",
+      "name": "the forge master",
+      "room": 63,
+      "home": 63,
+      "period": 200,
+      "jitter": 4,
+      "behaviour": "sentinel",
+      "zone": "ember",
+      "hp": 40,
+      "damage": 0,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 0,
+      "description": "A broad figure in a leather apron waits beside the cold forge.",
+      "examine": "The forge master's hands are scarred and steady.",
+      "dialogue": [
+        "The door remembered you.",
+        "The first flame is deeper than the coals.",
+        "The hound in the garden has a fang worth taking."
+      ]
+    },
+    {
+      "id": "cinder-hound",
+      "name": "a cinder hound",
+      "room": 65,
+      "home": 65,
+      "period": 30,
+      "jitter": 5,
+      "behaviour": "wander",
+      "zone": "ember",
+      "hp": 16,
+      "damage": 4,
+      "armor": 1,
+      "aggression": 65,
+      "xp": 26,
+      "loot": [
+        "cinder-fang"
+      ],
+      "description": "A lean hound the colour of cooling slag.",
+      "examine": "Its hide is cracked like a dried riverbed, and heat shows through the cracks."
+    },
+    {
+      "id": "ember-warden",
+      "name": "the ember warden",
+      "room": 70,
+      "home": 70,
+      "period": 120,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "zone": "ember",
+      "hp": 50,
+      "damage": 8,
+      "armor": 3,
+      "aggression": 100,
+      "xp": 140,
+      "loot": [
+        "ember-ore"
+      ],
+      "description": "A tall figure of black iron stands at the edge of the flame.",
+      "examine": "The warden is jointed like a furnace door, and its eyes are coals."
     }
   ],
   "zones": [
@@ -1850,6 +2102,22 @@
         58,
         59,
         60
+      ]
+    },
+    {
+      "id": "ember",
+      "name": "The Ember Deep",
+      "rooms": [
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70
       ]
     }
   ],
@@ -2520,6 +2788,121 @@
       "value": 0,
       "examine": "A white chest bound with a single hair.",
       "forSale": false
+    },
+    {
+      "id": "cinder-fang",
+      "name": "a cinder fang",
+      "room": 65,
+      "flags": [
+        "takeable"
+      ],
+      "value": 6,
+      "examine": "A curved fang, still warm. It is heavy for its size.",
+      "forSale": false
+    },
+    {
+      "id": "ember-ore",
+      "name": "a lump of ember ore",
+      "room": 66,
+      "flags": [
+        "takeable"
+      ],
+      "value": 9,
+      "examine": "Black ore veined with red. It is warm through the cloth.",
+      "forSale": false
+    },
+    {
+      "id": "ash-key",
+      "name": "an ash key",
+      "room": 67,
+      "flags": [
+        "takeable"
+      ],
+      "value": 15,
+      "examine": "An iron key with a bow of braided ash.",
+      "forSale": false
+    },
+    {
+      "id": "ember-chest",
+      "name": "an iron chest",
+      "room": 69,
+      "flags": [
+        "fixed",
+        "container"
+      ],
+      "capacity": 2,
+      "open": false,
+      "value": 0,
+      "examine": "A chest of black iron, bound with a single band.",
+      "forSale": false
+    },
+    {
+      "id": "ember-lantern",
+      "name": "an ember lantern",
+      "inside": "ember-chest",
+      "flags": [
+        "takeable",
+        "light"
+      ],
+      "value": 30,
+      "examine": "A lantern of red glass. A coal burns inside it without smoke.",
+      "forSale": false
+    },
+    {
+      "id": "forge-hammer",
+      "name": "a forge hammer",
+      "room": 63,
+      "flags": [
+        "takeable",
+        "weapon"
+      ],
+      "slot": "mainhand",
+      "damage": 4,
+      "forSale": true,
+      "price": 40,
+      "value": 20,
+      "examine": "A heavy hammer with a square head. The haft is wrapped in wire."
+    },
+    {
+      "id": "ember-cloak",
+      "name": "an ember cloak",
+      "room": 63,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "cloak",
+      "armor": 3,
+      "forSale": true,
+      "price": 55,
+      "value": 27,
+      "examine": "A cloak of dark wool with a red lining. It holds warmth like a banked fire."
+    },
+    {
+      "id": "first-coal",
+      "name": "the first coal",
+      "room": 70,
+      "flags": [
+        "takeable"
+      ],
+      "value": 20,
+      "examine": "A black coal with a white seam. It is warm but never burns.",
+      "forSale": false
+    },
+    {
+      "id": "ember-brand",
+      "name": "an ember brand",
+      "room": 70,
+      "flags": [
+        "takeable",
+        "weapon"
+      ],
+      "slot": "mainhand",
+      "damage": 6,
+      "value": 35,
+      "examine": "A blade of black iron with a red edge. It hums when the flame moves.",
+      "forSale": false
     }
   ],
   "climate": {
@@ -2586,6 +2969,12 @@
       "id": "inn",
       "room": 10,
       "keeper": "innkeeper"
+    },
+    {
+      "id": "ember-forge",
+      "room": 63,
+      "keeper": "forge-master",
+      "name": "The Ember Forge"
     }
   ]
 }

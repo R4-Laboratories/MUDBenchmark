@@ -1375,6 +1375,51 @@ let actions = { ok: true, why: [] };
   if (actions.why.length) { actions.ok = false; failures.push(`the action engine is broken: ${actions.why[0]}`); }
 }
 
+// The Ember Deep: the quiet door opens for the last lantern, the rooms form a
+// loop, the quest chain pays out, the chest needs the ash key, and the first
+// flame is a way back.
+let ember = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, world.levels, questTable.quests);
+  const table = loadActions({ world });
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents, actions: table.actions }); state = result.state; return result.events; };
+  const action = (id) => table.actions.find((entry) => entry.id === id);
+  const check = (condition, why) => { if (!condition) { ember.ok = false; ember.why.push(why); } };
+  check(table.errors.length === 0, `action validation failed: ${table.errors[0] ?? ""}`);
+  check(world.rooms[60]?.secretExits?.east === 61 && world.rooms[61]?.exits?.west === 60, "the quiet door does not lead to the Ember Deep");
+  check(world.rooms[64]?.exits?.west === 62 && world.rooms[62]?.exits?.east === 64, "the bellows do not connect to the cinder hall");
+  check(action("touch-quiet-door")?.requires?.item === "last-lantern", "the quiet door does not require the last lantern");
+  check(action("enter-first-flame")?.effects?.some((effect) => effect.kind === "teleport" && effect.room === 61), "the first flame has no shortcut");
+  state.actors.push({ id: "e", key: "ember", account: "ember", name: "ember", room: 60, visited: [60], level: 9, xp: 5000, maxHp: 24, hp: 24, maxMana: 23, mana: 23, spellbook: [], guild: null, guildRank: null, wielding: null, quests: { active: [], completed: ["last"] }, found: [] });
+  state.objects.find((o) => o.id === "last-lantern").holder = "e";
+  run([{ kind: "action", actorId: "e", actionId: "touch-quiet-door", messages: { actor: "touched", others: "touches" } }]);
+  let actor = state.actors.find((entry) => entry.id === "e");
+  check(actor?.found?.includes("60:east"), "touching the quiet door did not reveal the way east");
+  run([{ kind: "move", actorId: "e", dir: "east", to: 61 }]);
+  actor = state.actors.find((entry) => entry.id === "e");
+  check(actor.room === 61, "the quiet door did not open into the Ashen Threshold");
+  run([{ kind: "questAccept", actorId: "e", questId: "ember-door" }]);
+  state.objects.find((o) => o.id === "first-coal").holder = "e";
+  for (const [dir, to] of [["east", 63], ["north", 64], ["north", 66], ["north", 68], ["north", 69], ["east", 70]]) {
+    run([{ kind: "move", actorId: "e", dir, to }]);
+  }
+  actor = state.actors.find((entry) => entry.id === "e");
+  check(actor.room === 70, "the Ember Deep walk did not reach the First Flame");
+  check(actor.quests.completed.includes("ember-door"), "Beyond the Quiet Door did not complete");
+  check(state.objects.find((o) => o.id === "ember-brand")?.holder === "e", "the ember brand reward did not reach the actor");
+  actor.room = 69;
+  state.objects.find((o) => o.id === "ash-key").holder = "e";
+  run([{ kind: "action", actorId: "e", actionId: "unlock-ember-chest", messages: { actor: "unlocked", others: "unlocks" } }]);
+  check(state.objects.find((o) => o.id === "ember-chest")?.open === true, "the ash key did not open the ember chest");
+  actor = state.actors.find((entry) => entry.id === "e");
+  actor.room = 70;
+  run([{ kind: "action", actorId: "e", actionId: "enter-first-flame", messages: { actor: "entered", others: "enters" } }]);
+  actor = state.actors.find((entry) => entry.id === "e");
+  check(actor.room === 61, "the first flame shortcut did not return to the threshold");
+  if (ember.why.length) { ember.ok = false; failures.push(`the Ember Deep is broken: ${ember.why[0]}`); }
+}
+
 // The state file is atomic, backed up, and fail-loud.
 let durableState = { ok: true, why: [] };
 {
@@ -2370,7 +2415,8 @@ if (process.argv.includes("--json")) {
   console.log(`${"equipment".padEnd(26)}  ${(equipment.ok ? "8 slots" : "BROKEN").padStart(5)}   == wear, wield, replace`);
   console.log(`${"magic".padEnd(26)}  ${(magic.ok ? "6 spells+scrolls" : "BROKEN").padStart(5)}   == mana, cast, study`);
   console.log(`${"lantern".padEnd(26)}  ${(lantern.ok ? "60 rooms" : "BROKEN").padStart(5)}   == errand, charm, secret`);
-  console.log(`${"actions".padEnd(26)}  ${(actions.ok ? "9 verbs" : "BROKEN").padStart(5)}   == reveal, open, last`);
+  console.log(`${"actions".padEnd(26)}  ${(actions.ok ? "11 verbs" : "BROKEN").padStart(5)}   == reveal, open, last`);
+  console.log(`${"ember".padEnd(26)}  ${(ember.ok ? "10 rooms" : "BROKEN").padStart(5)}   == door, quest, shortcut`);
   console.log(`${"pinned".padEnd(26)}  ${(identityPin.ok ? "revoked" : "BROKEN").padStart(5)}   == old log refused`);
   console.log(`${"takeover".padEnd(26)}  ${(takeover.ok ? "1 actor" : "BROKEN").padStart(5)}   == leave then login`);
   console.log(`${"characters".padEnd(26)}  ${(characters.ok ? "2 chars" : "BROKEN").padStart(5)}   == create, switch`);

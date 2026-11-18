@@ -519,6 +519,12 @@
       "level": "build",
       "statement": "The telemetry drawer has a Trends section fed by /trends: AI turns, parse rate, p50/p95 latency, tokens, world online/levels, accepted/refused commands, top commands, providers and models. /trends is computed from the durable span tail with readSpansTail; the endpoint keeps the error map and adds error_count. A local run produced 10 trend cards and top-command/provider/model listings with no JS errors.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-81",
+      "level": "build",
+      "statement": "The Ember Deep adds ten connected rooms behind the Quiet Door (61-70), three mobiles (forge master, cinder hound, ember warden), nine objects, a forge shop with a hammer and cloak, four room actions (last-lantern door reveal, bellows heal, ash-key chest unlock, first-flame shortcut) and five quests including the magician-tier Ember Warden guild quest. The world is 70 rooms, 31 quests, 32 mobiles and 63 objects; 13 actions use 11 verbs. The gate walks the quiet door, the full Ember Deep loop, the quest payout, the chest unlock and the shortcut, and validates every exit and quest reference.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }
