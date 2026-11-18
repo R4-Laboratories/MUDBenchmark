@@ -12,7 +12,8 @@ import { join as joinPath } from "node:path";
 import { createHash, randomBytes } from "node:crypto";
 import { WebSocketServer } from "ws";
 import { recordSpan, digest, TELEMETRY_LOG } from "./telemetry.mjs";
-import { readSpanTail, redactSpans } from "./spans.mjs";
+import { readSpanTail, readSpansTail, redactSpans } from "./spans.mjs";
+import { summarizeTrends } from "./trends.mjs";
 import { step, initialState, digestState, phaseAt, upgradeState, releaseHeldObjects, checkpointIdentities, armorOf, nextFrom, TICK_MS } from "./world.mjs";
 import { equipmentText } from "./equipment.mjs";
 import { maxManaFor, spellById, spellLine, trainableSpells, trainingCost } from "./magic.mjs";
@@ -2343,6 +2344,14 @@ const web = http.createServer((req, res) => {
   if (pathname === "/world") {
     res.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
     res.end(JSON.stringify(worldStatus(state, ROOMS)));
+    return;
+  }
+
+  if (pathname === "/trends") {
+    const summary = summarizeTrends(readSpansTail(TELEMETRY_LOG));
+    if (summary.ai) summary.ai.error_count = Object.keys(summary.ai.errors ?? {}).length;
+    res.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
+    res.end(JSON.stringify({ ...summary, file: TELEMETRY_LOG }));
     return;
   }
 

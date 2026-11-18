@@ -133,7 +133,7 @@ if (commandsCheck.status !== 0) failures.push(`docs/COMMANDS.md is stale: ${(com
 
 // The web shell must actually offer account and AI-play controls.
 const web = readFileSync("runtime/web/index.html", "utf8");
-if (!/id="login"/.test(web) || !/id="register"/.test(web) || !/id="prism-login"/.test(web) || !/id="mode-ai"/.test(web) || !/id="ai-provider"/.test(web) || !/id="ai-reset"/.test(web) || !/id="director-input"/.test(web) || !/id="telemetry-open"/.test(web) || !/id="ai-stream"/.test(web)) {
+if (!/id="login"/.test(web) || !/id="register"/.test(web) || !/id="prism-login"/.test(web) || !/id="mode-ai"/.test(web) || !/id="ai-provider"/.test(web) || !/id="ai-reset"/.test(web) || !/id="director-input"/.test(web) || !/id="telemetry-open"/.test(web) || !/id="trend-stats"/.test(web) || !/id="ai-stream"/.test(web)) {
   failures.push("the web shell lost its Prism, password, AI-play or telemetry controls");
 }
 const liveIndex = web.indexOf('id="ai-live"');

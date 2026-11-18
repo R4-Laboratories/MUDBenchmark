@@ -231,7 +231,8 @@
   .thought .meta .highlight { margin-left: auto; background: transparent; color: var(--muted); border: 1px solid var(--line); border-radius: 6px; padding: 0 6px; font-size: 13px; cursor: pointer; text-transform: none; letter-spacing: 0; }
   .thought .meta .highlight:disabled { color: var(--warn); cursor: default; }
   .highlight-row { border-left: 2px solid var(--warn); padding: 6px 9px; margin: 6px 0; font-size: 12px; background: rgba(251,191,36,.04); }
-  #bench-stats, #run-stats, #model-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
+  #bench-stats, #trend-stats, #run-stats, #model-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
+  .pane-title { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 0 0 7px; }
   #bench-kinds { max-height: 160px; }
   .stat { border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; font-size: 10px; color: var(--muted); background: rgba(8,13,19,.65); }
   .stat b { display: block; color: var(--text); font-size: 14px; font-weight: 700; overflow-wrap: anywhere; margin-top: 2px; }
@@ -343,6 +344,10 @@
             <div class="model-block"><h3>Sent to the game</h3><pre id="model-command"></pre></div>
           </div>
           <div id="bench-pane" class="pane" hidden>
+            <h3 class="pane-title">Trends</h3>
+            <div id="trend-stats"></div>
+            <pre id="trend-top"></pre>
+            <h3 class="pane-title">Spans</h3>
             <div id="bench-stats"></div>
             <div class="row"><button type="button" id="span-refresh">Refresh server spans</button></div>
             <p class="small muted">Aggregates only; the Model tab shows the AI's commands. A highlight is in range when its tick is inside the server's tick range.</p>
@@ -644,6 +649,8 @@
   const benchStats = document.getElementById("bench-stats");
   const benchKinds = document.getElementById("bench-kinds");
   const benchRecent = document.getElementById("bench-recent");
+  const trendStats = document.getElementById("trend-stats");
+  const trendTop = document.getElementById("trend-top");
   const spanRefresh = document.getElementById("span-refresh");
   const aiLocal = document.getElementById("ai-local");
   const directorForm = document.getElementById("director-form");
@@ -1767,7 +1774,53 @@
     }
   }
 
+  async function refreshTrends() {
+    trendStats.innerHTML = "";
+    trendTop.textContent = "Loading trends…";
+    try {
+      const res = await fetch("/trends", { signal: AbortSignal.timeout(3000) });
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+      const data = await res.json();
+      const pct = (value) => typeof value === "number" ? `${(value * 100).toFixed(1)}%` : "—";
+      const ms = (value) => typeof value === "number" ? `${Math.round(value)} ms` : "—";
+      const count = (value) => typeof value === "number" ? String(value) : "—";
+      const cells = [
+        ["AI turns", count(data.ai?.turns)],
+        ["Parsed", pct(data.ai?.parsed)],
+        ["Latency p50", ms(data.ai?.latency_ms?.p50)],
+        ["Latency p95", ms(data.ai?.latency_ms?.p95)],
+        ["Tokens in", count(data.ai?.tokens_in)],
+        ["Tokens out", count(data.ai?.tokens_out)],
+        ["Online max", count(data.world?.online?.max)],
+        ["Levels max", count(data.world?.levels?.max)],
+        ["Commands", count(data.commands?.accepted)],
+        ["Refused", count(data.commands?.refused)],
+      ];
+      for (const [label, value] of cells) {
+        const cell = document.createElement("div");
+        cell.className = "stat";
+        cell.textContent = label;
+        const strong = document.createElement("b");
+        strong.textContent = value;
+        cell.appendChild(strong);
+        trendStats.appendChild(cell);
+      }
+      const block = (title, entries) => entries.length
+        ? [title, ...entries.map(([name, size]) => `${String(size).padStart(5)}  ${name}`)]
+        : [];
+      const lines = [
+        ...block("top commands", Object.entries(data.commands?.top ?? {}).slice(0, 8)),
+        ...block("providers", Object.entries(data.ai?.providers ?? {})),
+        ...block("models", Object.entries(data.ai?.models ?? {}).slice(0, 6)),
+      ];
+      trendTop.textContent = lines.length ? lines.join("\n") : "No trend data yet.";
+    } catch (error) {
+      trendTop.textContent = `Trends unavailable: ${error.message}`;
+    }
+  }
+
   async function refreshSpans() {
+    refreshTrends();
     benchStats.innerHTML = "";
     benchKinds.textContent = "";
     benchRecent.innerHTML = "";

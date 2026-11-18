@@ -10,6 +10,10 @@ const MAX_BYTES = 4 * 1024 * 1024;
 export function summarizeSpans(lines, { recent = 100 } = {}) {
   const spans = [];
   for (const line of lines) {
+    if (line && typeof line === "object") {
+      if (typeof line.name === "string") spans.push(line);
+      continue;
+    }
     const text = typeof line === "string" ? line.trim() : "";
     if (!text) continue;
     try {
@@ -86,16 +90,16 @@ export function redactSpans(summary) {
   };
 }
 
-export function readSpanTail(file, { maxBytes = MAX_BYTES, recent = 100 } = {}) {
+export function readSpansTail(file, { maxBytes = MAX_BYTES } = {}) {
   let stat;
   try {
     stat = statSync(file);
   } catch {
-    return summarizeSpans([], { recent });
+    return [];
   }
   const start = Math.max(0, stat.size - maxBytes);
   const length = stat.size - start;
-  if (length <= 0) return summarizeSpans([], { recent });
+  if (length <= 0) return [];
   const buffer = Buffer.alloc(length);
   const fd = openSync(file, "r");
   try {
@@ -108,5 +112,19 @@ export function readSpanTail(file, { maxBytes = MAX_BYTES, recent = 100 } = {}) 
     const newline = text.indexOf("\n");
     if (newline >= 0) text = text.slice(newline + 1);
   }
-  return summarizeSpans(text.split("\n"), { recent });
+  const spans = [];
+  for (const line of text.split("\n")) {
+    if (!line.trim()) continue;
+    try {
+      const span = JSON.parse(line);
+      if (span && typeof span.name === "string") spans.push(span);
+    } catch {
+      // A partial or foreign line is not a span; skip it.
+    }
+  }
+  return spans;
+}
+
+export function readSpanTail(file, { maxBytes = MAX_BYTES, recent = 100 } = {}) {
+  return summarizeSpans(readSpansTail(file, { maxBytes }), { recent });
 }
