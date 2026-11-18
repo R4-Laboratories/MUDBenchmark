@@ -107,8 +107,15 @@ by setting `GEMINI_API_KEY` (and optionally `GEMINI_MODEL`,
 
 Google's free tier is real but variable: limits are per project (RPM, TPM,
 RPD), reset at midnight Pacific, and free-tier data may be used to improve
-products. The UI discloses that before the run. The demo is deliberately
-opt-in; a local model remains the no-cost path.
+products. **Free tier does not mean keyless**: Google requires an API key to
+attribute quota and stop abuse, and there is no public Gemini endpoint that
+accepts anonymous requests. The operator key is the missing input; the code
+path is already built and dormant until `GEMINI_API_KEY` is set.
+
+Keyless community proxies exist, but they are best-effort and often queue,
+rate-limit or return 402 on real prompts; this project does not make one a
+default. The UI discloses the Gemini demo before the run. A local model remains
+the no-cost, no-account path.
 
 Other options are unchanged: user-supplied keys, a local Ollama/LM Studio
 model, or a custom OpenAI-compatible endpoint.
