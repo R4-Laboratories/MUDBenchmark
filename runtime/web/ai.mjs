@@ -42,7 +42,7 @@ export const PROVIDERS = {
   "gemini-demo": {
     label: "Gemini demo (Prism only)",
     base: "/api/gemini/v1",
-    model: "gemini-2.5-flash",
+    model: "gemini-3.1-flash-lite",
     needsKey: false,
     keyMode: "proxy",
     hint: "Operator-funded Gemini demo. Sign in with a Prism id; the server holds the key, enforces a small daily/minute quota and forces thinking off. Free-tier data may be used by Google to improve products.",

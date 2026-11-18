@@ -1693,6 +1693,7 @@
       aiBase.value = provider.base;
       aiModel.value = provider.model;
     }
+    if (id === "gemini-demo" && DEMO.model) aiModel.value = DEMO.model;
     aiKeyField.hidden = ["none", "proxy"].includes(provider.keyMode ?? (provider.needsKey ? "required" : "none"));
     aiHint.textContent = provider.hint;
     aiHint.className = "small muted";

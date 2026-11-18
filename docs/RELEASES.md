@@ -168,6 +168,9 @@ Rehearsed 2026-11-16:
   prompt, keeps free-form commands, adds Auto/Always/Never reasoning and fixes
   Mind/chat scrolling; the Prism-only Gemini demo and its quota proxy are
   available when the operator configures a key (MB-92/93);
+- v0.64.1 (Gemini live) configures the demo with gemini-3.1-flash-lite,
+  corrects the model label and records a real nine-turn Prism-only run at
+  p50 1.04s / p95 1.33s (MB-95);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);
