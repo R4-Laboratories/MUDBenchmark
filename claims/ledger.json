@@ -411,6 +411,12 @@
       "level": "build",
       "statement": "Spell training now costs coins: spark 15, mend 20, light 10, shield 40, detect 30, recall 80. The Mages' Guild trainer-discount perk reduces the price by 10% rounded up. The reducer consumes the selected carried coins, and the gate covers a paid training and the discount arithmetic. The live-copy corruption drill refuses a truncated state with exit 1 rather than starting empty.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-63",
+      "level": "some-true",
+      "statement": "Production v0.56.0 serves 60 rooms, 24 quests, 29 mobiles and 54 objects; spell training costs coins and the Mages' Guild trainer-discount reduces it by 10% rounded up. Accounts 105 / characters 106 / pinned 8. The live-copy corruption drill refused a truncated state with exit 1. Retention, clock skew, account audit, watch, provider fast mode and redacted durable telemetry remain present.",
+      "authority": "wick production v0.56.0 2026-11-18; /world and /health; corruption drill; release 44254248796; gate 44252912693"
     }
   ]
 }
