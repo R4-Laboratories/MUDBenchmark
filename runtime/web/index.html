@@ -619,8 +619,14 @@
             <input id="ai-key" type="password" autocomplete="off" placeholder="sk-…">
           </div>
           <div class="field">
+            <label for="ai-reasoning">Reasoning</label>
+            <select id="ai-reasoning">
+              <option value="auto">Auto — direct, reason on hard turns</option>
+              <option value="always">Always allow thinking</option>
+              <option value="never">Never reason</option>
+            </select>
             <div class="fast-row">
-              <label><input type="checkbox" id="ai-fast"> Fast mode</label>
+              <label><input type="checkbox" id="ai-fast"> Direct prompt</label>
               <button type="button" id="ai-reset">Reset identity</button>
             </div>
             <p class="small muted" id="ai-identity">The Prism id is the account; the character is the in-game name.</p>
@@ -850,7 +856,7 @@
 <script type="module">
   import {
     PROVIDERS, DEFAULT_GOAL, buildSystemPrompt, buildUserPrompt,
-    parseBrain, requestFor, replyFrom, trimHistory, normalizeBase,
+    parseBrain, buildActionMenu, requestFor, replyFrom, trimHistory, normalizeBase,
   } from "/ai.mjs";
   import { signIn as prismSignIn, reset as prismReset, load as loadSession, save as saveSession, personaSignIn, personaRetire, nextPersonaEpoch, createRecoveryKit, restoreRecoveryKit, characterHandoff, characterRevoke, signChallenge } from "/prism-auth.mjs";
   import { createLinkOffer, parseLinkUri, requestLink, acceptLinkRequest, completeLink, linkCode, revokeDevice, resolvePrism, linkQr } from "/prism-id.mjs";
@@ -897,6 +903,7 @@
   const aiKey = document.getElementById("ai-key");
   const aiKeyField = document.getElementById("ai-key-field");
   const aiFast = document.getElementById("ai-fast");
+  const aiReasoning = document.getElementById("ai-reasoning");
   const aiIdentity = document.getElementById("ai-identity");
   const aiHint = document.getElementById("ai-hint");
   const aiStart = document.getElementById("ai-start");
@@ -917,6 +924,7 @@
   const aiCopy = document.getElementById("ai-copy");
   const chat = document.getElementById("chat");
   const mind = document.getElementById("mind");
+  const mindPane = document.getElementById("mind-pane");
   const runStats = document.getElementById("run-stats");
   const modelStats = document.getElementById("model-stats");
   const modelPrompt = document.getElementById("model-prompt");
@@ -1003,6 +1011,7 @@
     character: "scout", lastRequest: null, lastReply: null, lastParsed: null, lastLatency: 0,
     persona: null, owner: null, personaAudience: null, tickFrom: null, lastTick: null,
     highlights: [], streaming: false, timeouts: 0, lastPoll: null, state: null,
+    demoToken: null, demoTokenExpires: 0, demoWaiters: [],
   };
   const shortId = (id) => (id ? `${id.slice(0, 15)}…` : "—");
 
@@ -1660,7 +1669,18 @@
   // --- AI setup -----------------------------------------------------------
   let autoStart = location.hash === "#ai";
 
+  const DEMO = await (async () => {
+    try {
+      const res = await fetch("/api/demo", { signal: AbortSignal.timeout(2500) });
+      if (!res.ok) throw new Error(`${res.status}`);
+      return await res.json();
+    } catch {
+      return { configured: false, model: "", dailyLimit: 0, minuteLimit: 0 };
+    }
+  })();
+
   for (const [id, provider] of Object.entries(PROVIDERS)) {
+    if (id === "gemini-demo" && !DEMO.configured) continue;
     const option = document.createElement("option");
     option.value = id;
     option.textContent = provider.label;
@@ -1673,7 +1693,7 @@
       aiBase.value = provider.base;
       aiModel.value = provider.model;
     }
-    aiKeyField.hidden = (provider.keyMode ?? (provider.needsKey ? "required" : "none")) === "none";
+    aiKeyField.hidden = ["none", "proxy"].includes(provider.keyMode ?? (provider.needsKey ? "required" : "none"));
     aiHint.textContent = provider.hint;
     aiHint.className = "small muted";
     syncModelSummary();
@@ -1704,7 +1724,7 @@
     if (planBrain) planBrain.textContent = provider?.label ?? aiProvider.value;
     if (planModel) planModel.textContent = model;
     if (planCharacter) planCharacter.textContent = character;
-    if (planMode) planMode.textContent = aiFast.checked ? "Fast" : "Standard";
+    if (planMode) planMode.textContent = `${aiFast.checked ? "Direct" : "Full"} · ${aiReasoning.value}`;
     if (!AI.running) aiSub.textContent = summary;
   }
 
@@ -1715,6 +1735,7 @@
       model: aiModel.value.trim(),
       character: aiCharacter.value.trim(),
       fast: aiFast.checked,
+      reasoning: aiReasoning.value,
     };
     saveJSON(CONFIG_KEY, config);
     if (includeKey && aiKey.value.trim()) saveKeyFor(config.base, aiKey.value.trim());
@@ -1723,11 +1744,13 @@
   function renderSetup() {
     document.querySelector("aside").scrollTop = 0;
     const config = loadJSON(CONFIG_KEY, {}) ?? {};
-    aiProvider.value = config.provider ?? "ollama";
+    const wanted = config.provider ?? "ollama";
+    aiProvider.value = wanted === "gemini-demo" && !DEMO.configured ? "ollama" : wanted;
     aiBase.value = config.base ?? PROVIDERS[aiProvider.value].base;
     aiModel.value = config.model ?? PROVIDERS[aiProvider.value].model;
     aiCharacter.value = config.character ?? "scout";
-    aiFast.checked = Boolean(config.fast);
+    aiFast.checked = config.fast !== false;
+    aiReasoning.value = config.reasoning ?? "auto";
     aiKey.value = "";
     // A pre-v0.44 key was global. Move it only when the active preset is a
     // known host whose origin matches; never attach it to an arbitrary custom
@@ -1753,7 +1776,7 @@
     aiKey.value = keyFor(aiBase.value);
     detectLocalModels();
   });
-  for (const field of [aiBase, aiModel, aiCharacter, aiFast]) {
+  for (const field of [aiBase, aiModel, aiCharacter, aiFast, aiReasoning]) {
     field.addEventListener("change", () => { persistConfig(false); syncModelSummary(); });
   }
 
@@ -1877,6 +1900,25 @@
     aiHint.className = `small ${error ? "err" : "muted"}`;
   }
 
+  function requestDemoToken() {
+    return new Promise((resolve, reject) => {
+      if (AI.socket?.readyState !== WebSocket.OPEN) {
+        reject(new Error("The AI is not connected to the game."));
+        return;
+      }
+      const waiter = {
+        resolve,
+        reject,
+        timer: setTimeout(() => {
+          AI.demoWaiters = AI.demoWaiters.filter((entry) => entry !== waiter);
+          reject(new Error("The demo token request timed out."));
+        }, 6000),
+      };
+      AI.demoWaiters.push(waiter);
+      AI.socket.send("demo-token\n");
+    });
+  }
+
   async function startAI() {
     const provider = aiProvider.value;
     const base = normalizeBase(aiBase.value.trim());
@@ -1888,8 +1930,9 @@
       model: aiModel.value.trim(),
       key,
       temperature: fast ? 0 : 0.7,
-      maxTokens: fast ? 200 : 400,
+      maxTokens: fast ? 120 : 400,
       fast,
+      reasoning: aiReasoning.value,
     };
     if (!config.base || !config.model) {
       showHint("Set a base URL and a model first.", true);
@@ -1959,6 +2002,9 @@
     AI.lastCommand = "";
     AI.character = aiCharacter.value.trim() || "scout";
     AI.lastRequest = null;
+    AI.demoToken = null;
+    AI.demoTokenExpires = 0;
+    AI.demoWaiters = [];
     AI.lastReply = null;
     AI.lastParsed = null;
     AI.lastLatency = 0;
@@ -1971,6 +2017,8 @@
     log.innerHTML = "";
     chat.innerHTML = "";
     mind.innerHTML = "";
+    chatStick = true;
+    mindStick = true;
     aiTitle.textContent = "AI";
     aiSub.textContent = `${PROVIDERS[provider].label} · ${config.model}`;
     aiSettings.textContent = `${PROVIDERS[provider].label} · ${config.model} · ${config.base}`;
@@ -2067,6 +2115,15 @@
     if (!next) scheduleTurn(250);
   }
 
+  let chatStick = true;
+  chat.addEventListener("scroll", () => {
+    chatStick = chat.scrollHeight - chat.scrollTop - chat.clientHeight < 48;
+  });
+  let mindStick = true;
+  mindPane.addEventListener("scroll", () => {
+    mindStick = mindPane.scrollHeight - mindPane.scrollTop - mindPane.clientHeight < 48;
+  });
+
   function addChat(who, text) {
     const wrap = document.createElement("div");
     wrap.className = `msg ${who}`;
@@ -2077,7 +2134,7 @@
     body.textContent = text;
     wrap.append(label, body);
     chat.appendChild(wrap);
-    chat.scrollTop = chat.scrollHeight;
+    if (chatStick) chat.scrollTop = chat.scrollHeight;
   }
 
   function addThought(turn, text, muted = false) {
@@ -2097,7 +2154,7 @@
     body.textContent = text;
     wrap.append(meta, body);
     mind.appendChild(wrap);
-    mind.scrollTop = mind.scrollHeight;
+    if (mindStick) mindPane.scrollTop = mindPane.scrollHeight;
     liveThought.textContent = text.slice(0, 140);
     AI.thoughts.push({ turn, text, at: new Date().toISOString() });
   }
@@ -2165,6 +2222,8 @@
         ["Parsed", pct(data.ai?.parsed)],
         ["Latency p50", ms(data.ai?.latency_ms?.p50)],
         ["Latency p95", ms(data.ai?.latency_ms?.p95)],
+        ["Direct p50", ms(data.ai?.by_mode?.direct?.p50)],
+        ["Full p50", ms(data.ai?.by_mode?.full?.p50)],
         ["Tokens in", count(data.ai?.tokens_in)],
         ["Tokens out", count(data.ai?.tokens_out)],
         ["Online max", count(data.world?.online?.max)],
@@ -2411,6 +2470,21 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         }
         return;
       }
+      const demoLine = text.match(/^#demo-token (.*)\r?\n?$/);
+      if (demoLine) {
+        let payload = null;
+        try { payload = JSON.parse(demoLine[1]); } catch {}
+        const waiters = AI.demoWaiters.splice(0);
+        if (payload?.token) {
+          AI.demoToken = payload.token;
+          AI.demoTokenExpires = Number(payload.expires) || 0;
+          for (const waiter of waiters) { clearTimeout(waiter.timer); waiter.resolve(payload); }
+        } else {
+          const why = payload?.error ?? "The Gemini demo is unavailable.";
+          for (const waiter of waiters) { clearTimeout(waiter.timer); waiter.reject(new Error(why)); }
+        }
+        return;
+      }
       const stateLine = text.match(/^#state (.*)\r?\n?$/);
       if (stateLine) {
         try { AI.state = JSON.parse(stateLine[1]); } catch {}
@@ -2499,7 +2573,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         updateRunStats();
         if (AI.streaming) publishStream({ kind: "room", text: room[1], tick: AI.lastTick });
       }
-      scheduleTurn(650);
+      scheduleTurn(300);
     };
   }
 
@@ -2508,6 +2582,19 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
     AI.quiet = setTimeout(() => {
       if (AI.running && AI.authed && !AI.paused && !AI.busy) runTurn();
     }, delay);
+  }
+
+  function needsReasoning() {
+    if (AI.config.reasoning === "always") return true;
+    if (AI.config.reasoning === "never") return false;
+    if (AI.turn <= 2) return true;
+    if (AI.director.length > 0) return true;
+    if (AI.lastError) return true;
+    const self = AI.state?.self;
+    if (self && Number.isFinite(self.hp) && Number.isFinite(self.max_hp) && self.hp <= Math.ceil(self.max_hp * 0.4)) return true;
+    if (AI.recent.length >= 3 && new Set(AI.recent.slice(-3)).size === 1) return true;
+    if (AI.turn > 0 && AI.turn % 8 === 0) return true;
+    return false;
   }
 
   async function runTurn(force = false) {
@@ -2530,24 +2617,37 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
 
     const started = performance.now();
     try {
-      const system = buildSystemPrompt({ name: AI.name || "an autonomous player", goal: DEFAULT_GOAL });
+      const actions = buildActionMenu(AI.state);
+      const deliberate = needsReasoning();
+      const system = buildSystemPrompt({ name: AI.name || "an autonomous player", goal: DEFAULT_GOAL, fast: AI.config.fast, deliberate });
       const user = buildUserPrompt({
         turn,
         observation,
         director,
         state: AI.state,
+        actions,
+        fast: AI.config.fast,
         note: AI.nudge ? "You repeated a command. Do something different: move, examine, take, talk, or check your inventory." : "",
       });
       AI.nudge = false;
-      const messages = trimHistory([...AI.history, { role: "user", content: user }], AI.config.fast ? 4 : 8);
-      const request = requestFor(AI.config.provider, { ...AI.config, name: AI.name || "ai" }, system, messages);
-      AI.lastRequest = { system, messages, provider: AI.config.provider, model: AI.config.model, at: new Date().toISOString() };
+      const messages = trimHistory([...AI.history, { role: "user", content: user }], AI.config.fast ? 2 : 8);
+      if (AI.config.provider === "gemini-demo") {
+        // A fresh token per turn survives a server restart and keeps the
+        // proxy check bound to this authenticated game socket.
+        await requestDemoToken();
+      }
+      const request = requestFor(AI.config.provider, { ...AI.config, name: AI.name || "ai", demoToken: AI.demoToken, deliberate }, system, messages);
+      AI.lastRequest = {
+        system, messages, provider: AI.config.provider, model: AI.config.model,
+        fast: AI.config.fast, deliberate, prompt_version: AI.config.fast ? "r4-direct-2" : "full-1",
+        at: new Date().toISOString(),
+      };
       updateModelInspector();
       const res = await fetch(request.url, {
         method: "POST",
         headers: request.headers,
         body: JSON.stringify(request.body),
-        signal: AbortSignal.timeout(AI.config.fast ? 45000 : 120000),
+        signal: AbortSignal.timeout(AI.config.fast ? 25000 : 120000),
       });
       if (!res.ok) {
         const detail = (await res.text()).slice(0, 240);
@@ -2573,12 +2673,16 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         parse_ok: Boolean(parsed.command),
         command: parsed.command,
         thought_chars: parsed.thought?.length ?? 0,
+        fast: Boolean(AI.config.fast),
+        deliberate,
+        reasoning: AI.config.reasoning,
+        prompt_version: AI.config.fast ? "r4-direct-2" : "full-1",
         turn,
         tick: AI.lastTick,
       });
 
       AI.history.push({ role: "user", content: user }, { role: "assistant", content: text });
-      AI.history = trimHistory(AI.history, 8);
+      AI.history = trimHistory(AI.history, AI.config.fast ? 2 : 8);
       AI.latencies.push(latency);
       AI.usage.prompt += usage?.input_tokens ?? usage?.prompt_tokens ?? 0;
       AI.usage.completion += usage?.output_tokens ?? usage?.completion_tokens ?? 0;
@@ -2633,7 +2737,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       setAIStatus("live");
     } catch (error) {
       const message = error?.name === "TimeoutError"
-        ? `The model did not answer within ${AI.config?.fast ? 45 : 120} seconds.`
+        ? `The model did not answer within ${AI.config?.fast ? 25 : 120} seconds.`
         : error.message;
       sendMetric({
         kind: "ai.turn",
@@ -2642,6 +2746,10 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         latency_ms: Math.round(performance.now() - started),
         error: String(message),
         timeout: error?.name === "TimeoutError",
+        fast: Boolean(AI.config.fast),
+        deliberate: Boolean(AI.lastRequest?.deliberate),
+        reasoning: AI.config.reasoning,
+        prompt_version: AI.config.fast ? "r4-direct-2" : "full-1",
         turn,
         tick: AI.lastTick,
       });
@@ -2743,6 +2851,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       document.getElementById("model-pane").hidden = tab.dataset.tab !== "model";
       document.getElementById("bench-pane").hidden = tab.dataset.tab !== "bench";
       if (tab.dataset.tab === "bench") refreshSpans();
+      if (tab.dataset.tab === "mind" && mindStick) mindPane.scrollTop = mindPane.scrollHeight;
     });
   }
 

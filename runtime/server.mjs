@@ -166,6 +166,18 @@ let nextId = 1;
 // Guards that must exist before this is reachable by anyone but us.
 const MAX_CLIENTS = Number(process.env.MAX_CLIENTS ?? 40);
 const MAX_ACCOUNTS = Number(process.env.MAX_ACCOUNTS ?? 500);
+// Operator-funded Gemini demo. The key never leaves the server. The browser
+// receives a short-lived demo token over its authenticated game socket; the
+// proxy checks that token and a per-Prism quota before forwarding.
+const GEMINI_KEY = process.env.GEMINI_API_KEY ?? process.env.GEMINI_KEY ?? "";
+const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
+const GEMINI_BASE = process.env.GEMINI_BASE ?? "https://generativelanguage.googleapis.com/v1beta/openai";
+const GEMINI_DAILY_TURNS = Math.max(1, Number(process.env.GEMINI_DAILY_TURNS ?? 100));
+const GEMINI_MINUTE_TURNS = Math.max(1, Number(process.env.GEMINI_MINUTE_TURNS ?? 8));
+const GEMINI_GLOBAL_DAILY = Math.max(1, Number(process.env.GEMINI_GLOBAL_DAILY ?? 500));
+const demoAccess = new Map();
+const demoUsage = new Map();
+let demoGlobal = { day: null, turns: 0 };
 const MAX_SPECTATORS = Number(process.env.MAX_SPECTATORS ?? 200);
 const RATE_WINDOW_MS = 5000;
 const RATE_MAX = 12;
@@ -408,7 +420,12 @@ function loadIdentityStore() {
         if (raw?.schema !== "mudbenchmark/identities/1" || typeof raw.prisms !== "object") {
           throw new Error("the identity store has an unknown schema");
         }
-        return { schema: raw.schema, prisms: raw.prisms ?? {} };
+        return {
+          schema: raw.schema,
+          prisms: raw.prisms ?? {},
+          revokedBefore: Number.isSafeInteger(raw.revokedBefore) ? raw.revokedBefore : null,
+          blocked: Array.isArray(raw.blocked) ? raw.blocked.filter((id) => /^sha256:[0-9a-f]{64}$/.test(id)) : [],
+        };
       },
     });
   } catch (error) {
@@ -648,6 +665,44 @@ const ALIASES = {
 // actor can already learn from score, quests, equipment, world and look.
 function selfState(actor) {
   const status = worldStatus(state, ROOMS);
+  const room = actor?.key ? ROOMS[actor.room] ?? null : null;
+  const foundHere = actor?.key
+    ? (actor.found ?? []).filter((entry) => entry.startsWith(`${actor.room}:`)).map((entry) => entry.split(":")[1])
+    : [];
+  const exits = room ? Object.entries(room.exits ?? {}).map(([dir, to]) => ({ dir, room: ROOMS[to]?.name ?? String(to) })) : [];
+  for (const dir of foundHere) {
+    if (!exits.some((entry) => entry.dir === dir) && room?.secretExits?.[dir]) {
+      exits.push({ dir, room: ROOMS[room.secretExits[dir]]?.name ?? String(room.secretExits[dir]) });
+    }
+  }
+  const objectsHere = actor?.key
+    ? state.objects.filter((object) => object.room === actor.room && !object.eaten).map((object) => ({
+        name: object.name,
+        takeable: (object.flags ?? []).includes("takeable"),
+        container: (object.flags ?? []).includes("container"),
+        open: object.open === true,
+        forSale: object.forSale === true,
+        price: object.price ?? null,
+      }))
+    : [];
+  const npcsHere = actor?.key
+    ? state.npcs.filter((npc) => npc.room === actor.room && !npc.dead).map((npc) => ({
+        name: npc.name,
+        aggression: npc.aggression ?? 0,
+      }))
+    : [];
+  const actionsHere = actor?.key
+    ? ACTION_TABLE.actions.filter((action) => action.room === actor.room)
+        .filter((action) => !action.requires?.spell || (actor.spellbook ?? []).includes(action.requires.spell))
+        .filter((action) => !action.requires?.item || state.objects.some((object) => object.id === action.requires.item && object.holder === actor.id && !object.eaten))
+        .map((action) => ({ verb: action.verb, target: action.target }))
+    : [];
+  const activeQuests = actor?.key
+    ? normalizeQuestState(actor.quests, QUESTS.quests).active.map((entry) => {
+        const quest = questById(QUESTS.quests, entry.id);
+        return quest ? { id: quest.id, name: quest.name, objectives: questLines(quest, entry.progress, actor, state.objects) } : null;
+      }).filter(Boolean)
+    : [];
   const self = actor?.key ? {
     name: actor.name,
     level: actor.level ?? 1,
@@ -666,8 +721,20 @@ function selfState(actor) {
       completed: actor.quests?.completed?.length ?? 0,
     },
     inventory: state.objects.filter((object) => object.holder === actor.id && !object.worn).length,
+    inventory_names: state.objects.filter((object) => object.holder === actor.id && !object.worn && !object.eaten).map((object) => object.name),
     wielding: state.objects.find((object) => object.id === actor.wielding)?.name ?? null,
     worn: state.objects.filter((object) => object.holder === actor.id && object.worn).map((object) => object.name),
+    active_quests: activeQuests,
+    room: room ? {
+      name: room.name,
+      safe: room.safe === true,
+      zone: room.zone ?? null,
+      details: Object.keys(room.details ?? {}),
+      exits,
+      objects: objectsHere,
+      npcs: npcsHere,
+      actions: actionsHere,
+    } : null,
   } : null;
   return {
     schema: "mudbenchmark/state/1",
@@ -691,8 +758,13 @@ async function handleCommand(id, line) {
   // as typed and lowercase only the parts used for matching.
   const parts = raw.split(/\s+/);
   const entered = parts[0].toLowerCase();
-  const verb = ALIASES[entered] ?? entered;
-  const restRaw = parts.slice(1);
+  let verb = ALIASES[entered] ?? entered;
+  let restRaw = parts.slice(1);
+  // A model or a person may write "go north"; the world uses the direction.
+  if (verb === "go" && restRaw.length) {
+    verb = restRaw[0].toLowerCase();
+    restRaw = restRaw.slice(1);
+  }
   const rest = restRaw.map((part) => part.toLowerCase());
   const actor = actorById(id);
   if (actor?.account && federationBusy.has(actor.account)) {
@@ -783,6 +855,18 @@ async function handleCommand(id, line) {
   // The public watch layer is opt-in and read-only. The streamer presses Go
   // live in the AI panel; only that authenticated actor can publish events.
   // Spectator chat is handled on the /live socket, not as a game command.
+  if (verb === "demo-token") {
+    if (!GEMINI_KEY) return sendTo(id, `#demo-token ${JSON.stringify({ error: "The Gemini demo is not configured by the operator." })}\r\n`);
+    if (!actor?.key) return sendTo(id, `#demo-token ${JSON.stringify({ error: "Sign in with a Prism account first." })}\r\n`);
+    for (const [token, entry] of demoAccess) {
+      if (entry.prism === actor.key) demoAccess.delete(token);
+    }
+    const token = randomBytes(24).toString("base64url");
+    const expires = Date.now() + 30 * 60 * 1000;
+    demoAccess.set(token, { prism: actor.key, expires });
+    return sendTo(id, `#demo-token ${JSON.stringify({ token, expires, ...demoStatus() })}\r\n`);
+  }
+
   if (verb === "stream") {
     if (!actor?.key) return sendTo(id, "Sign in to start a stream.\r\n");
     const action = rest[0];
@@ -933,7 +1017,7 @@ async function handleCommand(id, line) {
     }
     const prismId = parsed.envelope?.body?.prism;
     const pinned = prismId ? identityStore.prisms[prismId] ?? null : null;
-    const verdict = await verifyPrismSession(parsed, { origin, pinned });
+    const verdict = await verifyPrismSession(parsed, { origin, pinned, revokedBefore: identityStore.revokedBefore ?? null, blocked: identityStore.blocked ?? [] });
     if (!verdict.ok) return sendTo(id, `Prism sign-in refused: ${verdict.reason}.\r\n`);
     if (!state.accounts?.[verdict.prism] && accountCapReached(Object.keys(state.accounts ?? {}).length, MAX_ACCOUNTS)) {
       return sendTo(id, "The world has reached its account cap; no new Prism account can be created right now.\r\n");
@@ -952,6 +1036,9 @@ async function handleCommand(id, line) {
     let owner = null;
     if (parsed.owner) {
       const ownerId = parsed.owner?.envelope?.body?.prism;
+      if (ownerId && (identityStore.blocked ?? []).includes(ownerId)) {
+        return sendTo(id, "Prism sign-in refused: this owner Prism id is blocked by the operator.\r\n");
+      }
       const ownerPinned = ownerId ? identityStore.prisms[ownerId] ?? null : null;
       const ownerVerdict = await verifyPersonaOwner(parsed.owner, { origin, persona: verdict.prism, pinned: ownerPinned });
       if (!ownerVerdict.ok) return sendTo(id, `Prism sign-in refused: ${ownerVerdict.reason}.\r\n`);
@@ -2232,7 +2319,7 @@ async function handle(id, line) {
   // The login handshake, the owner console and the stream telemetry are not
   // game commands. They have their own checks and must not consume the player's
   // global line budget: a busy AI publishes several stream events per turn.
-  if (!/^(stream|metric|session-key|rebind)\b/i.test(raw) && !allowCommand(id)) {
+  if (!/^(stream|metric|session-key|rebind|demo-token)\b/i.test(raw) && !allowCommand(id)) {
     return sendTo(id, "Slow down.\r\n");
   }
   return handleCommand(id, line);
@@ -2483,7 +2570,115 @@ const server = net.createServer((socket) => {
 
 // One origin for the page and the socket: no port juggling, no mixed content,
 // and a browser client that is the same client the harness is.
-const web = http.createServer((req, res) => {
+function readRequestBody(req, maxBytes = 120_000) {
+  return new Promise((resolve, reject) => {
+    let size = 0;
+    const chunks = [];
+    req.on("data", (chunk) => {
+      size += chunk.length;
+      if (size > maxBytes) {
+        reject(new Error("request too large"));
+        req.destroy();
+        return;
+      }
+      chunks.push(chunk);
+    });
+    req.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
+    req.on("error", reject);
+  });
+}
+
+const demoDay = () => new Date().toISOString().slice(0, 10);
+const demoMinute = () => Math.floor(Date.now() / 60_000);
+
+function demoQuota(prism) {
+  const day = demoDay();
+  const minute = demoMinute();
+  const current = demoUsage.get(prism) ?? { day, turns: 0, minute, minuteTurns: 0 };
+  if (current.day !== day) { current.day = day; current.turns = 0; }
+  if (current.minute !== minute) { current.minute = minute; current.minuteTurns = 0; }
+  return current;
+}
+
+function demoStatus() {
+  return {
+    configured: Boolean(GEMINI_KEY),
+    model: GEMINI_MODEL,
+    dailyLimit: GEMINI_DAILY_TURNS,
+    minuteLimit: GEMINI_MINUTE_TURNS,
+    note: "Operator-funded Gemini demo for Prism accounts. Free-tier data may be used by Google to improve products.",
+  };
+}
+
+async function handleGeminiDemo(req, res) {
+  const send = (status, payload) => {
+    res.writeHead(status, { "content-type": "application/json", "cache-control": "no-store" });
+    res.end(JSON.stringify(payload));
+  };
+  if (!GEMINI_KEY) return send(503, { error: "The Gemini demo is not configured by the operator." });
+  const token = String(req.headers["x-demo-token"] ?? "");
+  const access = demoAccess.get(token);
+  if (!access || access.expires < Date.now()) {
+    demoAccess.delete(token);
+    return send(401, { error: "The demo token is missing or expired. Reconnect the AI and try again." });
+  }
+  const usage = demoQuota(access.prism);
+  if (usage.turns >= GEMINI_DAILY_TURNS) return send(429, { error: `Daily demo limit reached (${GEMINI_DAILY_TURNS} turns). Try again tomorrow.` });
+  if (usage.minuteTurns >= GEMINI_MINUTE_TURNS) return send(429, { error: `Demo rate limit reached (${GEMINI_MINUTE_TURNS} turns/minute). Wait a moment.` });
+  if (demoGlobal.day !== demoDay()) demoGlobal = { day: demoDay(), turns: 0 };
+  if (demoGlobal.turns >= GEMINI_GLOBAL_DAILY) return send(429, { error: "The world-wide demo limit is reached for today." });
+
+  let body;
+  try {
+    body = JSON.parse(await readRequestBody(req));
+  } catch {
+    return send(400, { error: "The request is not valid JSON." });
+  }
+  const messages = Array.isArray(body.messages) ? body.messages.slice(-10).map((message) => ({
+    role: message.role === "assistant" ? "assistant" : message.role === "system" ? "system" : "user",
+    content: String(message.content ?? "").slice(0, 8000),
+  })) : [];
+  if (!messages.length) return send(400, { error: "The request has no messages." });
+  const requestedReasoning = String(req.headers["x-demo-reasoning"] ?? "none");
+  const reasoning = requestedReasoning === "low" ? "low" : (/gemini-2\.5/i.test(GEMINI_MODEL) ? "none" : "minimal");
+  const started = Date.now();
+  try {
+    const upstream = await fetch(`${GEMINI_BASE.replace(/\/+$/, "")}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${GEMINI_KEY}`,
+      },
+      body: JSON.stringify({
+        model: GEMINI_MODEL,
+        messages,
+        temperature: 0,
+        max_tokens: 160,
+        reasoning_effort: reasoning,
+        stream: false,
+      }),
+    });
+    const text = await upstream.text();
+    recordSpan("ai.demo", {
+      "ai.provider": "gemini-demo",
+      "ai.model": GEMINI_MODEL,
+      "ai.latency_ms": Date.now() - started,
+      "ai.status": upstream.status,
+      "prism.id": access.prism,
+    }, Date.now() - started);
+    if (!upstream.ok) {
+      return send(502, { error: `Gemini returned ${upstream.status}.`, detail: text.slice(0, 240) });
+    }
+    usage.turns += 1;
+    usage.minuteTurns += 1;
+    demoGlobal.turns += 1;
+    return send(200, JSON.parse(text));
+  } catch (error) {
+    return send(502, { error: `Gemini request failed: ${error.message}` });
+  }
+}
+
+const web = http.createServer(async (req, res) => {
   // Query strings are for cache-busting and links; routing uses the path only.
   const pathname = new URL(req.url, "http://localhost").pathname;
   if (pathname === "/federation/status" || pathname === "/federation/transfer") {
@@ -2513,6 +2708,15 @@ const web = http.createServer((req, res) => {
     }
     res.writeHead(405, { "content-type": "application/json" });
     res.end(JSON.stringify({ error: "method not allowed" }));
+    return;
+  }
+  if (pathname === "/api/demo" && req.method === "GET") {
+    res.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
+    res.end(JSON.stringify(demoStatus()));
+    return;
+  }
+  if (pathname === "/api/gemini/v1/chat/completions" && req.method === "POST") {
+    await handleGeminiDemo(req, res);
     return;
   }
   if (pathname === "/" || pathname === "/index.html") {

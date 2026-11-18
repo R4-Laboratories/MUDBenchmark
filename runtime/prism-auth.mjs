@@ -104,7 +104,7 @@ export async function verifyPersonaOwner(owner, { origin, persona, action = "pri
   return { ok: true, owner: body.prism, device: verdict.device, action };
 }
 
-export async function verifyPrismSession(session, { origin, now = Date.now(), pinned = null } = {}) {
+export async function verifyPrismSession(session, { origin, now = Date.now(), pinned = null, revokedBefore = null, blocked = [] } = {}) {
   const { app, envelope, records } = session ?? {};
   // The same eight inputs the proved Identity kernel decides on. The early
   // returns below give the player a precise reason; the final identityAdmits
@@ -128,7 +128,15 @@ export async function verifyPrismSession(session, { origin, now = Date.now(), pi
   if (typeof body.prism !== "string" || !/^sha256:[0-9a-f]{64}$/.test(body.prism)) {
     return { ok: false, reason: "the session names no Prism id" };
   }
+  if (Array.isArray(blocked) && blocked.includes(body.prism)) {
+    return { ok: false, reason: "this Prism id is blocked by the operator" };
+  }
   if (!Number.isSafeInteger(body.at)) return { ok: false, reason: "the session has no issue time" };
+  // A world reset is a revocation point: a session minted before it cannot be
+  // replayed to re-pin the identity after the operator removed it.
+  if (revokedBefore !== null && Number.isSafeInteger(revokedBefore) && body.at < revokedBefore) {
+    return { ok: false, reason: "the session predates the account reset" };
+  }
   const { sessionKey, expires } = body.payload ?? {};
   if (typeof sessionKey !== "string" || !/^[\w-]{87}$/.test(sessionKey)) {
     return { ok: false, reason: "the session key is malformed" };

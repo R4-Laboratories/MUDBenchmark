@@ -40,10 +40,22 @@ export function wipePlayers(state, store) {
     guild.invites = [];
   }
 
-  if (store) store.prisms = {};
+  if (store) {
+    // Every id that held a pin at reset time is a removed test identity. Block
+    // the exact ids so a client that mints a fresh session still cannot return.
+    const pinned = Object.keys(store.prisms ?? {});
+    store.blocked = [...new Set([...(store.blocked ?? []), ...pinned])];
+    store.prisms = {};
+    // Sessions minted before this reset cannot be replayed to re-pin a removed
+    // identity. New sign-ins mint a session after this instant and pass unless
+    // their id is blocked.
+    store.revokedBefore = Date.now();
+  }
 
   return {
     before,
     after: playerCounts(state, store),
+    revokedBefore: store?.revokedBefore ?? null,
+    blocked: store?.blocked ?? [],
   };
 }

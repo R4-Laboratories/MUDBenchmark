@@ -20,7 +20,15 @@ provider's endpoint.
 | OpenAI | `https://api.openai.com/v1` | required |
 | Anthropic (Claude) | `https://api.anthropic.com/v1` | required |
 | OpenAI-compatible (custom) | any `/v1` endpoint | optional |
+| Gemini demo (Prism only) | server proxy | none |
 | Prime Router (hypersphere, local) | `http://localhost:8000` | none |
+
+The Gemini demo appears only when the operator has configured
+`GEMINI_API_KEY` on the server. It is quota-limited per Prism account and
+never exposes the key to the browser. The **Reasoning** setting (Auto,
+Always, Never) controls whether the provider may spend thinking tokens on a
+turn; the default Auto is direct on routine turns and deliberate on first
+turns, director messages, low HP, repeats and every eighth turn.
 
 ### Watching what the AI sees and does
 

@@ -1,7 +1,9 @@
 # Model providers
 
-The AI panel talks to four protocols through one browser-side registry. The
-game server never sees a provider key.
+The AI panel talks to five protocols through one browser-side registry. The
+game server never sees a user's provider key. The Gemini demo is the exception:
+its operator key stays on the server and the browser receives only a
+short-lived demo token.
 
 ## What you can select
 
@@ -11,6 +13,7 @@ game server never sees a provider key.
 | OpenAI | OpenAI chat completions | required |
 | Anthropic (Claude) | Anthropic messages | required |
 | OpenAI-compatible (custom) | OpenAI chat completions | **optional** |
+| Gemini demo (Prism only) | server proxy to Gemini's OpenAI endpoint | none |
 | Prime Router | Prime Router `/api/chat` | none |
 
 The custom preset is the path for OpenRouter, Groq, Together, LiteLLM, a
@@ -48,39 +51,67 @@ The first time this version runs, a pre-v0.44 global key is moved only when the
 active preset is OpenAI or Anthropic and its origin matches the preset. It is
 never attached to an arbitrary custom endpoint.
 
-## Fast mode
+## Direct prompt, action injection and reasoning
 
-Fast mode is a checkbox in the AI setup:
+**Direct prompt** is the default fast path. Each turn injects:
 
-- history: 4 pairs instead of 8;
-- output budget: 200 tokens instead of 400;
-- temperature: 0;
-- deadline: 45 seconds instead of 120;
-- on the first two timeouts, send the safe command `look` and continue instead
-  of pausing the run. A third consecutive timeout pauses and asks for a
-  different model or provider.
+- the room text, exits, objects, NPCs and examine-able details;
+- the current self state, inventory names and active quest objectives;
+- a shortlist of legal actions for this room (including `say`, `tell`,
+  `global`, `talk`, socials and room actions).
 
-Every turn records provider, model, latency, tokens, thinking tokens, parse
-result and timeout/error in `ai.turn` telemetry. The public watch page shows
-`thinking`, then `live`/`timeout`; it never shows the thought.
+The shortlist is a hint, not a cage. The model may use any legal command from
+the compact `COMMANDS` line, including speech to players. It returns
+`THOUGHT`, `REPLY` and `COMMAND`; the parser accepts a missing `REPLY` and
+falls back to a known verb.
+
+**Reasoning** is a separate setting:
+
+| Setting | Behaviour |
+| --- | --- |
+| Auto (default) | Direct turns disable thinking; first turns, director messages, low HP, repeated commands and every eighth turn allow it. |
+| Always allow thinking | Provider thinking is enabled when the model supports it. |
+| Never reason | The provider thinking switch is forced off. |
+
+Ollama uses `think: true/false` only for models that support it and
+`keep_alive: -1`; a model like qwen2.5 receives `think:false` rather than a
+400. Gemini 2.5 uses `reasoning_effort: none` for direct turns and `low` for
+deliberate turns. OpenAI reasoning models use `reasoning_effort` and
+`max_completion_tokens`. Standard mode leaves provider defaults alone.
+
+Direct prompt also:
+
+- keeps two history pairs instead of eight;
+- budgets 120 output tokens instead of 400;
+- sets temperature 0;
+- times out at 25 seconds rather than 120, then sends `look` and continues;
+- records provider, model, latency, tokens, thinking tokens, parse result,
+  direct/deliberate, reasoning setting, prompt version and timeout/error in
+  `ai.turn` telemetry.
+
+The public watch page shows `thinking`, then `live`/`timeout`; it never shows
+the thought.
 
 ## Hosted/free defaults
 
-There is no silent free default. A real free tier is variable, rate-limited
-and has data terms that differ from a paid account; putting one behind an
-unlabelled default would be a promise the project cannot keep. The honest
-options are:
+There is no silent free default. The operator may enable the **Gemini demo**
+by setting `GEMINI_API_KEY` (and optionally `GEMINI_MODEL`,
+`GEMINI_BASE`, `GEMINI_DAILY_TURNS`, `GEMINI_MINUTE_TURNS`,
+`GEMINI_GLOBAL_DAILY`) on the server. When configured:
 
-1. **Use your own key** — the default. Presets and the custom form are enough.
-2. **Use a local model** — Ollama/LM Studio, with the CORS and local-network
-   permission caveats in `docs/STREAM.md`.
-3. **Try a demo** — a future operator-funded, fixed-model, quota-limited proxy
-   with a disclosure before the first turn. It is not built yet. If it ships,
-   the provider URL is fixed by the server, never supplied by the request.
+1. The browser shows **Gemini demo (Prism only)**. It never sees the key.
+2. An authenticated game socket asks for a short-lived demo token.
+3. The proxy checks the token and per-Prism daily/minute limits, then calls
+   Gemini with `reasoning_effort: none` (or `low` on deliberate turns).
+4. `/api/demo` reports only `configured`, model and limits.
 
-Free-tier figures (Gemini, OpenRouter, Groq, Cloudflare Workers AI) were
-reviewed on 2026-11-17 and are inputs to a future demo decision, not a current
-claim. Re-check them before publishing a “free” label.
+Google's free tier is real but variable: limits are per project (RPM, TPM,
+RPD), reset at midnight Pacific, and free-tier data may be used to improve
+products. The UI discloses that before the run. The demo is deliberately
+opt-in; a local model remains the no-cost path.
+
+Other options are unchanged: user-supplied keys, a local Ollama/LM Studio
+model, or a custom OpenAI-compatible endpoint.
 
 ## Errors
 
@@ -91,5 +122,8 @@ A failed test or turn names the layer that failed:
 - `429` — rate limit; retry later or switch provider;
 - `TypeError: Failed to fetch` — usually CORS, a wrong URL, an offline host, or
   a local-network permission, not necessarily a bad key;
-- timeout — the model did not answer inside the deadline; fast mode falls back
-  to `look` twice, then pauses.
+- timeout — the model did not answer inside the deadline; direct mode falls
+  back to `look` twice, then pauses;
+- `503` on the Gemini demo — the operator has not configured a key;
+- `429` on the Gemini demo — the per-account or world-wide demo quota is
+  reached; wait for the minute/day reset or use another provider.
