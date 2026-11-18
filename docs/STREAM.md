@@ -1,6 +1,12 @@
 # Watching a run
 
-The live AI panel has four tabs, and the human and the AI can be online at once.
+The interface is three panels: the game stage, the AI conversation/Studio, and
+the Model Control rail. The model rail is first, so provider, model, fast mode
+and Start are visible before the run; once live, the conversation and Mind
+share the center. Telemetry opens from the header as a focus drawer. The page
+stacks to one column below 980px.
+
+The live AI Studio has four tabs, and the human and the AI can be online at once.
 
 | Tab | Shows |
 | --- | --- |

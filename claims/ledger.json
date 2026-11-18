@@ -501,6 +501,12 @@
       "level": "some-true",
       "statement": "Production v0.60.0 serves 60 rooms, 26 quests, 29 mobiles and 54 objects. The magician-tier Choir Bell and Reliquary Lens guild quests and the adept\u2192magician rank transition are live. Accounts 105 / characters 106 / pinned 8. All prior systems remain: nine action verbs, magic/scrolls, gear, watch, provider fast mode, account cap/audit, retention, corruption/restore drills and production origin tests.",
       "authority": "wick production v0.60.0 2026-11-18; /health; release 44337339197; gate 44335718319"
+    },
+    {
+      "id": "MB-78",
+      "level": "build",
+      "statement": "The web shell is a three-panel app: the game stage, a dedicated conversation/Studio center panel, and a right rail whose first card is Model Control. The model card is compact enough to show provider, base URL, model, fast mode and Start together; Start/Forget hide while a run is live. Telemetry opens as a fixed focus drawer from the header. The layout stacks to one column below 980px. The gate checks the required controls, the conversation-before-rail order, and the telemetry control; headless desktop and 900px regression showed no JS errors.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

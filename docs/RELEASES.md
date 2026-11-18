@@ -147,6 +147,9 @@ Rehearsed 2026-11-16:
   the read-only audit without deleting them (MB-70);
 - v0.60.0 (magician tier) adds The Choir Bell and The Reliquary Lens guild
   quests and the adept→magician rank transition; 26 quests (MB-76);
+- v0.61.0 (interface) rebuilds the web shell around a prominent Model Control
+  rail, a conversation/Studio center, and a telemetry focus drawer, with a
+  one-column mobile layout (MB-78);
 - a SHA with no green Gate run (`a78f57e`) refused before the tag was created;
 - the timer pulled v0.34.0; v0.33.0 was deployed and verified (101 accounts,
   101 characters), then v0.34.0 restored;

@@ -7,203 +7,284 @@
 <style>
   :root {
     color-scheme: dark;
-    --bg: #0d1117; --panel: #11161d; --line: #21262d; --text: #c9d1d9;
-    --muted: #8b949e; --faint: #484f58; --accent: #79c0ff; --good: #7ee787;
+    --bg: #06080c; --bg-2: #0a0f16; --panel: #0d141d; --panel-2: #111a25;
+    --line: #223144; --line-2: #2e4158; --text: #e8f0fa; --muted: #91a4ba;
+    --faint: #5c6e84; --accent: #5eead4; --accent-2: #7dd3fc; --blue: #60a5fa;
+    --good: #86efac; --warn: #fbbf24; --danger: #fb7185;
+    --radius: 16px; --radius-sm: 10px; --shadow: 0 24px 70px rgba(0,0,0,.38);
+    --log-size: 15px;
   }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
+  html, body { height: 100%; }
   body {
-    margin: 0; min-height: 100vh; background: var(--bg); color: var(--text);
-    font: 16px/1.7 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    margin: 0; min-height: 100vh; color: var(--text);
+    background:
+      radial-gradient(1200px 700px at 18% -10%, rgba(94,234,212,.10), transparent 60%),
+      radial-gradient(900px 600px at 100% 0%, rgba(96,165,250,.09), transparent 55%),
+      linear-gradient(180deg, #06080c, #080c12 60%, #06080c);
+    font: 14px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    letter-spacing: .01em;
   }
   header {
-    display: flex; align-items: baseline; gap: 12px; padding: 10px 16px;
-    border-bottom: 1px solid var(--line); color: var(--muted);
+    position: sticky; top: 0; z-index: 30; display: flex; align-items: center;
+    gap: 22px; padding: 12px 22px; border-bottom: 1px solid rgba(46,65,88,.55);
+    background: rgba(6,8,12,.78); backdrop-filter: blur(18px);
   }
-  header strong { color: var(--text); font-weight: 600; letter-spacing: .06em; }
-  header .spacer { flex: 1; }
-  header button {
-    background: transparent; color: var(--muted); border: 1px solid var(--line);
-    font: inherit; padding: 2px 8px; cursor: pointer;
+  .brand { display: flex; align-items: center; gap: 11px; min-width: 230px; }
+  .brand-mark {
+    width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #031411;
+    font-weight: 900; font-size: 18px; box-shadow: 0 0 30px rgba(94,234,212,.25);
   }
-  header button:hover { color: var(--text); border-color: var(--muted); }
-  #modes { display: flex; border: 1px solid var(--line); align-self: center; }
-  #modes button { border: 0; border-right: 1px solid var(--line); padding: 3px 10px; }
-  #modes button:last-child { border-right: 0; }
-  #modes button.active { background: var(--accent); color: #0d1117; }
-  #state { color: var(--muted); }
-  #state.live { color: var(--good); }
+  .brand-copy { display: flex; flex-direction: column; line-height: 1.15; }
+  .brand-copy strong { font-size: 15px; letter-spacing: .14em; text-transform: uppercase; }
+  #tagline { font-size: 11px; color: var(--muted); letter-spacing: .08em; }
+  .header-center { display: flex; align-items: center; justify-content: center; gap: 14px; flex: 1; }
+  #modes { display: flex; padding: 4px; border: 1px solid var(--line); border-radius: 999px; background: rgba(13,20,29,.8); }
+  #modes button {
+    border: 0; background: transparent; color: var(--muted); padding: 7px 16px;
+    border-radius: 999px; font: inherit; font-size: 12px; cursor: pointer; letter-spacing: .06em;
+  }
+  #modes button:hover { color: var(--text); }
+  #modes button.active {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: #04110f; font-weight: 800; box-shadow: 0 4px 18px rgba(94,234,212,.25);
+  }
+  #state {
+    font-size: 12px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px;
+    padding: 6px 12px; background: rgba(13,20,29,.6); max-width: 300px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  #state.live { color: var(--accent); border-color: rgba(94,234,212,.4); box-shadow: 0 0 18px rgba(94,234,212,.12); }
+  .header-actions { display: flex; gap: 6px; align-items: center; }
+  .header-actions button {
+    background: rgba(17,26,37,.7); color: var(--muted); border: 1px solid var(--line);
+    border-radius: 9px; padding: 7px 11px; font: inherit; font-size: 12px; cursor: pointer;
+  }
+  .header-actions button:hover { color: var(--text); border-color: var(--line-2); }
   main {
-    display: grid; grid-template-columns: minmax(0, 1fr) 360px;
-    height: calc(100vh - 47px);
+    max-width: 1920px; margin: 0 auto; padding: 18px; display: grid;
+    grid-template-columns: minmax(0,1fr) 390px; gap: 16px;
+    height: calc(100vh - 63px); min-height: 0;
   }
-  body.ai-mode main { grid-template-columns: minmax(0, 1fr) 400px; }
-  #terminal { display: flex; flex-direction: column; min-width: 0; min-height: 0; border-right: 1px solid var(--line); position: relative; }
+  body.ai-mode.ai-running main {
+    grid-template-columns: minmax(0,.9fr) minmax(340px,.75fr) 400px;
+  }
+  #terminal {
+    position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 0;
+    background: linear-gradient(180deg, rgba(13,20,29,.97), rgba(8,12,18,.99));
+    border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden;
+  }
   #livebar {
-    display: none; align-items: center; gap: 10px; padding: 7px 18px;
-    border-bottom: 1px solid var(--line); background: #0b0f14; font-size: 13px;
+    display: none; align-items: center; gap: 10px; padding: 10px 18px;
+    border-bottom: 1px solid var(--line); font-size: 12px;
+    background: linear-gradient(90deg, rgba(94,234,212,.07), transparent 45%);
   }
   body.ai-mode #livebar { display: flex; }
   #livebar .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); }
-  #livebar.live .dot { background: #ff5c5c; box-shadow: 0 0 8px #ff5c5c; animation: pulse 1.6s infinite; }
+  #livebar.live .dot { background: #fb7185; box-shadow: 0 0 10px #fb7185; animation: pulse 1.6s infinite; }
   #livebar .spacer { flex: 1; }
-  #live-thought { max-width: 52ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+  #live-thought { max-width: 48ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
   @keyframes pulse { 50% { opacity: .35; } }
   #log {
-    flex: 1; min-height: 0; overflow-y: auto; padding: 22px 26px;
+    flex: 1; min-height: 0; overflow-y: auto; padding: 24px 28px;
     white-space: pre-wrap; overflow-wrap: anywhere;
-    font-size: var(--log-size, 16px); line-height: 1.7;
-    max-width: 110ch; width: 100%; margin: 0 auto;
+    font: var(--log-size, 15px)/1.7 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   }
   #latest {
-    position: absolute; right: 18px; bottom: 64px; display: none;
-    background: #1f6feb; color: #fff; border: 0; padding: 7px 12px;
-    font: inherit; cursor: pointer; box-shadow: 0 4px 16px #0008;
+    position: absolute; right: 18px; bottom: 70px; display: none;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #04110f;
+    border: 0; border-radius: 999px; padding: 8px 14px; font: inherit; font-weight: 800;
+    cursor: pointer; box-shadow: 0 8px 24px #0008;
   }
-  #latest:hover { background: #388bfd; }
   #log .line { min-height: 1.7em; }
   #log .me { color: var(--accent); }
   #log .sys { color: var(--muted); }
-  #log .err { color: #ff7b72; }
+  #log .err { color: var(--danger); }
   #log .ai-cmd { color: var(--accent); opacity: .9; }
-  #log .room {
-    color: var(--accent); font-weight: 600; letter-spacing: .04em;
-    margin-top: 24px; padding-top: 12px; border-top: 1px solid var(--line);
-  }
+  #log .room { color: var(--accent); font-weight: 700; letter-spacing: .04em; margin-top: 24px; padding-top: 12px; border-top: 1px solid var(--line); }
   #log .room:first-child { margin-top: 0; border-top: 0; }
   #log .desc { color: var(--text); margin-top: 2px; }
   #log .scene { color: #a9b6c5; font-style: italic; margin-top: 4px; }
-  #log .label {
-    color: var(--muted); margin-top: 12px; font-size: .78em;
-    letter-spacing: .16em; text-transform: uppercase;
-  }
+  #log .label { color: var(--muted); margin-top: 12px; font-size: .78em; letter-spacing: .16em; text-transform: uppercase; }
   #log .item { padding-left: 18px; color: #d7dee8; }
   #log .exits { color: var(--muted); margin-top: 10px; }
   #log .event { color: #b8c4d2; }
-  #entry { display: flex; border-top: 1px solid var(--line); }
+  #entry { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--line); background: rgba(6,8,12,.35); }
   body.ai-mode #entry { display: none; }
   #entry input {
-    flex: 1; background: transparent; border: 0; outline: 0;
-    padding: 14px 18px; color: var(--text); font: inherit; font-size: max(16px, var(--log-size, 16px));
+    flex: 1; min-width: 0; background: #080d13; border: 1px solid var(--line);
+    border-radius: 11px; outline: 0; padding: 12px 14px; color: var(--text);
+    font: max(16px, var(--log-size, 15px))/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   }
   #entry input::placeholder { color: var(--faint); }
   #entry input:disabled { opacity: .45; }
   #entry button, .panel button, .panel a.button {
-    background: #1f6feb; color: #fff; border: 0; padding: 8px 12px;
-    font: inherit; cursor: pointer; text-decoration: none; display: inline-block;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #04110f;
+    border: 0; border-radius: 9px; padding: 9px 13px; font: inherit; font-weight: 800;
+    font-size: 12px; cursor: pointer; text-decoration: none; display: inline-block;
   }
-  #entry button { margin: 6px; padding: 8px 16px; }
-  #entry button:hover, .panel button:hover, .panel a.button:hover { background: #388bfd; }
-  aside { overflow-y: auto; padding: 14px; background: var(--panel); }
-  body.ai-mode:not(.ai-running) aside { overflow-y: auto; }
-  body.ai-mode.ai-running aside { overflow: hidden; display: flex; flex-direction: column; }
-  .panel { border: 1px solid var(--line); padding: 12px; margin-bottom: 14px; }
-  .panel h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); margin: 0 0 10px; }
-  .panel p { margin: 0 0 10px; color: var(--muted); font-size: 12px; }
+  #entry button { padding: 10px 18px; }
+  #entry button:hover, .panel button:hover, .panel a.button:hover { filter: brightness(1.08); }
+  aside { display: flex; flex-direction: column; gap: 14px; overflow-y: auto; min-height: 0; padding-right: 2px; }
+  .panel {
+    flex: 0 0 auto;
+    background: linear-gradient(180deg, rgba(17,26,37,.94), rgba(10,15,22,.97));
+    border: 1px solid var(--line); border-radius: var(--radius); padding: 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.18);
+  }
+  .panel h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .16em; color: var(--muted); margin: 0 0 12px; }
+  .panel p { margin: 0 0 10px; color: var(--muted); font-size: 12px; line-height: 1.55; }
   .panel textarea {
-    background: #0b0f14; color: var(--text); border: 1px solid var(--line);
-    padding: 8px; font: inherit; font-size: 12px; width: 100%; min-height: 56px;
-    resize: vertical;
+    background: #080d13; color: var(--text); border: 1px solid var(--line);
+    border-radius: 9px; padding: 9px; font: inherit; font-size: 12px; width: 100%;
+    min-height: 56px; resize: vertical;
   }
-  #link-qr { display: block; margin: 8px 0; width: 180px; height: 180px; image-rendering: pixelated; background: #fff; }
-  #devices-list .device {
-    display: flex; align-items: center; justify-content: space-between; gap: 8px;
-    padding: 4px 0; border-bottom: 1px solid var(--line); font-size: 12px;
-  }
-  #devices-list .device button { padding: 2px 8px; font-size: 11px; }
-  .field { display: grid; gap: 6px; margin-bottom: 8px; }
-  .field label { color: var(--muted); font-size: 12px; }
+  #link-qr { display: block; margin: 8px 0; width: 180px; height: 180px; image-rendering: pixelated; background: #fff; border-radius: 10px; }
+  #devices-list .device { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 12px; }
+  #devices-list .device button { padding: 3px 8px; font-size: 11px; }
+  .field { display: grid; gap: 7px; margin-bottom: 10px; }
+  .field label { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .12em; }
   .field input, .field select, #director-form input {
-    background: #0b0f14; color: var(--text); border: 1px solid var(--line);
-    padding: 8px; font: inherit; min-width: 0;
+    background: #080d13; color: var(--text); border: 1px solid var(--line);
+    border-radius: 9px; padding: 10px; font: inherit; font-size: 13px; min-width: 0; outline: none;
   }
+  .field input:focus, .field select:focus, #director-form input:focus, #entry input:focus { border-color: rgba(94,234,212,.65); box-shadow: 0 0 0 3px rgba(94,234,212,.08); }
   .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
   .row button { flex: 1; }
   .row.grow input { flex: 1; }
   .muted { color: var(--muted); }
   .small { font-size: 12px; }
-  .err { color: #ff7b72; }
+  .err { color: var(--danger); }
   pre {
-    margin: 8px 0 0; padding: 10px; background: #0b0f14; border: 1px solid var(--line);
-    white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; color: var(--muted);
+    margin: 8px 0 0; padding: 11px; background: #070b10; border: 1px solid var(--line);
+    border-radius: 9px; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 11px;
+    color: #aab8c8; line-height: 1.55;
   }
   #signed { display: none; }
-  #ai-setup { display: none; }
-  body.ai-mode #ai-setup { display: block; }
-  body.ai-mode.ai-running #ai-setup { display: none; }
+  #ai-setup { display: block; position: relative; overflow: visible; border-color: rgba(94,234,212,.32); box-shadow: 0 0 0 1px rgba(94,234,212,.06), var(--shadow); }
+  #ai-setup::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 2px; background: linear-gradient(90deg, var(--accent), var(--accent-2), transparent); }
+  #ai-setup h2 { color: var(--accent); font-size: 13px; }
+  #ai-setup > p:first-of-type { color: var(--muted); font-size: 11px; }
+  #ai-setup .field { margin-bottom: 7px; gap: 4px; }
+  #ai-setup .field > p:not(#ai-identity) { display: none; }
+  #ai-setup .field input, #ai-setup .field select { padding: 8px 9px; }
+  #ai-setup .row { margin-top: 6px; }
+  #ai-setup #ai-identity { font-size: 10px; line-height: 1.45; }
+  body.ai-running #ai-start, body.ai-running #ai-forget { display: none; }
   body.ai-mode #account, body.ai-mode #characters, body.ai-mode #signed, body.ai-mode #glance { display: none; }
   #character-list { display: flex; flex-direction: column; gap: 6px; margin: 8px 0; }
   #character-list .row { margin: 0; }
   #character-list button { text-align: left; }
-  #model-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
-  .model-block h3 { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 10px 0 0; }
-  .model-block pre { max-height: 240px; overflow: auto; }
-  #ai-live { display: none; }
-  body.ai-mode.ai-running #ai-live {
-    display: flex; flex-direction: column; flex: 1; min-height: 0;
-    border: 1px solid var(--line); padding: 12px; margin-bottom: 0;
+  #ai-live {
+    display: none; flex-direction: column; min-width: 0; min-height: 0;
+    background: linear-gradient(180deg, rgba(13,20,29,.98), rgba(7,11,16,.99));
+    border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden;
   }
-  #ai-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+  body.ai-mode.ai-running #ai-live { display: flex; }
+  #ai-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 16px 18px; border-bottom: 1px solid var(--line);
+    background: linear-gradient(180deg, rgba(17,26,37,.94), rgba(13,20,29,.9));
+  }
+  #ai-head strong { font-size: 18px; letter-spacing: .02em; }
   #ai-head .row { margin: 0; flex: 0 1 auto; }
-  #ai-head button { padding: 4px 8px; font-size: 12px; }
-  #ai-sub { display: block; font-size: 11px; }
+  #ai-head button { padding: 6px 10px; font-size: 11px; }
+  #ai-sub { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
+  #ai-live > p { padding: 10px 18px 0; margin: 0 !important; font-size: 11px; }
+  #stream-tools { margin: 0; padding: 10px 18px; border-bottom: 1px solid var(--line); background: rgba(6,8,12,.25); }
+  #stream-tools button { background: rgba(17,26,37,.8); color: var(--muted); border: 1px solid var(--line); font-weight: 600; }
   #chat {
     flex: 1; min-height: 120px; overflow-y: auto; display: flex; flex-direction: column;
-    gap: 8px; padding-right: 4px;
+    gap: 10px; padding: 18px; background: radial-gradient(600px 300px at 50% 0%, rgba(94,234,212,.04), transparent 70%);
   }
-  .msg { border: 1px solid var(--line); background: #0b0f14; padding: 8px 10px; font-size: 13px; line-height: 1.5; }
-  .msg.you { border-color: #1f6feb88; }
-  .msg.ai { border-color: #7ee78766; }
-  .msg.viewer { border-color: #93c5fd66; }
-  .msg.system { border-color: #f0883e66; color: var(--muted); }
-  .msg .who { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
-  #director-form { display: flex; gap: 6px; margin-top: 8px; }
+  .msg {
+    max-width: 86%; border: 1px solid var(--line); background: rgba(17,26,37,.8);
+    border-radius: 13px; padding: 10px 12px; font-size: 13px; line-height: 1.55;
+    box-shadow: 0 6px 20px rgba(0,0,0,.14);
+  }
+  .msg.you { margin-left: auto; border-color: rgba(94,234,212,.45); background: linear-gradient(135deg, rgba(94,234,212,.13), rgba(125,211,252,.08)); }
+  .msg.ai { margin-right: auto; border-color: rgba(134,239,172,.35); }
+  .msg.viewer { margin-right: auto; border-color: rgba(96,165,250,.35); background: rgba(96,165,250,.06); }
+  .msg.system { align-self: center; max-width: 92%; border-color: rgba(251,191,36,.25); background: rgba(251,191,36,.04); color: var(--muted); }
+  .msg .who { font-size: 9px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; }
+  #director-form { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--line); background: rgba(6,8,12,.35); }
   #director-form input { flex: 1; }
-  #director-form button { background: #1f6feb; color: #fff; border: 0; padding: 8px 12px; font: inherit; cursor: pointer; }
+  #director-form button { flex: 0 0 auto; }
   #observe {
-    height: 42%; min-height: 170px; display: flex; flex-direction: column;
-    border-top: 1px solid var(--line); margin-top: 10px; padding-top: 8px;
+    height: 34%; min-height: 170px; display: flex; flex-direction: column;
+    border-top: 1px solid var(--line); padding: 12px 16px 14px; background: rgba(6,8,12,.38);
   }
-  #tabs { display: flex; gap: 4px; margin-bottom: 6px; }
-  #tabs .tab { flex: 1; background: transparent; color: var(--muted); border: 1px solid var(--line); padding: 4px; cursor: pointer; font: inherit; }
-  #tabs .tab.active { color: var(--text); border-color: var(--accent); }
+  #tabs { display: flex; gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: 10px; background: rgba(8,13,19,.8); margin-bottom: 8px; }
+  #tabs .tab {
+    flex: 1; border: 0; background: transparent; color: var(--muted); padding: 7px;
+    border-radius: 7px; cursor: pointer; font: inherit; font-size: 10px;
+    text-transform: uppercase; letter-spacing: .12em;
+  }
+  #tabs .tab:hover { color: var(--text); }
+  #tabs .tab.active { background: var(--panel-2); color: var(--accent); box-shadow: inset 0 0 0 1px rgba(94,234,212,.2); }
   .pane { flex: 1; min-height: 0; overflow-y: auto; }
   #mind { display: flex; flex-direction: column; gap: 8px; }
-  .thought { border-left: 2px solid var(--accent); padding: 6px 10px; background: #0b0f14; font-size: 13px; line-height: 1.5; }
-  .thought .meta { color: var(--muted); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
-  .thought .meta .highlight { margin-left: auto; background: transparent; color: var(--muted); border: 1px solid var(--line); padding: 0 6px; font-size: 13px; cursor: pointer; text-transform: none; letter-spacing: 0; }
-  .thought .meta .highlight:disabled { color: #d29922; cursor: default; }
-  .highlight-row { border-left: 2px solid #d29922; padding: 5px 8px; margin: 6px 0; font-size: 12px; }
-  #bench-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
+  .thought { border-left: 2px solid var(--accent); border-radius: 0 10px 10px 0; padding: 8px 10px; background: rgba(8,13,19,.8); font-size: 12px; line-height: 1.55; }
+  .thought .meta { color: var(--muted); font-size: 9px; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+  .thought .meta .highlight { margin-left: auto; background: transparent; color: var(--muted); border: 1px solid var(--line); border-radius: 6px; padding: 0 6px; font-size: 13px; cursor: pointer; text-transform: none; letter-spacing: 0; }
+  .thought .meta .highlight:disabled { color: var(--warn); cursor: default; }
+  .highlight-row { border-left: 2px solid var(--warn); padding: 6px 9px; margin: 6px 0; font-size: 12px; background: rgba(251,191,36,.04); }
+  #bench-stats, #run-stats, #model-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
   #bench-kinds { max-height: 160px; }
-  #run-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
-  .stat { border: 1px solid var(--line); padding: 6px 8px; font-size: 11px; color: var(--muted); }
-  .stat b { display: block; color: var(--text); font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
-  #ai-settings { font-size: 12px; color: var(--muted); margin-top: 6px; overflow-wrap: anywhere; }
-  @media (max-width: 900px) {
-    main { grid-template-columns: 1fr; height: auto; }
-    body.ai-mode main { grid-template-columns: 1fr; }
-    #terminal { height: 62vh; border-right: 0; border-bottom: 1px solid var(--line); }
-    body.ai-mode.ai-running #terminal { height: 55vh; }
-    body.ai-mode.ai-running aside { height: 78vh; }
-    aside { max-height: none; }
+  .stat { border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; font-size: 10px; color: var(--muted); background: rgba(8,13,19,.65); }
+  .stat b { display: block; color: var(--text); font-size: 14px; font-weight: 700; overflow-wrap: anywhere; margin-top: 2px; }
+  .model-block h3 { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 10px 0 0; }
+  .model-block pre { max-height: 240px; overflow: auto; }
+  #ai-settings { font-size: 11px; color: var(--muted); margin-top: 6px; overflow-wrap: anywhere; }
+  body.telemetry-focus::after { content: ""; position: fixed; inset: 0; background: rgba(2,4,7,.66); backdrop-filter: blur(4px); z-index: 40; }
+  body.telemetry-focus #observe {
+    position: fixed; z-index: 50; right: 24px; bottom: 24px;
+    width: min(780px, calc(100vw - 48px)); height: min(68vh, 680px);
+    background: linear-gradient(180deg, rgba(17,26,37,.99), rgba(8,12,18,.99));
+    border: 1px solid var(--line-2); border-radius: 18px; box-shadow: var(--shadow); padding: 18px;
   }
-</style>
+  body.telemetry-focus #tabs .tab.active { color: var(--accent); }
+  @media (max-width: 1280px) {
+    body.ai-mode.ai-running main { grid-template-columns: minmax(0,1fr) 390px; grid-template-rows: minmax(0,1fr) minmax(0,1fr); }
+    body.ai-mode.ai-running #ai-live { grid-column: 1; grid-row: 2; }
+    body.ai-mode.ai-running aside { grid-column: 2; grid-row: 1 / span 2; }
+  }
+  @media (max-width: 980px) {
+    main, body.ai-mode.ai-running main { grid-template-columns: 1fr; grid-template-rows: none; height: auto; }
+    #terminal { height: 62vh; }
+    body.ai-mode.ai-running #terminal { height: 52vh; }
+    body.ai-mode.ai-running #ai-live { grid-column: auto; grid-row: auto; height: 72vh; }
+    body.ai-mode.ai-running aside { grid-column: auto; grid-row: auto; max-height: none; }
+    header { gap: 10px; flex-wrap: wrap; }
+    .brand { min-width: 0; }
+    .header-center { order: 3; width: 100%; justify-content: space-between; }
+  }
+
+  </style>
 </head>
 <body>
   <header>
-    <strong>MUDBench</strong>
-    <span class="muted" id="tagline">one world · people and agents</span>
-    <span class="spacer"></span>
-    <div id="modes" role="tablist" aria-label="Mode">
-      <button type="button" id="mode-play" class="mode active">Play</button>
-      <button type="button" id="mode-ai" class="mode">Watch AI</button>
+    <div class="brand">
+      <span class="brand-mark">M</span>
+      <div class="brand-copy">
+        <strong>MUDBench</strong>
+        <span id="tagline">one world · people and agents</span>
+      </div>
     </div>
-    <span class="spacer"></span>
-    <span id="state">connecting…</span>
-    <span class="spacer"></span>
-    <button type="button" id="font-down" title="Smaller text">A−</button>
-    <button type="button" id="font-up" title="Larger text">A+</button>
+    <div class="header-center">
+      <div id="modes" role="tablist" aria-label="Mode">
+        <button type="button" id="mode-play" class="mode active">Play</button>
+        <button type="button" id="mode-ai" class="mode">Watch AI</button>
+      </div>
+      <span id="state">connecting…</span>
+    </div>
+    <div class="header-actions">
+      <button type="button" id="telemetry-open" title="Open telemetry">Telemetry</button>
+      <button type="button" id="font-down" title="Smaller text">A−</button>
+      <button type="button" id="font-up" title="Larger text">A+</button>
+    </div>
   </header>
   <main>
     <section id="terminal">
@@ -222,7 +303,116 @@
         <button type="submit">Send</button>
       </form>
     </section>
+      <section class="panel" id="ai-live">
+        <div id="ai-head">
+          <div>
+            <strong id="ai-title">scout</strong>
+            <span id="ai-sub" class="muted">ready</span>
+          </div>
+          <div class="row">
+            <button type="button" id="ai-pause">Pause</button>
+            <button type="button" id="ai-step">Step</button>
+            <button type="button" id="ai-stream">Go live</button>
+            <button type="button" id="ai-stop">Stop</button>
+          </div>
+        </div>
+        <p class="small muted" style="margin:0 0 8px"><a href="/watch" target="_blank" rel="noopener" style="color: var(--accent)">Public watch page</a> — press Go live to publish this run. Audience chat reaches the AI as director input.</p>
+        <div class="row" id="stream-tools">
+          <button type="button" id="stream-poll">Start poll</button>
+          <button type="button" id="stream-poll-close">Close poll</button>
+          <button type="button" id="stream-chat-toggle">Chat off</button>
+        </div>
+        <div id="chat" aria-live="polite"></div>
+        <form id="director-form">
+          <input id="director-input" autocomplete="off" placeholder="Steer the AI…" aria-label="Director message">
+          <button type="submit">Send</button>
+        </form>
+        <div id="observe">
+          <div id="tabs" role="tablist">
+            <button type="button" class="tab active" data-tab="mind">Mind</button>
+            <button type="button" class="tab" data-tab="run">Run</button>
+            <button type="button" class="tab" data-tab="model">Model</button>
+            <button type="button" class="tab" data-tab="bench">Bench</button>
+          </div>
+          <div id="mind-pane" class="pane"><div id="mind"></div></div>
+          <div id="model-pane" class="pane" hidden>
+            <div id="model-stats"></div>
+            <div class="model-block"><h3>Sent to the model</h3><pre id="model-prompt"></pre></div>
+            <div class="model-block"><h3>Context</h3><pre id="model-context"></pre></div>
+            <div class="model-block"><h3>Model returned</h3><pre id="model-reply"></pre></div>
+            <div class="model-block"><h3>Sent to the game</h3><pre id="model-command"></pre></div>
+          </div>
+          <div id="bench-pane" class="pane" hidden>
+            <div id="bench-stats"></div>
+            <div class="row"><button type="button" id="span-refresh">Refresh server spans</button></div>
+            <p class="small muted">Aggregates only; the Model tab shows the AI's commands. A highlight is in range when its tick is inside the server's tick range.</p>
+            <div id="bench-recent"></div>
+            <pre id="bench-kinds"></pre>
+          </div>
+          <div id="run-pane" class="pane" hidden>
+            <div id="run-stats"></div>
+            <div id="highlights"></div>
+            <div class="row">
+              <button type="button" id="ai-transcript">Download transcript</button>
+              <button type="button" id="ai-copy">Copy JSON</button>
+            </div>
+            <details class="small muted"><summary>Brain settings</summary><div id="ai-settings"></div></details>
+          </div>
+        </div>
+      </section>
     <aside>
+      <section class="panel" id="ai-setup">
+        <h2>Model control</h2>
+        <p>Pick a provider, model and character. The AI plays through this page under the same 250&nbsp;ms limit; your provider key stays in this browser.</p>
+        <div class="field">
+          <label for="ai-provider">Brain</label>
+          <select id="ai-provider"></select>
+        </div>
+        <div class="field">
+          <label for="ai-base">Base URL</label>
+          <input id="ai-base" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="ai-model">Model</label>
+          <div class="row grow">
+            <input id="ai-model" list="ai-models" autocomplete="off">
+            <button type="button" id="ai-find">Find</button>
+          </div>
+          <datalist id="ai-models"></datalist>
+          <p class="small muted" id="ai-local">Local providers need no key. Start Ollama and click Find.</p>
+        </div>
+        <div class="field">
+          <label><input type="checkbox" id="ai-fast"> Fast mode</label>
+          <p class="small muted">Shorter history, fewer tokens, a 45-second deadline, and a safe fallback to <code>look</code> instead of pausing.</p>
+        </div>
+        <div class="row">
+          <button type="button" id="ai-start">Start AI run</button>
+          <button type="button" id="ai-forget">Forget key</button>
+        </div>
+        <div class="field" id="ai-key-field">
+          <label for="ai-key">API key <span class="muted">(this browser only)</span></label>
+          <input id="ai-key" type="password" autocomplete="off" placeholder="sk-…">
+        </div>
+        <div class="field">
+          <label for="ai-character">Character name</label>
+          <input id="ai-character" autocomplete="off" maxlength="24" placeholder="scout">
+          <p class="small muted">The AI signs in with its Prism id, then plays this character. If it does not exist, the AI creates it. Another tab or a person can take the same character over.</p>
+        </div>
+        <div class="field">
+          <label>AI Prism identity</label>
+          <p class="small muted" id="ai-identity">The Prism id is the account; the character name is the in-game name.</p>
+          <div class="row"><button type="button" id="ai-reset">Reset identity</button></div>
+        </div>
+        <p class="small muted" id="ai-hint"></p>
+        <details class="small muted">
+          <summary>How this works</summary>
+          <p>1. Pick a brain. Ollama is free and local; OpenAI and Anthropic need a key.</p>
+          <p>2. When you are signed in, the AI is a persona of your Prism id; your device signs the owner action. If you are not signed in, it uses its own account.</p>
+          <p>3. It sees the same room text you do, types one command per turn, and waits for the server like any player.</p>
+          <p>4. Send direction in the Director chat. The AI replies there and its private reasoning appears in Mind.</p>
+          <p>The game server never sees the provider key.</p>
+        </details>
+      </section>
       <section class="panel" id="account">
         <h2>Sign in</h2>
         <p>Use your Prism id. No password. The id is your account; after signing in you choose a character. Clearing site data or losing the browser loses the account until you link another device.</p>
@@ -364,120 +554,13 @@
         </details>
       </section>
 
-      <section class="panel" id="ai-setup">
-        <h2>Watch an AI play</h2>
-        <p>The AI plays through this same page. When you are signed in with your Prism id, the AI is a <strong>persona owned by your account</strong>; otherwise it uses its own account. It sees the room text, types one command per turn, and is bound by the same 250&nbsp;ms limit. You steer it in the Director chat; its reasoning appears in Mind. The provider key stays in this browser.</p>
-        <div class="field">
-          <label for="ai-provider">Brain</label>
-          <select id="ai-provider"></select>
-        </div>
-        <div class="field">
-          <label for="ai-base">Base URL</label>
-          <input id="ai-base" autocomplete="off">
-        </div>
-        <div class="field">
-          <label for="ai-model">Model</label>
-          <div class="row grow">
-            <input id="ai-model" list="ai-models" autocomplete="off">
-            <button type="button" id="ai-find">Find</button>
-          </div>
-          <datalist id="ai-models"></datalist>
-          <p class="small muted" id="ai-local">Local providers need no key. Start Ollama and click Find.</p>
-        </div>
-        <div class="field">
-          <label><input type="checkbox" id="ai-fast"> Fast mode</label>
-          <p class="small muted">Shorter history, fewer tokens, a 45-second deadline, and a safe fallback to <code>look</code> instead of pausing.</p>
-        </div>
-        <div class="field" id="ai-key-field">
-          <label for="ai-key">API key <span class="muted">(this browser only)</span></label>
-          <input id="ai-key" type="password" autocomplete="off" placeholder="sk-…">
-        </div>
-        <div class="field">
-          <label for="ai-character">Character name</label>
-          <input id="ai-character" autocomplete="off" maxlength="24" placeholder="scout">
-          <p class="small muted">The AI signs in with its Prism id, then plays this character. If it does not exist, the AI creates it. Another tab or a person can take the same character over.</p>
-        </div>
-        <div class="field">
-          <label>AI Prism identity</label>
-          <p class="small muted" id="ai-identity">The Prism id is the account. The character name above is the in-game name. Clearing site data loses the account.</p>
-          <div class="row"><button type="button" id="ai-reset">Reset identity</button></div>
-        </div>
-        <div class="row">
-          <button type="button" id="ai-start">Start watching</button>
-          <button type="button" id="ai-forget">Forget key</button>
-        </div>
-        <p class="small muted" id="ai-hint"></p>
-        <details class="small muted">
-          <summary>How this works</summary>
-          <p>1. Pick a brain. Ollama is free and local; OpenAI and Anthropic need a key.</p>
-          <p>2. When you are signed in, the AI is a persona of your Prism id; your device signs the owner action. If you are not signed in, it uses its own account.</p>
-          <p>3. It sees the same room text you do, types one command per turn, and waits for the server like any player.</p>
-          <p>4. Send direction in the Director chat. The AI replies there and its private reasoning appears in Mind.</p>
-          <p>The game server never sees the provider key.</p>
-        </details>
-      </section>
 
-      <section class="panel" id="ai-live">
-        <div id="ai-head">
-          <div>
-            <strong id="ai-title">scout</strong>
-            <span id="ai-sub" class="muted">ready</span>
-          </div>
-          <div class="row">
-            <button type="button" id="ai-pause">Pause</button>
-            <button type="button" id="ai-step">Step</button>
-            <button type="button" id="ai-stream">Go live</button>
-            <button type="button" id="ai-stop">Stop</button>
-          </div>
-        </div>
-        <p class="small muted" style="margin:0 0 8px"><a href="/watch" target="_blank" rel="noopener" style="color: var(--accent)">Public watch page</a> — press Go live to publish this run. Audience chat reaches the AI as director input.</p>
-        <div class="row" id="stream-tools">
-          <button type="button" id="stream-poll">Start poll</button>
-          <button type="button" id="stream-poll-close">Close poll</button>
-          <button type="button" id="stream-chat-toggle">Chat off</button>
-        </div>
-        <div id="chat" aria-live="polite"></div>
-        <form id="director-form">
-          <input id="director-input" autocomplete="off" placeholder="Steer the AI…" aria-label="Director message">
-          <button type="submit">Send</button>
-        </form>
-        <div id="observe">
-          <div id="tabs" role="tablist">
-            <button type="button" class="tab active" data-tab="mind">Mind</button>
-            <button type="button" class="tab" data-tab="run">Run</button>
-            <button type="button" class="tab" data-tab="model">Model</button>
-            <button type="button" class="tab" data-tab="bench">Bench</button>
-          </div>
-          <div id="mind-pane" class="pane"><div id="mind"></div></div>
-          <div id="model-pane" class="pane" hidden>
-            <div id="model-stats"></div>
-            <div class="model-block"><h3>Sent to the model</h3><pre id="model-prompt"></pre></div>
-            <div class="model-block"><h3>Context</h3><pre id="model-context"></pre></div>
-            <div class="model-block"><h3>Model returned</h3><pre id="model-reply"></pre></div>
-            <div class="model-block"><h3>Sent to the game</h3><pre id="model-command"></pre></div>
-          </div>
-          <div id="bench-pane" class="pane" hidden>
-            <div id="bench-stats"></div>
-            <div class="row"><button type="button" id="span-refresh">Refresh server spans</button></div>
-            <p class="small muted">Aggregates only; the Model tab shows the AI's commands. A highlight is in range when its tick is inside the server's tick range.</p>
-            <div id="bench-recent"></div>
-            <pre id="bench-kinds"></pre>
-          </div>
-          <div id="run-pane" class="pane" hidden>
-            <div id="run-stats"></div>
-            <div id="highlights"></div>
-            <div class="row">
-              <button type="button" id="ai-transcript">Download transcript</button>
-              <button type="button" id="ai-copy">Copy JSON</button>
-            </div>
-            <details class="small muted"><summary>Brain settings</summary><div id="ai-settings"></div></details>
-          </div>
-        </div>
-      </section>
+
+
 
       <section class="panel" id="glance">
         <h2>At a glance</h2>
-        <p class="small muted">33 rooms: the temple, the town, the wilds, the undercroft and the harbor. Shops in the Storeroom, Smithy and the Gilded Rat. Quests from the shrine, the guild clerk and the docks. The Ring beneath the Docks is a consensual arena.</p>
+        <p class="small muted">60 rooms across the temple, town, wilds, undercroft, harbor, Lantern Quarter and Undervault. Shops in the Storeroom, Smithy, Gilded Rat and Spellwright. Quests from the shrine, the guild clerk, the docks, the owl and the archmage. The Ring beneath the Docks is a consensual arena.</p>
         <p class="small muted"><a href="/llms.txt" style="color: var(--accent)">/llms.txt</a> is the machine-readable contract for agents.</p>
       </section>
     </aside>
@@ -1180,6 +1263,7 @@
     modePlay.classList.toggle("active", mode === "play");
     modeAI.classList.toggle("active", mode === "ai");
     document.body.classList.toggle("ai-mode", mode === "ai");
+    document.querySelector("aside").scrollTop = 0;
     if (mode === "ai") {
       // Keep the human's play socket signed in. The human and the AI can be
       // online at once; watching must not quit the character.
@@ -1209,6 +1293,23 @@
 
   modePlay.addEventListener("click", () => setMode("play"));
   modeAI.addEventListener("click", () => setMode("ai"));
+  try { history.scrollRestoration = "manual"; } catch {}
+  window.addEventListener("pageshow", () => {
+    const rail = document.querySelector("aside");
+    if (rail) rail.scrollTop = 0;
+  });
+  const telemetryOpen = document.getElementById("telemetry-open");
+  telemetryOpen.addEventListener("click", () => {
+    if (!AI.running) {
+      state.textContent = "Start an AI run to open telemetry";
+      return;
+    }
+    document.querySelector('[data-tab="bench"]')?.click();
+    document.body.classList.toggle("telemetry-focus");
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") document.body.classList.remove("telemetry-focus");
+  });
 
   // --- AI setup -----------------------------------------------------------
   let autoStart = location.hash === "#ai";
@@ -1246,6 +1347,7 @@
   }
 
   function renderSetup() {
+    document.querySelector("aside").scrollTop = 0;
     const config = loadJSON(CONFIG_KEY, {}) ?? {};
     aiProvider.value = config.provider ?? "ollama";
     aiBase.value = config.base ?? PROVIDERS[aiProvider.value].base;
@@ -1502,6 +1604,7 @@
     updatePause();
     setAIStatus("connecting");
     document.body.classList.add("ai-mode", "ai-running");
+    document.querySelector("aside").scrollTop = 0;
     mode = "ai";
     modePlay.classList.remove("active");
     modeAI.classList.add("active");
