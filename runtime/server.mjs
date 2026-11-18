@@ -247,7 +247,11 @@ function loadIdentityStore() {
         if (raw?.schema !== "mudbenchmark/identities/1" || typeof raw.prisms !== "object") {
           throw new Error("the identity store has an unknown schema");
         }
-        return { schema: raw.schema, prisms: raw.prisms ?? {} };
+        return {
+          schema: raw.schema,
+          prisms: raw.prisms ?? {},
+          revokedBefore: Number.isSafeInteger(raw.revokedBefore) ? raw.revokedBefore : null,
+        };
       },
     });
   } catch (error) {
@@ -765,7 +769,7 @@ async function handleCommand(id, line) {
     }
     const prismId = parsed.envelope?.body?.prism;
     const pinned = prismId ? identityStore.prisms[prismId] ?? null : null;
-    const verdict = await verifyPrismSession(parsed, { origin, pinned });
+    const verdict = await verifyPrismSession(parsed, { origin, pinned, revokedBefore: identityStore.revokedBefore ?? null });
     if (!verdict.ok) return sendTo(id, `Prism sign-in refused: ${verdict.reason}.\r\n`);
     if (!state.accounts?.[verdict.prism] && accountCapReached(Object.keys(state.accounts ?? {}).length, MAX_ACCOUNTS)) {
       return sendTo(id, "The world has reached its account cap; no new Prism account can be created right now.\r\n");

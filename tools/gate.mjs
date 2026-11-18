@@ -1045,6 +1045,7 @@ let accountWipe = { ok: true, why: [] };
   const result = wipePlayers(state, store);
   check(result.before.accounts === 2 && result.before.identities === 2 && result.before.pinned === 2, "the wipe counts are wrong");
   check(result.after.accounts === 0 && result.after.identities === 0 && result.after.pinned === 0, "the wipe left player records");
+  check(Number.isSafeInteger(store.revokedBefore) && result.revokedBefore === store.revokedBefore, "the wipe did not set a session revocation point");
   check(result.after.actors === 0 && state.mail.length === 0 && state.duels.length === 0 && state.engagements.length === 0, "the wipe left player references");
   check(state.guilds.mages && Object.keys(state.guilds.mages.members).length === 0 && state.guilds.mages.invites.length === 0, "the mages roster was not cleared");
   check(!state.guilds.players, "a player guild survived the wipe");
@@ -1495,6 +1496,9 @@ let prismSession = { ok: true, why: [] };
   if (wrong.ok) prismSession.why.push("a session for another origin was accepted");
   const expired = await verifyPrismSession(fixture, { origin: fixture.app, now: fixture.envelope.body.payload.expires + 1 });
   if (expired.ok) prismSession.why.push("an expired session was accepted");
+  const revoked = await verifyPrismSession(fixture, { origin: fixture.app, now: at, revokedBefore: at + 1 });
+  if (revoked.ok) prismSession.why.push("a session issued before the reset was accepted");
+
   if (!sessionWithinWindow(at, at + 2 * 60 * 1000)) prismSession.why.push("a two-minute-slow clock was refused");
   if (sessionWithinWindow(at, at + 6 * 60 * 1000)) prismSession.why.push("a six-minute-skewed session was accepted");
   if (prismSession.why.length) { prismSession.ok = false; failures.push(`the Prism verifier is broken: ${prismSession.why[0]}`); }

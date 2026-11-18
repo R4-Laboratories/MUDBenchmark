@@ -161,6 +161,9 @@ Rehearsed 2026-11-16:
   rail, with the streamer, room, viewer count and a Watch live link (MB-85);
 - v0.63.1 (watch polish) brings the public watch page onto the same tokens,
   header and type scale as the main shell (MB-87);
+- v0.63.2 (revocation) refuses Prism sessions issued before an account reset,
+  so deleting a pinned log cannot be undone by replaying the old session
+  (MB-89);
 - a SHA with no green Gate run (`a78f57e`) refused before the tag was created;
 - the timer pulled v0.34.0; v0.33.0 was deployed and verified (101 accounts,
   101 characters), then v0.34.0 restored;

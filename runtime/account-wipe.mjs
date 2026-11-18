@@ -40,10 +40,16 @@ export function wipePlayers(state, store) {
     guild.invites = [];
   }
 
-  if (store) store.prisms = {};
+  if (store) {
+    store.prisms = {};
+    // Sessions minted before this reset cannot be replayed to re-pin a removed
+    // identity. New sign-ins mint a session after this instant and pass.
+    store.revokedBefore = Date.now();
+  }
 
   return {
     before,
     after: playerCounts(state, store),
+    revokedBefore: store?.revokedBefore ?? null,
   };
 }
