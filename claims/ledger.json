@@ -387,6 +387,12 @@
       "level": "build",
       "statement": "Two adept-tier Mages' Guild quests are live: The Mirror Ledger (visit the Mirror Pool, carry a shard; requires the personal mirror quest) and The Warden's Debt (kill the warden, carry the ward key; requires the guild ledger). Both grant guild XP. Two more room actions are live: pray at the Shrine (heals 2) and touch the Wardstone (room event). The world has 20 quests and seven action verbs. The gate covers the action effects and the quest references.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-59",
+      "level": "some-true",
+      "statement": "Production v0.54.0 serves 50 rooms, 26 mobiles, 49 objects and 20 quests, including The Mirror Ledger and The Warden's Debt for Mages' Guild adepts and the repeatable Sigil Trial. Seven room actions are live, including shrine prayer and wardstone touch. Retention, clock-skew checks, magic, scrolls, equipment, watch and redacted durable telemetry remain present. Accounts 104 and characters 105.",
+      "authority": "wick production v0.54.0 2026-11-18; /world and /health; release 44232568451; gate 44231633489"
     }
   ]
 }
