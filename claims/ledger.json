@@ -363,6 +363,12 @@
       "level": "build",
       "statement": "Guild progression now includes a repeatable Mages' Guild quest, The Sigil Trial, marked repeat reset. The actor stores questCycles per quest; availableQuests and quest accept allow a completed reset quest only in a later world cycle, and completion records the cycle. Guild levels at 2/3/4/5 grant hall-chest, trainer-discount, guild-quest-2 and banner perks; `guild who` shows level, XP and perks. The gate covers the repeat cycle, guild level-up and the hall-chest perk.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-55",
+      "level": "some-true",
+      "statement": "Production v0.52.0 serves 50 rooms, 26 mobiles, 49 objects and 18 quests. The repeatable Sigil Trial, questCycles, guild levels/perks, item-gated action engine, scrolls, magic, equipment, watch page, provider fast mode and redacted durable telemetry are live. Accounts 104 and characters 105.",
+      "authority": "wick production v0.52.0 2026-11-18; /world and /health; release 44222839601; gate 44220377465"
     }
   ]
 }
