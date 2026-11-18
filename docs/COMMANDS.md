@@ -97,6 +97,10 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `guild-sigils` | The Sigil Trial | 5 | Find the first sigil; Find the second sigil; Find the third sigil | 120 xp |
 | `guild-mirror` | The Mirror Ledger | 6 | Enter the Mirror Pool; Carry a mirror shard | 120 xp |
 | `guild-warden` | The Warden's Debt | 7 | Defeat the warden; Carry the ward key | 200 xp |
+| `cistern` | The Cistern Key | 6 | Enter the Cistern; Carry the bone key | 90 xp |
+| `choir` | The Black Choir | 7 | Defeat the choir moth; Carry the black bell | 120 xp |
+| `reliquary` | The Sealed Reliquary | 8 | Enter the Sealed Reliquary; Carry the reliquary lens | 150 xp |
+| `last` | The Last Lantern | 8 | Reach the Last Lantern; Carry the last lantern | 180 xp |
 
 ## Rooms
 
@@ -150,6 +154,16 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 46 | The Chained Niche | undervault | no | up 44, east 47 |
 | 47 | The Ossuary of Names | undervault | no | west 46, north 48 |
 | 48 | The Drowned Library | undervault | no | south 47, east 49 |
-| 49 | The Sunken Vault | undervault | no | west 48, north 50 |
+| 49 | The Sunken Vault | undervault | no | west 48, north 50, east 51 |
 | 50 | The Wardstone Heart | undervault | no | south 49 |
+| 51 | The Drowned Market | undervault | no | west 49, north 52, east 53 |
+| 52 | The Cistern | undervault | no | south 51, east 54 |
+| 53 | The Bone Archive | undervault | no | west 51, north 55 |
+| 54 | The Mirror Stair | undervault | no | west 52, north 56 |
+| 55 | The Ossuary Gate | undervault | no | south 53, east 56 |
+| 56 | The Lantern Vault | undervault | no | south 54, west 55, north 57 |
+| 57 | The Black Choir | undervault | no | south 56, east 58 |
+| 58 | The Sealed Reliquary | undervault | no | west 57, north 59 |
+| 59 | The Last Lantern | undervault | no | south 58, east 60 |
+| 60 | The Quiet Door | undervault | no | west 59 |
 

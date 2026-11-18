@@ -55,6 +55,7 @@ import { planRetention } from "../runtime/retention.mjs";
 import { equipmentOf, equipmentText } from "../runtime/equipment.mjs";
 import { maxManaFor } from "../runtime/magic.mjs";
 import { findAction, loadActions } from "../runtime/actions.mjs";
+import { auditAccounts } from "../runtime/account-audit.mjs";
 
 const root = process.cwd();
 const ratchet = JSON.parse(readFileSync(join(root, "world/ratchet.json"), "utf8"));
@@ -954,6 +955,26 @@ let deletion = { ok: true, why: [] };
   if (deletion.why.length) { deletion.ok = false; failures.push(`the baseline delete is broken: ${deletion.why[0]}`); }
 }
 
+// The account audit is read-only and never prints credential hashes.
+let audit = { ok: true, why: [] };
+{
+  const check = (condition, why) => { if (!condition) { audit.ok = false; audit.why.push(why); } };
+  const report = auditAccounts({
+    accounts: {
+      a: { kind: "legacy", characters: ["a"], passwordHash: "h" },
+      b: { kind: "legacy", characters: ["b"], tokenHash: "t" },
+      c: { kind: "legacy", characters: [], retired: true },
+      d: { kind: "legacy", characters: ["d"], passwordHash: null, tokenHash: null },
+      p: { kind: "prism", characters: ["p"] },
+    },
+    identities: { a: {}, b: {}, d: {}, p: {} },
+  });
+  check(report.counts.accounts === 5 && report.counts.legacy === 4 && report.counts.prism === 1, "the audit account counts are wrong");
+  check(report.counts.credentialless === 1 && report.credentialless[0] === "d", "the audit did not find the credentialless account");
+  check(!JSON.stringify(report).includes("passwordHash"), "the audit exposed a credential field");
+  if (audit.why.length) { audit.ok = false; failures.push(`the account audit is broken: ${audit.why[0]}`); }
+}
+
 // The public watch layer filters private lines before anything is broadcast,
 // and accepts only the four public event kinds.
 let stream = { ok: true, why: [] };
@@ -1277,6 +1298,14 @@ let actions = { ok: true, why: [] };
   actor.room = 50;
   const wardEvents = run([{ kind: "action", actorId: "x", actionId: "touch-wardstone", messages: { actor: "touched", others: "touches" } }]);
   check(wardEvents.some((event) => /turns over and settles/.test(event.text ?? "")), "touching the wardstone did not emit its message");
+  actor = state.actors.find((entry) => entry.id === "x");
+  actor.room = 58;
+  run([{ kind: "action", actorId: "x", actionId: "open-reliquary", messages: { actor: "opened", others: "opens" } }]);
+  check(state.objects.find((o) => o.id === "reliquary-chest")?.open === true, "the reliquary action did not open the chest");
+  actor = state.actors.find((entry) => entry.id === "x");
+  actor.room = 59;
+  const lanternEvents = run([{ kind: "action", actorId: "x", actionId: "fill-lantern", messages: { actor: "filled", others: "fills" } }]);
+  check(lanternEvents.some((event) => /door is listening/.test(event.text ?? "")), "the last lantern action did not emit its message");
   if (actions.why.length) { actions.ok = false; failures.push(`the action engine is broken: ${actions.why[0]}`); }
 }
 
@@ -2267,13 +2296,14 @@ if (process.argv.includes("--json")) {
   console.log(`${"claim".padEnd(26)}  ${(claim.ok ? "adds char" : "BROKEN").padStart(5)}   == owner, tombstone`);
   console.log(`${"rebind".padEnd(26)}  ${(rebind.ok ? "token, prism" : "BROKEN").padStart(5)}   == owner, online, once`);
   console.log(`${"delete".padEnd(26)}  ${(deletion.ok ? "bare only" : "BROKEN").padStart(5)}   == no refs, no progress`);
+  console.log(`${"audit".padEnd(26)}  ${(audit.ok ? "read-only" : "BROKEN").padStart(5)}   == kinds, credentials`);
   console.log(`${"stream".padEnd(26)}  ${(stream.ok ? "public" : "BROKEN").padStart(5)}   == filters, events, watch`);
   console.log(`${"telemetry".padEnd(26)}  ${(telemetry.ok ? "trends" : "BROKEN").padStart(5)}   == ai, world, clients`);
   console.log(`${"aliases".padEnd(26)}  ${(aliases.ok ? "short" : "BROKEN").padStart(5)}   == get, eq, status`);
   console.log(`${"equipment".padEnd(26)}  ${(equipment.ok ? "8 slots" : "BROKEN").padStart(5)}   == wear, wield, replace`);
   console.log(`${"magic".padEnd(26)}  ${(magic.ok ? "6 spells+scrolls" : "BROKEN").padStart(5)}   == mana, cast, study`);
-  console.log(`${"lantern".padEnd(26)}  ${(lantern.ok ? "50 rooms" : "BROKEN").padStart(5)}   == errand, charm, secret`);
-  console.log(`${"actions".padEnd(26)}  ${(actions.ok ? "7 verbs" : "BROKEN").padStart(5)}   == reveal, open, key`);
+  console.log(`${"lantern".padEnd(26)}  ${(lantern.ok ? "60 rooms" : "BROKEN").padStart(5)}   == errand, charm, secret`);
+  console.log(`${"actions".padEnd(26)}  ${(actions.ok ? "9 verbs" : "BROKEN").padStart(5)}   == reveal, open, last`);
   console.log(`${"pinned".padEnd(26)}  ${(identityPin.ok ? "revoked" : "BROKEN").padStart(5)}   == old log refused`);
   console.log(`${"takeover".padEnd(26)}  ${(takeover.ok ? "1 actor" : "BROKEN").padStart(5)}   == leave then login`);
   console.log(`${"characters".padEnd(26)}  ${(characters.ok ? "2 chars" : "BROKEN").padStart(5)}   == create, switch`);

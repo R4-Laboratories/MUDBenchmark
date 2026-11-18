@@ -393,6 +393,12 @@
       "level": "some-true",
       "statement": "Production v0.54.0 serves 50 rooms, 26 mobiles, 49 objects and 20 quests, including The Mirror Ledger and The Warden's Debt for Mages' Guild adepts and the repeatable Sigil Trial. Seven room actions are live, including shrine prayer and wardstone touch. Retention, clock-skew checks, magic, scrolls, equipment, watch and redacted durable telemetry remain present. Accounts 104 and characters 105.",
       "authority": "wick production v0.54.0 2026-11-18; /world and /health; release 44232568451; gate 44231633489"
+    },
+    {
+      "id": "MB-60",
+      "level": "build",
+      "statement": "The M7 Undervault extension adds ten connected rooms, three mobiles, five objects, four linked quests and two room actions (open reliquary, fill last lantern). The world is 60 rooms, 24 quests, 29 mobiles and 54 objects; there are nine action verbs in the data-driven engine. The account audit tool is read-only, prints counts by kind/credential/retirement and never prints hashes; the gate covers its fixture.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

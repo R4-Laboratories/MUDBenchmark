@@ -897,7 +897,8 @@
       "safe": false,
       "exits": {
         "west": 48,
-        "north": 50
+        "north": 50,
+        "east": 51
       },
       "details": {
         "cat": "The cat is dry. It should not be.",
@@ -922,6 +923,177 @@
       "ambient": [
         "The stone beats once.",
         "The water below goes still."
+      ]
+    },
+    "51": {
+      "name": "The Drowned Market",
+      "text": "A market square under black water, stalls still standing and goods still on the hooks. A green stair climbs north, and a bone-white arch opens east.",
+      "safe": false,
+      "exits": {
+        "west": 49,
+        "north": 52,
+        "east": 53
+      },
+      "details": {
+        "stalls": "The goods are wrapped in oilcloth. None of them are wet.",
+        "arch": "The arch is made of ribs, fitted together without nails."
+      },
+      "ambient": [
+        "A stall creaks under the water.",
+        "A coin turns over on the stones."
+      ]
+    },
+    "52": {
+      "name": "The Cistern",
+      "text": "A round cistern of green water and rusted pipes. The water is higher than the room should allow; a stair of iron climbs east, and a narrow ledge circles north.",
+      "safe": false,
+      "exits": {
+        "south": 51,
+        "east": 54
+      },
+      "details": {
+        "water": "The water is warm. It should be cold.",
+        "pipes": "The pipes are dry on the inside."
+      },
+      "ambient": [
+        "A pipe knocks once.",
+        "The water rises a finger and falls."
+      ]
+    },
+    "53": {
+      "name": "The Bone Archive",
+      "text": "A long room of shelves made from ribs, each holding a bundle of dried pages. A stair of bone climbs north into a colder dark.",
+      "safe": false,
+      "exits": {
+        "west": 51,
+        "north": 55
+      },
+      "details": {
+        "shelves": "The pages are written in a hand that never lifts from the line.",
+        "pages": "One bundle is warm. The rest are cold."
+      },
+      "ambient": [
+        "A page turns by itself.",
+        "The ribs settle."
+      ]
+    },
+    "54": {
+      "name": "The Mirror Stair",
+      "text": "A stair of black glass climbs through a room with no walls. Reflections of the same stair climb beside you, always one step behind.",
+      "safe": false,
+      "exits": {
+        "west": 52,
+        "north": 56
+      },
+      "details": {
+        "glass": "The glass is cold and does not show your face.",
+        "stair": "Your reflection takes the steps a moment late."
+      },
+      "ambient": [
+        "A reflection clears its throat.",
+        "The stair hums."
+      ]
+    },
+    "55": {
+      "name": "The Ossuary Gate",
+      "text": "A gate of stacked skulls and iron bars. The gate is open; the room beyond is darker than the room should allow.",
+      "safe": false,
+      "exits": {
+        "south": 53,
+        "east": 56
+      },
+      "details": {
+        "gate": "The bars are cold. The skulls are warm.",
+        "dark": "The dark has a shape, but it does not move."
+      },
+      "ambient": [
+        "A skull turns on its stack.",
+        "The gate breathes."
+      ]
+    },
+    "56": {
+      "name": "The Lantern Vault",
+      "text": "A vault of hanging lanterns, each burning with a cold, colourless flame. A stair climbs north; a dark arch waits west, and the glass stair descends south.",
+      "safe": false,
+      "exits": {
+        "south": 54,
+        "west": 55,
+        "north": 57
+      },
+      "details": {
+        "lanterns": "None of the flames cast a shadow.",
+        "vault": "The ceiling is lost in chains."
+      },
+      "ambient": [
+        "A lantern swings without wind.",
+        "The flames lean toward you."
+      ]
+    },
+    "57": {
+      "name": "The Black Choir",
+      "text": "A chapel of black stone, empty pews facing an altar of closed eyes. A great moth hangs above the altar, wings wide and still.",
+      "safe": false,
+      "exits": {
+        "south": 56,
+        "east": 58
+      },
+      "details": {
+        "altar": "The eyes are painted, not carved. One is wet.",
+        "pews": "The pews are worn by people who are not here."
+      },
+      "ambient": [
+        "A wing shifts.",
+        "The choir inhales."
+      ]
+    },
+    "58": {
+      "name": "The Sealed Reliquary",
+      "text": "A small room of white stone and iron shelves. A reliquary chest waits against the far wall; a stair of black iron climbs north, and the choir is west.",
+      "safe": false,
+      "exits": {
+        "west": 57,
+        "north": 59
+      },
+      "details": {
+        "chest": "The chest is bound with a single hair.",
+        "shelves": "The shelves are empty except for dust and a lens."
+      },
+      "ambient": [
+        "The chest ticks.",
+        "The white stone is warm."
+      ]
+    },
+    "59": {
+      "name": "The Last Lantern",
+      "text": "A round room with one lantern at its center, burning with a steady white flame. A small keeper sits beneath it; a door of pale wood waits east.",
+      "safe": false,
+      "exits": {
+        "south": 58,
+        "east": 60
+      },
+      "details": {
+        "lantern": "The flame has no smoke and no heat.",
+        "keeper": "The keeper is very old and very still."
+      },
+      "ambient": [
+        "The flame leans east.",
+        "The keeper exhales."
+      ]
+    },
+    "60": {
+      "name": "The Quiet Door",
+      "text": "A door of pale wood in a room of soft grey stone. There is no handle, no keyhole and no sound. The last lantern is west, and the door waits.",
+      "safe": false,
+      "exits": {
+        "west": 59
+      },
+      "details": {
+        "door": "The wood is warm. It has no seam.",
+        "stone": "The grey stone is soft underfoot."
+      },
+      "ambient": [
+        "The door waits.",
+        "The room holds its breath."
       ]
     }
   },
@@ -1499,6 +1671,76 @@
         "The cat does not answer.",
         "The cat watches the water."
       ]
+    },
+    {
+      "id": "choir-moth",
+      "name": "the choir moth",
+      "room": 57,
+      "home": 57,
+      "period": 150,
+      "jitter": 4,
+      "behaviour": "sentinel",
+      "zone": "undervault",
+      "hp": 24,
+      "damage": 4,
+      "armor": 1,
+      "aggression": 65,
+      "xp": 55,
+      "loot": [
+        "choir-bell"
+      ],
+      "description": "A great black moth, wings wide as a door.",
+      "examine": "Its wings are marked with closed eyes.",
+      "dialogue": [
+        "The choir does not sing.",
+        "The lantern is the last one."
+      ]
+    },
+    {
+      "id": "reliquary-keeper",
+      "name": "the reliquary keeper",
+      "room": 58,
+      "home": 58,
+      "period": 170,
+      "jitter": 4,
+      "behaviour": "sentinel",
+      "zone": "undervault",
+      "hp": 30,
+      "damage": 3,
+      "armor": 2,
+      "aggression": 40,
+      "xp": 60,
+      "loot": [
+        "reliquary-lens"
+      ],
+      "description": "A tall figure in white, face hidden behind a lens.",
+      "examine": "The lens shows a room that is not this one.",
+      "dialogue": [
+        "The chest is not for you.",
+        "The lens sees the quiet door."
+      ]
+    },
+    {
+      "id": "last-keeper",
+      "name": "the last keeper",
+      "room": 59,
+      "home": 59,
+      "period": 180,
+      "jitter": 3,
+      "behaviour": "sentinel",
+      "zone": "undervault",
+      "hp": 20,
+      "damage": 0,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 0,
+      "description": "An old keeper sits beneath the last lantern.",
+      "examine": "The keeper is warm. The lantern is not.",
+      "dialogue": [
+        "The quiet door has no handle.",
+        "The lantern is the last one.",
+        "Take it, and the door will know you."
+      ]
     }
   ],
   "zones": [
@@ -1597,7 +1839,17 @@
         47,
         48,
         49,
-        50
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60
       ]
     }
   ],
@@ -2207,6 +2459,66 @@
       ],
       "value": 10,
       "examine": "A disc of black stone cut with no eye at all.",
+      "forSale": false
+    },
+    {
+      "id": "bone-key",
+      "name": "a bone key",
+      "room": 53,
+      "flags": [
+        "takeable"
+      ],
+      "value": 10,
+      "examine": "A key carved from a single rib.",
+      "forSale": false
+    },
+    {
+      "id": "choir-bell",
+      "name": "a black bell",
+      "room": 57,
+      "flags": [
+        "takeable"
+      ],
+      "value": 14,
+      "examine": "A bell of black glass. It has no clapper.",
+      "forSale": false
+    },
+    {
+      "id": "reliquary-lens",
+      "name": "a reliquary lens",
+      "room": 58,
+      "flags": [
+        "takeable"
+      ],
+      "value": 16,
+      "examine": "A lens of pale glass. The room beyond it is always quiet.",
+      "forSale": false
+    },
+    {
+      "id": "last-lantern",
+      "name": "the last lantern",
+      "room": 59,
+      "flags": [
+        "takeable",
+        "light"
+      ],
+      "value": 20,
+      "examine": "A small lantern with a steady white flame. It has no smoke.",
+      "forSale": false
+    },
+    {
+      "id": "reliquary-chest",
+      "name": "the reliquary chest",
+      "room": 58,
+      "flags": [
+        "fixed",
+        "container"
+      ],
+      "capacity": 2,
+      "open": false,
+      "openAtStart": false,
+      "value": 0,
+      "examine": "A white chest bound with a single hair.",
       "forSale": false
     }
   ],

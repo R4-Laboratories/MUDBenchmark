@@ -135,6 +135,42 @@
         "actor": "You touch the wardstone. It beats once under your hand.",
         "others": "%a touches the wardstone; it beats once."
       }
+    },
+    {
+      "id": "open-reliquary",
+      "verb": "open",
+      "target": "reliquary",
+      "room": 58,
+      "effects": [
+        {
+          "kind": "open",
+          "object": "reliquary-chest"
+        },
+        {
+          "kind": "message",
+          "text": "The hair binding the chest parts. The reliquary opens."
+        }
+      ],
+      "messages": {
+        "actor": "You open the reliquary chest.",
+        "others": "%a opens the reliquary chest."
+      }
+    },
+    {
+      "id": "fill-lantern",
+      "verb": "fill",
+      "target": "lantern",
+      "room": 59,
+      "effects": [
+        {
+          "kind": "message",
+          "text": "The last lantern burns brighter for a moment. The quiet door is listening."
+        }
+      ],
+      "messages": {
+        "actor": "You fill the last lantern. The flame steadies.",
+        "others": "%a tends the last lantern."
+      }
     }
   ]
 }

@@ -494,6 +494,115 @@
       "requires": [
         "guild-ledger"
       ]
+    },
+    {
+      "id": "cistern",
+      "name": "The Cistern Key",
+      "level": 6,
+      "giver": "an owl",
+      "description": "A bone key waits in the Bone Archive beyond the drowned market. The owl wants it.",
+      "objectives": [
+        {
+          "kind": "visit",
+          "room": 52,
+          "text": "Enter the Cistern"
+        },
+        {
+          "kind": "collect",
+          "object": "bone-key",
+          "count": 1,
+          "text": "Carry the bone key"
+        }
+      ],
+      "rewards": {
+        "xp": 90
+      },
+      "complete": "The bone key is warm.",
+      "requires": [
+        "sigils"
+      ]
+    },
+    {
+      "id": "choir",
+      "name": "The Black Choir",
+      "level": 7,
+      "giver": "an owl",
+      "description": "A great moth keeps a black bell above the choir altar.",
+      "objectives": [
+        {
+          "kind": "kill",
+          "npc": "choir-moth",
+          "count": 1,
+          "text": "Defeat the choir moth"
+        },
+        {
+          "kind": "collect",
+          "object": "choir-bell",
+          "count": 1,
+          "text": "Carry the black bell"
+        }
+      ],
+      "rewards": {
+        "xp": 120
+      },
+      "complete": "The bell rings without a clapper.",
+      "requires": [
+        "cistern"
+      ]
+    },
+    {
+      "id": "reliquary",
+      "name": "The Sealed Reliquary",
+      "level": 8,
+      "giver": "an owl",
+      "description": "The reliquary keeper carries a lens that sees the quiet door.",
+      "objectives": [
+        {
+          "kind": "visit",
+          "room": 58,
+          "text": "Enter the Sealed Reliquary"
+        },
+        {
+          "kind": "collect",
+          "object": "reliquary-lens",
+          "count": 1,
+          "text": "Carry the reliquary lens"
+        }
+      ],
+      "rewards": {
+        "xp": 150
+      },
+      "complete": "The lens shows a door with no handle.",
+      "requires": [
+        "choir"
+      ]
+    },
+    {
+      "id": "last",
+      "name": "The Last Lantern",
+      "level": 8,
+      "giver": "the archmage",
+      "description": "The last keeper has the last lantern. Bring it to the archmage.",
+      "objectives": [
+        {
+          "kind": "visit",
+          "room": 59,
+          "text": "Reach the Last Lantern"
+        },
+        {
+          "kind": "collect",
+          "object": "last-lantern",
+          "count": 1,
+          "text": "Carry the last lantern"
+        }
+      ],
+      "rewards": {
+        "xp": 180
+      },
+      "complete": "The archmage sets the last lantern beside the orrery.",
+      "requires": [
+        "reliquary"
+      ]
     }
   ]
 }

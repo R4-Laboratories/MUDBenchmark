@@ -131,6 +131,10 @@ Rehearsed 2026-11-16:
 - v0.54.0 (guild quests) adds The Mirror Ledger and The Warden's Debt, plus
   shrine prayer and wardstone touch actions; 20 quests / 7 action verbs
   (MB-58);
+- v0.55.0 (M7) adds ten Undervault rooms, four linked quests, three mobiles,
+  five objects and two actions; 60 rooms / 24 quests / 9 action verbs. The
+  read-only account audit and a production restart drill are recorded
+  (MB-60);
 - a SHA with no green Gate run (`a78f57e`) refused before the tag was created;
 - the timer pulled v0.34.0; v0.33.0 was deployed and verified (101 accounts,
   101 characters), then v0.34.0 restored;

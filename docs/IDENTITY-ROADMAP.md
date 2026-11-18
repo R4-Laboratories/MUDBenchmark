@@ -647,12 +647,13 @@ it, and rolls it back once. MB-26/27.
 9. **Persona privacy.** The owner record is host-visible; the rest of the human
    log (other personas, other hosts) must not be. Confirm the server stores
    only the record it needs and cannot enumerate the human's personas.
-10. **Account abuse.** There is no cap, no deletion and no GC; 32-bit display
-    names collide at scale. Decide a cap and a retirement policy before the
-    world is public.
+10. **Account abuse.** `tools/account-audit.mjs` reports kinds, retirement and
+    credential presence without hashes; the live audit is 105 accounts / 106
+    characters, 0 credentialless, 3 retired. A cap, deletion policy and GC
+    still need an owner decision before the world is public.
 11. **Telemetry privacy.** The full Prism id is a stable pseudonym in the span
-    stream; the stream lives in `/tmp` and grows. Decide retention and who can
-    read it before exporting spans.
+    stream; the stream is now durable and rotated, with `tools/telemetry-retention.mjs`
+    as the retention policy. Decide who can read it before exporting spans.
 12. **The relay, if used.** ntfy.sh promises 30 minutes of retained messages,
     not durability; metadata is visible to the relay. Prefer server pinning for
     login; use the relay only for instant revocation, and self-host it if the
