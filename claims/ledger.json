@@ -399,6 +399,12 @@
       "level": "build",
       "statement": "The M7 Undervault extension adds ten connected rooms, three mobiles, five objects, four linked quests and two room actions (open reliquary, fill last lantern). The world is 60 rooms, 24 quests, 29 mobiles and 54 objects; there are nine action verbs in the data-driven engine. The account audit tool is read-only, prints counts by kind/credential/retirement and never prints hashes; the gate covers its fixture.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-61",
+      "level": "some-true",
+      "statement": "Production v0.55.0 serves 60 rooms, 24 quests, 29 mobiles and 54 objects with nine action verbs. The read-only account audit reports 105 accounts / 106 characters, 0 credentialless and 3 retired after a live restart drill preserved the state. The M7 Undervault, guild cycle, magic/scrolls, equipment, watch, provider fast mode, retention and redacted durable telemetry are live.",
+      "authority": "wick production v0.55.0 2026-11-18; /world and /health; account audit; release 44245630127; gate 44244656798"
     }
   ]
 }
