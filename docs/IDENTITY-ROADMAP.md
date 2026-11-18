@@ -620,11 +620,10 @@ it, and rolls it back once. MB-26/27.
    `navigator.storage.persist()` helps Chrome, not ITP. Test on a real iPhone
    and a low-storage Android; decide whether a returning player after a week
    still finds the id. If not, linking/recovery is not optional.
-2. **Private windows.** Incognito Chrome on production reported
-   `persisted: false`, a 10 GiB temporary quota, working IndexedDB and
-   `storageMode: indexeddb`. The sign-in path warns when persistence is denied.
-   A private-window sign-in/reload still needs the explicit disposable-account
-   treatment.
+2. **Private windows.** Incognito Chrome on production signed in, reloaded and
+   signed in again as the same Prism id while `persisted` stayed false. IndexedDB
+   survived within that private session; the page warned that persistence was
+   not granted. The pin was removed with the strict tool afterward.
 3. **Production origin through the tunnel.** Exercised 2026-11-18: an expired
    fixture passed the allowlist and failed only expiry; a foreign origin was
    refused. A disposable headless Chrome profile then completed a live

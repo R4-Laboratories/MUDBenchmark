@@ -483,6 +483,12 @@
       "level": "some-true",
       "statement": "A real incognito Chrome context loaded production. navigator.storage.persisted() was false, the quota estimate was 10 GiB, IndexedDB opened successfully, and prism-auth storageMode reported indexeddb. This is temporary storage, not a hard failure; the existing sign-in path warns \"may evict\" when persisted is false. The probe did not sign in and created no account or pin.",
       "authority": "Chrome --incognito headless 2026-11-18; production page; storage/IDB probe"
+    },
+    {
+      "id": "MB-75",
+      "level": "some-true",
+      "statement": "A real incognito Chrome session on production signed in as prism:7693047c with persisted false, reloaded, and signed in again as the same prism:7693047c. Private-window IndexedDB survived the reload for this session, while the page kept warning that persistence was not granted. The browser was closed and its single new pin removed with the strict tool; production is back to 105 accounts / 106 characters / 8 pins.",
+      "authority": "Chrome --incognito 2026-11-18; production play.r4labs.org; pin diff/delete; /health"
     }
   ]
 }
