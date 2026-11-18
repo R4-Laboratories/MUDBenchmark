@@ -555,6 +555,12 @@
       "level": "some-true",
       "statement": "Production v0.63.0 serves GET /stream and the Play-rail Live now card alongside the v0.62 interface, trends dashboard and Ember Deep. A local live mock run returned the expected stream name, room, tick, viewers and chat flag and rendered the 342x129 card. After the second account wipe, production reports accounts 0 / characters 0 / pinned 1; the pin belongs to a live guest client that has not created a character, so no player account exists. Rooms 70, npcs 32, objects 63, watch 200.",
       "authority": "wick production v0.63.0 2026-11-18; release 44359081628; gate 44357328640; /health and /stream; live mock run; account-wipe manifest 2026-11-18T17-29-46-750Z"
+    },
+    {
+      "id": "MB-87",
+      "level": "build",
+      "statement": "The public /watch page now uses the same tokens as the main shell: dark #080b0f background, #0d1219 panels, 1px #1e2a38 lines, 16px/1.65 mono feed, 13px UI chat, 6px controls, 320px audience rail, 52px header and a reduced-motion fallback. No stream logic changed; the gate stream checks still pass.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }
