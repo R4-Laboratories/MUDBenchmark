@@ -141,6 +141,8 @@ Rehearsed 2026-11-16:
 - v0.57.0 (account cap) refuses new legacy/Prism accounts at MAX_ACCOUNTS
   (default 500) while leaving existing logins alone; boundary and live test
   recorded (MB-65);
+- v0.58.0 (guild-quest-2) enforces one/two active guild quests by the perk and
+  exposes guild level/XP/perks in the public world status (MB-67);
 - a SHA with no green Gate run (`a78f57e`) refused before the tag was created;
 - the timer pulled v0.34.0; v0.33.0 was deployed and verified (101 accounts,
   101 characters), then v0.34.0 restored;

@@ -48,6 +48,9 @@ export function worldStatus(state, rooms) {
       id: guild.id,
       name: guild.name,
       members: Object.keys(guild.members ?? {}).length,
+      level: guild.level ?? 1,
+      xp: guild.xp ?? 0,
+      perks: [...(guild.perks ?? [])],
     }))
     .sort((a, b) => b.members - a.members || a.name.localeCompare(b.name));
 
@@ -97,7 +100,7 @@ export function worldStatusText(status) {
     }
   }
   if (status.guilds.length) {
-    lines.push(`Guilds: ${status.guilds.map((guild) => `${guild.name} (${guild.members})`).join(", ")}.`);
+    lines.push(`Guilds: ${status.guilds.map((guild) => `${guild.name} (level ${guild.level}, ${guild.members})`).join(", ")}.`);
   }
   return lines.join("\r\n");
 }

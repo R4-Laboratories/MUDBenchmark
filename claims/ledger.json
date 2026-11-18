@@ -435,6 +435,12 @@
       "level": "some-true",
       "statement": "Production v0.57.0 runs the account cap at the default 500 with 105 accounts / 106 characters, 8 pinned and one connection. Existing logins are unaffected; only new legacy registrations and new Prism accounts are checked. The world remains 60 rooms / 24 quests with the action engine, guild cycle, paid training, watch, provider fast mode and redacted durable telemetry.",
       "authority": "wick production v0.57.0 2026-11-18; /health; release 44259401772; gate 44258264238"
+    },
+    {
+      "id": "MB-67",
+      "level": "build",
+      "statement": "The guild-quest-2 perk is functional: a character may hold one active guild quest normally and two with the level-4 perk. The server and reducer both enforce the limit, and the gate tests a second guild quest being refused without the perk and accepted with it. `world`/`GET /world` guild entries now include level, XP and perks; `guild who` already shows them.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

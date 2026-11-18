@@ -717,6 +717,12 @@ export function step({ state, rooms, intents, actions = [] }) {
         if (!(quest.requires ?? []).every((id) => stateQ.completed.includes(id))) continue;
         const repeatable = quest.repeat === "reset" && (actor.questCycles?.[quest.id] ?? -1) < (next.cycle ?? 0);
         if ((stateQ.completed.includes(quest.id) && !repeatable) || stateQ.active.some((entry) => entry.id === quest.id)) continue;
+        if (quest.scope === "guild") {
+          const guild = next.guilds[actor.guild];
+          const activeGuild = stateQ.active.filter((entry) => questById(next.quests, entry.id)?.scope === "guild").length;
+          const limit = guild?.perks?.includes("guild-quest-2") ? 2 : 1;
+          if (activeGuild >= limit) continue;
+        }
         stateQ.completed = stateQ.completed.filter((id) => id !== quest.id);
         stateQ.active.push({ id: quest.id, progress: emptyProgress() });
         actor.quests = stateQ;

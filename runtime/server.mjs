@@ -1572,6 +1572,12 @@ async function handleCommand(id, line) {
     const stateQ = normalizeQuestState(actor.quests, QUESTS.quests);
     if (action === "accept") {
       if ((actor.level ?? 1) < quest.level) return sendTo(id, `${render(messages.locked, { words: String(quest.level) })}\r\n`);
+      if (quest.scope === "guild") {
+        const guild = state.guilds[actor.guild];
+        const activeGuild = stateQ.active.filter((entry) => questById(QUESTS.quests, entry.id)?.scope === "guild").length;
+        const limit = guild?.perks?.includes("guild-quest-2") ? 2 : 1;
+        if (activeGuild >= limit) return sendTo(id, `You can hold ${limit} active guild quest${limit === 1 ? "" : "s"} at this rank.\r\n`);
+      }
       const missing = (quest.requires ?? []).find((required) => !stateQ.completed.includes(required));
       if (missing) return sendTo(id, `${render(messages.requires, { words: questById(QUESTS.quests, missing)?.name ?? missing })}\r\n`);
       const repeatable = quest.repeat === "reset" && (actor.questCycles?.[quest.id] ?? -1) < (state.cycle ?? 0);
