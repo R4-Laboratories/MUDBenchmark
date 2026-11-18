@@ -36,6 +36,10 @@ export function normalizeAiTurn(value) {
     error: text(value.error, 200),
     turn: number(value.turn, 1_000_000),
     tick: number(value.tick, 1_000_000_000),
+    fast: value.fast === true,
+    deliberate: value.deliberate === true,
+    reasoning: text(value.reasoning, 16),
+    prompt_version: text(value.prompt_version, 32),
   };
 }
 
@@ -54,5 +58,9 @@ export function aiTurnAttributes(metric) {
     "ai.error": metric.error,
     "ai.turn": metric.turn,
     "world.tick": metric.tick,
+    "ai.fast": metric.fast,
+    "ai.deliberate": metric.deliberate,
+    "ai.reasoning": metric.reasoning,
+    "ai.prompt_version": metric.prompt_version,
   };
 }

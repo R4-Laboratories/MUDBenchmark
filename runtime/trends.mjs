@@ -76,6 +76,24 @@ export function summarizeTrends(spans) {
       tokens_out: aiTurns.reduce((sum, span) => sum + (number(span["ai.completion_tokens"]) ?? 0), 0),
       thinking_tokens: aiTurns.reduce((sum, span) => sum + (number(span["ai.thinking_tokens"]) ?? 0), 0),
       commands: countBy(ai.map((span) => verb(span["ai.command"] ?? span["output.command"]))),
+      prompt_versions: countBy(ai.map((span) => span["ai.prompt_version"])),
+      reasonings: countBy(ai.map((span) => span["ai.reasoning"])),
+      deliberate: ai.filter((span) => span["ai.deliberate"] === true || span["ai.deliberate"] === "true").length,
+      direct: ai.filter((span) => span["ai.fast"] === true || span["ai.fast"] === "true").length,
+      by_mode: (() => {
+        const groups = { direct: [], full: [] };
+        for (const span of ai) {
+          const latency = number(span["ai.latency_ms"] ?? span["telemetry.latency_ms"]);
+          if (latency === null) continue;
+          const direct = span["ai.fast"] === true || span["ai.fast"] === "true";
+          groups[direct ? "direct" : "full"].push(latency);
+        }
+        return Object.fromEntries(Object.entries(groups).map(([mode, values]) => [mode, {
+          turns: values.length,
+          p50: percentile(values, 50),
+          p95: percentile(values, 95),
+        }]));
+      })(),
     },
     world: {
       snapshots: snapshots.length,

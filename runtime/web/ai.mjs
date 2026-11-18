@@ -39,6 +39,14 @@ export const PROVIDERS = {
     keyMode: "optional",
     hint: "Any OpenAI-compatible /v1/chat/completions endpoint. Add a key if the gateway needs one; it stays in this browser.",
   },
+  "gemini-demo": {
+    label: "Gemini demo (Prism only)",
+    base: "/api/gemini/v1",
+    model: "gemini-2.5-flash",
+    needsKey: false,
+    keyMode: "proxy",
+    hint: "Operator-funded Gemini demo. Sign in with a Prism id; the server holds the key, enforces a small daily/minute quota and forces thinking off. Free-tier data may be used by Google to improve products.",
+  },
   "prime-router": {
     label: "Prime Router (hypersphere, local)",
     base: "http://localhost:8000",
@@ -55,6 +63,7 @@ export const PROVIDERS = {
 export function normalizeBase(input) {
   let value = String(input ?? "").trim();
   if (!value) return "";
+  if (value.startsWith("/")) return value.replace(/\/+$/, "");
   if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(value)) {
     const local = /^(localhost|127\.|\[::1\])/i.test(value);
     value = `${local ? "http" : "https"}://${value}`;
@@ -77,10 +86,12 @@ open <thing>, close <thing>, wear <thing>, remove <thing>, eat <thing>, light <t
 buy <thing>, sell <thing>, list, wait, wave, nod, bow, laugh, sigh, shrug, dance, score,
 equipment, quests, quest accept <id>, quest abandon <id>, deliver <thing> to <name>,
 guild create <name>, guild join <name>, guild leave, guild who, guild list, guild chat <text>,
-guild rank <member> <rank>, guild disband, talk <name>, spells, train <spell>, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search, turn, push, ring, world, help`;
+guild rank <member> <rank>, guild disband, talk <name>, spells, train <spell>, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search, turn, push, ring, world, help, go <direction>`;
+
+const FAST_COMMANDS = "look, examine <thing>, inventory, score, equipment, quests, say <text>, tell <name> <text>, global <text>, talk <name>, who, north/south/east/west/up/down, take/drop/wear/wield, attack <name>, flee, cast <spell>, buy/sell/list, open/close, quest accept <id>, deliver <thing> to <name>, guild create/join/leave/who/chat, wait, search, world, help, wave/nod/bow/laugh";
 
 const VERBS = new Set([
-  "look", "l", "examine", "x", "ex", "who", "wh", "awake", "aw", "answer", "claim", "say", "tell", "mail",
+  "look", "l", "examine", "x", "ex", "who", "wh", "awake", "aw", "answer", "claim", "say", "tell", "mail", "go",
   "global", "gossip", "gos", "goss", "trade", "channels", "north", "south", "east", "west", "up", "down",
   "n", "s", "e", "w", "u", "d", "attack", "kill", "flee", "wield", "unwield", "inventory",
   "i", "inv", "equipment", "eq", "take", "get", "g", "grab", "drop", "dr", "put", "open", "close",
@@ -93,7 +104,26 @@ export const DEFAULT_GOAL =
   "Explore the temple, the town and the wilds. Find the Vault word and answer at the Shrine. " +
   "Grow stronger, take on quests, and make the run interesting to watch. Stay alive.";
 
-export function buildSystemPrompt({ name = "scout", goal = DEFAULT_GOAL } = {}) {
+export function buildSystemPrompt({ name = "scout", goal = DEFAULT_GOAL, fast = false, deliberate = false } = {}) {
+  if (fast) {
+    return `You are ${name}, an autonomous player in MUDBench. You may reason when the situation needs it; this turn is ${deliberate ? "deliberate" : "direct"}.
+Reply with exactly these three labelled lines:
+THOUGHT: ${deliberate ? "up to three sentences of private reasoning" : "one short sentence of private reasoning"}.
+REPLY: a short message to the director, or "none".
+COMMAND: exactly one legal game command.
+
+Rules:
+- ACTIONS is a shortlist of what is in this room. You may use any legal command from the COMMANDS line, including speech.
+- To talk to players, use say <text>, tell <name> <text>, or global <text>. To talk to an NPC, use talk <name>.
+- Never invent a command. Never output quit. Keep the three labels.
+- Use only what ROOM, STATE, QUESTS and DIRECTOR show.
+- Follow the director unless it is impossible.
+- If you are unsure, look, examine, inventory, or score.
+
+COMMANDS: ${FAST_COMMANDS}
+
+Goal: ${goal}`;
+  }
   return `You are ${name}, an autonomous player in MUDBench, a persistent text world shared by people and agents.
 You see the game exactly as a player does: the latest room, events, and the result of your last command. You type one command per turn through the same interface. The server enforces the same 250 ms input limit on you as on a human. You have no privileged view and no special commands.
 
@@ -121,10 +151,39 @@ ${COMMANDS}
 Goal: ${goal}`;
 }
 
-export function buildUserPrompt({ turn = 1, observation = "", director = [], state = null, note = "" } = {}) {
+export function buildActionMenu(state = null) {
+  const menu = new Set(["look", "score", "inventory", "search"]);
+  const room = state?.room;
+  if (room) {
+    for (const exit of room.exits ?? []) menu.add(exit.dir);
+    for (const detail of room.details ?? []) menu.add(`examine ${detail}`);
+    for (const object of room.objects ?? []) {
+      menu.add(`examine ${object.name}`);
+      if (object.takeable) menu.add(`take ${object.name}`);
+      if (object.container) menu.add(object.open ? `close ${object.name}` : `open ${object.name}`);
+      if (object.forSale && object.price != null) menu.add(`buy ${object.name}`);
+    }
+    for (const npc of room.npcs ?? []) {
+      menu.add(`talk ${npc.name}`);
+      if (!room.safe && npc.aggression > 0) menu.add(`attack ${npc.name}`);
+    }
+    for (const action of room.actions ?? []) menu.add(`${action.verb} ${action.target}`);
+  }
+  for (const line of ["say <text>", "tell <name> <text>", "global <text>", "talk <name>", "wave", "nod", "bow", "laugh", "who"]) {
+    menu.add(line);
+  }
+  return [...menu].slice(0, 32);
+}
+
+export function buildUserPrompt({ turn = 1, observation = "", director = [], state = null, note = "", fast = false, actions: injected = null } = {}) {
   const steering = director.length
     ? director.map((line) => `- ${line}`).join("\n")
     : "none";
+  const actions = Array.isArray(injected) ? injected : buildActionMenu(state);
+  const quests = (state?.self?.active_quests ?? [])
+    .slice(0, 3)
+    .map((quest) => `${quest.name}: ${quest.objectives.slice(0, 3).join(" ")}`)
+    .join("\n");
   const world = state?.world
     ? `WORLD: ${state.world.online} online · ${state.world.phase} · ${state.world.weather ?? "clear"} · reset in ${Math.max(0, Math.round((state.world.reset_seconds ?? 0) / 60))}m`
     : "";
@@ -132,10 +191,26 @@ export function buildUserPrompt({ turn = 1, observation = "", director = [], sta
     ? `YOU: level ${state.self.level} · ${state.self.xp}/${state.self.next_xp ?? "?"} xp · ${state.self.hp ?? "?"}/${state.self.max_hp ?? "?"} hp · ${state.self.mana ?? "?"}/${state.self.max_mana ?? "?"} mana · ${state.self.quests?.active ?? 0} active / ${state.self.quests?.completed ?? 0} done quests · ${state.self.inventory ?? 0} items${state.self.spells?.length ? ` · spells ${state.self.spells.join(", ")}` : ""}${state.self.guild ? ` · ${state.self.guild}${state.self.guild_rank ? ` (${state.self.guild_rank})` : ""}` : ""}${state.self.wielding ? ` · wielding ${state.self.wielding}` : ""}`
     : "";
   const sheet = [world, self].filter(Boolean).join("\n");
-  return `TURN ${turn}
-GAME:
+  const menu = actions.join(", ");
+  const questBlock = quests ? `QUESTS:\n${quests}` : "";
+  if (fast) {
+    return `TURN ${turn}
+ROOM:
 ${observation.trim() || "(no new text)"}
 ${sheet ? `\nSTATE:\n${sheet}\n` : ""}
+ACTIONS: ${menu}
+${questBlock ? `\n${questBlock}\n` : ""}
+DIRECTOR:
+${steering}
+${note ? `\nNOTE: ${note}\n` : ""}
+Choose one command. You may use say, tell or global to talk; ACTIONS is a shortlist, not a cage.`;
+  }
+  return `TURN ${turn}
+ROOM:
+${observation.trim() || "(no new text)"}
+${sheet ? `\nSTATE:\n${sheet}\n` : ""}
+${menu ? `ACTIONS: ${menu}\n` : ""}
+${questBlock ? `${questBlock}\n` : ""}
 DIRECTOR:
 ${steering}
 ${note ? `\nNOTE: ${note}\n` : ""}
@@ -189,8 +264,38 @@ export function trimHistory(messages, pairs = 8) {
   return trimmed;
 }
 
+const ollamaThinks = (model) => /qwen3|deepseek-r1|deepseek-v3|magistral|gpt-oss|gemma3|phi4-reasoning|granite3\.3/i.test(String(model ?? ""));
+
+const reasoningEffortFor = (model) => {
+  const name = String(model ?? "").toLowerCase();
+  if (/gemini-2\.5/.test(name)) return "none";
+  if (/gemini-[34]|gpt-5|(^|[-/])o[134]/.test(name)) return "minimal";
+  return null;
+};
+
 export function requestFor(provider, config, system, messages) {
   const base = normalizeBase(config.base);
+  if (provider === "ollama") {
+    // Ollama's native chat endpoint is the only one that can switch thinking
+    // off explicitly. The OpenAI-compatible path silently spends reasoning
+    // tokens on models that support it.
+    const root = base.replace(/\/v1$/i, "");
+    return {
+      url: `${root}/api/chat`,
+      headers: { "content-type": "application/json" },
+      body: {
+        model: config.model,
+        messages: [{ role: "system", content: system }, ...messages],
+        stream: false,
+        think: Boolean(config.deliberate && ollamaThinks(config.model)),
+        keep_alive: -1,
+        options: {
+          temperature: config.temperature ?? 0,
+          num_predict: config.maxTokens ?? 120,
+        },
+      },
+    };
+  }
   if (provider === "anthropic") {
     return {
       url: `${base}/messages`,
@@ -219,6 +324,26 @@ export function requestFor(provider, config, system, messages) {
       },
     };
   }
+  if (provider === "gemini-demo") {
+    return {
+      url: `${base}/chat/completions`,
+      headers: {
+        "content-type": "application/json",
+        ...(config.demoToken ? { "x-demo-token": config.demoToken } : {}),
+        ...(config.deliberate ? { "x-demo-reasoning": "low" } : { "x-demo-reasoning": "none" }),
+      },
+      body: {
+        model: config.model,
+        messages: [{ role: "system", content: system }, ...messages],
+        temperature: 0,
+        max_tokens: 160,
+      },
+    };
+  }
+  const reasoning = config.deliberate
+    ? (reasoningEffortFor(config.model) ? "low" : null)
+    : (config.fast ? reasoningEffortFor(config.model) : null);
+  const reasoningModel = /gpt-5|(^|[-/])o[134]/i.test(String(config.model ?? ""));
   return {
     url: `${base}/chat/completions`,
     headers: {
@@ -228,13 +353,23 @@ export function requestFor(provider, config, system, messages) {
     body: {
       model: config.model,
       messages: [{ role: "system", content: system }, ...messages],
-      temperature: config.temperature ?? 0.7,
-      max_tokens: config.maxTokens ?? 400,
+      ...(reasoningModel ? {} : { temperature: config.temperature ?? 0.7 }),
+      ...(reasoningModel
+        ? { max_completion_tokens: config.deliberate ? 800 : 300 }
+        : { max_tokens: config.maxTokens ?? 400 }),
+      ...(reasoning ? { reasoning_effort: reasoning } : {}),
     },
   };
 }
 
 export function replyFrom(provider, body) {
+  if (provider === "ollama") {
+    const usage = body.usage ?? (Number.isInteger(body.eval_count) ? {
+      prompt_tokens: body.prompt_eval_count ?? null,
+      completion_tokens: body.eval_count,
+    } : null);
+    return { text: String(body.message?.content ?? "").trim(), usage };
+  }
   if (provider === "anthropic") {
     const text = (body.content ?? [])
       .filter((block) => block.type === "text")
@@ -247,8 +382,10 @@ export function replyFrom(provider, body) {
     return { text: String(body.description ?? body.response ?? "").trim(), usage: null };
   }
   const message = body.choices?.[0]?.message ?? {};
+  // reasoning_content is private deliberation, not the answer. Falling back to
+  // it sent half-finished thoughts into the game as commands.
   return {
-    text: String(message.content ?? message.reasoning_content ?? "").trim(),
+    text: typeof message.content === "string" ? message.content.trim() : "",
     usage: body.usage ?? null,
   };
 }

@@ -585,6 +585,18 @@
       "level": "some-true",
       "statement": "Production v0.63.3 holds the reset: the two Prism ids that held pins (synther and bob) are blocked, pins remain 0 after 30 seconds, and accounts/characters remain 0 while one unauthenticated guest connection stays. The verifier refuses sessions issued before the reset and blocked ids, while a freshly minted session after the reset passes the gate. The world is 70 rooms / 32 mobiles / 63 objects, landing and watch 200.",
       "authority": "wick production v0.63.3 2026-11-18; release 44369197236; gate 44367622377; wipe manifest 2026-11-18T18-24-31-867Z; /health after 30s; blocked=2 pins=0"
+    },
+    {
+      "id": "MB-92",
+      "level": "build",
+      "statement": "The direct AI contract injects the room, exits, details, objects, NPCs, room actions, inventory names, active quest objectives and a social-aware action shortlist, but remains free-form: the model may use any legal command, including say, tell and global. Reasoning is Auto/Always/Never; Auto disables provider thinking on routine turns and allows it on first turns, director messages, low HP, repeats and every eighth turn. Ollama only sends think:true for capable models and keep_alive:-1; Gemini 2.5 uses reasoning_effort none/low; OpenAI reasoning models use reasoning_effort and max_completion_tokens. Error turns carry mode fields. The Mind pane now scrolls its actual container and chat only follows when the reader is at the bottom.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-93",
+      "level": "build",
+      "statement": "The Prism-only Gemini demo is implemented behind the server. GEMINI_API_KEY never reaches the browser; an authenticated game socket issues a 30-minute demo token; the proxy enforces per-Prism daily/minute and world-wide daily quotas, forwards only the model/messages, forces reasoning off on direct turns and low on deliberate turns, and records ai.demo latency/status. GET /api/demo reports configured/model/limits without a key. The UI shows the provider only when configured and authenticates by the game socket. A mock upstream run completed Prism login -> demo token -> proxy -> command with 5 ai.turn metrics and no browser key.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

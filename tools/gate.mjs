@@ -155,6 +155,7 @@ let webAI = { ok: true, why: [] };
   const check = (condition, why) => { if (!condition) { webAI.ok = false; webAI.why.push(why); } };
   check(!PROVIDERS.ollama?.needsKey && !PROVIDERS.custom?.needsKey && !PROVIDERS["prime-router"]?.needsKey, "a local provider requires a key");
   check(PROVIDERS.custom?.keyMode === "optional" && PROVIDERS.openai?.keyMode === "required", "the provider key modes are wrong");
+  check(PROVIDERS["gemini-demo"]?.keyMode === "proxy" && !PROVIDERS["gemini-demo"]?.needsKey, "the Gemini demo provider is not server-keyed");
   check(normalizeBase("https://api.openai.com/v1/chat/completions") === "https://api.openai.com/v1", "a full chat URL was not normalized to its base");
   check(normalizeBase("api.openai.com/v1") === "https://api.openai.com/v1", "a bare host was not normalized");
   check(normalizeBase("http://127.0.0.1:11434/v1/") === "http://127.0.0.1:11434/v1", "a local base kept its trailing slash");
@@ -189,6 +190,38 @@ let webAI = { ok: true, why: [] };
   check(openai.url.endsWith("/chat/completions") && openai.headers.authorization === "Bearer k", "the OpenAI request shape is wrong");
   const anthropic = requestFor("anthropic", { base: "https://api.anthropic.com/v1", model: "m", key: "k" }, "sys", [{ role: "user", content: "hi" }]);
   check(anthropic.headers["anthropic-dangerous-direct-browser-access"] === "true", "the Anthropic request lost the browser header");
+  const ollama = requestFor("ollama", { base: "http://localhost:11434/v1", model: "qwen2.5:7b", fast: true, maxTokens: 80 }, "sys", [{ role: "user", content: "hi" }]);
+  check(ollama.url.endsWith("/api/chat") && ollama.body.think === false && ollama.body.keep_alive === -1 && ollama.body.options.num_predict === 80, "the Ollama request does not disable thinking or bound output");
+  const ollamaThink = requestFor("ollama", { base: "http://localhost:11434/v1", model: "qwen3:8b", fast: true, deliberate: true }, "sys", [{ role: "user", content: "hi" }]);
+  check(ollamaThink.body.think === true, "deliberate mode did not allow Ollama thinking");
+  const demo = requestFor("gemini-demo", { base: "/api/gemini/v1", model: "gemini-2.5-flash", fast: true, demoToken: "dt" }, "sys", [{ role: "user", content: "hi" }]);
+  check(demo.url === "/api/gemini/v1/chat/completions" && demo.headers["x-demo-token"] === "dt" && !demo.body.reasoning_effort, "the Gemini demo request shape is wrong");
+  const gemini = requestFor("custom", { base: "https://example.test/v1", model: "gemini-2.5-flash", fast: true, maxTokens: 80 }, "sys", [{ role: "user", content: "hi" }]);
+  check(gemini.body.reasoning_effort === "none", "Gemini fast mode did not disable thinking");
+  const geminiThink = requestFor("custom", { base: "https://example.test/v1", model: "gemini-2.5-flash", fast: true, deliberate: true }, "sys", [{ role: "user", content: "hi" }]);
+  check(geminiThink.body.reasoning_effort === "low", "Gemini deliberate mode did not allow thinking");
+  const gpt5 = requestFor("custom", { base: "https://example.test/v1", model: "gpt-5-mini", fast: true, maxTokens: 80 }, "sys", [{ role: "user", content: "hi" }]);
+  check(gpt5.body.reasoning_effort === "minimal", "a reasoning model did not get minimal effort");
+  const deliberate = requestFor("custom", { base: "https://example.test/v1", model: "gemini-2.5-flash", fast: false }, "sys", [{ role: "user", content: "hi" }]);
+  check(deliberate.body.reasoning_effort === undefined, "standard mode changed the provider reasoning setting");
+  const fastSystem = buildSystemPrompt({ name: "scout", fast: true });
+  check(fastSystem.includes("ACTIONS is a shortlist") && fastSystem.includes("say <text>") && fastSystem.includes("THOUGHT"), "the fast system prompt lost the free-form/social contract");
+  const fastUser = buildUserPrompt({
+    turn: 1,
+    observation: "[The Atrium]",
+    fast: true,
+    state: {
+      room: {
+        name: "The Atrium", safe: true, details: ["plaque"],
+        exits: [{ dir: "north" }], objects: [{ name: "a grey cloak", takeable: true }], npcs: [{ name: "a bard", aggression: 0 }], actions: [],
+      },
+    },
+  });
+  check(fastUser.includes("ACTIONS:") && fastUser.includes("north") && fastUser.includes("examine plaque") && fastUser.includes("take a grey cloak") && fastUser.includes("say <text>"), "the fast prompt did not inject the legal/social actions");
+  const reasoned = replyFrom("custom", { choices: [{ message: { content: "", reasoning_content: "COMMAND: look" } }] });
+  check(reasoned.text === "", "reasoning content was treated as the answer");
+  const native = replyFrom("ollama", { message: { content: "THOUGHT: x\nCOMMAND: look" } });
+  check(native.text.includes("COMMAND: look"), "the native Ollama reply was not parsed");
   const prime = requestFor("prime-router", { base: "http://localhost:8000", name: "scout" }, "sys", [{ role: "user", content: "hi" }]);
   check(prime.url.endsWith("/api/chat") && prime.body.identity === "mudbench-scout", "the prime-router request shape is wrong");
   const reply = replyFrom("anthropic", { content: [{ type: "text", text: "THOUGHT: x\nCOMMAND: look" }], usage: { input_tokens: 3, output_tokens: 4 } });
@@ -1080,10 +1113,14 @@ let stream = { ok: true, why: [] };
   check(/#stream-state/.test(serverText), "the server does not confirm stream state");
   check(/action === "poll"/.test(serverText) && /action === "chat"/.test(serverText), "the streamer has no poll or chat controls");
   check(/pathname === "\/stream"/.test(serverText) && /mudbenchmark\/stream\/1/.test(serverText), "the public stream status endpoint is missing");
+  check(/pathname === "\/api\/demo"/.test(serverText) && /pathname === "\/api\/gemini\/v1\/chat\/completions"/.test(serverText), "the Gemini demo routes are missing");
+  check(/GEMINI_API_KEY/.test(serverText) && /x-demo-token/.test(serverText) && /GEMINI_DAILY_TURNS/.test(serverText), "the Gemini proxy lost its key, token or quota");
+  check(/inventory_names/.test(serverText) && /active_quests/.test(serverText) && /details: Object.keys\(room.details/.test(serverText), "the self state lost the injected room context");
   check(/isVote/.test(serverText) && /vote a or vote b/.test(serverText), "spectators cannot vote");
-  check(/\^\(stream\|metric\|session-key\|rebind\)/.test(serverText), "control verbs still consume the player rate limit");
+  check(/\^\(stream\|metric\|session-key\|rebind\|demo-token\)/.test(serverText), "control verbs still consume the player rate limit");
   const page = readFileSync(join(root, "runtime/web/index.html"), "utf8");
   check(/id="ai-stream"/.test(page) && /#stream-chat/.test(page), "the AI panel has no Go live path");
+  check(/gemini-demo/.test(page) && /requestDemoToken/.test(page) && /#demo-token/.test(page), "the UI has no Gemini demo path");
   const watch = readFileSync(join(root, "runtime/web/watch.html"), "utf8");
   check(/WebSocket\(`\$\{scheme\}\/\/\$\{location\.host\}\/live`\)/.test(watch), "the watch page does not connect to /live");
   check(/function renderPoll/.test(watch) && /highlight-card/.test(watch), "the watch page has no poll or highlight");
@@ -1126,8 +1163,10 @@ let telemetry = { ok: true, why: [] };
     kind: "ai.turn", provider: "openai", model: "test", latency_ms: 1234,
     prompt_tokens: 100, completion_tokens: 20, thinking_tokens: 15,
     parse_ok: true, command: "look", thought_chars: 40, turn: 2, tick: 9,
+    fast: true, deliberate: true, reasoning: "auto", prompt_version: "r4-direct-2",
   });
   check(metric?.latency_ms === 1234 && metric?.command === "look", "a valid AI turn metric was refused");
+  check(metric?.fast === true && metric?.deliberate === true && metric?.reasoning === "auto" && metric?.prompt_version === "r4-direct-2", "the AI turn metric lost its mode");
   check(normalizeAiTurn({ kind: "other", provider: "x" }) === null, "an unknown metric kind was accepted");
   check(normalizeAiTurn({ kind: "ai.turn", provider: "x", error: "x".repeat(500) })?.error.length === 200, "an error string was not bounded");
   const attrs = aiTurnAttributes(metric);
@@ -1137,7 +1176,7 @@ let telemetry = { ok: true, why: [] };
     { name: "world.client", at: "2026-11-17T00:00:00Z", "client.transport": "websocket" },
     { name: "world.disconnect", at: "2026-11-17T00:01:00Z", duration_ms: 60000, "client.transport": "websocket" },
     { name: "world.session", at: "2026-11-17T00:00:30Z", "session.kind": "login" },
-    { name: "ai.turn", at: "2026-11-17T00:00:40Z", "ai.latency_ms": 1000, "ai.parse_ok": true, "ai.command": "look", "ai.prompt_tokens": 10, "ai.completion_tokens": 2, "ai.provider": "openai" },
+    { name: "ai.turn", at: "2026-11-17T00:00:40Z", "ai.latency_ms": 1000, "ai.parse_ok": true, "ai.command": "look", "ai.prompt_tokens": 10, "ai.completion_tokens": 2, "ai.provider": "openai", "ai.fast": true, "ai.prompt_version": "r4-direct-1" },
     { name: "ai.turn", at: "2026-11-17T00:00:45Z", "ai.latency_ms": 3000, "ai.parse_ok": false, "ai.error": "timeout", "ai.timeout": true, "ai.provider": "openai" },
     { name: "world.input", at: "2026-11-17T00:00:41Z", text: "look" },
     { name: "world.input", at: "2026-11-17T00:00:42Z", text: "north" },
@@ -1146,6 +1185,7 @@ let telemetry = { ok: true, why: [] };
   ];
   const trends = summarizeTrends(spans);
   check(trends.ai.turns === 2 && trends.ai.parsed === 0.5, "the AI trend counts are wrong");
+  check(trends.ai.by_mode.direct.turns === 1 && trends.ai.by_mode.full.turns === 1 && trends.ai.prompt_versions["r4-direct-1"] === 1, "the AI mode trends are wrong");
   check(trends.ai.latency_ms.p50 === 1000 && trends.ai.latency_ms.max === 3000, "the AI latency percentiles are wrong");
   check(trends.commands.accepted === 2 && trends.commands.refused === 1, "the command trend counts are wrong");
   check(trends.world.online.latest === 1 && trends.world.levels.max === 4, "the world trend counts are wrong");
@@ -1185,6 +1225,7 @@ let aliases = { ok: true, why: [] };
   check(/g: "take"/.test(serverText) && /dr: "drop"/.test(serverText), "get/drop aliases are missing");
   check(/eq: "equipment"/.test(serverText) && /verb === "equipment"/.test(serverText), "the equipment alias or view is missing");
   check(/status: "world"/.test(serverText) && /time: "world"/.test(serverText), "the world status aliases are missing");
+  check(/verb === "go" && restRaw.length/.test(serverText), "the go <direction> alias is missing");
   check(/armorOf\(actor, state\.objects\)/.test(serverText), "equipment does not pass the world objects to armorOf");
   if (aliases.why.length) { aliases.ok = false; failures.push(`the command aliases are broken: ${aliases.why[0]}`); }
 }
