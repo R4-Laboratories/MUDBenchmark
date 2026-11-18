@@ -622,12 +622,13 @@ it, and rolls it back once. MB-26/27.
    still finds the id. If not, linking/recovery is not optional.
 2. **Private windows.** IndexedDB may be memory-only. Confirm the warning and
    that no account is silently created on reload.
-3. **Production origin through the tunnel.** Exercised 2026-11-18: a committed
-   expired Prism fixture with Origin `https://play.r4labs.org` passed the
-   allowlist and was refused only for expiry; the same fixture with
-   `https://evil.example` was refused as a foreign origin. No account was
-   created. A full live signed-in browser session is still needed to assert
-   `Signing in as prism:`.
+3. **Production origin through the tunnel.** Exercised 2026-11-18: an expired
+   fixture passed the allowlist and failed only expiry; a foreign origin was
+   refused. A disposable headless Chrome profile then completed a live
+   `Use my Prism id` sign-in through `https://play.r4labs.org` and showed
+   `Signed in as prism:b2ae06fe` with no characters. It reported that
+   persistent storage was not granted. The pin was removed with
+   `tools/delete-account.mjs`; accounts are 105 / characters 106 / pinned 8.
 4. **Clock skew.** `sessionWithinWindow` accepts a two-minute-slow clock and
    refuses a six-minute skew; the gate tests both. The browser still needs a
    real slow-clock run through the page.

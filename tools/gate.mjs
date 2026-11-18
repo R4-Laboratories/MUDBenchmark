@@ -57,6 +57,7 @@ import { maxManaFor } from "../runtime/magic.mjs";
 import { trainingCost } from "../runtime/magic.mjs";
 import { findAction, loadActions } from "../runtime/actions.mjs";
 import { auditAccounts } from "../runtime/account-audit.mjs";
+import { deleteBarePrismAccount, deletePrismIdentity } from "../runtime/account-delete.mjs";
 
 const root = process.cwd();
 const ratchet = JSON.parse(readFileSync(join(root, "world/ratchet.json"), "utf8"));
@@ -980,6 +981,33 @@ let audit = { ok: true, why: [] };
   check(report.counts.inactive === 1 && report.inactive[0] === "d", "the audit did not find the inactive account");
   check(!JSON.stringify(report).includes("passwordHash"), "the audit exposed a credential field");
   if (audit.why.length) { audit.ok = false; failures.push(`the account audit is broken: ${audit.why[0]}`); }
+}
+
+// A disposable bare Prism account can be removed with its pin; an account with
+// a character, owner or external reference is refused.
+let accountDelete = { ok: true, why: [] };
+{
+  const check = (condition, why) => { if (!condition) { accountDelete.ok = false; accountDelete.why.push(why); } };
+  const bare = () => ({
+    accounts: { p: { kind: "prism", characters: [], retired: false } },
+    identities: {}, guilds: {}, mail: [], duels: [], actors: [],
+  });
+  let store = { prisms: { p: { root: "x" } } };
+  let state = bare();
+  const removed = deleteBarePrismAccount(state, store, "p");
+  check(removed.ok && !state.accounts.p && !store.prisms.p, "a bare Prism account was not removed with its pin");
+  check(removed.counts?.accounts === 0 && removed.counts?.pinned === 0, "the delete-account counts are wrong");
+  state = bare(); state.accounts.p.characters.push("alice");
+  check(!deleteBarePrismAccount(state, store, "p").ok, "an account with a character was deleted");
+  state = bare(); state.accounts.p.owner = "human";
+  check(!deleteBarePrismAccount(state, store, "p").ok, "a persona account was deleted");
+  state = bare(); state.mail.push({ fromKey: "p", toKey: "friend" });
+  check(!deleteBarePrismAccount(state, store, "p").ok, "an account with mail was deleted");
+  state = { accounts: {}, identities: {}, guilds: {}, mail: [], duels: [], actors: [] };
+  store = { prisms: { q: { root: "x" } } };
+  const pin = deletePrismIdentity(state, store, "q");
+  check(pin.ok && !store.prisms.q && pin.removed.account === null, "a bare Prism pin was not removed");
+  if (accountDelete.why.length) { accountDelete.ok = false; failures.push(`the account delete is broken: ${accountDelete.why[0]}`); }
 }
 
 // The public watch layer filters private lines before anything is broadcast,
@@ -2325,6 +2353,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"rebind".padEnd(26)}  ${(rebind.ok ? "token, prism" : "BROKEN").padStart(5)}   == owner, online, once`);
   console.log(`${"delete".padEnd(26)}  ${(deletion.ok ? "bare only" : "BROKEN").padStart(5)}   == no refs, no progress`);
   console.log(`${"audit".padEnd(26)}  ${(audit.ok ? "read-only" : "BROKEN").padStart(5)}   == kinds, credentials`);
+  console.log(`${"accountDel".padEnd(26)}  ${(accountDelete.ok ? "bare only" : "BROKEN").padStart(5)}   == no chars, pin`);
   console.log(`${"stream".padEnd(26)}  ${(stream.ok ? "public" : "BROKEN").padStart(5)}   == filters, events, watch`);
   console.log(`${"telemetry".padEnd(26)}  ${(telemetry.ok ? "trends" : "BROKEN").padStart(5)}   == ai, world, clients`);
   console.log(`${"aliases".padEnd(26)}  ${(aliases.ok ? "short" : "BROKEN").padStart(5)}   == get, eq, status`);

@@ -465,6 +465,18 @@
       "level": "some-true",
       "statement": "Production v0.59.0 records lastSeenTick on register/login and the read-only audit reports inactive accounts for a chosen window. Live audit: 105 accounts / 106 characters, 95 legacy / 10 prism / 3 retired, 7 password / 85 token / 0 credentialless, 0 inactive at 90 days. The world is 60 rooms / 24 quests; watch, provider fast mode, account cap, retention and corruption/restore drills remain.",
       "authority": "wick production v0.59.0 2026-11-18; /health; account audit; release 44315188216; gate 44313777148"
+    },
+    {
+      "id": "MB-72",
+      "level": "some-true",
+      "statement": "A disposable headless Chrome profile signed in through https://play.r4labs.org with \"Use my Prism id\" and received \"Signed in as prism:b2ae06fe\" with no characters; the page reported that persistent storage was not granted. The sign-in created a pinned Prism log but no account. The strict delete-account tool removed that pin after the world was stopped; on restart accounts are 105 / characters 106 / pinned 8. A stray open tab re-pinned once and was closed before the final delete.",
+      "authority": "production play.r4labs.org 2026-11-18; pin diff before/after; delete-account pin removal; /health"
+    },
+    {
+      "id": "MB-73",
+      "level": "build",
+      "statement": "tools/delete-account.mjs removes either a bare Prism account (no characters, no owner, no guild/mail/duel/actor reference) or a bare pinned Prism log with no account. It defaults to a dry run, archives state and identity store, writes the state atomically and replaces the identity store atomically. The gate covers bare account + pin deletion, pin-only deletion, and refusals for characters, persona owner and mail.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }
