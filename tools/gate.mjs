@@ -36,6 +36,7 @@ import { AREA_PERIOD, armorOf, attackRoll, checkpointIdentities, initialState, n
 import { join } from "node:path";
 import { buildCandidates } from "./candidate.mjs";
 import { PROVIDERS, buildSystemPrompt, buildUserPrompt, normalizeBase, parseBrain, requestFor, replyFrom, trimHistory } from "../runtime/web/ai.mjs";
+import { emptyMemory, rememberResult, memoryPrompt, loopWarning, breakLoop, shouldBreakLoop } from "../runtime/web/memory.mjs";
 import { verifyPrismSession, verifyPersonaOwner, verifySessionKey, sessionWithinWindow } from "../runtime/prism-auth.mjs";
 import { decodeIdentityRequest, identityAdmits } from "../runtime/identity.mjs";
 import { loadStateFile, saveStateFile } from "../runtime/state.mjs";
@@ -231,6 +232,31 @@ let webAI = { ok: true, why: [] };
   const trimmed = trimHistory(history, 2);
   check(trimmed.length === 4 && trimmed[0].role === "user", "history trimming cut a pair in half");
   if (!webAI.ok) failures.push(`the browser AI is broken: ${webAI.why[0]}`);
+}
+
+// Persistent AI memory: room commands, stale repeats, unexplored exits, and
+// a loop guard that chooses a different action.
+let aiMemory = { ok: true, why: [] };
+{
+  const check = (condition, why) => { if (!condition) { aiMemory.ok = false; aiMemory.why.push(why); } };
+  const memory = emptyMemory();
+  rememberResult(memory, { room: "The Atrium", command: "examine plaque", observation: "The plaque reads: the Vault keeps the word.", tick: 1 });
+  rememberResult(memory, { room: "The Atrium", command: "examine plaque", observation: "The plaque reads: the Vault keeps the word.", tick: 2 });
+  rememberResult(memory, { room: "The Atrium", command: "examine plaque", observation: "The plaque reads: the Vault keeps the word.", tick: 3 });
+  rememberResult(memory, { room: "The Storeroom", command: "look", observation: "Shelves of empty crates.", tick: 4 });
+  const prompt = memoryPrompt(memory, {
+    room: "The Atrium",
+    exits: [{ dir: "north", room: "The Corridor" }, { dir: "south", room: "Market Square" }],
+  });
+  check(prompt.includes("seen 2 times") || prompt.includes("seen 1 time"), "the memory lost the room visit");
+  check(prompt.includes("stale 2"), "the memory did not mark the repeated result stale");
+  check(prompt.includes("The Storeroom"), "the memory lost a visited room");
+  check(prompt.includes("Unexplored exits"), "the memory lost the unexplored exits");
+  check(loopWarning(["north", "south", "north", "south"]).includes("LOOP"), "the memory did not detect a movement cycle");
+  check(loopWarning(["look", "look", "look"]).includes("LOOP"), "the memory did not detect a repeated command");
+  check(breakLoop(["north", "south", "north", "south"], [{ dir: "north" }, { dir: "south" }, { dir: "east" }]) === "east", "the loop guard did not choose a fresh exit");
+  check(shouldBreakLoop(memory, { room: "The Atrium", command: "examine plaque", recent: [] }), "the stale memory did not trigger the loop guard");
+  if (aiMemory.why.length) { aiMemory.ok = false; failures.push(`the AI memory is broken: ${aiMemory.why[0]}`); }
 }
 
 // The world is a map, not a pile of rooms: every room has a real description,
@@ -2511,6 +2537,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"lantern".padEnd(26)}  ${(lantern.ok ? "60 rooms" : "BROKEN").padStart(5)}   == errand, charm, secret`);
   console.log(`${"actions".padEnd(26)}  ${(actions.ok ? "11 verbs" : "BROKEN").padStart(5)}   == reveal, open, last`);
   console.log(`${"ember".padEnd(26)}  ${(ember.ok ? "10 rooms" : "BROKEN").padStart(5)}   == door, quest, shortcut`);
+  console.log(`${"aiMemory".padEnd(26)}  ${(aiMemory.ok ? "rooms, stale" : "BROKEN").padStart(5)}   == exits, loop guard`);
   console.log(`${"pinned".padEnd(26)}  ${(identityPin.ok ? "revoked" : "BROKEN").padStart(5)}   == old log refused`);
   console.log(`${"takeover".padEnd(26)}  ${(takeover.ok ? "1 actor" : "BROKEN").padStart(5)}   == leave then login`);
   console.log(`${"characters".padEnd(26)}  ${(characters.ok ? "2 chars" : "BROKEN").padStart(5)}   == create, switch`);

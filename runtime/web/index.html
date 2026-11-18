@@ -645,6 +645,7 @@
           <p>2. When you are signed in, the AI is a persona of your Prism id; your device signs the owner action. If you are not signed in, it uses its own account.</p>
           <p>3. It sees the same room text you do, types one command per turn, and waits for the server like any player.</p>
           <p>4. Send direction in the Director chat. The AI replies there and its private reasoning appears in Mind.</p>
+          <p>5. A compact memory of rooms, tried commands and stale results is kept per character in this browser and injected every turn. A loop guard breaks repeated observation commands instead of pausing the run.</p>
           <p>The game server never sees the provider key.</p>
         </details>
         <div class="modal-actions">
@@ -858,6 +859,7 @@
     PROVIDERS, DEFAULT_GOAL, buildSystemPrompt, buildUserPrompt,
     parseBrain, buildActionMenu, requestFor, replyFrom, trimHistory, normalizeBase,
   } from "/ai.mjs";
+  import { emptyMemory, rememberResult, memoryPrompt, loopWarning, breakLoop, shouldBreakLoop } from "/memory.mjs";
   import { signIn as prismSignIn, reset as prismReset, load as loadSession, save as saveSession, personaSignIn, personaRetire, nextPersonaEpoch, createRecoveryKit, restoreRecoveryKit, characterHandoff, characterRevoke, signChallenge } from "/prism-auth.mjs";
   import { createLinkOffer, parseLinkUri, requestLink, acceptLinkRequest, completeLink, linkCode, revokeDevice, resolvePrism, linkQr } from "/prism-id.mjs";
 
@@ -1012,6 +1014,7 @@
     persona: null, owner: null, personaAudience: null, tickFrom: null, lastTick: null,
     highlights: [], streaming: false, timeouts: 0, lastPoll: null, state: null,
     demoToken: null, demoTokenExpires: 0, demoWaiters: [],
+    memory: null, memoryKey: null, commandRoom: null, exits: [],
   };
   const shortId = (id) => (id ? `${id.slice(0, 15)}…` : "—");
 
@@ -1049,10 +1052,16 @@
     for (const line of lines) {
       if (!line.trim()) { addLine("", "spacer"); continue; }
       let kind = cls ?? "event";
-      if (/^\[.*\]$/.test(line.trim())) kind = "room";
+      if (/^\[.*\]$/.test(line.trim())) {
+        kind = "room";
+        AI.exits = [];
+      }
       else if (/^(Here|Objects):$/i.test(line.trim())) kind = "label";
       else if (/^  /.test(line)) kind = "item";
-      else if (/^Exits:/i.test(line.trim())) kind = "exits";
+      else if (/^Exits:/i.test(line.trim())) {
+        kind = "exits";
+        AI.exits = line.replace(/^Exits:\s*/i, "").split(/[,\s]+/).map((dir) => dir.replace(/[^a-z]/gi, "")).filter(Boolean);
+      }
       else if (/^(Night|Dawn|Day|Dusk)\./.test(line.trim())) kind = "scene";
       else if (/^(Welcome|Account|Signing|You must sign|That name|No such|Usage|Goodbye|Connected|New here)/i.test(line.trim())) kind = "sys";
       else if (!cls && !/^\[/.test(line.trim())) kind = "desc";
@@ -1901,6 +1910,23 @@
     aiHint.className = `small ${error ? "err" : "muted"}`;
   }
 
+  function ensureMemory() {
+    if (AI.memory) return AI.memory;
+    const key = `mudbench-ai-memory:${AI.persona ?? AI.identity?.envelope?.body?.prism ?? AI.character ?? "ai"}`;
+    AI.memoryKey = key;
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw) AI.memory = JSON.parse(raw);
+    } catch {}
+    if (!AI.memory || typeof AI.memory !== "object" || !AI.memory.rooms) AI.memory = emptyMemory();
+    return AI.memory;
+  }
+
+  function saveMemory() {
+    if (!AI.memoryKey || !AI.memory) return;
+    try { localStorage.setItem(AI.memoryKey, JSON.stringify(AI.memory)); } catch {}
+  }
+
   function requestDemoToken() {
     return new Promise((resolve, reject) => {
       if (AI.socket?.readyState !== WebSocket.OPEN) {
@@ -2006,6 +2032,10 @@
     AI.demoToken = null;
     AI.demoTokenExpires = 0;
     AI.demoWaiters = [];
+    AI.memory = null;
+    AI.memoryKey = null;
+    AI.commandRoom = null;
+    AI.exits = [];
     AI.lastReply = null;
     AI.lastParsed = null;
     AI.lastLatency = 0;
@@ -2618,19 +2648,41 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
 
     const started = performance.now();
     try {
-      const actions = buildActionMenu(AI.state);
+      const memory = ensureMemory();
+      if (AI.lastCommand && AI.commandRoom) {
+        rememberResult(memory, {
+          room: AI.commandRoom,
+          command: AI.lastCommand,
+          observation,
+          tick: AI.lastTick,
+          at: Date.now(),
+        });
+        saveMemory();
+      }
+      const stateRoom = AI.state?.room?.name === AI.room
+        ? AI.state.room
+        : { name: AI.room, safe: false, details: [], exits: (AI.exits ?? []).map((dir) => ({ dir })), objects: [], npcs: [], actions: [] };
+      const promptState = AI.state ? { ...AI.state, room: stateRoom } : { room: stateRoom };
+      const exits = stateRoom.exits ?? [];
+      const memoryText = memoryPrompt(memory, { room: AI.room || stateRoom.name, exits });
+      const notes = [];
+      if (AI.nudge) notes.push("You repeated a command. Do something different: move, examine, take, talk, or check your inventory.");
+      const loop = loopWarning(AI.recent);
+      if (loop) notes.push(loop);
+      AI.nudge = false;
+      const actions = buildActionMenu(promptState);
       const deliberate = needsReasoning();
       const system = buildSystemPrompt({ name: AI.name || "an autonomous player", goal: DEFAULT_GOAL, fast: AI.config.fast, deliberate });
       const user = buildUserPrompt({
         turn,
         observation,
         director,
-        state: AI.state,
+        state: promptState,
         actions,
+        memory: memoryText,
         fast: AI.config.fast,
-        note: AI.nudge ? "You repeated a command. Do something different: move, examine, take, talk, or check your inventory." : "",
+        note: notes.join(" "),
       });
-      AI.nudge = false;
       const messages = trimHistory([...AI.history, { role: "user", content: user }], AI.config.fast ? 2 : 8);
       if (AI.config.provider === "gemini-demo") {
         // A fresh token per turn survives a server restart and keeps the
@@ -2659,6 +2711,14 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       if (!text) throw new Error("The model returned an empty reply.");
       const latency = Math.round(performance.now() - started);
       const parsed = parseBrain(text);
+      if (shouldBreakLoop(memory, { room: AI.room || AI.state?.room?.name, command: parsed.command, recent: AI.recent })) {
+        const forced = breakLoop(AI.recent, exits);
+        if (forced && forced !== parsed.command) {
+          parsed.command = forced;
+          parsed.thought = `Loop broken: ${forced}.`;
+          addChat("system", `Loop guard: a repeated command was replaced with "${forced}".`);
+        }
+      }
       AI.lastLatency = latency;
       AI.lastReply = { text, usage: usage ?? null, latency_ms: latency, at: new Date().toISOString() };
       AI.lastParsed = parsed;
@@ -2688,22 +2748,16 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       AI.usage.prompt += usage?.input_tokens ?? usage?.prompt_tokens ?? 0;
       AI.usage.completion += usage?.output_tokens ?? usage?.completion_tokens ?? 0;
       AI.lastCommand = parsed.command;
-      const recent = [...AI.recent, parsed.command];
+      let recent = [...AI.recent, parsed.command];
       const stuck = recent.length >= 5 && recent.slice(-5).every((command) => command === parsed.command);
-
       if (stuck) {
-        if (parsed.thought) addThought(turn, parsed.thought);
-        else addThought(turn, `No reasoning returned; the model chose ${parsed.command}.`, true);
-        AI.transcript.push({
-          turn, observation, director, thought: parsed.thought, reply: parsed.reply,
-          command: parsed.command, tick: null, latency_ms: latency, usage: usage ?? null,
-          stuck: true, at: new Date().toISOString(),
-        });
-        AI.paused = true;
-        updatePause();
-        setAIStatus("paused");
-        addChat("system", `The AI repeated "${parsed.command}" five times. Steer it, then Resume.`);
-        return;
+        const forced = breakLoop(recent, exits);
+        if (forced && forced !== parsed.command) {
+          parsed.command = forced;
+          parsed.thought = `Loop broken: ${forced}.`;
+          addChat("system", `Loop guard: repeat limit reached; trying "${forced}".`);
+          recent = [...AI.recent, parsed.command];
+        }
       }
 
       if (director.length) AI.director.splice(0, director.length);
@@ -2731,6 +2785,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         publishStream({ kind: "command", text: parsed.command, turn, tick: AI.lastTick });
         publishStream({ kind: "status", text: "live", tick: AI.lastTick });
       }
+      AI.commandRoom = AI.room || AI.state?.room?.name || null;
       if (AI.socket?.readyState === WebSocket.OPEN) AI.socket.send(`${parsed.command}\n`);
       else throw new Error("The AI is not connected.");
       AI.lastError = null;

@@ -65,6 +65,15 @@ the compact `COMMANDS` line, including speech to players. It returns
 `THOUGHT`, `REPLY` and `COMMAND`; the parser accepts a missing `REPLY` and
 falls back to a known verb.
 
+A compact per-character memory is injected every turn. It records rooms seen,
+commands tried in the current room, whether the result changed (`stale`), and
+which exits lead to unseen rooms. It persists in browser storage across runs,
+so a reload does not reset the character's map. After a stale command repeats
+or a movement cycle appears, a loop guard replaces the command with a fresh
+exit, `look`, or `wait` instead of pausing the run. This is the structured
+memory layer; the R4 router's integer/GCD concept retrieval can replace or
+augment it without changing the game interface.
+
 **Reasoning** is a separate setting:
 
 | Setting | Behaviour |

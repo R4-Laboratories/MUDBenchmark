@@ -587,6 +587,7 @@ function selfState(actor) {
       leaders: status.top,
     },
     self,
+    room: self?.room ?? null,
   };
 }
 
@@ -2500,6 +2501,17 @@ const web = http.createServer(async (req, res) => {
   if (pathname === "/agent.mjs") {
     try {
       const source = readFileSync(new URL("./agent.mjs", import.meta.url));
+      res.writeHead(200, { "content-type": "text/javascript; charset=utf-8", "cache-control": "no-store" });
+      res.end(source);
+    } catch {
+      res.writeHead(404, { "content-type": "text/plain" });
+      res.end("not found");
+    }
+    return;
+  }
+  if (pathname === "/memory.mjs") {
+    try {
+      const source = readFileSync(new URL("./web/memory.mjs", import.meta.url));
       res.writeHead(200, { "content-type": "text/javascript; charset=utf-8", "cache-control": "no-store" });
       res.end(source);
     } catch {

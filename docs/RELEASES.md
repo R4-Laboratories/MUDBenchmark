@@ -171,6 +171,9 @@ Rehearsed 2026-11-16:
 - v0.64.1 (Gemini live) configures the demo with gemini-3.1-flash-lite,
   corrects the model label and records a real nine-turn Prism-only run at
   p50 1.04s / p95 1.33s (MB-95);
+- v0.65.0 (agent memory) adds persistent per-character room/command/stale
+  memory, injects it every turn and replaces observation loops with a fresh
+  action instead of pausing (MB-97);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);
