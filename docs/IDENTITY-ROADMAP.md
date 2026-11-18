@@ -626,9 +626,9 @@ it, and rolls it back once. MB-26/27.
    exercised through Cloudflare. Run a headless browser against
    `https://play.r4labs.org`, click "Use my Prism id", and assert
    `Signing in as prism:`; run the same against localhost in the gate.
-4. **Clock skew.** A 60-second past window fails on a slow device clock. Test
-   with a page whose `Date.now` is two minutes slow; verify the new window and
-   the message.
+4. **Clock skew.** `sessionWithinWindow` accepts a two-minute-slow clock and
+   refuses a six-minute skew; the gate tests both. The browser still needs a
+   real slow-clock run through the page.
 5. **Reboot.** The only proof that the state is durable is a reboot. Schedule a
    window, migrate the live file first, and check the identity count and the
    `casey` account afterwards.

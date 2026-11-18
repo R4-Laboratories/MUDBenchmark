@@ -369,6 +369,12 @@
       "level": "some-true",
       "statement": "Production v0.52.0 serves 50 rooms, 26 mobiles, 49 objects and 18 quests. The repeatable Sigil Trial, questCycles, guild levels/perks, item-gated action engine, scrolls, magic, equipment, watch page, provider fast mode and redacted durable telemetry are live. Accounts 104 and characters 105.",
       "authority": "wick production v0.52.0 2026-11-18; /world and /health; release 44222839601; gate 44220377465"
+    },
+    {
+      "id": "MB-56",
+      "level": "build",
+      "statement": "Telemetry retention has a pure planner and a CLI that keep the live spans/trace, remove archives older than the keep window, and enforce a total-byte cap by deleting the oldest archives first. The CLI defaults to a dry run and never deletes the live files. Prism session freshness is factored into `sessionWithinWindow`; a two-minute-slow clock is accepted and a six-minute skew is refused. The gate covers the retention plan and both skew cases.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

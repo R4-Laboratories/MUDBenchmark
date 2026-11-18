@@ -71,6 +71,19 @@ Once a question has enough data to state a rate with an interval, it can become
 an `open` claim in `claims/ledger.json`; only a gate-tested checker becomes a
 `build` claim.
 
+## Retention
+
+```sh
+node tools/telemetry-retention.mjs --dir ~/.mudbench/telemetry
+node tools/telemetry-retention.mjs --dir ~/.mudbench/telemetry --apply
+```
+
+The live `spans.jsonl` and `trace.jsonl` are never removed. Archived files older
+than 90 days are removed first, then the oldest archives until the directory is
+under 4 GiB. The default is a dry run; `--apply` deletes the listed archives.
+The gate tests the planner with a live file, an expired archive, a recent
+archive and a byte cap.
+
 ## Retention and privacy
 
 - Production should set `TELEMETRY_LOG` to a durable directory, not `/tmp`.

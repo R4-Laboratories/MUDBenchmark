@@ -15,6 +15,11 @@ import { CREDENTIAL, identityAdmits } from "./identity.mjs";
 
 const MAX_SESSION_MS = 15 * 60 * 1000;
 const WINDOW_MS = 5 * 60 * 1000;
+
+export function sessionWithinWindow(issued, now, window = WINDOW_MS) {
+  return Number.isSafeInteger(issued) && Number.isSafeInteger(now)
+    && issued >= now - window && issued <= now + window;
+}
 const MAX_RECORDS = 64;
 const SESSION_ACTION = "prism/session/1";
 
@@ -135,7 +140,7 @@ export async function verifyPrismSession(session, { origin, now = Date.now(), pi
     return { ok: false, reason: "the session lasts too long" };
   }
   flags.expiry = true;
-  if (body.at < now - WINDOW_MS || body.at > now + WINDOW_MS) {
+  if (!sessionWithinWindow(body.at, now)) {
     return { ok: false, reason: "the session is outside the time window" };
   }
   flags.window = true;

@@ -36,7 +36,7 @@ import { AREA_PERIOD, armorOf, attackRoll, checkpointIdentities, initialState, n
 import { join } from "node:path";
 import { buildCandidates } from "./candidate.mjs";
 import { PROVIDERS, buildSystemPrompt, buildUserPrompt, normalizeBase, parseBrain, requestFor, replyFrom, trimHistory } from "../runtime/web/ai.mjs";
-import { verifyPrismSession, verifyPersonaOwner, verifySessionKey } from "../runtime/prism-auth.mjs";
+import { verifyPrismSession, verifyPersonaOwner, verifySessionKey, sessionWithinWindow } from "../runtime/prism-auth.mjs";
 import { decodeIdentityRequest, identityAdmits } from "../runtime/identity.mjs";
 import { loadStateFile, saveStateFile } from "../runtime/state.mjs";
 import { acceptLinkRequest, completeLink, createDevice, createLinkOffer, createPrism, createRecovery, linkCode, recoverPrism, requestLink, revokeDevice, signAction, verifyAction } from "../runtime/web/prism-id.mjs";
@@ -51,6 +51,7 @@ import { normalizeAiTurn, aiTurnAttributes } from "../runtime/metrics.mjs";
 import { summarizeTrends } from "../runtime/trends.mjs";
 import { worldStatus, worldStatusText } from "../runtime/worldstatus.mjs";
 import { redactCommand, sanitizeIntent, sanitizeState, scrubSecrets, scrubSpan } from "../runtime/telemetry-policy.mjs";
+import { planRetention } from "../runtime/retention.mjs";
 import { equipmentOf, equipmentText } from "../runtime/equipment.mjs";
 import { maxManaFor } from "../runtime/magic.mjs";
 import { findAction, loadActions } from "../runtime/actions.mjs";
@@ -1048,6 +1049,17 @@ let telemetry = { ok: true, why: [] };
   check(trends.commands.accepted === 2 && trends.commands.refused === 1, "the command trend counts are wrong");
   check(trends.world.online.latest === 1 && trends.world.levels.max === 4, "the world trend counts are wrong");
   check(trends.clients.connections === 1 && trends.clients.sessions === 1, "the client trend counts are wrong");
+  const now = 1_000_000_000_000;
+  const retention = planRetention([
+    { path: "/t/spans.jsonl", size: 10, mtimeMs: now - 80 * 86400000 },
+    { path: "/t/spans.old", size: 10, mtimeMs: now - 40 * 86400000 },
+    { path: "/t/spans.new", size: 10, mtimeMs: now - 1 * 86400000 },
+    { path: "/t/spans.huge", size: 100, mtimeMs: now - 2 * 86400000 },
+  ], { now, keepDays: 30, maxBytes: 50 });
+  check(retention.keep.some((file) => file.path.endsWith("spans.jsonl")), "retention dropped the live span file");
+  check(retention.remove.some((file) => file.path.endsWith("spans.old")), "retention kept an expired archive");
+  check(retention.keep.some((file) => file.path.endsWith("spans.new")), "retention dropped a recent archive");
+  check(retention.remove.some((file) => file.path.endsWith("spans.huge")), "retention did not enforce the byte cap");
 
   const statusWorld = loadWorld({ mode: "single" });
   let statusState = initialState(statusWorld.rooms, statusWorld.npcs, statusWorld.objects, statusWorld.start, statusWorld.climate, channelTable.channels, statusWorld.levels, questTable.quests);
@@ -1296,6 +1308,8 @@ let prismSession = { ok: true, why: [] };
   if (wrong.ok) prismSession.why.push("a session for another origin was accepted");
   const expired = await verifyPrismSession(fixture, { origin: fixture.app, now: fixture.envelope.body.payload.expires + 1 });
   if (expired.ok) prismSession.why.push("an expired session was accepted");
+  if (!sessionWithinWindow(at, at + 2 * 60 * 1000)) prismSession.why.push("a two-minute-slow clock was refused");
+  if (sessionWithinWindow(at, at + 6 * 60 * 1000)) prismSession.why.push("a six-minute-skewed session was accepted");
   if (prismSession.why.length) { prismSession.ok = false; failures.push(`the Prism verifier is broken: ${prismSession.why[0]}`); }
 }
 
