@@ -37,6 +37,8 @@ jobs:
           node-version: '22'
       - name: Gate
         run: node tools/gate.mjs
+      - name: Tutor region client
+        run: node --test runtime/tutor-region.test.mjs
       - name: Next improvement
         if: always()
         run: node tools/tick.mjs

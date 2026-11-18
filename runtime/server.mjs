@@ -37,6 +37,7 @@ import { normalizeAiTurn, aiTurnAttributes } from "./metrics.mjs";
 import { worldStatus, worldStatusText } from "./worldstatus.mjs";
 import { redactCommand, sanitizeIntent, sanitizeState } from "./telemetry-policy.mjs";
 import { loadStateFile, saveStateFile } from "./state.mjs";
+import { loadTutorClaims, saveTutorClaims, tutorCommand, tutorConfig } from "./tutor-region.mjs";
 
 const HOLO_URL = process.env.HOLO_URL ?? "http://127.0.0.1:8082";
 const TELNET_PORT = Number(process.env.TELNET_PORT ?? 4000);
@@ -45,6 +46,7 @@ const WEB_PORT = Number(process.env.WEB_PORT ?? 8090);
 // directory outside the release artifact; the unit and the deploy set it too.
 const STATE_FILE = process.env.STATE_FILE ?? joinPath(homedir(), ".mudbench", "state", "world.json");
 const IDENTITY_FILE = process.env.IDENTITY_FILE ?? joinPath(homedir(), ".mudbench", "state", "identities.json");
+const TUTOR_CLAIMS_FILE = process.env.TUTOR_CLAIMS_FILE ?? joinPath(homedir(), ".mudbench", "state", "tutor-claims.json");
 const TRACE_FILE = process.env.TRACE_FILE ?? "/tmp/mudbench-trace.jsonl";
 const PRISM_ORIGINS = (process.env.PRISM_ORIGINS ?? "").split(",").map((value) => value.trim()).filter(Boolean);
 const PRISM_LOGIN_MAX = 262144;
@@ -274,6 +276,18 @@ function loadIdentityStore() {
 }
 
 const identityStore = loadIdentityStore();
+
+// Tutor is a separate region. Its answers are kept outside `step`'s state for
+// the same reason as the identity store.
+let TUTOR;
+let tutorClaims;
+try {
+  TUTOR = tutorConfig();
+  tutorClaims = loadTutorClaims(TUTOR_CLAIMS_FILE);
+} catch (error) {
+  console.error(`tutor: ${error.message}`);
+  process.exit(1);
+}
 
 function saveIdentityStore() {
   try {
@@ -1131,7 +1145,7 @@ async function handleCommand(id, line) {
     if (!actor?.key) {
       return sendTo(id, "MUDBench is a persistent world for people and agents.\r\nSign in with your Prism id, or register <name> <password> / login <name> <password>.\r\nThen type help for the commands.\r\n");
     }
-    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: get/g, drop/dr, inventory/i, score/sc, quests/q, who/wh, gossip/gos, guildchat/gc.\r\nMagic: spells, train <spell> at the Mages' Guild, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search. Guild: guild join/leave/who/list/chat, guild advance (Mages). Room actions: turn, push, ring where the room suggests.\r\nWorld: world or status (online, levels, guilds, reset).\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
+    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: get/g, drop/dr, inventory/i, score/sc, quests/q, who/wh, gossip/gos, guildchat/gc.\r\nMagic: spells, train <spell> at the Mages' Guild, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search. Guild: guild join/leave/who/list/chat, guild advance (Mages). Room actions: turn, push, ring where the room suggests.\r\nTutor: tutor, tutor link <code>, tutor claim <problem>.\r\nWorld: world or status (online, levels, guilds, reset).\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
   }
 
   // A command typed before the join tick lands is queued, not refused: the
@@ -1145,6 +1159,12 @@ async function handleCommand(id, line) {
 
   if (!actor.key) {
     return sendTo(id, "You must sign in first. register <name> <password>, or login <name> <password>.\r\n");
+  }
+
+  if (verb === "tutor") {
+    const result = await tutorCommand({ config: TUTOR, claims: tutorClaims, character: actor.key, args: restRaw });
+    if (result.changed) saveTutorClaims(TUTOR_CLAIMS_FILE, tutorClaims);
+    return sendTo(id, result.text);
   }
 
   if (verb === "search") {

@@ -18,6 +18,9 @@ export function redactCommand(raw) {
   if (SECRET_VERBS.has(verb)) {
     return { verb, text: null, policy: "secret", length: text.length };
   }
+  if (verb === "tutor" && text.trim().split(/\s+/)[1]?.toLowerCase() === "link") {
+    return { verb, text: null, policy: "secret", length: text.length };
+  }
   if (PRIVATE_SPEECH.has(verb)) {
     return { verb, text: null, policy: "metadata", length: text.length };
   }
