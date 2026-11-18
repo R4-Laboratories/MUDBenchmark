@@ -95,6 +95,8 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `ledger` | The Drowned Ledger | 4 | Defeat the drowned clerk; Recover the drowned page | 100 xp |
 | `sigils` | Three Parts of a Sigil | 5 | Find the first sigil; Find the second sigil; Find the third sigil | 150 xp |
 | `guild-sigils` | The Sigil Trial | 5 | Find the first sigil; Find the second sigil; Find the third sigil | 120 xp |
+| `guild-mirror` | The Mirror Ledger | 6 | Enter the Mirror Pool; Carry a mirror shard | 120 xp |
+| `guild-warden` | The Warden's Debt | 7 | Defeat the warden; Carry the ward key | 200 xp |
 
 ## Rooms
 

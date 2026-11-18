@@ -128,6 +128,9 @@ Rehearsed 2026-11-16:
   levels/perks and the hall-chest perk; 18 quests (MB-54);
 - v0.53.0 (launch hardening) adds telemetry retention and a session clock-skew
   check; dry run against the live directory keeps the live files (MB-56);
+- v0.54.0 (guild quests) adds The Mirror Ledger and The Warden's Debt, plus
+  shrine prayer and wardstone touch actions; 20 quests / 7 action verbs
+  (MB-58);
 - a SHA with no green Gate run (`a78f57e`) refused before the tag was created;
 - the timer pulled v0.34.0; v0.33.0 was deployed and verified (101 accounts,
   101 characters), then v0.34.0 restored;

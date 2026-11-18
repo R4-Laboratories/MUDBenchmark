@@ -99,6 +99,42 @@
         "actor": "You read the names. One brow is blank.",
         "others": "%a studies the names on the skulls."
       }
+    },
+    {
+      "id": "pray-shrine",
+      "verb": "pray",
+      "target": "shrine",
+      "room": 6,
+      "effects": [
+        {
+          "kind": "heal",
+          "amount": 2
+        },
+        {
+          "kind": "message",
+          "text": "The shrine is quiet. Some of the cold leaves you."
+        }
+      ],
+      "messages": {
+        "actor": "You kneel at the shrine and feel a little warmer.",
+        "others": "%a kneels at the shrine."
+      }
+    },
+    {
+      "id": "touch-wardstone",
+      "verb": "touch",
+      "target": "wardstone",
+      "room": 50,
+      "effects": [
+        {
+          "kind": "message",
+          "text": "The wardstone is warm. Something inside it turns over and settles."
+        }
+      ],
+      "messages": {
+        "actor": "You touch the wardstone. It beats once under your hand.",
+        "others": "%a touches the wardstone; it beats once."
+      }
     }
   ]
 }

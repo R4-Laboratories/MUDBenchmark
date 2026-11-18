@@ -14,7 +14,7 @@ and the AI prompt/router state layer.
 | --- | --- | --- |
 | M3 | **done** — Equipment slots (`world/data/slots.json`): head, body, hands, feet, cloak, neck, mainhand, offhand; `equip`/`unequip`/`equipment`; gear in shops and quest rewards | slot swap, two-handed clears offhand, armour sum, weapon damage, drop/death/reset clears gear |
 | M4 | **done** — Magic: mana, `cast`/`spells`/`train`/`study`/`recite`, scrolls, the Mages' Guild and an archmage trainer | spark/mend/light/shield/detect/recall; mana refill and regen; spellbook persists; scrolls consume; rank gates |
-| M5 | **first two slices done** — The Lantern Quarter / Undervault: 11 rooms, 2 zones, 5 quests, 5 mobiles, 6 objects, one secret stair, three room actions; the full 25-room/10-quest target remains | 50 rooms, 17 quests, every exit reciprocal, all references valid, scripted `errand`/`familiar`/`mirror` walks |
+| M5 | **first two slices done** — The Lantern Quarter / Undervault: 11 rooms, 2 zones, 5 quests, 5 mobiles, 6 objects, one secret stair, seven room actions; the full 25-room/10-quest target remains | 50 rooms, 17 quests, every exit reciprocal, all references valid, scripted `errand`/`familiar`/`mirror` walks |
 | M6 | **core done** — Guild quests and progression: guild XP/level, ledger and repeatable sigil quests, apprentice→adept→magician advancement, level 2–5 perks; more guild quests remain | guild quest acceptance by rank, repeat reset cycle, guild XP, perks, rank advancement, restart persistence |
 | M7 | Second content slice: another 25 rooms / 8 quests using the same template | same map/quest/reference gates |
 

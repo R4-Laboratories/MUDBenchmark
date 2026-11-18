@@ -1268,6 +1268,15 @@ let actions = { ok: true, why: [] };
   state.actors.push(noSpell);
   run([{ kind: "action", actorId: "y", actionId: "turn-mirror", messages: { actor: "turned", others: "turns" } }]);
   check(!(state.actors.find((entry) => entry.id === "y")?.found ?? []).includes("41:down"), "an action with an unmet spell requirement fired");
+  actor = state.actors.find((entry) => entry.id === "x");
+  actor.room = 6;
+  actor.hp = 5;
+  run([{ kind: "action", actorId: "x", actionId: "pray-shrine", messages: { actor: "prayed", others: "prays" } }]);
+  actor = state.actors.find((entry) => entry.id === "x");
+  check(actor.hp === 7, "praying at the shrine did not heal");
+  actor.room = 50;
+  const wardEvents = run([{ kind: "action", actorId: "x", actionId: "touch-wardstone", messages: { actor: "touched", others: "touches" } }]);
+  check(wardEvents.some((event) => /turns over and settles/.test(event.text ?? "")), "touching the wardstone did not emit its message");
   if (actions.why.length) { actions.ok = false; failures.push(`the action engine is broken: ${actions.why[0]}`); }
 }
 
@@ -2264,7 +2273,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"equipment".padEnd(26)}  ${(equipment.ok ? "8 slots" : "BROKEN").padStart(5)}   == wear, wield, replace`);
   console.log(`${"magic".padEnd(26)}  ${(magic.ok ? "6 spells+scrolls" : "BROKEN").padStart(5)}   == mana, cast, study`);
   console.log(`${"lantern".padEnd(26)}  ${(lantern.ok ? "50 rooms" : "BROKEN").padStart(5)}   == errand, charm, secret`);
-  console.log(`${"actions".padEnd(26)}  ${(actions.ok ? "5 verbs" : "BROKEN").padStart(5)}   == reveal, open, key`);
+  console.log(`${"actions".padEnd(26)}  ${(actions.ok ? "7 verbs" : "BROKEN").padStart(5)}   == reveal, open, key`);
   console.log(`${"pinned".padEnd(26)}  ${(identityPin.ok ? "revoked" : "BROKEN").padStart(5)}   == old log refused`);
   console.log(`${"takeover".padEnd(26)}  ${(takeover.ok ? "1 actor" : "BROKEN").padStart(5)}   == leave then login`);
   console.log(`${"characters".padEnd(26)}  ${(characters.ok ? "2 chars" : "BROKEN").padStart(5)}   == create, switch`);

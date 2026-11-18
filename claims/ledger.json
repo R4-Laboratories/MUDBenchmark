@@ -381,6 +381,12 @@
       "level": "some-true",
       "statement": "Production v0.53.0 runs the retention dry run over the live telemetry directory: 4 files / 366 MB kept, 0 removed, with the live spans/trace protected. The session window accepts a two-minute-slow clock and refuses six minutes. The world remains 50 rooms / 18 quests with the action engine, guild cycle, scrolls, watch, provider fast mode and redacted durable telemetry.",
       "authority": "wick production v0.53.0 2026-11-18; retention dry run; release 44225180852; gate 44223351299"
+    },
+    {
+      "id": "MB-58",
+      "level": "build",
+      "statement": "Two adept-tier Mages' Guild quests are live: The Mirror Ledger (visit the Mirror Pool, carry a shard; requires the personal mirror quest) and The Warden's Debt (kill the warden, carry the ward key; requires the guild ledger). Both grant guild XP. Two more room actions are live: pray at the Shrine (heals 2) and touch the Wardstone (room event). The world has 20 quests and seven action verbs. The gate covers the action effects and the quest references.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

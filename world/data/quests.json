@@ -431,6 +431,69 @@
         "guildXp": 50
       },
       "complete": "The archmage fits the sigils into the ward and hands them back for the next cycle."
+    },
+    {
+      "id": "guild-mirror",
+      "name": "The Mirror Ledger",
+      "level": 6,
+      "giver": "the archmage",
+      "description": "The archmage wants a shard of the Mirror Pool for the guild ledger.",
+      "scope": "guild",
+      "guild": "mages",
+      "rank": "adept",
+      "objectives": [
+        {
+          "kind": "visit",
+          "room": 41,
+          "text": "Enter the Mirror Pool"
+        },
+        {
+          "kind": "collect",
+          "object": "mirror-shard",
+          "count": 1,
+          "text": "Carry a mirror shard"
+        }
+      ],
+      "rewards": {
+        "xp": 120,
+        "guildXp": 60
+      },
+      "complete": "The archmage sets the shard in the ledger and the page goes dark.",
+      "requires": [
+        "mirror"
+      ]
+    },
+    {
+      "id": "guild-warden",
+      "name": "The Warden's Debt",
+      "level": 7,
+      "giver": "the archmage",
+      "description": "The warden in the Wardstone chamber still owes the guild a key. Collect it.",
+      "scope": "guild",
+      "guild": "mages",
+      "rank": "adept",
+      "objectives": [
+        {
+          "kind": "kill",
+          "npc": "warden",
+          "count": 1,
+          "text": "Defeat the warden"
+        },
+        {
+          "kind": "collect",
+          "object": "ward-key",
+          "count": 1,
+          "text": "Carry the ward key"
+        }
+      ],
+      "rewards": {
+        "xp": 200,
+        "guildXp": 80
+      },
+      "complete": "The archmage adds the key to a ring of identical keys.",
+      "requires": [
+        "guild-ledger"
+      ]
     }
   ]
 }
