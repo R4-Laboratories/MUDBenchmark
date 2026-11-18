@@ -4,7 +4,7 @@ This was the queued AberMUD-style content and systems track. The v0.47/v0.48 sli
 have landed: eight equipment slots, six spells and the Mages' Guild, eleven
 Lantern Quarter/Undervault rooms, five personal quests, a guild ledger quest,
 a searchable secret stair, three data-driven room actions and mage rank advancement. The world is now 60 rooms
-and 24 quests. The foundation from v0.46 remains:
+and 26 quests. The foundation from v0.46 remains:
 short command forms, `equipment`, `world`/`status`, the hidden `#state` line,
 and the AI prompt/router state layer.
 
@@ -14,9 +14,9 @@ and the AI prompt/router state layer.
 | --- | --- | --- |
 | M3 | **done** — Equipment slots (`world/data/slots.json`): head, body, hands, feet, cloak, neck, mainhand, offhand; `equip`/`unequip`/`equipment`; gear in shops and quest rewards | slot swap, two-handed clears offhand, armour sum, weapon damage, drop/death/reset clears gear |
 | M4 | **done** — Magic: mana, `cast`/`spells`/`train`/`study`/`recite`, scrolls, the Mages' Guild and an archmage trainer | spark/mend/light/shield/detect/recall; mana refill and regen; spellbook persists; scrolls consume; rank gates |
-| M5 | **first two slices done** — The Lantern Quarter / Undervault: 11 rooms, 2 zones, 5 quests, 5 mobiles, 6 objects, one secret stair, seven room actions; the full 25-room/10-quest target remains | 60 rooms, 24 quests, every exit reciprocal, all references valid, scripted `errand`/`familiar`/`mirror` walks |
-| M6 | **core done** — Guild quests and progression: guild XP/level, ledger/mirror/warden/repeatable sigil quests, apprentice→adept→magician advancement, level 2–5 perks including functional trainer-discount and guild-quest-2 limits; more guild quests remain | guild quest acceptance by rank, repeat reset cycle, guild XP, paid training/discount, rank advancement, restart persistence |
-| M7 | **first slice done** — another ten Undervault rooms, four linked quests and two actions; 60 rooms / 24 quests | same map/quest/reference gates |
+| M5 | **first two slices done** — The Lantern Quarter / Undervault: 11 rooms, 2 zones, 5 quests, 5 mobiles, 6 objects, one secret stair, seven room actions; the full 25-room/10-quest target remains | 60 rooms, 26 quests, every exit reciprocal, all references valid, scripted `errand`/`familiar`/`mirror` walks |
+| M6 | **core done** — Guild quests and progression: guild XP/level, ledger/mirror/warden/choir/reliquary/repeatable sigil quests, apprentice→adept→magician advancement, level 2–5 perks including functional trainer-discount and guild-quest-2 limits; more guild quests remain | guild quest acceptance by rank, repeat reset cycle, guild XP, paid training/discount, rank advancement, restart persistence |
+| M7 | **first slice done** — another ten Undervault rooms, four linked quests and two actions; 60 rooms / 26 quests | same map/quest/reference gates |
 
 ## Rules that keep the model green
 

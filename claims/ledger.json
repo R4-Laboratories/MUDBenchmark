@@ -489,6 +489,12 @@
       "level": "some-true",
       "statement": "A real incognito Chrome session on production signed in as prism:7693047c with persisted false, reloaded, and signed in again as the same prism:7693047c. Private-window IndexedDB survived the reload for this session, while the page kept warning that persistence was not granted. The browser was closed and its single new pin removed with the strict tool; production is back to 105 accounts / 106 characters / 8 pins.",
       "authority": "Chrome --incognito 2026-11-18; production play.r4labs.org; pin diff/delete; /health"
+    },
+    {
+      "id": "MB-76",
+      "level": "build",
+      "statement": "Two magician-tier Mages' Guild quests are live: The Choir Bell (kill the choir moth, carry the black bell) and The Reliquary Lens (visit the Sealed Reliquary, carry the lens). Both require the earlier guild quests, rank magician, and award guild XP. The gate covers the adept\u2192magician rank transition; the world has 26 quests.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

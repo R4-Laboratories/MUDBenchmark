@@ -101,6 +101,8 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `choir` | The Black Choir | 7 | Defeat the choir moth; Carry the black bell | 120 xp |
 | `reliquary` | The Sealed Reliquary | 8 | Enter the Sealed Reliquary; Carry the reliquary lens | 150 xp |
 | `last` | The Last Lantern | 8 | Reach the Last Lantern; Carry the last lantern | 180 xp |
+| `guild-choir` | The Choir Bell | 8 | Defeat the choir moth; Carry the black bell | 180 xp |
+| `guild-reliquary` | The Reliquary Lens | 9 | Enter the Sealed Reliquary; Carry the reliquary lens | 200 xp |
 
 ## Rooms
 

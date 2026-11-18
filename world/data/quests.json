@@ -603,6 +603,69 @@
       "requires": [
         "reliquary"
       ]
+    },
+    {
+      "id": "guild-choir",
+      "name": "The Choir Bell",
+      "level": 8,
+      "giver": "the archmage",
+      "description": "A black bell hangs above the choir moth. The archmage wants it for the guild's collection.",
+      "scope": "guild",
+      "guild": "mages",
+      "rank": "magician",
+      "objectives": [
+        {
+          "kind": "kill",
+          "npc": "choir-moth",
+          "count": 1,
+          "text": "Defeat the choir moth"
+        },
+        {
+          "kind": "collect",
+          "object": "choir-bell",
+          "count": 1,
+          "text": "Carry the black bell"
+        }
+      ],
+      "rewards": {
+        "xp": 180,
+        "guildXp": 100
+      },
+      "complete": "The archmage hangs the black bell beside the ledger.",
+      "requires": [
+        "guild-mirror"
+      ]
+    },
+    {
+      "id": "guild-reliquary",
+      "name": "The Reliquary Lens",
+      "level": 9,
+      "giver": "the archmage",
+      "description": "The reliquary keeper holds a lens that sees the quiet door. The archmage wants it studied.",
+      "scope": "guild",
+      "guild": "mages",
+      "rank": "magician",
+      "objectives": [
+        {
+          "kind": "visit",
+          "room": 58,
+          "text": "Enter the Sealed Reliquary"
+        },
+        {
+          "kind": "collect",
+          "object": "reliquary-lens",
+          "count": 1,
+          "text": "Carry the reliquary lens"
+        }
+      ],
+      "rewards": {
+        "xp": 200,
+        "guildXp": 120
+      },
+      "complete": "The archmage looks through the lens and does not blink.",
+      "requires": [
+        "guild-warden"
+      ]
     }
   ]
 }
