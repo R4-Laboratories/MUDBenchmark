@@ -1,8 +1,8 @@
 {
   "schema": "mudbenchmark/pacing/1",
-  "candidate": "c-4abd39bfc4ff",
-  "report": "7c0b3f5d4668e19d2c083a292327774ce4d88e31a460c5bbe3ab57facf31e778",
-  "worldHash": "af73f522b5baa1bcc9056211eaebf1fd2cb75a19c697e40bc7ab1f31613068c2",
+  "candidate": "c-0f5ec925e602",
+  "report": "fdd6c0c96c2b6c6c66c4f9fcacaa95c62a8999254a70f2d08bf04a353d10e2ff",
+  "worldHash": "defad5596ea6cb76467e8008b2d46c89496f8bbe8da3ecbd43108a7bf5d6936c",
   "changes": [
     {
       "group": "hostile-hp",
@@ -36,9 +36,9 @@
     "benefit": true,
     "bounds": true,
     "checks": true,
-    "candidate": "c-4abd39bfc4ff",
-    "report": "7c0b3f5d4668e19d2c083a292327774ce4d88e31a460c5bbe3ab57facf31e778",
-    "worldHash": "af73f522b5baa1bcc9056211eaebf1fd2cb75a19c697e40bc7ab1f31613068c2",
+    "candidate": "c-0f5ec925e602",
+    "report": "fdd6c0c96c2b6c6c66c4f9fcacaa95c62a8999254a70f2d08bf04a353d10e2ff",
+    "worldHash": "defad5596ea6cb76467e8008b2d46c89496f8bbe8da3ecbd43108a7bf5d6936c",
     "kernel": "sha256:cc0cd971f1090692e7fad9ad7b23a3a35dada64168de74110b321d3e31c30258"
   }
 }
