@@ -1520,6 +1520,13 @@ let sessionChallenge = { ok: true, why: [] };
   const envelope = await signAction(session, "prism/session/1", { sessionKey: raw, expires: now + 10 * 60 * 1000 }, { audience: origin, now });
   const verdict = await verifyPrismSession({ app: origin, envelope, records: [...session.log.values()] }, { origin, now });
   check(verdict.ok && verdict.sessionKey === raw, "the verifier did not return the session key");
+  const fresh = await createPrism({});
+  const freshEnvelope = await signAction(fresh, "prism/session/1", { sessionKey: raw, expires: now + 10 * 60 * 1000 }, { audience: origin, now: now + 1 });
+  const afterReset = await verifyPrismSession(
+    { app: origin, envelope: freshEnvelope, records: [...fresh.log.values()] },
+    { origin, now: now + 1, revokedBefore: now - 1000 },
+  );
+  check(afterReset.ok, "a session minted after the reset was refused");
   const nonce = "gate-session-nonce";
   const message = `prism/session-key/1 ${nonce} 0`;
   const signature = Buffer.from(await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, keys.privateKey, Buffer.from(message))).toString("base64url");
