@@ -423,6 +423,12 @@
       "level": "some-true",
       "statement": "A live-copy restore drill truncated world.json, kept the .1 backup, and started the server against the pair. The loader moved the bad file aside, restored world.json.1, and the world resumed at tick 1006080 with 105 accounts / 106 characters / 29 mobiles. The production state was not touched.",
       "authority": "wick state copy 2026-11-18; truncated main, restored .1; local server on 4098/8098"
+    },
+    {
+      "id": "MB-65",
+      "level": "build",
+      "statement": "The server enforces a configurable account cap (MAX_ACCOUNTS, default 500) on new legacy registrations and new Prism accounts; existing account logins and character selection are unaffected. The cap boundary is gate-tested and an integration run with MAX_ACCOUNTS=1 accepted the first account and refused the second with the cap message.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

@@ -652,8 +652,10 @@ it, and rolls it back once. MB-26/27.
    only the record it needs and cannot enumerate the human's personas.
 10. **Account abuse.** `tools/account-audit.mjs` reports kinds, retirement and
     credential presence without hashes; the live audit is 105 accounts / 106
-    characters, 0 credentialless, 3 retired. A cap, deletion policy and GC
-    still need an owner decision before the world is public.
+    characters, 0 credentialless, 3 retired. New accounts are capped at
+    `MAX_ACCOUNTS` (default 500); the boundary is gate-tested and a live
+    `MAX_ACCOUNTS=1` run accepted one and refused the next. A deletion/GC policy
+    for inactive accounts still needs an owner decision.
 11. **Telemetry privacy.** The full Prism id is a stable pseudonym in the span
     stream; the stream is now durable and rotated, with `tools/telemetry-retention.mjs`
     as the retention policy. Decide who can read it before exporting spans.

@@ -26,7 +26,7 @@ import { loadLevels, nextLevelXp } from "./levels.mjs";
 import { availableQuests, loadQuests, normalizeQuestState, questById, questLines, validateQuestReferences } from "./quests.mjs";
 import { RANKS, guildId, rankAtLeast, validGuildName } from "./guilds.mjs";
 import { buildLlms } from "./llms.mjs";
-import { hashPassword, verifyPassword, validName, validPassword } from "./accounts.mjs";
+import { hashPassword, verifyPassword, validName, validPassword, accountCapReached } from "./accounts.mjs";
 import { allowCommand as allowInput, DEFAULT_INTERVAL_MS } from "./allowance.mjs";
 import { verifyPrismSession, verifyPersonaOwner, verifySessionKey, prismDisplay } from "./prism-auth.mjs";
 import { CREDENTIAL, identityAdmits } from "./identity.mjs";
@@ -161,6 +161,7 @@ let nextId = 1;
 
 // Guards that must exist before this is reachable by anyone but us.
 const MAX_CLIENTS = Number(process.env.MAX_CLIENTS ?? 40);
+const MAX_ACCOUNTS = Number(process.env.MAX_ACCOUNTS ?? 500);
 const MAX_SPECTATORS = Number(process.env.MAX_SPECTATORS ?? 200);
 const RATE_WINDOW_MS = 5000;
 const RATE_MAX = 12;
@@ -765,6 +766,9 @@ async function handleCommand(id, line) {
     const pinned = prismId ? identityStore.prisms[prismId] ?? null : null;
     const verdict = await verifyPrismSession(parsed, { origin, pinned });
     if (!verdict.ok) return sendTo(id, `Prism sign-in refused: ${verdict.reason}.\r\n`);
+    if (!state.accounts?.[verdict.prism] && accountCapReached(Object.keys(state.accounts ?? {}).length, MAX_ACCOUNTS)) {
+      return sendTo(id, "The world has reached its account cap; no new Prism account can be created right now.\r\n");
+    }
     if (!pinned || pinned.root !== verdict.root) {
       identityStore.prisms[verdict.prism] = {
         records: verdict.records,
@@ -965,6 +969,9 @@ async function handleCommand(id, line) {
     const password = restRaw.slice(1).join(" ");
     if (!validName(key)) return sendTo(id, "Names are 1-24 letters, digits, - or _.\r\n");
     if (!validPassword(password)) return sendTo(id, "Passwords are at least 6 characters.\r\n");
+    if (accountCapReached(Object.keys(state.accounts ?? {}).length, MAX_ACCOUNTS)) {
+      return sendTo(id, "The world has reached its account cap; no new account can be created right now.\r\n");
+    }
     if (state.accounts[key] || state.identities[key]) return sendTo(id, "That name is taken.\r\n");
     if (state.actors.some((candidate) => candidate.id !== id && candidate.key === key)) {
       return sendTo(id, "That name is already signed in.\r\n");

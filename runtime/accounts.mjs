@@ -10,6 +10,12 @@ export const validName = (name) => typeof name === "string" && /^[a-z0-9_-]{1,24
 export const validPassword = (password) =>
   typeof password === "string" && password.length >= 6 && password.length <= 128;
 
+// A cap is a hard ceiling on new accounts, not on existing logins. Zero or a
+// negative value means no cap, which is useful for local tests.
+export function accountCapReached(count, cap) {
+  return Number.isInteger(cap) && cap > 0 && count >= cap;
+}
+
 export function hashPassword(password, salt = randomBytes(16).toString("hex")) {
   return { salt, hash: scryptSync(password, salt, 32).toString("hex") };
 }

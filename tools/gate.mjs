@@ -24,7 +24,7 @@ import { describe as renderRoom, examine } from "../runtime/view.mjs";
 import { loadVerbs } from "../runtime/verbs.mjs";
 import { loadChannels } from "../runtime/channels.mjs";
 import { loadSocials } from "../runtime/socials.mjs";
-import { hashPassword, verifyPassword, validName, validPassword } from "../runtime/accounts.mjs";
+import { hashPassword, verifyPassword, validName, validPassword, accountCapReached } from "../runtime/accounts.mjs";
 import { allowCommand, DEFAULT_INTERVAL_MS } from "../runtime/allowance.mjs";
 import { loadLevels } from "../runtime/levels.mjs";
 import { loadQuests, validateQuestReferences } from "../runtime/quests.mjs";
@@ -285,6 +285,10 @@ let accounts = { ok: true, why: [] };
   if (!validName("alice-1") || validName("a b") || !validPassword("sixsix") || validPassword("short")) {
     accounts.ok = false;
     accounts.why.push("name or password validation is wrong");
+  }
+  if (accountCapReached(499, 500) || !accountCapReached(500, 500) || accountCapReached(1, 0)) {
+    accounts.ok = false;
+    accounts.why.push("the account cap boundary is wrong");
   }
 
   const world = loadWorld({ mode: "single" });
