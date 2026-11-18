@@ -9,7 +9,7 @@ import http from "node:http";
 import { readFileSync, statSync, writeFileSync, appendFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join as joinPath } from "node:path";
-import { createHash, randomBytes } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { WebSocketServer } from "ws";
 import { recordSpan, digest, TELEMETRY_LOG } from "./telemetry.mjs";
 import { readSpanTail, readSpansTail, redactSpans } from "./spans.mjs";
@@ -37,6 +37,7 @@ import { normalizeAiTurn, aiTurnAttributes } from "./metrics.mjs";
 import { worldStatus, worldStatusText } from "./worldstatus.mjs";
 import { redactCommand, sanitizeIntent, sanitizeState } from "./telemetry-policy.mjs";
 import { loadStateFile, saveStateFile } from "./state.mjs";
+import { authenticatedPeer, federationConfig, readFederationBody, requestPeer, signClaim, verifyClaim } from "./federation.mjs";
 
 const HOLO_URL = process.env.HOLO_URL ?? "http://127.0.0.1:8082";
 const TELNET_PORT = Number(process.env.TELNET_PORT ?? 4000);
@@ -53,6 +54,8 @@ const COMMAND_INTERVAL_MS = Number(process.env.COMMAND_INTERVAL_MS ?? DEFAULT_IN
 // The owner console's only authority. Unset means every rebind is refused;
 // there is no empty-token fallback.
 const OWNER_TOKEN = process.env.MUDBENCH_OWNER_TOKEN ?? "";
+const FEDERATION = federationConfig();
+const federationBusy = new Set();
 
 // The world is data: rooms, exits, notices and the task live in
 // world/data/world.json. DECOY_MODE selects which text variant is in play for
@@ -211,7 +214,7 @@ function restoreState(saved) {
 
 function loadState() {
   try {
-    return loadStateFile(STATE_FILE, { initial: makeInitialState, restore: restoreState });
+    return loadStateFile(STATE_FILE, { initial: makeInitialState, restore: restoreState, allowBackup: !FEDERATION });
   } catch (error) {
     console.error(`state: ${error.message}`);
     process.exit(1);
@@ -219,6 +222,14 @@ function loadState() {
 }
 
 let state = loadState();
+function applySkillPolicy(character) {
+  const skills = [...new Set([...(character.spellbook ?? []), ...(character.unrecognizedSkills ?? [])])];
+  character.spellbook = skills.filter((skill) => !FEDERATION || FEDERATION.allowedSkills.has(skill));
+  character.unrecognizedSkills = skills.filter((skill) => FEDERATION && !FEDERATION.allowedSkills.has(skill));
+}
+for (const character of Object.values(state.identities ?? {})) {
+  if (FEDERATION || character.unrecognizedSkills?.length) applySkillPolicy(character);
+}
 if (!state.guilds) state.guilds = {};
 if (!state.guilds.mages) {
   state.guilds.mages = {
@@ -245,6 +256,156 @@ function saveState() {
     lastSave = Date.now();
   } catch (error) {
     console.error(`state not saved: ${error.message}`);
+  }
+}
+
+function federationSave() {
+  checkpointIdentities(state);
+  saveStateFile(STATE_FILE, state);
+  lastSave = Date.now();
+}
+
+function receiveTransfer(from, payload) {
+  const { claim, signature, account } = payload ?? {};
+  const { transferId, characterId, character } = claim ?? {};
+  const name = account?.name;
+  if (!verifyClaim(FEDERATION, from, claim, signature) ||
+      claim?.issuer !== from || claim?.destination !== FEDERATION.id ||
+      claim?.protocol !== FEDERATION.protocol || claim?.rules !== FEDERATION.rules ||
+      !/^[0-9a-f-]{36}$/.test(transferId ?? "") || !/^[0-9a-f-]{36}$/.test(characterId ?? "") ||
+      !validName(name) || account.kind !== "legacy" || account.retired ||
+      !/^[0-9a-f]{64}$/.test(account.passwordHash ?? "") || !/^[0-9a-f]{32}$/.test(account.salt ?? "") ||
+      !character || character.owner !== name || character.name !== name ||
+      !Number.isSafeInteger(character.level) || character.level < 1 ||
+      !Number.isSafeInteger(character.xp) || character.xp < 0 ||
+      !character.quests || !Array.isArray(character.quests.active) || !Array.isArray(character.quests.completed) ||
+      !Array.isArray(character.spellbook) || !character.spellbook.every((spell) => {
+        const definition = spellById(spell);
+        return definition?.id === spell && definition.level <= character.level;
+      }) ||
+      !Number.isFinite(character.maxMana) || !character.questCycles || typeof character.questCycles !== "object") {
+    throw new Error("invalid transfer");
+  }
+  const existing = state.accounts[name];
+  const transferHash = createHash("sha256").update(JSON.stringify(payload)).digest("hex");
+  if (existing?.federation?.status === "active" && existing.federation.lastTransfer === transferId &&
+      existing.federation.characterId === characterId && existing.federation.lastTransferHash === transferHash) return;
+  const received = existing?.federation?.received ?? [];
+  if (received.includes(transferId)) throw new Error("transfer already used");
+  if (existing && (!["away", "outgoing"].includes(existing.federation?.status) ||
+      existing.federation.to !== from || existing.federation.characterId !== characterId)) {
+    throw new Error("account name already belongs to this region");
+  }
+  if (!existing && state.identities[name]) throw new Error("character name already belongs to this region");
+  if (state.actors.some((actor) => actor.key === name)) throw new Error("character is online here");
+
+  const previousAccount = state.accounts[name];
+  const previousCharacter = state.identities[name];
+  const localGuild = previousCharacter?.guild;
+  const guild = state.guilds[localGuild]?.members?.[name] ? localGuild : null;
+  state.accounts[name] = {
+    kind: "legacy", name, characters: [name], passwordHash: account.passwordHash,
+    salt: account.salt, tokenHash: null, retired: false, mergedInto: null,
+    federation: {
+      status: "active", characterId, lastTransfer: transferId, lastTransferHash: transferHash,
+      received: [...received, transferId],
+    },
+  };
+  state.identities[name] = {
+    kind: "character", owner: name, name, role: 0,
+    level: character.level, xp: character.xp, quests: character.quests,
+    spellbook: character.spellbook, maxMana: maxManaFor({ level: character.level, guild }),
+    questCycles: character.questCycles,
+    guild, guildRank: guild ? state.guilds[guild].members[name] : null,
+    federationProof: { claim, signature },
+  };
+  applySkillPolicy(state.identities[name]);
+  try {
+    federationSave();
+  } catch (error) {
+    if (previousAccount) state.accounts[name] = previousAccount;
+    else delete state.accounts[name];
+    if (previousCharacter) state.identities[name] = previousCharacter;
+    else delete state.identities[name];
+    throw error;
+  }
+}
+
+async function deliverTransfer(name) {
+  const account = state.accounts[name];
+  const transfer = account?.federation;
+  if (transfer?.status !== "outgoing") throw new Error("no pending transfer");
+  const claim = {
+    protocol: FEDERATION.protocol,
+    rules: FEDERATION.rules,
+    issuer: FEDERATION.id,
+    destination: transfer.to,
+    transferId: transfer.transferId,
+    characterId: transfer.characterId,
+    character: transfer.character,
+  };
+  const payload = {
+    claim,
+    signature: signClaim(FEDERATION, claim),
+    account: { kind: "legacy", name, passwordHash: account.passwordHash, salt: account.salt },
+  };
+  await requestPeer(FEDERATION, transfer.to, "/federation/transfer", payload);
+  transfer.status = "away";
+  delete transfer.character;
+  federationSave();
+  return transfer.to;
+}
+
+async function travel(id, destination) {
+  const actor = actorById(id);
+  const session = accountSessions.get(id);
+  const account = state.accounts[session?.key];
+  if (!FEDERATION || !FEDERATION.peers[destination]) return sendTo(id, "Unknown or unconfigured region.\r\n");
+  if (!actor?.key || session?.kind !== "legacy" || actor.key !== session.key ||
+      account?.kind !== "legacy" || account.characters?.length !== 1 || !account.passwordHash) {
+    return sendTo(id, "Region travel currently supports signed-in password accounts with one character.\r\n");
+  }
+  const name = session.key;
+  if (federationBusy.has(name)) return sendTo(id, "A transfer is already in progress.\r\n");
+  federationBusy.add(name);
+  try {
+    const status = await requestPeer(FEDERATION, destination, "/federation/status");
+    if (status.region !== destination) throw new Error("destination identity does not match");
+    if (status.protocol !== FEDERATION.protocol || status.rules !== FEDERATION.rules) {
+      throw new Error("destination game rules or transfer protocol are incompatible");
+    }
+    onTick();
+    const current = actorById(id);
+    if (!current || current.key !== name || !transports.has(id)) throw new Error("session ended");
+    checkpointIdentities(state);
+    pending.push({ kind: "leave", actorId: id });
+    onTick();
+    const liveAccount = state.accounts[name];
+    const character = state.identities[name];
+    liveAccount.federation = {
+      status: "outgoing", to: destination, transferId: randomUUID(),
+      characterId: liveAccount.federation?.characterId ?? randomUUID(),
+      received: liveAccount.federation?.received ?? [],
+      character: structuredClone({
+        owner: name, name, level: character.level, xp: character.xp, quests: character.quests,
+        spellbook: [...new Set([...(character.spellbook ?? []), ...(character.unrecognizedSkills ?? [])])],
+        maxMana: character.maxMana, questCycles: character.questCycles,
+      }),
+    };
+    accountSessions.delete(id);
+    federationSave();
+    try {
+      await deliverTransfer(name);
+      sendTo(id, `Transferred to ${destination}. Reconnect there and log in with the same account.\r\n`);
+      transports.get(id)?.close();
+    } catch {
+      sendTo(id, `Transfer to ${destination} is pending. Reconnect here and log in to retry safely.\r\n`);
+      transports.get(id)?.close();
+    }
+  } catch (error) {
+    sendTo(id, `Cannot transfer: ${error.message}.\r\n`);
+  } finally {
+    federationBusy.delete(name);
   }
 }
 
@@ -606,6 +767,9 @@ async function handleCommand(id, line) {
   }
   const rest = restRaw.map((part) => part.toLowerCase());
   const actor = actorById(id);
+  if (actor?.account && federationBusy.has(actor.account)) {
+    return sendTo(id, "A region transfer is in progress.\r\n");
+  }
 
   // The session-key answer is a login handshake, not a game command. It is
   // exempt from the 250 ms input budget and from the span/tick record.
@@ -808,6 +972,10 @@ async function handleCommand(id, line) {
   }, 0);
   sendTo(id, `#tick ${state.tick}\r\n`);
   sendTo(id, `#state ${JSON.stringify(selfState(actor))}\r\n`);
+
+  if (verb === "travel") {
+    return travel(id, rest[0]);
+  }
 
   if (verb === "quit") {
     const session = accountSessions.get(id);
@@ -1017,6 +1185,9 @@ async function handleCommand(id, line) {
     if (!name) return sendTo(id, "Usage: play <character>.\r\n");
     if (actor?.key === name) return sendTo(id, `You are already playing ${name}.\r\n`);
     const account = state.accounts?.[session.key];
+    if (account?.federation && account.federation.status !== "active") {
+      return sendTo(id, `That character is transferring to ${account.federation.to}.\r\n`);
+    }
     const character = state.identities[name];
     const owns = character?.owner === session.key;
     const delegated = character?.delegate === session.key && character?.owner !== session.key;
@@ -1094,6 +1265,23 @@ async function handleCommand(id, line) {
     // password, because the kinds must match.
     if (!identityAdmits({ presented, stored, authenticated: passwordOk, audience: true, window: true, unseen: true, shape: true, expiry: true })) {
       return sendTo(id, "That name and password do not match.\r\n");
+    }
+    if (federationBusy.has(key)) return sendTo(id, "A region transfer is in progress.\r\n");
+    if (account.federation?.status === "outgoing") {
+      if (!FEDERATION?.peers[account.federation.to]) return sendTo(id, "The pending destination is not configured.\r\n");
+      federationBusy.add(key);
+      try {
+        const destination = await deliverTransfer(key);
+        sendTo(id, `Transferred to ${destination}. Reconnect there and log in with the same account.\r\n`);
+      } catch {
+        sendTo(id, "Transfer is still pending. Try again when the destination is available.\r\n");
+      } finally {
+        federationBusy.delete(key);
+      }
+      return;
+    }
+    if (account.federation?.status === "away") {
+      return sendTo(id, `Your character is in ${account.federation.to}. Log in there.\r\n`);
     }
     accountSessions.set(id, { key, kind: "legacy" });
     takeover(characterKey, id);
@@ -1251,7 +1439,7 @@ async function handleCommand(id, line) {
 
   if (verb === "spells") {
     const known = (actor.spellbook ?? []).map((id) => spellById(id)).filter(Boolean);
-    const trainable = trainableSpells(actor);
+    const trainable = trainableSpells(actor).filter((spell) => !FEDERATION || FEDERATION.allowedSkills.has(spell.id));
     const parts = [
       `Mana ${actor.mana ?? maxManaFor(actor)}/${actor.maxMana ?? maxManaFor(actor)}.`,
       `Known: ${known.length ? known.map((spell) => `${spell.name} (${spell.mana})`).join(", ") : "none"}.`,
@@ -1266,6 +1454,7 @@ async function handleCommand(id, line) {
     if (!guild || guild.id !== "mages") return sendTo(id, "You must join the Mages' Guild first: guild join mages.\r\n");
     const spell = spellById(rest[0]);
     if (!spell) return sendTo(id, "Usage: train <spell>. Try spells.\r\n");
+    if (FEDERATION && !FEDERATION.allowedSkills.has(spell.id)) return sendTo(id, `${spell.name} is not recognized in this region.\r\n`);
     if ((actor.level ?? 1) < spell.level) return sendTo(id, `You are not ready for ${spell.name}; it needs level ${spell.level}.\r\n`);
     if ((actor.spellbook ?? []).includes(spell.id)) return sendTo(id, `You already know ${spell.name}.\r\n`);
     const cost = trainingCost(spell, guild);
@@ -1288,6 +1477,7 @@ async function handleCommand(id, line) {
   if (verb === "cast") {
     const spell = spellById(rest[0]);
     if (!spell) return sendTo(id, "Usage: cast <spell> [on <target>]. Try spells.\r\n");
+    if (FEDERATION && !FEDERATION.allowedSkills.has(spell.id)) return sendTo(id, `${spell.name} is not recognized in this region.\r\n`);
     if (!(actor.spellbook ?? []).includes(spell.id)) return sendTo(id, `You do not know ${spell.name}.\r\n`);
     const mana = actor.mana ?? maxManaFor(actor);
     if (mana < spell.mana) return sendTo(id, `You need ${spell.mana} mana; you have ${mana}.\r\n`);
@@ -1318,6 +1508,7 @@ async function handleCommand(id, line) {
     if (!object) return sendTo(id, `You have no ${needle || "scroll"}.\r\n`);
     const spell = spellById(object.spell);
     if (!spell) return sendTo(id, "The scroll is unreadable.\r\n");
+    if (verb === "study" && FEDERATION && !FEDERATION.allowedSkills.has(spell.id)) return sendTo(id, `${spell.name} is not recognized in this region.\r\n`);
     if (verb === "study" && actor.guild !== "mages") return sendTo(id, "Only a mage can study a spell from a scroll. Try recite.\r\n");
     if (verb === "study" && (actor.level ?? 1) < spell.level) return sendTo(id, `You are not ready for ${spell.name}; it needs level ${spell.level}.\r\n`);
     let target = null;
@@ -2136,13 +2327,33 @@ async function handle(id, line) {
 
 // --- the clock -----------------------------------------------------------
 
+function progressionSnapshot(actor) {
+  const { role, level, xp, guild, guildRank, quests, spellbook, maxMana, questCycles } = actor;
+  return JSON.stringify({ role, level, xp, guild, guildRank, quests, spellbook, maxMana, questCycles });
+}
+
 function onTick() {
   const intents = pending.splice(0);
   // A login or registration must hit the disk before the next checkpoint; a
   // kill -9 must not erase an account created seconds ago.
   const identityChanged = intents.some((intent) => ["login", "register", "password", "claim", "claimLegacy", "rebindLegacy", "createCharacter", "ownAccount", "retireAccount", "handoffCharacter", "revokeHandoff", "train", "guildAdvance"].includes(intent.kind));
+  const previousProgress = FEDERATION && new Map(state.actors.filter((actor) => actor.key)
+    .map((actor) => [actor.id, progressionSnapshot(actor)]));
   const result = step({ state, rooms: ROOMS, intents, actions: ACTION_TABLE.actions });
   state = result.state;
+  if (FEDERATION) {
+    const progressChanged = state.actors.some((actor) => actor.key && previousProgress.has(actor.id)
+      && previousProgress.get(actor.id) !== progressionSnapshot(actor))
+      || intents.some((intent) => intent.kind === "leave" && previousProgress.has(intent.actorId));
+    if (result.checkpoint || identityChanged || progressChanged) {
+      try {
+        federationSave();
+      } catch (error) {
+        console.error(`federation state not saved; stopping before acknowledging progress: ${error.message}`);
+        process.exit(1);
+      }
+    }
+  }
   for (const intent of intents) {
     if (intent.kind !== "login" && intent.kind !== "register") continue;
     const actor = actorById(intent.actorId);
@@ -2266,7 +2477,11 @@ function onTick() {
   for (const intent of intents) {
     if (intent.kind !== "login" && intent.kind !== "register") continue;
     const actor = actorById(intent.actorId);
-    if (actor) sendTo(actor.id, describe(actor.room, actor.id));
+    if (actor) {
+      sendTo(actor.id, describe(actor.room, actor.id));
+      const disabled = state.identities[actor.key]?.unrecognizedSkills ?? [];
+      if (disabled.length) sendTo(actor.id, `Skills not recognized here: ${disabled.join(", ")}.\r\n`);
+    }
   }
 
   // Anything typed before the actor existed is played now, in order.
@@ -2276,7 +2491,7 @@ function onTick() {
     for (const line of lines) handleCommand(id, line).catch(() => {});
   }
 
-  if (result.checkpoint || identityChanged) saveState();
+  if (!FEDERATION && (result.checkpoint || identityChanged)) saveState();
 
   // The trace written into the span stream, not a second file: from these a run
   // can be reconstructed with nothing but the record.
@@ -2466,6 +2681,35 @@ async function handleGeminiDemo(req, res) {
 const web = http.createServer(async (req, res) => {
   // Query strings are for cache-busting and links; routing uses the path only.
   const pathname = new URL(req.url, "http://localhost").pathname;
+  if (pathname === "/federation/status" || pathname === "/federation/transfer") {
+    const from = authenticatedPeer(FEDERATION, req.headers);
+    if (!from) {
+      res.writeHead(403, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "not authorized" }));
+      return;
+    }
+    if (pathname === "/federation/status" && req.method === "GET") {
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ region: FEDERATION.id, protocol: FEDERATION.protocol, rules: FEDERATION.rules }));
+      return;
+    }
+    if (pathname === "/federation/transfer" && req.method === "POST") {
+      (async () => {
+        try {
+          receiveTransfer(from, await readFederationBody(req));
+          res.writeHead(200, { "content-type": "application/json" });
+          res.end(JSON.stringify({ accepted: true }));
+        } catch {
+          res.writeHead(409, { "content-type": "application/json" });
+          res.end(JSON.stringify({ error: "transfer refused" }));
+        }
+      })();
+      return;
+    }
+    res.writeHead(405, { "content-type": "application/json" });
+    res.end(JSON.stringify({ error: "method not allowed" }));
+    return;
+  }
   if (pathname === "/api/demo" && req.method === "GET") {
     res.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
     res.end(JSON.stringify(demoStatus()));
