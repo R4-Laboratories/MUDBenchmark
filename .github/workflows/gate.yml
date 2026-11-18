@@ -3,7 +3,7 @@ name: Gate
 # The improvement loop, on a schedule. Every six hours the project is asked one
 # question: is anything worse than it was? The ratchet answers it, the model is
 # re-proved, and the vectors are replayed. A red run is a regression, not a
-# flake: nothing here is timing-dependent.
+# flake: the model and vectors remain deterministic.
 #
 # Publishing is a separate, deliberate act: only a `v*` tag produces a release,
 # and only a release is what wick's deploy timer will pull.
@@ -37,6 +37,10 @@ jobs:
           node-version: '22'
       - name: Gate
         run: node tools/gate.mjs
+      - name: Browser reconnect
+        run: |
+          npm ci --prefix runtime --no-audit --no-fund
+          node --test runtime/session-reconnect.test.mjs
       - name: Next improvement
         if: always()
         run: node tools/tick.mjs
