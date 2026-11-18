@@ -251,6 +251,7 @@ function loadIdentityStore() {
           schema: raw.schema,
           prisms: raw.prisms ?? {},
           revokedBefore: Number.isSafeInteger(raw.revokedBefore) ? raw.revokedBefore : null,
+          blocked: Array.isArray(raw.blocked) ? raw.blocked.filter((id) => /^sha256:[0-9a-f]{64}$/.test(id)) : [],
         };
       },
     });
@@ -769,7 +770,7 @@ async function handleCommand(id, line) {
     }
     const prismId = parsed.envelope?.body?.prism;
     const pinned = prismId ? identityStore.prisms[prismId] ?? null : null;
-    const verdict = await verifyPrismSession(parsed, { origin, pinned, revokedBefore: identityStore.revokedBefore ?? null });
+    const verdict = await verifyPrismSession(parsed, { origin, pinned, revokedBefore: identityStore.revokedBefore ?? null, blocked: identityStore.blocked ?? [] });
     if (!verdict.ok) return sendTo(id, `Prism sign-in refused: ${verdict.reason}.\r\n`);
     if (!state.accounts?.[verdict.prism] && accountCapReached(Object.keys(state.accounts ?? {}).length, MAX_ACCOUNTS)) {
       return sendTo(id, "The world has reached its account cap; no new Prism account can be created right now.\r\n");
@@ -788,6 +789,9 @@ async function handleCommand(id, line) {
     let owner = null;
     if (parsed.owner) {
       const ownerId = parsed.owner?.envelope?.body?.prism;
+      if (ownerId && (identityStore.blocked ?? []).includes(ownerId)) {
+        return sendTo(id, "Prism sign-in refused: this owner Prism id is blocked by the operator.\r\n");
+      }
       const ownerPinned = ownerId ? identityStore.prisms[ownerId] ?? null : null;
       const ownerVerdict = await verifyPersonaOwner(parsed.owner, { origin, persona: verdict.prism, pinned: ownerPinned });
       if (!ownerVerdict.ok) return sendTo(id, `Prism sign-in refused: ${ownerVerdict.reason}.\r\n`);

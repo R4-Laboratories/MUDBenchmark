@@ -573,6 +573,12 @@
       "level": "build",
       "statement": "Deleting a pinned Prism log now revokes the sessions issued before the reset. The identity store carries a revokedBefore watermark; verifyPrismSession refuses any session whose issue time predates it with \"the session predates the account reset\", and wipePlayers sets the watermark when it clears the stores. The gate covers the refusal; a fresh session after the watermark is accepted by the existing signed-session fixture.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-90",
+      "level": "build",
+      "statement": "The identity store now carries an operator block list. verifyPrismSession refuses a blocked Prism id before replay checks, the server refuses a persona whose owner is blocked, and wipePlayers blocks every Prism id that held a pin at reset time before clearing the pins. The gate covers the blocked-session refusal and the wipe block list.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

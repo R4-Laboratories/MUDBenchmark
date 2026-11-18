@@ -1046,6 +1046,7 @@ let accountWipe = { ok: true, why: [] };
   check(result.before.accounts === 2 && result.before.identities === 2 && result.before.pinned === 2, "the wipe counts are wrong");
   check(result.after.accounts === 0 && result.after.identities === 0 && result.after.pinned === 0, "the wipe left player records");
   check(Number.isSafeInteger(store.revokedBefore) && result.revokedBefore === store.revokedBefore, "the wipe did not set a session revocation point");
+  check(store.blocked?.includes("a") && store.blocked?.includes("p") && store.blocked?.length === 2, "the wipe did not block the removed pinned ids");
   check(result.after.actors === 0 && state.mail.length === 0 && state.duels.length === 0 && state.engagements.length === 0, "the wipe left player references");
   check(state.guilds.mages && Object.keys(state.guilds.mages.members).length === 0 && state.guilds.mages.invites.length === 0, "the mages roster was not cleared");
   check(!state.guilds.players, "a player guild survived the wipe");
@@ -1490,6 +1491,8 @@ let prismSession = { ok: true, why: [] };
 {
   const fixture = JSON.parse(readFileSync(join(root, "world/fixtures/prism-session.json"), "utf8"));
   const at = fixture.envelope.body.at;
+  const blocked = await verifyPrismSession(fixture, { origin: fixture.app, now: at, blocked: [fixture.envelope.body.prism] });
+  if (blocked.ok) prismSession.why.push("a blocked Prism id was accepted");
   const good = await verifyPrismSession(fixture, { origin: fixture.app, now: at });
   if (!good.ok || good.prism !== fixture.envelope.body.prism) prismSession.why.push(`a signed session was refused: ${good.reason ?? "no id"}`);
   const wrong = await verifyPrismSession(fixture, { origin: "https://evil.example", now: at });
