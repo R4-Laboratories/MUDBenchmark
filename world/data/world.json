@@ -758,7 +758,14 @@
       "ambient": [
         "The pool does not ripple.",
         "Your reflection turns a moment late."
-      ]
+      ],
+      "secretExits": {
+        "down": 45
+      },
+      "secrets": {
+        "pool": "The pool is deeper than the room. A stair of water descends.",
+        "mirror": "The mirror is warm. Something on the other side is waiting."
+      }
     },
     "42": {
       "name": "The Sunken Vault",
@@ -808,6 +815,22 @@
       "ambient": [
         "The door waits.",
         "Something on the other side exhales."
+      ]
+    },
+    "45": {
+      "name": "The Mirror's Other Side",
+      "text": "The room is the Mirror Pool again, but reversed: the black glass is above, the stone below, and your reflection stands in the doorway with its back turned. A single silver bell rests on the floor.",
+      "safe": false,
+      "exits": {
+        "up": 41
+      },
+      "details": {
+        "bell": "The bell has no clapper. It rings anyway when you look at it.",
+        "reflection": "It is your shape, but it does not breathe."
+      },
+      "ambient": [
+        "The reflection turns a moment late.",
+        "The bell rings once, silently."
       ]
     }
   },
@@ -1432,7 +1455,8 @@
         41,
         42,
         43,
-        44
+        44,
+        45
       ]
     }
   ],
@@ -1961,6 +1985,43 @@
       "value": 15,
       "spell": "shield",
       "examine": "A ward written around a circle of chalk."
+    },
+    {
+      "id": "bell",
+      "name": "a silver bell",
+      "room": 39,
+      "flags": [
+        "fixed"
+      ],
+      "value": 5,
+      "examine": "A small silver bell, cold to the touch.",
+      "forSale": false
+    },
+    {
+      "id": "statue",
+      "name": "a stone statue",
+      "room": 43,
+      "flags": [
+        "fixed"
+      ],
+      "value": 0,
+      "examine": "A kneeling figure with one hand pressed to the floor.",
+      "forSale": false
+    },
+    {
+      "id": "ward-chest",
+      "name": "a ward chest",
+      "room": 43,
+      "flags": [
+        "fixed",
+        "container"
+      ],
+      "capacity": 3,
+      "open": false,
+      "openAtStart": false,
+      "value": 0,
+      "examine": "A chest of black iron, bound with a closed eye.",
+      "forSale": false
     }
   ],
   "climate": {

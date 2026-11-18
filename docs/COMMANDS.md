@@ -141,4 +141,5 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 42 | The Sunken Vault | undervault | no | south 41, east 43 |
 | 43 | The Wardstone | undervault | no | west 42, north 44 |
 | 44 | The Deep Door | undervault | no | south 43 |
+| 45 | The Mirror's Other Side | undervault | no | up 41 |
 

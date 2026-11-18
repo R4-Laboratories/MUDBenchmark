@@ -104,6 +104,18 @@ for (const file of inputs) {
       continue;
     }
 
+    if (span.name === "world.action") {
+      rows.push({
+        ...common,
+        event: "action",
+        actor: span["actor.id"] ?? null,
+        action: span["action.id"] ?? null,
+        verb: span["action.verb"] ?? null,
+        room_from: num(span["room.id"]),
+      });
+      continue;
+    }
+
     if (span.name === "world.spell") {
       rows.push({
         ...common,

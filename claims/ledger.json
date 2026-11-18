@@ -333,6 +333,12 @@
       "level": "some-true",
       "statement": "Production v0.49.0 serves 44 rooms, 24 mobiles, 42 objects and 15 quests. Spell scrolls of spark, mend and shield are for sale at the Spellwright; study and recite are live; the Undervault secret stair, Mirror Pool/Wardstone quests, mage rank advancement, equipment slots, the watch page, provider fast mode and redacted durable telemetry remain present. Accounts are 104 and characters 105.",
       "authority": "wick production v0.49.0 2026-11-18; /world and /health; release 44204730188; gate 44203689019"
+    },
+    {
+      "id": "MB-50",
+      "level": "build",
+      "statement": "Room actions are data in world/data/actions.json: a verb, target and room, a closed effect set (revealExit, open, close, grantItem, teleport, damage, heal, message), optional spell requirement, and actor/others messages. The loader validates rooms, objects, spells and secret exits at boot; the server resolves the action in the actor room; the reducer applies effects and records a world.action span. Three actions are live: turn mirror reveals the Mirror Pool secret stair (requires detect), push statue opens the ward chest, and ring bell emits its room message. The world is 45 rooms and 15 quests. Gate: actions 3 verbs == reveal, open, ring.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

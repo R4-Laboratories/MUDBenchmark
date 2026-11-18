@@ -16,6 +16,7 @@ import { readSpanTail, redactSpans } from "./spans.mjs";
 import { step, initialState, digestState, phaseAt, upgradeState, releaseHeldObjects, checkpointIdentities, armorOf, nextFrom, TICK_MS } from "./world.mjs";
 import { equipmentText } from "./equipment.mjs";
 import { maxManaFor, spellById, spellLine, trainableSpells } from "./magic.mjs";
+import { findAction, loadActions } from "./actions.mjs";
 import { loadWorld } from "./worlddata.mjs";
 import { describe as renderRoom, examine } from "./view.mjs";
 import { loadVerbs, render, resolve } from "./verbs.mjs";
@@ -60,6 +61,11 @@ const loaded = loadWorld({ mode: DECOY_MODE, path: process.env.WORLD_PATH ?? und
 const ROOMS = loaded.rooms;
 if (loaded.errors.length > 0) {
   for (const problem of loaded.errors) console.error(`world: ${problem}`);
+  process.exit(1);
+}
+const ACTION_TABLE = loadActions({ world: loaded });
+if (ACTION_TABLE.errors.length > 0) {
+  for (const problem of ACTION_TABLE.errors) console.error(`actions: ${problem}`);
   process.exit(1);
 }
 const WORLD_START = loaded.start ?? 1;
@@ -1029,7 +1035,7 @@ async function handleCommand(id, line) {
     if (!actor?.key) {
       return sendTo(id, "MUDBench is a persistent world for people and agents.\r\nSign in with your Prism id, or register <name> <password> / login <name> <password>.\r\nThen type help for the commands.\r\n");
     }
-    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: get/g, drop/dr, inventory/i, score/sc, quests/q, who/wh, gossip/gos, guildchat/gc.\r\nMagic: spells, train <spell> at the Mages' Guild, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search. Guild: guild join/leave/who/list/chat, guild advance (Mages).\r\nWorld: world or status (online, levels, guilds, reset).\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
+    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: get/g, drop/dr, inventory/i, score/sc, quests/q, who/wh, gossip/gos, guildchat/gc.\r\nMagic: spells, train <spell> at the Mages' Guild, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search. Guild: guild join/leave/who/list/chat, guild advance (Mages). Room actions: turn, push, ring where the room suggests.\r\nWorld: world or status (online, levels, guilds, reset).\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
   }
 
   // A command typed before the join tick lands is queued, not refused: the
@@ -1127,6 +1133,22 @@ async function handleCommand(id, line) {
     return entries.find(([, identity]) => identity.name.toLowerCase() === want)
       ?? entries.find(([, identity]) => identity.name.toLowerCase().includes(want));
   };
+
+  const roomAction = findAction(ACTION_TABLE.actions, { verb, target: restRaw.join(" "), room: actor.room });
+  if (roomAction) {
+    if (roomAction.requires?.spell && !(actor.spellbook ?? []).includes(roomAction.requires.spell)) {
+      return sendTo(id, `You need to know ${roomAction.requires.spell} to do that.\r\n`);
+    }
+    pending.push({ kind: "action", actorId: id, actionId: roomAction.id, messages: roomAction.messages });
+    recordSpan("world.action", {
+      "actor.id": id,
+      "action.id": roomAction.id,
+      "action.verb": roomAction.verb,
+      "room.id": actor.room,
+      "world.tick": state.tick,
+    }, 0);
+    return;
+  }
 
   if (verb === "spells") {
     const known = (actor.spellbook ?? []).map((id) => spellById(id)).filter(Boolean);
@@ -2001,7 +2023,7 @@ function onTick() {
   // A login or registration must hit the disk before the next checkpoint; a
   // kill -9 must not erase an account created seconds ago.
   const identityChanged = intents.some((intent) => ["login", "register", "password", "claim", "claimLegacy", "rebindLegacy", "createCharacter", "ownAccount", "retireAccount", "handoffCharacter", "revokeHandoff", "train", "guildAdvance"].includes(intent.kind));
-  const result = step({ state, rooms: ROOMS, intents });
+  const result = step({ state, rooms: ROOMS, intents, actions: ACTION_TABLE.actions });
   state = result.state;
   for (const intent of intents) {
     if (intent.kind !== "login" && intent.kind !== "register") continue;

@@ -468,7 +468,7 @@ export function checkpointIdentities(state) {
   return state;
 }
 
-export function step({ state, rooms, intents }) {
+export function step({ state, rooms, intents, actions = [] }) {
   const events = [];
   const next = {
     tick: state.tick + 1,
@@ -529,6 +529,44 @@ export function step({ state, rooms, intents }) {
   const find = (id) => next.actors.find((a) => a.id === id);
 
   for (const intent of intents) {
+    if (intent.kind === "action") {
+      const actor = find(intent.actorId);
+      const action = actions.find((entry) => entry.id === intent.actionId);
+      if (!actor || !action) continue;
+      if (actor.room !== action.room) continue;
+      if (action.requires?.spell && !(actor.spellbook ?? []).includes(action.requires.spell)) continue;
+      for (const effect of action.effects ?? []) {
+        if (effect.kind === "revealExit") {
+          const found = new Set(actor.found ?? []);
+          found.add(`${action.room}:${effect.dir}`);
+          actor.found = [...found];
+        } else if (effect.kind === "open" || effect.kind === "close") {
+          const object = next.objects.find((entry) => entry.id === effect.object);
+          if (object) object.open = effect.kind === "open";
+        } else if (effect.kind === "grantItem") {
+          const object = next.objects.find((entry) => entry.id === effect.object);
+          if (object) {
+            object.holder = actor.id;
+            object.room = null;
+            object.inside = null;
+            object.worn = false;
+          }
+        } else if (effect.kind === "teleport") {
+          actor.room = effect.room;
+          actor.visited = [...new Set([...(actor.visited ?? []), effect.room])];
+        } else if (effect.kind === "damage") {
+          actor.hp = Math.max(0, (actor.hp ?? 0) - effect.amount);
+        } else if (effect.kind === "heal") {
+          actor.hp = Math.min(actor.maxHp, (actor.hp ?? 0) + effect.amount);
+        } else if (effect.kind === "message") {
+          events.push({ onlyId: actor.id, text: `${effect.text}\r\n` });
+        }
+      }
+      if (intent.messages?.others) events.push({ room: actor.room, text: intent.messages.others, exceptId: actor.id });
+      if (intent.messages?.actor) events.push({ onlyId: actor.id, text: `${intent.messages.actor}\r\n` });
+      continue;
+    }
+
     if (intent.kind === "join") {
       if (!find(intent.actorId)) {
         next.actors.push({

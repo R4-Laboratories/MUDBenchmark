@@ -1,0 +1,48 @@
+{
+  "schema": "mudbenchmark/actions/1",
+  "note": "Room verbs with data-defined effects. References are validated at boot by runtime/actions.mjs; effects are applied by the reducer, so a recorded action replays.",
+  "actions": [
+    {
+      "id": "turn-mirror",
+      "verb": "turn",
+      "target": "mirror",
+      "room": 41,
+      "requires": { "spell": "detect" },
+      "effects": [
+        { "kind": "revealExit", "dir": "down" },
+        { "kind": "message", "text": "The pool clears. A stair of water descends into the dark." }
+      ],
+      "messages": {
+        "actor": "You turn the mirror toward the pool. The water clears.",
+        "others": "%a turns the mirror toward the pool; the water clears."
+      }
+    },
+    {
+      "id": "push-statue",
+      "verb": "push",
+      "target": "statue",
+      "room": 43,
+      "effects": [
+        { "kind": "open", "object": "ward-chest" },
+        { "kind": "message", "text": "The statue grinds aside. The ward chest opens." }
+      ],
+      "messages": {
+        "actor": "You push the statue aside. The ward chest opens.",
+        "others": "%a pushes the statue aside. The ward chest opens."
+      }
+    },
+    {
+      "id": "ring-bell",
+      "verb": "ring",
+      "target": "bell",
+      "room": 39,
+      "effects": [
+        { "kind": "message", "text": "The bell rings without a clapper. Somewhere below, a door answers." }
+      ],
+      "messages": {
+        "actor": "You ring the bell. It has no clapper, but the room answers.",
+        "others": "%a rings the bell. The room answers."
+      }
+    }
+  ]
+}

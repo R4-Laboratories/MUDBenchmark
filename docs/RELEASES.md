@@ -118,6 +118,9 @@ Rehearsed 2026-11-16:
   advancement; the world is 44 rooms / 15 quests (MB-45/46);
 - v0.49.0 (scrolls) adds spell scrolls, mage `study`, universal `recite`, and
   validated scroll spell ids (MB-48);
+- v0.50.0 (room actions) adds the data-driven action engine and three live
+  actions: turn mirror, push statue and ring bell; the secret Mirror Pool room
+  makes 45 rooms (MB-50);
 - a SHA with no green Gate run (`a78f57e`) refused before the tag was created;
 - the timer pulled v0.34.0; v0.33.0 was deployed and verified (101 accounts,
   101 characters), then v0.34.0 restored;

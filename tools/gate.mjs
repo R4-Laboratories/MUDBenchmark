@@ -53,6 +53,7 @@ import { worldStatus, worldStatusText } from "../runtime/worldstatus.mjs";
 import { redactCommand, sanitizeIntent, sanitizeState, scrubSecrets, scrubSpan } from "../runtime/telemetry-policy.mjs";
 import { equipmentOf, equipmentText } from "../runtime/equipment.mjs";
 import { maxManaFor } from "../runtime/magic.mjs";
+import { findAction, loadActions } from "../runtime/actions.mjs";
 
 const root = process.cwd();
 const ratchet = JSON.parse(readFileSync(join(root, "world/ratchet.json"), "utf8"));
@@ -1203,6 +1204,38 @@ let lantern = { ok: true, why: [] };
   if (lantern.why.length) { lantern.ok = false; failures.push(`the Lantern Quarter is broken: ${lantern.why[0]}`); }
 }
 
+// Room actions are data: the loader validates their rooms, objects and spells;
+// the reducer reveals an exit, opens a container and emits room text.
+let actions = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, world.levels, questTable.quests);
+  const table = loadActions({ world });
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents, actions: table.actions }); state = result.state; return result.events; };
+  const check = (condition, why) => { if (!condition) { actions.ok = false; actions.why.push(why); } };
+  check(table.errors.length === 0, `action validation failed: ${table.errors[0] ?? ""}`);
+  check(findAction(table.actions, { verb: "turn", target: "mirror", room: 41 })?.id === "turn-mirror", "the mirror action does not resolve");
+  state.actors.push({ id: "x", key: "xena", account: "xena", name: "xena", room: 41, visited: [41], level: 5, xp: 400, maxHp: 18, hp: 18, maxMana: 17, mana: 17, spellbook: ["detect"], guild: "mages", guildRank: "apprentice", wielding: null, quests: { active: [], completed: [] }, found: [] });
+  run([{ kind: "action", actorId: "x", actionId: "turn-mirror", messages: { actor: "turned", others: "turns" } }]);
+  let actor = state.actors.find((entry) => entry.id === "x");
+  check(actor.found?.includes("41:down"), "turn mirror did not reveal the secret exit");
+  run([{ kind: "move", actorId: "x", dir: "down", to: 45 }]);
+  actor = state.actors.find((entry) => entry.id === "x");
+  check(actor.room === 45, "the revealed exit did not reach the Mirror's Other Side");
+  actor.room = 43;
+  run([{ kind: "action", actorId: "x", actionId: "push-statue", messages: { actor: "pushed", others: "pushes" } }]);
+  check(state.objects.find((o) => o.id === "ward-chest")?.open === true, "push statue did not open the ward chest");
+  actor = state.actors.find((entry) => entry.id === "x");
+  actor.room = 39;
+  const bellEvents = run([{ kind: "action", actorId: "x", actionId: "ring-bell", messages: { actor: "rung", others: "rings" } }]);
+  check(bellEvents.some((event) => /door answers/.test(event.text ?? "")), "ring bell did not emit its room message");
+  const noSpell = { id: "y", key: "yara", account: "yara", name: "yara", room: 41, visited: [41], level: 5, xp: 400, maxHp: 18, hp: 18, maxMana: 13, mana: 13, spellbook: [], guild: null, guildRank: null, wielding: null, quests: { active: [], completed: [] }, found: [] };
+  state.actors.push(noSpell);
+  run([{ kind: "action", actorId: "y", actionId: "turn-mirror", messages: { actor: "turned", others: "turns" } }]);
+  check(!(state.actors.find((entry) => entry.id === "y")?.found ?? []).includes("41:down"), "an action with an unmet spell requirement fired");
+  if (actions.why.length) { actions.ok = false; failures.push(`the action engine is broken: ${actions.why[0]}`); }
+}
+
 // The state file is atomic, backed up, and fail-loud.
 let durableState = { ok: true, why: [] };
 {
@@ -2193,7 +2226,8 @@ if (process.argv.includes("--json")) {
   console.log(`${"aliases".padEnd(26)}  ${(aliases.ok ? "short" : "BROKEN").padStart(5)}   == get, eq, status`);
   console.log(`${"equipment".padEnd(26)}  ${(equipment.ok ? "8 slots" : "BROKEN").padStart(5)}   == wear, wield, replace`);
   console.log(`${"magic".padEnd(26)}  ${(magic.ok ? "6 spells+scrolls" : "BROKEN").padStart(5)}   == mana, cast, study`);
-  console.log(`${"lantern".padEnd(26)}  ${(lantern.ok ? "44 rooms" : "BROKEN").padStart(5)}   == errand, charm, secret`);
+  console.log(`${"lantern".padEnd(26)}  ${(lantern.ok ? "45 rooms" : "BROKEN").padStart(5)}   == errand, charm, secret`);
+  console.log(`${"actions".padEnd(26)}  ${(actions.ok ? "3 verbs" : "BROKEN").padStart(5)}   == reveal, open, ring`);
   console.log(`${"pinned".padEnd(26)}  ${(identityPin.ok ? "revoked" : "BROKEN").padStart(5)}   == old log refused`);
   console.log(`${"takeover".padEnd(26)}  ${(takeover.ok ? "1 actor" : "BROKEN").padStart(5)}   == leave then login`);
   console.log(`${"characters".padEnd(26)}  ${(characters.ok ? "2 chars" : "BROKEN").padStart(5)}   == create, switch`);
