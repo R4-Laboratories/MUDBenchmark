@@ -597,6 +597,12 @@
       "level": "build",
       "statement": "The Prism-only Gemini demo is implemented behind the server. GEMINI_API_KEY never reaches the browser; an authenticated game socket issues a 30-minute demo token; the proxy enforces per-Prism daily/minute and world-wide daily quotas, forwards only the model/messages, forces reasoning off on direct turns and low on deliberate turns, and records ai.demo latency/status. GET /api/demo reports configured/model/limits without a key. The UI shows the provider only when configured and authenticates by the game socket. A mock upstream run completed Prism login -> demo token -> proxy -> command with 5 ai.turn metrics and no browser key.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-94",
+      "level": "some-true",
+      "statement": "Production v0.64.0 serves the free-form direct prompt with injected room/self/quest/social context, Auto/Always/Never reasoning, and the Prism-only Gemini demo path (dormant because GEMINI_API_KEY is not configured; the provider is hidden). The production setup is 542px with Reasoning=Auto and Direct prompt on; no JS errors. Local qwen2.5:7b measured p50 5.6s (22.8s first load) because inference is hardware-bound; a mock Gemini proxy run completed five turns at 9ms. Mind-pane and chat scrolling now use their real scroll containers. A live client created one legacy test account (synther, 0 progress) after the Prism block; pins remain 0.",
+      "authority": "wick production v0.64.0 2026-11-18; release 44392228200; gate 44390704913; /api/demo and headless setup check; local qwen/mock runs; /health"
     }
   ]
 }
