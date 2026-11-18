@@ -429,6 +429,12 @@
       "level": "build",
       "statement": "The server enforces a configurable account cap (MAX_ACCOUNTS, default 500) on new legacy registrations and new Prism accounts; existing account logins and character selection are unaffected. The cap boundary is gate-tested and an integration run with MAX_ACCOUNTS=1 accepted the first account and refused the second with the cap message.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-66",
+      "level": "some-true",
+      "statement": "Production v0.57.0 runs the account cap at the default 500 with 105 accounts / 106 characters, 8 pinned and one connection. Existing logins are unaffected; only new legacy registrations and new Prism accounts are checked. The world remains 60 rooms / 24 quests with the action engine, guild cycle, paid training, watch, provider fast mode and redacted durable telemetry.",
+      "authority": "wick production v0.57.0 2026-11-18; /health; release 44259401772; gate 44258264238"
     }
   ]
 }
