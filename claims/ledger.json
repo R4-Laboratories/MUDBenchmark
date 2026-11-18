@@ -357,6 +357,12 @@
       "level": "some-true",
       "statement": "Production v0.51.0 serves 50 rooms, 26 mobiles, 49 objects and 17 quests. The Deep Door opens with the ward key; the Chained Niche, Ossuary, Drowned Library, Sunken Vault and Wardstone Heart are live; the drowned ledger and three-sigil quests and the item-gated unlock/read actions are in place. Accounts 104 and characters 105; watch, magic, scrolls, equipment, provider fast mode and redacted durable telemetry remain present.",
       "authority": "wick production v0.51.0 2026-11-18; /world and /health; release 44219546214; gate 44218408484"
+    },
+    {
+      "id": "MB-54",
+      "level": "build",
+      "statement": "Guild progression now includes a repeatable Mages' Guild quest, The Sigil Trial, marked repeat reset. The actor stores questCycles per quest; availableQuests and quest accept allow a completed reset quest only in a later world cycle, and completion records the cycle. Guild levels at 2/3/4/5 grant hall-chest, trainer-discount, guild-quest-2 and banner perks; `guild who` shows level, XP and perks. The gate covers the repeat cycle, guild level-up and the hall-chest perk.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

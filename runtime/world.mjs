@@ -12,7 +12,7 @@ import { createHash } from "node:crypto";
 import { advance, due as pulseDue, makePulse } from "./generated/Pulses.mjs";
 import { levelForXp, nextLevelXp } from "./levels.mjs";
 import { applyQuestEvent, emptyProgress, normalizeQuestState, questById, questMet } from "./quests.mjs";
-import { RANKS, guildId, guildLevelFor, rankAtLeast, removeMember, successor, validGuildName } from "./guilds.mjs";
+import { RANKS, guildId, guildLevelFor, rankAtLeast, removeMember, successor, validGuildName, perksFor } from "./guilds.mjs";
 import { armorOf, slotOf, weaponOf } from "./equipment.mjs";
 import { maxManaFor, spellById } from "./magic.mjs";
 
@@ -137,12 +137,14 @@ function advanceQuests(state, actor, event, events) {
         reward.worn = false;
       }
       current.completed.push(quest.id);
+      actor.questCycles = { ...(actor.questCycles ?? {}), [quest.id]: state.cycle ?? 0 };
       if (quest.rewards?.guildXp && actor.guild && state.guilds?.[actor.guild]) {
         const guild = state.guilds[actor.guild];
         guild.xp = (guild.xp ?? 0) + quest.rewards.guildXp;
         const level = guildLevelFor(guild.xp);
         if (level > (guild.level ?? 1)) {
           guild.level = level;
+          guild.perks = perksFor(level);
           events.push({ room: actor.room, text: `${guild.name} reaches guild level ${level}.` });
         }
       }
@@ -463,6 +465,7 @@ export function checkpointIdentities(state) {
       quests: actor.quests ?? { active: [], completed: [] },
       spellbook: [...(actor.spellbook ?? [])],
       maxMana: actor.maxMana ?? maxManaFor(actor),
+      questCycles: { ...(actor.questCycles ?? {}) },
     };
   }
   return state;
@@ -586,7 +589,7 @@ export function step({ state, rooms, intents, actions = [] }) {
           guildRank: null,
           quests: { active: [], completed: [] },
           wielding: null,
-          mana: 5, maxMana: 5, spellbook: [], armorBonus: 0, buffUntil: null,
+          mana: 5, maxMana: 5, spellbook: [], armorBonus: 0, buffUntil: null, questCycles: {},
         });
       }
       continue;
@@ -663,6 +666,7 @@ export function step({ state, rooms, intents, actions = [] }) {
       actor.spellbook = [];
       actor.armorBonus = 0;
       actor.buffUntil = null;
+      actor.questCycles = {};
       next.accounts[intent.key] = {
         kind: "legacy",
         name: intent.key,
@@ -683,7 +687,7 @@ export function step({ state, rooms, intents, actions = [] }) {
         guild: null,
         guildRank: null,
         quests: { active: [], completed: [] },
-        spellbook: [], maxMana: 5,
+        spellbook: [], maxMana: 5, questCycles: {},
       };
       continue;
     }
@@ -711,7 +715,9 @@ export function step({ state, rooms, intents, actions = [] }) {
         if (!quest || (actor.level ?? 1) < quest.level) continue;
         const stateQ = normalizeQuestState(actor.quests, next.quests);
         if (!(quest.requires ?? []).every((id) => stateQ.completed.includes(id))) continue;
-        if (stateQ.completed.includes(quest.id) || stateQ.active.some((entry) => entry.id === quest.id)) continue;
+        const repeatable = quest.repeat === "reset" && (actor.questCycles?.[quest.id] ?? -1) < (next.cycle ?? 0);
+        if ((stateQ.completed.includes(quest.id) && !repeatable) || stateQ.active.some((entry) => entry.id === quest.id)) continue;
+        stateQ.completed = stateQ.completed.filter((id) => id !== quest.id);
         stateQ.active.push({ id: quest.id, progress: emptyProgress() });
         actor.quests = stateQ;
         events.push({ onlyId: actor.id, text: `Quest accepted: ${quest.name}.\r\n`, quest: { action: "accept", id: quest.id, name: quest.name } });
@@ -1007,6 +1013,7 @@ export function step({ state, rooms, intents, actions = [] }) {
       actor.spellbook = [...(known.spellbook ?? [])];
       actor.armorBonus = 0;
       actor.buffUntil = null;
+      actor.questCycles = { ...(known.questCycles ?? {}) };
       actor.guild = next.guilds[known.guild] ? known.guild : null;
       actor.guildRank = actor.guild ? (next.guilds[actor.guild].members[actor.key] ?? null) : null;
       actor.quests = {

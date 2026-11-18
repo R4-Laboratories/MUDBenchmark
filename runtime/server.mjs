@@ -219,6 +219,7 @@ if (!state.guilds.mages) {
     trainer: "archmage",
     xp: 0,
     level: 1,
+    perks: [],
   };
 }
 let lastSave = (() => { try { return statSync(STATE_FILE).mtimeMs; } catch { return 0; } })();
@@ -1526,7 +1527,7 @@ async function handleCommand(id, line) {
       return quest ? `${quest.name} (${quest.id}): ${questLines(quest, entry.progress, actor, state.objects).join("; ")}` : entry.id;
     });
     const completed = stateQ.completed.map((id) => questById(QUESTS.quests, id)?.name ?? id);
-    const available = availableQuests(QUESTS.quests, actor).map((quest) => `${quest.name} (${quest.id}, level ${quest.level})`);
+    const available = availableQuests(QUESTS.quests, actor, state.cycle ?? 0).map((quest) => `${quest.name} (${quest.id}, level ${quest.level})`);
     const parts = [];
     if (active.length) parts.push(`active: ${active.join(", ")}`);
     if (completed.length) parts.push(`completed: ${completed.join(", ")}`);
@@ -1554,7 +1555,8 @@ async function handleCommand(id, line) {
       if ((actor.level ?? 1) < quest.level) return sendTo(id, `${render(messages.locked, { words: String(quest.level) })}\r\n`);
       const missing = (quest.requires ?? []).find((required) => !stateQ.completed.includes(required));
       if (missing) return sendTo(id, `${render(messages.requires, { words: questById(QUESTS.quests, missing)?.name ?? missing })}\r\n`);
-      if (stateQ.completed.includes(quest.id)) return sendTo(id, `${messages.complete}\r\n`);
+      const repeatable = quest.repeat === "reset" && (actor.questCycles?.[quest.id] ?? -1) < (state.cycle ?? 0);
+      if (stateQ.completed.includes(quest.id) && !repeatable) return sendTo(id, `${messages.complete}\r\n`);
       if (stateQ.active.some((entry) => entry.id === quest.id)) return sendTo(id, `${messages.active}\r\n`);
       pending.push({ kind: "questAccept", actorId: id, questId: quest.id });
       return;
@@ -1609,7 +1611,7 @@ async function handleCommand(id, line) {
     if (action === "who") {
       const guild = state.guilds[actor.guild];
       if (!guild) return sendTo(id, `${messages.noGuild}\r\n`);
-      return sendTo(id, `${render(messages.who, { words: `${guild.name} (level ${guild.level ?? 1}, ${guild.xp ?? 0} xp): ${guildRoster(guild).join(", ")}` })}\r\n`);
+      return sendTo(id, `${render(messages.who, { words: `${guild.name} (level ${guild.level ?? 1}, ${guild.xp ?? 0} xp${guild.perks?.length ? `, perks ${guild.perks.join(", ")}` : ""}): ${guildRoster(guild).join(", ")}` })}\r\n`);
     }
     if (action === "create") {
       const name = restRaw.slice(1).join(" ").trim();

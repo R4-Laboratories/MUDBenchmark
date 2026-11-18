@@ -141,11 +141,14 @@ export function validateQuestReferences(quests, { rooms = {}, npcs = [], objects
   return errors;
 }
 
-export function availableQuests(quests, actor) {
+export function availableQuests(quests, actor, cycle = 0) {
   const state = normalizeQuestState(actor.quests, quests);
-  return quests.filter((quest) =>
-    (actor.level ?? 1) >= quest.level &&
-    (quest.requires ?? []).every((id) => state.completed.includes(id)) &&
-    !state.completed.includes(quest.id) &&
-    !state.active.some((entry) => entry.id === quest.id));
+  return quests.filter((quest) => {
+    const completed = state.completed.includes(quest.id);
+    const repeatable = quest.repeat === "reset" && (actor.questCycles?.[quest.id] ?? -1) < cycle;
+    return (actor.level ?? 1) >= quest.level
+      && (quest.requires ?? []).every((id) => state.completed.includes(id))
+      && (!completed || repeatable)
+      && !state.active.some((entry) => entry.id === quest.id);
+  });
 }

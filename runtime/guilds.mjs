@@ -26,6 +26,15 @@ export function guildLevelFor(xp) {
   return level;
 }
 
+export function perksFor(level) {
+  const perks = [];
+  if (level >= 2) perks.push("hall-chest");
+  if (level >= 3) perks.push("trainer-discount");
+  if (level >= 4) perks.push("guild-quest-2");
+  if (level >= 5) perks.push("banner");
+  return perks;
+}
+
 /** The next leader: the earliest officer, otherwise the earliest member. */
 export function successor(members, leavingKey) {
   const entries = Object.entries(members).filter(([key]) => key !== leavingKey);

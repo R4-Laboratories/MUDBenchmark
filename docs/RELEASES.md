@@ -124,6 +124,8 @@ Rehearsed 2026-11-16:
 - v0.51.0 (Undervault II) adds five rooms behind a ward-key-gated Deep Door,
   two mobiles, four objects, the Drowned Ledger and Three Parts of a Sigil
   quests, and item requirements for actions; 50 rooms / 17 quests (MB-52);
+- v0.52.0 (guild cycle) adds the repeatable Sigil Trial, questCycles, guild
+  levels/perks and the hall-chest perk; 18 quests (MB-54);
 - a SHA with no green Gate run (`a78f57e`) refused before the tag was created;
 - the timer pulled v0.34.0; v0.33.0 was deployed and verified (101 accounts,
   101 characters), then v0.34.0 restored;

@@ -395,6 +395,42 @@
       "requires": [
         "ledger"
       ]
+    },
+    {
+      "id": "guild-sigils",
+      "name": "The Sigil Trial",
+      "level": 5,
+      "giver": "the archmage",
+      "description": "The three sigils can be gathered again each cycle. The archmage uses them to test the wards.",
+      "scope": "guild",
+      "guild": "mages",
+      "rank": "apprentice",
+      "repeat": "reset",
+      "objectives": [
+        {
+          "kind": "collect",
+          "object": "sigil-1",
+          "count": 1,
+          "text": "Find the first sigil"
+        },
+        {
+          "kind": "collect",
+          "object": "sigil-2",
+          "count": 1,
+          "text": "Find the second sigil"
+        },
+        {
+          "kind": "collect",
+          "object": "sigil-3",
+          "count": 1,
+          "text": "Find the third sigil"
+        }
+      ],
+      "rewards": {
+        "xp": 120,
+        "guildXp": 50
+      },
+      "complete": "The archmage fits the sigils into the ward and hands them back for the next cycle."
     }
   ]
 }
