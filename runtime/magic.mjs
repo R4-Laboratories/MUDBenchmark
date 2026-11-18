@@ -5,35 +5,35 @@
 
 export const SPELLS = [
   {
-    id: "spark", name: "Spark", level: 1, mana: 3, target: "npc", effect: "damage",
+    id: "spark", cost: 15, name: "Spark", level: 1, mana: 3, target: "npc", effect: "damage",
     damage: 4, xp: 3,
     description: "A beginner's attack. One to four damage.",
     train: "The archmage traces a spark between two fingers.",
   },
   {
-    id: "mend", name: "Mend", level: 1, mana: 4, target: "self", effect: "heal",
+    id: "mend", cost: 20, name: "Mend", level: 1, mana: 4, target: "self", effect: "heal",
     heal: 4,
     description: "Close a wound with a word. Heals four plus half your level.",
     train: "The archmage presses a warm hand to your shoulder.",
   },
   {
-    id: "light", name: "Light", level: 1, mana: 2, target: "self", effect: "light",
+    id: "light", cost: 10, name: "Light", level: 1, mana: 2, target: "self", effect: "light",
     description: "A cold flame that follows you. A convenience, not a weapon.",
     train: "The archmage lights a candle without touching it.",
   },
   {
-    id: "shield", name: "Shield", level: 3, mana: 5, target: "self", effect: "shield",
+    id: "shield", cost: 40, name: "Shield", level: 3, mana: 5, target: "self", effect: "shield",
     armor: 2, ticks: 120,
     description: "A brief ward. Two armour for thirty seconds.",
     train: "The air around the archmage hardens like glass.",
   },
   {
-    id: "detect", name: "Detect", level: 3, mana: 3, target: "self", effect: "detect",
+    id: "detect", cost: 30, name: "Detect", level: 3, mana: 3, target: "self", effect: "detect",
     description: "Read the room for what it is hiding.",
     train: "The archmage closes his eyes and names a door you cannot see.",
   },
   {
-    id: "recall", name: "Recall", level: 5, mana: 10, target: "self", effect: "recall",
+    id: "recall", cost: 80, name: "Recall", level: 5, mana: 10, target: "self", effect: "recall",
     description: "Return to the Atrium. The road is shorter going back.",
     train: "The archmage is suddenly standing where he was not.",
   },
@@ -60,4 +60,9 @@ export function trainableSpells(actor) {
 
 export function spellLine(spell) {
   return `${spell.name} (${spell.id}) — ${spell.mana} mana, level ${spell.level}: ${spell.description}`;
+}
+
+export function trainingCost(spell, guild = null) {
+  const cost = Number.isInteger(spell?.cost) ? spell.cost : 0;
+  return guild?.perks?.includes("trainer-discount") ? Math.ceil(cost * 0.9) : cost;
 }

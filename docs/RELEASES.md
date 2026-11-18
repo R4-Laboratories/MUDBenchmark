@@ -135,6 +135,9 @@ Rehearsed 2026-11-16:
   five objects and two actions; 60 rooms / 24 quests / 9 action verbs. The
   read-only account audit and a production restart drill are recorded
   (MB-60);
+- v0.56.0 (guild economy) makes spell training cost coins and the trainer
+  discount functional; a live-copy corruption drill refuses a truncated state
+  (MB-62);
 - a SHA with no green Gate run (`a78f57e`) refused before the tag was created;
 - the timer pulled v0.34.0; v0.33.0 was deployed and verified (101 accounts,
   101 characters), then v0.34.0 restored;

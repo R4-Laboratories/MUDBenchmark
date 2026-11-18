@@ -632,8 +632,9 @@ it, and rolls it back once. MB-26/27.
 5. **Reboot.** The only proof that the state is durable is a reboot. Schedule a
    window, migrate the live file first, and check the identity count and the
    `casey` account afterwards.
-6. **Corruption.** Truncate a copy of the state, start the server against it,
-   and confirm it refuses to start rather than resetting. Restore from a backup.
+6. **Corruption.** Gate-tested and drilled against a copy of the live state:
+   a truncated state exits 1 with "refusing to start so the file can be
+   recovered". A full restore-from-backup on the live box is still pending.
 7. **Claim edge cases.** Mail and guild membership are keyed by the old name;
    a bulk rewrite can lose either. Use aliases/tombstones and test a legacy
    account with mail, a guild rank and an active quest. Test a password

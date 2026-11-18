@@ -1281,6 +1281,16 @@ export function step({ state, rooms, intents, actions = [] }) {
       if (!spell || actor.guild !== "mages" || (actor.level ?? 1) < spell.level) continue;
       const book = actor.spellbook ?? [];
       if (book.includes(spell.id)) continue;
+      const cost = Number.isInteger(intent.cost) ? intent.cost : 0;
+      const coins = (intent.coinIds ?? [])
+        .map((coinId) => next.objects.find((object) => object.id === coinId))
+        .filter((coin) => coin && coin.holder === actor.id && (coin.flags ?? []).includes("coin") && !coin.eaten);
+      const paid = coins.reduce((sum, coin) => sum + coin.value, 0);
+      if (paid < cost) continue;
+      for (const coin of coins) {
+        coin.holder = null;
+        coin.room = actor.room;
+      }
       actor.spellbook = [...book, spell.id];
       actor.maxMana = maxManaFor(actor);
       events.push({ onlyId: actor.id, text: `You learn ${spell.name}.\r\n` });

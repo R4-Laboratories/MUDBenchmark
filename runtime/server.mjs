@@ -15,7 +15,7 @@ import { recordSpan, digest, TELEMETRY_LOG } from "./telemetry.mjs";
 import { readSpanTail, redactSpans } from "./spans.mjs";
 import { step, initialState, digestState, phaseAt, upgradeState, releaseHeldObjects, checkpointIdentities, armorOf, nextFrom, TICK_MS } from "./world.mjs";
 import { equipmentText } from "./equipment.mjs";
-import { maxManaFor, spellById, spellLine, trainableSpells } from "./magic.mjs";
+import { maxManaFor, spellById, spellLine, trainableSpells, trainingCost } from "./magic.mjs";
 import { findAction, loadActions } from "./actions.mjs";
 import { loadWorld } from "./worlddata.mjs";
 import { describe as renderRoom, examine } from "./view.mjs";
@@ -1173,9 +1173,21 @@ async function handleCommand(id, line) {
     if (!spell) return sendTo(id, "Usage: train <spell>. Try spells.\r\n");
     if ((actor.level ?? 1) < spell.level) return sendTo(id, `You are not ready for ${spell.name}; it needs level ${spell.level}.\r\n`);
     if ((actor.spellbook ?? []).includes(spell.id)) return sendTo(id, `You already know ${spell.name}.\r\n`);
-    pending.push({ kind: "train", actorId: id, spellId: spell.id });
-    recordSpan("world.spell", { "actor.id": id, "spell.action": "train", "spell.id": spell.id, "world.tick": state.tick }, 0);
-    return sendTo(id, `${spell.train ?? "The archmage nods."} You learn ${spell.name}.\r\n`);
+    const cost = trainingCost(spell, guild);
+    const coins = state.objects
+      .filter((object) => object.holder === id && (object.flags ?? []).includes("coin") && !object.eaten)
+      .sort((a, b) => b.value - a.value);
+    const chosen = [];
+    let paid = 0;
+    for (const coin of coins) {
+      chosen.push(coin);
+      paid += coin.value;
+      if (paid >= cost) break;
+    }
+    if (paid < cost) return sendTo(id, `Training ${spell.name} costs ${cost} coins; you have ${paid}.\r\n`);
+    pending.push({ kind: "train", actorId: id, spellId: spell.id, cost, coinIds: chosen.map((coin) => coin.id) });
+    recordSpan("world.spell", { "actor.id": id, "spell.action": "train", "spell.id": spell.id, "spell.cost": cost, "spell.paid": paid, "world.tick": state.tick }, 0);
+    return sendTo(id, `${spell.train ?? "The archmage nods."} You learn ${spell.name} for ${cost} coins.\r\n`);
   }
 
   if (verb === "cast") {

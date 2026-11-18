@@ -54,6 +54,7 @@ import { redactCommand, sanitizeIntent, sanitizeState, scrubSecrets, scrubSpan }
 import { planRetention } from "../runtime/retention.mjs";
 import { equipmentOf, equipmentText } from "../runtime/equipment.mjs";
 import { maxManaFor } from "../runtime/magic.mjs";
+import { trainingCost } from "../runtime/magic.mjs";
 import { findAction, loadActions } from "../runtime/actions.mjs";
 import { auditAccounts } from "../runtime/account-audit.mjs";
 
@@ -1177,6 +1178,7 @@ let magic = { ok: true, why: [] };
   checkpointIdentities(state);
   check(state.identities.mira?.spellbook?.includes("detect"), "training did not survive a checkpoint");
   check(maxManaFor(actor) === 3 + 5 * 2 + 4, "the mages mana bonus is wrong");
+  check(trainingCost({ cost: 30 }, null) === 30 && trainingCost({ cost: 30 }, { perks: ["trainer-discount"] }) === 27, "the trainer discount is wrong");
   state.objects.push({ id: "scroll-light-test", name: "a scroll of light", holder: "m", room: null, eaten: false, flags: ["takeable", "readable"], spell: "light" });
   run([{ kind: "study", actorId: "m", objectId: "scroll-light-test" }]);
   actor = state.actors.find((entry) => entry.id === "m");
@@ -1186,6 +1188,12 @@ let magic = { ok: true, why: [] };
   run([{ kind: "recite", actorId: "m", objectId: "scroll-mend-test" }]);
   actor = state.actors.find((entry) => entry.id === "m");
   check(actor.hp > 5 && state.objects.find((o) => o.id === "scroll-mend-test")?.eaten === true, "recite did not cast and consume the scroll");
+  state.actors.push({ id: "m2", key: "mora", account: "mora", name: "mora", room: 34, visited: [34], level: 5, xp: 400, maxHp: 18, hp: 18, maxMana: 17, mana: 17, spellbook: [], guild: "mages", guildRank: "apprentice", wielding: null, quests: { active: [], completed: [] } });
+  state.objects.push({ id: "coin-train", name: "a gold coin", holder: "m2", room: null, eaten: false, flags: ["takeable", "coin"], value: 27 });
+  run([{ kind: "train", actorId: "m2", spellId: "detect", cost: 27, coinIds: ["coin-train"] }]);
+  const trainee = state.actors.find((entry) => entry.id === "m2");
+  check(trainee?.spellbook?.includes("detect"), "paid training did not add the spell");
+  check(state.objects.find((o) => o.id === "coin-train")?.holder === null, "paid training did not consume the coins");
   if (magic.why.length) { magic.ok = false; failures.push(`magic is broken: ${magic.why[0]}`); }
 }
 
