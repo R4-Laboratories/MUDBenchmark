@@ -2347,6 +2347,30 @@ const web = http.createServer((req, res) => {
     return;
   }
 
+  if (pathname === "/stream") {
+    // A small public status read for the landing page. The watch socket still
+    // carries the event feed; this never exposes chat identities or commands.
+    const current = publicLive();
+    res.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
+    res.end(JSON.stringify({
+      schema: "mudbenchmark/stream/1",
+      live: current ? {
+        status: current.status,
+        name: current.name,
+        room: current.room,
+        tick: current.tick,
+        startedAt: current.startedAt,
+        viewers: current.viewers,
+        chat: current.chat,
+        poll: current.poll,
+      } : null,
+      viewers: spectators.size,
+      tick: state.tick,
+      rooms: Object.keys(ROOMS).length,
+    }));
+    return;
+  }
+
   if (pathname === "/trends") {
     const summary = summarizeTrends(readSpansTail(TELEMETRY_LOG));
     if (summary.ai) summary.ai.error_count = Object.keys(summary.ai.errors ?? {}).length;

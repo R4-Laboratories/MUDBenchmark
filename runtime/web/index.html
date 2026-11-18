@@ -230,7 +230,12 @@
   #character-list .row { margin: 0; }
   #character-list button { text-align: left; }
   #player-stack { display: flex; flex-direction: column; gap: 10px; }
-  body.ai-mode #player-stack, body.ai-mode #watch-card, body.ai-mode #commands-card, body.ai-mode #glance { display: none !important; }
+  body.ai-mode #player-stack, body.ai-mode #watch-card, body.ai-mode #live-card, body.ai-mode #commands-card, body.ai-mode #glance { display: none !important; }
+  #live-card { border-color: rgba(251,113,133,.3); }
+  #live-card h2 { color: var(--danger); }
+  #live-card p { margin-bottom: 4px; }
+  #live-card #live-card-title { color: var(--text); font-weight: 500; }
+  #live-card .watch-actions { margin-top: 6px; }
   #watch-card { border-color: rgba(94,234,212,.28); }
   #watch-card h2 { color: var(--accent); }
   #watch-card .watch-actions { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
@@ -801,6 +806,15 @@
       </section>
       </div>
 
+      <section class="panel" id="live-card" hidden>
+        <h2>Live now</h2>
+        <p id="live-card-title">—</p>
+        <p class="small muted" id="live-card-meta">—</p>
+        <div class="watch-actions">
+          <a class="button" href="/watch" target="_blank" rel="noopener">Watch live ↗</a>
+        </div>
+      </section>
+
       <section class="panel" id="watch-card">
         <h2>Watch an AI</h2>
         <p id="watch-summary">Ollama · llama3.2</p>
@@ -923,6 +937,9 @@
   const liveStatus = document.getElementById("live-status");
   const liveThought = document.getElementById("live-thought");
   const livebar = document.getElementById("livebar");
+  const liveCard = document.getElementById("live-card");
+  const liveCardTitle = document.getElementById("live-card-title");
+  const liveCardMeta = document.getElementById("live-card-meta");
   const watchSummary = document.getElementById("watch-summary");
   const watchOpen = document.getElementById("watch-open");
   const planBrain = document.getElementById("plan-brain");
@@ -1576,6 +1593,7 @@
       state.textContent = "connected";
       state.className = "live";
       renderHandoff();
+      refreshLiveCard();
     }
     updateTelemetryAvailability();
   }
@@ -1661,6 +1679,20 @@
     syncModelSummary();
     if (!reset) return;
     persistConfig(false);
+  }
+
+  async function refreshLiveCard() {
+    try {
+      const res = await fetch("/stream", { signal: AbortSignal.timeout(3000) });
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+      const data = await res.json();
+      if (!data.live) { liveCard.hidden = true; return; }
+      liveCardTitle.textContent = `${data.live.name} · ${data.live.status}`;
+      liveCardMeta.textContent = `${data.live.room} · ${data.live.viewers} watching${data.live.chat ? "" : " · chat closed"}`;
+      liveCard.hidden = false;
+    } catch {
+      liveCard.hidden = true;
+    }
   }
 
   function syncModelSummary() {
@@ -2767,6 +2799,8 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
 
   renderSetup();
   updateTelemetryAvailability();
+  refreshLiveCard();
+  setInterval(refreshLiveCard, 20000);
   renderHighlights();
   updateRunStats();
 

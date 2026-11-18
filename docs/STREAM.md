@@ -14,6 +14,11 @@ Telemetry opens from the header or the dock's Expand control as a full-height
 390px-safe header below 768px. All existing AI, Prism, stream and transcript
 IDs are unchanged.
 
+The Play rail also shows a compact **Live now** card when `/stream` reports an
+active run: the streamer, room, viewer count and a Watch live link. The endpoint
+is deliberately small and public; it never includes chat identities or command
+text. `/watch` remains the event feed.
+
 The live AI Studio has four tabs, and the human and the AI can be online at once.
 
 | Tab | Shows |

@@ -134,7 +134,7 @@ if (commandsCheck.status !== 0) failures.push(`docs/COMMANDS.md is stale: ${(com
 
 // The web shell must actually offer account and AI-play controls.
 const web = readFileSync("runtime/web/index.html", "utf8");
-for (const id of ["login", "register", "prism-login", "mode-ai", "ai-provider", "ai-reset", "director-input", "telemetry-open", "trend-stats", "ai-stream", "model-edit", "model-apply", "observe-close", "watch-card", "ai-plan", "player-stack"]) {
+for (const id of ["login", "register", "prism-login", "mode-ai", "ai-provider", "ai-reset", "director-input", "telemetry-open", "trend-stats", "ai-stream", "model-edit", "model-apply", "observe-close", "watch-card", "live-card", "ai-plan", "player-stack"]) {
   if (!web.includes(`id="${id}"`)) failures.push(`the web shell lost its ${id} control`);
 }
 const webIds = [...web.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1]);
@@ -1077,6 +1077,7 @@ let stream = { ok: true, why: [] };
   check(/pathname === "\/live"/.test(serverText), "the server has no /live spectator socket");
   check(/#stream-state/.test(serverText), "the server does not confirm stream state");
   check(/action === "poll"/.test(serverText) && /action === "chat"/.test(serverText), "the streamer has no poll or chat controls");
+  check(/pathname === "\/stream"/.test(serverText) && /mudbenchmark\/stream\/1/.test(serverText), "the public stream status endpoint is missing");
   check(/isVote/.test(serverText) && /vote a or vote b/.test(serverText), "spectators cannot vote");
   check(/\^\(stream\|metric\|session-key\|rebind\)/.test(serverText), "control verbs still consume the player rate limit");
   const page = readFileSync(join(root, "runtime/web/index.html"), "utf8");
