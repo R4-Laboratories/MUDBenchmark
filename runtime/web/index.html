@@ -1653,7 +1653,7 @@
     try { const value = localStorage.getItem(TUTOR_KEY) ?? ""; return TUTOR_URL.test(value) ? value : ""; } catch { return ""; }
   }
   async function showTutor() {
-    const task = tutorProblem ? ` Puzzle: ${tutorProblem}. Solve it here, run tutor region submit ${tutorProblem}, then type tutor claim ${tutorProblem} in the game.` : "";
+    const task = tutorProblem ? ` Puzzle ${tutorProblem} is open below. When it passes, type tutor claim ${tutorProblem} in the game.` : "";
     const status = document.getElementById("tutor-status");
     const frame = document.getElementById("tutor-frame");
     const setup = document.getElementById("tutor-setup");
@@ -1677,7 +1677,8 @@
     recheck.hidden = true;
     status.textContent = `Connected to the Tutor terminal on this machine.${task}`;
     frame.hidden = false;
-    if (frame.getAttribute("src") !== url) frame.src = url;
+    const src = /^[\w-]{1,64}$/.test(tutorProblem) ? `${url}?arg=${encodeURIComponent(tutorProblem)}` : url;
+    if (frame.getAttribute("src") !== src) frame.src = src;
   }
   // The game opens this panel when a player works a code puzzle in a room (a `#tutor <problem>` line).
   function setTutor(open, problem = "") {

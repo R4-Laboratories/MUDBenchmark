@@ -1260,7 +1260,8 @@ async function handleCommand(id, line) {
     }
     // A code puzzle: the browser opens the player's Tutor terminal; text clients get the hint below.
     if (roomAction.tutor) {
-      sendTo(id, `#tutor ${roomAction.tutor}\r\nThis is a code puzzle. Solve "${roomAction.tutor}" in Tutor, then: tutor claim ${roomAction.tutor}\r\n`);
+      sendTo(id, `#tutor ${roomAction.tutor}\r\n`);
+      sendTo(id, `This is a code puzzle (${roomAction.tutor}). Work on it in your Tutor terminal. Once it passes, come back and type: tutor claim ${roomAction.tutor}\r\n`);
     }
     pending.push({ kind: "action", actorId: id, actionId: roomAction.id, messages: roomAction.messages });
     recordSpan("world.action", {

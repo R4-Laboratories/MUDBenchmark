@@ -77,7 +77,7 @@ function record(claims, character, problem, answer, now) {
 
 /** Handle `tutor`, `tutor link <code>` and `tutor claim <problem>` for a signed-in character. */
 export async function tutorCommand({ config, claims, character, args, fetchImpl = fetch, now = () => new Date().toISOString() }) {
-  if (!config) return { text: "This world is not connected to a Tutor region.\r\n", changed: false };
+  if (!config) return { text: "This world has no Tutor server set up, so it cannot check your solution. (Operator: set TUTOR_REGION_URL and TUTOR_REGION_SECRET.)\r\n", changed: false };
   const [action, value] = args;
 
   if (!action) {
