@@ -676,6 +676,7 @@ export function step({ state, rooms, intents, actions = [] }) {
         tokenHash: null,
         retired: false,
         mergedInto: null,
+        lastSeenTick: next.tick,
       };
       next.identities[intent.key] = {
         kind: "character",
@@ -991,6 +992,7 @@ export function step({ state, rooms, intents, actions = [] }) {
         events.push({ onlyId: actor.id, text: "That account is not available.\r\n" });
         continue;
       }
+      account.lastSeenTick = next.tick;
       const owns = known.owner === accountKey;
       const delegated = known.delegate === accountKey && known.owner !== accountKey;
       if ((!owns && !delegated) || (owns && !account.characters.includes(intent.key))) {

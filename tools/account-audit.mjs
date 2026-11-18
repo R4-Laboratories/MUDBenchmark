@@ -19,12 +19,16 @@ if (!file) {
   console.error("usage: account-audit --state <world.json> [--json]");
   process.exit(2);
 }
-const audit = auditAccounts(JSON.parse(readFileSync(file, "utf8")));
+const audit = auditAccounts(JSON.parse(readFileSync(file, "utf8")), {
+  inactiveDays: Number(option("inactive-days", 90)),
+});
 if (args.includes("--json")) {
   process.stdout.write(`${JSON.stringify(audit, null, 2)}\n`);
 } else {
   console.log(`accounts ${audit.counts.accounts} · characters ${audit.counts.characters}`);
   console.log(`legacy ${audit.counts.legacy} · prism ${audit.counts.prism} · retired ${audit.counts.retired}`);
   console.log(`password ${audit.counts.password} · token ${audit.counts.token} · credentialless ${audit.counts.credentialless}`);
+  console.log(`inactive >${audit.inactiveDays}d ${audit.counts.inactive}`);
   if (audit.credentialless.length) console.log(`credentialless: ${audit.credentialless.join(", ")}`);
+  if (audit.inactive.length) console.log(`inactive: ${audit.inactive.join(", ")}`);
 }

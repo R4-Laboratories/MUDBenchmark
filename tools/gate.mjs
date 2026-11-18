@@ -965,17 +965,19 @@ let audit = { ok: true, why: [] };
 {
   const check = (condition, why) => { if (!condition) { audit.ok = false; audit.why.push(why); } };
   const report = auditAccounts({
+    tick: 1_000_000,
     accounts: {
-      a: { kind: "legacy", characters: ["a"], passwordHash: "h" },
-      b: { kind: "legacy", characters: ["b"], tokenHash: "t" },
+      a: { kind: "legacy", characters: ["a"], passwordHash: "h", lastSeenTick: 1_000_000 },
+      b: { kind: "legacy", characters: ["b"], tokenHash: "t", lastSeenTick: 1_000_000 },
       c: { kind: "legacy", characters: [], retired: true },
-      d: { kind: "legacy", characters: ["d"], passwordHash: null, tokenHash: null },
-      p: { kind: "prism", characters: ["p"] },
+      d: { kind: "legacy", characters: ["d"], passwordHash: null, tokenHash: null, lastSeenTick: 0 },
+      p: { kind: "prism", characters: ["p"], lastSeenTick: 1_000_000 },
     },
     identities: { a: {}, b: {}, d: {}, p: {} },
-  });
+  }, { inactiveDays: 1 });
   check(report.counts.accounts === 5 && report.counts.legacy === 4 && report.counts.prism === 1, "the audit account counts are wrong");
   check(report.counts.credentialless === 1 && report.credentialless[0] === "d", "the audit did not find the credentialless account");
+  check(report.counts.inactive === 1 && report.inactive[0] === "d", "the audit did not find the inactive account");
   check(!JSON.stringify(report).includes("passwordHash"), "the audit exposed a credential field");
   if (audit.why.length) { audit.ok = false; failures.push(`the account audit is broken: ${audit.why[0]}`); }
 }
