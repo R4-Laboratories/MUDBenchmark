@@ -133,13 +133,19 @@ if (commandsCheck.status !== 0) failures.push(`docs/COMMANDS.md is stale: ${(com
 
 // The web shell must actually offer account and AI-play controls.
 const web = readFileSync("runtime/web/index.html", "utf8");
-if (!/id="login"/.test(web) || !/id="register"/.test(web) || !/id="prism-login"/.test(web) || !/id="mode-ai"/.test(web) || !/id="ai-provider"/.test(web) || !/id="ai-reset"/.test(web) || !/id="director-input"/.test(web) || !/id="telemetry-open"/.test(web) || !/id="trend-stats"/.test(web) || !/id="ai-stream"/.test(web)) {
-  failures.push("the web shell lost its Prism, password, AI-play or telemetry controls");
+for (const id of ["login", "register", "prism-login", "mode-ai", "ai-provider", "ai-reset", "director-input", "telemetry-open", "trend-stats", "ai-stream", "model-edit", "model-apply", "observe-close", "watch-card", "ai-plan", "player-stack"]) {
+  if (!web.includes(`id="${id}"`)) failures.push(`the web shell lost its ${id} control`);
 }
+const webIds = [...web.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1]);
+const duplicateIds = [...new Set(webIds.filter((id, index) => webIds.indexOf(id) !== index))];
+if (duplicateIds.length) failures.push(`the web shell has duplicate ids: ${duplicateIds.join(", ")}`);
 const liveIndex = web.indexOf('id="ai-live"');
 const railIndex = web.indexOf("<aside>");
 if (liveIndex < 0 || railIndex < 0 || liveIndex > railIndex) {
   failures.push("the AI conversation is not the center panel before the model rail");
+}
+if (!web.includes("body.ai-mode.ai-running main") || !web.includes("--dock: 520px")) {
+  failures.push("the live Studio dock sizing was lost");
 }
 
 // The browser AI: the parser, the prompt, and every provider request shape.

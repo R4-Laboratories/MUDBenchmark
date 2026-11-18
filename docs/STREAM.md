@@ -1,10 +1,18 @@
 # Watching a run
 
-The interface is three panels: the game stage, the AI conversation/Studio, and
-the Model Control rail. The model rail is first, so provider, model, fast mode
-and Start are visible before the run; once live, the conversation and Mind
-share the center. Telemetry opens from the header as a focus drawer. The page
-stacks to one column below 980px.
+The interface has three workspaces. **Play** is a 52px header over a large game
+stage and a 344px context rail (player, Watch-an-AI, commands). **Watch AI
+setup** hides the stage and gives the model form a centered 620+360px launch
+workspace with one primary Start button and a live run plan. **Watch AI live**
+is two columns: the game stage plus a 520px Studio dock containing the run
+header, stream toolbar, conversation, Director input and the 220–340px
+inspector. Model control collapses to a chip and a Change button; Change opens
+a transient 640px dialog with Apply & restart.
+
+Telemetry opens from the header or the dock's Expand control as a full-height
+520px right sheet. The layout degrades to one column below 1024px and a
+390px-safe header below 768px. All existing AI, Prism, stream and transcript
+IDs are unchanged.
 
 The live AI Studio has four tabs, and the human and the AI can be online at once.
 

@@ -525,6 +525,12 @@
       "level": "build",
       "statement": "The Ember Deep adds ten connected rooms behind the Quiet Door (61-70), three mobiles (forge master, cinder hound, ember warden), nine objects, a forge shop with a hammer and cloak, four room actions (last-lantern door reveal, bellows heal, ash-key chest unlock, first-flame shortcut) and five quests including the magician-tier Ember Warden guild quest. The world is 70 rooms, 31 quests, 32 mobiles and 63 objects; 13 actions use 11 verbs. The gate walks the quiet door, the full Ember Deep loop, the quest payout, the chest unlock and the shortcut, and validates every exit and quest reference.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-82",
+      "level": "build",
+      "statement": "The web shell is now state-based: Play is a 1212px stage plus a 344px context rail with a Watch-an-AI card and commands; Watch-AI setup is a centered 620+360px workspace with a 454px model form and a run-plan card; Watch-AI live is a 1036px stage plus a 520px Studio dock with a 377px conversation, 257px inspector, a model chip and a Change dialog (640x462) with Apply & restart. Telemetry is a 520px full-height right sheet. Header is 52px; the 390px mobile header and live dock have no horizontal overflow. Headless desktop and mobile runs showed no JS errors; restart, Escape, telemetry close and tab rendering were exercised. MB-81 content remains: 70 rooms / 31 quests.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

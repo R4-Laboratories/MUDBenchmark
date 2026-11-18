@@ -150,6 +150,10 @@ Rehearsed 2026-11-16:
 - v0.61.0 (interface) rebuilds the web shell around a prominent Model Control
   rail, a conversation/Studio center, and a telemetry focus drawer, with a
   one-column mobile layout (MB-78);
+- v0.62.0 (studio) adds the trends dashboard, the ten-room Ember Deep and five
+  quests (70 rooms / 31 quests), and the state-based interface: Play context
+  rail, dedicated setup workspace, live stage plus 520px Studio dock, model
+  chip with a Change dialog, and a full-height telemetry sheet (MB-80/81/82);
 - a SHA with no green Gate run (`a78f57e`) refused before the tag was created;
 - the timer pulled v0.34.0; v0.33.0 was deployed and verified (101 accounts,
   101 characters), then v0.34.0 restored;

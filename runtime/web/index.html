@@ -7,260 +7,467 @@
 <style>
   :root {
     color-scheme: dark;
-    --bg: #06080c; --bg-2: #0a0f16; --panel: #0d141d; --panel-2: #111a25;
-    --line: #223144; --line-2: #2e4158; --text: #e8f0fa; --muted: #91a4ba;
-    --faint: #5c6e84; --accent: #5eead4; --accent-2: #7dd3fc; --blue: #60a5fa;
-    --good: #86efac; --warn: #fbbf24; --danger: #fb7185;
-    --radius: 16px; --radius-sm: 10px; --shadow: 0 24px 70px rgba(0,0,0,.38);
-    --log-size: 15px;
+    --hdr: 52px;
+    --rail-play: 344px;
+    --dock: 520px;
+    --bg: #080b0f;
+    --surface: #0d1219;
+    --surface-2: #111823;
+    --surface-3: #17202c;
+    --line: #1e2a38;
+    --line-2: #2b3a4b;
+    --text: #e6edf5;
+    --muted: #9aa8b8;
+    --faint: #7d8b9c;
+    --accent: #5eead4;
+    --accent-strong: #2dd4bf;
+    --accent-ink: #04110f;
+    --link: #7dd3fc;
+    --good: #86efac;
+    --warn: #fbbf24;
+    --danger: #fb7185;
+    --r-panel: 10px;
+    --r-inner: 8px;
+    --r-control: 6px;
+    --shadow-overlay: 0 24px 64px rgba(0,0,0,.55);
+    --font-ui: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    --log-size: 16px;
   }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
   html, body { height: 100%; }
   body {
-    margin: 0; min-height: 100vh; color: var(--text);
-    background:
-      radial-gradient(1200px 700px at 18% -10%, rgba(94,234,212,.10), transparent 60%),
-      radial-gradient(900px 600px at 100% 0%, rgba(96,165,250,.09), transparent 55%),
-      linear-gradient(180deg, #06080c, #080c12 60%, #06080c);
-    font: 14px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-    letter-spacing: .01em;
+    margin: 0; height: 100dvh; overflow: hidden; color: var(--text);
+    background: var(--bg); font: 13px/1.5 var(--font-ui);
+    display: grid; grid-template-rows: var(--hdr) minmax(0, 1fr);
+  }
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
   }
   header {
-    position: sticky; top: 0; z-index: 30; display: flex; align-items: center;
-    gap: 22px; padding: 12px 22px; border-bottom: 1px solid rgba(46,65,88,.55);
-    background: rgba(6,8,12,.78); backdrop-filter: blur(18px);
+    height: var(--hdr); display: flex; align-items: center; gap: 12px;
+    padding: 0 16px; border-bottom: 1px solid var(--line);
+    background: var(--bg); position: relative; z-index: 30;
   }
-  .brand { display: flex; align-items: center; gap: 11px; min-width: 230px; }
+  .brand { display: flex; align-items: center; gap: 9px; flex: 0 0 auto; }
   .brand-mark {
-    width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center;
-    background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #031411;
-    font-weight: 900; font-size: 18px; box-shadow: 0 0 30px rgba(94,234,212,.25);
+    width: 26px; height: 26px; border-radius: 7px; display: grid; place-items: center;
+    background: var(--accent); color: var(--accent-ink); font-weight: 800; font-size: 13px;
   }
-  .brand-copy { display: flex; flex-direction: column; line-height: 1.15; }
-  .brand-copy strong { font-size: 15px; letter-spacing: .14em; text-transform: uppercase; }
-  #tagline { font-size: 11px; color: var(--muted); letter-spacing: .08em; }
-  .header-center { display: flex; align-items: center; justify-content: center; gap: 14px; flex: 1; }
-  #modes { display: flex; padding: 4px; border: 1px solid var(--line); border-radius: 999px; background: rgba(13,20,29,.8); }
+  .brand-copy { display: flex; flex-direction: column; line-height: 1.1; }
+  .brand-copy strong { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; }
+  #tagline { font-size: 10px; color: var(--faint); letter-spacing: .04em; }
+  .header-center { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+  #modes {
+    display: flex; padding: 2px; border: 1px solid var(--line);
+    border-radius: var(--r-control); background: var(--surface);
+  }
   #modes button {
-    border: 0; background: transparent; color: var(--muted); padding: 7px 16px;
-    border-radius: 999px; font: inherit; font-size: 12px; cursor: pointer; letter-spacing: .06em;
+    height: 26px; border: 0; border-radius: 4px; background: transparent;
+    color: var(--muted); padding: 0 12px; font: 500 11.5px/1 var(--font-ui);
+    cursor: pointer;
   }
   #modes button:hover { color: var(--text); }
   #modes button.active {
-    background: linear-gradient(135deg, var(--accent), var(--accent-2));
-    color: #04110f; font-weight: 800; box-shadow: 0 4px 18px rgba(94,234,212,.25);
+    background: var(--surface-3); color: var(--accent); box-shadow: inset 0 0 0 1px var(--line-2);
   }
   #state {
-    font-size: 12px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px;
-    padding: 6px 12px; background: rgba(13,20,29,.6); max-width: 300px;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    display: inline-flex; align-items: center; gap: 6px; height: 24px;
+    max-width: 260px; padding: 0 9px; border: 1px solid var(--line);
+    border-radius: 999px; background: var(--surface); color: var(--muted);
+    font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  #state.live { color: var(--accent); border-color: rgba(94,234,212,.4); box-shadow: 0 0 18px rgba(94,234,212,.12); }
-  .header-actions { display: flex; gap: 6px; align-items: center; }
-  .header-actions button {
-    background: rgba(17,26,37,.7); color: var(--muted); border: 1px solid var(--line);
-    border-radius: 9px; padding: 7px 11px; font: inherit; font-size: 12px; cursor: pointer;
+  #state::before {
+    content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--faint); flex: 0 0 auto;
   }
-  .header-actions button:hover { color: var(--text); border-color: var(--line-2); }
+  #state.live { color: var(--accent); border-color: rgba(94,234,212,.35); }
+  #state.live::before { background: var(--accent); }
+  .header-actions { display: flex; align-items: center; gap: 4px; flex: 0 0 auto; }
+  .header-actions a, .header-actions button {
+    height: 26px; display: inline-flex; align-items: center; gap: 4px;
+    padding: 0 8px; border: 1px solid transparent; border-radius: var(--r-control);
+    background: transparent; color: var(--muted); font: 500 11.5px/1 var(--font-ui);
+    text-decoration: none; cursor: pointer;
+  }
+  .header-actions a:hover, .header-actions button:hover {
+    color: var(--text); border-color: var(--line-2); background: var(--surface);
+  }
+  #telemetry-open[aria-disabled="true"] { opacity: .5; cursor: default; }
   main {
-    max-width: 1920px; margin: 0 auto; padding: 18px; display: grid;
-    grid-template-columns: minmax(0,1fr) 390px; gap: 16px;
-    height: calc(100vh - 63px); min-height: 0;
+    width: 100%; max-width: 1920px; margin: 0 auto; min-height: 0;
+    padding: 12px 16px 16px; display: grid; gap: 12px;
+    grid-template-columns: minmax(0, 1fr) var(--rail-play);
   }
-  body.ai-mode.ai-running main {
-    grid-template-columns: minmax(0,.9fr) minmax(340px,.75fr) 400px;
+  body.ai-mode.ai-running main { grid-template-columns: minmax(0, 1fr) var(--dock); }
+  body.ai-mode.ai-running aside { display: none; }
+  #terminal, #ai-live {
+    min-width: 0; min-height: 0; height: 100%;
+    border: 1px solid var(--line); border-radius: var(--r-panel);
+    background: var(--surface); overflow: hidden;
   }
-  #terminal {
-    position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 0;
-    background: linear-gradient(180deg, rgba(13,20,29,.97), rgba(8,12,18,.99));
-    border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden;
-  }
+  #terminal { position: relative; display: flex; flex-direction: column; }
   #livebar {
-    display: none; align-items: center; gap: 10px; padding: 10px 18px;
-    border-bottom: 1px solid var(--line); font-size: 12px;
-    background: linear-gradient(90deg, rgba(94,234,212,.07), transparent 45%);
+    flex: 0 0 32px; display: none; align-items: center; gap: 8px;
+    padding: 0 14px; border-bottom: 1px solid var(--line);
+    font-size: 11px; color: var(--muted);
   }
   body.ai-mode #livebar { display: flex; }
-  #livebar .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); }
-  #livebar.live .dot { background: #fb7185; box-shadow: 0 0 10px #fb7185; animation: pulse 1.6s infinite; }
+  #livebar .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--faint); flex: 0 0 auto; }
+  #livebar.live .dot { background: var(--danger); animation: pulse 1.6s infinite; }
   #livebar .spacer { flex: 1; }
-  #live-thought { max-width: 48ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
+  #live-name { color: var(--text); font-weight: 600; }
+  #live-thought { max-width: 46ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
   @keyframes pulse { 50% { opacity: .35; } }
   #log {
-    flex: 1; min-height: 0; overflow-y: auto; padding: 24px 28px;
+    flex: 1; min-height: 0; overflow-y: auto; padding: 18px 24px 28px;
     white-space: pre-wrap; overflow-wrap: anywhere;
-    font: var(--log-size, 15px)/1.7 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font: var(--log-size, 16px)/1.65 var(--font-mono);
+    scrollbar-gutter: stable;
   }
+  #log:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
   #latest {
-    position: absolute; right: 18px; bottom: 70px; display: none;
-    background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #04110f;
-    border: 0; border-radius: 999px; padding: 8px 14px; font: inherit; font-weight: 800;
-    cursor: pointer; box-shadow: 0 8px 24px #0008;
+    position: absolute; right: 14px; bottom: 64px; display: none;
+    height: 28px; padding: 0 11px; border: 0; border-radius: 999px;
+    background: var(--accent-strong); color: var(--accent-ink);
+    font: 600 11.5px/1 var(--font-ui); cursor: pointer; box-shadow: 0 8px 20px #0007;
   }
-  #log .line { min-height: 1.7em; }
-  #log .me { color: var(--accent); }
+  body.ai-mode #latest { bottom: 16px; }
+  #log .line { min-height: 1.65em; }
+  #log .me, #log .ai-cmd { color: var(--accent); }
+  #log .ai-cmd { font-weight: 500; }
   #log .sys { color: var(--muted); }
   #log .err { color: var(--danger); }
-  #log .ai-cmd { color: var(--accent); opacity: .9; }
-  #log .room { color: var(--accent); font-weight: 700; letter-spacing: .04em; margin-top: 24px; padding-top: 12px; border-top: 1px solid var(--line); }
+  #log .room {
+    color: var(--accent); font-weight: 600; letter-spacing: .02em;
+    margin-top: 22px; padding-top: 10px; border-top: 1px solid var(--line);
+  }
   #log .room:first-child { margin-top: 0; border-top: 0; }
-  #log .desc { color: var(--text); margin-top: 2px; }
-  #log .scene { color: #a9b6c5; font-style: italic; margin-top: 4px; }
-  #log .label { color: var(--muted); margin-top: 12px; font-size: .78em; letter-spacing: .16em; text-transform: uppercase; }
-  #log .item { padding-left: 18px; color: #d7dee8; }
-  #log .exits { color: var(--muted); margin-top: 10px; }
+  #log .desc { color: #dfe7f0; margin-top: 2px; }
+  #log .scene { color: #aab8c8; font-style: italic; margin-top: 4px; }
+  #log .label { color: var(--faint); margin-top: 10px; font-size: .72em; letter-spacing: .12em; text-transform: uppercase; }
+  #log .item { padding-left: 16px; color: #cfd9e4; }
+  #log .exits { color: var(--muted); margin-top: 8px; }
   #log .event { color: #b8c4d2; }
-  #entry { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--line); background: rgba(6,8,12,.35); }
+  #entry {
+    flex: 0 0 52px; display: flex; gap: 8px; padding: 8px 10px;
+    border-top: 1px solid var(--line);
+  }
   body.ai-mode #entry { display: none; }
   #entry input {
-    flex: 1; min-width: 0; background: #080d13; border: 1px solid var(--line);
-    border-radius: 11px; outline: 0; padding: 12px 14px; color: var(--text);
-    font: max(16px, var(--log-size, 15px))/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    flex: 1; min-width: 0; height: 36px; padding: 0 12px;
+    background: #090e14; border: 1px solid var(--line-2); border-radius: var(--r-control);
+    outline: 0; color: var(--text);
+    font: max(16px, var(--log-size, 16px))/1.4 var(--font-mono);
   }
   #entry input::placeholder { color: var(--faint); }
   #entry input:disabled { opacity: .45; }
-  #entry button, .panel button, .panel a.button {
-    background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #04110f;
-    border: 0; border-radius: 9px; padding: 9px 13px; font: inherit; font-weight: 800;
-    font-size: 12px; cursor: pointer; text-decoration: none; display: inline-block;
+  #entry input:focus-visible { border-color: var(--accent); outline: 2px solid rgba(94,234,212,.35); outline-offset: 1px; }
+  #entry button {
+    height: 36px; padding: 0 16px; border: 0; border-radius: var(--r-control);
+    background: var(--accent-strong); color: var(--accent-ink);
+    font: 600 12px/1 var(--font-ui); cursor: pointer;
   }
-  #entry button { padding: 10px 18px; }
-  #entry button:hover, .panel button:hover, .panel a.button:hover { filter: brightness(1.08); }
-  aside { display: flex; flex-direction: column; gap: 14px; overflow-y: auto; min-height: 0; padding-right: 2px; }
+  aside {
+    min-height: 0; display: flex; flex-direction: column; gap: 10px;
+    overflow-y: auto; padding-right: 2px;
+  }
   .panel {
-    flex: 0 0 auto;
-    background: linear-gradient(180deg, rgba(17,26,37,.94), rgba(10,15,22,.97));
-    border: 1px solid var(--line); border-radius: var(--radius); padding: 16px;
-    box-shadow: 0 10px 30px rgba(0,0,0,.18);
+    flex: 0 0 auto; padding: 14px; border: 1px solid var(--line);
+    border-radius: var(--r-panel); background: var(--surface);
   }
-  .panel h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .16em; color: var(--muted); margin: 0 0 12px; }
-  .panel p { margin: 0 0 10px; color: var(--muted); font-size: 12px; line-height: 1.55; }
+  .panel h2 {
+    margin: 0 0 9px; color: var(--muted); font: 600 11px/1.3 var(--font-ui);
+    letter-spacing: .06em; text-transform: uppercase;
+  }
+  .panel p { margin: 0 0 9px; color: var(--muted); font-size: 12px; line-height: 1.5; }
   .panel textarea {
-    background: #080d13; color: var(--text); border: 1px solid var(--line);
-    border-radius: 9px; padding: 9px; font: inherit; font-size: 12px; width: 100%;
-    min-height: 56px; resize: vertical;
+    width: 100%; min-height: 52px; padding: 8px; resize: vertical;
+    background: #090e14; color: var(--text); border: 1px solid var(--line-2);
+    border-radius: var(--r-control); font: 12px/1.45 var(--font-ui);
   }
-  #link-qr { display: block; margin: 8px 0; width: 180px; height: 180px; image-rendering: pixelated; background: #fff; border-radius: 10px; }
-  #devices-list .device { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 12px; }
-  #devices-list .device button { padding: 3px 8px; font-size: 11px; }
-  .field { display: grid; gap: 7px; margin-bottom: 10px; }
-  .field label { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .12em; }
+  .panel a { color: var(--link); }
+  #link-qr { display: block; margin: 8px 0; width: 140px; height: 140px; image-rendering: pixelated; background: #fff; border-radius: var(--r-inner); }
+  #devices-list .device { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--line); font-size: 11px; }
+  #devices-list .device button { height: 24px; padding: 0 7px; font-size: 10.5px; }
+  .field { display: grid; align-content: start; gap: 3px; margin: 0 0 6px; }
+  .field label { color: var(--muted); font-size: 11px; font-weight: 500; letter-spacing: 0; text-transform: none; }
   .field input, .field select, #director-form input {
-    background: #080d13; color: var(--text); border: 1px solid var(--line);
-    border-radius: 9px; padding: 10px; font: inherit; font-size: 13px; min-width: 0; outline: none;
+    height: 34px; min-width: 0; padding: 0 9px;
+    background: #090e14; color: var(--text); border: 1px solid var(--line-2);
+    border-radius: var(--r-control); font: 400 13px/1.4 var(--font-ui); outline: 0;
   }
-  .field input:focus, .field select:focus, #director-form input:focus, #entry input:focus { border-color: rgba(94,234,212,.65); box-shadow: 0 0 0 3px rgba(94,234,212,.08); }
-  .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .field input:focus-visible, .field select:focus-visible, #director-form input:focus-visible, #entry input:focus-visible {
+    border-color: var(--accent); outline: 2px solid rgba(94,234,212,.3); outline-offset: 1px;
+  }
+  .row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
   .row button { flex: 1; }
   .row.grow input { flex: 1; }
   .muted { color: var(--muted); }
   .small { font-size: 12px; }
   .err { color: var(--danger); }
   pre {
-    margin: 8px 0 0; padding: 11px; background: #070b10; border: 1px solid var(--line);
-    border-radius: 9px; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 11px;
-    color: #aab8c8; line-height: 1.55;
+    margin: 8px 0 0; padding: 9px; background: #0a0f15; border: 1px solid var(--line);
+    border-radius: var(--r-control); white-space: pre-wrap; overflow-wrap: anywhere;
+    font: 11.5px/1.55 var(--font-mono); color: #aab8c8;
   }
+  button, .panel button, .panel a.button {
+    border: 1px solid var(--line-2); border-radius: var(--r-control);
+    background: var(--surface-2); color: var(--text);
+    font: 500 11.5px/1 var(--font-ui); cursor: pointer;
+  }
+  button:hover, .panel button:hover, .panel a.button:hover { border-color: var(--faint); }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .panel button, .row button, #prism-login, #login, #register { height: 30px; padding: 0 10px; }
+  .panel a.button { display: inline-flex; align-items: center; height: 30px; padding: 0 10px; text-decoration: none; }
+  #prism-login, #ai-start, #entry button, #model-apply { border-color: transparent; background: var(--accent-strong); color: var(--accent-ink); font-weight: 600; }
+  #prism-login:hover, #ai-start:hover, #model-apply:hover { border-color: transparent; filter: brightness(1.05); }
+  #ai-stop, #quit { color: var(--danger); border-color: rgba(251,113,133,.35); background: transparent; }
   #signed { display: none; }
-  #ai-setup { display: block; position: relative; overflow: visible; border-color: rgba(94,234,212,.32); box-shadow: 0 0 0 1px rgba(94,234,212,.06), var(--shadow); }
-  #ai-setup::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 2px; background: linear-gradient(90deg, var(--accent), var(--accent-2), transparent); }
-  #ai-setup h2 { color: var(--accent); font-size: 13px; }
-  #ai-setup > p:first-of-type { color: var(--muted); font-size: 11px; }
-  #ai-setup .field { margin-bottom: 7px; gap: 4px; }
-  #ai-setup .field > p:not(#ai-identity) { display: none; }
-  #ai-setup .field input, #ai-setup .field select { padding: 8px 9px; }
-  #ai-setup .row { margin-top: 6px; }
-  #ai-setup #ai-identity { font-size: 10px; line-height: 1.45; }
-  body.ai-running #ai-start, body.ai-running #ai-forget { display: none; }
-  body.ai-mode #account, body.ai-mode #characters, body.ai-mode #signed, body.ai-mode #glance { display: none; }
-  #character-list { display: flex; flex-direction: column; gap: 6px; margin: 8px 0; }
+  #character-list { display: flex; flex-direction: column; gap: 5px; margin: 7px 0; }
   #character-list .row { margin: 0; }
   #character-list button { text-align: left; }
-  #ai-live {
-    display: none; flex-direction: column; min-width: 0; min-height: 0;
-    background: linear-gradient(180deg, rgba(13,20,29,.98), rgba(7,11,16,.99));
-    border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden;
+  #player-stack { display: flex; flex-direction: column; gap: 10px; }
+  body.ai-mode #player-stack, body.ai-mode #watch-card, body.ai-mode #commands-card, body.ai-mode #glance { display: none !important; }
+  #watch-card { border-color: rgba(94,234,212,.28); }
+  #watch-card h2 { color: var(--accent); }
+  #watch-card .watch-actions { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+  #watch-open { height: 32px; padding: 0 11px; }
+  #watch-card a { font-size: 11.5px; }
+  #commands-card { font-size: 11.5px; }
+  .command-row { display: flex; justify-content: space-between; gap: 10px; padding: 4px 0; border-bottom: 1px solid var(--line); }
+  .command-row:last-child { border-bottom: 0; }
+  .command-row code { color: var(--text); font: 11.5px/1.4 var(--font-mono); }
+  .command-row span { color: var(--faint); text-align: right; }
+  #glance { padding: 11px 14px; }
+  #glance summary { color: var(--muted); font-size: 11.5px; cursor: pointer; }
+  #glance .glance-body { padding-top: 8px; }
+  #glance p { margin-bottom: 6px; font-size: 11px; }
+  #ai-setup, #ai-plan { display: none; }
+  #ai-setup { border-color: rgba(94,234,212,.28); padding: 16px; }
+  #ai-setup h2 { color: var(--text); font-size: 18px; text-transform: none; letter-spacing: 0; margin-bottom: 4px; }
+  #ai-setup > p:first-of-type { font-size: 12px; max-width: 62ch; }
+  .setup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 18px; margin-top: 7px; }
+  .setup-grid .field > p { margin: 1px 0 0; font-size: 11px; line-height: 1.35; }
+  .field .row.grow { margin-top: 0; }
+  #ai-find { height: 34px; flex: 0 0 auto; }
+  #ai-setup .field { margin-bottom: 8px; }
+  #ai-identity { font-size: 11px; line-height: 1.45; }
+  .fast-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 34px; }
+  .fast-row label { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 11px; }
+  .fast-row button { height: 26px; padding: 0 8px; background: transparent; color: var(--muted); font-size: 10.5px; }
+  .fast-row button:hover { color: var(--text); border-color: var(--line-2); }
+  #ai-hint { min-height: 18px; margin: 0; font-size: 11.5px; }
+  .launch-bar { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+  .launch-actions { display: flex; gap: 8px; margin-top: 7px; }
+  #ai-start { height: 40px; flex: 1; font-size: 12.5px; }
+  #ai-forget { height: 40px; padding: 0 12px; background: transparent; border-color: transparent; color: var(--muted); }
+  #ai-forget:hover { color: var(--text); border-color: var(--line-2); }
+  #ai-setup details { margin-top: 5px; font-size: 11.5px; }
+  #ai-setup details summary { color: var(--muted); cursor: pointer; }
+  #ai-setup details p { margin: 6px 0 0; font-size: 11.5px; }
+  body.ai-running:not(.model-focus) #ai-start, body.ai-running:not(.model-focus) #ai-forget { display: none; }
+  body.model-focus #ai-start, body.model-focus #ai-forget { display: none; }
+  .modal-actions { display: none; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+  body.model-focus .modal-actions { display: flex; }
+  #model-apply { height: 36px; flex: 1; }
+  #model-download { height: 36px; padding: 0 10px; background: transparent; }
+  #model-close { height: 36px; width: 36px; padding: 0; background: transparent; color: var(--muted); font-size: 18px; }
+  #ai-plan {
+    border-color: var(--line);
   }
+  #ai-plan h2 { color: var(--text); font-size: 13px; text-transform: none; letter-spacing: 0; }
+  .plan-list { display: grid; gap: 0; margin: 8px 0 12px; }
+  .plan-row { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 12px; }
+  .plan-row:last-child { border-bottom: 0; }
+  .plan-row span { color: var(--muted); }
+  .plan-row b { font-weight: 500; text-align: right; overflow-wrap: anywhere; }
+  .plan-steps { margin: 0 0 12px; padding-left: 18px; color: var(--muted); font-size: 11.5px; line-height: 1.6; }
+  .plan-note { color: var(--faint); font-size: 11px; margin: 0; }
+  #ai-live { display: none; flex-direction: column; }
   body.ai-mode.ai-running #ai-live { display: flex; }
   #ai-head {
-    display: flex; align-items: center; justify-content: space-between; gap: 10px;
-    padding: 16px 18px; border-bottom: 1px solid var(--line);
-    background: linear-gradient(180deg, rgba(17,26,37,.94), rgba(13,20,29,.9));
+    flex: 0 0 56px; display: flex; align-items: center; justify-content: space-between;
+    gap: 8px; padding: 0 12px; border-bottom: 1px solid var(--line);
   }
-  #ai-head strong { font-size: 18px; letter-spacing: .02em; }
-  #ai-head .row { margin: 0; flex: 0 1 auto; }
-  #ai-head button { padding: 6px 10px; font-size: 11px; }
-  #ai-sub { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
-  #ai-live > p { padding: 10px 18px 0; margin: 0 !important; font-size: 11px; }
-  #stream-tools { margin: 0; padding: 10px 18px; border-bottom: 1px solid var(--line); background: rgba(6,8,12,.25); }
-  #stream-tools button { background: rgba(17,26,37,.8); color: var(--muted); border: 1px solid var(--line); font-weight: 600; }
+  .run-title { min-width: 0; }
+  #ai-title { font-size: 15px; font-weight: 600; display: block; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .run-meta { display: flex; align-items: center; gap: 6px; margin-top: 3px; }
+  #ai-sub {
+    display: inline-block; max-width: 190px; padding: 2px 7px;
+    border: 1px solid var(--line-2); border-radius: 999px;
+    color: var(--muted); font: 11px/1.4 var(--font-mono);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  #model-edit { height: 22px; padding: 0 5px; border-color: transparent; background: transparent; color: var(--muted); font-size: 10.5px; }
+  #model-edit:hover { color: var(--text); border-color: var(--line-2); }
+  .transport { display: flex; gap: 4px; flex: 0 0 auto; }
+  .transport button { height: 26px; padding: 0 8px; font-size: 11px; }
+  #stream-tools {
+    flex: 0 0 36px; display: flex; align-items: center; gap: 4px;
+    margin: 0; padding: 0 10px; border-bottom: 1px solid var(--line);
+  }
+  #stream-tools button { height: 26px; padding: 0 8px; font-size: 10.5px; background: transparent; color: var(--muted); }
+  #stream-tools button:hover { color: var(--text); }
+  #stream-tools .spacer { flex: 1; }
+  #stream-tools a { color: var(--link); font-size: 10.5px; text-decoration: none; white-space: nowrap; }
+  #ai-stream { color: var(--accent) !important; border-color: rgba(94,234,212,.3) !important; }
+  #ai-stream.live { color: var(--danger) !important; border-color: rgba(251,113,133,.35) !important; }
   #chat {
-    flex: 1; min-height: 120px; overflow-y: auto; display: flex; flex-direction: column;
-    gap: 10px; padding: 18px; background: radial-gradient(600px 300px at 50% 0%, rgba(94,234,212,.04), transparent 70%);
+    flex: 1; min-height: 160px; overflow-y: auto; display: flex; flex-direction: column;
+    gap: 8px; padding: 12px 14px; scrollbar-gutter: stable;
   }
+  #chat:empty::before, #mind:empty::before, #bench-recent:empty::before {
+    content: "Messages appear here."; color: var(--faint); font-size: 12px;
+  }
+  #mind:empty::before { content: "Thoughts appear after the first turn."; }
+  #bench-recent:empty::before { content: "No spans yet."; }
   .msg {
-    max-width: 86%; border: 1px solid var(--line); background: rgba(17,26,37,.8);
-    border-radius: 13px; padding: 10px 12px; font-size: 13px; line-height: 1.55;
-    box-shadow: 0 6px 20px rgba(0,0,0,.14);
+    max-width: 88%; padding: 8px 10px; border: 1px solid var(--line);
+    border-radius: 10px; background: var(--surface-2); font-size: 13px; line-height: 1.5;
   }
-  .msg.you { margin-left: auto; border-color: rgba(94,234,212,.45); background: linear-gradient(135deg, rgba(94,234,212,.13), rgba(125,211,252,.08)); }
-  .msg.ai { margin-right: auto; border-color: rgba(134,239,172,.35); }
-  .msg.viewer { margin-right: auto; border-color: rgba(96,165,250,.35); background: rgba(96,165,250,.06); }
-  .msg.system { align-self: center; max-width: 92%; border-color: rgba(251,191,36,.25); background: rgba(251,191,36,.04); color: var(--muted); }
-  .msg .who { font-size: 9px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; }
-  #director-form { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--line); background: rgba(6,8,12,.35); }
-  #director-form input { flex: 1; }
-  #director-form button { flex: 0 0 auto; }
+  .msg.you { margin-left: auto; border-color: rgba(94,234,212,.35); background: rgba(94,234,212,.08); }
+  .msg.ai { margin-right: auto; border-color: rgba(134,239,172,.28); }
+  .msg.viewer { margin-right: auto; border-color: rgba(125,211,252,.25); background: rgba(125,211,252,.05); }
+  .msg.system { align-self: center; max-width: 94%; border: 0; background: transparent; color: var(--muted); font-size: 12px; }
+  .msg .who { margin-bottom: 3px; color: var(--faint); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
+  #director-form {
+    flex: 0 0 48px; display: flex; gap: 6px; padding: 7px 10px;
+    border-top: 1px solid var(--line);
+  }
+  #director-form input { flex: 1; height: 34px; }
+  #director-form button { height: 34px; padding: 0 12px; }
   #observe {
-    height: 34%; min-height: 170px; display: flex; flex-direction: column;
-    border-top: 1px solid var(--line); padding: 12px 16px 14px; background: rgba(6,8,12,.38);
+    flex: 0 0 clamp(220px, 30vh, 340px); min-height: 0; display: flex; flex-direction: column;
+    padding: 8px 12px 10px; border-top: 1px solid var(--line);
   }
-  #tabs { display: flex; gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: 10px; background: rgba(8,13,19,.8); margin-bottom: 8px; }
+  .observe-head { display: flex; align-items: center; justify-content: space-between; height: 22px; margin-bottom: 6px; }
+  .observe-head span { color: var(--faint); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; }
+  #observe-expand { height: 22px; padding: 0 6px; border-color: transparent; background: transparent; color: var(--muted); font-size: 10.5px; }
+  #observe-close { display: none; height: 22px; width: 22px; padding: 0; background: transparent; color: var(--muted); font-size: 16px; }
+  #tabs {
+    display: flex; gap: 2px; margin: 0 0 8px; padding: 0;
+    border-bottom: 1px solid var(--line); border-radius: 0; background: none;
+  }
   #tabs .tab {
-    flex: 1; border: 0; background: transparent; color: var(--muted); padding: 7px;
-    border-radius: 7px; cursor: pointer; font: inherit; font-size: 10px;
-    text-transform: uppercase; letter-spacing: .12em;
+    flex: 0 0 auto; height: 30px; padding: 0 10px; border: 0;
+    border-bottom: 2px solid transparent; border-radius: 0; background: transparent;
+    color: var(--muted); font: 500 11.5px/1 var(--font-ui); letter-spacing: 0; text-transform: none;
   }
   #tabs .tab:hover { color: var(--text); }
-  #tabs .tab.active { background: var(--panel-2); color: var(--accent); box-shadow: inset 0 0 0 1px rgba(94,234,212,.2); }
+  #tabs .tab.active { color: var(--text); border-bottom-color: var(--accent); }
   .pane { flex: 1; min-height: 0; overflow-y: auto; }
-  #mind { display: flex; flex-direction: column; gap: 8px; }
-  .thought { border-left: 2px solid var(--accent); border-radius: 0 10px 10px 0; padding: 8px 10px; background: rgba(8,13,19,.8); font-size: 12px; line-height: 1.55; }
-  .thought .meta { color: var(--muted); font-size: 9px; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
-  .thought .meta .highlight { margin-left: auto; background: transparent; color: var(--muted); border: 1px solid var(--line); border-radius: 6px; padding: 0 6px; font-size: 13px; cursor: pointer; text-transform: none; letter-spacing: 0; }
+  #mind { display: flex; flex-direction: column; gap: 6px; }
+  .thought {
+    border-left: 2px solid var(--accent); border-radius: 0 6px 6px 0;
+    padding: 7px 9px; background: #0a0f15; font-size: 12px; line-height: 1.5;
+  }
+  .thought .meta { display: flex; align-items: center; gap: 7px; margin-bottom: 3px; color: var(--faint); font-size: 10px; letter-spacing: .06em; }
+  .thought .meta .highlight {
+    width: 22px; height: 22px; margin-left: auto; padding: 0;
+    border: 1px solid var(--line); border-radius: 4px; background: transparent;
+    color: var(--muted); font-size: 12px; letter-spacing: 0; text-transform: none;
+  }
   .thought .meta .highlight:disabled { color: var(--warn); cursor: default; }
-  .highlight-row { border-left: 2px solid var(--warn); padding: 6px 9px; margin: 6px 0; font-size: 12px; background: rgba(251,191,36,.04); }
-  #bench-stats, #trend-stats, #run-stats, #model-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
-  .pane-title { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 0 0 7px; }
-  #bench-kinds { max-height: 160px; }
-  .stat { border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; font-size: 10px; color: var(--muted); background: rgba(8,13,19,.65); }
-  .stat b { display: block; color: var(--text); font-size: 14px; font-weight: 700; overflow-wrap: anywhere; margin-top: 2px; }
-  .model-block h3 { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 10px 0 0; }
+  .highlight-row { margin: 5px 0; padding: 6px 8px; border-left: 2px solid var(--warn); background: rgba(251,191,36,.04); font-size: 12px; }
+  .pane-title { margin: 0 0 7px; color: var(--muted); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; }
+  #bench-stats, #trend-stats, #run-stats, #model-stats {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
+    gap: 6px; margin-bottom: 8px;
+  }
+  #bench-kinds { max-height: 150px; }
+  .stat {
+    padding: 6px 8px; border: 1px solid var(--line); border-radius: var(--r-control);
+    background: #0a0f15; color: var(--faint); font-size: 10px;
+    letter-spacing: .06em; text-transform: uppercase;
+  }
+  .stat b { display: block; margin-top: 2px; color: var(--text); font-size: 13px; font-weight: 600; text-transform: none; letter-spacing: 0; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .model-block h3 { margin: 9px 0 0; color: var(--muted); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; }
   .model-block pre { max-height: 240px; overflow: auto; }
-  #ai-settings { font-size: 11px; color: var(--muted); margin-top: 6px; overflow-wrap: anywhere; }
-  body.telemetry-focus::after { content: ""; position: fixed; inset: 0; background: rgba(2,4,7,.66); backdrop-filter: blur(4px); z-index: 40; }
+  #ai-settings { margin-top: 5px; color: var(--muted); font-size: 11px; overflow-wrap: anywhere; }
+  body.telemetry-focus::after {
+    content: ""; position: fixed; inset: 0; z-index: 60;
+    background: rgba(2,4,7,.62); backdrop-filter: blur(2px);
+  }
   body.telemetry-focus #observe {
-    position: fixed; z-index: 50; right: 24px; bottom: 24px;
-    width: min(780px, calc(100vw - 48px)); height: min(68vh, 680px);
-    background: linear-gradient(180deg, rgba(17,26,37,.99), rgba(8,12,18,.99));
-    border: 1px solid var(--line-2); border-radius: 18px; box-shadow: var(--shadow); padding: 18px;
+    position: fixed; z-index: 70; top: calc(var(--hdr) + 8px); right: 8px; bottom: 8px;
+    width: min(520px, calc(100vw - 16px)); height: auto; padding: 0 14px 14px;
+    border: 1px solid var(--line-2); border-radius: 12px; background: var(--surface);
+    box-shadow: var(--shadow-overlay);
   }
-  body.telemetry-focus #tabs .tab.active { color: var(--accent); }
-  @media (max-width: 1280px) {
-    body.ai-mode.ai-running main { grid-template-columns: minmax(0,1fr) 390px; grid-template-rows: minmax(0,1fr) minmax(0,1fr); }
-    body.ai-mode.ai-running #ai-live { grid-column: 1; grid-row: 2; }
-    body.ai-mode.ai-running aside { grid-column: 2; grid-row: 1 / span 2; }
+  body.telemetry-focus #observe .observe-head { margin-top: 0; padding-top: 10px; }
+  body.telemetry-focus #observe-close { display: inline-flex; align-items: center; justify-content: center; }
+  body.telemetry-focus #observe-expand { display: none; }
+  body.telemetry-focus #observe .pane { overflow-y: auto; }
+  #model-scrim {
+    display: none; position: fixed; inset: 0; z-index: 75;
+    background: rgba(2,4,7,.66); backdrop-filter: blur(2px);
   }
-  @media (max-width: 980px) {
-    main, body.ai-mode.ai-running main { grid-template-columns: 1fr; grid-template-rows: none; height: auto; }
-    #terminal { height: 62vh; }
-    body.ai-mode.ai-running #terminal { height: 52vh; }
-    body.ai-mode.ai-running #ai-live { grid-column: auto; grid-row: auto; height: 72vh; }
-    body.ai-mode.ai-running aside { grid-column: auto; grid-row: auto; max-height: none; }
-    header { gap: 10px; flex-wrap: wrap; }
-    .brand { min-width: 0; }
-    .header-center { order: 3; width: 100%; justify-content: space-between; }
+  body.model-focus #model-scrim { display: block; }
+  body.model-focus aside, body.ai-mode.ai-running.model-focus aside {
+    display: block; position: fixed; inset: 0; z-index: 80;
+    overflow: visible; background: transparent; pointer-events: none; padding: 0;
+  }
+  body.model-focus #ai-setup {
+    display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: min(640px, calc(100vw - 32px)); max-height: calc(100dvh - 48px); overflow: auto;
+    padding: 20px; border-radius: 14px; background: var(--surface);
+    box-shadow: var(--shadow-overlay); pointer-events: auto;
+  }
+  body.model-focus #ai-plan { display: none !important; }
+  body.ai-mode:not(.ai-running) main { display: block; padding: 0; overflow-y: auto; }
+  body.ai-mode:not(.ai-running) #terminal { display: none; }
+  body.ai-mode:not(.ai-running) aside {
+    display: grid; grid-template-columns: minmax(0, 620px) 360px; gap: 24px;
+    align-items: start; max-width: 1060px; margin: 0 auto; padding: 24px 20px 40px;
+    overflow: visible;
+  }
+  body.ai-mode:not(.ai-running) #ai-setup, body.ai-mode:not(.ai-running) #ai-plan { display: block; }
+  @media (max-width: 1599px) { :root { --rail-play: 320px; --dock: 480px; } }
+  @media (max-width: 1359px) { :root { --rail-play: 320px; --dock: 440px; } }
+  @media (max-width: 1199px) {
+    :root { --rail-play: 304px; --dock: 400px; }
+    body.ai-mode:not(.ai-running) aside { grid-template-columns: minmax(0, 1fr); max-width: 640px; }
+  }
+  @media (max-width: 1023px) {
+    main, body.ai-mode.ai-running main {
+      grid-template-columns: 1fr; grid-template-rows: none; height: auto; overflow-y: auto;
+    }
+    #terminal, body.ai-mode.ai-running #terminal { height: 54vh; min-height: 360px; }
+    body.ai-mode.ai-running #ai-live { grid-column: 1; height: 78vh; min-height: 520px; }
+    aside, body.ai-mode.ai-running aside { grid-column: 1; max-height: none; }
+    #tagline { display: none; }
+    #state { max-width: 180px; }
+    body.ai-mode:not(.ai-running) aside { padding: 18px 16px 32px; }
+    .setup-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 767px) {
+    :root { --hdr: 48px; }
+    header { gap: 7px; padding: 0 9px; }
+    .header-actions a { display: none; }
+    #tagline { display: none; }
+    .brand-copy strong { font-size: 11px; }
+    #state { width: 22px; max-width: 22px; padding: 0; justify-content: center; font-size: 0; }
+    #font-down, #font-up { display: none; }
+    main { padding: 0; gap: 0; }
+    #terminal, #ai-live { border-radius: 0; border-left: 0; border-right: 0; }
+    #entry { flex-basis: 56px; }
+    #log { padding: 14px 16px 22px; font-size: 15px; }
+    .msg { font-size: 13px; }
+    body.ai-mode:not(.ai-running) aside { padding: 14px 12px 28px; }
+    .transport button { min-height: 28px; }
+    #ai-head { flex: 0 0 auto; flex-wrap: wrap; min-height: 56px; padding: 6px 10px; gap: 6px; }
+    #ai-sub { max-width: 130px; }
+    .transport { margin-left: auto; }
+    #stream-tools { flex: 0 0 auto; flex-wrap: wrap; min-height: 36px; height: auto; padding: 4px 8px; }
+    #stream-tools .spacer { display: none; }
+    #stream-tools a { margin-left: auto; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+    #livebar.live .dot { animation: none; }
   }
 
   </style>
@@ -268,23 +475,24 @@
 <body>
   <header>
     <div class="brand">
-      <span class="brand-mark">M</span>
+      <span class="brand-mark" aria-hidden="true">M</span>
       <div class="brand-copy">
         <strong>MUDBench</strong>
         <span id="tagline">one world · people and agents</span>
       </div>
     </div>
     <div class="header-center">
-      <div id="modes" role="tablist" aria-label="Mode">
-        <button type="button" id="mode-play" class="mode active">Play</button>
-        <button type="button" id="mode-ai" class="mode">Watch AI</button>
+      <div id="modes" role="group" aria-label="Workspace mode">
+        <button type="button" id="mode-play" class="mode active" aria-pressed="true">Play</button>
+        <button type="button" id="mode-ai" class="mode" aria-pressed="false">Watch AI</button>
       </div>
-      <span id="state">connecting…</span>
+      <span id="state" role="status">connecting…</span>
     </div>
     <div class="header-actions">
-      <button type="button" id="telemetry-open" title="Open telemetry">Telemetry</button>
-      <button type="button" id="font-down" title="Smaller text">A−</button>
-      <button type="button" id="font-up" title="Larger text">A+</button>
+      <a href="/watch" target="_blank" rel="noopener">Watch live ↗</a>
+      <button type="button" id="telemetry-open" title="Open telemetry" aria-expanded="false" aria-controls="observe">Telemetry</button>
+      <button type="button" id="font-down" title="Smaller text" aria-label="Smaller text">A−</button>
+      <button type="button" id="font-up" title="Larger text" aria-label="Larger text">A+</button>
     </div>
   </header>
   <main>
@@ -297,53 +505,62 @@
         <span class="spacer"></span>
         <span id="live-status" class="muted">setting up</span>
       </div>
-      <div id="log" aria-live="polite"></div>
+      <div id="log" role="log" aria-label="Game log" aria-live="off" tabindex="0"></div>
       <button type="button" id="latest">↓ Latest</button>
       <form id="entry">
         <input id="cmd" autocomplete="off" disabled placeholder="Sign in to play" aria-label="Command">
         <button type="submit">Send</button>
       </form>
     </section>
-      <section class="panel" id="ai-live">
+      <section id="ai-live" aria-label="AI Studio">
         <div id="ai-head">
-          <div>
+          <div class="run-title">
             <strong id="ai-title">scout</strong>
-            <span id="ai-sub" class="muted">ready</span>
+            <div class="run-meta">
+              <span id="ai-sub">ready</span>
+              <button type="button" id="model-edit" aria-haspopup="dialog" aria-expanded="false" title="Change model">Change</button>
+            </div>
           </div>
-          <div class="row">
+          <div class="transport">
             <button type="button" id="ai-pause">Pause</button>
             <button type="button" id="ai-step">Step</button>
-            <button type="button" id="ai-stream">Go live</button>
             <button type="button" id="ai-stop">Stop</button>
           </div>
         </div>
-        <p class="small muted" style="margin:0 0 8px"><a href="/watch" target="_blank" rel="noopener" style="color: var(--accent)">Public watch page</a> — press Go live to publish this run. Audience chat reaches the AI as director input.</p>
-        <div class="row" id="stream-tools">
+        <div id="stream-tools">
+          <button type="button" id="ai-stream">Go live</button>
           <button type="button" id="stream-poll">Start poll</button>
           <button type="button" id="stream-poll-close">Close poll</button>
           <button type="button" id="stream-chat-toggle">Chat off</button>
+          <span class="spacer"></span>
+          <a href="/watch" target="_blank" rel="noopener">Watch page ↗</a>
         </div>
-        <div id="chat" aria-live="polite"></div>
+        <div id="chat" aria-live="polite" aria-label="AI conversation"></div>
         <form id="director-form">
           <input id="director-input" autocomplete="off" placeholder="Steer the AI…" aria-label="Director message">
           <button type="submit">Send</button>
         </form>
         <div id="observe">
-          <div id="tabs" role="tablist">
-            <button type="button" class="tab active" data-tab="mind">Mind</button>
-            <button type="button" class="tab" data-tab="run">Run</button>
-            <button type="button" class="tab" data-tab="model">Model</button>
-            <button type="button" class="tab" data-tab="bench">Bench</button>
+          <div class="observe-head">
+            <span>Studio</span>
+            <button type="button" id="observe-expand" title="Open telemetry" aria-label="Open telemetry">Expand</button>
+            <button type="button" id="observe-close" title="Close telemetry" aria-label="Close telemetry">×</button>
           </div>
-          <div id="mind-pane" class="pane"><div id="mind"></div></div>
-          <div id="model-pane" class="pane" hidden>
+          <div id="tabs" role="tablist" aria-label="Studio panels">
+            <button type="button" class="tab active" data-tab="mind" role="tab" aria-selected="true">Mind</button>
+            <button type="button" class="tab" data-tab="run" role="tab" aria-selected="false">Run</button>
+            <button type="button" class="tab" data-tab="model" role="tab" aria-selected="false">Model</button>
+            <button type="button" class="tab" data-tab="bench" role="tab" aria-selected="false">Bench</button>
+          </div>
+          <div id="mind-pane" class="pane" role="tabpanel"><div id="mind"></div></div>
+          <div id="model-pane" class="pane" role="tabpanel" hidden>
             <div id="model-stats"></div>
             <div class="model-block"><h3>Sent to the model</h3><pre id="model-prompt"></pre></div>
             <div class="model-block"><h3>Context</h3><pre id="model-context"></pre></div>
             <div class="model-block"><h3>Model returned</h3><pre id="model-reply"></pre></div>
             <div class="model-block"><h3>Sent to the game</h3><pre id="model-command"></pre></div>
           </div>
-          <div id="bench-pane" class="pane" hidden>
+          <div id="bench-pane" class="pane" role="tabpanel" hidden>
             <h3 class="pane-title">Trends</h3>
             <div id="trend-stats"></div>
             <pre id="trend-top"></pre>
@@ -354,7 +571,7 @@
             <div id="bench-recent"></div>
             <pre id="bench-kinds"></pre>
           </div>
-          <div id="run-pane" class="pane" hidden>
+          <div id="run-pane" class="pane" role="tabpanel" hidden>
             <div id="run-stats"></div>
             <div id="highlights"></div>
             <div class="row">
@@ -366,49 +583,51 @@
         </div>
       </section>
     <aside>
-      <section class="panel" id="ai-setup">
+      <section class="panel" id="ai-setup" aria-label="Model control">
         <h2>Model control</h2>
-        <p>Pick a provider, model and character. The AI plays through this page under the same 250&nbsp;ms limit; your provider key stays in this browser.</p>
-        <div class="field">
-          <label for="ai-provider">Brain</label>
-          <select id="ai-provider"></select>
-        </div>
-        <div class="field">
-          <label for="ai-base">Base URL</label>
-          <input id="ai-base" autocomplete="off">
-        </div>
-        <div class="field">
-          <label for="ai-model">Model</label>
-          <div class="row grow">
-            <input id="ai-model" list="ai-models" autocomplete="off">
-            <button type="button" id="ai-find">Find</button>
+        <p>Pick a provider, model and character. Your provider key stays in this browser.</p>
+        <div class="setup-grid">
+          <div class="field">
+            <label for="ai-provider">Brain</label>
+            <select id="ai-provider"></select>
           </div>
-          <datalist id="ai-models"></datalist>
-          <p class="small muted" id="ai-local">Local providers need no key. Start Ollama and click Find.</p>
+          <div class="field">
+            <label for="ai-character">Character name</label>
+            <input id="ai-character" autocomplete="off" maxlength="24" placeholder="scout">
+            <p class="small muted">Created if missing. The AI signs in with its Prism id.</p>
+          </div>
+          <div class="field">
+            <label for="ai-base">Base URL</label>
+            <input id="ai-base" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="ai-model">Model</label>
+            <div class="row grow">
+              <input id="ai-model" list="ai-models" autocomplete="off">
+              <button type="button" id="ai-find">Find</button>
+            </div>
+            <datalist id="ai-models"></datalist>
+            <p class="small muted" id="ai-local">Local providers need no key. Start Ollama and click Find.</p>
+          </div>
+          <div class="field" id="ai-key-field">
+            <label for="ai-key">API key <span class="muted">(this browser only)</span></label>
+            <input id="ai-key" type="password" autocomplete="off" placeholder="sk-…">
+          </div>
+          <div class="field">
+            <div class="fast-row">
+              <label><input type="checkbox" id="ai-fast"> Fast mode</label>
+              <button type="button" id="ai-reset">Reset identity</button>
+            </div>
+            <p class="small muted" id="ai-identity">The Prism id is the account; the character is the in-game name.</p>
+          </div>
         </div>
-        <div class="field">
-          <label><input type="checkbox" id="ai-fast"> Fast mode</label>
-          <p class="small muted">Shorter history, fewer tokens, a 45-second deadline, and a safe fallback to <code>look</code> instead of pausing.</p>
+        <div class="launch-bar">
+          <p id="ai-hint" role="status" aria-live="polite"></p>
+          <div class="launch-actions">
+            <button type="button" id="ai-start">Start AI run</button>
+            <button type="button" id="ai-forget">Forget key</button>
+          </div>
         </div>
-        <div class="row">
-          <button type="button" id="ai-start">Start AI run</button>
-          <button type="button" id="ai-forget">Forget key</button>
-        </div>
-        <div class="field" id="ai-key-field">
-          <label for="ai-key">API key <span class="muted">(this browser only)</span></label>
-          <input id="ai-key" type="password" autocomplete="off" placeholder="sk-…">
-        </div>
-        <div class="field">
-          <label for="ai-character">Character name</label>
-          <input id="ai-character" autocomplete="off" maxlength="24" placeholder="scout">
-          <p class="small muted">The AI signs in with its Prism id, then plays this character. If it does not exist, the AI creates it. Another tab or a person can take the same character over.</p>
-        </div>
-        <div class="field">
-          <label>AI Prism identity</label>
-          <p class="small muted" id="ai-identity">The Prism id is the account; the character name is the in-game name.</p>
-          <div class="row"><button type="button" id="ai-reset">Reset identity</button></div>
-        </div>
-        <p class="small muted" id="ai-hint"></p>
         <details class="small muted">
           <summary>How this works</summary>
           <p>1. Pick a brain. Ollama is free and local; OpenAI and Anthropic need a key.</p>
@@ -417,7 +636,29 @@
           <p>4. Send direction in the Director chat. The AI replies there and its private reasoning appears in Mind.</p>
           <p>The game server never sees the provider key.</p>
         </details>
+        <div class="modal-actions">
+          <button type="button" id="model-apply">Apply &amp; restart</button>
+          <button type="button" id="model-download">Download transcript</button>
+          <button type="button" id="model-close" aria-label="Close model control">×</button>
+        </div>
       </section>
+      <section class="panel" id="ai-plan" aria-label="Run plan">
+        <h2>Run plan</h2>
+        <div class="plan-list">
+          <div class="plan-row"><span>Brain</span><b id="plan-brain">Ollama</b></div>
+          <div class="plan-row"><span>Model</span><b id="plan-model">llama3.2</b></div>
+          <div class="plan-row"><span>Character</span><b id="plan-character">scout</b></div>
+          <div class="plan-row"><span>Mode</span><b id="plan-mode">Standard</b></div>
+        </div>
+        <ol class="plan-steps">
+          <li>Mind shows the AI's reasoning.</li>
+          <li>Steer it in the Director chat.</li>
+          <li>Press Go live to publish the run.</li>
+        </ol>
+        <p class="plan-note">You stay signed in as your human character; switch to Play any time. Nothing publishes until you press Go live.</p>
+        <p class="small muted"><a href="/watch" target="_blank" rel="noopener">Public watch page ↗</a></p>
+      </section>
+      <div id="player-stack">
       <section class="panel" id="account">
         <h2>Sign in</h2>
         <p>Use your Prism id. No password. The id is your account; after signing in you choose a character. Clearing site data or losing the browser loses the account until you link another device.</p>
@@ -558,18 +799,40 @@
           </div>
         </details>
       </section>
+      </div>
 
+      <section class="panel" id="watch-card">
+        <h2>Watch an AI</h2>
+        <p id="watch-summary">Ollama · llama3.2</p>
+        <div class="watch-actions">
+          <button type="button" id="watch-open">Open AI setup →</button>
+          <a href="/watch" target="_blank" rel="noopener">Public watch page ↗</a>
+        </div>
+      </section>
 
-
-
+      <section class="panel" id="commands-card">
+        <h2>Commands</h2>
+        <div class="command-row"><code>look</code><span>the room</span></div>
+        <div class="command-row"><code>say &lt;text&gt;</code><span>the room hears</span></div>
+        <div class="command-row"><code>global &lt;text&gt;</code><span>server-wide</span></div>
+        <div class="command-row"><code>who</code><span>who is online</span></div>
+        <div class="command-row"><code>help</code><span>all commands</span></div>
+        <div class="command-row"><code>quit</code><span>leave the world</span></div>
+      </section>
 
       <section class="panel" id="glance">
-        <h2>At a glance</h2>
-        <p class="small muted">60 rooms across the temple, town, wilds, undercroft, harbor, Lantern Quarter and Undervault. Shops in the Storeroom, Smithy, Gilded Rat and Spellwright. Quests from the shrine, the guild clerk, the docks, the owl and the archmage. The Ring beneath the Docks is a consensual arena.</p>
-        <p class="small muted"><a href="/llms.txt" style="color: var(--accent)">/llms.txt</a> is the machine-readable contract for agents.</p>
+        <details>
+          <summary>At a glance</summary>
+          <div class="glance-body">
+            <p>70 rooms across the temple, town, wilds, undercroft, harbor, Lantern Quarter, Undervault and Ember Deep. Shops in the Storeroom, Smithy, Gilded Rat, Spellwright and Ember Forge. Quests from the shrine, the guild clerk, the docks, the owl, the archmage and the forge master. The Ring beneath the Docks is a consensual arena.</p>
+            <p><a href="/llms.txt">/llms.txt</a> is the machine-readable contract for agents.</p>
+          </div>
+        </details>
       </section>
     </aside>
   </main>
+  <div id="model-scrim"></div>
+  <div id="announcer" class="sr-only" role="status" aria-live="polite"></div>
 <script type="module">
   import {
     PROVIDERS, DEFAULT_GOAL, buildSystemPrompt, buildUserPrompt,
@@ -660,6 +923,20 @@
   const liveStatus = document.getElementById("live-status");
   const liveThought = document.getElementById("live-thought");
   const livebar = document.getElementById("livebar");
+  const watchSummary = document.getElementById("watch-summary");
+  const watchOpen = document.getElementById("watch-open");
+  const planBrain = document.getElementById("plan-brain");
+  const planModel = document.getElementById("plan-model");
+  const planCharacter = document.getElementById("plan-character");
+  const planMode = document.getElementById("plan-mode");
+  const modelEdit = document.getElementById("model-edit");
+  const modelScrim = document.getElementById("model-scrim");
+  const modelApply = document.getElementById("model-apply");
+  const modelDownload = document.getElementById("model-download");
+  const modelClose = document.getElementById("model-close");
+  const observeExpand = document.getElementById("observe-expand");
+  const observeClose = document.getElementById("observe-close");
+  const announcer = document.getElementById("announcer");
 
   const CONFIG_KEY = "mudbench-ai-config";
   const KEY_KEY = "mudbench-ai-key";
@@ -1267,9 +1544,13 @@
   function setMode(next) {
     if (next === mode) return;
     mode = next;
+    document.body.classList.toggle("ai-mode", mode === "ai");
+    document.body.classList.remove("model-focus", "telemetry-focus");
+    telemetryOpen.setAttribute("aria-expanded", "false");
     modePlay.classList.toggle("active", mode === "play");
     modeAI.classList.toggle("active", mode === "ai");
-    document.body.classList.toggle("ai-mode", mode === "ai");
+    modePlay.setAttribute("aria-pressed", String(mode === "play"));
+    modeAI.setAttribute("aria-pressed", String(mode === "ai"));
     document.querySelector("aside").scrollTop = 0;
     if (mode === "ai") {
       // Keep the human's play socket signed in. The human and the AI can be
@@ -1296,6 +1577,7 @@
       state.className = "live";
       renderHandoff();
     }
+    updateTelemetryAvailability();
   }
 
   modePlay.addEventListener("click", () => setMode("play"));
@@ -1306,16 +1588,55 @@
     if (rail) rail.scrollTop = 0;
   });
   const telemetryOpen = document.getElementById("telemetry-open");
-  telemetryOpen.addEventListener("click", () => {
-    if (!AI.running) {
+  function updateTelemetryAvailability() {
+    telemetryOpen.setAttribute("aria-disabled", AI.running ? "false" : "true");
+  }
+  function setTelemetry(open) {
+    if (open && !AI.running) {
       state.textContent = "Start an AI run to open telemetry";
       return;
     }
-    document.querySelector('[data-tab="bench"]')?.click();
-    document.body.classList.toggle("telemetry-focus");
-  });
+    if (open) closeModel(false);
+    document.body.classList.toggle("telemetry-focus", open);
+    telemetryOpen.setAttribute("aria-expanded", String(open));
+    if (open) document.querySelector('[data-tab="bench"]')?.click();
+    else telemetryOpen.focus();
+  }
+  telemetryOpen.addEventListener("click", () => setTelemetry(!document.body.classList.contains("telemetry-focus")));
+  observeExpand.addEventListener("click", () => setTelemetry(true));
+  observeClose.addEventListener("click", () => setTelemetry(false));
+
+  function openModel() {
+    if (!AI.running) return;
+    setTelemetry(false);
+    document.body.classList.add("model-focus");
+    modelEdit.setAttribute("aria-expanded", "true");
+    setTimeout(() => aiProvider.focus(), 30);
+  }
+  function closeModel(restoreFocus = true) {
+    if (!document.body.classList.contains("model-focus")) return;
+    document.body.classList.remove("model-focus");
+    modelEdit.setAttribute("aria-expanded", "false");
+    if (restoreFocus && AI.running) modelEdit.focus();
+  }
+  async function restartAI() {
+    if (!AI.running) { closeModel(); return; }
+    if (!confirm("Apply these settings and restart the run? The current transcript is cleared.")) return;
+    closeModel(false);
+    stopAI(true);
+    await startAI();
+  }
+  modelEdit.addEventListener("click", openModel);
+  modelClose.addEventListener("click", () => closeModel());
+  modelScrim.addEventListener("click", () => closeModel());
+  modelApply.addEventListener("click", restartAI);
+  modelDownload.addEventListener("click", () => aiTranscript.click());
+  watchOpen.addEventListener("click", () => setMode("ai"));
+
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") document.body.classList.remove("telemetry-focus");
+    if (event.key !== "Escape") return;
+    if (document.body.classList.contains("model-focus")) closeModel();
+    else if (document.body.classList.contains("telemetry-focus")) setTelemetry(false);
   });
 
   // --- AI setup -----------------------------------------------------------
@@ -1337,8 +1658,22 @@
     aiKeyField.hidden = (provider.keyMode ?? (provider.needsKey ? "required" : "none")) === "none";
     aiHint.textContent = provider.hint;
     aiHint.className = "small muted";
+    syncModelSummary();
     if (!reset) return;
     persistConfig(false);
+  }
+
+  function syncModelSummary() {
+    const provider = PROVIDERS[aiProvider.value] ?? PROVIDERS.ollama;
+    const model = aiModel.value.trim() || "no model";
+    const character = aiCharacter.value.trim() || "scout";
+    const summary = `${provider?.label ?? aiProvider.value} · ${model}`;
+    if (watchSummary) watchSummary.textContent = summary;
+    if (planBrain) planBrain.textContent = provider?.label ?? aiProvider.value;
+    if (planModel) planModel.textContent = model;
+    if (planCharacter) planCharacter.textContent = character;
+    if (planMode) planMode.textContent = aiFast.checked ? "Fast" : "Standard";
+    if (!AI.running) aiSub.textContent = summary;
   }
 
   function persistConfig(includeKey = false) {
@@ -1376,8 +1711,8 @@
     } catch {}
     applyProvider(aiProvider.value, false);
     aiTitle.textContent = "AI";
-    aiSub.textContent = `${PROVIDERS[aiProvider.value].label} · ${aiModel.value || "no model"}`;
-    aiIdentity.textContent = "Sign in with your Prism id, then start the AI: it becomes a persona owned by you. Without a human sign-in it uses its own account.";
+    syncModelSummary();
+    aiIdentity.textContent = "The Prism id is the account; the character is the in-game name.";
     detectLocalModels();
   }
 
@@ -1386,7 +1721,9 @@
     aiKey.value = keyFor(aiBase.value);
     detectLocalModels();
   });
-  for (const field of [aiBase, aiModel, aiCharacter, aiFast]) field.addEventListener("change", () => persistConfig(false));
+  for (const field of [aiBase, aiModel, aiCharacter, aiFast]) {
+    field.addEventListener("change", () => { persistConfig(false); syncModelSummary(); });
+  }
 
   aiReset.addEventListener("click", async () => {
     if (AI.owner) {
@@ -1611,10 +1948,14 @@
     updatePause();
     setAIStatus("connecting");
     document.body.classList.add("ai-mode", "ai-running");
+    document.body.classList.remove("model-focus", "telemetry-focus");
     document.querySelector("aside").scrollTop = 0;
     mode = "ai";
     modePlay.classList.remove("active");
     modeAI.classList.add("active");
+    modePlay.setAttribute("aria-pressed", "false");
+    modeAI.setAttribute("aria-pressed", "true");
+    updateTelemetryAvailability();
     updateLiveBar();
     updateRunStats();
     connectAI();
@@ -1622,6 +1963,9 @@
 
   function stopAI(silent = false) {
     AI.running = false;
+    updateTelemetryAvailability();
+    document.body.classList.remove("model-focus", "telemetry-focus");
+    telemetryOpen.setAttribute("aria-expanded", "false");
     AI.paused = true;
     AI.busy = false;
     clearTimeout(AI.quiet);
@@ -2358,7 +2702,10 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
 
   for (const tab of document.querySelectorAll("#tabs .tab")) {
     tab.addEventListener("click", () => {
-      for (const other of document.querySelectorAll("#tabs .tab")) other.classList.toggle("active", other === tab);
+      for (const other of document.querySelectorAll("#tabs .tab")) {
+        other.classList.toggle("active", other === tab);
+        other.setAttribute("aria-selected", String(other === tab));
+      }
       document.getElementById("mind-pane").hidden = tab.dataset.tab !== "mind";
       document.getElementById("run-pane").hidden = tab.dataset.tab !== "run";
       document.getElementById("model-pane").hidden = tab.dataset.tab !== "model";
@@ -2419,6 +2766,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
   });
 
   renderSetup();
+  updateTelemetryAvailability();
   renderHighlights();
   updateRunStats();
 
