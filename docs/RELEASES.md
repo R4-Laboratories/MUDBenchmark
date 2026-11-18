@@ -154,6 +154,9 @@ Rehearsed 2026-11-16:
   quests (70 rooms / 31 quests), and the state-based interface: Play context
   rail, dedicated setup workspace, live stage plus 520px Studio dock, model
   chip with a Change dialog, and a full-height telemetry sheet (MB-80/81/82);
+- the launch cleanup archived 105 accounts / 106 characters / 8 pins and wiped
+  them to zero; the host reboot drill brought holo, world and cloudflared back
+  active (MB-83/84);
 - a SHA with no green Gate run (`a78f57e`) refused before the tag was created;
 - the timer pulled v0.34.0; v0.33.0 was deployed and verified (101 accounts,
   101 characters), then v0.34.0 restored;

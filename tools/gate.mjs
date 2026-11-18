@@ -58,6 +58,7 @@ import { trainingCost } from "../runtime/magic.mjs";
 import { findAction, loadActions } from "../runtime/actions.mjs";
 import { auditAccounts } from "../runtime/account-audit.mjs";
 import { deleteBarePrismAccount, deletePrismIdentity } from "../runtime/account-delete.mjs";
+import { wipePlayers } from "../runtime/account-wipe.mjs";
 
 const root = process.cwd();
 const ratchet = JSON.parse(readFileSync(join(root, "world/ratchet.json"), "utf8"));
@@ -1019,6 +1020,36 @@ let accountDelete = { ok: true, why: [] };
   const pin = deletePrismIdentity(state, store, "q");
   check(pin.ok && !store.prisms.q && pin.removed.account === null, "a bare Prism pin was not removed");
   if (accountDelete.why.length) { accountDelete.ok = false; failures.push(`the account delete is broken: ${accountDelete.why[0]}`); }
+}
+
+// The launch wipe removes every player record and pinned Prism log while
+// keeping the world itself.
+let accountWipe = { ok: true, why: [] };
+{
+  const check = (condition, why) => { if (!condition) { accountWipe.ok = false; accountWipe.why.push(why); } };
+  const state = {
+    accounts: { a: { kind: "legacy" }, p: { kind: "prism" } },
+    identities: { alice: { owner: "p" }, bob: {} },
+    actors: [{ id: 1, key: "alice" }],
+    mail: [{ fromKey: "p" }],
+    duels: [{ challengerKey: "a" }],
+    engagements: [{ attackerId: 1 }],
+    guilds: {
+      mages: { members: { alice: "member" }, invites: ["bob"] },
+      players: { members: { bob: "leader" }, invites: [] },
+    },
+    rooms: { 1: { name: "The Atrium" } },
+    npcs: [{ id: "rat" }],
+  };
+  const store = { prisms: { a: { root: "x" }, p: { root: "y" } } };
+  const result = wipePlayers(state, store);
+  check(result.before.accounts === 2 && result.before.identities === 2 && result.before.pinned === 2, "the wipe counts are wrong");
+  check(result.after.accounts === 0 && result.after.identities === 0 && result.after.pinned === 0, "the wipe left player records");
+  check(result.after.actors === 0 && state.mail.length === 0 && state.duels.length === 0 && state.engagements.length === 0, "the wipe left player references");
+  check(state.guilds.mages && Object.keys(state.guilds.mages.members).length === 0 && state.guilds.mages.invites.length === 0, "the mages roster was not cleared");
+  check(!state.guilds.players, "a player guild survived the wipe");
+  check(state.rooms[1]?.name === "The Atrium" && state.npcs[0]?.id === "rat", "the wipe removed world content");
+  if (accountWipe.why.length) { accountWipe.ok = false; failures.push(`the account wipe is broken: ${accountWipe.why[0]}`); }
 }
 
 // The public watch layer filters private lines before anything is broadcast,
@@ -2415,6 +2446,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"delete".padEnd(26)}  ${(deletion.ok ? "bare only" : "BROKEN").padStart(5)}   == no refs, no progress`);
   console.log(`${"audit".padEnd(26)}  ${(audit.ok ? "read-only" : "BROKEN").padStart(5)}   == kinds, credentials`);
   console.log(`${"accountDel".padEnd(26)}  ${(accountDelete.ok ? "bare only" : "BROKEN").padStart(5)}   == no chars, pin`);
+  console.log(`${"accountWipe".padEnd(26)}  ${(accountWipe.ok ? "all players" : "BROKEN").padStart(5)}   == accounts, pins, refs`);
   console.log(`${"stream".padEnd(26)}  ${(stream.ok ? "public" : "BROKEN").padStart(5)}   == filters, events, watch`);
   console.log(`${"telemetry".padEnd(26)}  ${(telemetry.ok ? "trends" : "BROKEN").padStart(5)}   == ai, world, clients`);
   console.log(`${"aliases".padEnd(26)}  ${(aliases.ok ? "short" : "BROKEN").padStart(5)}   == get, eq, status`);
