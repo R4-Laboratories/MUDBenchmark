@@ -561,6 +561,12 @@
       "level": "build",
       "statement": "The public /watch page now uses the same tokens as the main shell: dark #080b0f background, #0d1219 panels, 1px #1e2a38 lines, 16px/1.65 mono feed, 13px UI chat, 6px controls, 320px audience rail, 52px header and a reduced-motion fallback. No stream logic changed; the gate stream checks still pass.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-88",
+      "level": "some-true",
+      "statement": "Production v0.63.1 serves the public /watch page with the studio tokens: 52px header, 16px/1.65 mono feed, 13px UI chat, 320px audience rail and reduced motion. The main shell remains the state-based Play/setup/live layout, /stream returns the public status read, and the Ember Deep and trends dashboard remain. Production reports accounts 0 / characters 0; a live guest client keeps one pinned session log (pinned 1) without creating a character. Rooms 70, npcs 32, objects 63, landing and watch both 200.",
+      "authority": "wick production v0.63.1 2026-11-18; release 44362243855; gate 44360453287; /health, /stream and /watch CSS; account-wipe manifest 2026-11-18T17-29-46-750Z"
     }
   ]
 }
