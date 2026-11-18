@@ -36,6 +36,7 @@ export function loadActions({ path = DEFAULT_PATH, world = null } = {}) {
     if (action.requires?.item && world && !world.objects?.some((object) => object.id === action.requires.item)) {
       errors.push(`action ${action.id} requires item ${action.requires.item}, which does not exist`);
     }
+    if (action.tutor !== undefined && !/^[\w-]{1,64}$/.test(action.tutor)) errors.push(`action ${action.id} has an invalid tutor problem`);
     if (!Array.isArray(action.effects) || action.effects.length === 0) errors.push(`action ${action.id} has no effects`);
     for (const effect of action.effects ?? []) {
       if (!EFFECTS.has(effect.kind)) {

@@ -33,12 +33,18 @@ Tutor's side (`tutor region serve`) is documented in the Tutor repository.
 `node --test runtime/tutor-region.test.mjs` runs the checks against a stand-in
 Tutor.
 
-## Tutor panel
+## Code puzzles and the Tutor panel
 
-The **Tutor** button in the header opens a panel that shows the learner's own
-Tutor terminal, which runs on their machine (`tutor region terminal`, see the
-Tutor repository). The terminal's URL contains a secret path. It arrives once,
-in the URL fragment from `tutor region terminal --open <this page>`, is kept in
-this browser's `localStorage` and is removed from the address bar. If the
-terminal is not running the panel shows the one-line install command. This
-page never sends the URL anywhere.
+A room action in `world/data/actions.json` can carry `"tutor": "<problem>"`.
+When a player triggers it, the game sends the browser a `#tutor <problem>`
+line (text clients get a plain hint) and the page opens a panel with the
+learner's own Tutor terminal, which runs on their machine (`tutor region
+terminal`, see the Tutor repository). The player solves the problem there,
+runs `tutor region submit <problem>`, then types `tutor claim <problem>` in
+the game. There is no always-on Tutor button.
+
+The terminal's URL contains a secret path. It arrives once, in the URL
+fragment from `tutor region terminal --open <this page>`, is kept in this
+browser's `localStorage` and is removed from the address bar. If the terminal
+is not running the panel shows the one-line install command. This page never
+sends the URL anywhere.

@@ -506,7 +506,6 @@
     </div>
     <div class="header-actions">
       <a href="/watch" target="_blank" rel="noopener">Watch live ↗</a>
-      <button type="button" id="tutor-open" title="Open your Tutor terminal" aria-expanded="false" aria-controls="tutor-panel">Tutor</button>
       <button type="button" id="telemetry-open" title="Open telemetry" aria-expanded="false" aria-controls="observe">Telemetry</button>
       <button type="button" id="font-down" title="Smaller text" aria-label="Smaller text">A−</button>
       <button type="button" id="font-up" title="Larger text" aria-label="Larger text">A+</button>
@@ -1148,6 +1147,8 @@
         try { renderCharacters(JSON.parse(charactersLine[1])); } catch {}
         return;
       }
+      const tutorLine = text.match(/^#tutor ([\w-]{1,64})\r?\n?$/);
+      if (tutorLine) { setTutor(true, tutorLine[1]); return; }
       if (/^#state /.test(text)) return;
       if (/^#tick \d+\r?\n?$/.test(text)) return;
       append(text);
@@ -1647,11 +1648,12 @@
   const TUTOR_URL = /^http:\/\/(127\.0\.0\.1|localhost|\[::1\]):\d{2,5}\/t\/[A-Za-z0-9_-]{16,}\/$/;
   const TUTOR_INSTALL = "curl -fsSL https://raw.githubusercontent.com/Syntra-Tutor/tutor/main/install.sh | sh";
   const tutorPanel = document.getElementById("tutor-panel");
-  const tutorOpen = document.getElementById("tutor-open");
+  let tutorProblem = "";
   function tutorUrl() {
     try { const value = localStorage.getItem(TUTOR_KEY) ?? ""; return TUTOR_URL.test(value) ? value : ""; } catch { return ""; }
   }
   async function showTutor() {
+    const task = tutorProblem ? ` Puzzle: ${tutorProblem}. Solve it here, run tutor region submit ${tutorProblem}, then type tutor claim ${tutorProblem} in the game.` : "";
     const status = document.getElementById("tutor-status");
     const frame = document.getElementById("tutor-frame");
     const setup = document.getElementById("tutor-setup");
@@ -1673,17 +1675,15 @@
     try { await fetch(url, { mode: "no-cors", cache: "no-store" }); } catch { return stop("Your Tutor terminal is not running."); }
     setup.hidden = true;
     recheck.hidden = true;
-    status.textContent = "Connected to the Tutor terminal on this machine.";
+    status.textContent = `Connected to the Tutor terminal on this machine.${task}`;
     frame.hidden = false;
     if (frame.getAttribute("src") !== url) frame.src = url;
   }
-  function setTutor(open) {
+  // The game opens this panel when a player works a code puzzle in a room (a `#tutor <problem>` line).
+  function setTutor(open, problem = "") {
     tutorPanel.hidden = !open;
-    tutorOpen.setAttribute("aria-expanded", String(open));
-    if (open) showTutor();
-    else tutorOpen.focus();
+    if (open) { tutorProblem = problem; showTutor(); }
   }
-  tutorOpen.addEventListener("click", () => setTutor(tutorPanel.hidden));
   document.getElementById("tutor-close").addEventListener("click", () => setTutor(false));
   document.getElementById("tutor-recheck").addEventListener("click", showTutor);
   document.getElementById("tutor-forget").addEventListener("click", () => {
@@ -1700,7 +1700,7 @@
       history.replaceState(null, "", location.pathname + location.search);
       if (TUTOR_URL.test(url)) {
         try { localStorage.setItem(TUTOR_KEY, url); } catch {}
-        setTutor(true);
+        append("Tutor terminal connected. Try a code puzzle in the world to use it.", "sys");
       }
     }
   }

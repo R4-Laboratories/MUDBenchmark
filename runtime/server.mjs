@@ -1258,6 +1258,10 @@ async function handleCommand(id, line) {
     if (roomAction.requires?.item && !state.objects.some((object) => object.id === roomAction.requires.item && object.holder === id && !object.eaten)) {
       return sendTo(id, `You need ${roomAction.requires.item} to do that.\r\n`);
     }
+    // A code puzzle: the browser opens the player's Tutor terminal; text clients get the hint below.
+    if (roomAction.tutor) {
+      sendTo(id, `#tutor ${roomAction.tutor}\r\nThis is a code puzzle. Solve "${roomAction.tutor}" in Tutor, then: tutor claim ${roomAction.tutor}\r\n`);
+    }
     pending.push({ kind: "action", actorId: id, actionId: roomAction.id, messages: roomAction.messages });
     recordSpan("world.action", {
       "actor.id": id,

@@ -78,3 +78,24 @@ test("configuration refuses weak secrets and plain remote HTTP, and link codes a
   assert.equal(redacted.policy, "secret");
   assert.equal(redactCommand("tutor claim 000a").policy, "public");
 });
+
+test("a room action's tutor problem must be a plain id", async () => {
+  const { loadActions } = await import("./actions.mjs");
+  const dir = await mkdtemp(join(tmpdir(), "actions-"));
+  try {
+    const { writeFile } = await import("node:fs/promises");
+    const action = (tutor) => ({
+      id: "puzzle", verb: "type", target: "console", room: 1, tutor,
+      messages: { actor: "a", others: "b" }, effects: [{ kind: "message", text: "ok" }],
+    });
+    const load = async (tutor) => {
+      const path = join(dir, "actions.json");
+      await writeFile(path, JSON.stringify({ actions: [action(tutor)] }));
+      return loadActions({ path }).errors;
+    };
+    assert.deepEqual(await load("two-sum"), []);
+    assert.match((await load("a b\n#x"))[0], /invalid tutor problem/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
