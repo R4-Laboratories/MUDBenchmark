@@ -2240,13 +2240,33 @@ async function handle(id, line) {
 
 // --- the clock -----------------------------------------------------------
 
+function progressionSnapshot(actor) {
+  const { role, level, xp, guild, guildRank, quests, spellbook, maxMana, questCycles } = actor;
+  return JSON.stringify({ role, level, xp, guild, guildRank, quests, spellbook, maxMana, questCycles });
+}
+
 function onTick() {
   const intents = pending.splice(0);
   // A login or registration must hit the disk before the next checkpoint; a
   // kill -9 must not erase an account created seconds ago.
   const identityChanged = intents.some((intent) => ["login", "register", "password", "claim", "claimLegacy", "rebindLegacy", "createCharacter", "ownAccount", "retireAccount", "handoffCharacter", "revokeHandoff", "train", "guildAdvance"].includes(intent.kind));
+  const previousProgress = FEDERATION && new Map(state.actors.filter((actor) => actor.key)
+    .map((actor) => [actor.id, progressionSnapshot(actor)]));
   const result = step({ state, rooms: ROOMS, intents, actions: ACTION_TABLE.actions });
   state = result.state;
+  if (FEDERATION) {
+    const progressChanged = state.actors.some((actor) => actor.key && previousProgress.has(actor.id)
+      && previousProgress.get(actor.id) !== progressionSnapshot(actor))
+      || intents.some((intent) => intent.kind === "leave" && previousProgress.has(intent.actorId));
+    if (result.checkpoint || identityChanged || progressChanged) {
+      try {
+        federationSave();
+      } catch (error) {
+        console.error(`federation state not saved; stopping before acknowledging progress: ${error.message}`);
+        process.exit(1);
+      }
+    }
+  }
   for (const intent of intents) {
     if (intent.kind !== "login" && intent.kind !== "register") continue;
     const actor = actorById(intent.actorId);
@@ -2384,7 +2404,7 @@ function onTick() {
     for (const line of lines) handleCommand(id, line).catch(() => {});
   }
 
-  if (result.checkpoint || identityChanged) saveState();
+  if (!FEDERATION && (result.checkpoint || identityChanged)) saveState();
 
   // The trace written into the span stream, not a second file: from these a run
   // can be reconstructed with nothing but the record.

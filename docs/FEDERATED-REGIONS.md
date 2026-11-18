@@ -20,6 +20,15 @@ recover it without checking the destination first. Federation refuses to restore
 an older state backup automatically, because rollback can duplicate or lose a
 character.
 
+When a peer is unavailable, its neighbors can continue running their own
+worlds, but travel to that peer cannot complete. In federation mode, changes to
+online character progression are checkpointed before gameplay results are
+sent; a failed write stops the server rather than acknowledging that progress.
+This synchronous full-state write can add latency and has not been load-tested.
+Other world changes remain subject to periodic checkpoints and resets, so an
+abrupt crash may still roll back recent world activity. This is not a guarantee
+against disk or power failure.
+
 The operators choose a seed rules fingerprint and configure it on both
 servers. Each server refuses to start federation if its local rules differ,
 and peers compare that fingerprint and the transfer protocol before travel.
@@ -101,3 +110,7 @@ inventory, so transferring them needs a separate item-identity and persistence
 design.
 
 Run the local two-process check with `node --test runtime/federation.test.mjs`.
+It also tests quest progress during a peer outage, process-kill recovery and
+subsequent transfer. Movement in this test uses a stub hologram service; normal
+movement requires that local service. It does not test offline clients, network
+partitions between independently changing copies, or synchronization of worlds.

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { generateKeyPairSync, sign, verify } from "node:crypto";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { createServer } from "node:http";
 import net from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -39,7 +40,11 @@ function player(portNumber) {
   socket.on("error", () => {});
   return {
     async expect(value) {
-      await until(() => text.includes(value));
+      try {
+        await until(() => text.includes(value));
+      } catch {
+        throw new Error(`timed out waiting for ${JSON.stringify(value)}; received ${JSON.stringify(text)}`);
+      }
     },
     send(line) { socket.write(`${line}\n`); },
     close() { socket.destroy(); },
@@ -85,6 +90,16 @@ test("two live servers transfer a character and retain separate authority", { ti
   const ports = { westWeb: await port(), eastWeb: await port(), westTelnet: await port(), eastTelnet: await port() };
   const children = new Set();
   const sockets = [];
+  const holo = createServer((request, response) => {
+    let body = "";
+    request.on("data", (chunk) => { body += chunk; });
+    request.on("end", () => {
+      const kind = JSON.parse(body).payload.charCodeAt(0);
+      response.writeHead(200, { "content-type": "application/json" });
+      response.end(JSON.stringify({ outputs: [kind === 1 ? "admissible" : kind === 6 ? "cleared" : "invalid request"] }));
+    });
+  });
+  await new Promise((resolve) => holo.listen(0, "127.0.0.1", resolve));
   t.after(async () => {
     for (const socket of sockets) socket.close();
     for (const child of children) child.kill("SIGTERM");
@@ -92,6 +107,7 @@ test("two live servers transfer a character and retain separate authority", { ti
       if (child.exitCode !== null || child.signalCode !== null) resolve();
       else child.once("exit", resolve);
     })));
+    await new Promise((resolve) => holo.close(resolve));
     await rm(directory, { recursive: true, force: true });
   });
 
@@ -115,6 +131,7 @@ test("two live servers transfer a character and retain separate authority", { ti
         IDENTITY_FILE: join(directory, `${region}-identity.json`),
         TRACE_FILE: join(directory, `${region}-trace.jsonl`),
         TELEMETRY_LOG: join(directory, `${region}-telemetry.jsonl`),
+        HOLO_URL: `http://127.0.0.1:${holo.address().port}`,
         COMMAND_INTERVAL_MS: "0",
       },
       stdio: "ignore",
@@ -133,7 +150,7 @@ test("two live servers transfer a character and retain separate authority", { ti
     });
   }
 
-  const east = start("east");
+  let east = start("east");
   let west = start("west");
   await Promise.all([ready("west", "east"), ready("east", "west")]);
   const denied = await fetch(`http://127.0.0.1:${ports.eastWeb}/federation/status`);
@@ -258,6 +275,57 @@ test("two live servers transfer a character and retain separate authority", { ti
   await p.expect("#characters");
   p.send("travel east");
   await p.expect("Cannot transfer:");
-  p.send("look");
-  await p.expect("The Atrium");
+  p.send("quest accept scroll");
+  await p.expect("Quest accepted: A Curled Scroll.");
+  west.kill("SIGKILL");
+  await new Promise((resolve) => west.once("exit", resolve));
+  const afterAcceptance = JSON.parse(await readFile(westFile, "utf8"));
+  assert.ok(afterAcceptance.identities.alice.quests.active.some((quest) => quest.id === "scroll"));
+  west = start("west");
+  await ready("west", "east");
+  p = player(ports.westTelnet);
+  sockets.push(p);
+  await p.expect("Welcome to MUDBench.");
+  p.send("login alice secret123");
+  await p.expect("#characters");
+  p.send("north");
+  await p.expect("The Corridor");
+  p.send("take scroll");
+  await p.expect("Quest complete: A Curled Scroll.");
+  west.kill("SIGKILL");
+  await new Promise((resolve) => west.once("exit", resolve));
+  const afterCrash = JSON.parse(await readFile(westFile, "utf8"));
+  assert.equal(afterCrash.identities.alice.xp, 138);
+  assert.ok(afterCrash.identities.alice.quests.completed.includes("scroll"));
+
+  west = start("west");
+  await ready("west", "east");
+  p = player(ports.westTelnet);
+  sockets.push(p);
+  await p.expect("Welcome to MUDBench.");
+  p.send("login alice secret123");
+  await p.expect("#characters");
+  p.send("score");
+  await p.expect("138/300 xp");
+  east = start("east");
+  await ready("east", "west");
+  p.send("travel east");
+  await p.expect("Transferred to east.");
+  const recoveredWest = JSON.parse(await readFile(westFile, "utf8"));
+  const recoveredEast = JSON.parse(await readFile(join(directory, "east.json"), "utf8"));
+  assert.equal(recoveredEast.identities.alice.xp, 138);
+  assert.ok(recoveredEast.identities.alice.quests.completed.includes("scroll"));
+  assert.equal(recoveredWest.accounts.alice.federation.status, "away");
+  assert.equal(recoveredEast.accounts.alice.federation.status, "active");
+  assert.equal(recoveredWest.objects.find((object) => object.id === "scroll").room, 2);
+  assert.equal(recoveredEast.objects.find((object) => object.id === "scroll").room, 2);
+  p = player(ports.eastTelnet);
+  sockets.push(p);
+  await p.expect("Welcome to MUDBench.");
+  p.send("login alice secret123");
+  await p.expect("#characters");
+  p.send("score");
+  await p.expect("138/300 xp");
+  p.send("quests");
+  await p.expect("completed: A Curled Scroll");
 });
