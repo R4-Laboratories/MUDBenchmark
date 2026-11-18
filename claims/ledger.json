@@ -339,6 +339,12 @@
       "level": "build",
       "statement": "Room actions are data in world/data/actions.json: a verb, target and room, a closed effect set (revealExit, open, close, grantItem, teleport, damage, heal, message), optional spell requirement, and actor/others messages. The loader validates rooms, objects, spells and secret exits at boot; the server resolves the action in the actor room; the reducer applies effects and records a world.action span. Three actions are live: turn mirror reveals the Mirror Pool secret stair (requires detect), push statue opens the ward chest, and ring bell emits its room message. The world is 45 rooms and 15 quests. Gate: actions 3 verbs == reveal, open, ring.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-51",
+      "level": "some-true",
+      "statement": "Production v0.50.0 serves 45 rooms, 24 mobiles and 45 objects. The data-driven action engine is live with turn mirror/push statue/ring bell; the Mirror Pool secret stair and the Mirror's Other Side are in the world; scrolls study/recite, equipment slots, magic, mage ranks, the watch page, provider fast mode and redacted durable telemetry remain present. Accounts 104 and characters 105.",
+      "authority": "wick production v0.50.0 2026-11-18; /world and /health; release 44216795338; gate 44215694252"
     }
   ]
 }
