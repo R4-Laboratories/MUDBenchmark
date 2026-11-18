@@ -12,13 +12,16 @@ import { dirname } from "node:path";
 
 const KEEP = 5;
 
-export function loadStateFile(file, { initial, restore }) {
-  if (!existsSync(file)) return initial();
+export function loadStateFile(file, { initial, restore, allowBackup = true }) {
+  if (!existsSync(file)) {
+    if (!allowBackup && existsSync(`${file}.1`)) throw new Error(`${file} is missing; refusing to restore an older federation state`);
+    return initial();
+  }
   try {
     return restore(JSON.parse(readFileSync(file, "utf8")));
   } catch (error) {
     const backup = `${file}.1`;
-    if (existsSync(backup)) {
+    if (allowBackup && existsSync(backup)) {
       try {
         const restored = restore(JSON.parse(readFileSync(backup, "utf8")));
         const aside = `${file}.corrupt.${Date.now()}`;

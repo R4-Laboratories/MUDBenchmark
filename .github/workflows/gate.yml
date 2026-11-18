@@ -37,6 +37,10 @@ jobs:
           node-version: '22'
       - name: Gate
         run: node tools/gate.mjs
+      - name: Federated region smoke
+        run: |
+          npm ci --prefix runtime --no-audit --no-fund
+          node --test runtime/federation.test.mjs
       - name: Next improvement
         if: always()
         run: node tools/tick.mjs

@@ -91,6 +91,8 @@ world/          the PrismPM project: LexLean model of the world and hosting
 runtime/        the Node.js world server, telnet and WebSocket
 ```
 
+For the experimental two-region handoff, see [Federated regions](docs/FEDERATED-REGIONS.md).
+
 ## Self-improvement
 
 The repository proposes, measures and admits bounded pacing candidates. It
