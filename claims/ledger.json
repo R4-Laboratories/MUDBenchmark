@@ -495,6 +495,12 @@
       "level": "build",
       "statement": "Two magician-tier Mages' Guild quests are live: The Choir Bell (kill the choir moth, carry the black bell) and The Reliquary Lens (visit the Sealed Reliquary, carry the lens). Both require the earlier guild quests, rank magician, and award guild XP. The gate covers the adept\u2192magician rank transition; the world has 26 quests.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-77",
+      "level": "some-true",
+      "statement": "Production v0.60.0 serves 60 rooms, 26 quests, 29 mobiles and 54 objects. The magician-tier Choir Bell and Reliquary Lens guild quests and the adept\u2192magician rank transition are live. Accounts 105 / characters 106 / pinned 8. All prior systems remain: nine action verbs, magic/scrolls, gear, watch, provider fast mode, account cap/audit, retention, corruption/restore drills and production origin tests.",
+      "authority": "wick production v0.60.0 2026-11-18; /health; release 44337339197; gate 44335718319"
     }
   ]
 }
