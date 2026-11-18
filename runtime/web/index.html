@@ -1018,6 +1018,8 @@
   let playSocket = null;
   let playEnabled = true;
   let authed = false;
+  let resumeCharacter = null;
+  let resumeOnDisconnect = true;
   let stick = true;
   let characterState = { account: "", characters: [], delegated: {} };
 
@@ -1115,9 +1117,12 @@
   // --- play mode ----------------------------------------------------------
   function connectPlay() {
     if (!playEnabled || mode !== "play") return;
+    if (playSocket && playSocket.readyState !== WebSocket.CLOSED) return;
     const scheme = location.protocol === "https:" ? "wss:" : "ws:";
-    playSocket = new WebSocket(`${scheme}//${location.host}`);
-    playSocket.onopen = () => {
+    const socket = new WebSocket(`${scheme}//${location.host}`);
+    playSocket = socket;
+    socket.onopen = () => {
+      if (playSocket !== socket) return;
       state.textContent = "connected";
       state.className = "live";
       append("Connected. Register or log in to play. Type help for the commands.", "sys");
@@ -1125,31 +1130,34 @@
       // guest screen; the old socket's death must not cost the character.
       if (playAuth === "prism" && mode === "play" && !authed) signInPrism(false);
     };
-    playSocket.onclose = () => {
+    socket.onclose = () => {
+      if (playSocket !== socket) return;
+      if (resumeOnDisconnect && playAuth === "prism" && authed && characterState.account
+          && characterState.characters.includes(signedName.textContent)) {
+        resumeCharacter = { account: characterState.account, name: signedName.textContent };
+      }
       state.textContent = "disconnected";
       state.className = "";
       authed = false;
       signed.style.display = "none";
-      if (characterState.account) {
-        charactersPanel.hidden = false;
-        account.style.display = "none";
-      } else {
-        charactersPanel.hidden = true;
-        account.style.display = "block";
-      }
+      charactersPanel.hidden = true;
+      account.style.display = "block";
       cmd.disabled = true;
       cmd.placeholder = "Sign in to play";
       if (playEnabled && mode === "play") setTimeout(connectPlay, 1500);
     };
-    playSocket.onerror = () => { state.textContent = "error"; state.className = ""; };
-    playSocket.onmessage = async (event) => {
+    socket.onerror = () => {
+      if (playSocket === socket) { state.textContent = "error"; state.className = ""; }
+    };
+    socket.onmessage = async (event) => {
+      if (playSocket !== socket) return;
       const text = String(event.data);
       const challengeLine = text.match(/^#challenge ([\w-]+)\r?\n?$/);
       if (challengeLine) {
         try {
           const signed = await signChallenge("default", challengeLine[1], 0);
-          if (signed && playSocket?.readyState === WebSocket.OPEN) {
-            playSocket.send(`session-key ${signed.counter} ${signed.signature}\n`);
+          if (signed && playSocket === socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(`session-key ${signed.counter} ${signed.signature}\n`);
           }
         } catch (error) {
           append(`Session key: ${error.message}`, "err");
@@ -1158,7 +1166,17 @@
       }
       const charactersLine = text.match(/^#characters (.*)\r?\n?$/);
       if (charactersLine) {
-        try { renderCharacters(JSON.parse(charactersLine[1])); } catch {}
+        try {
+          const info = JSON.parse(charactersLine[1]);
+          renderCharacters(info);
+          if (resumeCharacter && playAuth === "prism") {
+            const previous = resumeCharacter;
+            resumeCharacter = null;
+            if (info.account === previous.account && info.characters?.includes(previous.name)) {
+              socket.send(`resume ${previous.name}\n`);
+            }
+          }
+        } catch {}
         return;
       }
       const recoverLine = text.match(/^#recover-list (.*)\r?\n?$/);
@@ -1171,6 +1189,7 @@
       append(text);
       if (/signed in elsewhere/i.test(text)) {
         playAuth = null;
+        resumeCharacter = null;
         prismSession = null;
         authed = false;
         signed.style.display = "none";
@@ -1189,6 +1208,7 @@
       if (/You are now|Signing in as|Account .* created|Welcome,\s/.test(text)) {
         authed = true;
         if (signedAs) {
+          resumeOnDisconnect = true;
           signedName.textContent = signedAs[1];
           if (!signedAs[1].startsWith("prism:")) nameInput.value = signedAs[1];
         } else {
@@ -1212,6 +1232,7 @@
         cmd.focus();
       }
       if (/Goodbye\./.test(text)) {
+        resumeCharacter = null;
         authed = false;
         signed.style.display = "none";
         cmd.disabled = true;
@@ -1229,6 +1250,7 @@
 
   const send = (line, echo) => {
     if (!line) return;
+    if (/^quit$/i.test(line.trim())) { resumeOnDisconnect = false; resumeCharacter = null; }
     if (echo) append("> " + echo, "me");
     if (playSocket?.readyState === WebSocket.OPEN) playSocket.send(line + "\n");
     else append("(not connected)", "err");
@@ -1418,6 +1440,7 @@
   charactersButton.addEventListener("click", () => send("characters", "characters"));
   signOut.addEventListener("click", () => {
     playAuth = null;
+    resumeCharacter = null;
     prismSession = null;
     characterState = { account: "", characters: [], delegated: {} };
     charactersPanel.hidden = true;
@@ -1489,20 +1512,22 @@
 
   async function signInPrism(announce = true) {
     if (mode !== "play") return;
+    const socket = playSocket;
     if (announce) append("Loading your Prism id…", "sys");
     try {
       const session = await prismSignIn("default", location.origin);
-      prismSession = await loadSession("default");
+      const currentSession = await loadSession("default");
+      if (playSocket !== socket || socket?.readyState !== WebSocket.OPEN || (!announce && playAuth !== "prism")) {
+        if (announce) append("(not connected)", "err");
+        return;
+      }
+      prismSession = currentSession;
       renderDevices();
       if (session.storage === "memory") append("This window cannot keep the Prism id; a reload will make a new one.", "err");
       else if (!session.persisted) append("The browser did not grant persistent storage; it may evict the Prism id.", "sys");
       if (announce) append("> prism [session hidden]", "me");
-      if (playSocket?.readyState === WebSocket.OPEN) {
-        playSocket.send(`prism ${b64uJson(session)}\n`);
-        playAuth = "prism";
-      } else if (announce) {
-        append("(not connected)", "err");
-      }
+      socket.send(`prism ${b64uJson(session)}\n`);
+      playAuth = "prism";
     } catch (error) {
       append(`Prism: ${error.message}`, "err");
     }

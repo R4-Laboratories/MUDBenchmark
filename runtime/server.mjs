@@ -753,6 +753,7 @@ async function handleCommand(id, line) {
     const ok = await verifySessionKey(session.challenge.key, session.challenge.nonce, counter, signature);
     if (!ok) return sendTo(id, "The session signature is invalid.\r\n");
     session.challenge.last = counter;
+    if (!session.challenge.confirmed) session.resumeAvailable = true;
     session.challenge.confirmed = true;
     return sendCharacters(id, session);
   }
@@ -939,7 +940,11 @@ async function handleCommand(id, line) {
   // transport. A model and a human type on the same clock.
   const transport = transports.get(id);
   const now = Date.now();
-  if (transport && !allowInput(transport.lastCommandAt, now, COMMAND_INTERVAL_MS)) {
+  const resumeSession = accountSessions.get(id);
+  const resumeHandshake = verb === "resume" && resumeSession?.kind === "prism"
+    && sessionConfirmed(resumeSession) && resumeSession.resumeAvailable;
+  if (resumeHandshake) resumeSession.resumeAvailable = false;
+  if (!resumeHandshake && transport && !allowInput(transport.lastCommandAt, now, COMMAND_INTERVAL_MS)) {
     recordSpan("world.input", {
       "actor.id": id,
       "command": verb,
@@ -949,7 +954,7 @@ async function handleCommand(id, line) {
     }, 0);
     return sendTo(id, "You must wait a moment.\r\n");
   }
-  if (transport) transport.lastCommandAt = now;
+  if (transport && !resumeHandshake) transport.lastCommandAt = now;
   // The accepted command and its tick. The same tick goes to the client in a
   // hidden line, so the transcript's turn and the span agree exactly.
   const redacted = redactCommand(raw);
@@ -1229,12 +1234,12 @@ async function handleCommand(id, line) {
     return sendTo(id, "Persona retired.\r\n");
   }
 
-  if (verb === "play") {
+  if (verb === "play" || verb === "resume") {
     const session = accountSessions.get(id);
     if (!session) return sendTo(id, "Sign in with your Prism id first.\r\n");
     if (!sessionConfirmed(session)) return sendTo(id, "Confirm your session first.\r\n");
     const name = rest[0];
-    if (!name) return sendTo(id, "Usage: play <character>.\r\n");
+    if (!name) return sendTo(id, `Usage: ${verb} <character>.\r\n`);
     if (actor?.key === name) return sendTo(id, `You are already playing ${name}.\r\n`);
     const account = state.accounts?.[session.key];
     const character = state.identities[name];
@@ -1243,7 +1248,13 @@ async function handleCommand(id, line) {
     if (!account || account.retired || !character || (!owns && !delegated) || (owns && !account.characters?.includes(name))) {
       return sendTo(id, `No character named ${name} on this account.\r\n`);
     }
-    takeover(name, id);
+    if (pending.some((intent) => intent.kind === "login" && intent.key === name && intent.actorId !== id)) {
+      return sendTo(id, `${name} is signing in elsewhere. Choose the character to try again.\r\n`);
+    }
+    if (verb === "resume" && state.actors.some((candidate) => candidate.id !== id && candidate.key === name)) {
+      return sendTo(id, `${name} is already active elsewhere. Choose the character to take it over.\r\n`);
+    }
+    if (verb === "play") takeover(name, id);
     if (actor?.key) {
       pending.push({ kind: "leave", actorId: id });
       pending.push({ kind: "join", actorId: id, name });
