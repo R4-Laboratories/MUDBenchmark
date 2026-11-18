@@ -622,10 +622,12 @@ it, and rolls it back once. MB-26/27.
    still finds the id. If not, linking/recovery is not optional.
 2. **Private windows.** IndexedDB may be memory-only. Confirm the warning and
    that no account is silently created on reload.
-3. **Production origin through the tunnel.** The origin check has never been
-   exercised through Cloudflare. Run a headless browser against
-   `https://play.r4labs.org`, click "Use my Prism id", and assert
-   `Signing in as prism:`; run the same against localhost in the gate.
+3. **Production origin through the tunnel.** Exercised 2026-11-18: a committed
+   expired Prism fixture with Origin `https://play.r4labs.org` passed the
+   allowlist and was refused only for expiry; the same fixture with
+   `https://evil.example` was refused as a foreign origin. No account was
+   created. A full live signed-in browser session is still needed to assert
+   `Signing in as prism:`.
 4. **Clock skew.** `sessionWithinWindow` accepts a two-minute-slow clock and
    refuses a six-minute skew; the gate tests both. The browser still needs a
    real slow-clock run through the page.

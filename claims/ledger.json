@@ -447,6 +447,12 @@
       "level": "some-true",
       "statement": "Production v0.58.0 enforces one active guild quest normally and two with guild-quest-2, and the world status exposes guild level/XP/perks. The server has 105 accounts / 106 characters, 8 pinned and 60 rooms / 24 quests. All prior systems remain: action engine, magic/scrolls, gear, watch, account cap, retention, audit and corruption/restore drills.",
       "authority": "wick production v0.58.0 2026-11-18; /health and /world; release 44262388503; gate 44261225869"
+    },
+    {
+      "id": "MB-69",
+      "level": "some-true",
+      "statement": "The production WSS origin path was exercised through Cloudflare without creating an account. A committed expired Prism fixture sent with Origin https://play.r4labs.org passed the origin allowlist and was refused only with \"the session has expired\". The same fixture sent with Origin https://evil.example was refused with \"this origin is not allowed\". A live signed-in browser session is still needed for the full positive login.",
+      "authority": "wss://play.r4labs.org 2026-11-18; committed world/fixtures/prism-session.json; correct and foreign Origin probes"
     }
   ]
 }
