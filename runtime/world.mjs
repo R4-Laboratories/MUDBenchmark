@@ -440,9 +440,8 @@ export function releaseHeldObjects(state, actors = []) {
 }
 
 /**
- * Before a checkpoint, write every online actor's hands into their identity.
- * A crash then loses at most the ticks since the last checkpoint, and a clean
- * logout and a hard restart restore the same inventory.
+ * Before a checkpoint, write every online actor's progression into their
+ * identity and record the last checkpointed room for held objects.
  */
 export function checkpointIdentities(state) {
   for (const actor of state.actors ?? []) {
