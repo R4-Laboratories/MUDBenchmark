@@ -643,6 +643,19 @@
         "usage": "title <id|name>, or title none.",
         "missing": "You have not earned a title called %s."
       }
+    },
+    "recall": {
+      "aliases": [
+        "remember",
+        "mem"
+      ],
+      "argument": "word",
+      "messages": {
+        "usage": "Recall what word? recall <word>.",
+        "missing": "You have not learned that word.",
+        "shrine": "The shrine is where a learned word is spoken.",
+        "recalled": "You recall: %s"
+      }
     }
   }
 }

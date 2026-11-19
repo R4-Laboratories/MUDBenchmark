@@ -395,6 +395,7 @@ export function upgradeState(saved, base) {
       name,
       ignored: Array.isArray(identity.ignored) ? [...identity.ignored] : [],
       title: typeof identity.title === "string" ? identity.title : null,
+      memory: { facts: { ...(identity.memory?.facts ?? {}) } },
       level: identity.level ?? 1,
       xp: identity.xp ?? 0,
       guild: guilds[identity.guild] ? identity.guild : null,
@@ -525,6 +526,7 @@ export function checkpointIdentities(state) {
       quests: actor.quests ?? { active: [], completed: [] },
       ignored: [...(actor.ignored ?? [])],
       title: actor.title ?? null,
+      memory: { facts: { ...(actor.memory?.facts ?? {}) } },
       spellbook: [...(actor.spellbook ?? [])],
       maxMana: actor.maxMana ?? maxManaFor(actor),
       questCycles: { ...(actor.questCycles ?? {}) },
@@ -571,6 +573,7 @@ export function step({ state, rooms, intents, actions = [] }) {
       ...a,
       visited: [...a.visited],
       effects: (a.effects ?? []).map((effect) => ({ ...effect })),
+      memory: { facts: { ...(a.memory?.facts ?? {}) } },
       quests: normalizeQuestState(a.quests, state.quests ?? []),
     })),
     objects: state.objects.map((o) => ({ ...o })),
@@ -865,6 +868,23 @@ export function step({ state, rooms, intents, actions = [] }) {
       actor.title = typeof intent.title === "string" && intent.title.trim() ? intent.title.trim() : null;
       next.identities[actor.key] = { ...next.identities[actor.key], title: actor.title };
       events.push({ onlyId: actor.id, text: actor.title ? `Title set: ${actor.title}.\r\n` : "Title cleared.\r\n" });
+      continue;
+    }
+
+    if (intent.kind === "learnFact") {
+      const actor = find(intent.actorId);
+      if (!actor?.key || !intent.fact?.id) continue;
+      actor.memory ??= { facts: {} };
+      actor.memory.facts[intent.fact.id] = {
+        id: intent.fact.id,
+        word: intent.fact.word,
+        text: intent.fact.text,
+        source: intent.fact.npc,
+        tick: next.tick,
+      };
+      next.identities[actor.key] = { ...next.identities[actor.key], memory: actor.memory };
+      events.push({ onlyId: actor.id, text: `You will remember the word: ${intent.fact.word.toUpperCase()}.\r\n` });
+      advanceQuests(next, actor, { kind: "collect" }, events);
       continue;
     }
 
@@ -1173,6 +1193,7 @@ export function step({ state, rooms, intents, actions = [] }) {
       actor.questCycles = { ...(known.questCycles ?? {}) };
       actor.ignored = [...(known.ignored ?? [])];
       actor.title = known.title ?? null;
+      actor.memory = { facts: { ...(known.memory?.facts ?? {}) } };
       actor.guild = next.guilds[known.guild] ? known.guild : null;
       actor.guildRank = actor.guild ? (next.guilds[actor.guild].members[actor.key] ?? null) : null;
       actor.quests = {
@@ -1194,6 +1215,7 @@ export function step({ state, rooms, intents, actions = [] }) {
         quests: actor.quests,
         ignored: actor.ignored,
         title: actor.title,
+        memory: actor.memory,
       };
       advanceQuests(next, actor, { kind: "visit", room: actor.room }, events);
       for (const letter of next.mail) {

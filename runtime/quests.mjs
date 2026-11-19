@@ -36,6 +36,7 @@ export function loadQuests({ path = DEFAULT_PATH } = {}) {
       if ((objective.kind === "kill" || objective.kind === "deliver" || objective.kind === "talk") && typeof objective.npc !== "string") errors.push(`quest ${quest.id} ${objective.kind} has no npc`);
       if (objective.kind === "collect" && typeof objective.object !== "string") errors.push(`quest ${quest.id} collect has no object`);
       if (objective.kind === "answer" && typeof objective.word !== "string") errors.push(`quest ${quest.id} answer has no word`);
+      if (objective.kind === "answer" && objective.fact !== undefined && typeof objective.fact !== "string") errors.push(`quest ${quest.id} answer has an invalid fact`);
       if (objective.count !== undefined && (!Number.isInteger(objective.count) || objective.count < 1)) errors.push(`quest ${quest.id} has an invalid count`);
     }
     const rewards = quest.rewards ?? {};
@@ -112,7 +113,10 @@ export function objectiveDone(objective, progress, actor, objects) {
     const rightObject = !objective.object || (p.deliveredObjects[objective.npc] ?? []).includes(objective.object);
     return delivered && rightObject;
   }
-  if (objective.kind === "answer") return p.answered[objective.word] === true;
+  if (objective.kind === "answer") {
+    if (objective.fact && !actor.memory?.facts?.[objective.fact]) return false;
+    return p.answered[objective.word] === true;
+  }
   if (objective.kind === "talk") return (p.talked[objective.npc] ?? 0) >= (objective.count ?? 1);
   if (objective.kind === "collect") return heldCount(actor, objective.object, objects) >= (objective.count ?? 1);
   return false;

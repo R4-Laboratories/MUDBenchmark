@@ -230,6 +230,9 @@ Rehearsed 2026-11-16:
 - v0.80.0 (safety/titles) adds persistent ignore lists across tells, mail,
   channels, guild chat, socials and room speech, quest-earned titles with a
   `title` selector, and a telemetry tuning report; 49 quests (MB-131);
+- v0.81.0 (memory garden) adds NPC-learned facts, a local fact store mirrored
+  to R4 with context fallback, the `recall` command, the three-room Memory
+  Garden and The Garden Remembers quest; 100 rooms / 50 quests (MB-133);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

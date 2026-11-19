@@ -14,6 +14,11 @@
       "id": "dawnbringer",
       "name": "Dawnbringer",
       "quest": "eclipse-throne"
+    },
+    {
+      "id": "gardenkeeper",
+      "name": "Gardenkeeper",
+      "quest": "memory-garden"
     }
   ]
 }

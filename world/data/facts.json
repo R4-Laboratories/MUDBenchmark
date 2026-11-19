@@ -1,0 +1,22 @@
+{
+  "facts": [
+    {
+      "id": "ledger-word",
+      "npc": "guild-clerk",
+      "word": "ledger",
+      "text": "The guild clerk taps the ledger. \"The word the shrine wants is LEDGER. Do not write it down.\""
+    },
+    {
+      "id": "garden-word",
+      "npc": "rememberer",
+      "word": "garden",
+      "text": "The rememberer says: \"The garden remembers the word GARDEN. Say it where the shrine can hear.\""
+    },
+    {
+      "id": "moon-word",
+      "npc": "silver-owl",
+      "word": "crescent",
+      "text": "The silver owl says: \"The moonwell keeps what is reflected. The word is CRESCENT.\""
+    }
+  ]
+}

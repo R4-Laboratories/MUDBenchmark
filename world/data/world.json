@@ -114,7 +114,8 @@
       "safe": true,
       "exits": {
         "south": 5,
-        "north": 7
+        "north": 7,
+        "east": 98
       },
       "details": {
         "altar": "The altar is worn smooth. A single word is cut into its edge.",
@@ -1781,6 +1782,59 @@
         "The gate brightens and dims.",
         "A bird calls from the world below."
       ]
+    },
+    "98": {
+      "name": "The Memory Garden",
+      "text": "A walled garden of white roses behind the shrine. A stone bench waits under a bare tree, and a path of glass roses runs east. The shrine is west.",
+      "safe": true,
+      "exits": {
+        "west": 6,
+        "east": 99,
+        "north": 100
+      },
+      "details": {
+        "roses": "The roses are white with a dark heart.",
+        "bench": "The bench is worn smooth by waiting.",
+        "path": "The glass roses catch a light that is not there."
+      },
+      "ambient": [
+        "A rose opens without sound.",
+        "The garden is very still."
+      ]
+    },
+    "99": {
+      "name": "The Rose Walk",
+      "text": "A path of glass roses between low hedges. A single white rose grows at the end, and a pale wisp drifts above it. The garden is west.",
+      "safe": true,
+      "exits": {
+        "west": 98
+      },
+      "details": {
+        "roses": "Each glass rose holds a different reflection.",
+        "wisp": "The wisp is a small, patient light.",
+        "white-rose": "The white rose is real, and very cold."
+      },
+      "ambient": [
+        "The wisp circles once.",
+        "Glass petals click together."
+      ]
+    },
+    "100": {
+      "name": "The Rememberer's Bench",
+      "text": "A stone bench under a bare tree at the garden's north end. An old rememberer sits with a closed book, and the garden waits around them. The garden is south.",
+      "safe": true,
+      "exits": {
+        "south": 98
+      },
+      "details": {
+        "bench": "The bench has room for two.",
+        "book": "The book is closed and warm.",
+        "tree": "The tree has no leaves, but its roots are green."
+      },
+      "ambient": [
+        "The rememberer turns a page that is not there.",
+        "The tree creaks once."
+      ]
     }
   },
   "task": {
@@ -2758,6 +2812,45 @@
       ],
       "description": "A tall figure in a crown of burnt glass sits on the throne of ash.",
       "examine": "The regent's hand is closed around a sigil. The crown ticks as it cools."
+    },
+    {
+      "id": "rememberer",
+      "name": "the rememberer",
+      "room": 100,
+      "home": 100,
+      "period": 240,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "zone": "garden",
+      "hp": 30,
+      "damage": 0,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 0,
+      "description": "An old figure sits on the bench with a closed book.",
+      "examine": "The rememberer's hands are stained with ink and soil.",
+      "dialogue": [
+        "The garden keeps what the shrine forgets.",
+        "Bring me a word you learned and I will plant it.",
+        "A word is only remembered when someone else can hear it."
+      ]
+    },
+    {
+      "id": "garden-wisp",
+      "name": "a garden wisp",
+      "room": 99,
+      "home": 99,
+      "period": 180,
+      "jitter": 10,
+      "behaviour": "sentinel",
+      "zone": "garden",
+      "hp": 8,
+      "damage": 0,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 0,
+      "description": "A small light drifts above the white rose.",
+      "examine": "The wisp is warm and does not speak."
     }
   ],
   "zones": [
@@ -2934,6 +3027,15 @@
         95,
         96,
         97
+      ]
+    },
+    {
+      "id": "garden",
+      "name": "The Memory Garden",
+      "rooms": [
+        98,
+        99,
+        100
       ]
     }
   ],
@@ -4103,6 +4205,28 @@
       ],
       "value": 8,
       "examine": "A stub of red wax stamped with the guild ledger.",
+      "forSale": false
+    },
+    {
+      "id": "memory-rose",
+      "name": "a memory rose",
+      "room": 99,
+      "flags": [
+        "takeable"
+      ],
+      "value": 40,
+      "examine": "A white rose with a dark heart; it stays cold in the hand.",
+      "forSale": false
+    },
+    {
+      "id": "glass-bead",
+      "name": "a glass bead",
+      "room": 98,
+      "flags": [
+        "takeable"
+      ],
+      "value": 12,
+      "examine": "A bead of clear glass with a tiny garden caught inside.",
       "forSale": false
     }
   ],

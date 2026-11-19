@@ -31,6 +31,7 @@ matches it, checks the facts, and pays once.
 | `collect` | the actor is carrying `count` of the object right now |
 | `deliver` | the actor has given the named object to the mobile |
 | `answer` | the actor has spoken the word at the shrine |
+| `answer` + `fact` | the actor has learned that fact and spoken its word at the shrine |
 | `talk` | the actor has spoken with the named mobile |
 
 `collect` is a fact, not a counter: it is recomputed from the actor's hands
@@ -90,4 +91,8 @@ items are not bound to the character. Those are content and policy choices,
 not missing quest-engine facts. `guild-sigils` and the clerk's errand use the
 reset-cycle repeat; the errand consumes the delivered seal, so each cycle needs
 a fresh one. `hall-word` is the first social quest: talk to the market woman
-and the guild clerk, and the two versions of the rumor complete it.
+and the guild clerk, and the two versions of the rumor complete it. The Memory
+Garden adds `memory-garden`: the guild clerk teaches a word, the character
+stores it as a fact and mirrors it to R4, and `recall <word>` at the shrine
+completes the answer objective. A fact-gated answer is refused when the
+character has not learned the fact, even if the word is correct.

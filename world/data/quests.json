@@ -1324,6 +1324,40 @@
         "xp": 70
       },
       "complete": "The two stories do not agree. The bard writes both down."
+    },
+    {
+      "id": "memory-garden",
+      "name": "The Garden Remembers",
+      "level": 3,
+      "giver": "the rememberer",
+      "description": "The rememberer wants a word learned from the guild clerk and carried to the shrine. Then visit the garden and let it hear you.",
+      "requires": [
+        "hall-word"
+      ],
+      "objectives": [
+        {
+          "kind": "talk",
+          "npc": "guild-clerk",
+          "count": 1,
+          "text": "Learn the ledger word from the guild clerk"
+        },
+        {
+          "kind": "answer",
+          "word": "ledger",
+          "fact": "ledger-word",
+          "text": "Recall the ledger word at the shrine"
+        },
+        {
+          "kind": "visit",
+          "room": 98,
+          "text": "Visit the Memory Garden"
+        }
+      ],
+      "rewards": {
+        "xp": 150,
+        "object": "memory-rose"
+      },
+      "complete": "The rememberer takes the rose and sets it in the bed. The garden remembers with you."
     }
   ]
 }

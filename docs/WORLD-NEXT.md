@@ -3,8 +3,8 @@
 This was the queued AberMUD-style content and systems track. The v0.47/v0.48 slices
 have landed: eight equipment slots, six spells and the Mages' Guild, eleven
 Lantern Quarter/Undervault rooms, five personal quests, a guild ledger quest,
-a searchable secret stair, three data-driven room actions and mage rank advancement. The world is now 97 rooms
-and 49 quests. The foundation from v0.46 remains:
+a searchable secret stair, three data-driven room actions and mage rank advancement. The world is now 100 rooms
+and 50 quests. The foundation from v0.46 remains:
 short command forms, `equipment`, `world`/`status`, the hidden `#state` line,
 and the AI prompt/router state layer.
 
@@ -23,6 +23,7 @@ and the AI prompt/router state layer.
 | M11 | **done** — onboarding and deeper chains: the First Steps beginner tour, the `tutorial` command, The Salt Ward and The Deep Fen reward quests; 41 quests | accept/walk/complete First Steps, tutorial aliases, quest references |
 | M12 | **done** — The Moonlit Reach: six rooms east of the deep forest, three mobiles, six objects, a moon-key chest, the crescent-moon shortcut and three linked quests; 91 rooms / 44 quests | forest gate, walk to the Moon Throne, moon-key chest, crescent shortcut, quest chain references, every exit reciprocal |
 | M13 | **done** — The Eclipse Court: six level-10 rooms above the Moon Throne, four mobiles, eight objects, an eclipse-key chest, the dawn-gate shortcut and a three-quest chain; 97 rooms / 47 quests | capstone walk, key/chest, regent kill, reward payout, quest chain, dawn gate, every exit reciprocal |
+| M14 | **done** — The Memory Garden: three rooms east of the shrine, a rememberer and garden wisp, two keepsakes, an NPC fact/recall contract and The Garden Remembers quest; 100 rooms / 50 quests | fact learning, R4 context match, answer-without-fact refusal, recall at the shrine, reward, every exit reciprocal |
 
 ## Rules that keep the model green
 
@@ -54,7 +55,9 @@ and the AI prompt/router state layer.
 
 ## Immediate next step
 
-The Eclipse Court is the level-10 capstone. The next content work is the guild
-vault/bank and repeatable guild quests, followed by social quests that use the
-memory layer. The magic, equipment, action and quest systems are all
-data-driven, so new content needs no rules change.
+The Memory Garden is the first fact/recall content slice: the guild clerk
+teaches a word, the character stores it, and the shrine accepts it only after
+the fact is learned. The next content work is a second garden quest using the
+moon-word fact and a live session in the level 8-10 band. The magic, equipment,
+action, fact and quest systems are all data-driven, so new content needs no
+rules change.

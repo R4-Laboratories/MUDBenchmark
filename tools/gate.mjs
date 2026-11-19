@@ -27,6 +27,7 @@ import { loadSocials } from "../runtime/socials.mjs";
 import { hashPassword, verifyPassword, validName, validPassword, accountCapReached } from "../runtime/accounts.mjs";
 import { CHAT_LIMIT, CHAT_WINDOW_MS, chatAllowed } from "../runtime/moderation.mjs";
 import { loadTitles, earnedTitles } from "../runtime/titles.mjs";
+import { loadFacts, contextHasWord } from "../runtime/facts.mjs";
 import { allowCommand, DEFAULT_INTERVAL_MS } from "../runtime/allowance.mjs";
 import { loadLevels } from "../runtime/levels.mjs";
 import { loadQuests, validateQuestReferences } from "../runtime/quests.mjs";
@@ -2650,6 +2651,7 @@ let titles = { ok: true, why: [] };
   state.actors.push({ id: "t", key: "titled", account: "titled", name: "titled", room: 1, visited: [1], level: 10, xp: 30000, maxHp: 28, hp: 28, maxMana: 27, mana: 27, spellbook: [], guild: null, guildRank: null, wielding: null, quests: { active: [], completed: ["first-steps", "eclipse-throne"] }, ignored: [], title: null });
   const earned = earnedTitles(table.titles, state.actors[0].quests.completed);
   check(earned.length === 2, "the earned titles do not follow completed quests");
+  check(table.titles.some((title) => title.id === "gardenkeeper" && title.quest === "memory-garden"), "the garden title is missing");
   run([{ kind: "setTitle", actorId: "t", title: "Dawnbringer" }]);
   let actor = state.actors.find((entry) => entry.id === "t");
   check(actor.title === "Dawnbringer", "the title was not worn");
@@ -2659,6 +2661,53 @@ let titles = { ok: true, why: [] };
   actor = state.actors.find((entry) => entry.id === "t");
   check(actor.title === null, "the title was not cleared");
   if (titles.why.length) { titles.ok = false; failures.push(`titles are broken: ${titles.why[0]}`); }
+}
+
+// Facts are learned from an NPC, persist on the character, and gate an answer
+// objective. A learned word can be recalled; a missing word cannot complete it.
+let memoryQuest = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, undefined, questTable.quests);
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
+  const check = (condition, why) => { if (!condition) { memoryQuest.ok = false; memoryQuest.why.push(why); } };
+  const table = loadFacts();
+  check(table.errors.length === 0, `fact validation failed: ${table.errors[0] ?? ""}`);
+  const ledger = table.byWord.get("ledger");
+  check(ledger?.npc === "guild-clerk", "the ledger fact is not taught by the guild clerk");
+  check(table.facts.every((fact) => world.npcs.some((npc) => npc.id === fact.npc)), "a fact names an unknown npc");
+  for (const quest of questTable.quests) {
+    for (const objective of quest.objectives) {
+      if (objective.kind === "answer" && objective.fact && !table.byId.has(objective.fact)) {
+        memoryQuest.ok = false;
+        memoryQuest.why.push(`${quest.id} names unknown fact ${objective.fact}`);
+      }
+    }
+  }
+  check(contextHasWord({ context: "the shrine wants LEDGER", concepts: [] }, "ledger"), "R4 context did not match its word");
+  check(!contextHasWord({ context: "the shrine wants AMBER" }, "ledger"), "R4 context matched the wrong word");
+
+  state.actors.push({ id: "mq", key: "memory", account: "memory", name: "memory", room: 24, visited: [24], level: 3, xp: 400, maxHp: 14, hp: 14, maxMana: 11, mana: 11, spellbook: [], guild: null, guildRank: null, wielding: null, quests: { active: [], completed: ["hall-word"] }, ignored: [], memory: { facts: {} }, found: [] });
+  run([{ kind: "questAccept", actorId: "mq", questId: "memory-garden" }]);
+  let actor = state.actors.find((entry) => entry.id === "mq");
+  check(actor.quests.active.some((entry) => entry.id === "memory-garden"), "the memory quest was not accepted");
+  run([{ kind: "talk", actorId: "mq", npcId: "guild-clerk" }]);
+  actor = state.actors.find((entry) => entry.id === "mq");
+  check((actor.quests.active[0]?.progress?.talked?.["guild-clerk"] ?? 0) === 1, "the clerk talk did not advance the memory quest");
+  actor.room = 6;
+  run([{ kind: "questAnswer", actorId: "mq", word: "ledger" }]);
+  actor = state.actors.find((entry) => entry.id === "mq");
+  run([{ kind: "move", actorId: "mq", dir: "east", to: 98 }]);
+  actor = state.actors.find((entry) => entry.id === "mq");
+  check(!actor.quests.completed.includes("memory-garden"), "the memory quest completed without the fact");
+  run([{ kind: "learnFact", actorId: "mq", fact: ledger }]);
+  actor = state.actors.find((entry) => entry.id === "mq");
+  check(actor.memory?.facts?.["ledger-word"]?.word === "ledger", "the fact was not stored on the character");
+  check(actor.quests.completed.includes("memory-garden"), "learning the fact did not complete the memory quest");
+  check(state.objects.find((object) => object.id === "memory-rose")?.holder === "mq", "the memory rose reward was not paid");
+  checkpointIdentities(state);
+  check(state.identities.memory?.memory?.facts?.["ledger-word"]?.word === "ledger", "the fact did not survive a checkpoint");
+  if (memoryQuest.why.length) { memoryQuest.ok = false; failures.push(`the memory quest is broken: ${memoryQuest.why[0]}`); }
 }
 
 // Guilds: one name, a roster, ranks, a chat that reaches only members, and a
@@ -3023,6 +3072,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"chatGuard".padEnd(26)}  ${(chatGuard.ok ? "8/10s" : "BROKEN").padStart(5)}   == rate limit`);
   console.log(`${"ignore".padEnd(26)}  ${(ignore.ok ? "5 paths" : "BROKEN").padStart(5)}   == tell, mail, chat`);
   console.log(`${"titles".padEnd(26)}  ${(titles.ok ? "3 earned" : "BROKEN").padStart(5)}   == select, persist`);
+  console.log(`${"memoryQuest".padEnd(26)}  ${(memoryQuest.ok ? "150 xp" : "BROKEN").padStart(5)}   == fact, recall`);
   console.log(`${"quests".padEnd(26)}  ${(quests.ok ? "accept, advance, pay" : "BROKEN").padStart(5)}   == facts, once`);
   console.log(`${"aggression".padEnd(26)}  ${(aggression.ok ? "1 duel" : "BROKEN").padStart(5)}   == mobs start fights`);
   console.log(`${"combat2".padEnd(26)}  ${(combat2.ok ? "weapons, armour, xp" : "BROKEN").padStart(5)}   == fight and grow`);

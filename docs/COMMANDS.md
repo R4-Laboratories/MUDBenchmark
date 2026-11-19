@@ -45,6 +45,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `put` | `insert`, `pt` | object in object |
 | `quest` | — | subcommand |
 | `quests` | `journal`, `q` | none |
+| `recall` | `remember`, `mem` | word |
 | `remove` | `doff`, `rm` | object |
 | `say` | `sy` | text |
 | `score` | `stats`, `sc` | none |
@@ -163,6 +164,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `eclipse-throne` | The Throne of Ash | 10 | Reach the Throne of Ash; Defeat the eclipse regent; Carry the regent's sigil | 800 xp |
 | `clerk-errand` | The Clerk's Errand | 3 | Deliver a clerk's seal to the guild clerk | 80 xp |
 | `hall-word` | A Word in the Hall | 2 | Talk to the market woman; Talk to the guild clerk | 70 xp |
+| `memory-garden` | The Garden Remembers | 3 | Learn the ledger word from the guild clerk; Recall the ledger word at the shrine; Visit the Memory Garden | 150 xp |
 
 ## Rooms
 
@@ -173,7 +175,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 3 | The Storeroom | temple | yes | west 1, north 5 |
 | 4 | The Vault | temple | no | west 2 |
 | 5 | The Cell | temple | no | south 3, north 6, down 25 |
-| 6 | The Shrine | temple | yes | south 5, north 7 |
+| 6 | The Shrine | temple | yes | south 5, north 7, east 98 |
 | 7 | The Chancel | temple | yes | south 6 |
 | 8 | Market Square | town | yes | north 1, east 9, west 10, south 11, up 35 |
 | 9 | The Smithy | town | yes | west 8 |
@@ -265,4 +267,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 95 | The Mirror Vault | eclipse | no | east 93 |
 | 96 | The Throne of Ash | eclipse | no | south 94, up 97 |
 | 97 | The Dawn Gate | eclipse | yes | down 96 |
+| 98 | The Memory Garden | garden | yes | west 6, east 99, north 100 |
+| 99 | The Rose Walk | garden | yes | west 98 |
+| 100 | The Rememberer's Bench | garden | yes | south 98 |
 
