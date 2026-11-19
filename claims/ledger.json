@@ -645,6 +645,12 @@
       "level": "build",
       "statement": "The R4 memory sidecar is deployed on wick as a patched prime-router service on loopback: /api/context routes and retrieves only the character-scoped notes, /api/remember appends to memory_notes.jsonl, and the journal is replayed at startup. The game server proxies r4-context/r4-remember over the authenticated socket and the browser injects R4 CONTEXT ahead of the local MEMORY block, with a 60-second circuit breaker to local memory if the sidecar is unavailable. Local end-to-end calls measured 3-62ms; wick retrieval measured 11.5ms. The 349MB cache loads in 13.6s warm; no model is downloaded or used.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-102",
+      "level": "some-true",
+      "statement": "Production v0.67.0 runs the R4 memory sidecar on wick and injects R4 CONTEXT into the AI prompt. A 14-turn Gemini run reached p50 917ms / p95 1205ms with zero errors, used say/talk and movement/examine/take/wear, and carried prior-room context (Market Square, The Gilded Rat) into later turns. The sidecar recorded 29 calls at p50 4ms / p95 64ms / max 239ms. Warm restart is 13.6s with no model download; the local browser memory remains the fallback.",
+      "authority": "wick production v0.67.0 2026-11-19; release 44439824019; gate 44438484443; /api/sysinfo; /trends; ai.r4 spans; headless Gemini run"
     }
   ]
 }
