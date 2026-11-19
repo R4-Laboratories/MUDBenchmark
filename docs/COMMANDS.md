@@ -150,6 +150,9 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `moon-hare` | The Moon Hare | 5 | Defeat the moon hare; Carry a moonpetal | 150 xp |
 | `moon-well` | The Moonwell | 6 | Reach the Moonwell; Carry a flask of moonwater | 190 xp |
 | `moon-stag` | The Moon Stag | 9 | Reach the Moon Throne; Defeat the moon stag; Carry a moon antler | 360 xp |
+| `eclipse-stair` | The Eclipse Stair | 9 | Climb the Eclipse Stair; Defeat the star hound; Carry the eclipse key | 280 xp |
+| `eclipse-vault` | The Mirror Vault | 10 | Enter the Mirror Vault; Carry the dawn crown | 450 xp |
+| `eclipse-throne` | The Throne of Ash | 10 | Reach the Throne of Ash; Defeat the eclipse regent; Carry the regent's sigil | 800 xp |
 
 ## Rooms
 
@@ -245,5 +248,11 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 88 | The Owl Grove | moon | yes | west 86, north 89 |
 | 89 | The Moonwell | moon | no | west 87, south 88, east 90 |
 | 90 | The Hunter's Camp | moon | no | west 89, north 91 |
-| 91 | The Moon Throne | moon | no | south 90 |
+| 91 | The Moon Throne | moon | no | south 90, up 92 |
+| 92 | The Eclipse Stair | eclipse | yes | down 91, north 93 |
+| 93 | The Starless Hall | eclipse | no | south 92, east 94, west 95 |
+| 94 | The Sundial Court | eclipse | no | west 93, north 96 |
+| 95 | The Mirror Vault | eclipse | no | east 93 |
+| 96 | The Throne of Ash | eclipse | no | south 94, up 97 |
+| 97 | The Dawn Gate | eclipse | yes | down 96 |
 

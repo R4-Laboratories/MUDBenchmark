@@ -77,8 +77,13 @@ the next `quests` command and in the completion that follows.
 6. **The Lighthouse Lens** — level 2; carry the brass telescope from the
    lighthouse to the docks.
 
-## Not here yet
+## Chains, repeatables and givers
 
-Dialogue-driven givers (the giver is text, not a mobile yet), quest chains and
-prerequisites, repeatable daily quests, and quest items that bind to the
-character. The world phase adds the givers and the map; the engine is stable.
+Quests can name prerequisites with `requires`, and the Eclipse Court uses a
+three-quest level-10 chain. The engine also understands `repeat: "reset"` with
+`questCycles`, so a quest can return after the two-hour reset, but no live
+quest uses it yet.
+
+The giver is still descriptive text rather than a dialogue tree, and quest
+items are not bound to the character. Those are content and policy choices,
+not missing quest-engine facts.

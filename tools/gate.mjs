@@ -1707,6 +1707,76 @@ let moon = { ok: true, why: [] };
   if (moon.why.length) { moon.ok = false; failures.push(`the Moonlit Reach is broken: ${moon.why[0]}`); }
 }
 
+// The Eclipse Court: the level-10 capstone above the Moon Throne. The walk
+// covers the full quest chain, the keyed vault, the regent kill and the dawn
+// gate back to the Moonlit Reach.
+let eclipse = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, world.levels, questTable.quests);
+  const table = loadActions({ world });
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents, actions: table.actions }); state = result.state; return result.events; };
+  const check = (condition, why) => { if (!condition) { eclipse.ok = false; eclipse.why.push(why); } };
+  const actorNow = () => state.actors.find((entry) => entry.id === "ec");
+  check(table.errors.length === 0, `eclipse action validation failed: ${table.errors[0] ?? ""}`);
+  check(world.rooms[91]?.exits?.up === 92 && world.rooms[92]?.exits?.down === 91, "the Eclipse Court is not connected to the Moon Throne");
+  check(world.rooms[97]?.exits?.down === 96, "the Dawn Gate does not return to the throne");
+  check(world.zones.some((zone) => zone.id === "eclipse" && zone.rooms.includes(97)), "the Eclipse Court zone is missing");
+  const chain = ["eclipse-stair", "eclipse-vault", "eclipse-throne"].map((id) => questTable.quests.find((quest) => quest.id === id));
+  check(chain.every(Boolean), "an Eclipse quest is missing");
+  check(chain[0]?.requires?.includes("moon-stag"), "the Eclipse chain does not follow the moon stag");
+  check(chain[1]?.requires?.includes("eclipse-stair") && chain[2]?.requires?.includes("eclipse-vault"), "the Eclipse chain is not connected");
+  check(chain[2]?.level === 10, "the capstone quest is not level 10");
+  check(findAction(table.actions, { verb: "open", target: "chest", room: 95 })?.id === "open-eclipse-chest", "open chest does not resolve in the Mirror Vault");
+  check(findAction(table.actions, { verb: "enter", target: "gate", room: 97 })?.id === "enter-dawn-gate", "enter gate does not resolve at the Dawn Gate");
+
+  state.actors.push({ id: "ec", key: "eclipse", account: "eclipse", name: "eclipse", room: 91, visited: [91], level: 10, xp: 30000, maxHp: 28, hp: 28, maxMana: 27, mana: 27, spellbook: ["spark", "mend", "shield"], guild: "mages", guildRank: "magician", wielding: null, quests: { active: [], completed: ["moon-stag"] }, found: [] });
+  run([{ kind: "questAccept", actorId: "ec", questId: "eclipse-stair" }]);
+  check(actorNow().quests.active.some((entry) => entry.id === "eclipse-stair"), "the Eclipse Stair quest was not accepted");
+  for (const [dir, to] of [["up", 92], ["north", 93]]) run([{ kind: "move", actorId: "ec", dir, to }]);
+  let actor = actorNow();
+  check(actor.room === 93, "the Eclipse walk did not reach the Starless Hall");
+  state.npcs.find((npc) => npc.id === "star-hound").hp = 1;
+  run([{ kind: "attack", actorId: "ec", targetId: "star-hound" }]);
+  for (let i = 0; i < 40; i += 1) run([]);
+  run([{ kind: "move", actorId: "ec", dir: "east", to: 94 }]);
+  run([{ kind: "take", actorId: "ec", objectId: "eclipse-key", messages: { actor: "taken", others: "takes" } }]);
+  actor = actorNow();
+  check(actor.quests.completed.includes("eclipse-stair"), "the Eclipse Stair quest did not complete");
+  check(state.objects.find((object) => object.id === "eclipse-key")?.holder === "ec", "the eclipse key was not taken");
+
+  run([{ kind: "questAccept", actorId: "ec", questId: "eclipse-vault" }]);
+  check(actorNow().quests.active.some((entry) => entry.id === "eclipse-vault"), "the Mirror Vault quest was not accepted");
+  run([{ kind: "move", actorId: "ec", dir: "west", to: 93 }]);
+  run([{ kind: "move", actorId: "ec", dir: "west", to: 95 }]);
+  run([{ kind: "action", actorId: "ec", actionId: "open-eclipse-chest", messages: { actor: "opened", others: "opens" } }]);
+  check(state.objects.find((object) => object.id === "eclipse-chest")?.open === true, "the eclipse key did not open the black chest");
+  run([{ kind: "takeFrom", actorId: "ec", objectId: "dawn-crown", containerId: "eclipse-chest", messages: { actor: "taken", others: "takes" } }]);
+  actor = actorNow();
+  check(actor.quests.completed.includes("eclipse-vault"), "the Mirror Vault quest did not complete");
+  check(state.objects.find((object) => object.id === "eclipse-ward")?.holder === "ec", "the Eclipse Ward reward was not paid");
+
+  run([{ kind: "questAccept", actorId: "ec", questId: "eclipse-throne" }]);
+  check(actorNow().quests.active.some((entry) => entry.id === "eclipse-throne"), "the Throne of Ash quest was not accepted");
+  run([{ kind: "move", actorId: "ec", dir: "east", to: 93 }]);
+  run([{ kind: "move", actorId: "ec", dir: "east", to: 94 }]);
+  run([{ kind: "move", actorId: "ec", dir: "north", to: 96 }]);
+  state.npcs.find((npc) => npc.id === "eclipse-regent").hp = 1;
+  run([{ kind: "attack", actorId: "ec", targetId: "eclipse-regent" }]);
+  for (let i = 0; i < 40; i += 1) run([]);
+  run([{ kind: "take", actorId: "ec", objectId: "regent-sigil", messages: { actor: "taken", others: "takes" } }]);
+  actor = actorNow();
+  check(actor.quests.completed.includes("eclipse-throne"), "the Throne of Ash quest did not complete");
+  check(state.objects.find((object) => object.id === "dawn-blade")?.holder === "ec", "the dawn blade reward was not paid");
+  check(actor.xp >= 32100, `the capstone paid ${actor.xp} xp, not the expected total`);
+
+  run([{ kind: "move", actorId: "ec", dir: "up", to: 97 }]);
+  run([{ kind: "action", actorId: "ec", actionId: "enter-dawn-gate", messages: { actor: "entered", others: "enters" } }]);
+  actor = actorNow();
+  check(actor.room === 86, "the dawn gate did not return to the Moonlit Gate");
+  if (eclipse.why.length) { eclipse.ok = false; failures.push(`the Eclipse Court is broken: ${eclipse.why[0]}`); }
+}
+
 // The state file is atomic, backed up, and fail-loud.
 let durableState = { ok: true, why: [] };
 {
@@ -2723,6 +2793,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"visibility".padEnd(26)}  ${(visibility.ok ? "levels, map" : "BROKEN").padStart(5)}   == board, shortcuts`);
   console.log(`${"salt".padEnd(26)}  ${(salt.ok ? "5 rooms" : "BROKEN").padStart(5)}   == key, chest, shortcut`);
   console.log(`${"moon".padEnd(26)}  ${(moon.ok ? "6 rooms" : "BROKEN").padStart(5)}   == key, chest, shortcut`);
+  console.log(`${"eclipse".padEnd(26)}  ${(eclipse.ok ? "6 rooms" : "BROKEN").padStart(5)}   == chain, chest, gate`);
   console.log(`${"firstSteps".padEnd(26)}  ${(firstSteps.ok ? "20 xp" : "BROKEN").padStart(5)}   == tour, quest`);
   console.log(`${"pinned".padEnd(26)}  ${(identityPin.ok ? "revoked" : "BROKEN").padStart(5)}   == old log refused`);
   console.log(`${"takeover".padEnd(26)}  ${(takeover.ok ? "1 actor" : "BROKEN").padStart(5)}   == leave then login`);

@@ -1182,6 +1182,101 @@
         "object": "moon-charm"
       },
       "complete": "The owl sets the antler beside the well. The moon in the water turns."
+    },
+    {
+      "id": "eclipse-stair",
+      "name": "The Eclipse Stair",
+      "level": 9,
+      "giver": "the eclipse herald",
+      "description": "The herald will open the Eclipse Court to anyone who has faced the moon stag. Bring the key the sundial knight guards.",
+      "requires": [
+        "moon-stag"
+      ],
+      "objectives": [
+        {
+          "kind": "visit",
+          "room": 92,
+          "text": "Climb the Eclipse Stair"
+        },
+        {
+          "kind": "kill",
+          "npc": "star-hound",
+          "count": 1,
+          "text": "Defeat the star hound"
+        },
+        {
+          "kind": "collect",
+          "object": "eclipse-key",
+          "count": 1,
+          "text": "Carry the eclipse key"
+        }
+      ],
+      "rewards": {
+        "xp": 280
+      },
+      "complete": "The herald takes the key and sets it in the stair. The way north opens."
+    },
+    {
+      "id": "eclipse-vault",
+      "name": "The Mirror Vault",
+      "level": 10,
+      "giver": "the eclipse herald",
+      "description": "The mirror vault holds a crown of dawn. Open the black chest and bring the crown back to the herald's stair.",
+      "requires": [
+        "eclipse-stair"
+      ],
+      "objectives": [
+        {
+          "kind": "visit",
+          "room": 95,
+          "text": "Enter the Mirror Vault"
+        },
+        {
+          "kind": "collect",
+          "object": "dawn-crown",
+          "count": 1,
+          "text": "Carry the dawn crown"
+        }
+      ],
+      "rewards": {
+        "xp": 450,
+        "object": "eclipse-ward"
+      },
+      "complete": "The herald sets the crown on the stair. The mirrors in the vault go dark."
+    },
+    {
+      "id": "eclipse-throne",
+      "name": "The Throne of Ash",
+      "level": 10,
+      "giver": "the eclipse herald",
+      "description": "The eclipse regent holds the sigil that keeps the court closed. Take it from the throne of ash.",
+      "requires": [
+        "eclipse-vault"
+      ],
+      "objectives": [
+        {
+          "kind": "visit",
+          "room": 96,
+          "text": "Reach the Throne of Ash"
+        },
+        {
+          "kind": "kill",
+          "npc": "eclipse-regent",
+          "count": 1,
+          "text": "Defeat the eclipse regent"
+        },
+        {
+          "kind": "collect",
+          "object": "regent-sigil",
+          "count": 1,
+          "text": "Carry the regent's sigil"
+        }
+      ],
+      "rewards": {
+        "xp": 800,
+        "object": "dawn-blade"
+      },
+      "complete": "The herald closes the regent's eye. The dawn gate opens behind the throne."
     }
   ]
 }

@@ -1659,10 +1659,11 @@
     },
     "91": {
       "name": "The Moon Throne",
-      "text": "A throne of pale stone under a crescent moon that hangs in the branches. A moon stag stands before it, antlers bright. The camp is south.",
+      "text": "A throne of pale stone under a crescent moon that hangs in the branches. A moon stag stands before it, antlers bright. The camp is south, and a stair of black glass climbs behind the throne.",
       "safe": false,
       "exits": {
-        "south": 90
+        "south": 90,
+        "up": 92
       },
       "details": {
         "throne": "The throne is empty and cold.",
@@ -1672,6 +1673,113 @@
       "ambient": [
         "The moon does not move.",
         "The stag lowers its head."
+      ]
+    },
+    "92": {
+      "name": "The Eclipse Stair",
+      "text": "A stair of black glass climbs out of the moon's shadow into warm, still air. A herald in a cloak of white ash waits at the top. The throne is below; a starless hall opens north.",
+      "safe": true,
+      "exits": {
+        "down": 91,
+        "north": 93
+      },
+      "details": {
+        "stair": "The glass is warm and does not reflect you.",
+        "herald": "The herald's cloak is white ash that never falls.",
+        "moon": "The crescent hangs below the stair, small and cold."
+      },
+      "ambient": [
+        "The stair hums underfoot.",
+        "The herald turns a page that is not there."
+      ]
+    },
+    "93": {
+      "name": "The Starless Hall",
+      "text": "A hall without windows. The ceiling is a field of fixed stars, and a star hound circles beneath them. The stair is south; the sundial court lies east, and the mirror vault west.",
+      "safe": false,
+      "exits": {
+        "south": 92,
+        "east": 94,
+        "west": 95
+      },
+      "details": {
+        "stars": "The stars do not move.",
+        "hound": "The hound's eyes are two points of white.",
+        "floor": "The floor is black and smooth as water."
+      },
+      "ambient": [
+        "A star goes out and returns.",
+        "The hound's claws click on the black floor."
+      ]
+    },
+    "94": {
+      "name": "The Sundial Court",
+      "text": "A court of white sand around a sundial whose shadow points nowhere. A knight in eclipse armour stands beside it, a pale key at his feet. The hall is west; the throne lies north.",
+      "safe": false,
+      "exits": {
+        "west": 93,
+        "north": 96
+      },
+      "details": {
+        "sundial": "The dial has no numbers, only a hand that never moves.",
+        "knight": "The knight's armour is the colour of a closed eye.",
+        "key": "A key of pale iron lies in the sand."
+      },
+      "ambient": [
+        "The sand shifts without wind.",
+        "The knight does not breathe."
+      ]
+    },
+    "95": {
+      "name": "The Mirror Vault",
+      "text": "A vault lined with mirrors that show the room empty. A chest of black wood sits on a stone plinth. The hall is east.",
+      "safe": false,
+      "exits": {
+        "east": 93
+      },
+      "details": {
+        "mirrors": "In every mirror the vault is empty, and you are not in it.",
+        "chest": "The chest is bound with a band of eclipse iron.",
+        "plinth": "The plinth is worn smooth by hands that are not there."
+      },
+      "ambient": [
+        "A mirror fogs and clears.",
+        "Something moves behind the glass."
+      ]
+    },
+    "96": {
+      "name": "The Throne of Ash",
+      "text": "A throne of grey ash under a ceiling of smoke. The eclipse regent sits with a sigil in its hand, and a stair of dawnlight rises behind the throne. The court is south.",
+      "safe": false,
+      "exits": {
+        "south": 94,
+        "up": 97
+      },
+      "details": {
+        "throne": "The ash holds the shape of a seat.",
+        "regent": "The regent wears a crown of burnt glass.",
+        "stair": "The stair is made of light that falls upward."
+      },
+      "ambient": [
+        "Ash drifts from the ceiling.",
+        "The regent's crown ticks as it cools."
+      ]
+    },
+    "97": {
+      "name": "The Dawn Gate",
+      "text": "A gate of white light at the top of the stair. Beyond it the Moonlit Gate is visible, small and far below. The throne is down.",
+      "safe": true,
+      "exits": {
+        "down": 96
+      },
+      "details": {
+        "gate": "The gate is a standing dawn.",
+        "light": "The light is warm and does not hurt your eyes.",
+        "view": "The Moonlit Gate waits at the bottom of the sky."
+      },
+      "ambient": [
+        "The gate brightens and dims.",
+        "A bird calls from the world below."
       ]
     }
   },
@@ -2571,6 +2679,85 @@
       "status": "chill",
       "description": "A tall stag with antlers of clear glass.",
       "examine": "Its antlers hold a light that is not there."
+    },
+    {
+      "id": "eclipse-herald",
+      "name": "the eclipse herald",
+      "room": 92,
+      "home": 92,
+      "period": 200,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "zone": "eclipse",
+      "hp": 30,
+      "damage": 0,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 0,
+      "description": "A herald in a cloak of white ash waits at the top of the stair.",
+      "examine": "The herald's face is hidden, but the cloak is very old.",
+      "dialogue": [
+        "The stair opens only after the stag falls.",
+        "The knight keeps the key. The regent keeps the sigil.",
+        "The dawn gate is the way back. It was always the way back."
+      ]
+    },
+    {
+      "id": "star-hound",
+      "name": "a star hound",
+      "room": 93,
+      "home": 93,
+      "period": 30,
+      "jitter": 2,
+      "behaviour": "sentinel",
+      "zone": "eclipse",
+      "hp": 28,
+      "damage": 5,
+      "armor": 1,
+      "aggression": 75,
+      "xp": 110,
+      "status": "bleed",
+      "description": "A lean hound with a coat of fixed stars.",
+      "examine": "Its eyes are two points of white, and its teeth are very long."
+    },
+    {
+      "id": "sundial-knight",
+      "name": "the sundial knight",
+      "room": 94,
+      "home": 94,
+      "period": 90,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "zone": "eclipse",
+      "hp": 42,
+      "damage": 6,
+      "armor": 3,
+      "aggression": 90,
+      "xp": 200,
+      "status": "chill",
+      "description": "A knight in armour the colour of a closed eye.",
+      "examine": "The knight's visor is a slit of darkness. It does not move until you do."
+    },
+    {
+      "id": "eclipse-regent",
+      "name": "the eclipse regent",
+      "room": 96,
+      "home": 96,
+      "period": 120,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "zone": "eclipse",
+      "hp": 64,
+      "damage": 6,
+      "armor": 4,
+      "aggression": 100,
+      "xp": 500,
+      "status": "burn",
+      "loot": [
+        "regent-sigil"
+      ],
+      "description": "A tall figure in a crown of burnt glass sits on the throne of ash.",
+      "examine": "The regent's hand is closed around a sigil. The crown ticks as it cools."
     }
   ],
   "zones": [
@@ -2735,6 +2922,18 @@
         89,
         90,
         91
+      ]
+    },
+    {
+      "id": "eclipse",
+      "name": "The Eclipse Court",
+      "rooms": [
+        92,
+        93,
+        94,
+        95,
+        96,
+        97
       ]
     }
   ],
@@ -3788,6 +3987,111 @@
       ],
       "value": 22,
       "examine": "A shard of clear antler, cold and bright.",
+      "forSale": false
+    },
+    {
+      "id": "eclipse-token",
+      "name": "an eclipse token",
+      "room": 92,
+      "flags": [
+        "takeable"
+      ],
+      "value": 30,
+      "examine": "A disc of black glass with a white crescent cut through it.",
+      "forSale": false
+    },
+    {
+      "id": "eclipse-key",
+      "name": "an eclipse key",
+      "room": 94,
+      "flags": [
+        "takeable"
+      ],
+      "value": 40,
+      "examine": "A key of pale iron, cold as a closed eye.",
+      "forSale": false
+    },
+    {
+      "id": "eclipse-chest",
+      "name": "a chest of black wood",
+      "room": 95,
+      "flags": [
+        "fixed",
+        "container"
+      ],
+      "capacity": 2,
+      "open": false,
+      "value": 0,
+      "examine": "A chest of black wood bound with a band of eclipse iron.",
+      "forSale": false
+    },
+    {
+      "id": "dawn-crown",
+      "name": "the dawn crown",
+      "inside": "eclipse-chest",
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "head",
+      "armor": 3,
+      "value": 120,
+      "examine": "A circlet of white glass that holds a small, steady dawn.",
+      "forSale": false
+    },
+    {
+      "id": "starwater",
+      "name": "a flask of starwater",
+      "room": 95,
+      "flags": [
+        "takeable",
+        "food"
+      ],
+      "bites": 1,
+      "heal": 6,
+      "value": 24,
+      "examine": "A flask of water with a fixed star at the bottom.",
+      "forSale": false
+    },
+    {
+      "id": "regent-sigil",
+      "name": "the regent's sigil",
+      "room": 96,
+      "flags": [
+        "takeable"
+      ],
+      "value": 80,
+      "examine": "A disc of burnt glass stamped with a closed eye.",
+      "forSale": false
+    },
+    {
+      "id": "eclipse-ward",
+      "name": "an eclipse ward",
+      "room": 92,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "neck",
+      "armor": 3,
+      "value": 90,
+      "examine": "A disc of black glass on a chain of pale iron.",
+      "forSale": false
+    },
+    {
+      "id": "dawn-blade",
+      "name": "the dawn blade",
+      "room": 97,
+      "flags": [
+        "takeable",
+        "weapon"
+      ],
+      "damage": 8,
+      "status": "burn",
+      "value": 160,
+      "examine": "A long blade of white glass with a line of dawn down its edge.",
       "forSale": false
     }
   ],

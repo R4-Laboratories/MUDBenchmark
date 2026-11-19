@@ -386,6 +386,49 @@
         "actor": "You step into the crescent moon. The glade folds and the gate is beneath you.",
         "others": "%a steps into the moon and vanishes."
       }
+    },
+    {
+      "id": "open-eclipse-chest",
+      "verb": "open",
+      "target": "chest",
+      "room": 95,
+      "requires": {
+        "item": "eclipse-key"
+      },
+      "effects": [
+        {
+          "kind": "open",
+          "object": "eclipse-chest"
+        },
+        {
+          "kind": "message",
+          "text": "The eclipse iron loosens and the black chest opens on a folded dawn."
+        }
+      ],
+      "messages": {
+        "actor": "You fit the eclipse key to the black chest. The band loosens.",
+        "others": "%a opens the black chest."
+      }
+    },
+    {
+      "id": "enter-dawn-gate",
+      "verb": "enter",
+      "target": "gate",
+      "room": 97,
+      "effects": [
+        {
+          "kind": "teleport",
+          "room": 86
+        },
+        {
+          "kind": "message",
+          "text": "The dawn folds around you and sets you down at the Moonlit Gate."
+        }
+      ],
+      "messages": {
+        "actor": "You step into the dawn gate. The sky folds and the Moonlit Gate is beneath you.",
+        "others": "%a steps into the dawn and vanishes."
+      }
     }
   ]
 }

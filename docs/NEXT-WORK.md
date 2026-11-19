@@ -1,34 +1,40 @@
 # Next work
 
-Baseline: **v0.65.1**. The world is 70 rooms / 31 quests, the browser shell is
-state-based, a per-character memory is injected every turn, and the Prism-only
-Gemini demo is live with `gemini-3.1-flash-lite` (p50 ~1.1s in a 37-turn run).
-The local 7B model remains hardware-bound at ~5.6s/turn.
+Baseline: **v0.76.0**, with v0.77.0 in flight. The world has 97 rooms, 13 zones,
+47 quests, 45 mobiles and 92 objects. R4 memory, command grounding, scorecards
+and the public stats surface are live; signups are open and the Gemini demo is
+disabled and unconfigured.
 
-The next phase is not more prompt wording. It is moving context out of the
-model's short chat history and into an identity-scoped memory service, then
-proving that the model uses it.
+The next phase is **endgame depth and evidence from real play**, not another
+memory or prompt system.
 
-## Goals
+## Current roadmap
 
-1. **R4 memory**: an identity-scoped context service that keeps state
-   indefinitely, retrieves by the R4 integer/concept space, and returns a
-   bounded token block for each turn.
-2. **Grounding**: fewer invalid commands and fewer repeated actions; the
-   server stays the authority.
-3. **Measurement**: scorecards by provider, model, prompt and reasoning mode:
-   latency, parse rate, invalid-command rate, room coverage, loop rate, quest
-   progress.
-4. **Operations**: safe Gemini quota/key handling, account/signup policy,
-   rollback and restore drills.
-5. **World**: social and quest depth after the memory system is trustworthy.
+| Release | Scope | Status |
+| --- | --- | --- |
+| v0.77.0 | The Eclipse Court: six-room level-10 capstone, quest chain, keyed vault, dawn gate; balance sampler reads real world data | **in flight** |
+| v0.78.0 | Guild hall vault/bank and repeatable guild quests | next |
+| v0.79.0 | Social/memory-driven quests, titles and chat moderation | planned |
 
-## Non-goals for this phase
+## What is next
 
-- No claim that the LLM itself remembers. Memory belongs to the service.
-- No change to the 250 ms input allowance or server authority.
-- No silent free default; the Gemini demo stays opt-in and quota-limited.
-- No new world systems until the memory/action loop is measured.
+1. **Live-run tuning.** The sampler is deterministic, not live evidence. Run
+   human/AI sessions, read `/stats` and the combat spans, and tune status
+   durations, aggression, mana costs and the level 8-10 reward curve.
+2. **Guild depth.** The guild hall exists at room 24, but it has no shared
+   vault or bank. Add a per-guild store and one more high-rank quest line.
+3. **Repeatable content.** The quest engine already supports `repeat: "reset"`
+   and `questCycles`, but no quest uses it. Add daily or weekly guild work.
+4. **Social quests.** Social memory is recorded; no quest objective reads it.
+   Add a conversation or delivery chain that uses the memory layer.
+5. **Moderation.** Open signups need chat rate limits, mute/ignore and a
+   blocked-name policy before the world is left unattended.
+
+## Historical workstreams
+
+The sections below are the v0.66-v0.70 plan. Workstreams A-C are complete and
+are kept as a record of the contracts they established; D and E carry the
+remaining items.
 
 ## Workstream A — R4 memory service
 
@@ -157,23 +163,24 @@ works; no key reaches the browser, transcript or telemetry.
 
 ## Workstream D — World, social and stream
 
-Only after A/B:
-
-- social memory: remember who said what, guild membership, NPC dialogue facts;
-- a second outdoor region and five quests using existing systems;
-- guild rank 6 and one more guild quest line;
-- public stream: audience retention, clips, stream status (the v2 status card is
-  already live).
+- social memory: **done** — public speech with private-line filtering and R4
+  retrieval;
+- a second outdoor region and five quests: **done** — the Hollow Fen, Salt
+  Caves and Moonlit Reach followed;
+- guild rank 6 and one more guild quest line: **done** — guild level 6 and the
+  Ember/Fen guild quests are live;
+- public stream: **done** — archives, clips and the live status card;
+- next: a guild vault/bank, repeatable guild work and social quests that use
+  the memory layer.
 
 ## Workstream E — Launch and operations
 
-- Decide the account policy: current live set is a few active/test accounts and
-  a recurring client. Options: allow signups, invite-only, or a temporary signup
-  hold while the demo is curated.
-- Moderation and abuse: chat rate limits, blocked-name policy, demo quota.
-- Cost caps and alerts for the Gemini demo.
-- One more backup/restore and reboot drill after the memory service is added.
-- Rotate the exposed key and record the rotation date.
+- Account policy: **decided** — signups stay open.
+- Gemini: **retired** — the testing key was removed, its backup deleted, and
+  `/api/demo` reports `configured:false`.
+- Moderation and abuse: still open — chat rate limits, mute/ignore and a
+  blocked-name policy.
+- One more backup/restore and reboot drill after the v0.77 deployment.
 
 ## Sequence
 
@@ -190,7 +197,8 @@ Only after A/B:
 | v0.74.0 | Combat status effects, enemy tactics, spell/gear scaling | **done** (MB-119) |
 | v0.75.0 | First Steps tutorial and deeper Salt/Fen quest chains | **done** (MB-121) |
 | v0.76.0 | Live balance review and the Moonlit Reach | **done** (MB-123) |
-| v0.77.0 | Next content slice and live-run tuning | next |
+| v0.77.0 | The Eclipse Court level-10 capstone and real-data balance sampler | **done** (MB-125) |
+| v0.78.0 | Guild vault/bank and repeatable guild quests | next |
 
 ## Risks
 
@@ -209,13 +217,12 @@ Only after A/B:
 - **Account churn**: a live client can recreate test accounts; a signup policy
   is an operator decision, not a code accident.
 
-## Decisions needed
+## Decisions taken
 
-1. **Memory host**: run the R4 service on wick (loopback, lowest latency) or a
-   separate machine? Recommendation: wick first, with a measured CPU/RAM cap.
-2. **Memory portability**: server-side identity store is required for the real
-   R4 design; browser localStorage remains the fallback. Confirm that direction.
-3. **Account policy**: allow open signups, invite-only, or a temporary hold
-   while the demo is curated.
-4. **Gemini key rotation**: do it now or after the next demo run. The key is in
-   chat history and should be treated as exposed.
+1. **Memory host**: wick, loopback only, with local-memory fallback.
+2. **Memory portability**: the server-side identity store is authoritative;
+   browser localStorage remains the fallback.
+3. **Account policy**: signups stay open.
+4. **Level cap**: level 10 stays the cap for v0.77, with the Eclipse Court as
+   the endgame. Raising it is a later decision.
+5. **Gemini**: retired; the testing key is no longer stored.

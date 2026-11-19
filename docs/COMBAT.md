@@ -80,8 +80,16 @@ at the start.
 is as much an observation as a hit: it says the attacker swung and the world
 said no.
 
+## Status effects
+
+Spells, weapons and enemy tactics apply timed effects. Spark and the ember
+brand burn; bog hounds bleed; fen staffs, salt wraiths and the sundial knight
+chill. Effects tick on the violence pulse, chill subtracts armour, Mend
+cleanses bleed and burn, and death or the two-hour reset clears them. `score`,
+`battle` and the AI prompt show active effects and remaining rounds.
+
 ## Not here yet
 
-Armour slots and encumbrance, weapon speed, criticals, spells, death penalties
-beyond dropping, and quest objectives that count kills. Those arrive with the
-quest and world phases; the round and the spans are the stable part.
+Encumbrance, weapon speed, criticals and death penalties beyond dropping.
+Armour slots, spells, status effects and kill objectives are live; the round
+and the spans are the stable part.

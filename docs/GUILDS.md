@@ -54,8 +54,12 @@ span: `actor.id`, `guild.id`, `guild.action`, `guild.name`. Create/join/leave/
 rank/invite come from reducer events; chat is recorded at command time because
 it has recipients rather than state.
 
-## What is not here yet
+## What is live, and what is not
 
-Instanced guild halls, a guild bank/till, invite-only guilds and guild quests.
-The roster, ranks and chat are the stable core; the hall arrives with the world
-phase, when a room can belong to a guild rather than to everyone.
+The shared guild hall is room 24, south of the Gilded Rat, with the guild
+clerk and notice board. Guild quests, guild XP, ranks and the level-6
+three-active-quest perk are live.
+
+Not here yet: a per-guild vault/bank, instanced halls and invite-only guilds.
+The roster, ranks and chat are the stable core; the vault is the next
+stateful layer.
