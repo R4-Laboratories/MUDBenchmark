@@ -807,6 +807,12 @@
       "level": "build",
       "statement": "v0.79 adds the talk quest objective and the two-NPC hall-word social quest (market woman and guild clerk, 70 xp). Chat now has an eight-line/ten-second per-connection guard across say, tell, mail and channels, and account/character names reserve admin, administrator, system, moderator, wizard, staff, owner and npc. The world is 97 rooms/13 zones/49 quests/45 mobiles/93 objects. The gate covers the talk chain, rate window, reserved names and all prior content checks.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-130",
+      "level": "some-true",
+      "statement": "Production v0.79.0 serves 97 rooms, 13 zones, 49 quests, 45 mobiles and 93 objects. The Eclipse Court level-10 capstone, per-guild 20-slot vault, repeatable clerk errand, talk-objective social quest, eight-line/ten-second chat guard and reserved names are live. R4 is active, Gemini reports configured false, signups stay open. Gate 44584005119 green.",
+      "authority": "wick production v0.79.0 2026-11-19; release 44585487125; gate 44584005119; /health and /world"
     }
   ]
 }

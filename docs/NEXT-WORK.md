@@ -1,7 +1,7 @@
 # Next work
 
-Baseline: **v0.78.0**, with v0.79.0 in flight. The world has 97 rooms, 13 zones,
-49 quests, 45 mobiles and 93 objects. R4 memory, command grounding, scorecards
+Baseline: **v0.79.0**. The world has 97 rooms, 13 zones, 49 quests, 45 mobiles
+and 93 objects. R4 memory, command grounding, scorecards
 and the public stats surface are live; signups are open and the Gemini demo is
 disabled and unconfigured.
 
@@ -12,9 +12,9 @@ memory or prompt system.
 
 | Release | Scope | Status |
 | --- | --- | --- |
-| v0.77.0 | The Eclipse Court: six-room level-10 capstone, quest chain, keyed vault, dawn gate; balance sampler reads real world data | **in flight** |
+| v0.77.0 | The Eclipse Court: six-room level-10 capstone, quest chain, keyed vault, dawn gate; balance sampler reads real world data | **done** (MB-125) |
 | v0.78.0 | Per-guild hall vault and the repeatable clerk's errand | **done** (MB-127) |
-| v0.79.0 | Social talk quest, chat-rate guard and reserved names | **in flight** |
+| v0.79.0 | Social talk quest, chat-rate guard and reserved names | **done** (MB-129) |
 | v0.80.0 | Ignore/mute, titles and the next live-tuning pass | next |
 
 ## What is next
@@ -202,7 +202,7 @@ works; no key reaches the browser, transcript or telemetry.
 | v0.76.0 | Live balance review and the Moonlit Reach | **done** (MB-123) |
 | v0.77.0 | The Eclipse Court level-10 capstone and real-data balance sampler | **done** (MB-125) |
 | v0.78.0 | Per-guild hall vault and the repeatable clerk's errand | **done** (MB-127) |
-| v0.79.0 | Social talk quest, chat-rate guard and reserved names | **in flight** |
+| v0.79.0 | Social talk quest, chat-rate guard and reserved names | **done** (MB-129) |
 | v0.80.0 | Ignore/mute, titles and the next live-tuning pass | next |
 
 ## Risks
