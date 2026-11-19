@@ -859,7 +859,7 @@
     PROVIDERS, DEFAULT_GOAL, buildSystemPrompt, buildUserPrompt,
     parseBrain, buildActionMenu, validateCommand, repairCommand, requestFor, replyFrom, trimHistory, normalizeBase,
   } from "/ai.mjs";
-  import { emptyMemory, rememberResult, memoryPrompt, loopWarning, breakLoop, shouldBreakLoop } from "/memory.mjs";
+  import { emptyMemory, rememberResult, memoryPrompt, loopWarning, breakLoop, shouldBreakLoop, publicMemoryText } from "/memory.mjs";
   import { signIn as prismSignIn, reset as prismReset, load as loadSession, save as saveSession, personaSignIn, personaRetire, nextPersonaEpoch, createRecoveryKit, restoreRecoveryKit, characterHandoff, characterRevoke, signChallenge } from "/prism-auth.mjs";
   import { createLinkOffer, parseLinkUri, requestLink, acceptLinkRequest, completeLink, linkCode, revokeDevice, resolvePrism, linkQr } from "/prism-id.mjs";
 
@@ -2706,7 +2706,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       let r4Text = "";
       if (Date.now() >= AI.r4DownUntil) {
         try {
-          const r4 = await requestR4Context(`${AI.room || ""} ${observation}`);
+          const r4 = await requestR4Context(`${AI.room || ""} ${publicMemoryText(observation)}`);
           r4Text = String(r4?.context ?? "").trim();
           AI.lastR4 = Boolean(r4Text);
           AI.r4LastLatency = Number(r4?.latency_ms) || 0;
@@ -2881,7 +2881,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       AI.commandRoom = AI.room || AI.state?.room?.name || null;
       if (AI.socket?.readyState === WebSocket.OPEN) AI.socket.send(`${parsed.command}\n`);
       else throw new Error("The AI is not connected.");
-      rememberR4(`Turn ${turn} in ${AI.room || "the world"}: ${observation} I chose ${parsed.command}.`);
+      rememberR4(`Turn ${turn} in ${AI.room || "the world"}: ${publicMemoryText(observation)} I chose ${parsed.command}.`);
       AI.lastError = null;
       AI.timeouts = 0;
       setAIStatus("live");

@@ -370,7 +370,8 @@
       "safe": false,
       "exits": {
         "west": 19,
-        "north": 18
+        "north": 18,
+        "east": 71
       },
       "details": {
         "wheel": "The wheel turns without grinding anything.",
@@ -1285,6 +1286,190 @@
         "The flame leans.",
         "The chamber is very still."
       ]
+    },
+    "71": {
+      "name": "The Fen Gate",
+      "text": "A low gate of woven willow stands where the mill path ends. Reeds crowd a narrow causeway; the abandoned mill is west, a reed walk climbs north, and a drowned orchard lies east. The air is wet and green.",
+      "safe": false,
+      "exits": {
+        "west": 20,
+        "north": 72,
+        "east": 73
+      },
+      "details": {
+        "gate": "The willow gate is tied with green cord.",
+        "reeds": "The reeds are taller than a person and never still.",
+        "causeway": "The causeway is made of bundled branches."
+      },
+      "ambient": [
+        "Water ticks under the causeway.",
+        "A heron calls somewhere north."
+      ]
+    },
+    "72": {
+      "name": "The Reed Walk",
+      "text": "A raised walk of split logs crosses the fen. Reeds close in on both sides and the water below is black. The gate is south; the heron pool waits north, and a peat cut opens east.",
+      "safe": false,
+      "exits": {
+        "south": 71,
+        "east": 74,
+        "north": 75
+      },
+      "details": {
+        "walk": "The logs are slick but sound.",
+        "reeds": "Something small moves between the stems.",
+        "water": "The water reflects a sky that is not quite the right colour."
+      },
+      "ambient": [
+        "The reeds whisper.",
+        "A frog stops mid-croak."
+      ]
+    },
+    "73": {
+      "name": "The Drowned Orchard",
+      "text": "Apple trees stand in standing water, their branches bare. A bog hound has made a nest of roots and mud. The fen gate is west; the peat cut is north.",
+      "safe": false,
+      "exits": {
+        "west": 71,
+        "north": 74
+      },
+      "details": {
+        "trees": "The trees are alive but bear no leaves.",
+        "nest": "The nest is woven from reeds and old bone.",
+        "water": "The water is warm.",
+        "bog hound": "A lean shape moves between the trunks."
+      },
+      "ambient": [
+        "An apple drops into the water.",
+        "The hound breathes somewhere close."
+      ]
+    },
+    "74": {
+      "name": "The Peat Cut",
+      "text": "A black cut through the peat, straight as a road. The walls are wet and smell of iron. The reed walk is west, the orchard south, and the causeway north.",
+      "safe": false,
+      "exits": {
+        "west": 72,
+        "south": 73,
+        "north": 76
+      },
+      "details": {
+        "peat": "The peat is layered like old paper.",
+        "walls": "Water seeps from the cut walls.",
+        "air": "The air is colder here."
+      },
+      "ambient": [
+        "Water drips into the cut.",
+        "The peat shifts underfoot."
+      ]
+    },
+    "75": {
+      "name": "The Heron Pool",
+      "text": "A round pool of still water with a heron standing at its edge. The bird does not move. The reed walk is south, and a sunken causeway runs east.",
+      "safe": true,
+      "exits": {
+        "south": 72,
+        "east": 76
+      },
+      "details": {
+        "heron": "The heron is grey and very patient.",
+        "pool": "The pool holds no reflection of the sky.",
+        "reeds": "A ring of reeds circles the water."
+      },
+      "ambient": [
+        "The heron tilts its head.",
+        "The pool is perfectly still."
+      ]
+    },
+    "76": {
+      "name": "The Sunken Causeway",
+      "text": "A stone causeway sinks into the fen, its blocks tilted and green. The heron pool is west, the peat cut south, and a field of lights waits north.",
+      "safe": false,
+      "exits": {
+        "west": 75,
+        "south": 74,
+        "north": 77
+      },
+      "details": {
+        "stones": "The stones are carved with worn knots.",
+        "water": "The water covers the causeway to the ankle.",
+        "lights": "Small lights drift over the reeds ahead."
+      },
+      "ambient": [
+        "The water is warm around your feet.",
+        "A light blinks out."
+      ]
+    },
+    "77": {
+      "name": "The Wisp Field",
+      "text": "A field of reeds and floating lights. The lights drift without wind, and one comes close enough to see. The causeway is south, and the old beacon rises east.",
+      "safe": false,
+      "exits": {
+        "south": 76,
+        "east": 78
+      },
+      "details": {
+        "lights": "Each light is a small, cold flame.",
+        "reeds": "The reeds are bent in a circle.",
+        "wisp": "A fen wisp watches from the stems."
+      },
+      "ambient": [
+        "A light circles your hand.",
+        "The reeds lean away from the lights."
+      ]
+    },
+    "78": {
+      "name": "The Old Beacon",
+      "text": "A stone beacon tower, cracked and leaning. A green key hangs from a hook inside the door. The wisp field is west, and the fen vault waits north.",
+      "safe": false,
+      "exits": {
+        "west": 77,
+        "north": 79
+      },
+      "details": {
+        "beacon": "The beacon's firebox is cold and full of rainwater.",
+        "key": "A green iron key hangs on a hook.",
+        "door": "The door is warped but open."
+      },
+      "ambient": [
+        "The tower creaks.",
+        "Rainwater drips inside the beacon."
+      ]
+    },
+    "79": {
+      "name": "The Fen Vault",
+      "text": "A low vault of green stone, half-sunk in the fen. An iron chest waits against the far wall. The old beacon is south, and the green heart waits east.",
+      "safe": false,
+      "exits": {
+        "south": 78,
+        "east": 80
+      },
+      "details": {
+        "chest": "The chest is bound with a green iron band.",
+        "walls": "The walls are cold and wet.",
+        "floor": "The floor is a single slab of green stone."
+      },
+      "ambient": [
+        "The chest ticks as it cools.",
+        "Water seeps under the door."
+      ]
+    },
+    "80": {
+      "name": "The Green Heart",
+      "text": "A round chamber around a living root, green and warm. The root pulses slowly, and the air smells of rain. The fen vault is west, and the root fills the room.",
+      "safe": false,
+      "exits": {
+        "west": 79
+      },
+      "details": {
+        "root": "The root is warm and moves with a slow heartbeat.",
+        "floor": "The floor is soft with moss.",
+        "air": "The air is full of tiny flying seeds."
+      },
+      "ambient": [
+        "The root pulses.",
+        "A seed drifts past your face."
+      ]
     }
   },
   "task": {
@@ -1993,6 +2178,68 @@
       ],
       "description": "A tall figure of black iron stands at the edge of the flame.",
       "examine": "The warden is jointed like a furnace door, and its eyes are coals."
+    },
+    {
+      "id": "fen-wisp",
+      "name": "a fen wisp",
+      "room": 77,
+      "home": 77,
+      "period": 30,
+      "jitter": 5,
+      "behaviour": "wander",
+      "zone": "fen",
+      "hp": 18,
+      "damage": 3,
+      "armor": 0,
+      "aggression": 40,
+      "xp": 30,
+      "loot": [
+        "wisp-glass"
+      ],
+      "description": "A cold light drifts above the reeds.",
+      "examine": "The wisp is a small flame with no fuel and no heat."
+    },
+    {
+      "id": "bog-hound",
+      "name": "a bog hound",
+      "room": 73,
+      "home": 73,
+      "period": 28,
+      "jitter": 4,
+      "behaviour": "wander",
+      "zone": "fen",
+      "hp": 16,
+      "damage": 4,
+      "armor": 1,
+      "aggression": 55,
+      "xp": 26,
+      "loot": [
+        "bog-fang"
+      ],
+      "description": "A lean hound the colour of wet peat.",
+      "examine": "Its fur is matted with mud and its eyes are yellow."
+    },
+    {
+      "id": "heron-keeper",
+      "name": "the heron keeper",
+      "room": 80,
+      "home": 80,
+      "period": 240,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "zone": "fen",
+      "hp": 40,
+      "damage": 0,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 0,
+      "description": "A tall figure in a cloak of grey feathers stands beside the root.",
+      "examine": "The keeper's hands are stained green.",
+      "dialogue": [
+        "The fen remembers every footstep.",
+        "The green key opens the vault.",
+        "The heart is older than the mill."
+      ]
     }
   ],
   "zones": [
@@ -2118,6 +2365,22 @@
         68,
         69,
         70
+      ]
+    },
+    {
+      "id": "fen",
+      "name": "The Hollow Fen",
+      "rooms": [
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80
       ]
     }
   ],
@@ -2902,6 +3165,105 @@
       "damage": 6,
       "value": 35,
       "examine": "A blade of black iron with a red edge. It hums when the flame moves.",
+      "forSale": false
+    },
+    {
+      "id": "wisp-glass",
+      "name": "a piece of wisp glass",
+      "room": 77,
+      "flags": [
+        "takeable"
+      ],
+      "value": 12,
+      "examine": "A shard of cold green glass. It is light enough to float.",
+      "forSale": false
+    },
+    {
+      "id": "bog-fang",
+      "name": "a bog fang",
+      "room": 73,
+      "flags": [
+        "takeable"
+      ],
+      "value": 8,
+      "examine": "A yellow fang, wet with peat.",
+      "forSale": false
+    },
+    {
+      "id": "fen-lantern",
+      "name": "a fen lantern",
+      "room": 72,
+      "flags": [
+        "takeable",
+        "light"
+      ],
+      "value": 15,
+      "examine": "A lantern of green glass. A pale flame burns inside.",
+      "forSale": false
+    },
+    {
+      "id": "green-key",
+      "name": "a green key",
+      "room": 78,
+      "flags": [
+        "takeable"
+      ],
+      "value": 18,
+      "examine": "An iron key with a bow of green glass.",
+      "forSale": false
+    },
+    {
+      "id": "fen-chest",
+      "name": "an iron chest",
+      "room": 79,
+      "flags": [
+        "fixed",
+        "container"
+      ],
+      "capacity": 2,
+      "open": false,
+      "value": 0,
+      "examine": "A chest of green iron, bound with a single band.",
+      "forSale": false
+    },
+    {
+      "id": "green-seed",
+      "name": "a green seed",
+      "inside": "fen-chest",
+      "flags": [
+        "takeable"
+      ],
+      "value": 20,
+      "examine": "A seed the size of a fist. It is warm and faintly moving.",
+      "forSale": false
+    },
+    {
+      "id": "fen-cloak",
+      "name": "a fen cloak",
+      "room": 71,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "cloak",
+      "armor": 2,
+      "value": 24,
+      "examine": "A cloak of grey-green wool that sheds water.",
+      "forSale": false
+    },
+    {
+      "id": "fen-staff",
+      "name": "a fen staff",
+      "room": 71,
+      "flags": [
+        "takeable",
+        "weapon"
+      ],
+      "slot": "mainhand",
+      "damage": 5,
+      "value": 30,
+      "examine": "A staff of black willow with a green glass cap.",
       "forSale": false
     }
   ],

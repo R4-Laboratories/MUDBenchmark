@@ -108,6 +108,11 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `ember-key` | The Ash Key | 8 | Enter the Ember Chapel; Carry the ash key | 180 xp |
 | `ember-flame` | The Ember Lantern | 9 | Stand at the First Flame; Carry an ember lantern; Carry the first coal | 400 xp |
 | `guild-ember` | The Ember Warden | 9 | Defeat the ember warden; Carry the first coal | 260 xp |
+| `fen-reed` | The Wisp Glass | 5 | Enter the Fen Gate; Carry a piece of wisp glass | 160 xp |
+| `fen-hound` | The Bog Hound | 5 | Defeat the bog hound; Carry a bog fang | 180 xp |
+| `fen-beacon` | The Old Beacon | 6 | Enter the Old Beacon; Carry the green key | 200 xp |
+| `fen-heart` | The Green Heart | 7 | Reach the Green Heart; Carry the green seed | 280 xp |
+| `guild-fen` | The Fen Wisp | 8 | Defeat a fen wisp; Carry a piece of wisp glass | 220 xp |
 
 ## Rooms
 
@@ -132,7 +137,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 17 | The Graveyard | wilds | no | east 11, south 21 |
 | 18 | The Deep Forest | wilds | no | west 15, south 20 |
 | 19 | The Riverbank | wilds | no | north 15, east 20, south 30 |
-| 20 | The Abandoned Mill | wilds | no | west 19, north 18 |
+| 20 | The Abandoned Mill | wilds | no | west 19, north 18, east 71 |
 | 21 | The Crypt Entrance | wilds | no | north 17, down 22 |
 | 22 | The Crypt Hall | wilds | no | up 21, east 23 |
 | 23 | The Ossuary | wilds | no | west 22 |
@@ -183,4 +188,14 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 68 | The Deep Door | ember | no | west 67, south 66, north 69 |
 | 69 | The Vault of Coals | ember | no | south 68, east 70 |
 | 70 | The First Flame | ember | no | west 69 |
+| 71 | The Fen Gate | fen | no | west 20, north 72, east 73 |
+| 72 | The Reed Walk | fen | no | south 71, east 74, north 75 |
+| 73 | The Drowned Orchard | fen | no | west 71, north 74 |
+| 74 | The Peat Cut | fen | no | west 72, south 73, north 76 |
+| 75 | The Heron Pool | fen | yes | south 72, east 76 |
+| 76 | The Sunken Causeway | fen | no | west 75, south 74, north 77 |
+| 77 | The Wisp Field | fen | no | south 76, east 78 |
+| 78 | The Old Beacon | fen | no | west 77, north 79 |
+| 79 | The Fen Vault | fen | no | south 78, east 80 |
+| 80 | The Green Heart | fen | no | west 79 |
 

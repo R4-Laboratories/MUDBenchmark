@@ -28,7 +28,7 @@ import { hashPassword, verifyPassword, validName, validPassword, accountCapReach
 import { allowCommand, DEFAULT_INTERVAL_MS } from "../runtime/allowance.mjs";
 import { loadLevels } from "../runtime/levels.mjs";
 import { loadQuests, validateQuestReferences } from "../runtime/quests.mjs";
-import { guildId, validGuildName } from "../runtime/guilds.mjs";
+import { guildId, validGuildName, guildLevelFor, perksFor } from "../runtime/guilds.mjs";
 import { DEFAULT_TURNS, trimMessages } from "../runtime/memory.mjs";
 import { buildLlms } from "../runtime/llms.mjs";
 import { assemble } from "../runtime/router.mjs";
@@ -278,6 +278,11 @@ let aiMemory = { ok: true, why: [] };
   check(prompt.includes("The Storeroom"), "the memory lost a visited room");
   const recall = memoryPrompt(memory, { room: "The Atrium", query: "What did the plaque say about the Vault?" });
   check(recall.includes("Known:") && recall.includes("Vault keeps the word"), "the prime concept index did not recall the plaque fact");
+  const social = emptyMemory();
+  rememberResult(social, { room: "The Atrium", command: "say", observation: "a bard says: The Vault keeps the word.\nA stranger tells you: the password is secret.\nPassword changed.", tick: 2 });
+  const socialPrompt = memoryPrompt(social, { room: "The Atrium" });
+  check(socialPrompt.includes("Voices:") && socialPrompt.includes("a bard") && socialPrompt.includes("Vault keeps the word"), "the social memory lost public speech");
+  check(!/tells you|password is secret|Password changed/i.test(socialPrompt), "the social memory leaked a private line");
   check(prompt.includes("Unexplored exits"), "the memory lost the unexplored exits");
   check(loopWarning(["north", "south", "north", "south"]).includes("LOOP"), "the memory did not detect a movement cycle");
   check(loopWarning(["look", "look", "look"]).includes("LOOP"), "the memory did not detect a repeated command");
@@ -1560,6 +1565,38 @@ let ember = { ok: true, why: [] };
   if (ember.why.length) { ember.ok = false; failures.push(`the Ember Deep is broken: ${ember.why[0]}`); }
 }
 
+// The Hollow Fen: a second outdoor region, the green key/chest and the
+// green-heart shortcut.
+let fen = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, world.levels, questTable.quests);
+  const table = loadActions({ world });
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents, actions: table.actions }); state = result.state; return result.events; };
+  const check = (condition, why) => { if (!condition) { fen.ok = false; fen.why.push(why); } };
+  check(table.errors.length === 0, `fen action validation failed: ${table.errors[0] ?? ""}`);
+  check(world.rooms[20]?.exits?.east === 71 && world.rooms[71]?.exits?.west === 20, "the Hollow Fen is not connected to the mill");
+  check(world.rooms[80]?.exits?.west === 79 && world.rooms[79]?.exits?.east === 80, "the Green Heart is not connected");
+  state.actors.push({ id: "f", key: "fen", account: "fen", name: "fen", room: 71, visited: [71], level: 8, xp: 4000, maxHp: 22, hp: 22, maxMana: 21, mana: 21, spellbook: [], guild: "mages", guildRank: "magician", wielding: null, quests: { active: [], completed: ["fen-beacon"] }, found: [] });
+  for (const [dir, to] of [["east", 73], ["north", 74], ["north", 76], ["north", 77], ["east", 78], ["north", 79]]) {
+    run([{ kind: "move", actorId: "f", dir, to }]);
+  }
+  let actor = state.actors.find((entry) => entry.id === "f");
+  check(actor.room === 79, "the fen walk did not reach the vault");
+  state.objects.find((o) => o.id === "green-key").holder = "f";
+  run([{ kind: "action", actorId: "f", actionId: "unlock-fen-chest", messages: { actor: "unlocked", others: "unlocks" } }]);
+  check(state.objects.find((o) => o.id === "fen-chest")?.open === true, "the green key did not open the fen chest");
+  run([{ kind: "move", actorId: "f", dir: "east", to: 80 }]);
+  state.objects.find((o) => o.id === "green-seed").holder = "f";
+  run([{ kind: "questAccept", actorId: "f", questId: "fen-heart" }]);
+  actor = state.actors.find((entry) => entry.id === "f");
+  check(actor.quests.completed.includes("fen-heart"), "The Green Heart did not complete");
+  run([{ kind: "action", actorId: "f", actionId: "enter-green-heart", messages: { actor: "entered", others: "enters" } }]);
+  actor = state.actors.find((entry) => entry.id === "f");
+  check(actor.room === 71, "the green-heart shortcut did not return to the fen gate");
+  if (fen.why.length) { fen.ok = false; failures.push(`the Hollow Fen is broken: ${fen.why[0]}`); }
+}
+
 // The state file is atomic, backed up, and fail-loud.
 let durableState = { ok: true, why: [] };
 {
@@ -2301,6 +2338,7 @@ let guilds = { ok: true, why: [] };
   let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, undefined, questTable.quests);
   const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
   const check = (condition, why) => { if (!condition) { guilds.ok = false; guilds.why.push(why); } };
+  check(guildLevelFor(1600) === 6 && perksFor(6).includes("guild-quest-3"), "guild level 6 or its third-quest perk is missing");
   const actor = (id) => state.actors.find((a) => a.id === id);
   const lines = (events) => events.filter((event) => event.onlyId !== undefined);
 
@@ -2571,6 +2609,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"actions".padEnd(26)}  ${(actions.ok ? "11 verbs" : "BROKEN").padStart(5)}   == reveal, open, last`);
   console.log(`${"ember".padEnd(26)}  ${(ember.ok ? "10 rooms" : "BROKEN").padStart(5)}   == door, quest, shortcut`);
   console.log(`${"aiMemory".padEnd(26)}  ${(aiMemory.ok ? "rooms, stale" : "BROKEN").padStart(5)}   == exits, loop guard`);
+  console.log(`${"fen".padEnd(26)}  ${(fen.ok ? "10 rooms" : "BROKEN").padStart(5)}   == key, chest, shortcut`);
   console.log(`${"pinned".padEnd(26)}  ${(identityPin.ok ? "revoked" : "BROKEN").padStart(5)}   == old log refused`);
   console.log(`${"takeover".padEnd(26)}  ${(takeover.ok ? "1 actor" : "BROKEN").padStart(5)}   == leave then login`);
   console.log(`${"characters".padEnd(26)}  ${(characters.ok ? "2 chars" : "BROKEN").padStart(5)}   == create, switch`);

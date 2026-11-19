@@ -681,6 +681,18 @@
       "level": "build",
       "statement": "The R4 note journal is bounded by MEMORY_MAX_NOTES (default 10,000) and MEMORY_RETENTION_DAYS (default 30), deduplicated and compacted on growth/startup; /api/sysinfo exposes notes_kept/max/retention. tools/r4-bench.mjs seeds game facts and runs 100 scoped queries, failing on any empty/failed result or p95 above 150ms. Wick run: 100/100, p50 2ms, p95 3ms, max 4ms, 0 empty, correct top facts. The Model inspector shows R4 hit/latency or fallback.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-108",
+      "level": "build",
+      "statement": "Social memory records public room speech and NPC dialogue per character, injects a Voices block, and filters private tells, mail, password/session lines before either the local memory or R4 receives text. The gate checks a public bard line is recalled and a private tell/password line never reaches the prompt.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-109",
+      "level": "build",
+      "statement": "The Hollow Fen adds ten connected rooms east of the Abandoned Mill, three mobiles, eight objects, two actions (green-key chest, green-heart shortcut) and five quests including the guild fen-wisp quest. Guild level 6 begins at 1600 XP and grants guild-quest-3, allowing three active guild quests. The world is 80 rooms / 36 quests; the gate walks the fen, opens the chest, completes The Green Heart, uses the shortcut and checks guild level 6.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

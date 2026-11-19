@@ -89,12 +89,46 @@ const retrieveNotes = (memory, query, room, limit = 3) => {
     .map((entry) => entry.note);
 };
 
+const PRIVATE_LINE = /(\btells you\b|^You tell\b|^You mail\b|^A letter from\b|^Password\b|^Account\b|^Signed in\b|^Welcome\b|^No such name\b|^That name\b|^That account\b|^You must sign in\b|^Goodbye\b|^#)/i;
+
+/** Public text only: speech in the room and observations, never tells/mail. */
+export function publicMemoryText(text) {
+  return String(text ?? "")
+    .replace(/\r/g, "")
+    .split("\n")
+    .filter((line) => !PRIVATE_LINE.test(line.trim()))
+    .join("\n")
+    .trim();
+}
+
+const indexSocial = (memory, { text, room, tick }) => {
+  const lines = publicMemoryText(text).split("\n");
+  memory.social ??= [];
+  for (const line of lines) {
+    const match = line.trim().match(/^([A-Za-z][\w' -]{0,40}) says:\s*(.+)$/);
+    if (!match) continue;
+    const speaker = match[1].trim();
+    if (/^you$/i.test(speaker)) continue;
+    const said = match[2].trim().slice(0, 180);
+    if (!said) continue;
+    const existing = memory.social.find((entry) => entry.speaker === speaker && entry.text === said);
+    if (existing) {
+      existing.tick = tick;
+      existing.room = room;
+      continue;
+    }
+    memory.social.push({ speaker, text: said, room, tick });
+  }
+  if (memory.social.length > 20) memory.social.splice(0, memory.social.length - 20);
+};
+
 export const emptyMemory = () => ({
   version: VERSION,
   rooms: {},
   lastRoom: null,
   visits: 0,
   notes: [],
+  social: [],
   updated: null,
 });
 
@@ -140,7 +174,9 @@ export function rememberResult(memory, { room, command, observation, tick = 0, a
   });
   known.count += 1;
   known.lastTick = tick;
-  indexNote(memory, { text: observation, room, command, tick });
+  const safeObservation = publicMemoryText(observation);
+  indexNote(memory, { text: safeObservation, room, command, tick });
+  indexSocial(memory, { text: safeObservation, room, tick });
   const digest = hash(observation);
   if (known.lastHash !== null && known.lastHash === digest) known.stale += 1;
   known.lastHash = digest;
@@ -168,6 +204,10 @@ export function memoryPrompt(memory, { room = null, exits = [], limit = 8, query
     if (tried.length) lines.push(`Tried here: ${tried.join(", ")}.`);
   } else if (room) {
     lines.push(`Current room: ${room}, not seen before in this run.`);
+  }
+  const voices = (memory.social ?? []).slice(-4);
+  if (voices.length) {
+    lines.push(`Voices: ${voices.map((entry) => `${entry.speaker}${entry.room ? ` (${entry.room})` : ""}: "${entry.text}"`).join(" | ")}`);
   }
   const known = retrieveNotes(memory, query, room, 3);
   if (known.length) {

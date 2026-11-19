@@ -1714,7 +1714,7 @@ async function handleCommand(id, line) {
       if (quest.scope === "guild") {
         const guild = state.guilds[actor.guild];
         const activeGuild = stateQ.active.filter((entry) => questById(QUESTS.quests, entry.id)?.scope === "guild").length;
-        const limit = guild?.perks?.includes("guild-quest-2") ? 2 : 1;
+        const limit = guild?.perks?.includes("guild-quest-3") ? 3 : guild?.perks?.includes("guild-quest-2") ? 2 : 1;
         if (activeGuild >= limit) return sendTo(id, `You can hold ${limit} active guild quest${limit === 1 ? "" : "s"} at this rank.\r\n`);
       }
       const missing = (quest.requires ?? []).find((required) => !stateQ.completed.includes(required));

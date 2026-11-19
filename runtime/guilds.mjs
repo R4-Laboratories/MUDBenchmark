@@ -16,7 +16,7 @@ export const rankAtLeast = (rank, wanted, ranks = RANKS) => {
   return have >= 0 && need >= 0 && have <= need;
 };
 
-export const GUILD_LEVELS = [0, 100, 300, 600, 1000];
+export const GUILD_LEVELS = [0, 100, 300, 600, 1000, 1600];
 
 export function guildLevelFor(xp) {
   let level = 1;
@@ -32,6 +32,7 @@ export function perksFor(level) {
   if (level >= 3) perks.push("trainer-discount");
   if (level >= 4) perks.push("guild-quest-2");
   if (level >= 5) perks.push("banner");
+  if (level >= 6) perks.push("guild-quest-3");
   return perks;
 }
 

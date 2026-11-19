@@ -257,6 +257,49 @@
         "actor": "You step into the first flame. Heat folds around you and the chamber is gone.",
         "others": "%a steps into the first flame and vanishes."
       }
+    },
+    {
+      "id": "unlock-fen-chest",
+      "verb": "unlock",
+      "target": "chest",
+      "room": 79,
+      "requires": {
+        "item": "green-key"
+      },
+      "effects": [
+        {
+          "kind": "open",
+          "object": "fen-chest"
+        },
+        {
+          "kind": "message",
+          "text": "The green iron band loosens and the chest opens."
+        }
+      ],
+      "messages": {
+        "actor": "You fit the green key to the chest. The band loosens.",
+        "others": "%a unlocks the green iron chest."
+      }
+    },
+    {
+      "id": "enter-green-heart",
+      "verb": "enter",
+      "target": "heart",
+      "room": 80,
+      "effects": [
+        {
+          "kind": "teleport",
+          "room": 71
+        },
+        {
+          "kind": "message",
+          "text": "The root folds around you and sets you down at the fen gate."
+        }
+      ],
+      "messages": {
+        "actor": "You step into the green heart. The root folds around you and the chamber is gone.",
+        "others": "%a steps into the green heart and vanishes."
+      }
     }
   ]
 }
