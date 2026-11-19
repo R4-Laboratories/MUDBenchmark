@@ -1,6 +1,6 @@
 # Next work
 
-Baseline: **v0.79.0**. The world has 97 rooms, 13 zones, 49 quests, 45 mobiles
+Baseline: **v0.80.0**. The world has 97 rooms, 13 zones, 49 quests, 45 mobiles
 and 93 objects. R4 memory, command grounding, scorecards
 and the public stats surface are live; signups are open and the Gemini demo is
 disabled and unconfigured.
@@ -15,7 +15,8 @@ memory or prompt system.
 | v0.77.0 | The Eclipse Court: six-room level-10 capstone, quest chain, keyed vault, dawn gate; balance sampler reads real world data | **done** (MB-125) |
 | v0.78.0 | Per-guild hall vault and the repeatable clerk's errand | **done** (MB-127) |
 | v0.79.0 | Social talk quest, chat-rate guard and reserved names | **done** (MB-129) |
-| v0.80.0 | Ignore/mute, titles and the next live-tuning pass | next |
+| v0.80.0 | Persistent ignore lists, quest-earned titles and telemetry tuning | **in flight** |
+| v0.81.0 | Memory-aware conversation quest and the next content slice | next |
 
 ## What is next
 
@@ -30,8 +31,9 @@ memory or prompt system.
    it.
 4. **Social quests.** `hall-word` adds a `talk` objective and a two-NPC
    conversation chain. A memory-aware conversation quest remains open.
-5. **Moderation.** Chat now has an eight-line/ten-second guard and reserved
-   names. Ignore/mute and a fuller blocked-name policy remain open.
+5. **Moderation.** Chat has an eight-line/ten-second guard, reserved names and
+   a persistent ignore list across tells, mail, channels, guild chat, socials
+   and room speech. A fuller blocked-name policy remains open.
 
 ## Historical workstreams
 
@@ -203,7 +205,8 @@ works; no key reaches the browser, transcript or telemetry.
 | v0.77.0 | The Eclipse Court level-10 capstone and real-data balance sampler | **done** (MB-125) |
 | v0.78.0 | Per-guild hall vault and the repeatable clerk's errand | **done** (MB-127) |
 | v0.79.0 | Social talk quest, chat-rate guard and reserved names | **done** (MB-129) |
-| v0.80.0 | Ignore/mute, titles and the next live-tuning pass | next |
+| v0.80.0 | Persistent ignore lists, quest-earned titles and telemetry tuning | **in flight** |
+| v0.81.0 | Memory-aware conversation quest and the next content slice | next |
 
 ## Risks
 

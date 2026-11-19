@@ -27,6 +27,7 @@ import { loadLevels, nextLevelXp } from "./levels.mjs";
 import { availableQuests, loadQuests, normalizeQuestState, questById, questLines, validateQuestReferences } from "./quests.mjs";
 import { GUILD_HALL, GUILD_VAULT_CAPACITY, RANKS, guildId, guildVaultHolder, rankAtLeast, validGuildName } from "./guilds.mjs";
 import { buildLlms } from "./llms.mjs";
+import { loadTitles, earnedTitles, titleLookup } from "./titles.mjs";
 import { hashPassword, verifyPassword, validName, validPassword, accountCapReached } from "./accounts.mjs";
 import { allowCommand as allowInput, DEFAULT_INTERVAL_MS } from "./allowance.mjs";
 import { chatAllowed } from "./moderation.mjs";
@@ -106,6 +107,18 @@ if (QUESTS.errors.length > 0) {
 if (process.env.SKIP_QUEST_VALIDATION !== "1") {
   for (const problem of validateQuestReferences(QUESTS.quests, { rooms: ROOMS, npcs: loaded.npcs, objects: loaded.objects })) {
     console.error(`quests: ${problem}`);
+    process.exit(1);
+  }
+}
+
+const TITLES = loadTitles();
+if (TITLES.errors.length > 0) {
+  for (const problem of TITLES.errors) console.error(`titles: ${problem}`);
+  process.exit(1);
+}
+for (const title of TITLES.titles) {
+  if (!QUESTS.quests.some((quest) => quest.id === title.quest)) {
+    console.error(`titles: ${title.id} names unknown quest ${title.quest}`);
     process.exit(1);
   }
 }
@@ -428,11 +441,12 @@ function publishLive(id, event) {
   return true;
 }
 
-function broadcast(room, text, exceptId) {
+function broadcast(room, text, exceptId, fromKey = null) {
   for (const a of actorsIn(room)) {
     // A guest has not signed in and is not playing. Do not let NPCs, weather or
     // other players scroll the login screen before authentication.
     if (!a.key || a.id === exceptId) continue;
+    if (fromKey && (a.ignored ?? []).includes(fromKey)) continue;
     sendTo(a.id, text);
   }
 }
@@ -606,6 +620,8 @@ function selfState(actor) {
     discovered: [...(actor.found ?? [])],
     guild: actor.guild ?? null,
     guild_rank: actor.guildRank ?? null,
+    title: actor.title ?? null,
+    ignoring: (actor.ignored ?? []).length,
     guild_vault: (state.guilds[actor.guild]?.vault ?? []).length,
     quests: {
       active: actor.quests?.active?.length ?? 0,
@@ -1263,7 +1279,7 @@ async function handleCommand(id, line) {
     if (!actor?.key) {
       return sendTo(id, "MUDBench is a persistent world for people and agents.\r\nSign in with your Prism id, or register <name> <password> / login <name> <password>.\r\nThen type help for the commands.\r\n");
     }
-    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: get/g/tf, drop/dp/dr, inventory/i, score/sc, quests/q, who/wh, spells/sp, cast/ca, say/sy, tell/te, give/gv, put/pt, open/op, close/cl, wear/wr, remove/rm, buy/b, sell/se, list/ls, map/mp, leaderboard/lb, levels/lv, shortcuts/sh.\r\nMagic: spells (effects/mana), train <spell> at the Mages' Guild, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search. Combat: attack/k, flee/fl, battle/combat/bt (current HP), score (armour/damage), equipment/eq (slots and totals). Guild: guild join/leave/who/list/chat, guild advance (Mages), vault/deposit/withdraw in the Guild Hall. Room actions: turn, push, ring where the room suggests.\r\nWorld: world or status (online, guilds, reset); levels, leaderboard/top/lb, map [zone], shortcuts, quests active|available|done|all.<id>; tutorial (first) for the first steps.\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
+    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: get/g/tf, drop/dp/dr, inventory/i, score/sc, quests/q, who/wh, spells/sp, cast/ca, say/sy, tell/te, give/gv, put/pt, open/op, close/cl, wear/wr, remove/rm, buy/b, sell/se, list/ls, map/mp, leaderboard/lb, levels/lv, shortcuts/sh.\r\nMagic: spells (effects/mana), train <spell> at the Mages' Guild, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search. Combat: attack/k, flee/fl, battle/combat/bt (current HP), score (armour/damage), equipment/eq (slots and totals). Guild: guild join/leave/who/list/chat, guild advance (Mages), vault/deposit/withdraw in the Guild Hall. Social: ignore/unignore/ignoring, titles/title. Room actions: turn, push, ring where the room suggests.\r\nWorld: world or status (online, guilds, reset); levels, leaderboard/top/lb, map [zone], shortcuts, quests active|available|done|all.<id>; tutorial (first) for the first steps.\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
   }
 
   // A command typed before the join tick lands is queued, not refused: the
@@ -1312,7 +1328,8 @@ async function handleCommand(id, line) {
       const guild = candidate.guild ? ` · ${candidate.guild}${candidate.guildRank ? ` (${candidate.guildRank})` : ""}` : "";
       const hp = candidate.maxHp ? ` · ${candidate.hp}/${candidate.maxHp} hp` : "";
       const quests = candidate.quests?.active?.length ?? 0;
-      return `${candidate.name} — level ${candidate.level ?? 1}, ${room}${hp}${guild} · ${quests} active quests${candidate.id === id ? " · you" : ""}`;
+      const title = candidate.title ? ` [${candidate.title}]` : "";
+      return `${candidate.name}${title} — level ${candidate.level ?? 1}, ${room}${hp}${guild} · ${quests} active quests${candidate.id === id ? " · you" : ""}`;
     });
     return sendTo(id, `Online (${online.length}):\r\n  ${lines.join("\r\n  ")}\r\nUse leaderboard for all characters.\r\n`);
   }
@@ -1624,6 +1641,7 @@ async function handleCommand(id, line) {
     const target = findActor(targetName);
     if (target && target.id === id) return sendTo(id, `${messages.self}\r\n`);
     if (!target) return sendTo(id, `${render(messages.missing, { words: targetName })}\r\n`);
+    if ((target.ignored ?? []).includes(actor.key)) return sendTo(id, "They are not listening.\r\n");
     pending.push({ kind: "tell", actorId: id, targetId: target.id, messages: {
       actor: render(messages.actor, { target: target.name, words: said }),
       target: render(messages.target, { actor: actor.name, words: said }),
@@ -1647,6 +1665,7 @@ async function handleCommand(id, line) {
     if (!known) return sendTo(id, `${render(messages.missing, { words: targetName })}\r\n`);
     const [toKey] = known;
     if (toKey === actor.key) return sendTo(id, `${messages.self}\r\n`);
+    if ((known[1].ignored ?? []).includes(actor.key)) return sendTo(id, "They are not accepting letters.\r\n");
     const online = state.actors.some((candidate) => candidate.key === toKey && candidate.id !== id);
     pending.push({ kind: "mail", actorId: id, toKey, text: said, messages: {
       actor: render(messages.actor, { target: known[1].name }),
@@ -1791,7 +1810,8 @@ async function handleCommand(id, line) {
     const nextXp = nextLevelXp(state.levels, actor.level);
     const stateQ = normalizeQuestState(actor.quests, QUESTS.quests);
     const effects = (actor.effects ?? []).length ? ` Effects: ${(actor.effects ?? []).map((effect) => `${effect.name} ${effect.rounds}`).join(", ")}.` : "";
-    const line = `Level ${actor.level} (${actor.xp}${nextXp === null ? "" : `/${nextXp}`} xp), ${actor.hp}/${actor.maxHp} hp, mana ${actor.mana ?? maxManaFor(actor)}/${actor.maxMana ?? maxManaFor(actor)}, armour ${armor}, damage ${weapon?.damage ?? 0}, spell power ${spellPower(actor, weapon?.damage ?? 0)}, ${weapon ? `wielding ${weapon.name}` : "unarmed"}${actor.guild ? `, guild ${actor.guild}` : ""}, ${stateQ.active.length} active/${stateQ.completed.length} done quests.${effects}`;
+    const title = actor.title ? ` Title ${actor.title}.` : "";
+    const line = `Level ${actor.level} (${actor.xp}${nextXp === null ? "" : `/${nextXp}`} xp), ${actor.hp}/${actor.maxHp} hp, mana ${actor.mana ?? maxManaFor(actor)}/${actor.maxMana ?? maxManaFor(actor)}, armour ${armor}, damage ${weapon?.damage ?? 0}, spell power ${spellPower(actor, weapon?.damage ?? 0)}, ${weapon ? `wielding ${weapon.name}` : "unarmed"}${actor.guild ? `, guild ${actor.guild}` : ""}, ${stateQ.active.length} active/${stateQ.completed.length} done quests.${title}${effects}`;
     return sendTo(id, `${render(messages.line, { words: line })}\r\n`);
   }
 
@@ -2066,6 +2086,56 @@ async function handleCommand(id, line) {
       others: render(messages.others, { actor: actor.name, words: said }),
     } });
     recordSpan("world.guild", { "actor.id": id, "guild.id": guild.id, "guild.action": "chat", "guild.name": guild.name, "recipients": recipients, "text.length": said.length, "world.tick": state.tick }, 0);
+    return;
+  }
+
+  if (named === "ignore" || named === "unignore") {
+    const messages = VERB_TABLE.verbs[named].messages;
+    const name = restRaw.join(" ").trim();
+    if (!name) return sendTo(id, `${messages.usage}\r\n`);
+    const entry = findIdentity(name);
+    if (!entry) return sendTo(id, `${render(messages.missing, { words: name })}\r\n`);
+    const [key, identity] = entry;
+    if (key === actor.key) return sendTo(id, `${named === "ignore" ? messages.self : "You cannot do that."}\r\n`);
+    const ignored = new Set(actor.ignored ?? []);
+    if (named === "ignore") {
+      if (ignored.has(key)) return sendTo(id, `${render(messages.already, { words: identity.name })}\r\n`);
+      pending.push({ kind: "ignore", actorId: id, targetKey: key, messages: { added: `${render(messages.added, { words: identity.name })}\r\n` } });
+      return;
+    }
+    if (!ignored.has(key)) return sendTo(id, `${render(messages.notIgnoring, { words: identity.name })}\r\n`);
+    pending.push({ kind: "unignore", actorId: id, targetKey: key, messages: { removed: `${render(messages.removed, { words: identity.name })}\r\n` } });
+    return;
+  }
+
+  if (named === "ignoring") {
+    const messages = VERB_TABLE.verbs.ignoring.messages;
+    const names = (actor.ignored ?? []).map((key) => state.identities[key]?.name ?? key);
+    if (!names.length) return sendTo(id, `${messages.empty}\r\n`);
+    return sendTo(id, `${render(messages.list, { words: names.join(", ") })}\r\n`);
+  }
+
+  if (named === "titles") {
+    const earned = earnedTitles(TITLES.titles, actor.quests?.completed ?? []);
+    if (!earned.length) return sendTo(id, "You have no titles yet. Quests earn them.\r\n");
+    const lines = earned.map((title) => `${title.name === actor.title ? "*" : " "} ${title.name} (${title.id}) — ${title.quest}`);
+    return sendTo(id, `Titles (* = worn; title <id|none>):\r\n  ${lines.join("\r\n  ")}\r\n`);
+  }
+
+  if (named === "title") {
+    const earned = earnedTitles(TITLES.titles, actor.quests?.completed ?? []);
+    const wanted = restRaw.join(" ").trim();
+    if (!wanted) {
+      const lines = earned.map((title) => `${title.name === actor.title ? "*" : " "} ${title.name} (${title.id})`);
+      return sendTo(id, earned.length ? `Titles (* = worn):\r\n  ${lines.join("\r\n  ")}\r\n` : "You have no titles yet.\r\n");
+    }
+    if (/^(none|clear|off)$/i.test(wanted)) {
+      pending.push({ kind: "setTitle", actorId: id, title: null });
+      return;
+    }
+    const title = titleLookup(earned, wanted);
+    if (!title) return sendTo(id, `You have not earned a title called ${wanted}.\r\n`);
+    pending.push({ kind: "setTitle", actorId: id, title: title.name });
     return;
   }
 
@@ -2375,13 +2445,13 @@ async function handle(id, line) {
 // --- the clock -----------------------------------------------------------
 
 function progressionSnapshot(actor) {
-  const { role, level, xp, guild, guildRank, quests, spellbook, maxMana, questCycles } = actor;
-  return JSON.stringify({ role, level, xp, guild, guildRank, quests, spellbook, maxMana, questCycles });
+  const { role, level, xp, guild, guildRank, quests, spellbook, maxMana, questCycles, ignored, title } = actor;
+  return JSON.stringify({ role, level, xp, guild, guildRank, quests, spellbook, maxMana, questCycles, ignored, title });
 }
 
 function onTick() {
   const intents = pending.splice(0);
-  const identityChanged = intents.some((intent) => ["login", "register", "password", "claim", "claimLegacy", "rebindLegacy", "createCharacter", "ownAccount", "retireAccount", "handoffCharacter", "revokeHandoff", "train", "guildAdvance"].includes(intent.kind));
+  const identityChanged = intents.some((intent) => ["login", "register", "password", "claim", "claimLegacy", "rebindLegacy", "createCharacter", "ownAccount", "retireAccount", "handoffCharacter", "revokeHandoff", "train", "guildAdvance", "ignore", "unignore", "setTitle"].includes(intent.kind));
   const previousProgress = new Map(state.actors.filter((actor) => actor.key)
     .map((actor) => [actor.id, progressionSnapshot(actor)]));
   const result = step({ state, rooms: ROOMS, intents, actions: ACTION_TABLE.actions });
@@ -2489,7 +2559,7 @@ function onTick() {
     const asLine = (text) => (typeof text === "string" ? (text.endsWith("\r\n") ? text : `${text}\r\n`) : "");
     if (typeof event.text === "string") {
       if (event.onlyId !== undefined) sendTo(event.onlyId, asLine(event.text));
-      else broadcast(event.room, asLine(event.text), event.exceptId);
+      else broadcast(event.room, asLine(event.text), event.exceptId, event.fromKey ?? null);
     }
   }
 

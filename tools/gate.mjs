@@ -26,6 +26,7 @@ import { loadChannels } from "../runtime/channels.mjs";
 import { loadSocials } from "../runtime/socials.mjs";
 import { hashPassword, verifyPassword, validName, validPassword, accountCapReached } from "../runtime/accounts.mjs";
 import { CHAT_LIMIT, CHAT_WINDOW_MS, chatAllowed } from "../runtime/moderation.mjs";
+import { loadTitles, earnedTitles } from "../runtime/titles.mjs";
 import { allowCommand, DEFAULT_INTERVAL_MS } from "../runtime/allowance.mjs";
 import { loadLevels } from "../runtime/levels.mjs";
 import { loadQuests, validateQuestReferences } from "../runtime/quests.mjs";
@@ -2596,6 +2597,70 @@ let social = { ok: true, why: [] };
   if (social.why.length) { social.ok = false; failures.push(`the social quest is broken: ${social.why[0]}`); }
 }
 
+// Ignore lists are persistent, and they cover every addressed channel: tells,
+// mail, global chat, guild chat, socials and the room's account of a say.
+let ignore = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, undefined, questTable.quests);
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
+  const check = (condition, why) => { if (!condition) { ignore.ok = false; ignore.why.push(why); } };
+  const lines = (events) => events.filter((event) => event.onlyId !== undefined);
+  run([{ kind: "join", actorId: "a", name: "alice" }, { kind: "join", actorId: "b", name: "bob" }]);
+  run([{ kind: "login", actorId: "a", key: "alice", authenticated: true }, { kind: "login", actorId: "b", key: "bob", authenticated: true }]);
+  run([{ kind: "ignore", actorId: "b", targetKey: "alice", messages: { added: "IG" } }]);
+  check(state.actors.find((entry) => entry.id === "b")?.ignored?.includes("alice"), "the ignore was not stored on the actor");
+  check(state.identities.bob?.ignored?.includes("alice"), "the ignore was not stored on the identity");
+  const told = lines(run([{ kind: "tell", actorId: "a", targetId: "b", messages: { actor: "TA", target: "TB" } }]));
+  check(told.length === 1 && told[0].text.includes("not listening"), "an ignored tell reached its target");
+  const channel = lines(run([{ kind: "channel", actorId: "a", channelId: "global", messages: { actor: "CA", others: "CO" } }]));
+  check(channel.length === 1 && channel[0].onlyId === "a", "an ignored global line reached the listener");
+  const social = lines(run([{ kind: "social", actorId: "a", targetId: null, messages: { actor: "UA", others: "UO", target: "UT", targeted: "UYOU", targetOthers: "UTO", self: "US", selfOthers: "USO" } }]));
+  check(social.length === 1 && social[0].onlyId === "a", "an ignored social reached the listener");
+  const mailed = lines(run([{ kind: "mail", actorId: "a", toKey: "bob", text: "hidden", messages: { actor: "MA", target: "MB" } }]));
+  check(mailed.length === 1 && mailed[0].text.includes("not accepting"), "an ignored letter was accepted or delivered");
+  check((state.mail ?? []).length === 0, "an ignored letter was stored");
+  const sayEvents = run([{ kind: "say", actorId: "a", text: "hello", messages: { actor: "SA", others: "SO" } }]);
+  check(sayEvents.some((event) => event.fromKey === "alice"), "a say did not carry the speaker key for delivery filtering");
+  run([{ kind: "unignore", actorId: "b", targetKey: "alice", messages: { removed: "UG" } }]);
+  check(!(state.actors.find((entry) => entry.id === "b")?.ignored ?? []).includes("alice"), "the unignore did not clear the list");
+  const again = lines(run([{ kind: "tell", actorId: "a", targetId: "b", messages: { actor: "TA2", target: "TB2" } }]));
+  check(again.length === 2, "a tell was still blocked after unignore");
+  checkpointIdentities(state);
+  check(state.identities.bob?.ignored?.length === 0, "the ignore list did not survive a checkpoint");
+  if (ignore.why.length) { ignore.ok = false; failures.push(`the ignore list is broken: ${ignore.why[0]}`); }
+}
+
+// Titles are earned facts: one completed quest unlocks one title, and the
+// chosen title is part of the character.
+let titles = { ok: true, why: [] };
+{
+  const table = loadTitles();
+  const check = (condition, why) => { if (!condition) { titles.ok = false; titles.why.push(why); } };
+  check(table.errors.length === 0, `title validation failed: ${table.errors[0] ?? ""}`);
+  for (const title of table.titles) {
+    if (!questTable.quests.some((quest) => quest.id === title.quest)) {
+      titles.ok = false;
+      titles.why.push(`${title.id} names unknown quest ${title.quest}`);
+    }
+  }
+  const world = loadWorld({ mode: "single" });
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, undefined, questTable.quests);
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
+  state.actors.push({ id: "t", key: "titled", account: "titled", name: "titled", room: 1, visited: [1], level: 10, xp: 30000, maxHp: 28, hp: 28, maxMana: 27, mana: 27, spellbook: [], guild: null, guildRank: null, wielding: null, quests: { active: [], completed: ["first-steps", "eclipse-throne"] }, ignored: [], title: null });
+  const earned = earnedTitles(table.titles, state.actors[0].quests.completed);
+  check(earned.length === 2, "the earned titles do not follow completed quests");
+  run([{ kind: "setTitle", actorId: "t", title: "Dawnbringer" }]);
+  let actor = state.actors.find((entry) => entry.id === "t");
+  check(actor.title === "Dawnbringer", "the title was not worn");
+  checkpointIdentities(state);
+  check(state.identities.titled?.title === "Dawnbringer", "the title did not survive a checkpoint");
+  run([{ kind: "setTitle", actorId: "t", title: null }]);
+  actor = state.actors.find((entry) => entry.id === "t");
+  check(actor.title === null, "the title was not cleared");
+  if (titles.why.length) { titles.ok = false; failures.push(`titles are broken: ${titles.why[0]}`); }
+}
+
 // Guilds: one name, a roster, ranks, a chat that reaches only members, and a
 // membership that survives a restart.
 let guilds = { ok: true, why: [] };
@@ -2956,6 +3021,8 @@ if (process.argv.includes("--json")) {
   console.log(`${"repeatable".padEnd(26)}  ${(repeatable.ok ? "80 xp" : "BROKEN").padStart(5)}   == cycle, deliver`);
   console.log(`${"social".padEnd(26)}  ${(social.ok ? "70 xp" : "BROKEN").padStart(5)}   == talk, quest`);
   console.log(`${"chatGuard".padEnd(26)}  ${(chatGuard.ok ? "8/10s" : "BROKEN").padStart(5)}   == rate limit`);
+  console.log(`${"ignore".padEnd(26)}  ${(ignore.ok ? "5 paths" : "BROKEN").padStart(5)}   == tell, mail, chat`);
+  console.log(`${"titles".padEnd(26)}  ${(titles.ok ? "3 earned" : "BROKEN").padStart(5)}   == select, persist`);
   console.log(`${"quests".padEnd(26)}  ${(quests.ok ? "accept, advance, pay" : "BROKEN").padStart(5)}   == facts, once`);
   console.log(`${"aggression".padEnd(26)}  ${(aggression.ok ? "1 duel" : "BROKEN").padStart(5)}   == mobs start fights`);
   console.log(`${"combat2".padEnd(26)}  ${(combat2.ok ? "weapons, armour, xp" : "BROKEN").padStart(5)}   == fight and grow`);

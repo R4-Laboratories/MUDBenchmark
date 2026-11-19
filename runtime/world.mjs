@@ -393,6 +393,8 @@ export function upgradeState(saved, base) {
       kind: "character",
       owner,
       name,
+      ignored: Array.isArray(identity.ignored) ? [...identity.ignored] : [],
+      title: typeof identity.title === "string" ? identity.title : null,
       level: identity.level ?? 1,
       xp: identity.xp ?? 0,
       guild: guilds[identity.guild] ? identity.guild : null,
@@ -521,6 +523,8 @@ export function checkpointIdentities(state) {
       guild: actor.guild ?? null,
       guildRank: actor.guildRank ?? null,
       quests: actor.quests ?? { active: [], completed: [] },
+      ignored: [...(actor.ignored ?? [])],
+      title: actor.title ?? null,
       spellbook: [...(actor.spellbook ?? [])],
       maxMana: actor.maxMana ?? maxManaFor(actor),
       questCycles: { ...(actor.questCycles ?? {}) },
@@ -836,6 +840,34 @@ export function step({ state, rooms, intents, actions = [] }) {
       continue;
     }
 
+    if (intent.kind === "ignore" || intent.kind === "unignore") {
+      const actor = find(intent.actorId);
+      if (!actor?.key || typeof intent.targetKey !== "string" || intent.targetKey === actor.key) continue;
+      const target = next.identities[intent.targetKey];
+      if (!target) continue;
+      const ignored = new Set(actor.ignored ?? []);
+      if (intent.kind === "ignore") {
+        ignored.add(intent.targetKey);
+        actor.ignored = [...ignored];
+        events.push({ onlyId: actor.id, text: intent.messages?.added ?? `You ignore ${target.name}.\r\n` });
+      } else {
+        ignored.delete(intent.targetKey);
+        actor.ignored = [...ignored];
+        events.push({ onlyId: actor.id, text: intent.messages?.removed ?? `You are no longer ignoring ${target.name}.\r\n` });
+      }
+      next.identities[actor.key] = { ...next.identities[actor.key], ignored: actor.ignored };
+      continue;
+    }
+
+    if (intent.kind === "setTitle") {
+      const actor = find(intent.actorId);
+      if (!actor?.key) continue;
+      actor.title = typeof intent.title === "string" && intent.title.trim() ? intent.title.trim() : null;
+      next.identities[actor.key] = { ...next.identities[actor.key], title: actor.title };
+      events.push({ onlyId: actor.id, text: actor.title ? `Title set: ${actor.title}.\r\n` : "Title cleared.\r\n" });
+      continue;
+    }
+
     if (intent.kind === "talk") {
       const actor = find(intent.actorId);
       const npc = next.npcs.find((entry) => entry.id === intent.npcId && entry.room === actor?.room && !entry.dead);
@@ -1030,6 +1062,7 @@ export function step({ state, rooms, intents, actions = [] }) {
       if (!guild) continue;
       for (const member of next.actors) {
         if (member.guild !== guild.id) continue;
+        if (member.id !== actor.id && (member.ignored ?? []).includes(actor.key)) continue;
         events.push({ onlyId: member.id, text: member.id === actor.id ? intent.messages.actor : intent.messages.others });
       }
       continue;
@@ -1138,6 +1171,8 @@ export function step({ state, rooms, intents, actions = [] }) {
       actor.armorBonus = 0;
       actor.buffUntil = null;
       actor.questCycles = { ...(known.questCycles ?? {}) };
+      actor.ignored = [...(known.ignored ?? [])];
+      actor.title = known.title ?? null;
       actor.guild = next.guilds[known.guild] ? known.guild : null;
       actor.guildRank = actor.guild ? (next.guilds[actor.guild].members[actor.key] ?? null) : null;
       actor.quests = {
@@ -1157,10 +1192,13 @@ export function step({ state, rooms, intents, actions = [] }) {
         guild: actor.guild,
         guildRank: actor.guildRank,
         quests: actor.quests,
+        ignored: actor.ignored,
+        title: actor.title,
       };
       advanceQuests(next, actor, { kind: "visit", room: actor.room }, events);
       for (const letter of next.mail) {
         if (letter.toKey !== actor.key || letter.read) continue;
+        if ((actor.ignored ?? []).includes(letter.fromKey)) { letter.read = true; continue; }
         letter.read = true;
         events.push({ onlyId: actor.id, text: `A letter from ${letter.from}, sent at tick ${letter.tick}: ${letter.text}` });
       }
@@ -1682,7 +1720,7 @@ export function step({ state, rooms, intents, actions = [] }) {
     }
 
     if (intent.kind === "say") {
-      events.push({ room: actor.room, text: intent.messages?.others ?? `${actor.name} says: ${intent.text}`, exceptId: actor.id });
+      events.push({ room: actor.room, text: intent.messages?.others ?? `${actor.name} says: ${intent.text}`, exceptId: actor.id, fromKey: actor.key });
       events.push({ onlyId: actor.id, text: intent.messages?.actor ?? `You say: ${intent.text}` });
       continue;
     }
@@ -1694,6 +1732,7 @@ export function step({ state, rooms, intents, actions = [] }) {
       if (!channel) continue;
       if ((actor.role ?? 0) < channel.minRole) continue;
       for (const listener of next.actors) {
+        if (listener.id !== actor.id && (listener.ignored ?? []).includes(actor.key)) continue;
         if (listener.id === actor.id) {
           events.push({ onlyId: listener.id, text: intent.messages.actor });
         } else {
@@ -1706,6 +1745,10 @@ export function step({ state, rooms, intents, actions = [] }) {
     if (intent.kind === "tell") {
       const target = next.actors.find((a) => a.id === intent.targetId);
       if (!target || target.id === actor.id) continue;
+      if ((target.ignored ?? []).includes(actor.key)) {
+        events.push({ onlyId: actor.id, text: "They are not listening.\r\n" });
+        continue;
+      }
       events.push({ onlyId: actor.id, text: intent.messages.actor });
       events.push({ onlyId: target.id, text: intent.messages.target });
       continue;
@@ -1714,6 +1757,10 @@ export function step({ state, rooms, intents, actions = [] }) {
     // Mail is a tell that waits. It is stored against the identity key, not the
     // actor, so a letter reaches someone who was not there when it was written.
     if (intent.kind === "mail") {
+      if ((next.identities[intent.toKey]?.ignored ?? []).includes(actor.key)) {
+        events.push({ onlyId: actor.id, text: "They are not accepting letters.\r\n" });
+        continue;
+      }
       const online = next.actors.find((a) => a.key === intent.toKey && a.id !== actor.id);
       const letter = {
         id: `mail-${next.tick}-${intent.actorId}-${next.mail.length}`,
@@ -1739,6 +1786,7 @@ export function step({ state, rooms, intents, actions = [] }) {
       if (intent.targetId !== null && !target) continue;
       for (const listener of next.actors) {
         if (listener.room !== actor.room) continue;
+        if (listener.id !== actor.id && (listener.ignored ?? []).includes(actor.key)) continue;
         let line;
         if (target === null) line = listener.id === actor.id ? intent.messages.actor : intent.messages.others;
         else if (listener.id === actor.id) line = target.id === actor.id ? intent.messages.self : intent.messages.target;

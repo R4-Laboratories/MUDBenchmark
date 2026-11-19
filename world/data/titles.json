@@ -1,0 +1,19 @@
+{
+  "titles": [
+    {
+      "id": "newcomer",
+      "name": "Newcomer",
+      "quest": "first-steps"
+    },
+    {
+      "id": "moonwarden",
+      "name": "Moonwarden",
+      "quest": "moon-stag"
+    },
+    {
+      "id": "dawnbringer",
+      "name": "Dawnbringer",
+      "quest": "eclipse-throne"
+    }
+  ]
+}

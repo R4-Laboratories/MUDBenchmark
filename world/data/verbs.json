@@ -585,6 +585,64 @@
         "wrongRoom": "The guild vault is in the Guild Hall, south of the Gilded Rat.",
         "missing": "The vault has no %s."
       }
+    },
+    "ignore": {
+      "aliases": [
+        "ign",
+        "mute"
+      ],
+      "argument": "actor",
+      "messages": {
+        "usage": "Ignore whom? ignore <name>.",
+        "missing": "No one named %s has been here.",
+        "self": "You cannot ignore yourself.",
+        "already": "You are already ignoring %s.",
+        "added": "You ignore %s. Their tells, mail and public lines no longer reach you."
+      }
+    },
+    "unignore": {
+      "aliases": [
+        "unign",
+        "unmute"
+      ],
+      "argument": "actor",
+      "messages": {
+        "usage": "Unignore whom? unignore <name>.",
+        "missing": "No one named %s has been here.",
+        "notIgnoring": "You are not ignoring %s.",
+        "removed": "You are no longer ignoring %s."
+      }
+    },
+    "ignoring": {
+      "aliases": [
+        "ignored",
+        "ignores"
+      ],
+      "argument": "none",
+      "messages": {
+        "empty": "You are not ignoring anyone.",
+        "list": "Ignoring: %s."
+      }
+    },
+    "titles": {
+      "aliases": [
+        "titlelist",
+        "achievements"
+      ],
+      "argument": "none",
+      "messages": {
+        "none": "Titles are earned by completing quests."
+      }
+    },
+    "title": {
+      "aliases": [
+        "settitle"
+      ],
+      "argument": "title or none",
+      "messages": {
+        "usage": "title <id|name>, or title none.",
+        "missing": "You have not earned a title called %s."
+      }
     }
   }
 }

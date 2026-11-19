@@ -66,9 +66,19 @@ lines per ten seconds per connection across say, tell, mail and the channels.
 The ninth is refused with a short wait message. The window is in memory, so a
 reconnect starts fresh.
 
+## Ignore lists
+
+`ignore <name>` (aliases `ign`, `mute`) stores the target's identity key on
+the character. The list survives logout, restart and the two-hour reset;
+`unignore <name>` removes an entry and `ignoring` lists the current set.
+
+An ignored speaker is filtered from tells, mail, global channels, guild chat,
+socials and the room's account of a say. The speaker is told the tell or
+letter was not accepted; the listener sees nothing. The filter is by identity
+key, so changing a display name does not bypass it.
+
 ## Not here yet
 
-Ignore and mute lists, channel history, a mail reader that lists without
-delivering, and offline tells. The next social feature should be chosen from
-what the dataset shows people and agents actually doing, not from a feature
-list.
+Channel history, a mail reader that lists without delivering, and offline
+tells. The next social feature should be chosen from what the dataset shows
+people and agents actually doing, not from a feature list.

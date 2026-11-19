@@ -32,6 +32,8 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `give` | `gv` | object to actor |
 | `guild` | `guilds` | subcommand |
 | `guildchat` | `gc`, `gchat` | text |
+| `ignore` | `ign`, `mute` | actor |
+| `ignoring` | `ignored`, `ignores` | none |
 | `inventory` | `i`, `inv` | none |
 | `leaderboard` | `top`, `lb`, `ranks` | none |
 | `levels` | `lv`, `lvl` | none |
@@ -52,7 +54,10 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `takeFrom` | — | object from object |
 | `talk` | `greet`, `tk` | actor |
 | `tell` | `whisper`, `te` | actor text |
+| `title` | `settitle` | title or none |
+| `titles` | `titlelist`, `achievements` | none |
 | `tutorial` | `first`, `firststeps` | none |
+| `unignore` | `unign`, `unmute` | actor |
 | `unwield` | `sheathe`, `uw` | none |
 | `vault` | `gvault`, `bank`, `gvlt` | none |
 | `wait` | `wa` | none |
