@@ -741,6 +741,12 @@
       "level": "build",
       "statement": "Spell power now scales with level and equipped focus: spark/mend add the scaling power, shield adds a level/focus ward, and score/equipment/spells show armor, damage and spell power. The Salt Caves add five rooms, three mobiles, five objects, a keyed chest, a return shortcut and two quests, bringing the world to 85 rooms/38 quests/38 mobiles/76 objects/11 zones. First-run First steps and watch-page spectator prompts explain the game. The gate covers spell power, the salt walk/chest/shortcut and all world references.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-118",
+      "level": "some-true",
+      "statement": "Production v0.73.0 serves 85 rooms, 11 zones, 38 quests, 38 mobiles and 76 objects. Spell power scales with level and equipped focus (spark/mend support, shield ward), and score/equipment/spells show armor/damage/spell power. The Salt Caves add five rooms, two quests, a brine-key chest and a return shortcut. First steps and watch-page spectator prompts are live. Shortcuts cover 115 verb keys and 30 socials; /stats and /leaderboard remain. Gate 44540055374 and the real-holo/crash-recovery tests pass after restoring the quests completed line.",
+      "authority": "wick production v0.73.0 2026-11-19; release 44541604675; gate 44540055374; /health and /world; /llms; holo/crash tests"
     }
   ]
 }

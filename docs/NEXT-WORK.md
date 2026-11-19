@@ -186,7 +186,8 @@ Only after A/B:
 | v0.70.0 | Stream archive/clips, quota alerts, signup mode, restore drill | **done** (MB-111/112) |
 | v0.71.0 | Visibility commands: who, quests, levels, leaderboard, map, shortcuts | **done** (MB-113) |
 | v0.72.0 | Full shortcut map, socials, battle/stat visibility, public stats | **done** (MB-114/115) |
-| v0.73.0 | More quests, onboarding and spectator prompts | next |
+| v0.73.0 | Scaled spells, Salt Caves, first-run/spectator prompts | **done** (MB-117/118) |
+| v0.74.0 | Combat balance, deeper quest chains and onboarding follow-through | next |
 
 ## Risks
 
