@@ -75,6 +75,13 @@ jobs:
           HOLO=$(ls -dt world/.prism/build/*/ | head -1)MUDBench.holo
           npx -y prism-code@0.5.0 vectors "$HOLO"
 
+      - name: Exercise gameplay with the built guest
+        run: |
+          npm ci --prefix runtime --no-audit --no-fund
+          npm install --prefix "$RUNNER_TEMP/mudbench-tools" --no-save --no-audit --no-fund prism-code@0.5.0
+          HOLO=$(ls -dt world/.prism/build/*/ | head -1)MUDBench.holo
+          MUD_HOLO="$HOLO" MUD_PRISM_CODE="$RUNNER_TEMP/mudbench-tools/node_modules/.bin/prism-code" node --test runtime/real-holo.test.mjs
+
       - name: Keep the artifact
         uses: actions/upload-artifact@v4
         with:
