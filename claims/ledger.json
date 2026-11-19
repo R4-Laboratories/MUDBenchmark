@@ -675,6 +675,12 @@
       "level": "some-true",
       "statement": "Production v0.68.2 serves grounded actions and scorecards alongside the R4 sidecar. The AI trend set reports 416 turns at Gemini p50 1091ms / p95 1651ms, rooms_seen_max 26, r4_hits 414, loops 36 and zero errors; the invalid field is recorded for every turn (0 on that sample). The hardened deploy script waited for login assets plus /health and v0.68.2 deployed without the transient rollback. The R4 sidecar remains active and loopback-only.",
       "authority": "wick production v0.68.2 2026-11-19; release 44445659872; gate 44444625540; /trends; /health; R4 /api/sysinfo; deploy log"
+    },
+    {
+      "id": "MB-107",
+      "level": "build",
+      "statement": "The R4 note journal is bounded by MEMORY_MAX_NOTES (default 10,000) and MEMORY_RETENTION_DAYS (default 30), deduplicated and compacted on growth/startup; /api/sysinfo exposes notes_kept/max/retention. tools/r4-bench.mjs seeds game facts and runs 100 scoped queries, failing on any empty/failed result or p95 above 150ms. Wick run: 100/100, p50 2ms, p95 3ms, max 4ms, 0 empty, correct top facts. The Model inspector shows R4 hit/latency or fallback.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

@@ -192,6 +192,9 @@ Rehearsed 2026-11-16:
   (MB-104);
 - v0.68.2 (deploy readiness) waits for login assets **and** /health for up to
   50s before rolling back, fixing the transient asset-check rollback (MB-105);
+- v0.68.3 (R4 hardening) bounds and compacts the note journal, adds the
+  100-query scoped benchmark (p95 3ms on wick), and shows R4 hit/latency or
+  fallback in the Model inspector (MB-107);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

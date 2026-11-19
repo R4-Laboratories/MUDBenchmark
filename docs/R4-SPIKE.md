@@ -28,6 +28,8 @@ used about **1.1 GB** of memory.
 | warm scoped context | 5–20 ms | scoped notes only |
 | remember call | 10–20 ms | append note journal |
 | resident memory | ~760 MB | no generation model |
+| 100 scoped queries | p50 2ms, p95 3ms, max 4ms | 0 empty, 0 failures |
+| journal | 797 notes | max 10k / 30d, compacted |
 
 The original 9–14 s measurements came from per-turn indexing and rewriting the
 349 MB cache. The full router is viable when the request path is split:

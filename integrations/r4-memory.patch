@@ -1,5 +1,5 @@
 diff --git a/server.py b/server.py
-index 154fd3f..7aa467d 100644
+index 154fd3f..cb99608 100644
 --- a/server.py
 +++ b/server.py
 @@ -1260,7 +1260,7 @@ def generate_geometric_response_with_trajectory(prompt_text, S, max_len=30, grav
@@ -20,15 +20,18 @@ index 154fd3f..7aa467d 100644
          scoped_items = scoped_index.get(win_idx, [])
          if not shared_items and not scoped_items:
              continue
-@@ -1425,6 +1425,7 @@ def index_corpus(corpus_text: str):
+@@ -1425,6 +1425,10 @@ def index_corpus(corpus_text: str):
      return indexed_count
  
  CACHE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "manifold_cache.json")
 +MEMORY_NOTES_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "memory_notes.jsonl")
++MEMORY_MAX_NOTES = max(100, int(os.environ.get("MEMORY_MAX_NOTES", "10000")))
++MEMORY_RETENTION_DAYS = max(1, int(os.environ.get("MEMORY_RETENTION_DAYS", "30")))
++NOTE_COUNT = 0
  
  # GloVe flag — set to True once GloVe vectors are loaded into VOCAB_VECTORS
  GLOVE_LOADED = False
-@@ -1566,7 +1567,7 @@ def save_manifold_cache(filepath: str):
+@@ -1566,7 +1570,7 @@ def save_manifold_cache(filepath: str):
  # Ollama config
  OLLAMA_URL   = os.environ.get("OLLAMA_URL", "http://127.0.0.1:11434")
  OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "gemma4:e2b")
@@ -37,7 +40,17 @@ index 154fd3f..7aa467d 100644
  
  VOCAB_LIST = []
  VOCAB_MATRIX = None
-@@ -2588,6 +2589,81 @@ class RouterAPIHandler(BaseHTTPRequestHandler):
+@@ -2349,6 +2353,9 @@ class RouterAPIHandler(BaseHTTPRequestHandler):
+                 "routing_latency_p95_ms": round(_percentile(rl, 95), 2),
+                 "gen_latency_p50_ms": round(_percentile(gl, 50), 2),
+                 "gen_latency_p95_ms": round(_percentile(gl, 95), 2),
++                "notes_kept": NOTE_COUNT,
++                "notes_max": MEMORY_MAX_NOTES,
++                "notes_retention_days": MEMORY_RETENTION_DAYS,
+                 "glove_loaded": GLOVE_LOADED,
+                 "otel_available": OTEL_AVAILABLE,
+             }
+@@ -2588,6 +2595,81 @@ class RouterAPIHandler(BaseHTTPRequestHandler):
                  self.send_header("Content-Type", "application/json")
                  self.end_headers()
                  self.wfile.write(json.dumps({"error": str(e)}).encode('utf-8'))
@@ -119,18 +132,66 @@ index 154fd3f..7aa467d 100644
          elif self.path == "/api/preload":
              _record_request("/api/preload")
              try:
-@@ -2960,6 +3036,30 @@ def index_single_sentence(s: str, identity: str | None = None):
+@@ -2960,6 +3042,79 @@ def index_single_sentence(s: str, identity: str | None = None):
      build_2nd_order_transitions()
      build_transitions_2nd_by_first()
  
++def _read_note_lines():
++    if not os.path.exists(MEMORY_NOTES_FILE):
++        return []
++    lines = []
++    with open(MEMORY_NOTES_FILE, "r", encoding="utf-8") as handle:
++        for line in handle:
++            line = line.strip()
++            if line:
++                lines.append(line)
++    return lines
++
++
++def compact_memory_notes():
++    """Keep the journal bounded and drop old notes; preserve the newest copy."""
++    global NOTE_COUNT
++    lines = _read_note_lines()
++    cutoff = time.time() - MEMORY_RETENTION_DAYS * 86400
++    kept = {}
++    for line in lines:
++        try:
++            note = json.loads(line)
++        except Exception:
++            continue
++        at = note.get("at")
++        if isinstance(at, (int, float)) and at < cutoff:
++            continue
++        identity = str(note.get("identity", "")).strip()
++        text = str(note.get("text", "")).strip()
++        if not identity or not text:
++            continue
++        kept[(identity, text)] = {"identity": identity, "text": text, "at": at if isinstance(at, (int, float)) else time.time()}
++    ordered = list(kept.values())[-MEMORY_MAX_NOTES:]
++    tmp = f"{MEMORY_NOTES_FILE}.tmp"
++    with open(tmp, "w", encoding="utf-8") as handle:
++        for note in ordered:
++            handle.write(json.dumps(note) + "\n")
++    os.replace(tmp, MEMORY_NOTES_FILE)
++    NOTE_COUNT = len(ordered)
++    return NOTE_COUNT
++
++
 +def append_memory_note(identity, text):
++    global NOTE_COUNT
 +    with open(MEMORY_NOTES_FILE, "a", encoding="utf-8") as handle:
 +        handle.write(json.dumps({"identity": identity, "text": text, "at": time.time()}) + "\n")
++    NOTE_COUNT += 1
++    if NOTE_COUNT > MEMORY_MAX_NOTES * 1.2:
++        compact_memory_notes()
 +
 +
 +def load_memory_notes():
++    global NOTE_COUNT
 +    if not os.path.exists(MEMORY_NOTES_FILE):
++        NOTE_COUNT = 0
 +        return 0
++    compact_memory_notes()
 +    loaded = 0
 +    with open(MEMORY_NOTES_FILE, "r", encoding="utf-8") as handle:
 +        for line in handle:
@@ -143,14 +204,15 @@ index 154fd3f..7aa467d 100644
 +                    loaded += 1
 +            except Exception:
 +                continue
-+    print(f"[+] Loaded {loaded} game memory notes")
++    NOTE_COUNT = loaded
++    print(f"[+] Loaded {loaded} game memory notes (max {MEMORY_MAX_NOTES}, {MEMORY_RETENTION_DAYS}d)")
 +    return loaded
 +
 +
  def run_server(port=8000):
      # 1. Start Ollama and verify OLLAMA_MODEL is pulled
      print("[*] Verifying Ollama service status...")
-@@ -3023,6 +3123,10 @@ def run_server(port=8000):
+@@ -3023,6 +3178,10 @@ def run_server(port=8000):
  
      # Try to load cached manifold model first (sub-second boot)
      cache_loaded = load_manifold_cache(CACHE_FILE)

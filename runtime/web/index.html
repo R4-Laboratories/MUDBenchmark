@@ -1016,7 +1016,7 @@
     demoToken: null, demoTokenExpires: 0, demoWaiters: [],
     memory: null, memoryKey: null, commandRoom: null, exits: [],
     r4Waiters: [], r4DownUntil: 0,
-    lastInvalid: null, lastValidation: null, loopBroken: false, lastR4: false,
+    lastInvalid: null, lastValidation: null, loopBroken: false, lastR4: false, r4LastLatency: 0,
   };
   const shortId = (id) => (id ? `${id.slice(0, 15)}…` : "—");
 
@@ -2068,6 +2068,7 @@
     AI.lastValidation = null;
     AI.loopBroken = false;
     AI.lastR4 = false;
+    AI.r4LastLatency = 0;
     AI.lastReply = null;
     AI.lastParsed = null;
     AI.lastLatency = 0;
@@ -2414,7 +2415,7 @@
       ["Last latency", AI.lastLatency ? `${(AI.lastLatency / 1000).toFixed(1)}s` : "—"],
       ["Invalid", AI.lastValidation?.invalid ? "yes" : "no"],
       ["Rooms seen", String(Object.keys(AI.memory?.rooms ?? {}).length)],
-      ["R4", AI.lastR4 ? "hit" : "local"],
+      ["R4", AI.lastR4 ? `hit ${AI.r4LastLatency}ms` : (AI.r4DownUntil > Date.now() ? "fallback" : "local")],
       ["Context", `${messages.length} msgs · ${contextChars} chars`],
       ["Last command", AI.lastCommand || "—"],
       ["Error", AI.lastError || "—"],
@@ -2708,6 +2709,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
           const r4 = await requestR4Context(`${AI.room || ""} ${observation}`);
           r4Text = String(r4?.context ?? "").trim();
           AI.lastR4 = Boolean(r4Text);
+          AI.r4LastLatency = Number(r4?.latency_ms) || 0;
         } catch {
           AI.r4DownUntil = Date.now() + 60_000;
         }
