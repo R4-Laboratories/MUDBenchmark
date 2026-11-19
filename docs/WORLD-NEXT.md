@@ -3,8 +3,8 @@
 This was the queued AberMUD-style content and systems track. The v0.47/v0.48 slices
 have landed: eight equipment slots, six spells and the Mages' Guild, eleven
 Lantern Quarter/Undervault rooms, five personal quests, a guild ledger quest,
-a searchable secret stair, three data-driven room actions and mage rank advancement. The world is now 85 rooms
-and 41 quests. The foundation from v0.46 remains:
+a searchable secret stair, three data-driven room actions and mage rank advancement. The world is now 91 rooms
+and 44 quests. The foundation from v0.46 remains:
 short command forms, `equipment`, `world`/`status`, the hidden `#state` line,
 and the AI prompt/router state layer.
 
@@ -21,6 +21,7 @@ and the AI prompt/router state layer.
 | M9 | **done** — The Hollow Fen: ten rooms east of the Abandoned Mill, three mobiles, eight objects, the green-key chest, the green-heart shortcut, five quests including the guild wisp quest, and guild level 6 with the third-active-guild-quest perk; 80 rooms / 36 quests | fen gate, full walk to the Green Heart, chest unlock, shortcut, quest payout, guild level 6, every exit reciprocal |
 | M10 | **done** — The Salt Caves: five rooms below the lighthouse, three mobiles, five objects, a brine-key chest, a salt-heart shortcut and two quests; 85 rooms / 38 quests | lighthouse stair, salt walk, chest unlock, shortcut, quest references, every exit reciprocal |
 | M11 | **done** — onboarding and deeper chains: the First Steps beginner tour, the `tutorial` command, The Salt Ward and The Deep Fen reward quests; 41 quests | accept/walk/complete First Steps, tutorial aliases, quest references |
+| M12 | **done** — The Moonlit Reach: six rooms east of the deep forest, three mobiles, six objects, a moon-key chest, the crescent-moon shortcut and three linked quests; 91 rooms / 44 quests | forest gate, walk to the Moon Throne, moon-key chest, crescent shortcut, quest chain references, every exit reciprocal |
 
 ## Rules that keep the model green
 

@@ -189,7 +189,8 @@ Only after A/B:
 | v0.73.0 | Scaled spells, Salt Caves, first-run/spectator prompts | **done** (MB-117/118) |
 | v0.74.0 | Combat status effects, enemy tactics, spell/gear scaling | **done** (MB-119) |
 | v0.75.0 | First Steps tutorial and deeper Salt/Fen quest chains | **done** (MB-121) |
-| v0.76.0 | Live balance review and next content slice | next |
+| v0.76.0 | Live balance review and the Moonlit Reach | **done** (MB-123) |
+| v0.77.0 | Next content slice and live-run tuning | next |
 
 ## Risks
 

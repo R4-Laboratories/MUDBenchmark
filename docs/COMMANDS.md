@@ -147,6 +147,9 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `first-steps` | First Steps | 1 | Stand in the Atrium; Walk north into the Corridor | 20 xp |
 | `salt-ward` | The Salt Ward | 7 | Defeat the salt wraith; Carry a salt shard | 260 xp |
 | `fen-deep` | The Deep Fen | 8 | Return to the Green Heart; Defeat a fen wisp; Carry a piece of wisp glass | 320 xp |
+| `moon-hare` | The Moon Hare | 5 | Defeat the moon hare; Carry a moonpetal | 150 xp |
+| `moon-well` | The Moonwell | 6 | Reach the Moonwell; Carry a flask of moonwater | 190 xp |
+| `moon-stag` | The Moon Stag | 9 | Reach the Moon Throne; Defeat the moon stag; Carry a moon antler | 360 xp |
 
 ## Rooms
 
@@ -169,7 +172,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 15 | The Forest Edge | wilds | no | north 11, east 18, south 19 |
 | 16 | The Old Well | wilds | no | west 11 |
 | 17 | The Graveyard | wilds | no | east 11, south 21 |
-| 18 | The Deep Forest | wilds | no | west 15, south 20 |
+| 18 | The Deep Forest | wilds | no | west 15, south 20, east 86 |
 | 19 | The Riverbank | wilds | no | north 15, east 20, south 30 |
 | 20 | The Abandoned Mill | wilds | no | west 19, north 18, east 71 |
 | 21 | The Crypt Entrance | wilds | no | north 17, down 22 |
@@ -237,4 +240,10 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 83 | The Tide Shrine | salt | no | south 82, east 85 |
 | 84 | The Kelp Vault | salt | no | west 82, north 85 |
 | 85 | The Salt Heart | salt | no | west 83, south 84 |
+| 86 | The Moonlit Gate | moon | no | west 18, north 87, east 88 |
+| 87 | The Silver Glade | moon | no | south 86, east 89 |
+| 88 | The Owl Grove | moon | yes | west 86, north 89 |
+| 89 | The Moonwell | moon | no | west 87, south 88, east 90 |
+| 90 | The Hunter's Camp | moon | no | west 89, north 91 |
+| 91 | The Moon Throne | moon | no | south 90 |
 

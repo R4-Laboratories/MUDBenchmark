@@ -343,6 +343,49 @@
         "actor": "You step into the salt heart. The cave folds and the stair is beneath you.",
         "others": "%a steps into the salt heart and vanishes."
       }
+    },
+    {
+      "id": "open-moon-chest",
+      "verb": "open",
+      "target": "chest",
+      "room": 89,
+      "requires": {
+        "item": "moon-key"
+      },
+      "effects": [
+        {
+          "kind": "open",
+          "object": "moon-chest"
+        },
+        {
+          "kind": "message",
+          "text": "The silver cord loosens and the pale chest opens."
+        }
+      ],
+      "messages": {
+        "actor": "You fit the moon key to the pale chest. The cord loosens.",
+        "others": "%a opens the pale chest."
+      }
+    },
+    {
+      "id": "enter-moon",
+      "verb": "enter",
+      "target": "moon",
+      "room": 91,
+      "effects": [
+        {
+          "kind": "teleport",
+          "room": 86
+        },
+        {
+          "kind": "message",
+          "text": "The crescent moon folds around you and sets you down at the gate."
+        }
+      ],
+      "messages": {
+        "actor": "You step into the crescent moon. The glade folds and the gate is beneath you.",
+        "others": "%a steps into the moon and vanishes."
+      }
     }
   ]
 }

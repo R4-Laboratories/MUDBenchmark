@@ -333,7 +333,8 @@
       "safe": false,
       "exits": {
         "west": 15,
-        "south": 20
+        "south": 20,
+        "east": 86
       },
       "details": {
         "moss": "The moss is thick and soft underfoot.",
@@ -1563,6 +1564,115 @@
         "The pillar pulses.",
         "Salt dust hangs in the air."
       ]
+    },
+    "86": {
+      "name": "The Moonlit Gate",
+      "text": "A gate of white stone opens where the deep forest thins. The trees lean away from it, and the air is cool and bright. The forest is west; a silver glade lies north, and an owl grove waits east.",
+      "safe": false,
+      "exits": {
+        "west": 18,
+        "north": 87,
+        "east": 88
+      },
+      "details": {
+        "gate": "The gate is carved with a crescent.",
+        "trees": "The trees are pale and leafless.",
+        "air": "The air smells of cold water."
+      },
+      "ambient": [
+        "A pale light moves in the trees.",
+        "An owl calls."
+      ]
+    },
+    "87": {
+      "name": "The Silver Glade",
+      "text": "A glade of silver grass under a sky of deep blue. A moon hare sits at the edge, ears high. The gate is south; the moonwell lies east.",
+      "safe": false,
+      "exits": {
+        "south": 86,
+        "east": 89
+      },
+      "details": {
+        "grass": "The grass is silver at the tip and green at the root.",
+        "hare": "The hare is white with eyes like glass.",
+        "sky": "The stars are out in daylight."
+      },
+      "ambient": [
+        "The grass shivers.",
+        "The hare watches you."
+      ]
+    },
+    "88": {
+      "name": "The Owl Grove",
+      "text": "A grove of white-barked trees. A silver owl sits on a low branch, and a key of pale bone hangs beneath it. The gate is west; the moonwell is north.",
+      "safe": true,
+      "exits": {
+        "west": 86,
+        "north": 89
+      },
+      "details": {
+        "owl": "The owl is silver and very still.",
+        "key": "A moon key hangs from a cord.",
+        "trees": "The bark is cold and smooth."
+      },
+      "ambient": [
+        "The owl blinks.",
+        "A feather turns on the branch."
+      ]
+    },
+    "89": {
+      "name": "The Moonwell",
+      "text": "A round well of white stone under an open sky. The water is perfectly still, and a chest of pale wood sits beside it. The glade is west; the owl grove is south, and a hunter's camp waits east.",
+      "safe": false,
+      "exits": {
+        "west": 87,
+        "south": 88,
+        "east": 90
+      },
+      "details": {
+        "well": "The water reflects a moon that is not in the sky.",
+        "chest": "The chest is bound with a cord of silver.",
+        "sky": "The sky is very dark for day."
+      },
+      "ambient": [
+        "The well is silent.",
+        "The chest ticks."
+      ]
+    },
+    "90": {
+      "name": "The Hunter's Camp",
+      "text": "A camp of grey tents around a cold fire. A trail climbs north toward a pale throne. The moonwell is west.",
+      "safe": false,
+      "exits": {
+        "west": 89,
+        "north": 91
+      },
+      "details": {
+        "tents": "The tents are empty and neatly tied.",
+        "fire": "The fire is cold ash.",
+        "trail": "The trail is marked with white stones."
+      },
+      "ambient": [
+        "Canvas moves in the wind.",
+        "A bird calls from the throne."
+      ]
+    },
+    "91": {
+      "name": "The Moon Throne",
+      "text": "A throne of pale stone under a crescent moon that hangs in the branches. A moon stag stands before it, antlers bright. The camp is south.",
+      "safe": false,
+      "exits": {
+        "south": 90
+      },
+      "details": {
+        "throne": "The throne is empty and cold.",
+        "moon": "The crescent is a hole in the sky.",
+        "stag": "The stag's antlers shine like glass."
+      },
+      "ambient": [
+        "The moon does not move.",
+        "The stag lowers its head."
+      ]
     }
   },
   "task": {
@@ -2398,6 +2508,69 @@
       "description": "A tall shape of white salt and cold air.",
       "examine": "The wraith has no face, only a seam of black.",
       "status": "chill"
+    },
+    {
+      "id": "moon-hare",
+      "name": "a moon hare",
+      "room": 87,
+      "home": 87,
+      "period": 28,
+      "jitter": 4,
+      "behaviour": "wander",
+      "zone": "moon",
+      "hp": 10,
+      "damage": 1,
+      "armor": 0,
+      "aggression": 20,
+      "xp": 12,
+      "loot": [
+        "moonpetal"
+      ],
+      "description": "A white hare with eyes like glass.",
+      "examine": "Its fur is silver at the tips."
+    },
+    {
+      "id": "silver-owl",
+      "name": "the silver owl",
+      "room": 88,
+      "home": 88,
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "zone": "moon",
+      "hp": 20,
+      "damage": 0,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 0,
+      "description": "A silver owl sits on a low branch.",
+      "examine": "The owl's eyes are two small moons.",
+      "dialogue": [
+        "The moonwell keeps what is reflected.",
+        "The bone key opens the chest.",
+        "The stag guards the throne."
+      ]
+    },
+    {
+      "id": "moon-stag",
+      "name": "the moon stag",
+      "room": 91,
+      "home": 91,
+      "period": 120,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "zone": "moon",
+      "hp": 35,
+      "damage": 5,
+      "armor": 2,
+      "aggression": 80,
+      "xp": 90,
+      "loot": [
+        "moon-antler"
+      ],
+      "status": "chill",
+      "description": "A tall stag with antlers of clear glass.",
+      "examine": "Its antlers hold a light that is not there."
     }
   ],
   "zones": [
@@ -2550,6 +2723,18 @@
         83,
         84,
         85
+      ]
+    },
+    {
+      "id": "moon",
+      "name": "The Moonlit Reach",
+      "rooms": [
+        86,
+        87,
+        88,
+        89,
+        90,
+        91
       ]
     }
   ],
@@ -3527,6 +3712,82 @@
       "armor": 1,
       "value": 22,
       "examine": "A knot of green reeds around a shard of wisp glass.",
+      "forSale": false
+    },
+    {
+      "id": "moonpetal",
+      "name": "a moonpetal",
+      "room": 87,
+      "flags": [
+        "takeable"
+      ],
+      "value": 10,
+      "examine": "A silver petal that is cold to the touch.",
+      "forSale": false
+    },
+    {
+      "id": "moon-key",
+      "name": "a moon key",
+      "room": 88,
+      "flags": [
+        "takeable"
+      ],
+      "value": 16,
+      "examine": "A pale key carved from a single bone, cold as moonlight.",
+      "forSale": false
+    },
+    {
+      "id": "moon-chest",
+      "name": "a pale chest",
+      "room": 89,
+      "flags": [
+        "fixed",
+        "container"
+      ],
+      "capacity": 2,
+      "open": false,
+      "value": 0,
+      "examine": "A chest of pale wood bound with silver cord.",
+      "forSale": false
+    },
+    {
+      "id": "moon-charm",
+      "name": "a moon charm",
+      "inside": "moon-chest",
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "neck",
+      "armor": 1,
+      "value": 24,
+      "examine": "A crescent of white stone on a silver cord.",
+      "forSale": false
+    },
+    {
+      "id": "moonwater",
+      "name": "a flask of moonwater",
+      "room": 89,
+      "flags": [
+        "takeable",
+        "food"
+      ],
+      "bites": 1,
+      "heal": 3,
+      "value": 12,
+      "examine": "A flask of water that reflects a moon.",
+      "forSale": false
+    },
+    {
+      "id": "moon-antler",
+      "name": "a moon antler",
+      "room": 91,
+      "flags": [
+        "takeable"
+      ],
+      "value": 22,
+      "examine": "A shard of clear antler, cold and bright.",
       "forSale": false
     }
   ],

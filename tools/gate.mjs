@@ -1673,6 +1673,40 @@ let salt = { ok: true, why: [] };
   if (salt.why.length) { salt.ok = false; failures.push(`the Salt Caves are broken: ${salt.why[0]}`); }
 }
 
+// The Moonlit Reach: six rooms beyond the deep forest, a moon-keyed chest,
+// the moonwell and the crescent shortcut.
+let moon = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, world.levels, questTable.quests);
+  const table = loadActions({ world });
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents, actions: table.actions }); state = result.state; return result.events; };
+  const check = (condition, why) => { if (!condition) { moon.ok = false; moon.why.push(why); } };
+  check(table.errors.length === 0, `moon action validation failed: ${table.errors[0] ?? ""}`);
+  check(world.rooms[18]?.exits?.east === 86 && world.rooms[86]?.exits?.west === 18, "the Moonlit Reach is not connected to the deep forest");
+  check(world.zones.some((zone) => zone.id === "moon" && zone.rooms.includes(91)), "the Moonlit Reach zone is missing");
+  const moonQuests = ["moon-hare", "moon-well", "moon-stag"].map((id) => questTable.quests.find((quest) => quest.id === id));
+  check(moonQuests.every(Boolean), "a Moonlit quest is missing");
+  check(moonQuests[1]?.requires?.includes("moon-hare") && moonQuests[2]?.requires?.includes("moon-well"), "the Moonlit quest chain is not connected");
+  check(world.objects.find((o) => o.id === "moon-key")?.room === 88, "the moon key is not in the owl grove");
+  check(findAction(table.actions, { verb: "open", target: "chest", room: 89 })?.id === "open-moon-chest", "open chest does not resolve in the Moonwell");
+  check(findAction(table.actions, { verb: "enter", target: "moon", room: 91 })?.id === "enter-moon", "enter moon does not resolve at the Moon Throne");
+  state.actors.push({ id: "mo", key: "moon", account: "moon", name: "moon", room: 86, visited: [86], level: 9, xp: 5000, maxHp: 24, hp: 24, maxMana: 22, mana: 22, spellbook: [], guild: null, guildRank: null, wielding: null, quests: { active: [], completed: [] }, found: [] });
+  for (const [dir, to] of [["north", 87], ["east", 89], ["south", 88]]) run([{ kind: "move", actorId: "mo", dir, to }]);
+  let actor = state.actors.find((entry) => entry.id === "mo");
+  check(actor.room === 88, "the moon walk did not reach the owl grove");
+  state.objects.find((o) => o.id === "moon-key").holder = "mo";
+  run([{ kind: "move", actorId: "mo", dir: "north", to: 89 }]);
+  run([{ kind: "action", actorId: "mo", actionId: "open-moon-chest", messages: { actor: "opened", others: "opens" } }]);
+  check(state.objects.find((o) => o.id === "moon-chest")?.open === true, "the moon key did not open the pale chest");
+  run([{ kind: "move", actorId: "mo", dir: "east", to: 90 }]);
+  run([{ kind: "move", actorId: "mo", dir: "north", to: 91 }]);
+  run([{ kind: "action", actorId: "mo", actionId: "enter-moon", messages: { actor: "entered", others: "enters" } }]);
+  actor = state.actors.find((entry) => entry.id === "mo");
+  check(actor.room === 86, "the crescent shortcut did not return to the gate");
+  if (moon.why.length) { moon.ok = false; failures.push(`the Moonlit Reach is broken: ${moon.why[0]}`); }
+}
+
 // The state file is atomic, backed up, and fail-loud.
 let durableState = { ok: true, why: [] };
 {
@@ -2688,6 +2722,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"fen".padEnd(26)}  ${(fen.ok ? "10 rooms" : "BROKEN").padStart(5)}   == key, chest, shortcut`);
   console.log(`${"visibility".padEnd(26)}  ${(visibility.ok ? "levels, map" : "BROKEN").padStart(5)}   == board, shortcuts`);
   console.log(`${"salt".padEnd(26)}  ${(salt.ok ? "5 rooms" : "BROKEN").padStart(5)}   == key, chest, shortcut`);
+  console.log(`${"moon".padEnd(26)}  ${(moon.ok ? "6 rooms" : "BROKEN").padStart(5)}   == key, chest, shortcut`);
   console.log(`${"firstSteps".padEnd(26)}  ${(firstSteps.ok ? "20 xp" : "BROKEN").padStart(5)}   == tour, quest`);
   console.log(`${"pinned".padEnd(26)}  ${(identityPin.ok ? "revoked" : "BROKEN").padStart(5)}   == old log refused`);
   console.log(`${"takeover".padEnd(26)}  ${(takeover.ok ? "1 actor" : "BROKEN").padStart(5)}   == leave then login`);

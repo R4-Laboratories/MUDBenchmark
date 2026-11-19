@@ -771,6 +771,12 @@
       "level": "some-true",
       "statement": "Production v0.75.0 serves 85 rooms, 11 zones, 41 quests, 38 mobiles and 78 objects. First Steps is a level-1 guided tour with tutorial/first/firststeps, The Salt Ward and The Deep Fen add reward chains, and combat has scaled spells plus burn/bleed/chill effects. The Gemini testing key was removed from owner.env and its backup deleted; /api/demo reports configured false and the provider is hidden. Gate 44561641206 green.",
       "authority": "wick production v0.75.0 2026-11-19; release 44563219783; gate 44561641206; /health, /world and /api/demo"
+    },
+    {
+      "id": "MB-123",
+      "level": "build",
+      "statement": "The Moonlit Reach adds six rooms east of the deep forest (91 rooms/12 zones), the moon hare, silver owl and moon stag (41 mobiles), six objects (84), a moon-key chest, the crescent-moon shortcut and three linked quests (44). tools/balance.mjs samples the real attackRoll across novice, geared and spell fights without changing the world. The gate walks the forest gate to the owl grove, opens the pale chest with the moon key, takes the crescent shortcut back, validates the quest chain and all references.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

@@ -1096,6 +1096,92 @@
         "object": "fen-charm"
       },
       "complete": "The heron keeper ties the charm around your neck. The reeds go still."
+    },
+    {
+      "id": "moon-hare",
+      "name": "The Moon Hare",
+      "level": 5,
+      "giver": "the silver owl",
+      "description": "A moon hare carries a silver petal. The owl wants it for the well.",
+      "objectives": [
+        {
+          "kind": "kill",
+          "npc": "moon-hare",
+          "count": 1,
+          "text": "Defeat the moon hare"
+        },
+        {
+          "kind": "collect",
+          "object": "moonpetal",
+          "count": 1,
+          "text": "Carry a moonpetal"
+        }
+      ],
+      "rewards": {
+        "xp": 150
+      },
+      "complete": "The owl sets the petal on the well and it floats."
+    },
+    {
+      "id": "moon-well",
+      "name": "The Moonwell",
+      "level": 6,
+      "giver": "the silver owl",
+      "description": "Draw water from the moonwell and open the pale chest.",
+      "requires": [
+        "moon-hare"
+      ],
+      "objectives": [
+        {
+          "kind": "visit",
+          "room": 89,
+          "text": "Reach the Moonwell"
+        },
+        {
+          "kind": "collect",
+          "object": "moonwater",
+          "count": 1,
+          "text": "Carry a flask of moonwater"
+        }
+      ],
+      "rewards": {
+        "xp": 190
+      },
+      "complete": "The owl drinks and its eyes grow brighter."
+    },
+    {
+      "id": "moon-stag",
+      "name": "The Moon Stag",
+      "level": 9,
+      "giver": "the silver owl",
+      "description": "The moon stag guards the throne. Bring the owl its antler.",
+      "requires": [
+        "moon-well"
+      ],
+      "objectives": [
+        {
+          "kind": "visit",
+          "room": 91,
+          "text": "Reach the Moon Throne"
+        },
+        {
+          "kind": "kill",
+          "npc": "moon-stag",
+          "count": 1,
+          "text": "Defeat the moon stag"
+        },
+        {
+          "kind": "collect",
+          "object": "moon-antler",
+          "count": 1,
+          "text": "Carry a moon antler"
+        }
+      ],
+      "rewards": {
+        "xp": 360,
+        "object": "moon-charm"
+      },
+      "complete": "The owl sets the antler beside the well. The moon in the water turns."
     }
   ]
 }

@@ -215,6 +215,9 @@ Rehearsed 2026-11-16:
   display in score/battle/prompts (MB-119);
 - v0.75.0 (first steps) adds the beginner tour and tutorial command, plus
   The Salt Ward and The Deep Fen reward chains; 41 quests (MB-121);
+- v0.76.0 (moonlit reach) adds six rooms east of the deep forest, the moon
+  hare, silver owl and moon stag, a moon-key chest, the crescent shortcut and
+  three linked quests; the balance sampler joins the tools (MB-123);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);
