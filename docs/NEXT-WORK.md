@@ -18,7 +18,7 @@ memory or prompt system.
 | v0.80.0 | Persistent ignore lists, quest-earned titles and telemetry tuning | **done** (MB-131) |
 | v0.81.0 | The Memory Garden fact/recall quest and R4 fallback | **done** (MB-133) |
 | v0.82.0 | The crescent garden quest, facts command and live level-10 run | **done** (MB-135) |
-| v0.83.0 | The Remembered Bed fact-gated action and unscripted run | **in flight** |
+| v0.83.0 | The Remembered Bed fact-gated action and unscripted run | **done** (MB-137) |
 | v0.84.0 | Agent navigation after hidden reveals and the next world slice | next |
 
 ## What is next
