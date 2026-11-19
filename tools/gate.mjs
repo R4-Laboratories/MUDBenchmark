@@ -251,6 +251,8 @@ let aiMemory = { ok: true, why: [] };
   check(prompt.includes("seen 2 times") || prompt.includes("seen 1 time"), "the memory lost the room visit");
   check(prompt.includes("stale 2"), "the memory did not mark the repeated result stale");
   check(prompt.includes("The Storeroom"), "the memory lost a visited room");
+  const recall = memoryPrompt(memory, { room: "The Atrium", query: "What did the plaque say about the Vault?" });
+  check(recall.includes("Known:") && recall.includes("Vault keeps the word"), "the prime concept index did not recall the plaque fact");
   check(prompt.includes("Unexplored exits"), "the memory lost the unexplored exits");
   check(loopWarning(["north", "south", "north", "south"]).includes("LOOP"), "the memory did not detect a movement cycle");
   check(loopWarning(["look", "look", "look"]).includes("LOOP"), "the memory did not detect a repeated command");

@@ -2664,7 +2664,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         : { name: AI.room, safe: false, details: [], exits: (AI.exits ?? []).map((dir) => ({ dir })), objects: [], npcs: [], actions: [] };
       const promptState = AI.state ? { ...AI.state, room: stateRoom } : { room: stateRoom };
       const exits = stateRoom.exits ?? [];
-      const memoryText = memoryPrompt(memory, { room: AI.room || stateRoom.name, exits });
+      const memoryText = memoryPrompt(memory, { room: AI.room || stateRoom.name, exits, query: observation });
       const notes = [];
       if (AI.nudge) notes.push("You repeated a command. Do something different: move, examine, take, talk, or check your inventory.");
       const loop = loopWarning(AI.recent);

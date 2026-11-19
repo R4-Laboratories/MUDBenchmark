@@ -633,6 +633,12 @@
       "level": "some-true",
       "statement": "Production v0.65.1 serves persistent per-character AI memory and open-container context. A real 37-turn Gemini run recorded p50 1067ms / p95 1603ms, zero errors, and varied commands (examine, talk, movement, take, wear, search, open, look). The memory prompt showed rooms seen, tried commands, stale counts and unexplored exits; a deliberately repeating mock traversed five rooms while the loop guard kept the run live. Memory is browser-local per character, not yet the R4 integer/GCD router or a portable server store.",
       "authority": "wick production v0.65.1 2026-11-19; release 44427528628; gate 44426430216; /trends; headless Gemini run; repeating-mock loop test"
+    },
+    {
+      "id": "MB-100",
+      "level": "build",
+      "statement": "The R4 router spike is documented in docs/R4-SPIKE.md. The full prime-router server indexed 23,466 wiki sentences at ~1.1 GB, started in ~2 minutes, returned wiki noise on the first game query and took 9.0-14.5s once per-turn indexing/cache work entered the path. It fails the p95 <150ms gate, so it is not deployed. The useful prime/GCD idea is implemented natively in memory.mjs: words map to stable primes, notes are prime sets, retrieval scores shared primes with room/command boosts, and the selected notes are injected as Known: each turn. The gate recalls the plaque/Vault fact from a later query.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

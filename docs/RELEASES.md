@@ -177,6 +177,9 @@ Rehearsed 2026-11-16:
 - v0.65.1 (container context) adds open-container contents to the injected
   action menu, so the model uses take <item> from <container> instead of
   inventing commands (MB-98);
+- v0.66.0 (R4-lite memory) records the full prime-router spike as a no-go for
+  per-turn production and adds a native prime/GCD concept index over the
+  character's own notes, injected as Known: facts (MB-100);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

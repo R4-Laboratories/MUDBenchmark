@@ -18,11 +18,83 @@ const STOP = new Set([
   "some", "more", "most", "very", "just", "only", "also", "than", "then",
 ]);
 
+// A small prime table is enough for the concept index: a word maps to one
+// stable prime, a note is the set of its word primes, and two notes share a
+// concept when their prime sets intersect (the discrete GCD analogue). This is
+// deliberately fast enough to run on every turn; the full geometric router is
+// a separate service spike.
+const PRIMES = [
+  2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71,
+  73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131, 137, 139, 149, 151,
+  157, 163, 167, 173, 179, 181, 191, 193, 197, 199, 211, 223, 227, 229, 233,
+  239, 241, 251, 257, 263, 269, 271, 277, 281, 283, 293, 307, 311, 313, 317,
+];
+
+const wordPrime = (word) => PRIMES[hash(word) % PRIMES.length];
+
+const notePrimes = (text) => {
+  const seen = new Set();
+  for (const raw of String(text ?? "").toLowerCase().split(/[^a-z0-9]+/)) {
+    const word = raw.trim();
+    if (word.length < 4 || STOP.has(word)) continue;
+    seen.add(wordPrime(word));
+  }
+  return [...seen].sort((a, b) => a - b);
+};
+
+const conceptScore = (note, query, room) => {
+  const wanted = new Set(query);
+  let shared = 0;
+  for (const prime of note.primes ?? []) if (wanted.has(prime)) shared += 1;
+  if (!shared) return 0;
+  const sameRoom = note.room && note.room === room ? 1.5 : 0;
+  const useful = /^(examine|talk|say|tell|answer|read|quest|take|open|look)\b/i.test(note.command ?? "") ? 0.5 : 0;
+  return shared + sameRoom + useful;
+};
+
+const indexNote = (memory, { text, room, command, tick }) => {
+  const clean = String(text ?? "").replace(/\s+/g, " ").trim();
+  if (clean.length < 18) return;
+  const fingerprint = hash(clean);
+  const existing = (memory.notes ?? []).find((note) => note.hash === fingerprint);
+  if (existing) {
+    existing.tick = tick;
+    existing.room = room;
+    existing.command = command;
+    return;
+  }
+  const primes = notePrimes(clean);
+  if (!primes.length) return;
+  memory.notes ??= [];
+  memory.notes.push({
+    text: clean.slice(0, 240),
+    room,
+    command,
+    tick,
+    hash: fingerprint,
+    primes,
+  });
+  if (memory.notes.length > 60) memory.notes.splice(0, memory.notes.length - 60);
+};
+
+const retrieveNotes = (memory, query, room, limit = 3) => {
+  if (!memory?.notes?.length || !query) return [];
+  const primes = notePrimes(query);
+  if (!primes.length) return [];
+  return memory.notes
+    .map((note) => ({ note, score: conceptScore(note, primes, room) }))
+    .filter((entry) => entry.score > 0)
+    .sort((a, b) => b.score - a.score || (b.note.tick ?? 0) - (a.note.tick ?? 0))
+    .slice(0, limit)
+    .map((entry) => entry.note);
+};
+
 export const emptyMemory = () => ({
   version: VERSION,
   rooms: {},
   lastRoom: null,
   visits: 0,
+  notes: [],
   updated: null,
 });
 
@@ -68,6 +140,7 @@ export function rememberResult(memory, { room, command, observation, tick = 0, a
   });
   known.count += 1;
   known.lastTick = tick;
+  indexNote(memory, { text: observation, room, command, tick });
   const digest = hash(observation);
   if (known.lastHash !== null && known.lastHash === digest) known.stale += 1;
   known.lastHash = digest;
@@ -82,7 +155,7 @@ export function rememberResult(memory, { room, command, observation, tick = 0, a
 }
 
 /** The small block injected into the model prompt. */
-export function memoryPrompt(memory, { room = null, exits = [], limit = 8 } = {}) {
+export function memoryPrompt(memory, { room = null, exits = [], limit = 8, query = "" } = {}) {
   if (!memory) return "";
   const lines = [];
   const current = room ? memory.rooms[room] : null;
@@ -95,6 +168,10 @@ export function memoryPrompt(memory, { room = null, exits = [], limit = 8 } = {}
     if (tried.length) lines.push(`Tried here: ${tried.join(", ")}.`);
   } else if (room) {
     lines.push(`Current room: ${room}, not seen before in this run.`);
+  }
+  const known = retrieveNotes(memory, query, room, 3);
+  if (known.length) {
+    lines.push(`Known: ${known.map((note) => note.text).join(" | ")}`);
   }
   const names = Object.keys(memory.rooms);
   if (names.length) {
