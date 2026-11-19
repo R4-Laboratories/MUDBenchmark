@@ -71,10 +71,10 @@ because the table had eleven thresholds. The table is now ten levels ending at
 ## Unscripted model run (v0.83)
 
 `docs/UNSCRIPTED-RUN.md` records qwen2.5:7b against the isolated Memory Garden.
-The model took the rose and planted it in both attempts; the second attempt
-also entered the hidden room and took the bloom, but never returned to the
-rememberer. The fact/action server contract worked; the remaining gap is model
-navigation and NPC follow-through after a hidden reveal.
+Before route memory, the model planted in both attempts but looped before the
+hand-in. After the shared route ledger and loop guard, the third run finished
+the Remembered Bed in seven turns: take rose, plant, down, take bloom, up,
+north, talk. The server contract and the navigation guard both worked.
 
 ## What would change the conclusion
 

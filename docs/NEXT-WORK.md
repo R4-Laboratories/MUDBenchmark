@@ -1,6 +1,6 @@
 # Next work
 
-Baseline: **v0.83.0**. The world has 101 rooms, 14 zones, 52 quests, 47 mobiles
+Baseline: **v0.84.0**. The world has 101 rooms, 14 zones, 52 quests, 47 mobiles
 and 97 objects. R4 memory, command grounding, scorecards
 and the public stats surface are live; signups are open and the Gemini demo is
 disabled and unconfigured.
@@ -19,7 +19,8 @@ memory or prompt system.
 | v0.81.0 | The Memory Garden fact/recall quest and R4 fallback | **done** (MB-133) |
 | v0.82.0 | The crescent garden quest, facts command and live level-10 run | **done** (MB-135) |
 | v0.83.0 | The Remembered Bed fact-gated action and unscripted run | **done** (MB-137) |
-| v0.84.0 | Agent navigation after hidden reveals and the next world slice | next |
+| v0.84.0 | Route memory, room-loop detection and unscripted completion | **in flight** |
+| v0.85.0 | Next world slice and broader live sessions | next |
 
 ## What is next
 

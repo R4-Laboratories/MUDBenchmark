@@ -2761,7 +2761,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       const memoryText = memoryPrompt(memory, { room: AI.room || stateRoom.name, exits, query: observation });
       const notes = [];
       if (AI.nudge) notes.push("You repeated a command. Do something different: move, examine, take, talk, or check your inventory.");
-      const loop = loopWarning(AI.recent);
+      const loop = loopWarning(AI.recent, memory.trail);
       if (loop) notes.push(loop);
       if (AI.lastInvalid) {
         notes.push(`Your previous command "${AI.lastInvalid.command}" was rejected (${AI.lastInvalid.reason}); use ACTIONS.`);
@@ -2817,7 +2817,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       const latency = Math.round(performance.now() - started);
       const parsed = parseBrain(text);
       if (shouldBreakLoop(memory, { room: AI.room || AI.state?.room?.name, command: parsed.command, recent: AI.recent })) {
-        const forced = breakLoop(AI.recent, exits);
+        const forced = breakLoop(AI.recent, exits, memory);
         if (forced && forced !== parsed.command) {
           parsed.command = forced;
           parsed.thought = `Loop broken: ${forced}.`;
@@ -2875,7 +2875,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       let recent = [...AI.recent, parsed.command];
       const stuck = recent.length >= 5 && recent.slice(-5).every((command) => command === parsed.command);
       if (stuck) {
-        const forced = breakLoop(recent, exits);
+        const forced = breakLoop(recent, exits, memory);
         if (forced && forced !== parsed.command) {
           parsed.command = forced;
           parsed.thought = `Loop broken: ${forced}.`;

@@ -12,6 +12,7 @@
 //   WS_URL=wss://play.r4labs.org node agent.mjs
 
 import { appendFileSync, readFileSync } from "node:fs";
+import { emptyMemory, noteRoom, rememberResult, memoryPrompt, loopWarning, breakLoop, shouldBreakLoop } from "./web/memory.mjs";
 
 const WS_URL = process.env.WS_URL ?? "ws://127.0.0.1:8090";
 const NAME = process.env.HARNESS_NAME ?? process.env.AGENT_NAME ?? "agent";
@@ -25,6 +26,7 @@ const TIMEOUT = Number(process.env.MODEL_TIMEOUT_MS ?? 90000);
 const GOAL = process.env.AGENT_GOAL ?? "Read the word in the Vault (north then east of the Atrium), then reach the Shrine (east, north, north) and use answer <word>. Explore, trade, fight or speak as you wish.";
 const LOG = process.env.AGENT_LOG ?? "";
 const PRIME_ID = process.env.PRIME_ROUTER_IDENTITY ?? `mudbench-${NAME}`;
+const STOP_ON_QUEST = process.env.AGENT_STOP_ON_QUEST === "1";
 
 if (!PASSWORD) {
   console.error("Set HARNESS_PASSWORD (or AGENT_PASSWORD) to the character's password.");
@@ -84,6 +86,10 @@ let answered = false;
 let turns = 0;
 let busy = false;
 let lastSend = 0;
+let lastCommand = "";
+let lastRoom = "";
+let recent = [];
+const nav = emptyMemory();
 const messages = [{ role: "system", content: SYSTEM }];
 
 const trim = () => {
@@ -105,6 +111,26 @@ function parse(text) {
     }
   }
   return { command: "look", ok: false };
+}
+
+function roomFrom(text) {
+  const line = String(text).split(/\r?\n/).find((entry) => entry.trim().startsWith("#state "));
+  if (line) {
+    try {
+      const state = JSON.parse(line.trim().slice(7));
+      const room = state.room ?? state.self?.room;
+      if (room?.name) {
+        return {
+          name: room.name,
+          exits: (room.exits ?? []).map((exit) => (typeof exit === "string" ? { dir: exit, room: null } : { dir: exit.dir, room: exit.room ?? null })).filter((exit) => exit.dir),
+        };
+      }
+    } catch {}
+  }
+  const name = String(text).match(/^\[([^\]]+)\]/m)?.[1];
+  if (!name) return null;
+  const exits = String(text).match(/^Exits:\s*(.+)$/m)?.[1] ?? "";
+  return { name, exits: exits.split(/,\s*/).map((dir) => ({ dir: dir.trim(), room: null })).filter((exit) => exit.dir) };
 }
 
 async function ask(observedText) {
@@ -169,16 +195,41 @@ async function turn() {
     if (socket?.readyState === 1) socket.send("quit\n");
     return;
   }
+  if (STOP_ON_QUEST && /Quest complete:/i.test(seen)) {
+    log("quest complete; stopping");
+    if (socket?.readyState === 1) socket.send("quit\n");
+    setTimeout(() => process.exit(0), 300);
+    return;
+  }
   turns += 1;
   if (turns > MAX_TURNS) { try { socket.send("quit\n"); } catch {} return; }
+  const room = roomFrom(seen);
+  if (lastCommand && lastRoom) rememberResult(nav, { room: lastRoom, command: lastCommand, observation: seen, tick: turns });
+  if (room) noteRoom(nav, room.name);
+  const navText = memoryPrompt(nav, { room: room?.name ?? lastRoom, exits: room?.exits ?? [], query: seen });
+  const warning = loopWarning(recent, nav.trail);
   busy = true;
   try {
-    const reply = await ask(seen);
-    const { command, ok } = parse(reply);
-    if (!ok) log("unparseable reply; sending look");
+    const reply = await ask([seen, navText ? `NAVIGATION:\n${navText}` : "", warning ? `NOTE: ${warning}` : ""].filter(Boolean).join("\n\n"));
+    let { command, ok } = parse(reply);
+    if (!ok) {
+      const forced = breakLoop(recent, room?.exits ?? [], nav);
+      command = forced ?? "look";
+      log(`unparseable reply; exploring ${command}`);
+    }
+    if (shouldBreakLoop(nav, { room: room?.name, command, recent })) {
+      const forced = breakLoop(recent, room?.exits ?? [], nav);
+      if (forced && forced !== command) {
+        log(`loop guard: ${command} → ${forced}`);
+        command = forced;
+      }
+    }
     if (/^answer\s+/i.test(command)) answered = true;
     log(`turn ${turns}: ${command}`);
+    recent = [...recent, command].slice(-12);
     await send(command);
+    lastCommand = command;
+    lastRoom = room?.name ?? lastRoom;
     if (command.toLowerCase() === "quit") {
       setTimeout(() => process.exit(0), 300);
     }

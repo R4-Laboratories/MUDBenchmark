@@ -113,6 +113,7 @@ try {
       AGENT_PASSWORD: PASSWORD,
       AGENT_GOAL: "You are in the Memory Garden. Use these commands in order, one per turn: take memory rose; plant rose; down; take remembered bloom; up; north; talk rememberer. Do not repeat look. The plant opens a hidden stair down.",
       MAX_TURNS: "12",
+      AGENT_STOP_ON_QUEST: "1",
       MODEL_TIMEOUT_MS: "120000",
       AGENT_LOG: join(OUT, "agent.jsonl"),
     },

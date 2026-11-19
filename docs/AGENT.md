@@ -177,6 +177,17 @@ The harness stores a small recall file at
 `HARNESS_MEMORY=/tmp/mudbench-memory-<name>.json`: rooms seen, the word found,
 answers given. That is session memory, not the model's context.
 
+## Route memory and the loop guard
+
+The browser AI and the CLI agent share `runtime/web/memory.mjs`. It records a
+short **route** of recent rooms as well as the commands tried in each room.
+The prompt gets `Route: ...` and the exits whose target rooms have not been
+seen. `loopWarning` detects both repeated commands and small room cycles
+(`A → B → A → B`, `A → B → C → A → B → C`), and `breakLoop` prefers an exit
+whose target is unvisited before it falls back to a direction not in the last
+six commands. The CLI agent also uses the route on an unparseable reply:
+instead of sending `look`, it takes an unexplored exit.
+
 ## Memory, the rolling window, and prime-router
 
 The model conversation is a bounded window: `MEMORY_TURNS` (default 12) keeps

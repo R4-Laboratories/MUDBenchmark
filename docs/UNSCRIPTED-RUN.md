@@ -56,14 +56,46 @@ The model followed `take memory rose`, `plant rose`, `down`, `take remembered
 bloom`, then drifted into `claim` commands instead of returning to the
 rememberer. The quest stayed active.
 
+## Attempt 3: after route memory
+
+The shared route ledger and loop guard were then wired into the CLI agent.
+
+| Result | Value |
+| --- | --- |
+| Turns | 7 |
+| Wall time | under 120 s |
+| Took rose | yes |
+| Planted rose | yes |
+| Entered hidden room | yes |
+| Took bloom | yes |
+| Talked to rememberer | yes |
+| Finished quest | yes |
+| Exit code | 0 |
+
+Commands:
+
+```
+take memory rose
+plant rose
+down
+take remembered bloom
+up
+north
+talk rememberer
+```
+
+The agent stopped cleanly on `Quest complete: The Remembered Bed` instead of
+waiting for the model timeout.
+
 ## What this proves
 
 - The fact-gated `plant rose` action works under unscripted play: a model can
   learn the prerequisite fact, hold the rose, plant it, and open the hidden
   stair.
 - The hidden room and the bloom are reachable through the action.
-- The remaining gap is model navigation and NPC interaction after the reveal,
-  not the server's fact or action contract.
+- The remaining gap after attempts 1-2 was model navigation and NPC interaction
+  after the reveal. The route ledger and loop guard closed that gap for this
+  run: attempt 3 completed the quest in seven turns.
 - The 7B model is slow enough that a 12-turn run can use the full 600 s bound.
 
 ## Limits

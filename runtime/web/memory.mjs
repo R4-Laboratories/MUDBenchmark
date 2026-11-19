@@ -129,6 +129,7 @@ export const emptyMemory = () => ({
   visits: 0,
   notes: [],
   social: [],
+  trail: [],
   updated: null,
 });
 
@@ -150,20 +151,30 @@ const trimRoom = (room) => {
   }
 };
 
-/** Record the result of the command issued in `room` on the previous turn. */
-export function rememberResult(memory, { room, command, observation, tick = 0, at = Date.now() } = {}) {
-  if (!memory || !room || !command) return memory;
+/** Record a room visit and its place in the recent route. */
+export function noteRoom(memory, room) {
+  if (!memory || !room) return memory;
   const entry = memory.rooms[room] ?? (memory.rooms[room] = {
     visits: 0,
-    firstTick: tick,
-    lastTick: tick,
+    firstTick: 0,
+    lastTick: 0,
     commands: {},
   });
   if (memory.lastRoom !== room) {
     entry.visits += 1;
     memory.lastRoom = room;
     memory.visits += 1;
+    memory.trail ??= [];
+    memory.trail.push(room);
+    if (memory.trail.length > 60) memory.trail.splice(0, memory.trail.length - 60);
   }
+  return memory;
+}
+
+/** Record the result of the command issued in `room` on the previous turn. */
+export function rememberResult(memory, { room, command, observation, tick = 0, at = Date.now() } = {}) {
+  if (!memory || !room || !command) return memory;
+  const entry = noteRoom(memory, room).rooms[room];
   entry.lastTick = tick;
   memory.updated = at;
   const known = entry.commands[command] ?? (entry.commands[command] = {
@@ -221,6 +232,8 @@ export function memoryPrompt(memory, { room = null, exits = [], limit = 8, query
       .map(([name]) => name);
     lines.push(`Rooms seen: ${names.length}. Recent: ${recent.join(", ")}.`);
   }
+  const route = (memory.trail ?? []).slice(-6);
+  if (route.length) lines.push(`Route: ${route.join(" → ")}.`);
   const unexplored = (Array.isArray(exits) ? exits : [])
     .filter((exit) => exit?.room && !memory.rooms[exit.room])
     .map((exit) => `${exit.dir} → ${exit.room}`);
@@ -233,27 +246,38 @@ export function memoryPrompt(memory, { room = null, exits = [], limit = 8, query
 }
 
 /** A compact warning when the recent command cycle is repeating. */
-export function loopWarning(recent = []) {
+export function loopWarning(recent = [], trail = []) {
   const list = Array.isArray(recent) ? recent : [];
+  const route = Array.isArray(trail) ? trail : [];
   if (list.length >= 3 && list.slice(-3).every((command) => command === list.at(-1))) {
     return `LOOP: you repeated "${list.at(-1)}" three times. Break the pattern; move or try a different action.`;
   }
   if (list.length >= 4 && list.at(-1) === list.at(-3) && list.at(-2) === list.at(-4)) {
     return `LOOP: you are cycling "${list.at(-2)}" and "${list.at(-1)}". Break the cycle.`;
   }
+  if (route.length >= 4 && route.at(-1) === route.at(-3) && route.at(-2) === route.at(-4)) {
+    return `ROUTE LOOP: you are cycling ${route.at(-2)} and ${route.at(-1)}. Take an exit you have not tried.`;
+  }
+  if (route.length >= 6 && route.at(-1) === route.at(-4) && route.at(-2) === route.at(-5) && route.at(-3) === route.at(-6)) {
+    return `ROUTE LOOP: you are circling ${route.at(-3)} → ${route.at(-2)} → ${route.at(-1)}. Take a different exit.`;
+  }
   return "";
 }
 
 /** Pick a different, safe command after an observation loop. */
-export function breakLoop(recent = [], exits = []) {
+export function breakLoop(recent = [], exits = [], memory = null) {
   const list = Array.isArray(recent) ? recent : [];
   const last = list.at(-1) ?? "";
   if (/^(attack|cast|flee|say|tell|global|talk|drop|give|buy|sell|train|study|recite)\b/i.test(last)) return null;
-  const dirs = (Array.isArray(exits) ? exits : [])
-    .map((exit) => (typeof exit === "string" ? exit : exit?.dir))
-    .filter(Boolean);
-  const fresh = dirs.find((dir) => !list.slice(-6).includes(dir));
-  if (fresh) return fresh;
+  const doors = (Array.isArray(exits) ? exits : [])
+    .map((exit) => (typeof exit === "string" ? { dir: exit, room: null } : { dir: exit?.dir, room: exit?.room ?? null }))
+    .filter((exit) => exit.dir);
+  const unseen = memory
+    ? doors.find((exit) => exit.room && !memory.rooms?.[exit.room])
+    : null;
+  if (unseen) return unseen.dir;
+  const fresh = doors.find((exit) => !list.slice(-6).includes(exit.dir));
+  if (fresh) return fresh.dir;
   if (last !== "look") return "look";
   return "wait";
 }
@@ -263,5 +287,5 @@ export function shouldBreakLoop(memory, { room, command, recent = [] } = {}) {
   if (/^(attack|cast|flee|say|tell|global|talk|drop|give|buy|sell|train|study|recite)\b/i.test(command)) return false;
   const entry = memory.rooms?.[room]?.commands?.[command];
   if (entry && entry.stale >= 2) return true;
-  return Boolean(loopWarning(recent));
+  return Boolean(loopWarning(recent, memory.trail ?? []));
 }

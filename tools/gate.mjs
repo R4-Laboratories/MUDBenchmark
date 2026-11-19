@@ -39,7 +39,7 @@ import { AREA_PERIOD, armorOf, attackRoll, checkpointIdentities, initialState, n
 import { join } from "node:path";
 import { buildCandidates } from "./candidate.mjs";
 import { PROVIDERS, buildSystemPrompt, buildUserPrompt, normalizeBase, parseBrain, requestFor, replyFrom, trimHistory, validateCommand, repairCommand } from "../runtime/web/ai.mjs";
-import { emptyMemory, rememberResult, memoryPrompt, loopWarning, breakLoop, shouldBreakLoop } from "../runtime/web/memory.mjs";
+import { emptyMemory, noteRoom, rememberResult, memoryPrompt, loopWarning, breakLoop, shouldBreakLoop } from "../runtime/web/memory.mjs";
 import { verifyPrismSession, verifyPersonaOwner, verifySessionKey, sessionWithinWindow } from "../runtime/prism-auth.mjs";
 import { decodeIdentityRequest, identityAdmits } from "../runtime/identity.mjs";
 import { loadStateFile, saveStateFile } from "../runtime/state.mjs";
@@ -288,9 +288,20 @@ let aiMemory = { ok: true, why: [] };
   check(socialPrompt.includes("Voices:") && socialPrompt.includes("a bard") && socialPrompt.includes("Vault keeps the word"), "the social memory lost public speech");
   check(!/tells you|password is secret|Password changed/i.test(socialPrompt), "the social memory leaked a private line");
   check(prompt.includes("Unexplored exits"), "the memory lost the unexplored exits");
+  check(prompt.includes("Route:"), "the memory lost the recent route");
   check(loopWarning(["north", "south", "north", "south"]).includes("LOOP"), "the memory did not detect a movement cycle");
   check(loopWarning(["look", "look", "look"]).includes("LOOP"), "the memory did not detect a repeated command");
+  check(loopWarning([], ["The Atrium", "The Corridor", "The Atrium", "The Corridor"]).includes("ROUTE LOOP"), "the memory did not detect a room cycle");
   check(breakLoop(["north", "south", "north", "south"], [{ dir: "north" }, { dir: "south" }, { dir: "east" }]) === "east", "the loop guard did not choose a fresh exit");
+  const route = emptyMemory();
+  noteRoom(route, "The Atrium");
+  noteRoom(route, "The Corridor");
+  check(breakLoop(["north", "south", "north", "south"], [
+    { dir: "north", room: "The Atrium" },
+    { dir: "south", room: "The Corridor" },
+    { dir: "east", room: "The Vault" },
+  ], route) === "east", "the loop guard did not prefer an unvisited room");
+  check(shouldBreakLoop(route, { room: "The Atrium", command: "north", recent: ["north", "south", "north", "south"] }), "the route loop did not trigger the loop guard");
   check(shouldBreakLoop(memory, { room: "The Atrium", command: "examine plaque", recent: [] }), "the stale memory did not trigger the loop guard");
   if (aiMemory.why.length) { aiMemory.ok = false; failures.push(`the AI memory is broken: ${aiMemory.why[0]}`); }
 }
