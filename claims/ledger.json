@@ -831,6 +831,12 @@
       "level": "build",
       "statement": "The Memory Garden adds three safe rooms east of the shrine (100 rooms/14 zones), a rememberer and garden wisp (47 mobiles), two keepsakes (95 objects) and The Garden Remembers quest (50 quests). A new facts layer teaches ledger, garden and crescent facts from NPCs, stores them on the character, mirrors them to R4, and gates an answer objective on the learned fact; recall <word> at the shrine uses the local note first and R4 context as fallback. The garden title is Gardenkeeper. The gate covers fact loading, R4 context matching, no-fact refusal, learnFact re-evaluation, reward and checkpoint persistence.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-134",
+      "level": "some-true",
+      "statement": "Production v0.81.0 serves 100 rooms, 14 zones, 50 quests, 47 mobiles and 95 objects. The Memory Garden adds three safe rooms east of the shrine, the rememberer and garden wisp, two keepsakes, and The Garden Remembers quest. NPC facts are stored per character, mirrored to R4, and recalled at the shrine; an answer objective with a fact cannot complete without learning it, and recall falls back to R4 context when the local note is missing. R4 is active, Gemini reports configured false, signups stay open. Gate 44594786579 green.",
+      "authority": "wick production v0.81.0 2026-11-19; release 44596483287; gate 44594786579; /health and /world"
     }
   ]
 }

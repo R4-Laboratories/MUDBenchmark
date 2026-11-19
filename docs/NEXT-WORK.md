@@ -16,7 +16,7 @@ memory or prompt system.
 | v0.78.0 | Per-guild hall vault and the repeatable clerk's errand | **done** (MB-127) |
 | v0.79.0 | Social talk quest, chat-rate guard and reserved names | **done** (MB-129) |
 | v0.80.0 | Persistent ignore lists, quest-earned titles and telemetry tuning | **done** (MB-131) |
-| v0.81.0 | The Memory Garden fact/recall quest and R4 fallback | **in flight** |
+| v0.81.0 | The Memory Garden fact/recall quest and R4 fallback | **done** (MB-133) |
 | v0.82.0 | Live session evidence and the next world slice | next |
 
 ## What is next
