@@ -24,6 +24,12 @@ viewers and public highlights in memory. `/watch` shows that archive with a
 JSON download; each live highlight also has a Copy and Download clip action.
 The archive is not persisted across a server restart.
 
+`/stats` is the public telemetry page for humans, AI drivers and spectators:
+world size, AI turns and latency, invalid/loop/memory/R4 counts, top commands,
+an all-time leaderboard and the live/last stream. It uses `/world`, `/trends`,
+`/leaderboard` and `/stream`, caches the last response for offline viewing and
+refreshes every 15 seconds.
+
 The live AI Studio has four tabs, and the human and the AI can be online at once.
 
 | Tab | Shows |

@@ -16,45 +16,46 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 
 | Verb | Aliases | Argument |
 | --- | --- | --- |
-| `adopt` | — | text |
-| `attack` | `kill`, `hit` | actor |
-| `buy` | `purchase` | object |
-| `channels` | `chan` | none |
-| `close` | `shut` | object |
-| `deliver` | `handin` | object to actor |
-| `drop` | `discard` | object |
-| `duel` | `challenge` | actor |
-| `eat` | `taste` | object |
-| `extinguish` | `douse`, `snuff` | object |
-| `flee` | `run` | none |
-| `give` | — | object to actor |
+| `adopt` | `ad` | text |
+| `attack` | `kill`, `hit`, `k`, `atk` | actor |
+| `battle` | `combat`, `bt` | none |
+| `buy` | `purchase`, `b` | object |
+| `channels` | `chan`, `ch` | none |
+| `close` | `shut`, `cl` | object |
+| `deliver` | `handin`, `dv` | object to actor |
+| `drop` | `discard`, `dp` | object |
+| `duel` | `challenge`, `du` | actor |
+| `eat` | `taste`, `ea` | object |
+| `extinguish` | `douse`, `snuff`, `ext` | object |
+| `flee` | `run`, `fl` | none |
+| `give` | `gv` | object to actor |
 | `guild` | `guilds` | subcommand |
 | `guildchat` | `gc`, `gchat` | text |
 | `inventory` | `i`, `inv` | none |
 | `leaderboard` | `top`, `lb`, `ranks` | none |
 | `levels` | `lv`, `lvl` | none |
-| `light` | `ignite` | object |
-| `list` | `shop`, `stock` | none |
-| `mail` | `letter` | actor text |
-| `map` | — | optional zone |
-| `open` | — | object |
-| `put` | `insert` | object in object |
+| `light` | `ignite`, `li` | object |
+| `list` | `shop`, `stock`, `ls` | none |
+| `mail` | `letter`, `m` | actor text |
+| `map` | `mp` | optional zone |
+| `open` | `op` | object |
+| `put` | `insert`, `pt` | object in object |
 | `quest` | — | subcommand |
-| `quests` | `journal` | none |
-| `remove` | `doff` | object |
-| `say` | — | text |
-| `score` | `stats` | none |
-| `sell` | `vend` | object |
-| `shortcuts` | — | none |
-| `take` | `get`, `grab` | object |
+| `quests` | `journal`, `q` | none |
+| `remove` | `doff`, `rm` | object |
+| `say` | `sy` | text |
+| `score` | `stats`, `sc` | none |
+| `sell` | `vend`, `se` | object |
+| `shortcuts` | `sh` | none |
+| `take` | `get`, `grab`, `tf` | object |
 | `takeFrom` | — | object from object |
-| `talk` | `greet` | actor |
-| `tell` | `whisper` | actor text |
-| `unwield` | `sheathe` | none |
-| `wait` | — | none |
-| `wear` | `don` | object |
-| `who` | `awake`, `online` | none |
-| `wield` | `equip` | object |
+| `talk` | `greet`, `tk` | actor |
+| `tell` | `whisper`, `te` | actor text |
+| `unwield` | `sheathe`, `uw` | none |
+| `wait` | `wa` | none |
+| `wear` | `don`, `wr` | object |
+| `who` | `awake`, `online`, `wh` | none |
+| `wield` | `equip`, `wi` | object |
 
 ## Channels
 
@@ -69,13 +70,36 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 
 | Social | Aliases |
 | --- | --- |
+| `apologize` | `apologize` |
 | `bow` | `bow` |
+| `cheer` | `cheer`, `woo` |
+| `clap` | `clap` |
+| `congratulate` | `congratulate` |
+| `cry` | `cry`, `sob` |
 | `dance` | `dance` |
-| `laugh` | `laugh`, `lol` |
-| `nod` | `nod` |
+| `frown` | `frown` |
+| `grin` | `grin` |
+| `highfive` | `highfive` |
+| `hug` | `hug` |
+| `hum` | `hum` |
+| `laugh` | `laugh`, `lol`, `hehe`, `haha` |
+| `mutter` | `mutter` |
+| `nod` | `nod`, `agree` |
+| `point` | `point` |
+| `poke` | `poke` |
+| `ponder` | `ponder`, `think` |
+| `salute` | `salute` |
+| `shiver` | `shiver` |
+| `shout` | `shout`, `yell` |
 | `shrug` | `shrug` |
 | `sigh` | `sigh` |
+| `sing` | `sing` |
+| `smile` | `smile`, `smirk` |
+| `stretch` | `stretch` |
 | `wave` | `wave` |
+| `whistle` | `whistle`, `whistles` |
+| `wink` | `wink` |
+| `yawn` | `yawn` |
 
 ## Quests
 

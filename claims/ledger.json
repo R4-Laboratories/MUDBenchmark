@@ -717,6 +717,18 @@
       "level": "build",
       "statement": "Visibility commands are live: who shows level, room, HP, guild/rank and active quests; quests supports active/available/done/all and quests <id> detail; levels shows every XP threshold; leaderboard/top/lb/ranks ranks all characters by level/XP/quests/guild; map summarizes zones/visited counts and map <zone> lists visited rooms while hiding unexplored ones; shortcuts lists movement, fast commands, recall and room shortcuts. The commands are in the verb table, help and /llms.txt; the AI action menu/validator accepts them; the gate covers level formatting, leaderboard order, map hiding and shortcut text.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-114",
+      "level": "build",
+      "statement": "Every command verb now has short aliases (g/tf, dp/dr, gv, pt, op, cl, wr, rm, ca, sp, lv, lb, mp, sh, k/atk and the rest), with 30 social emotes (smile through congratulate) in the socials table. score shows armour/damage, equipment shows slot totals, spells shows mana/effects/training costs, battle/combat/bt shows current opponents and HP. Wandering animal periods were shortened (rat/moth/boar/wolf/sewer-rat/cinder-hound/fen-wisp/bog-hound), and Snap-to-latest resets log/chat/Mind on AI start and mode entry. The gate covers the expanded verb table and socials.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-115",
+      "level": "build",
+      "statement": "GET /leaderboard returns the all-time character rows. GET /stats serves a public telemetry page with world counts, AI turns/latency/invalid/loops/memory/R4, per-model rows, top commands, leaderboard and live/last stream. /world now includes quests, zones and actions. The page caches the last responses for offline viewing and refreshes every 15 seconds.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

@@ -5,7 +5,8 @@
     "take": {
       "aliases": [
         "get",
-        "grab"
+        "grab",
+        "tf"
       ],
       "argument": "object",
       "messages": {
@@ -18,7 +19,8 @@
     },
     "drop": {
       "aliases": [
-        "discard"
+        "discard",
+        "dp"
       ],
       "argument": "object",
       "messages": {
@@ -28,7 +30,9 @@
       }
     },
     "give": {
-      "aliases": [],
+      "aliases": [
+        "gv"
+      ],
       "argument": "object to actor",
       "messages": {
         "actor": "You give %o to %t.",
@@ -54,7 +58,9 @@
     "attack": {
       "aliases": [
         "kill",
-        "hit"
+        "hit",
+        "k",
+        "atk"
       ],
       "argument": "actor",
       "messages": {
@@ -67,7 +73,8 @@
     },
     "put": {
       "aliases": [
-        "insert"
+        "insert",
+        "pt"
       ],
       "argument": "object in object",
       "messages": {
@@ -94,7 +101,9 @@
       }
     },
     "open": {
-      "aliases": [],
+      "aliases": [
+        "op"
+      ],
       "argument": "object",
       "messages": {
         "actor": "You open %o.",
@@ -106,7 +115,8 @@
     },
     "close": {
       "aliases": [
-        "shut"
+        "shut",
+        "cl"
       ],
       "argument": "object",
       "messages": {
@@ -119,7 +129,8 @@
     },
     "wear": {
       "aliases": [
-        "don"
+        "don",
+        "wr"
       ],
       "argument": "object",
       "messages": {
@@ -132,7 +143,8 @@
     },
     "remove": {
       "aliases": [
-        "doff"
+        "doff",
+        "rm"
       ],
       "argument": "object",
       "messages": {
@@ -144,7 +156,8 @@
     },
     "eat": {
       "aliases": [
-        "taste"
+        "taste",
+        "ea"
       ],
       "argument": "object",
       "messages": {
@@ -158,7 +171,8 @@
     },
     "light": {
       "aliases": [
-        "ignite"
+        "ignite",
+        "li"
       ],
       "argument": "object",
       "messages": {
@@ -172,7 +186,8 @@
     "extinguish": {
       "aliases": [
         "douse",
-        "snuff"
+        "snuff",
+        "ext"
       ],
       "argument": "object",
       "messages": {
@@ -185,7 +200,8 @@
     },
     "buy": {
       "aliases": [
-        "purchase"
+        "purchase",
+        "b"
       ],
       "argument": "object",
       "messages": {
@@ -199,7 +215,8 @@
     },
     "sell": {
       "aliases": [
-        "vend"
+        "vend",
+        "se"
       ],
       "argument": "object",
       "messages": {
@@ -214,7 +231,8 @@
     "list": {
       "aliases": [
         "shop",
-        "stock"
+        "stock",
+        "ls"
       ],
       "argument": "none",
       "messages": {
@@ -225,7 +243,9 @@
       }
     },
     "say": {
-      "aliases": [],
+      "aliases": [
+        "sy"
+      ],
       "argument": "text",
       "messages": {
         "actor": "You say: %s",
@@ -235,7 +255,8 @@
     },
     "tell": {
       "aliases": [
-        "whisper"
+        "whisper",
+        "te"
       ],
       "argument": "actor text",
       "messages": {
@@ -248,7 +269,8 @@
     },
     "mail": {
       "aliases": [
-        "letter"
+        "letter",
+        "m"
       ],
       "argument": "actor text",
       "messages": {
@@ -261,7 +283,8 @@
     },
     "channels": {
       "aliases": [
-        "chan"
+        "chan",
+        "ch"
       ],
       "argument": "none",
       "messages": {
@@ -271,7 +294,8 @@
     },
     "wield": {
       "aliases": [
-        "equip"
+        "equip",
+        "wi"
       ],
       "argument": "object",
       "messages": {
@@ -283,7 +307,8 @@
     },
     "unwield": {
       "aliases": [
-        "sheathe"
+        "sheathe",
+        "uw"
       ],
       "argument": "none",
       "messages": {
@@ -294,7 +319,8 @@
     },
     "flee": {
       "aliases": [
-        "run"
+        "run",
+        "fl"
       ],
       "argument": "none",
       "messages": {
@@ -305,7 +331,8 @@
     },
     "score": {
       "aliases": [
-        "stats"
+        "stats",
+        "sc"
       ],
       "argument": "none",
       "messages": {
@@ -314,7 +341,8 @@
     },
     "quests": {
       "aliases": [
-        "journal"
+        "journal",
+        "q"
       ],
       "argument": "none",
       "messages": {
@@ -338,7 +366,8 @@
     },
     "deliver": {
       "aliases": [
-        "handin"
+        "handin",
+        "dv"
       ],
       "argument": "object to actor",
       "messages": {
@@ -387,7 +416,8 @@
     },
     "talk": {
       "aliases": [
-        "greet"
+        "greet",
+        "tk"
       ],
       "argument": "actor",
       "messages": {
@@ -398,7 +428,8 @@
     },
     "duel": {
       "aliases": [
-        "challenge"
+        "challenge",
+        "du"
       ],
       "argument": "actor",
       "messages": {
@@ -417,7 +448,8 @@
     "who": {
       "aliases": [
         "awake",
-        "online"
+        "online",
+        "wh"
       ],
       "argument": "none",
       "messages": {
@@ -426,14 +458,18 @@
       }
     },
     "wait": {
-      "aliases": [],
+      "aliases": [
+        "wa"
+      ],
       "argument": "none",
       "messages": {
         "actor": "You wait."
       }
     },
     "adopt": {
-      "aliases": [],
+      "aliases": [
+        "ad"
+      ],
       "argument": "text",
       "messages": {
         "usage": "Usage: adopt <old-name> <password-or-token>.",
@@ -471,7 +507,9 @@
       }
     },
     "map": {
-      "aliases": [],
+      "aliases": [
+        "mp"
+      ],
       "argument": "optional zone",
       "messages": {
         "list": "The map is shown above.",
@@ -479,10 +517,22 @@
       }
     },
     "shortcuts": {
-      "aliases": [],
+      "aliases": [
+        "sh"
+      ],
       "argument": "none",
       "messages": {
         "list": "The shortcuts are shown above."
+      }
+    },
+    "battle": {
+      "aliases": [
+        "combat",
+        "bt"
+      ],
+      "argument": "none",
+      "messages": {
+        "list": "The current fight is shown above."
       }
     }
   }

@@ -203,6 +203,10 @@ Rehearsed 2026-11-16:
 - v0.71.0 (visibility) adds richer who/quests, levels, all-time leaderboard,
   zone map/shortcuts, and exposes them to the AI action menu and /llms.txt
   (MB-113);
+- v0.72.0 (shortcuts/stats) adds a shortcut for every verb, 30 socials,
+  battle/score/spell/equipment visibility, livelier animal cadence, snap-to-
+  latest panels and the public /stats dashboard with an all-time leaderboard
+  endpoint (MB-114/115);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

@@ -1172,6 +1172,7 @@ let stream = { ok: true, why: [] };
   check(/#stream-state/.test(serverText), "the server does not confirm stream state");
   check(/action === "poll"/.test(serverText) && /action === "chat"/.test(serverText), "the streamer has no poll or chat controls");
   check(/pathname === "\/stream"/.test(serverText) && /mudbenchmark\/stream\/1/.test(serverText), "the public stream status endpoint is missing");
+  check(/pathname === "\/stats"/.test(serverText) && /pathname === "\/leaderboard"/.test(serverText) && existsSync(join(root, "runtime/web/stats.html")), "the public stats page or leaderboard endpoint is missing");
   check(/pathname === "\/api\/demo"/.test(serverText) && /pathname === "\/api\/gemini\/v1\/chat\/completions"/.test(serverText), "the Gemini demo routes are missing");
   check(/r4-context/.test(serverText) && /R4_URL/.test(serverText), "the R4 memory proxy is missing");
   check(/lastLive/.test(serverText) && /publicLast/.test(serverText), "the stream archive is missing");

@@ -40,7 +40,8 @@ export function equipmentOf(actor, objects) {
 
 export function equipmentText(actor, objects) {
   const slots = equipmentOf(actor, objects);
-  const lines = [`Armour ${armorOf(actor, objects)}.`];
+  const weapon = weaponOf(actor, objects);
+  const lines = [`Armour ${armorOf(actor, objects)} · weapon damage ${weapon?.damage ?? 0}.`];
   for (const slot of SLOTS) {
     const object = slots[slot];
     lines.push(`${slot.padEnd(8)} ${object ? object.name : "—"}${object?.armor ? ` (armour ${object.armor})` : ""}${object?.damage ? ` (damage ${object.damage})` : ""}`);

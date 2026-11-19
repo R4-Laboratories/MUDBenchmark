@@ -15,7 +15,7 @@ import { recordSpan, digest, TELEMETRY_LOG } from "./telemetry.mjs";
 import { readSpanTail, readSpansTail, redactSpans } from "./spans.mjs";
 import { summarizeTrends } from "./trends.mjs";
 import { step, initialState, digestState, phaseAt, upgradeState, releaseHeldObjects, checkpointIdentities, armorOf, nextFrom, TICK_MS } from "./world.mjs";
-import { equipmentText } from "./equipment.mjs";
+import { equipmentText, weaponOf } from "./equipment.mjs";
 import { maxManaFor, spellById, spellLine, trainableSpells, trainingCost } from "./magic.mjs";
 import { findAction, loadActions } from "./actions.mjs";
 import { loadWorld } from "./worlddata.mjs";
@@ -35,7 +35,7 @@ import { normalizePrismId, ownerAllowed, rebindPlan } from "./rebind.mjs";
 import { normalizeStreamEvent, publicStreamText } from "./stream.mjs";
 import { normalizeAiTurn, aiTurnAttributes } from "./metrics.mjs";
 import { worldStatus, worldStatusText } from "./worldstatus.mjs";
-import { levelsText, leaderboardText, mapText, shortcutsText } from "./visibility.mjs";
+import { levelsText, leaderboardText, leaderboardRows, mapText, shortcutsText } from "./visibility.mjs";
 import { redactCommand, sanitizeIntent, sanitizeState } from "./telemetry-policy.mjs";
 import { loadStateFile, saveStateFile } from "./state.mjs";
 
@@ -531,6 +531,15 @@ const ALIASES = {
   status: "world", time: "world", sr: "search",
   lb: "leaderboard", top: "leaderboard", ranks: "leaderboard",
   lv: "levels", lvl: "levels",
+  gv: "give", pt: "put", op: "open", cl: "close", wr: "wear", rm: "remove",
+  ea: "eat", li: "light", ext: "extinguish", b: "buy", se: "sell", ls: "list",
+  sy: "say", te: "tell", m: "mail", ch: "channels", gl: "global", wi: "wield",
+  uw: "unwield", fl: "flee", dv: "deliver", tk: "talk", du: "duel", wa: "wait",
+  ad: "adopt", mp: "map", sh: "shortcuts", k: "attack", atk: "attack",
+  an: "answer", clm: "claim", wld: "world", sp: "spells", tr: "train",
+  ca: "cast", stu: "study", re: "recite", tu: "turn", pu: "push", ri: "ring",
+  chars: "characters", pl: "play", cr: "create", pw: "password", qq: "quit",
+  tf: "take", dp: "drop", combat: "battle", bt: "battle",
 };
 
 // One compact, hidden line per accepted command. It carries only what the
@@ -596,6 +605,8 @@ function selfState(actor) {
       completed: actor.quests?.completed?.length ?? 0,
     },
     inventory: state.objects.filter((object) => object.holder === actor.id && !object.worn).length,
+    armor: armorOf(actor, state.objects),
+    damage: weaponOf(actor, state.objects)?.damage ?? 0,
     inventory_names: state.objects.filter((object) => object.holder === actor.id && !object.worn && !object.eaten).map((object) => object.name),
     wielding: state.objects.find((object) => object.id === actor.wielding)?.name ?? null,
     worn: state.objects.filter((object) => object.holder === actor.id && object.worn).map((object) => object.name),
@@ -1239,7 +1250,7 @@ async function handleCommand(id, line) {
     if (!actor?.key) {
       return sendTo(id, "MUDBench is a persistent world for people and agents.\r\nSign in with your Prism id, or register <name> <password> / login <name> <password>.\r\nThen type help for the commands.\r\n");
     }
-    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: get/g, drop/dr, inventory/i, score/sc, quests/q, who/wh, gossip/gos, guildchat/gc.\r\nMagic: spells, train <spell> at the Mages' Guild, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search. Guild: guild join/leave/who/list/chat, guild advance (Mages). Room actions: turn, push, ring where the room suggests.\r\nWorld: world or status (online, guilds, reset); levels, leaderboard/top/lb, map [zone], shortcuts, quests active|available|done|all.<id>.\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
+    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: get/g/tf, drop/dp/dr, inventory/i, score/sc, quests/q, who/wh, spells/sp, cast/ca, say/sy, tell/te, give/gv, put/pt, open/op, close/cl, wear/wr, remove/rm, buy/b, sell/se, list/ls, map/mp, leaderboard/lb, levels/lv, shortcuts/sh.\r\nMagic: spells (effects/mana), train <spell> at the Mages' Guild, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search. Combat: attack/k, flee/fl, battle/combat/bt (current HP), score (armour/damage), equipment/eq (slots and totals). Guild: guild join/leave/who/list/chat, guild advance (Mages). Room actions: turn, push, ring where the room suggests.\r\nWorld: world or status (online, guilds, reset); levels, leaderboard/top/lb, map [zone], shortcuts, quests active|available|done|all.<id>.\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
   }
 
   // A command typed before the join tick lands is queued, not refused: the
@@ -1370,9 +1381,10 @@ async function handleCommand(id, line) {
     const trainable = trainableSpells(actor);
     const parts = [
       `Mana ${actor.mana ?? maxManaFor(actor)}/${actor.maxMana ?? maxManaFor(actor)}.`,
-      `Known: ${known.length ? known.map((spell) => `${spell.name} (${spell.mana})`).join(", ") : "none"}.`,
+      `Known: ${known.length ? known.map((spell) => spellLine(spell)).join("; ") : "none"}.`,
     ];
-    if (trainable.length) parts.push(`Trainable: ${trainable.map((spell) => `${spell.name} (${spell.level})`).join(", ")}.`);
+    if (trainable.length) parts.push(`Trainable: ${trainable.map((spell) => `${spell.name} (${spell.mana} mana, level ${spell.level}, ${spell.cost ?? 0} coins)`).join("; ")}.`);
+    parts.push("Use cast <spell> [on <target>] or study/recite a scroll.");
     return sendTo(id, `${parts.join(" ")}\r\n`);
   }
 
@@ -1732,13 +1744,30 @@ async function handleCommand(id, line) {
     return;
   }
 
+  if (verb === "battle" || verb === "combat") {
+    const fights = [];
+    for (const engagement of state.engagements ?? []) {
+      if (engagement.attackerId !== id && engagement.targetId !== id) continue;
+      const otherId = engagement.attackerId === id ? engagement.targetId : engagement.attackerId;
+      const other = state.actors.find((candidate) => candidate.id === otherId)
+        ?? state.npcs.find((candidate) => candidate.id === otherId);
+      if (!other || other.dead) continue;
+      const hp = other.hp ?? null;
+      const max = other.maxHp ?? null;
+      fights.push(`${other.name} — ${hp ?? "?"}/${max ?? "?"} hp${other.room === actor.room ? "" : " (elsewhere)"}`);
+    }
+    const weapon = weaponOf(actor, state.objects);
+    if (!fights.length) return sendTo(id, `You are not in a fight. ${weapon ? `Damage ${weapon.damage}; ` : ""}armour ${armorOf(actor, state.objects)}.\r\n`);
+    return sendTo(id, `Battle (${actor.hp}/${actor.maxHp} hp):\r\n  ${[...new Set(fights)].join("\r\n  ")}\r\n`);
+  }
+
   if (named === "score") {
     const messages = VERB_TABLE.verbs.score.messages;
     const weapon = state.objects.find((o) => o.id === actor.wielding);
     const armor = armorOf(actor, state.objects);
     const nextXp = nextLevelXp(state.levels, actor.level);
     const stateQ = normalizeQuestState(actor.quests, QUESTS.quests);
-    const line = `Level ${actor.level} (${actor.xp}${nextXp === null ? "" : `/${nextXp}`} xp), ${actor.hp}/${actor.maxHp} hp, mana ${actor.mana ?? maxManaFor(actor)}/${actor.maxMana ?? maxManaFor(actor)}, armour ${armor}, ${weapon ? `wielding ${weapon.name}` : "unarmed"}${actor.guild ? `, guild ${actor.guild}` : ""}, ${stateQ.active.length} active/${stateQ.completed.length} done quests.`;
+    const line = `Level ${actor.level} (${actor.xp}${nextXp === null ? "" : `/${nextXp}`} xp), ${actor.hp}/${actor.maxHp} hp, mana ${actor.mana ?? maxManaFor(actor)}/${actor.maxMana ?? maxManaFor(actor)}, armour ${armor}, damage ${weapon?.damage ?? 0}, ${weapon ? `wielding ${weapon.name}` : "unarmed"}${actor.guild ? `, guild ${actor.guild}` : ""}, ${stateQ.active.length} active/${stateQ.completed.length} done quests.`;
     return sendTo(id, `${render(messages.line, { words: line })}\r\n`);
   }
 
@@ -2636,6 +2665,23 @@ const web = http.createServer(async (req, res) => {
     }
     return;
   }
+  if (pathname === "/stats" || pathname === "/stats.html") {
+    try {
+      const html = readFileSync(new URL("./web/stats.html", import.meta.url));
+      res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" });
+      res.end(html);
+    } catch {
+      res.writeHead(500, { "content-type": "text/plain" });
+      res.end("stats page missing");
+    }
+    return;
+  }
+  if (pathname === "/leaderboard") {
+    const rows = leaderboardRows(state.identities ?? {});
+    res.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
+    res.end(JSON.stringify({ schema: "mudbenchmark/leaderboard/1", count: rows.length, rows: rows.slice(0, 50) }));
+    return;
+  }
   if (pathname === "/agent.mjs") {
     try {
       const source = readFileSync(new URL("./agent.mjs", import.meta.url));
@@ -2696,8 +2742,12 @@ const web = http.createServer(async (req, res) => {
     return;
   }
   if (pathname === "/world") {
+    const status = worldStatus(state, ROOMS);
+    status.quests = QUESTS.quests.length;
+    status.zones = loaded.zones.length;
+    status.actions = ACTION_TABLE.actions.length;
     res.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
-    res.end(JSON.stringify(worldStatus(state, ROOMS)));
+    res.end(JSON.stringify(status));
     return;
   }
 

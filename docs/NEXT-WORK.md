@@ -185,7 +185,8 @@ Only after A/B:
 | v0.69.0 | Social memory, Hollow Fen, guild level 6 | **done** (MB-108/109/110) |
 | v0.70.0 | Stream archive/clips, quota alerts, signup mode, restore drill | **done** (MB-111/112) |
 | v0.71.0 | Visibility commands: who, quests, levels, leaderboard, map, shortcuts | **done** (MB-113) |
-| v0.72.0 | More quest/shortcut content and onboarding | next |
+| v0.72.0 | Full shortcut map, socials, battle/stat visibility, public stats | **done** (MB-114/115) |
+| v0.73.0 | More quests, onboarding and spectator prompts | next |
 
 ## Risks
 

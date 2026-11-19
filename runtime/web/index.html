@@ -494,6 +494,7 @@
       <span id="state" role="status">connecting…</span>
     </div>
     <div class="header-actions">
+      <a href="/stats" target="_blank" rel="noopener">Stats</a>
       <a href="/watch" target="_blank" rel="noopener">Watch live ↗</a>
       <button type="button" id="telemetry-open" title="Open telemetry" aria-expanded="false" aria-controls="observe">Telemetry</button>
       <button type="button" id="font-down" title="Smaller text" aria-label="Smaller text">A−</button>
@@ -1041,6 +1042,18 @@
     latest.style.display = "none";
     log.scrollTop = log.scrollHeight;
   });
+
+  const snapToLatest = () => {
+    stick = true;
+    chatStick = true;
+    mindStick = true;
+    requestAnimationFrame(() => {
+      log.scrollTop = log.scrollHeight;
+      chat.scrollTop = chat.scrollHeight;
+      mindPane.scrollTop = mindPane.scrollHeight;
+      latest.style.display = "none";
+    });
+  };
 
   const addLine = (text, cls) => {
     const line = document.createElement("div");
@@ -1601,6 +1614,7 @@
         detectLocalModels();
       } else {
         document.body.classList.add("ai-running");
+        snapToLatest();
       }
     } else {
       stopAI(true);
@@ -2086,8 +2100,7 @@
     log.innerHTML = "";
     chat.innerHTML = "";
     mind.innerHTML = "";
-    chatStick = true;
-    mindStick = true;
+    snapToLatest();
     aiTitle.textContent = "AI";
     aiSub.textContent = `${PROVIDERS[provider].label} · ${config.model}`;
     aiSettings.textContent = `${PROVIDERS[provider].label} · ${config.model} · ${config.base}`;

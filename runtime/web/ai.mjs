@@ -83,7 +83,9 @@ tell <name> <text>, mail <name> <text>, channels, answer <word>, claim <word>,
 claim unknown, north, south, east, west, up, down (n/s/e/w/u/d), attack <name>,
 flee, wield <weapon>, unwield, inventory, take <thing>, drop <thing>, put <thing> in <thing>,
 open <thing>, close <thing>, wear <thing>, remove <thing>, eat <thing>, light <thing>,
-buy <thing>, sell <thing>, list, wait, wave, nod, bow, laugh, sigh, shrug, dance, score,
+buy <thing>, sell <thing>, list, wait, wave, nod, bow, laugh, sigh, shrug, dance,
+smile, grin, frown, cheer, salute, point, ponder, stretch, shiver, yawn, wink, hug, highfive, poke,
+whistle, sing, hum, mutter, shout, clap, cry, apologize, congratulate, battle (combat/bt), score,
 equipment, quests [active|available|done|all|<id>], quest accept <id>, quest abandon <id>, deliver <thing> to <name>,
 levels, leaderboard (top/lb), map [zone], shortcuts,
 guild create <name>, guild join <name>, guild leave, guild who, guild list, guild chat <text>,
@@ -100,6 +102,7 @@ const VERBS = new Set([
   "laugh", "sigh", "shrug", "dance", "score", "sc", "stats", "quests", "q", "j", "quest", "guild", "gc",
   "gchat", "deliver", "talk", "spells", "train", "cast", "study", "recite", "search", "sr", "turn", "push", "ring", "world", "status", "help", "h", "?",
   "levels", "leaderboard", "top", "lb", "ranks", "map", "shortcuts",
+  "smile", "grin", "frown", "cheer", "salute", "point", "ponder", "stretch", "shiver", "yawn", "wink", "hug", "highfive", "poke", "whistle", "sing", "hum", "mutter", "shout", "clap", "cry", "apologize", "congratulate", "battle", "combat", "bt",
 ]);
 
 export const DEFAULT_GOAL =
@@ -172,9 +175,10 @@ export function buildActionMenu(state = null) {
     }
     for (const action of room.actions ?? []) menu.add(`${action.verb} ${action.target}`);
   }
-  for (const line of ["say <text>", "tell <name> <text>", "global <text>", "talk <name>", "wave", "nod", "bow", "laugh", "who", "leaderboard", "levels", "map", "shortcuts", "quests"]) {
+  for (const line of ["say <text>", "tell <name> <text>", "global <text>", "talk <name>", "wave", "nod", "bow", "laugh", "smile", "grin", "cheer", "salute", "ponder", "whistle", "sing", "hug", "highfive", "who", "battle", "equipment", "spells", "leaderboard", "levels", "map", "shortcuts", "quests"]) {
     menu.add(line);
   }
+  for (const spell of state?.self?.spells ?? []) menu.add(`cast ${spell}`);
   return [...menu].slice(0, 32);
 }
 
@@ -189,6 +193,7 @@ const FREE_VERBS = new Set([
   "sigh", "shrug", "dance", "flee", "search", "sr", "answer", "claim",
   "guild", "gc", "gchat", "quest", "deliver", "train", "list", "buy", "sell",
   "levels", "leaderboard", "top", "lb", "ranks", "map", "shortcuts",
+  "smile", "grin", "frown", "cheer", "salute", "point", "ponder", "stretch", "shiver", "yawn", "wink", "hug", "highfive", "poke", "whistle", "sing", "hum", "mutter", "shout", "clap", "cry", "apologize", "congratulate", "battle", "combat", "bt",
 ]);
 const TARGET_VERBS = new Set([
   "examine", "x", "ex", "take", "get", "g", "grab", "drop", "dr", "discard",
