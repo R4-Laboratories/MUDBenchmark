@@ -89,9 +89,9 @@ whistle, sing, hum, mutter, shout, clap, cry, apologize, congratulate, battle (c
 equipment, quests [active|available|done|all|<id>], quest accept <id>, quest abandon <id>, deliver <thing> to <name>,
 levels, leaderboard (top/lb), map [zone], shortcuts, tutorial (first),
 guild create <name>, guild join <name>, guild leave, guild who, guild list, guild chat <text>,
-guild rank <member> <rank>, guild disband, talk <name>, spells, train <spell>, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search, turn, push, ring, world, help, go <direction>`;
+guild rank <member> <rank>, guild disband, vault, deposit <item>, withdraw <item>, talk <name>, spells, train <spell>, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search, turn, push, ring, world, help, go <direction>`;
 
-const FAST_COMMANDS = "look, examine <thing>, inventory, score, equipment, quests, say <text>, tell <name> <text>, global <text>, talk <name>, who, north/south/east/west/up/down, take/drop/wear/wield, attack <name>, flee, cast <spell>, buy/sell/list, open/close, quest accept <id>, deliver <thing> to <name>, guild create/join/leave/who/chat, wait, search, world, help, wave/nod/bow/laugh";
+const FAST_COMMANDS = "look, examine <thing>, inventory, score, equipment, quests, say <text>, tell <name> <text>, global <text>, talk <name>, who, north/south/east/west/up/down, take/drop/wear/wield, attack <name>, flee, cast <spell>, buy/sell/list, open/close, quest accept <id>, deliver <thing> to <name>, guild create/join/leave/who/chat, vault/deposit/withdraw, wait, search, world, help, wave/nod/bow/laugh";
 
 const VERBS = new Set([
   "look", "l", "examine", "x", "ex", "who", "wh", "awake", "aw", "answer", "claim", "say", "tell", "mail", "go",
@@ -101,6 +101,7 @@ const VERBS = new Set([
   "wear", "remove", "eat", "light", "extinguish", "buy", "sell", "list", "wait", "wave", "nod", "bow",
   "laugh", "sigh", "shrug", "dance", "score", "sc", "stats", "quests", "q", "j", "quest", "guild", "gc",
   "gchat", "deliver", "talk", "spells", "train", "cast", "study", "recite", "search", "sr", "turn", "push", "ring", "world", "status", "help", "h", "?",
+  "vault", "gvault", "bank", "gvlt", "deposit", "dep", "store", "ds", "withdraw", "wd", "retrieve", "wdr",
   "levels", "leaderboard", "top", "lb", "ranks", "map", "shortcuts", "tutorial", "first", "firststeps",
   "smile", "grin", "frown", "cheer", "salute", "point", "ponder", "stretch", "shiver", "yawn", "wink", "hug", "highfive", "poke", "whistle", "sing", "hum", "mutter", "shout", "clap", "cry", "apologize", "congratulate", "battle", "combat", "bt",
 ]);
@@ -192,6 +193,7 @@ const FREE_VERBS = new Set([
   "world", "status", "help", "h", "?", "wait", "wave", "nod", "bow", "laugh",
   "sigh", "shrug", "dance", "flee", "search", "sr", "answer", "claim",
   "guild", "gc", "gchat", "quest", "deliver", "train", "list", "buy", "sell",
+  "vault", "gvault", "bank", "gvlt",
   "levels", "leaderboard", "top", "lb", "ranks", "map", "shortcuts", "tutorial", "first", "firststeps",
   "smile", "grin", "frown", "cheer", "salute", "point", "ponder", "stretch", "shiver", "yawn", "wink", "hug", "highfive", "poke", "whistle", "sing", "hum", "mutter", "shout", "clap", "cry", "apologize", "congratulate", "battle", "combat", "bt",
 ]);
@@ -199,7 +201,7 @@ const TARGET_VERBS = new Set([
   "examine", "x", "ex", "take", "get", "g", "grab", "drop", "dr", "discard",
   "wear", "don", "remove", "wield", "unwield", "eat", "light", "extinguish",
   "open", "close", "shut", "talk", "attack", "kill", "hit", "buy", "sell",
-  "cast", "study", "recite",
+  "cast", "study", "recite", "deposit", "dep", "store", "ds", "withdraw", "wd", "retrieve", "wdr",
 ]);
 
 const wordsOf = (value) => String(value ?? "").toLowerCase().split(/[^a-z0-9]+/).filter((word) => word.length > 1);
@@ -336,7 +338,7 @@ export function buildUserPrompt({ turn = 1, observation = "", director = [], sta
     ? `WORLD: ${state.world.online} online · ${state.world.phase} · ${state.world.weather ?? "clear"} · reset in ${Math.max(0, Math.round((state.world.reset_seconds ?? 0) / 60))}m`
     : "";
   const self = state?.self
-    ? `YOU: level ${state.self.level} · ${state.self.xp}/${state.self.next_xp ?? "?"} xp · ${state.self.hp ?? "?"}/${state.self.max_hp ?? "?"} hp · ${state.self.mana ?? "?"}/${state.self.max_mana ?? "?"} mana · ${state.self.quests?.active ?? 0} active / ${state.self.quests?.completed ?? 0} done quests · ${state.self.inventory ?? 0} items${state.self.spells?.length ? ` · spells ${state.self.spells.join(", ")}` : ""}${state.self.guild ? ` · ${state.self.guild}${state.self.guild_rank ? ` (${state.self.guild_rank})` : ""}` : ""}${state.self.wielding ? ` · wielding ${state.self.wielding}` : ""}${Number.isFinite(state.self.spell_power) ? ` · spell power ${state.self.spell_power}` : ""}${(state.self.effects ?? []).length ? ` · effects ${(state.self.effects ?? []).map((effect) => `${effect.name} ${effect.rounds}`).join(", ")}` : ""}`
+    ? `YOU: level ${state.self.level} · ${state.self.xp}/${state.self.next_xp ?? "?"} xp · ${state.self.hp ?? "?"}/${state.self.max_hp ?? "?"} hp · ${state.self.mana ?? "?"}/${state.self.max_mana ?? "?"} mana · ${state.self.quests?.active ?? 0} active / ${state.self.quests?.completed ?? 0} done quests · ${state.self.inventory ?? 0} items${state.self.spells?.length ? ` · spells ${state.self.spells.join(", ")}` : ""}${state.self.guild ? ` · ${state.self.guild}${state.self.guild_rank ? ` (${state.self.guild_rank})` : ""}${Number.isFinite(state.self.guild_vault) ? ` · vault ${state.self.guild_vault}` : ""}` : ""}${state.self.wielding ? ` · wielding ${state.self.wielding}` : ""}${Number.isFinite(state.self.spell_power) ? ` · spell power ${state.self.spell_power}` : ""}${(state.self.effects ?? []).length ? ` · effects ${(state.self.effects ?? []).map((effect) => `${effect.name} ${effect.rounds}`).join(", ")}` : ""}`
     : "";
   const sheet = [world, self].filter(Boolean).join("\n");
   const menu = actions.join(", ");

@@ -384,7 +384,7 @@
       ],
       "argument": "subcommand",
       "messages": {
-        "usage": "guild create <name>, guild join <name>, guild leave, guild who, guild list, guild chat <text>, guild rank <member> <rank>, guild disband.",
+        "usage": "guild create <name>, guild join <name>, guild leave, guild who, guild list, guild chat <text>, guild rank <member> <rank>, guild disband; vault, deposit <item>, withdraw <item>.",
         "noGuild": "You are not in a guild. guild list, or guild create <name>.",
         "inGuild": "You are already in a guild. guild leave first.",
         "notFound": "No guild named %s.",
@@ -543,6 +543,47 @@
       "argument": "none",
       "messages": {
         "list": "The first steps are shown above."
+      }
+    },
+    "vault": {
+      "aliases": [
+        "gvault",
+        "bank",
+        "gvlt"
+      ],
+      "argument": "none",
+      "messages": {
+        "noGuild": "You are not in a guild.",
+        "wrongRoom": "The guild vault is in the Guild Hall, south of the Gilded Rat.",
+        "empty": "The guild vault is empty.",
+        "list": "The guild vault holds %s."
+      }
+    },
+    "deposit": {
+      "aliases": [
+        "dep",
+        "store",
+        "ds"
+      ],
+      "argument": "object",
+      "messages": {
+        "noGuild": "You are not in a guild.",
+        "wrongRoom": "The guild vault is in the Guild Hall, south of the Gilded Rat.",
+        "missing": "You are not carrying a %s.",
+        "full": "The guild vault is full (%s items)."
+      }
+    },
+    "withdraw": {
+      "aliases": [
+        "wd",
+        "retrieve",
+        "wdr"
+      ],
+      "argument": "object",
+      "messages": {
+        "noGuild": "You are not in a guild.",
+        "wrongRoom": "The guild vault is in the Guild Hall, south of the Gilded Rat.",
+        "missing": "The vault has no %s."
       }
     }
   }

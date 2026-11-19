@@ -221,6 +221,9 @@ Rehearsed 2026-11-16:
 - v0.77.0 (eclipse court) adds the six-room level-10 capstone above the Moon
   Throne, an eclipse-key chest, the dawn-gate shortcut and a three-quest chain;
   the balance sampler now reads the real world and its top-band fights (MB-125);
+- v0.78.0 (guild vault) adds a 20-slot per-guild vault in the shared hall,
+  deposit/withdraw commands, reset/restart/disband handling and the repeatable
+  clerk's errand; 48 quests (MB-127);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

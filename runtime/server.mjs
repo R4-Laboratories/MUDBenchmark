@@ -25,7 +25,7 @@ import { loadChannels, resolveChannel } from "./channels.mjs";
 import { loadSocials, resolveSocial } from "./socials.mjs";
 import { loadLevels, nextLevelXp } from "./levels.mjs";
 import { availableQuests, loadQuests, normalizeQuestState, questById, questLines, validateQuestReferences } from "./quests.mjs";
-import { RANKS, guildId, rankAtLeast, validGuildName } from "./guilds.mjs";
+import { GUILD_HALL, GUILD_VAULT_CAPACITY, RANKS, guildId, guildVaultHolder, rankAtLeast, validGuildName } from "./guilds.mjs";
 import { buildLlms } from "./llms.mjs";
 import { hashPassword, verifyPassword, validName, validPassword, accountCapReached } from "./accounts.mjs";
 import { allowCommand as allowInput, DEFAULT_INTERVAL_MS } from "./allowance.mjs";
@@ -243,6 +243,7 @@ if (!state.guilds.mages) {
     xp: 0,
     level: 1,
     perks: [],
+    vault: [],
   };
 }
 let lastSave = (() => { try { return statSync(STATE_FILE).mtimeMs; } catch { return 0; } })();
@@ -603,6 +604,7 @@ function selfState(actor) {
     discovered: [...(actor.found ?? [])],
     guild: actor.guild ?? null,
     guild_rank: actor.guildRank ?? null,
+    guild_vault: (state.guilds[actor.guild]?.vault ?? []).length,
     quests: {
       active: actor.quests?.active?.length ?? 0,
       completed: actor.quests?.completed?.length ?? 0,
@@ -1259,7 +1261,7 @@ async function handleCommand(id, line) {
     if (!actor?.key) {
       return sendTo(id, "MUDBench is a persistent world for people and agents.\r\nSign in with your Prism id, or register <name> <password> / login <name> <password>.\r\nThen type help for the commands.\r\n");
     }
-    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: get/g/tf, drop/dp/dr, inventory/i, score/sc, quests/q, who/wh, spells/sp, cast/ca, say/sy, tell/te, give/gv, put/pt, open/op, close/cl, wear/wr, remove/rm, buy/b, sell/se, list/ls, map/mp, leaderboard/lb, levels/lv, shortcuts/sh.\r\nMagic: spells (effects/mana), train <spell> at the Mages' Guild, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search. Combat: attack/k, flee/fl, battle/combat/bt (current HP), score (armour/damage), equipment/eq (slots and totals). Guild: guild join/leave/who/list/chat, guild advance (Mages). Room actions: turn, push, ring where the room suggests.\r\nWorld: world or status (online, guilds, reset); levels, leaderboard/top/lb, map [zone], shortcuts, quests active|available|done|all.<id>; tutorial (first) for the first steps.\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
+    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: get/g/tf, drop/dp/dr, inventory/i, score/sc, quests/q, who/wh, spells/sp, cast/ca, say/sy, tell/te, give/gv, put/pt, open/op, close/cl, wear/wr, remove/rm, buy/b, sell/se, list/ls, map/mp, leaderboard/lb, levels/lv, shortcuts/sh.\r\nMagic: spells (effects/mana), train <spell> at the Mages' Guild, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search. Combat: attack/k, flee/fl, battle/combat/bt (current HP), score (armour/damage), equipment/eq (slots and totals). Guild: guild join/leave/who/list/chat, guild advance (Mages), vault/deposit/withdraw in the Guild Hall. Room actions: turn, push, ring where the room suggests.\r\nWorld: world or status (online, guilds, reset); levels, leaderboard/top/lb, map [zone], shortcuts, quests active|available|done|all.<id>; tutorial (first) for the first steps.\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
   }
 
   // A command typed before the join tick lands is queued, not refused: the
@@ -1887,6 +1889,49 @@ async function handleCommand(id, line) {
   const guildRoster = (guild) => Object.entries(guild.members ?? {}).map(([key, rank]) =>
     `${key} (${rank}${state.actors.some((a) => a.key === key) ? ", awake" : ""})`);
 
+  const guildVaultItems = (guild) => (guild?.vault ?? [])
+    .map((objectId) => state.objects.find((object) => object.id === objectId && object.holder === guildVaultHolder(guild.id)))
+    .filter((object) => object && !object.eaten);
+
+  if (named === "vault") {
+    const messages = VERB_TABLE.verbs.vault.messages;
+    const guild = state.guilds[actor.guild];
+    if (!guild) return sendTo(id, `${messages.noGuild}\r\n`);
+    if (actor.room !== GUILD_HALL) return sendTo(id, `${messages.wrongRoom}\r\n`);
+    const items = guildVaultItems(guild);
+    if (!items.length) return sendTo(id, `${messages.empty}\r\n`);
+    const names = items.map((object) => {
+      const inside = state.objects.filter((entry) => entry.inside === object.id && !entry.eaten).length;
+      return `${object.name}${inside ? ` (${inside} inside)` : ""}`;
+    });
+    return sendTo(id, `${render(messages.list, { words: `${items.length}/${GUILD_VAULT_CAPACITY}: ${names.join(", ")}` })}\r\n`);
+  }
+
+  if (named === "deposit") {
+    const messages = VERB_TABLE.verbs.deposit.messages;
+    const guild = state.guilds[actor.guild];
+    if (!guild) return sendTo(id, `${messages.noGuild}\r\n`);
+    if (actor.room !== GUILD_HALL) return sendTo(id, `${messages.wrongRoom}\r\n`);
+    const object = findObject(words, (entry) => entry.holder === id && !entry.eaten);
+    if (!object) return sendTo(id, `${render(messages.missing, { words })}\r\n`);
+    const vault = guild.vault ?? [];
+    if (vault.length >= GUILD_VAULT_CAPACITY) return sendTo(id, `${render(messages.full, { words: String(vault.length) })}\r\n`);
+    pending.push({ kind: "guildDeposit", actorId: id, objectId: object.id });
+    return;
+  }
+
+  if (named === "withdraw") {
+    const messages = VERB_TABLE.verbs.withdraw.messages;
+    const guild = state.guilds[actor.guild];
+    if (!guild) return sendTo(id, `${messages.noGuild}\r\n`);
+    if (actor.room !== GUILD_HALL) return sendTo(id, `${messages.wrongRoom}\r\n`);
+    const wanted = words.toLowerCase();
+    const object = guildVaultItems(guild).find((entry) => entry.name.toLowerCase().includes(wanted));
+    if (!object) return sendTo(id, `${render(messages.missing, { words })}\r\n`);
+    pending.push({ kind: "guildWithdraw", actorId: id, objectId: object.id });
+    return;
+  }
+
   if (named === "guild") {
     const messages = VERB_TABLE.verbs.guild.messages;
     const action = rest[0];
@@ -2393,6 +2438,7 @@ function onTick() {
         "guild.id": event.guild.id,
         "guild.action": event.guild.action,
         "guild.name": event.guild.name ?? null,
+        "object.id": event.guild.object ?? null,
         "world.tick": state.tick,
       }, 0);
     }

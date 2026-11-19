@@ -1277,6 +1277,28 @@
         "object": "dawn-blade"
       },
       "complete": "The herald closes the regent's eye. The dawn gate opens behind the throne."
+    },
+    {
+      "id": "clerk-errand",
+      "name": "The Clerk's Errand",
+      "level": 3,
+      "giver": "the guild clerk",
+      "description": "A wax seal from the rat warren is missing from the ledger. Bring it back; the clerk finds another every cycle.",
+      "repeat": "reset",
+      "objectives": [
+        {
+          "kind": "deliver",
+          "npc": "guild-clerk",
+          "object": "clerk-seal",
+          "count": 1,
+          "text": "Deliver a clerk's seal to the guild clerk"
+        }
+      ],
+      "rewards": {
+        "xp": 80,
+        "guildXp": 20
+      },
+      "complete": "The clerk presses the seal into the ledger and hands you a fresh page. The errand will return."
     }
   ]
 }

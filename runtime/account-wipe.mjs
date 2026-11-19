@@ -5,6 +5,8 @@
 // that would otherwise point at accounts that no longer exist. The caller
 // archives the files first and stops the server before using it.
 
+import { GUILD_HALL } from "./guilds.mjs";
+
 const playerCounts = (state, store) => ({
   accounts: Object.keys(state.accounts ?? {}).length,
   identities: Object.keys(state.identities ?? {}).length,
@@ -30,8 +32,19 @@ export function wipePlayers(state, store) {
   state.engagements = [];
 
   // The Mages' Guild is a world institution; its roster is player data. Any
-  // other guild was founded by players and goes with them.
+  // other guild was founded by players and goes with them. A vault item is
+  // world state, so it falls in the shared hall instead of vanishing.
   for (const [id, guild] of Object.entries(state.guilds ?? {})) {
+    for (const objectId of guild.vault ?? []) {
+      const object = (state.objects ?? []).find((entry) => entry.id === objectId);
+      if (!object) continue;
+      object.holder = null;
+      object.room = GUILD_HALL;
+      object.inside = null;
+      object.heldRoom = null;
+      object.worn = false;
+    }
+    guild.vault = [];
     if (id !== "mages") {
       delete state.guilds[id];
       continue;

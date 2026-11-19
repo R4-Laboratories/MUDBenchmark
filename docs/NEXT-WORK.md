@@ -1,7 +1,7 @@
 # Next work
 
-Baseline: **v0.76.0**, with v0.77.0 in flight. The world has 97 rooms, 13 zones,
-47 quests, 45 mobiles and 92 objects. R4 memory, command grounding, scorecards
+Baseline: **v0.77.0**, with v0.78.0 in flight. The world has 97 rooms, 13 zones,
+48 quests, 45 mobiles and 93 objects. R4 memory, command grounding, scorecards
 and the public stats surface are live; signups are open and the Gemini demo is
 disabled and unconfigured.
 
@@ -13,18 +13,20 @@ memory or prompt system.
 | Release | Scope | Status |
 | --- | --- | --- |
 | v0.77.0 | The Eclipse Court: six-room level-10 capstone, quest chain, keyed vault, dawn gate; balance sampler reads real world data | **in flight** |
-| v0.78.0 | Guild hall vault/bank and repeatable guild quests | next |
-| v0.79.0 | Social/memory-driven quests, titles and chat moderation | planned |
+| v0.78.0 | Per-guild hall vault and the repeatable clerk's errand | **in flight** |
+| v0.79.0 | Social/memory-driven quests, titles and chat moderation | next |
 
 ## What is next
 
 1. **Live-run tuning.** The sampler is deterministic, not live evidence. Run
    human/AI sessions, read `/stats` and the combat spans, and tune status
    durations, aggression, mana costs and the level 8-10 reward curve.
-2. **Guild depth.** The guild hall exists at room 24, but it has no shared
-   vault or bank. Add a per-guild store and one more high-rank quest line.
-3. **Repeatable content.** The quest engine already supports `repeat: "reset"`
-   and `questCycles`, but no quest uses it. Add daily or weekly guild work.
+2. **Guild depth.** The guild hall vault now stores 20 goods per guild, with
+   deposit/withdraw and reset/restart/disband coverage. A high-rank guild quest
+   line remains open.
+3. **Repeatable content.** The clerk's errand is the second reset-cycle quest.
+   Add a higher-rank repeatable and a weekly cadence if the live data warrants
+   it.
 4. **Social quests.** Social memory is recorded; no quest objective reads it.
    Add a conversation or delivery chain that uses the memory layer.
 5. **Moderation.** Open signups need chat rate limits, mute/ignore and a
@@ -198,7 +200,8 @@ works; no key reaches the browser, transcript or telemetry.
 | v0.75.0 | First Steps tutorial and deeper Salt/Fen quest chains | **done** (MB-121) |
 | v0.76.0 | Live balance review and the Moonlit Reach | **done** (MB-123) |
 | v0.77.0 | The Eclipse Court level-10 capstone and real-data balance sampler | **done** (MB-125) |
-| v0.78.0 | Guild vault/bank and repeatable guild quests | next |
+| v0.78.0 | Per-guild hall vault and the repeatable clerk's errand | **in flight** |
+| v0.79.0 | Social/memory quests, titles and chat moderation | next |
 
 ## Risks
 

@@ -4093,6 +4093,17 @@
       "value": 160,
       "examine": "A long blade of white glass with a line of dawn down its edge.",
       "forSale": false
+    },
+    {
+      "id": "clerk-seal",
+      "name": "a clerk's seal",
+      "room": 28,
+      "flags": [
+        "takeable"
+      ],
+      "value": 8,
+      "examine": "A stub of red wax stamped with the guild ledger.",
+      "forSale": false
     }
   ],
   "climate": {

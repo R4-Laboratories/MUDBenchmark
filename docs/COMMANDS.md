@@ -23,6 +23,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `channels` | `chan`, `ch` | none |
 | `close` | `shut`, `cl` | object |
 | `deliver` | `handin`, `dv` | object to actor |
+| `deposit` | `dep`, `store`, `ds` | object |
 | `drop` | `discard`, `dp` | object |
 | `duel` | `challenge`, `du` | actor |
 | `eat` | `taste`, `ea` | object |
@@ -53,10 +54,12 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `tell` | `whisper`, `te` | actor text |
 | `tutorial` | `first`, `firststeps` | none |
 | `unwield` | `sheathe`, `uw` | none |
+| `vault` | `gvault`, `bank`, `gvlt` | none |
 | `wait` | `wa` | none |
 | `wear` | `don`, `wr` | object |
 | `who` | `awake`, `online`, `wh` | none |
 | `wield` | `equip`, `wi` | object |
+| `withdraw` | `wd`, `retrieve`, `wdr` | object |
 
 ## Channels
 
@@ -153,6 +156,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `eclipse-stair` | The Eclipse Stair | 9 | Climb the Eclipse Stair; Defeat the star hound; Carry the eclipse key | 280 xp |
 | `eclipse-vault` | The Mirror Vault | 10 | Enter the Mirror Vault; Carry the dawn crown | 450 xp |
 | `eclipse-throne` | The Throne of Ash | 10 | Reach the Throne of Ash; Defeat the eclipse regent; Carry the regent's sigil | 800 xp |
+| `clerk-errand` | The Clerk's Errand | 3 | Deliver a clerk's seal to the guild clerk | 80 xp |
 
 ## Rooms
 

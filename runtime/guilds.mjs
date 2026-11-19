@@ -3,6 +3,13 @@
 
 export const RANKS = ["leader", "officer", "member"];
 
+// The shared hall is room 24, south of the Gilded Rat. The vault is per guild
+// but lives in one physical room, so the room id is a world constant here.
+export const GUILD_HALL = 24;
+export const GUILD_VAULT_CAPACITY = 20;
+export const guildVaultHolder = (id) => `guild:${id}`;
+export const isGuildVaultHolder = (holder) => typeof holder === "string" && holder.startsWith("guild:");
+
 export const validGuildName = (name) =>
   typeof name === "string" && name.trim().length >= 2 && name.trim().length <= 32 && /^[a-z0-9][a-z0-9 '\-]*$/i.test(name.trim());
 

@@ -12,7 +12,7 @@ import { createHash } from "node:crypto";
 import { advance, due as pulseDue, makePulse } from "./generated/Pulses.mjs";
 import { levelForXp, nextLevelXp } from "./levels.mjs";
 import { applyQuestEvent, emptyProgress, normalizeQuestState, questById, questMet } from "./quests.mjs";
-import { RANKS, guildId, guildLevelFor, rankAtLeast, removeMember, successor, validGuildName, perksFor } from "./guilds.mjs";
+import { GUILD_HALL, GUILD_VAULT_CAPACITY, RANKS, guildId, guildLevelFor, guildVaultHolder, isGuildVaultHolder, rankAtLeast, removeMember, successor, validGuildName, perksFor } from "./guilds.mjs";
 import { armorOf, slotOf, weaponOf } from "./equipment.mjs";
 import { maxManaFor, spellById, spellPower } from "./magic.mjs";
 
@@ -304,6 +304,7 @@ export function digestState(state) {
       ...guild,
       members: { ...(guild.members ?? {}) },
       invites: [...(guild.invites ?? [])],
+      vault: [...(guild.vault ?? [])],
     }])),
     duels: (state.duels ?? []).map((duel) => ({ ...duel })),
     mail: (state.mail ?? []).map((letter) => ({ ...letter })),
@@ -462,7 +463,10 @@ export function upgradeState(saved, base) {
     channels: base.channels,
     levels: base.levels,
     quests: base.quests,
-    guilds: saved.guilds && typeof saved.guilds === "object" ? saved.guilds : {},
+    guilds: Object.fromEntries(Object.entries(saved.guilds ?? {}).map(([id, guild]) => [id, {
+      ...guild,
+      vault: Array.isArray(guild.vault) ? [...guild.vault] : [],
+    }])),
     duels: [],
     mail: Array.isArray(saved.mail) ? saved.mail : [],
     pulses,
@@ -482,6 +486,7 @@ export function releaseHeldObjects(state, actors = []) {
   const roomOf = new Map(actors.map((actor) => [actor.id, actor.room]));
   for (const object of state.objects) {
     if (object.holder === null || object.holder === undefined) continue;
+    if (isGuildVaultHolder(object.holder)) continue;
     // A restart drops the actor; the object falls where they stood, or goes
     // home if even that record is gone. Nothing is restored to a hand.
     object.room = roomOf.has(object.holder) ? roomOf.get(object.holder) : (object.heldRoom ?? state.start);
@@ -522,6 +527,20 @@ export function checkpointIdentities(state) {
     };
   }
   return state;
+}
+
+/** A disbanded guild leaves its vault goods in the shared hall. */
+function releaseGuildVault(state, guild) {
+  for (const id of guild.vault ?? []) {
+    const object = state.objects.find((entry) => entry.id === id);
+    if (!object || object.holder !== guildVaultHolder(guild.id)) continue;
+    object.holder = null;
+    object.room = GUILD_HALL;
+    object.inside = null;
+    object.heldRoom = null;
+    object.worn = false;
+  }
+  guild.vault = [];
 }
 
 export function step({ state, rooms, intents, actions = [] }) {
@@ -836,6 +855,39 @@ export function step({ state, rooms, intents, actions = [] }) {
       continue;
     }
 
+    if (intent.kind === "guildDeposit" || intent.kind === "guildWithdraw") {
+      const actor = find(intent.actorId);
+      const guild = next.guilds[actor?.guild];
+      if (!actor || !guild || actor.room !== GUILD_HALL) continue;
+      const vault = Array.isArray(guild.vault) ? guild.vault : (guild.vault = []);
+      if (intent.kind === "guildDeposit") {
+        const object = next.objects.find((entry) => entry.id === intent.objectId);
+        if (!object || object.holder !== actor.id || object.eaten) continue;
+        if (vault.length >= GUILD_VAULT_CAPACITY) continue;
+        if (actor.wielding === object.id) actor.wielding = null;
+        object.holder = guildVaultHolder(guild.id);
+        object.room = null;
+        object.inside = null;
+        object.heldRoom = null;
+        object.worn = false;
+        if (!vault.includes(object.id)) vault.push(object.id);
+        events.push({ onlyId: actor.id, text: `You deposit ${object.name} in the guild vault.\r\n`, guild: { action: "deposit", id: guild.id, name: guild.name, object: object.id } });
+        events.push({ room: actor.room, text: `${actor.name} stores something in the guild vault.`, exceptId: actor.id });
+      } else {
+        const object = next.objects.find((entry) => entry.id === intent.objectId && entry.holder === guildVaultHolder(guild.id));
+        if (!object) continue;
+        object.holder = actor.id;
+        object.room = null;
+        object.inside = null;
+        object.heldRoom = actor.room;
+        object.worn = false;
+        guild.vault = vault.filter((id) => id !== object.id);
+        events.push({ onlyId: actor.id, text: `You withdraw ${object.name} from the guild vault.\r\n`, guild: { action: "withdraw", id: guild.id, name: guild.name, object: object.id } });
+        events.push({ room: actor.room, text: `${actor.name} takes something from the guild vault.`, exceptId: actor.id });
+      }
+      continue;
+    }
+
     if (intent.kind === "guildJoin") {
       const actor = find(intent.actorId);
       if (!actor?.key || actor.guild) continue;
@@ -880,6 +932,7 @@ export function step({ state, rooms, intents, actions = [] }) {
       actor.guildRank = null;
       next.identities[actor.key] = { ...next.identities[actor.key], guild: null, guildRank: null };
       if (Object.keys(guild.members).length === 0) {
+        releaseGuildVault(next, guild);
         delete next.guilds[guild.id];
         events.push({ onlyId: actor.id, text: `You leave ${guild.name}. It has no members left.\r\n`, guild: { action: "disband", id: guild.id, name: guild.name } });
       } else {
@@ -941,6 +994,7 @@ export function step({ state, rooms, intents, actions = [] }) {
         const online = next.actors.find((member) => member.key === key);
         if (online) { online.guild = null; online.guildRank = null; }
       }
+      releaseGuildVault(next, guild);
       delete next.guilds[guild.id];
       events.push({ onlyId: actor.id, text: `${guild.name} is disbanded.\r\n`, guild: { action: "disband", id: guild.id, name: guild.name } });
       for (const member of next.actors) {
@@ -1870,7 +1924,9 @@ export function step({ state, rooms, intents, actions = [] }) {
     next.duels = [];
     for (const actor of next.actors) { actor.wielding = null; actor.effects = []; }
     next.objects = next.objects.filter((object) => !object.ephemeral);
+    const vaultContainers = new Set(next.objects.filter((object) => isGuildVaultHolder(object.holder)).map((object) => object.id));
     for (const object of next.objects) {
+      if (isGuildVaultHolder(object.holder) || vaultContainers.has(object.inside)) continue;
       object.holder = null;
       object.room = object.home;
       object.inside = object.homeInside;

@@ -28,7 +28,7 @@ import { hashPassword, verifyPassword, validName, validPassword, accountCapReach
 import { allowCommand, DEFAULT_INTERVAL_MS } from "../runtime/allowance.mjs";
 import { loadLevels } from "../runtime/levels.mjs";
 import { loadQuests, validateQuestReferences } from "../runtime/quests.mjs";
-import { guildId, validGuildName, guildLevelFor, perksFor } from "../runtime/guilds.mjs";
+import { GUILD_HALL, GUILD_VAULT_CAPACITY, guildId, guildVaultHolder, validGuildName, guildLevelFor, perksFor } from "../runtime/guilds.mjs";
 import { DEFAULT_TURNS, trimMessages } from "../runtime/memory.mjs";
 import { buildLlms } from "../runtime/llms.mjs";
 import { assemble } from "../runtime/router.mjs";
@@ -1127,9 +1127,10 @@ let accountWipe = { ok: true, why: [] };
     duels: [{ challengerKey: "a" }],
     engagements: [{ attackerId: 1 }],
     guilds: {
-      mages: { members: { alice: "member" }, invites: ["bob"] },
-      players: { members: { bob: "leader" }, invites: [] },
+      mages: { members: { alice: "member" }, invites: ["bob"], vault: ["shield"] },
+      players: { members: { bob: "leader" }, invites: [], vault: ["sword"] },
     },
+    objects: [{ id: "sword", holder: "guild:players" }, { id: "shield", holder: "guild:mages" }],
     rooms: { 1: { name: "The Atrium" } },
     npcs: [{ id: "rat" }],
   };
@@ -1142,6 +1143,7 @@ let accountWipe = { ok: true, why: [] };
   check(result.after.actors === 0 && state.mail.length === 0 && state.duels.length === 0 && state.engagements.length === 0, "the wipe left player references");
   check(state.guilds.mages && Object.keys(state.guilds.mages.members).length === 0 && state.guilds.mages.invites.length === 0, "the mages roster was not cleared");
   check(!state.guilds.players, "a player guild survived the wipe");
+  check(state.objects.every((object) => object.holder === null && object.room === GUILD_HALL), "the wipe did not release vault goods into the hall");
   check(state.rooms[1]?.name === "The Atrium" && state.npcs[0]?.id === "rat", "the wipe removed world content");
   if (accountWipe.why.length) { accountWipe.ok = false; failures.push(`the account wipe is broken: ${accountWipe.why[0]}`); }
 }
@@ -2510,6 +2512,52 @@ let quests = { ok: true, why: [] };
   if (!quests.ok) failures.push(`quests are broken: ${quests.why[0]}`);
 }
 
+// Repeatable work: the clerk's errand pays once per reset cycle, and the
+// delivered seal is consumed so the next cycle needs a fresh one.
+let repeatable = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, undefined, questTable.quests);
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
+  const check = (condition, why) => { if (!condition) { repeatable.ok = false; repeatable.why.push(why); } };
+  state.guilds.mages = { id: "mages", name: "The Mages' Guild", founder: "archmage", created: 0, members: { rep: "apprentice" }, invites: [], ranks: ["apprentice", "adept", "magician", "archmage"], xp: 0, level: 1, perks: [], vault: [] };
+  state.actors.push({ id: "r", key: "rep", account: "rep", name: "rep", room: 24, visited: [24], level: 5, xp: 0, maxHp: 18, hp: 18, maxMana: 17, mana: 17, spellbook: [], guild: "mages", guildRank: "apprentice", wielding: null, quests: { active: [], completed: [] }, found: [] });
+  run([{ kind: "questAccept", actorId: "r", questId: "clerk-errand" }]);
+  let actor = state.actors.find((entry) => entry.id === "r");
+  check(actor.quests.active.some((entry) => entry.id === "clerk-errand"), "the clerk errand was not accepted");
+  // The hall is room 24; the seal is in the rat warren, room 28.
+  actor.room = 28;
+  actor.visited = [...new Set([...actor.visited, 28])];
+  run([{ kind: "take", actorId: "r", objectId: "clerk-seal", messages: { actor: "taken", others: "takes" } }]);
+  actor = state.actors.find((entry) => entry.id === "r");
+  actor.room = 24;
+  run([{ kind: "deliver", actorId: "r", objectId: "clerk-seal", npcId: "guild-clerk", messages: { actor: "delivered", others: "delivers", target: "receives" } }]);
+  actor = state.actors.find((entry) => entry.id === "r");
+  check(actor.quests.completed.includes("clerk-errand"), "the clerk errand did not complete");
+  check((state.guilds.mages.xp ?? 0) === 20, "the clerk errand did not pay guild xp");
+  check(state.objects.find((object) => object.id === "clerk-seal")?.eaten === true, "the delivered seal was not consumed");
+  run([{ kind: "questAccept", actorId: "r", questId: "clerk-errand" }]);
+  actor = state.actors.find((entry) => entry.id === "r");
+  check(!actor.quests.active.some((entry) => entry.id === "clerk-errand"), "the errand repeated inside the same cycle");
+  state.cycle = (state.cycle ?? 0) + 1;
+  run([{ kind: "questAccept", actorId: "r", questId: "clerk-errand" }]);
+  actor = state.actors.find((entry) => entry.id === "r");
+  check(actor.quests.active.some((entry) => entry.id === "clerk-errand"), "the errand did not return next cycle");
+  const seal = state.objects.find((object) => object.id === "clerk-seal");
+  seal.eaten = false;
+  seal.holder = null;
+  seal.room = 28;
+  seal.inside = null;
+  actor.room = 28;
+  run([{ kind: "take", actorId: "r", objectId: "clerk-seal", messages: { actor: "taken", others: "takes" } }]);
+  actor = state.actors.find((entry) => entry.id === "r");
+  actor.room = 24;
+  run([{ kind: "deliver", actorId: "r", objectId: "clerk-seal", npcId: "guild-clerk", messages: { actor: "delivered", others: "delivers", target: "receives" } }]);
+  actor = state.actors.find((entry) => entry.id === "r");
+  check(actor.quests.completed.includes("clerk-errand") && (state.guilds.mages.xp ?? 0) === 40, "the second errand did not pay");
+  if (repeatable.why.length) { repeatable.ok = false; failures.push(`the repeatable errand is broken: ${repeatable.why[0]}`); }
+}
+
 // Guilds: one name, a roster, ranks, a chat that reaches only members, and a
 // membership that survives a restart.
 let guilds = { ok: true, why: [] };
@@ -2573,6 +2621,56 @@ let guilds = { ok: true, why: [] };
   check(state.identities.carol.guild === null, "disbanding did not clear an offline member's identity");
 
   if (!guilds.ok) failures.push(`guilds are broken: ${guilds.why[0]}`);
+}
+
+// The guild vault is per guild, survives a reset and a restart, and releases
+// its goods into the shared hall when the guild disbands.
+let guildVault = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, undefined, questTable.quests);
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
+  const check = (condition, why) => { if (!condition) { guildVault.ok = false; guildVault.why.push(why); } };
+  run([{ kind: "join", actorId: "v", name: "vera" }, { kind: "login", actorId: "v", key: "vera", authenticated: true }]);
+  run([{ kind: "guildCreate", actorId: "v", name: "Vaulters", guildId: "vaulters" }]);
+  const actor = state.actors.find((entry) => entry.id === "v");
+  actor.room = GUILD_HALL;
+  actor.visited = [...new Set([...actor.visited, GUILD_HALL])];
+  const sword = state.objects.find((object) => object.id === "sword");
+  sword.holder = "v";
+  sword.room = null;
+  sword.heldRoom = GUILD_HALL;
+  run([{ kind: "guildDeposit", actorId: "v", objectId: "sword" }]);
+  check(state.guilds.vaulters.vault.includes("sword"), "the sword was not recorded in the vault");
+  check(state.objects.find((object) => object.id === "sword")?.holder === guildVaultHolder("vaulters"), "the sword did not move into guild storage");
+  check(state.guilds.vaulters.vault.length <= GUILD_VAULT_CAPACITY, "the vault exceeded its capacity");
+  run([{ kind: "guildWithdraw", actorId: "v", objectId: "sword" }]);
+  check(state.objects.find((object) => object.id === "sword")?.holder === "v" && !state.guilds.vaulters.vault.includes("sword"), "the sword was not withdrawn");
+  run([{ kind: "guildDeposit", actorId: "v", objectId: "sword" }]);
+  const satchel = state.objects.find((object) => object.id === "satchel");
+  satchel.holder = "v";
+  satchel.room = null;
+  satchel.heldRoom = GUILD_HALL;
+  const bread = state.objects.find((object) => object.id === "bread");
+  bread.holder = null;
+  bread.room = null;
+  bread.inside = "satchel";
+  run([{ kind: "guildDeposit", actorId: "v", objectId: "satchel" }]);
+  state.pulses.area = { period: AREA_PERIOD, remaining: 1 };
+  run([]);
+  check(state.objects.find((object) => object.id === "sword")?.holder === guildVaultHolder("vaulters"), "the area reset pulled the vault sword onto the floor");
+  check(state.objects.find((object) => object.id === "satchel")?.holder === guildVaultHolder("vaulters"), "the area reset pulled the vault satchel onto the floor");
+  check(state.objects.find((object) => object.id === "bread")?.inside === "satchel", "the area reset spilled a vault container's contents");
+  const restarted = JSON.parse(JSON.stringify(state));
+  const savedActors = state.actors;
+  restarted.actors = [];
+  releaseHeldObjects(restarted, savedActors);
+  check(restarted.objects.find((object) => object.id === "sword")?.holder === guildVaultHolder("vaulters"), "a restart emptied the guild vault");
+  run([{ kind: "guildDisband", actorId: "v" }]);
+  check(!state.guilds.vaulters, "the guild was not disbanded");
+  check(state.objects.find((object) => object.id === "sword")?.holder === null && state.objects.find((object) => object.id === "sword")?.room === GUILD_HALL, "disbanding did not release the vault goods");
+  check(state.objects.find((object) => object.id === "satchel")?.room === GUILD_HALL && state.objects.find((object) => object.id === "bread")?.inside === "satchel", "disbanding did not release the container with its contents");
+  if (guildVault.why.length) { guildVault.ok = false; failures.push(`the guild vault is broken: ${guildVault.why[0]}`); }
 }
 
 // Duels are consensual in the Ring, and death there takes no goods.
@@ -2816,6 +2914,8 @@ if (process.argv.includes("--json")) {
   console.log(`${"safe".padEnd(26)}  ${(safe.ok ? "2 rooms" : "BROKEN").padStart(5)}   == no combat`);
   console.log(`${"duels".padEnd(26)}  ${(duels.ok ? "Ring rules" : "BROKEN").padStart(5)}   == consent and no loot`);
   console.log(`${"guilds".padEnd(26)}  ${(guilds.ok ? "create, rank, chat" : "BROKEN").padStart(5)}   == roster and chat`);
+  console.log(`${"guildVault".padEnd(26)}  ${(guildVault.ok ? "20 slots" : "BROKEN").padStart(5)}   == deposit, reset, disband`);
+  console.log(`${"repeatable".padEnd(26)}  ${(repeatable.ok ? "80 xp" : "BROKEN").padStart(5)}   == cycle, deliver`);
   console.log(`${"quests".padEnd(26)}  ${(quests.ok ? "accept, advance, pay" : "BROKEN").padStart(5)}   == facts, once`);
   console.log(`${"aggression".padEnd(26)}  ${(aggression.ok ? "1 duel" : "BROKEN").padStart(5)}   == mobs start fights`);
   console.log(`${"combat2".padEnd(26)}  ${(combat2.ok ? "weapons, armour, xp" : "BROKEN").padStart(5)}   == fight and grow`);

@@ -86,4 +86,6 @@ quest uses it yet.
 
 The giver is still descriptive text rather than a dialogue tree, and quest
 items are not bound to the character. Those are content and policy choices,
-not missing quest-engine facts.
+not missing quest-engine facts. `guild-sigils` and the clerk's errand use the
+reset-cycle repeat; the errand consumes the delivered seal, so each cycle needs
+a fresh one.

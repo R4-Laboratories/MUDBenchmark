@@ -795,6 +795,12 @@
       "level": "some-true",
       "statement": "Production v0.77.0 serves 97 rooms, 13 zones, 47 quests, 45 mobiles and 92 objects. The Eclipse Court runs above the Moon Throne through the starless hall, sundial court and mirror vault to the throne of ash and dawn gate, with a three-quest level-10 chain, eclipse-key chest, tuned regent and the eclipse ward/dawn blade rewards. tools/balance.mjs reads real world gear and mobiles. R4 is active, Gemini reports configured false, signups stay open. Gate 44578226461 green.",
       "authority": "wick production v0.77.0 2026-11-19; release 44579720017; gate 44578226461; /health and /world"
+    },
+    {
+      "id": "MB-127",
+      "level": "build",
+      "statement": "The shared guild hall now has a 20-slot per-guild vault with vault/bank, deposit and withdraw commands. Vault goods are guild-held objects that survive the two-hour reset and a restart, fall in room 24 when a guild disbands or loses its last member, and are released by the account wipe. The repeatable layer adds the clerk errand, a level-3 deliver quest that pays 80 xp and 20 guild xp once per reset cycle and consumes the seal. The world is 97 rooms/13 zones/48 quests/45 mobiles/93 objects. The gate covers deposit/withdraw, reset, restart, disband, wipe and two errand cycles.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

@@ -36,6 +36,9 @@ or the first member, and the promotion is a span.
 | `guild invite <member>` | leader or officer | notifies a player; joining is open |
 | `guild rank <member> <rank>` | leader | sets officer/member, or transfers leadership |
 | `guild disband` | leader | removes the guild and clears every member |
+| `vault` / `bank` | any member in the Guild Hall | lists the guild's stored goods and capacity |
+| `deposit <item>` / `dep` | any member in the Guild Hall | stores a held item in the guild vault |
+| `withdraw <item>` / `wd` | any member in the Guild Hall | retrieves an item from the guild vault |
 
 Names are 2–32 letters, digits, spaces, `-` or `'`; the id is a lower-case slug.
 Duplicate names and ids are refused.
@@ -54,12 +57,21 @@ span: `actor.id`, `guild.id`, `guild.action`, `guild.name`. Create/join/leave/
 rank/invite come from reducer events; chat is recorded at command time because
 it has recipients rather than state.
 
-## What is live, and what is not
+## The vault
 
 The shared guild hall is room 24, south of the Gilded Rat, with the guild
-clerk and notice board. Guild quests, guild XP, ranks and the level-6
-three-active-quest perk are live.
+clerk, notice board and a vault of 20 top-level goods. The vault is per guild:
+two guilds in the same hall cannot see each other's stores. `vault` lists the
+contents, `deposit <item>` stores a held item, and `withdraw <item>` returns it.
 
-Not here yet: a per-guild vault/bank, instanced halls and invite-only guilds.
-The roster, ranks and chat are the stable core; the vault is the next
-stateful layer.
+The two-hour reset leaves vault goods in the vault; a restart does too. When a
+guild disbands or loses its last member, its goods fall in the hall rather than
+vanishing. The account wipe releases vault goods the same way.
+
+## What is live, and what is not
+
+Guild quests, guild XP, ranks, the level-6 three-active-quest perk and the
+per-guild vault are live. The clerk's errand is repeatable once per reset cycle.
+
+Not here yet: instanced halls and invite-only guilds. A guild hall is shared
+ground; the vault is the stateful part that belongs to the guild.
