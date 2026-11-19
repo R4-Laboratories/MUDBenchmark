@@ -753,6 +753,12 @@
       "level": "build",
       "statement": "Combat now has timed status effects: spark and the ember brand apply burn, cinder hounds apply burn, bog hounds apply bleed, fen staffs and salt wraiths apply chill. Effects tick on the violence pulse, chill reduces armor, mend cleanses bleeding/burning, score/battle and the AI prompt show effects, and death/reset clears them. Spell damage/heal/shield scale with level and equipped focus. The gate checks spell power scaling, spark burn, mend cleanse and shield scaling; world/holo tests remain green.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-120",
+      "level": "some-true",
+      "statement": "Production v0.74.0 serves combat status effects and scaled spells: spark/ember burn, bog hound bleed, fen staff/salt wraith chill, violence-pulse ticks, chill armour loss, Mend cleansing, and effect text in score/battle/AI prompts. Spell power scales with level/focus and shield scales. The world is 85 rooms/11 zones/38 quests/38 mobiles/76 objects; the Salt Caves, shortcuts/socials, /stats and onboarding remain. Gate 44551041030 green.",
+      "authority": "wick production v0.74.0 2026-11-19; release 44552816091; gate 44551041030; /health and /world; magic gate"
     }
   ]
 }
