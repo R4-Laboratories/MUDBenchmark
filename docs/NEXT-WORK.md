@@ -17,7 +17,7 @@ memory or prompt system.
 | v0.79.0 | Social talk quest, chat-rate guard and reserved names | **done** (MB-129) |
 | v0.80.0 | Persistent ignore lists, quest-earned titles and telemetry tuning | **done** (MB-131) |
 | v0.81.0 | The Memory Garden fact/recall quest and R4 fallback | **done** (MB-133) |
-| v0.82.0 | The crescent garden quest, facts command and live level-10 run | **in flight** |
+| v0.82.0 | The crescent garden quest, facts command and live level-10 run | **done** (MB-135) |
 | v0.83.0 | Next world slice and live session follow-up | next |
 
 ## What is next

@@ -843,6 +843,12 @@
       "level": "build",
       "statement": "v0.82 adds the crescent fact from the silver owl, The Moon in the Garden follow-up (300 xp, moon seed, Moon Gardener title) and the facts/memory command. The world is 100 rooms/14 zones/51 quests/47 mobiles/96 objects with 5 titles. tools/live-session.mjs starts an isolated real server, seeds a level-10 character, fights the eclipse regent over WebSocket and walks the Memory Garden quest; the run won 11 rounds (21 events, 47.6% hits) and found the 30,000-XP level-11 bug. The level table is now ten levels capped at 30,000 and the gate covers levelCap and gardenMoon.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-136",
+      "level": "some-true",
+      "statement": "Production v0.82.0 serves 100 rooms, 14 zones, 51 quests, 47 mobiles and 96 objects with 5 quest-earned titles. The Moon in the Garden adds the silver owl crescent fact, a level-9 follow-up, the moon seed and Moon Gardener title; facts/memory lists learned words. The level table is ten levels capped at 30,000 XP after the live run exposed level 11. docs/LIVE-RUN.md records an isolated real-server level-10 run: 11 combat rounds, 21 events, 47.6% hits, regent kill, Memory Garden completion and Gardenkeeper title. R4 is active, signups open, Gemini configured false. Gate 44605886512 green.",
+      "authority": "wick production v0.82.0 2026-11-19; release 44607714960; gate 44605886512; /health and /world; live session report"
     }
   ]
 }
