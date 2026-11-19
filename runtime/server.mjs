@@ -119,6 +119,7 @@ const SHRINE = loaded.task.shrine;
 const transports = new Map(); // id -> { send, close, welcomed }
 const spectators = new Set(); // public /watch sockets
 let live = null; // { actorId, name, account, room, tick, startedAt, status, events }
+let lastLive = null; // last completed stream: name, room, endedAt, peakViewers, highlights
 let nextViewer = 1;
 const pending = [];
 const accountSessions = new Map(); // id -> { key, kind: "prism" | "legacy" }
@@ -163,6 +164,10 @@ let nextId = 1;
 // Guards that must exist before this is reachable by anyone but us.
 const MAX_CLIENTS = Number(process.env.MAX_CLIENTS ?? 40);
 const MAX_ACCOUNTS = Number(process.env.MAX_ACCOUNTS ?? 500);
+// "open" accepts new legacy/Prism accounts; "closed" keeps existing logins but
+// refuses new accounts. Set SIGNUP_MODE=closed for a curated launch.
+const SIGNUP_MODE = String(process.env.SIGNUP_MODE ?? "open").toLowerCase();
+const SIGNUPS_OPEN = SIGNUP_MODE !== "closed";
 // Operator-funded Gemini demo. The key never leaves the server. The browser
 // receives a short-lived demo token over its authenticated game socket; the
 // proxy checks that token and a per-Prism quota before forwarding.
@@ -308,6 +313,7 @@ function sendRebind(id, payload) {
 
 function publicLive() {
   if (!live) return null;
+  live.peakViewers = Math.max(live.peakViewers ?? 0, spectators.size);
   return {
     status: live.status,
     name: live.name,
@@ -315,6 +321,7 @@ function publicLive() {
     tick: live.tick,
     startedAt: live.startedAt,
     viewers: spectators.size,
+    peakViewers: live.peakViewers ?? spectators.size,
     chat: live.chat !== false,
     poll: live.poll ? publicPoll(live.poll) : null,
     events: live.events.slice(-80),
@@ -326,6 +333,18 @@ function publicPoll(poll) {
     question: poll.question,
     options: { a: poll.options.a, b: poll.options.b },
     votes: { a: poll.votes.a, b: poll.votes.b },
+  };
+}
+
+function publicLast() {
+  if (!lastLive) return null;
+  return {
+    name: lastLive.name,
+    room: lastLive.room,
+    startedAt: lastLive.startedAt,
+    endedAt: lastLive.endedAt,
+    peakViewers: lastLive.peakViewers ?? 0,
+    highlights: lastLive.highlights.slice(-8),
   };
 }
 
@@ -364,8 +383,16 @@ function startLive(id) {
 function stopLive(id = null) {
   if (!live) return false;
   if (id != null && live.actorId !== id) return false;
+  lastLive = {
+    name: live.name,
+    room: live.room,
+    startedAt: live.startedAt,
+    endedAt: new Date().toISOString(),
+    peakViewers: live.peakViewers ?? spectators.size,
+    highlights: live.events.filter((event) => event.kind === "highlight").slice(-20),
+  };
   live = null;
-  broadcastStream({ type: "off" });
+  broadcastStream({ type: "off", last: publicLast() });
   return true;
 }
 
@@ -736,7 +763,14 @@ async function handleCommand(id, line) {
     const token = randomBytes(24).toString("base64url");
     const expires = Date.now() + 30 * 60 * 1000;
     demoAccess.set(token, { prism: actor.key, expires });
-    return sendTo(id, `#demo-token ${JSON.stringify({ token, expires, ...demoStatus() })}\r\n`);
+    const usage = demoQuota(actor.key);
+    return sendTo(id, `#demo-token ${JSON.stringify({
+      token,
+      expires,
+      remaining: Math.max(0, GEMINI_DAILY_TURNS - usage.turns),
+      minuteRemaining: Math.max(0, GEMINI_MINUTE_TURNS - usage.minuteTurns),
+      ...demoStatus(),
+    })}\r\n`);
   }
 
   if (verb === "r4-context" || verb === "r4-remember") {
@@ -902,6 +936,9 @@ async function handleCommand(id, line) {
     const pinned = prismId ? identityStore.prisms[prismId] ?? null : null;
     const verdict = await verifyPrismSession(parsed, { origin, pinned, revokedBefore: identityStore.revokedBefore ?? null, blocked: identityStore.blocked ?? [] });
     if (!verdict.ok) return sendTo(id, `Prism sign-in refused: ${verdict.reason}.\r\n`);
+    if (!state.accounts?.[verdict.prism] && !SIGNUPS_OPEN) {
+      return sendTo(id, "New accounts are closed right now. The operator can open them.\r\n");
+    }
     if (!state.accounts?.[verdict.prism] && accountCapReached(Object.keys(state.accounts ?? {}).length, MAX_ACCOUNTS)) {
       return sendTo(id, "The world has reached its account cap; no new Prism account can be created right now.\r\n");
     }
@@ -1106,6 +1143,7 @@ async function handleCommand(id, line) {
     if (actor?.key) return sendTo(id, `You are already signed in as ${actor.name}. quit to change.\r\n`);
     const key = rest[0];
     const password = restRaw.slice(1).join(" ");
+    if (!SIGNUPS_OPEN) return sendTo(id, "New accounts are closed right now. The operator can open them.\r\n");
     if (!validName(key)) return sendTo(id, "Names are 1-24 letters, digits, - or _.\r\n");
     if (!validPassword(password)) return sendTo(id, "Passwords are at least 6 characters.\r\n");
     if (accountCapReached(Object.keys(state.accounts ?? {}).length, MAX_ACCOUNTS)) {
@@ -2442,6 +2480,7 @@ function demoStatus() {
     model: GEMINI_MODEL,
     dailyLimit: GEMINI_DAILY_TURNS,
     minuteLimit: GEMINI_MINUTE_TURNS,
+    globalRemaining: Math.max(0, GEMINI_GLOBAL_DAILY - (demoGlobal.day === demoDay() ? demoGlobal.turns : 0)),
     note: "Operator-funded Gemini demo for Prism accounts. Free-tier data may be used by Google to improve products.",
   };
 }
@@ -2630,6 +2669,7 @@ const web = http.createServer(async (req, res) => {
         chat: current.chat,
         poll: current.poll,
       } : null,
+      last: publicLast(),
       viewers: spectators.size,
       tick: state.tick,
       rooms: Object.keys(ROOMS).length,
@@ -2667,6 +2707,7 @@ const web = http.createServer(async (req, res) => {
       identities: Object.keys(state.accounts ?? {}).length,
       pinned: Object.keys(identityStore.prisms).length,
       connections: wss.clients.size,
+      signups: SIGNUP_MODE,
       identity: { file: IDENTITY_FILE },
       state: {
         file: STATE_FILE,

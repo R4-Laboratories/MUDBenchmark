@@ -1017,6 +1017,7 @@
     memory: null, memoryKey: null, commandRoom: null, exits: [],
     r4Waiters: [], r4DownUntil: 0,
     lastInvalid: null, lastValidation: null, loopBroken: false, lastR4: false, r4LastLatency: 0,
+    demoRemaining: null, demoMinuteRemaining: null, demoGlobalRemaining: null, demoWarned: false,
   };
   const shortId = (id) => (id ? `${id.slice(0, 15)}…` : "—");
 
@@ -2069,6 +2070,10 @@
     AI.loopBroken = false;
     AI.lastR4 = false;
     AI.r4LastLatency = 0;
+    AI.demoRemaining = null;
+    AI.demoMinuteRemaining = null;
+    AI.demoGlobalRemaining = null;
+    AI.demoWarned = false;
     AI.lastReply = null;
     AI.lastParsed = null;
     AI.lastLatency = 0;
@@ -2416,6 +2421,7 @@
       ["Invalid", AI.lastValidation?.invalid ? "yes" : "no"],
       ["Rooms seen", String(Object.keys(AI.memory?.rooms ?? {}).length)],
       ["R4", AI.lastR4 ? `hit ${AI.r4LastLatency}ms` : (AI.r4DownUntil > Date.now() ? "fallback" : "local")],
+      ["Demo left", AI.demoRemaining !== null ? `${AI.demoRemaining} today · ${AI.demoMinuteRemaining ?? "—"} this minute` : "—"],
       ["Context", `${messages.length} msgs · ${contextChars} chars`],
       ["Last command", AI.lastCommand || "—"],
       ["Error", AI.lastError || "—"],
@@ -2563,6 +2569,9 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         if (payload?.token) {
           AI.demoToken = payload.token;
           AI.demoTokenExpires = Number(payload.expires) || 0;
+          AI.demoRemaining = Number.isFinite(payload.remaining) ? payload.remaining : null;
+          AI.demoMinuteRemaining = Number.isFinite(payload.minuteRemaining) ? payload.minuteRemaining : null;
+          AI.demoGlobalRemaining = Number.isFinite(payload.globalRemaining) ? payload.globalRemaining : null;
           for (const waiter of waiters) { clearTimeout(waiter.timer); waiter.resolve(payload); }
         } else {
           const why = payload?.error ?? "The Gemini demo is unavailable.";
@@ -2761,7 +2770,11 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       if (AI.config.provider === "gemini-demo") {
         // A fresh token per turn survives a server restart and keeps the
         // proxy check bound to this authenticated game socket.
-        await requestDemoToken();
+        const grant = await requestDemoToken();
+        if (AI.demoRemaining !== null && AI.demoRemaining <= 5 && !AI.demoWarned) {
+          AI.demoWarned = true;
+          addChat("system", `Gemini demo: ${AI.demoRemaining} turns left today${AI.demoMinuteRemaining !== null ? `, ${AI.demoMinuteRemaining} this minute` : ""}.`);
+        }
       }
       const request = requestFor(AI.config.provider, { ...AI.config, name: AI.name || "ai", demoToken: AI.demoToken, deliberate }, system, messages);
       AI.lastRequest = {

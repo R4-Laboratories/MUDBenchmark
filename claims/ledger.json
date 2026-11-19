@@ -699,6 +699,12 @@
       "level": "some-true",
       "statement": "Production v0.69.0 serves 80 rooms, 36 quests, 35 mobiles and 71 objects, including the Hollow Fen and guild level 6. Social memory records public speech and NPC dialogue with private tell/mail/password filtering; the R4 sidecar is active with 821 notes kept of a 10,000/30-day bound and six identity scopes. The deploy completed without the transient rollback. Gemini demo remains configured for Prism accounts.",
       "authority": "wick production v0.69.0 2026-11-19; release 44453675127; gate 44452766196; /health, /world, /llms.txt; R4 /api/sysinfo; deploy log"
+    },
+    {
+      "id": "MB-111",
+      "level": "build",
+      "statement": "Stream v3 adds a last-run archive (name, room, end time, peak viewers, public highlights) served by /stream and rendered on /watch with JSON download; live highlights gain a Download clip action. Gemini demo token responses include per-account remaining/minute/global quota and the Model inspector shows demo turns left with a low-quota chat warning. Operators can set SIGNUP_MODE=closed to refuse new legacy/Prism accounts while preserving existing logins; /health reports the mode.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }
