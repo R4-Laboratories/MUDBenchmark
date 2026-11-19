@@ -789,6 +789,12 @@
       "level": "build",
       "statement": "The Eclipse Court adds a six-room level-10 capstone above the Moon Throne (97 rooms/13 zones), four mobiles (45), eight objects (92), an eclipse-key chest, the dawn-gate shortcut and a three-quest chain (47 quests) requiring the moon stag. The chain pays the eclipse ward and dawn blade, and the regent was tuned to 64 hp / 6 damage. tools/balance.mjs now reads real world gear and mobiles and samples early, mid, high and capstone fights. The gate walks the full chain, key, chest, regent kill, reward payout and dawn gate.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-126",
+      "level": "some-true",
+      "statement": "Production v0.77.0 serves 97 rooms, 13 zones, 47 quests, 45 mobiles and 92 objects. The Eclipse Court runs above the Moon Throne through the starless hall, sundial court and mirror vault to the throne of ash and dawn gate, with a three-quest level-10 chain, eclipse-key chest, tuned regent and the eclipse ward/dawn blade rewards. tools/balance.mjs reads real world gear and mobiles. R4 is active, Gemini reports configured false, signups stay open. Gate 44578226461 green.",
+      "authority": "wick production v0.77.0 2026-11-19; release 44579720017; gate 44578226461; /health and /world"
     }
   ]
 }
