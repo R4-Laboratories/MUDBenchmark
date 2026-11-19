@@ -157,6 +157,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `eclipse-vault` | The Mirror Vault | 10 | Enter the Mirror Vault; Carry the dawn crown | 450 xp |
 | `eclipse-throne` | The Throne of Ash | 10 | Reach the Throne of Ash; Defeat the eclipse regent; Carry the regent's sigil | 800 xp |
 | `clerk-errand` | The Clerk's Errand | 3 | Deliver a clerk's seal to the guild clerk | 80 xp |
+| `hall-word` | A Word in the Hall | 2 | Talk to the market woman; Talk to the guild clerk | 70 xp |
 
 ## Rooms
 

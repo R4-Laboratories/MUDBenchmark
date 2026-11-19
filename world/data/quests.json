@@ -1299,6 +1299,31 @@
         "guildXp": 20
       },
       "complete": "The clerk presses the seal into the ledger and hands you a fresh page. The errand will return."
+    },
+    {
+      "id": "hall-word",
+      "name": "A Word in the Hall",
+      "level": 2,
+      "giver": "the bard",
+      "description": "The bard wants both versions of the same rumor. Talk to the market woman and the guild clerk.",
+      "objectives": [
+        {
+          "kind": "talk",
+          "npc": "market-woman",
+          "count": 1,
+          "text": "Talk to the market woman"
+        },
+        {
+          "kind": "talk",
+          "npc": "guild-clerk",
+          "count": 1,
+          "text": "Talk to the guild clerk"
+        }
+      ],
+      "rewards": {
+        "xp": 70
+      },
+      "complete": "The two stories do not agree. The bard writes both down."
     }
   ]
 }

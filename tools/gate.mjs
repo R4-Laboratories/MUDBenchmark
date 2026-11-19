@@ -25,6 +25,7 @@ import { loadVerbs } from "../runtime/verbs.mjs";
 import { loadChannels } from "../runtime/channels.mjs";
 import { loadSocials } from "../runtime/socials.mjs";
 import { hashPassword, verifyPassword, validName, validPassword, accountCapReached } from "../runtime/accounts.mjs";
+import { CHAT_LIMIT, CHAT_WINDOW_MS, chatAllowed } from "../runtime/moderation.mjs";
 import { allowCommand, DEFAULT_INTERVAL_MS } from "../runtime/allowance.mjs";
 import { loadLevels } from "../runtime/levels.mjs";
 import { loadQuests, validateQuestReferences } from "../runtime/quests.mjs";
@@ -387,7 +388,7 @@ let accounts = { ok: true, why: [] };
   const { salt, hash } = hashPassword("correct horse");
   if (!verifyPassword("correct horse", salt, hash)) { accounts.ok = false; accounts.why.push("a correct password was refused"); }
   if (verifyPassword("wrong horse", salt, hash)) { accounts.ok = false; accounts.why.push("a wrong password was accepted"); }
-  if (!validName("alice-1") || validName("a b") || !validPassword("sixsix") || validPassword("short")) {
+  if (!validName("alice-1") || validName("a b") || validName("admin") || validName("Moderator") || !validPassword("sixsix") || validPassword("short")) {
     accounts.ok = false;
     accounts.why.push("name or password validation is wrong");
   }
@@ -1869,6 +1870,22 @@ let allowance = { ok: true, why: [] };
   if (!allowance.ok) failures.push(`the input allowance is broken: ${allowance.why[0]}`);
 }
 
+// Chat has its own rolling window, separate from the 250 ms input allowance.
+let chatGuard = { ok: true, why: [] };
+{
+  const check = (condition, why) => { if (!condition) { chatGuard.ok = false; chatGuard.why.push(why); } };
+  let recent = [];
+  for (let i = 0; i < CHAT_LIMIT; i += 1) {
+    const verdict = chatAllowed(recent, 1000 + i);
+    check(verdict.allowed, `line ${i + 1} was refused inside the window`);
+    recent = verdict.recent;
+  }
+  const refused = chatAllowed(recent, 2000);
+  check(!refused.allowed, "a ninth line was allowed inside the window");
+  check(chatAllowed(refused.recent, 1000 + CHAT_WINDOW_MS + 1).allowed, "the window never reopened");
+  if (chatGuard.why.length) failures.push(`the chat guard is broken: ${chatGuard.why[0]}`);
+}
+
 // A safe room refuses combat; an unsafe one begins it. The two-hour reset is
 // the world's clock, not a heartbeat.
 let safe = { ok: true, why: [] };
@@ -2558,6 +2575,27 @@ let repeatable = { ok: true, why: [] };
   if (repeatable.why.length) { repeatable.ok = false; failures.push(`the repeatable errand is broken: ${repeatable.why[0]}`); }
 }
 
+// Social quests: talking to a named mobile advances a talk objective.
+let social = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, undefined, questTable.quests);
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
+  const check = (condition, why) => { if (!condition) { social.ok = false; social.why.push(why); } };
+  state.actors.push({ id: "s", key: "social", account: "social", name: "social", room: 8, visited: [8], level: 2, xp: 100, maxHp: 12, hp: 12, maxMana: 7, mana: 7, spellbook: [], guild: null, guildRank: null, wielding: null, quests: { active: [], completed: [] }, found: [] });
+  run([{ kind: "questAccept", actorId: "s", questId: "hall-word" }]);
+  let actor = state.actors.find((entry) => entry.id === "s");
+  check(actor.quests.active.some((entry) => entry.id === "hall-word"), "the social quest was not accepted");
+  run([{ kind: "talk", actorId: "s", npcId: "market-woman" }]);
+  actor = state.actors.find((entry) => entry.id === "s");
+  actor.room = 24;
+  run([{ kind: "talk", actorId: "s", npcId: "guild-clerk" }]);
+  actor = state.actors.find((entry) => entry.id === "s");
+  check(actor.quests.completed.includes("hall-word"), "the social quest did not complete");
+  check(actor.xp >= 170, "the social quest did not pay its xp");
+  if (social.why.length) { social.ok = false; failures.push(`the social quest is broken: ${social.why[0]}`); }
+}
+
 // Guilds: one name, a roster, ranks, a chat that reaches only members, and a
 // membership that survives a restart.
 let guilds = { ok: true, why: [] };
@@ -2916,6 +2954,8 @@ if (process.argv.includes("--json")) {
   console.log(`${"guilds".padEnd(26)}  ${(guilds.ok ? "create, rank, chat" : "BROKEN").padStart(5)}   == roster and chat`);
   console.log(`${"guildVault".padEnd(26)}  ${(guildVault.ok ? "20 slots" : "BROKEN").padStart(5)}   == deposit, reset, disband`);
   console.log(`${"repeatable".padEnd(26)}  ${(repeatable.ok ? "80 xp" : "BROKEN").padStart(5)}   == cycle, deliver`);
+  console.log(`${"social".padEnd(26)}  ${(social.ok ? "70 xp" : "BROKEN").padStart(5)}   == talk, quest`);
+  console.log(`${"chatGuard".padEnd(26)}  ${(chatGuard.ok ? "8/10s" : "BROKEN").padStart(5)}   == rate limit`);
   console.log(`${"quests".padEnd(26)}  ${(quests.ok ? "accept, advance, pay" : "BROKEN").padStart(5)}   == facts, once`);
   console.log(`${"aggression".padEnd(26)}  ${(aggression.ok ? "1 duel" : "BROKEN").padStart(5)}   == mobs start fights`);
   console.log(`${"combat2".padEnd(26)}  ${(combat2.ok ? "weapons, armour, xp" : "BROKEN").padStart(5)}   == fight and grow`);

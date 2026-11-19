@@ -1,7 +1,7 @@
 # Next work
 
-Baseline: **v0.77.0**, with v0.78.0 in flight. The world has 97 rooms, 13 zones,
-48 quests, 45 mobiles and 93 objects. R4 memory, command grounding, scorecards
+Baseline: **v0.78.0**, with v0.79.0 in flight. The world has 97 rooms, 13 zones,
+49 quests, 45 mobiles and 93 objects. R4 memory, command grounding, scorecards
 and the public stats surface are live; signups are open and the Gemini demo is
 disabled and unconfigured.
 
@@ -13,8 +13,9 @@ memory or prompt system.
 | Release | Scope | Status |
 | --- | --- | --- |
 | v0.77.0 | The Eclipse Court: six-room level-10 capstone, quest chain, keyed vault, dawn gate; balance sampler reads real world data | **in flight** |
-| v0.78.0 | Per-guild hall vault and the repeatable clerk's errand | **in flight** |
-| v0.79.0 | Social/memory-driven quests, titles and chat moderation | next |
+| v0.78.0 | Per-guild hall vault and the repeatable clerk's errand | **done** (MB-127) |
+| v0.79.0 | Social talk quest, chat-rate guard and reserved names | **in flight** |
+| v0.80.0 | Ignore/mute, titles and the next live-tuning pass | next |
 
 ## What is next
 
@@ -27,10 +28,10 @@ memory or prompt system.
 3. **Repeatable content.** The clerk's errand is the second reset-cycle quest.
    Add a higher-rank repeatable and a weekly cadence if the live data warrants
    it.
-4. **Social quests.** Social memory is recorded; no quest objective reads it.
-   Add a conversation or delivery chain that uses the memory layer.
-5. **Moderation.** Open signups need chat rate limits, mute/ignore and a
-   blocked-name policy before the world is left unattended.
+4. **Social quests.** `hall-word` adds a `talk` objective and a two-NPC
+   conversation chain. A memory-aware conversation quest remains open.
+5. **Moderation.** Chat now has an eight-line/ten-second guard and reserved
+   names. Ignore/mute and a fuller blocked-name policy remain open.
 
 ## Historical workstreams
 
@@ -200,8 +201,9 @@ works; no key reaches the browser, transcript or telemetry.
 | v0.75.0 | First Steps tutorial and deeper Salt/Fen quest chains | **done** (MB-121) |
 | v0.76.0 | Live balance review and the Moonlit Reach | **done** (MB-123) |
 | v0.77.0 | The Eclipse Court level-10 capstone and real-data balance sampler | **done** (MB-125) |
-| v0.78.0 | Per-guild hall vault and the repeatable clerk's errand | **in flight** |
-| v0.79.0 | Social/memory quests, titles and chat moderation | next |
+| v0.78.0 | Per-guild hall vault and the repeatable clerk's errand | **done** (MB-127) |
+| v0.79.0 | Social talk quest, chat-rate guard and reserved names | **in flight** |
+| v0.80.0 | Ignore/mute, titles and the next live-tuning pass | next |
 
 ## Risks
 

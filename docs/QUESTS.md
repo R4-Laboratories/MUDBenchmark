@@ -31,6 +31,7 @@ matches it, checks the facts, and pays once.
 | `collect` | the actor is carrying `count` of the object right now |
 | `deliver` | the actor has given the named object to the mobile |
 | `answer` | the actor has spoken the word at the shrine |
+| `talk` | the actor has spoken with the named mobile |
 
 `collect` is a fact, not a counter: it is recomputed from the actor's hands
 after every intent, so eating, dropping or selling the item can undo it.
@@ -88,4 +89,5 @@ The giver is still descriptive text rather than a dialogue tree, and quest
 items are not bound to the character. Those are content and policy choices,
 not missing quest-engine facts. `guild-sigils` and the clerk's errand use the
 reset-cycle repeat; the errand consumes the delivered seal, so each cycle needs
-a fresh one.
+a fresh one. `hall-word` is the first social quest: talk to the market woman
+and the guild clerk, and the two versions of the rumor complete it.

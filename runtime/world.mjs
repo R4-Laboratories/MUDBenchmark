@@ -836,6 +836,14 @@ export function step({ state, rooms, intents, actions = [] }) {
       continue;
     }
 
+    if (intent.kind === "talk") {
+      const actor = find(intent.actorId);
+      const npc = next.npcs.find((entry) => entry.id === intent.npcId && entry.room === actor?.room && !entry.dead);
+      if (!actor || !npc) continue;
+      advanceQuests(next, actor, { kind: "talk", npc: npc.id }, events);
+      continue;
+    }
+
     if (intent.kind === "guildCreate") {
       const actor = find(intent.actorId);
       if (!actor?.key || actor.guild) continue;

@@ -29,6 +29,7 @@ import { GUILD_HALL, GUILD_VAULT_CAPACITY, RANKS, guildId, guildVaultHolder, ran
 import { buildLlms } from "./llms.mjs";
 import { hashPassword, verifyPassword, validName, validPassword, accountCapReached } from "./accounts.mjs";
 import { allowCommand as allowInput, DEFAULT_INTERVAL_MS } from "./allowance.mjs";
+import { chatAllowed } from "./moderation.mjs";
 import { verifyPrismSession, verifyPersonaOwner, verifySessionKey, prismDisplay } from "./prism-auth.mjs";
 import { CREDENTIAL, identityAdmits } from "./identity.mjs";
 import { normalizePrismId, ownerAllowed, rebindPlan } from "./rebind.mjs";
@@ -188,6 +189,7 @@ const MAX_SPECTATORS = Number(process.env.MAX_SPECTATORS ?? 200);
 const RATE_WINDOW_MS = 5000;
 const RATE_MAX = 12;
 const buckets = new Map();
+const chatWindows = new Map();
 
 function allowCommand(id) {
   const now = Date.now();
@@ -1351,6 +1353,14 @@ async function handleCommand(id, line) {
 
   const named = resolve(VERB_TABLE, verb);
   const words = rest.join(" ");
+  // The input allowance stops machine-gun commands; this stops a person or
+  // agent flooding every room channel. It is per connection, not per name.
+  const CHAT_VERBS = new Set(["say", "tell", "mail", "global", "guildchat"]);
+  if (CHAT_VERBS.has(named)) {
+    const verdict = chatAllowed(chatWindows.get(id) ?? [], Date.now());
+    if (!verdict.allowed) return sendTo(id, "You are speaking too quickly. Wait a moment.\r\n");
+    chatWindows.set(id, verdict.recent);
+  }
   // An exact name wins over a prefix: "b" should not reach bob when barbara is
   // also awake, and the other way round.
   const findActor = (needle, where = () => true) => {
@@ -2065,6 +2075,7 @@ async function handleCommand(id, line) {
     if (!npc) return sendTo(id, `${render(messages.missing, { words })}\r\n`);
     const lines = Array.isArray(npc.dialogue) && npc.dialogue.length ? npc.dialogue : [npc.description ?? npc.examine ?? `${npc.name} has nothing to say.`];
     const line = lines[nextFrom(state.tick + npc.id.length, lines.length)];
+    pending.push({ kind: "talk", actorId: id, npcId: npc.id });
     recordSpan("world.talk", { "actor.id": id, "npc.id": npc.id, "room.id": actor.room, "text": line.slice(0, 500), "world.tick": state.tick }, 0);
     return sendTo(id, `${render(messages.actor, { words: `${npc.name} says: ${line}` })}\r\n`);
   }
@@ -2585,6 +2596,7 @@ const server = net.createServer((socket) => {
     }
     transports.delete(id);
     buckets.delete(id);
+    chatWindows.delete(id);
     accountSessions.delete(id);
     stopLive(id);
     pending.push({ kind: "leave", actorId: id });
@@ -3000,6 +3012,7 @@ wss.on("connection", (ws, req) => {
     }
     transports.delete(id);
     buckets.delete(id);
+    chatWindows.delete(id);
     accountSessions.delete(id);
     stopLive(id);
     pending.push({ kind: "leave", actorId: id });

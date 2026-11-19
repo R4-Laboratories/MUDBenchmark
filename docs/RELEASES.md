@@ -224,6 +224,9 @@ Rehearsed 2026-11-16:
 - v0.78.0 (guild vault) adds a 20-slot per-guild vault in the shared hall,
   deposit/withdraw commands, reset/restart/disband handling and the repeatable
   clerk's errand; 48 quests (MB-127);
+- v0.79.0 (social/safety) adds the `talk` quest objective and the two-NPC
+  hall-word quest, an eight-line/ten-second chat guard, and reserved names;
+  49 quests (MB-129);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

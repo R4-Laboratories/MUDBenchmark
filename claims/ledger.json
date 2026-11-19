@@ -801,6 +801,12 @@
       "level": "build",
       "statement": "The shared guild hall now has a 20-slot per-guild vault with vault/bank, deposit and withdraw commands. Vault goods are guild-held objects that survive the two-hour reset and a restart, fall in room 24 when a guild disbands or loses its last member, and are released by the account wipe. The repeatable layer adds the clerk errand, a level-3 deliver quest that pays 80 xp and 20 guild xp once per reset cycle and consumes the seal. The world is 97 rooms/13 zones/48 quests/45 mobiles/93 objects. The gate covers deposit/withdraw, reset, restart, disband, wipe and two errand cycles.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-129",
+      "level": "build",
+      "statement": "v0.79 adds the talk quest objective and the two-NPC hall-word social quest (market woman and guild clerk, 70 xp). Chat now has an eight-line/ten-second per-connection guard across say, tell, mail and channels, and account/character names reserve admin, administrator, system, moderator, wizard, staff, owner and npc. The world is 97 rooms/13 zones/49 quests/45 mobiles/93 objects. The gate covers the talk chain, rate window, reserved names and all prior content checks.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

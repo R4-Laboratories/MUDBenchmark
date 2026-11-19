@@ -6,7 +6,11 @@
 
 import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 
-export const validName = (name) => typeof name === "string" && /^[a-z0-9_-]{1,24}$/i.test(name);
+// Names that imply an operator or a world role are reserved. The list is
+// deliberately short: it blocks impersonation, not ordinary player names.
+export const RESERVED_NAMES = new Set(["admin", "administrator", "system", "moderator", "wizard", "staff", "owner", "npc"]);
+
+export const validName = (name) => typeof name === "string" && /^[a-z0-9_-]{1,24}$/i.test(name) && !RESERVED_NAMES.has(name.toLowerCase());
 export const validPassword = (password) =>
   typeof password === "string" && password.length >= 6 && password.length <= 128;
 

@@ -59,6 +59,13 @@ channel reaches everyone awake, a role-0 actor cannot use the wizards channel,
 mail waits for an absent identity, and a targeted social gives each listener
 exactly one line.
 
+## Rate limits
+
+Chat has a rolling window separate from the 250 ms input allowance: eight
+lines per ten seconds per connection across say, tell, mail and the channels.
+The ninth is refused with a short wait message. The window is in memory, so a
+reconnect starts fresh.
+
 ## Not here yet
 
 Ignore and mute lists, channel history, a mail reader that lists without

@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_PATH = join(HERE, "..", "world", "data", "quests.json");
-const KINDS = new Set(["visit", "kill", "collect", "deliver", "answer"]);
+const KINDS = new Set(["visit", "kill", "collect", "deliver", "answer", "talk"]);
 
 export function loadQuests({ path = DEFAULT_PATH } = {}) {
   const errors = [];
@@ -33,7 +33,7 @@ export function loadQuests({ path = DEFAULT_PATH } = {}) {
     for (const objective of objectives) {
       if (!KINDS.has(objective.kind)) errors.push(`quest ${quest.id} has unknown objective "${objective.kind}"`);
       if (objective.kind === "visit" && !Number.isInteger(objective.room)) errors.push(`quest ${quest.id} visit has no room`);
-      if ((objective.kind === "kill" || objective.kind === "deliver") && typeof objective.npc !== "string") errors.push(`quest ${quest.id} ${objective.kind} has no npc`);
+      if ((objective.kind === "kill" || objective.kind === "deliver" || objective.kind === "talk") && typeof objective.npc !== "string") errors.push(`quest ${quest.id} ${objective.kind} has no npc`);
       if (objective.kind === "collect" && typeof objective.object !== "string") errors.push(`quest ${quest.id} collect has no object`);
       if (objective.kind === "answer" && typeof objective.word !== "string") errors.push(`quest ${quest.id} answer has no word`);
       if (objective.count !== undefined && (!Number.isInteger(objective.count) || objective.count < 1)) errors.push(`quest ${quest.id} has an invalid count`);
@@ -51,7 +51,7 @@ export function loadQuests({ path = DEFAULT_PATH } = {}) {
 
 export const questById = (quests, id) => quests.find((quest) => quest.id === id) ?? null;
 
-export const emptyProgress = () => ({ visits: [], kills: {}, collected: {}, delivered: {}, deliveredObjects: {}, answered: {} });
+export const emptyProgress = () => ({ visits: [], kills: {}, collected: {}, delivered: {}, deliveredObjects: {}, answered: {}, talked: {} });
 
 export function normalizeProgress(progress = {}) {
   return {
@@ -61,6 +61,7 @@ export function normalizeProgress(progress = {}) {
     delivered: { ...(progress.delivered ?? {}) },
     deliveredObjects: { ...(progress.deliveredObjects ?? {}) },
     answered: { ...(progress.answered ?? {}) },
+    talked: { ...(progress.talked ?? {}) },
   };
 }
 
@@ -90,6 +91,8 @@ export function applyQuestEvent(quest, progress, event, actor, objects) {
     }
   } else if (event.kind === "answer") {
     next.answered[event.word] = true;
+  } else if (event.kind === "talk") {
+    next.talked[event.npc] = (next.talked[event.npc] ?? 0) + 1;
   }
   // Collect is a fact about the actor's hands, not a counter: recompute it
   // whenever anything moves.
@@ -110,6 +113,7 @@ export function objectiveDone(objective, progress, actor, objects) {
     return delivered && rightObject;
   }
   if (objective.kind === "answer") return p.answered[objective.word] === true;
+  if (objective.kind === "talk") return (p.talked[objective.npc] ?? 0) >= (objective.count ?? 1);
   if (objective.kind === "collect") return heldCount(actor, objective.object, objects) >= (objective.count ?? 1);
   return false;
 }
@@ -133,7 +137,7 @@ export function validateQuestReferences(quests, { rooms = {}, npcs = [], objects
   for (const quest of quests) {
     for (const objective of quest.objectives) {
       if (objective.kind === "visit" && !rooms[objective.room]) errors.push(`quest ${quest.id} visits room ${objective.room}, which does not exist`);
-      if ((objective.kind === "kill" || objective.kind === "deliver") && !npcIds.has(objective.npc)) errors.push(`quest ${quest.id} names npc ${objective.npc}, which does not exist`);
+      if ((objective.kind === "kill" || objective.kind === "deliver" || objective.kind === "talk") && !npcIds.has(objective.npc)) errors.push(`quest ${quest.id} names npc ${objective.npc}, which does not exist`);
       if (objective.kind === "collect" && !objectIds.has(objective.object)) errors.push(`quest ${quest.id} collects ${objective.object}, which does not exist`);
       if (objective.kind === "deliver" && objective.object && !objectIds.has(objective.object)) errors.push(`quest ${quest.id} delivers ${objective.object}, which does not exist`);
     }
