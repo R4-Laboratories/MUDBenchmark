@@ -15,7 +15,7 @@ memory or prompt system.
 | v0.77.0 | The Eclipse Court: six-room level-10 capstone, quest chain, keyed vault, dawn gate; balance sampler reads real world data | **done** (MB-125) |
 | v0.78.0 | Per-guild hall vault and the repeatable clerk's errand | **done** (MB-127) |
 | v0.79.0 | Social talk quest, chat-rate guard and reserved names | **done** (MB-129) |
-| v0.80.0 | Persistent ignore lists, quest-earned titles and telemetry tuning | **in flight** |
+| v0.80.0 | Persistent ignore lists, quest-earned titles and telemetry tuning | **done** (MB-131) |
 | v0.81.0 | Memory-aware conversation quest and the next content slice | next |
 
 ## What is next
@@ -205,7 +205,7 @@ works; no key reaches the browser, transcript or telemetry.
 | v0.77.0 | The Eclipse Court level-10 capstone and real-data balance sampler | **done** (MB-125) |
 | v0.78.0 | Per-guild hall vault and the repeatable clerk's errand | **done** (MB-127) |
 | v0.79.0 | Social talk quest, chat-rate guard and reserved names | **done** (MB-129) |
-| v0.80.0 | Persistent ignore lists, quest-earned titles and telemetry tuning | **in flight** |
+| v0.80.0 | Persistent ignore lists, quest-earned titles and telemetry tuning | **done** (MB-131) |
 | v0.81.0 | Memory-aware conversation quest and the next content slice | next |
 
 ## Risks

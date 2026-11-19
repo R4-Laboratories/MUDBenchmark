@@ -819,6 +819,12 @@
       "level": "build",
       "statement": "v0.80 adds persistent per-character ignore lists (ignore/ign, unignore/unign, ignoring) that filter tells, mail, global channels, guild chat, socials and room speech by identity key, surviving checkpoint and login. Quest-earned titles are data-driven in world/data/titles.json (Newcomer, Moonwarden, Dawnbringer), selected with title/titles and shown in score, who and the AI prompt. docs/TUNING.md records archived production evidence: 2,305 AI turns, 99.3% parse, p50 980ms/p95 2695ms, 152 combat rounds at 50.7% hit rate; no balance change was justified. The gate covers ignore across five paths, title earning/selection/persistence and all prior content.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-132",
+      "level": "some-true",
+      "statement": "Production v0.80.0 serves 97 rooms, 13 zones, 49 quests, 45 mobiles and 93 objects. Persistent ignore lists filter tells, mail, global channels, guild chat, socials and room speech by identity key and survive login; quest-earned titles (Newcomer, Moonwarden, Dawnbringer) are selectable with title/titles and shown in score/who. docs/TUNING.md records archived production evidence (2,305 AI turns, 99.3% parse, p50 980ms/p95 2695ms, 152 combat rounds at 50.7% hit rate). R4 is active, Gemini reports configured false, signups stay open. Gate 44589717123 green.",
+      "authority": "wick production v0.80.0 2026-11-19; release 44591288348; gate 44589717123; /health and /world"
     }
   ]
 }
