@@ -711,6 +711,12 @@
       "level": "some-true",
       "statement": "Production v0.70.0 serves the stream archive and launch controls: a real Gemini stream was started, a highlight marked, stopped, and /stream plus /watch returned the last run (name, room, peak viewers, highlight) with Download last run. /api/demo reports globalRemaining; token responses carry per-account remaining/minute; SIGNUP_MODE is open and reported by /health. A copied state corrupted in /tmp restored from world.json.1 and served 11 accounts/35 mobiles on port 8092 without touching production. The world remains 80 rooms/36 quests/35 mobiles/71 objects.",
       "authority": "play.r4labs.org v0.70.0 2026-11-19; release 44461671964; gate 44460742321; headless stream run; /stream last; /watch last card; restore drill /tmp copy"
+    },
+    {
+      "id": "MB-113",
+      "level": "build",
+      "statement": "Visibility commands are live: who shows level, room, HP, guild/rank and active quests; quests supports active/available/done/all and quests <id> detail; levels shows every XP threshold; leaderboard/top/lb/ranks ranks all characters by level/XP/quests/guild; map summarizes zones/visited counts and map <zone> lists visited rooms while hiding unexplored ones; shortcuts lists movement, fast commands, recall and room shortcuts. The commands are in the verb table, help and /llms.txt; the AI action menu/validator accepts them; the gate covers level formatting, leaderboard order, map hiding and shortcut text.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

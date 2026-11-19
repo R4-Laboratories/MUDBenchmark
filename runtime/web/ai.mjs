@@ -84,7 +84,8 @@ claim unknown, north, south, east, west, up, down (n/s/e/w/u/d), attack <name>,
 flee, wield <weapon>, unwield, inventory, take <thing>, drop <thing>, put <thing> in <thing>,
 open <thing>, close <thing>, wear <thing>, remove <thing>, eat <thing>, light <thing>,
 buy <thing>, sell <thing>, list, wait, wave, nod, bow, laugh, sigh, shrug, dance, score,
-equipment, quests, quest accept <id>, quest abandon <id>, deliver <thing> to <name>,
+equipment, quests [active|available|done|all|<id>], quest accept <id>, quest abandon <id>, deliver <thing> to <name>,
+levels, leaderboard (top/lb), map [zone], shortcuts,
 guild create <name>, guild join <name>, guild leave, guild who, guild list, guild chat <text>,
 guild rank <member> <rank>, guild disband, talk <name>, spells, train <spell>, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search, turn, push, ring, world, help, go <direction>`;
 
@@ -98,6 +99,7 @@ const VERBS = new Set([
   "wear", "remove", "eat", "light", "extinguish", "buy", "sell", "list", "wait", "wave", "nod", "bow",
   "laugh", "sigh", "shrug", "dance", "score", "sc", "stats", "quests", "q", "j", "quest", "guild", "gc",
   "gchat", "deliver", "talk", "spells", "train", "cast", "study", "recite", "search", "sr", "turn", "push", "ring", "world", "status", "help", "h", "?",
+  "levels", "leaderboard", "top", "lb", "ranks", "map", "shortcuts",
 ]);
 
 export const DEFAULT_GOAL =
@@ -170,7 +172,7 @@ export function buildActionMenu(state = null) {
     }
     for (const action of room.actions ?? []) menu.add(`${action.verb} ${action.target}`);
   }
-  for (const line of ["say <text>", "tell <name> <text>", "global <text>", "talk <name>", "wave", "nod", "bow", "laugh", "who"]) {
+  for (const line of ["say <text>", "tell <name> <text>", "global <text>", "talk <name>", "wave", "nod", "bow", "laugh", "who", "leaderboard", "levels", "map", "shortcuts", "quests"]) {
     menu.add(line);
   }
   return [...menu].slice(0, 32);
@@ -186,6 +188,7 @@ const FREE_VERBS = new Set([
   "world", "status", "help", "h", "?", "wait", "wave", "nod", "bow", "laugh",
   "sigh", "shrug", "dance", "flee", "search", "sr", "answer", "claim",
   "guild", "gc", "gchat", "quest", "deliver", "train", "list", "buy", "sell",
+  "levels", "leaderboard", "top", "lb", "ranks", "map", "shortcuts",
 ]);
 const TARGET_VERBS = new Set([
   "examine", "x", "ex", "take", "get", "g", "grab", "drop", "dr", "discard",

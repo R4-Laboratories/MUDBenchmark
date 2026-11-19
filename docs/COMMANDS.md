@@ -31,9 +31,12 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `guild` | `guilds` | subcommand |
 | `guildchat` | `gc`, `gchat` | text |
 | `inventory` | `i`, `inv` | none |
+| `leaderboard` | `top`, `lb`, `ranks` | none |
+| `levels` | `lv`, `lvl` | none |
 | `light` | `ignite` | object |
 | `list` | `shop`, `stock` | none |
 | `mail` | `letter` | actor text |
+| `map` | — | optional zone |
 | `open` | — | object |
 | `put` | `insert` | object in object |
 | `quest` | — | subcommand |
@@ -42,6 +45,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `say` | — | text |
 | `score` | `stats` | none |
 | `sell` | `vend` | object |
+| `shortcuts` | — | none |
 | `take` | `get`, `grab` | object |
 | `takeFrom` | — | object from object |
 | `talk` | `greet` | actor |

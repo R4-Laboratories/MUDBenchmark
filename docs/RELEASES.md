@@ -200,6 +200,9 @@ Rehearsed 2026-11-16:
   green-heart shortcut, and guild level 6 with guild-quest-3 (MB-108/109);
 - v0.70.0 (stream/launch) adds last-run archives and clip downloads, demo
   remaining-quota alerts and an operator SIGNUP_MODE switch (MB-111);
+- v0.71.0 (visibility) adds richer who/quests, levels, all-time leaderboard,
+  zone map/shortcuts, and exposes them to the AI action menu and /llms.txt
+  (MB-113);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

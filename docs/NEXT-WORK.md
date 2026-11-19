@@ -184,7 +184,8 @@ Only after A/B:
 | v0.68.0–3 | Command grounding, scorecards, deploy readiness, R4 journal/benchmark hardening | **done** (MB-103–107) |
 | v0.69.0 | Social memory, Hollow Fen, guild level 6 | **done** (MB-108/109/110) |
 | v0.70.0 | Stream archive/clips, quota alerts, signup mode, restore drill | **done** (MB-111/112) |
-| v0.71.0 | Content depth and operator policy | next |
+| v0.71.0 | Visibility commands: who, quests, levels, leaderboard, map, shortcuts | **done** (MB-113) |
+| v0.72.0 | More quest/shortcut content and onboarding | next |
 
 ## Risks
 

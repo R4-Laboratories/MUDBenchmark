@@ -448,6 +448,42 @@
         "guild": "Leave your current guild before claiming an old name in another guild.",
         "claiming": "Claiming %s."
       }
+    },
+    "levels": {
+      "aliases": [
+        "lv",
+        "lvl"
+      ],
+      "argument": "none",
+      "messages": {
+        "list": "The level table is shown above."
+      }
+    },
+    "leaderboard": {
+      "aliases": [
+        "top",
+        "lb",
+        "ranks"
+      ],
+      "argument": "none",
+      "messages": {
+        "list": "The all-time character leaderboard is shown above."
+      }
+    },
+    "map": {
+      "aliases": [],
+      "argument": "optional zone",
+      "messages": {
+        "list": "The map is shown above.",
+        "none": "No zone named %s."
+      }
+    },
+    "shortcuts": {
+      "aliases": [],
+      "argument": "none",
+      "messages": {
+        "list": "The shortcuts are shown above."
+      }
     }
   }
 }

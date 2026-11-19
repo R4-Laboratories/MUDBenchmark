@@ -58,6 +58,7 @@ import { maxManaFor } from "../runtime/magic.mjs";
 import { trainingCost } from "../runtime/magic.mjs";
 import { findAction, loadActions } from "../runtime/actions.mjs";
 import { auditAccounts } from "../runtime/account-audit.mjs";
+import { levelsText, leaderboardText, mapText, shortcutsText } from "../runtime/visibility.mjs";
 import { deleteBarePrismAccount, deletePrismIdentity } from "../runtime/account-delete.mjs";
 import { wipePlayers } from "../runtime/account-wipe.mjs";
 
@@ -1568,6 +1569,28 @@ let ember = { ok: true, why: [] };
   if (ember.why.length) { ember.ok = false; failures.push(`the Ember Deep is broken: ${ember.why[0]}`); }
 }
 
+// Visibility commands: levels, leaderboard, map and shortcuts.
+let visibility = { ok: true, why: [] };
+{
+  const check = (condition, why) => { if (!condition) { visibility.ok = false; visibility.why.push(why); } };
+  const levels = levelsText({ levels: [0, 100, 300] }, 2);
+  check(levels.includes("Levels (3)") && levels.includes("→ 2") && levels.includes("100–299"), "the level view is wrong");
+  const board = leaderboardText({
+    a: { name: "ana", level: 3, xp: 400, quests: { completed: ["x"] }, guild: "mages", guildRank: "adept" },
+    b: { name: "bob", level: 5, xp: 100, quests: { completed: [] } },
+  }, 2);
+  check(board.includes("bob") && board.indexOf("bob") < board.indexOf("ana") && board.includes("adept"), "the leaderboard order is wrong");
+  const map = mapText({
+    1: { name: "The Atrium", zone: "temple" },
+    2: { name: "The Corridor", zone: "temple" },
+  }, [{ id: "temple", name: "The Temple", rooms: [1, 2] }], [1, 2], 1, "temple");
+  check(map.includes("The Atrium") && map.includes("The Corridor") && map.includes("→"), "the zone map is wrong");
+  const hidden = mapText({ 1: { name: "A", zone: "z" }, 2: { name: "B", zone: "z" } }, [{ id: "z", name: "Z", rooms: [1, 2] }], [1], 1, "z");
+  check(hidden.includes("unexplored") && !hidden.includes("B (") && hidden.includes("1/2"), "the map exposed an unvisited room");
+  check(shortcutsText().includes("recall") && shortcutsText().includes("leaderboard"), "the shortcut view is incomplete");
+  if (visibility.why.length) { visibility.ok = false; failures.push(`visibility is broken: ${visibility.why[0]}`); }
+}
+
 // The Hollow Fen: a second outdoor region, the green key/chest and the
 // green-heart shortcut.
 let fen = { ok: true, why: [] };
@@ -2613,6 +2636,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"ember".padEnd(26)}  ${(ember.ok ? "10 rooms" : "BROKEN").padStart(5)}   == door, quest, shortcut`);
   console.log(`${"aiMemory".padEnd(26)}  ${(aiMemory.ok ? "rooms, stale" : "BROKEN").padStart(5)}   == exits, loop guard`);
   console.log(`${"fen".padEnd(26)}  ${(fen.ok ? "10 rooms" : "BROKEN").padStart(5)}   == key, chest, shortcut`);
+  console.log(`${"visibility".padEnd(26)}  ${(visibility.ok ? "levels, map" : "BROKEN").padStart(5)}   == board, shortcuts`);
   console.log(`${"pinned".padEnd(26)}  ${(identityPin.ok ? "revoked" : "BROKEN").padStart(5)}   == old log refused`);
   console.log(`${"takeover".padEnd(26)}  ${(takeover.ok ? "1 actor" : "BROKEN").padStart(5)}   == leave then login`);
   console.log(`${"characters".padEnd(26)}  ${(characters.ok ? "2 chars" : "BROKEN").padStart(5)}   == create, switch`);

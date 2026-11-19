@@ -35,6 +35,7 @@ import { normalizePrismId, ownerAllowed, rebindPlan } from "./rebind.mjs";
 import { normalizeStreamEvent, publicStreamText } from "./stream.mjs";
 import { normalizeAiTurn, aiTurnAttributes } from "./metrics.mjs";
 import { worldStatus, worldStatusText } from "./worldstatus.mjs";
+import { levelsText, leaderboardText, mapText, shortcutsText } from "./visibility.mjs";
 import { redactCommand, sanitizeIntent, sanitizeState } from "./telemetry-policy.mjs";
 import { loadStateFile, saveStateFile } from "./state.mjs";
 
@@ -528,6 +529,8 @@ const ALIASES = {
   h: "help", "?": "help",
   gos: "gossip", goss: "gossip", gc: "guildchat", gchat: "guildchat",
   status: "world", time: "world", sr: "search",
+  lb: "leaderboard", top: "leaderboard", ranks: "leaderboard",
+  lv: "levels", lvl: "levels",
 };
 
 // One compact, hidden line per accepted command. It carries only what the
@@ -1209,6 +1212,22 @@ async function handleCommand(id, line) {
     return sendTo(id, "Changing your password.\r\n");
   }
 
+  if (verb === "levels") {
+    return sendTo(id, `${levelsText(LEVELS, actor.level ?? 1)}\r\n`);
+  }
+
+  if (verb === "leaderboard") {
+    return sendTo(id, `${leaderboardText(state.identities ?? {}, 10)}\r\n`);
+  }
+
+  if (verb === "map") {
+    return sendTo(id, `${mapText(ROOMS, loaded.zones, actor.visited ?? [], actor.room, restRaw.join(" "))}\r\n`);
+  }
+
+  if (verb === "shortcuts") {
+    return sendTo(id, `${shortcutsText()}\r\n`);
+  }
+
   if (verb === "world") {
     return sendTo(id, `${worldStatusText(worldStatus(state, ROOMS))}\r\n`);
   }
@@ -1220,7 +1239,7 @@ async function handleCommand(id, line) {
     if (!actor?.key) {
       return sendTo(id, "MUDBench is a persistent world for people and agents.\r\nSign in with your Prism id, or register <name> <password> / login <name> <password>.\r\nThen type help for the commands.\r\n");
     }
-    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: get/g, drop/dr, inventory/i, score/sc, quests/q, who/wh, gossip/gos, guildchat/gc.\r\nMagic: spells, train <spell> at the Mages' Guild, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search. Guild: guild join/leave/who/list/chat, guild advance (Mages). Room actions: turn, push, ring where the room suggests.\r\nWorld: world or status (online, levels, guilds, reset).\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
+    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: get/g, drop/dr, inventory/i, score/sc, quests/q, who/wh, gossip/gos, guildchat/gc.\r\nMagic: spells, train <spell> at the Mages' Guild, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search. Guild: guild join/leave/who/list/chat, guild advance (Mages). Room actions: turn, push, ring where the room suggests.\r\nWorld: world or status (online, guilds, reset); levels, leaderboard/top/lb, map [zone], shortcuts, quests active|available|done|all.<id>.\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
   }
 
   // A command typed before the join tick lands is queued, not refused: the
@@ -1260,10 +1279,18 @@ async function handleCommand(id, line) {
   }
 
   if (verb === "who" || verb === "awake" || verb === "online") {
-    const online = state.actors.filter((candidate) => candidate.key);
+    const online = state.actors
+      .filter((candidate) => candidate.key)
+      .sort((a, b) => (b.level ?? 1) - (a.level ?? 1) || (b.xp ?? 0) - (a.xp ?? 0) || a.name.localeCompare(b.name));
     if (online.length === 0) return sendTo(id, "No one is online.\r\n");
-    const lines = online.map((candidate) => `${candidate.name}${candidate.level > 1 ? ` (level ${candidate.level})` : ""}${candidate.id === id ? " (you)" : ""}`);
-    return sendTo(id, `Online (${online.length}):\r\n  ${lines.join("\r\n  ")}\r\n`);
+    const lines = online.map((candidate) => {
+      const room = ROOMS[candidate.room]?.name ?? String(candidate.room);
+      const guild = candidate.guild ? ` · ${candidate.guild}${candidate.guildRank ? ` (${candidate.guildRank})` : ""}` : "";
+      const hp = candidate.maxHp ? ` · ${candidate.hp}/${candidate.maxHp} hp` : "";
+      const quests = candidate.quests?.active?.length ?? 0;
+      return `${candidate.name} — level ${candidate.level ?? 1}, ${room}${hp}${guild} · ${quests} active quests${candidate.id === id ? " · you" : ""}`;
+    });
+    return sendTo(id, `Online (${online.length}):\r\n  ${lines.join("\r\n  ")}\r\nUse leaderboard for all characters.\r\n`);
   }
 
   if (verb === "equipment") {
@@ -1718,17 +1745,39 @@ async function handleCommand(id, line) {
   if (named === "quests" || (named === "quest" && rest.length === 0)) {
     const messages = VERB_TABLE.verbs.quests.messages;
     const stateQ = normalizeQuestState(actor.quests, QUESTS.quests);
+    const view = (rest[0] ?? "default").toLowerCase();
+    const detail = questById(QUESTS.quests, view);
     const active = stateQ.active.map((entry) => {
       const quest = questById(QUESTS.quests, entry.id);
-      return quest ? `${quest.name} (${quest.id}): ${questLines(quest, entry.progress, actor, state.objects).join("; ")}` : entry.id;
-    });
-    const completed = stateQ.completed.map((id) => questById(QUESTS.quests, id)?.name ?? id);
-    const available = availableQuests(QUESTS.quests, actor, state.cycle ?? 0).map((quest) => `${quest.name} (${quest.id}, level ${quest.level})`);
-    const parts = [];
-    if (active.length) parts.push(`active: ${active.join(", ")}`);
-    if (completed.length) parts.push(`completed: ${completed.join(", ")}`);
-    if (available.length) parts.push(`available: ${available.join(", ")}`);
-    return sendTo(id, `${parts.length ? render(messages.list, { words: parts.join("; ") }) : messages.none}\r\n`);
+      return quest ? { quest, lines: questLines(quest, entry.progress, actor, state.objects) } : null;
+    }).filter(Boolean);
+    const completed = stateQ.completed.map((id) => questById(QUESTS.quests, id)).filter(Boolean);
+    const available = availableQuests(QUESTS.quests, actor, state.cycle ?? 0);
+    if (detail) {
+      const reward = detail.rewards?.xp ? `${detail.rewards.xp} xp` : "none";
+      const req = detail.requires?.length ? `; requires ${detail.requires.join(", ")}` : "";
+      return sendTo(id, `${detail.name} (${detail.id}) · level ${detail.level} · ${detail.giver ?? "unknown giver"}${req}\r\n${detail.description ?? ""}\r\nObjectives: ${detail.objectives.map((o) => o.text ?? o.kind).join("; ")}\r\nReward: ${reward}${detail.rewards?.object ? ` + ${detail.rewards.object}` : ""}\r\n`);
+    }
+    if (view === "active" || view === "all" || view === "default") {
+      const lines = active.length
+        ? active.map(({ quest, lines: objectives }) => `${quest.name} (${quest.id}): ${objectives.join("; ")}`)
+        : ["none"];
+      if (view !== "default") return sendTo(id, `Active quests:\r\n  ${lines.join("\r\n  ")}\r\n`);
+      if (active.length) sendTo(id, `Active quests:\r\n  ${lines.join("\r\n  ")}\r\n`);
+    }
+    if (view === "available" || view === "all" || view === "default") {
+      const lines = available.map((quest) => `${quest.name} (${quest.id}) · level ${quest.level} · ${quest.giver ?? "unknown"}`);
+      if (view === "available") return sendTo(id, `Available quests:\r\n${lines.length ? `  ${lines.join("\r\n  ")}` : "  none"}\r\n`);
+      if (available.length) sendTo(id, `Available quests:\r\n  ${lines.join("\r\n  ")}\r\n`);
+    }
+    if (view === "done" || view === "all") {
+      if (!completed.length) return sendTo(id, "Completed quests: none.\r\n");
+      return sendTo(id, `Completed quests (${completed.length}):\r\n  ${completed.map((quest) => `${quest.name} (${quest.id})`).join("\r\n  ")}\r\n`);
+    }
+    if (view !== "active" && view !== "available" && view !== "default") {
+      return sendTo(id, `Usage: quests [active|available|done|all|<id>]. Completed ${completed.length}/${QUESTS.quests.length}.\r\n`);
+    }
+    return sendTo(id, `Quests: ${active.length} active · ${available.length} available · ${completed.length}/${QUESTS.quests.length} done. Use quests all or quests <id>.\r\n`);
   }
 
   if (named === "quest") {
