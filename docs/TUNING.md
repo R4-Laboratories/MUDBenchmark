@@ -56,9 +56,20 @@ melee character is at the bottom. The level-10 melee character is the 50%
 case. That is the intended difficulty, so v0.80 does not change status
 durations, aggression or the regent's 64 HP / 6 damage.
 
+## Live session (v0.82)
+
+The isolated level-10 run in `docs/LIVE-RUN.md` fought the eclipse regent for
+**11 rounds**: 21 combat events, 9 hits, 11 misses and one kill, for a 47.6%
+hit rate. The player dealt 66 damage and took 16, finishing at 6 / 28 hp. That
+is the expected close fight the sampler predicted, so the regent's 64 hp / 6
+damage stays.
+
+The same run found a real progression defect: 30,000 XP produced level 11
+because the table had eleven thresholds. The table is now ten levels ending at
+30,000 XP, and the gate asserts the cap.
+
 ## What would change the conclusion
 
-A real session in the level 8-10 band, especially one that fights the eclipse
-regent with the pre-capstone gear and records the combat spans. The next tuning
-pass should read those spans before changing numbers; the archived sample is
-dominated by early rooms and one vault guardian.
+A fresh human or unscripted-agent session in the level 8-10 band, especially
+one that starts without seeded gear and records the combat spans. The isolated
+run is real server evidence, but its character and kit were seeded.

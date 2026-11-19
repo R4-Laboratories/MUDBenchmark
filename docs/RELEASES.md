@@ -233,6 +233,9 @@ Rehearsed 2026-11-16:
 - v0.81.0 (memory garden) adds NPC-learned facts, a local fact store mirrored
   to R4 with context fallback, the `recall` command, the three-room Memory
   Garden and The Garden Remembers quest; 100 rooms / 50 quests (MB-133);
+- v0.82.0 (live garden) adds the crescent fact, The Moon in the Garden
+  follow-up, the `facts` command, a reproducible live-server session and the
+  level-10 cap fix; 51 quests (MB-135);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

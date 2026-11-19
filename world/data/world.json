@@ -4228,6 +4228,17 @@
       "value": 12,
       "examine": "A bead of clear glass with a tiny garden caught inside.",
       "forSale": false
+    },
+    {
+      "id": "moon-seed",
+      "name": "a moon seed",
+      "room": 99,
+      "flags": [
+        "takeable"
+      ],
+      "value": 50,
+      "examine": "A seed of white glass with a tiny crescent inside.",
+      "forSale": false
     }
   ],
   "climate": {

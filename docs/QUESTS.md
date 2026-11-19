@@ -95,4 +95,6 @@ and the guild clerk, and the two versions of the rumor complete it. The Memory
 Garden adds `memory-garden`: the guild clerk teaches a word, the character
 stores it as a fact and mirrors it to R4, and `recall <word>` at the shrine
 completes the answer objective. A fact-gated answer is refused when the
-character has not learned the fact, even if the word is correct.
+character has not learned the fact, even if the word is correct. The level-9
+follow-up `garden-moon` uses the silver owl's crescent fact, the shrine and the
+Rose Walk; its reward is the moon seed and the Moon Gardener title.

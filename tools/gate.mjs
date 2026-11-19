@@ -29,7 +29,7 @@ import { CHAT_LIMIT, CHAT_WINDOW_MS, chatAllowed } from "../runtime/moderation.m
 import { loadTitles, earnedTitles } from "../runtime/titles.mjs";
 import { loadFacts, contextHasWord } from "../runtime/facts.mjs";
 import { allowCommand, DEFAULT_INTERVAL_MS } from "../runtime/allowance.mjs";
-import { loadLevels } from "../runtime/levels.mjs";
+import { loadLevels, levelForXp } from "../runtime/levels.mjs";
 import { loadQuests, validateQuestReferences } from "../runtime/quests.mjs";
 import { GUILD_HALL, GUILD_VAULT_CAPACITY, guildId, guildVaultHolder, validGuildName, guildLevelFor, perksFor } from "../runtime/guilds.mjs";
 import { DEFAULT_TURNS, trimMessages } from "../runtime/memory.mjs";
@@ -1581,6 +1581,21 @@ let ember = { ok: true, why: [] };
   if (ember.why.length) { ember.ok = false; failures.push(`the Ember Deep is broken: ${ember.why[0]}`); }
 }
 
+// The level table must cap at ten. The old eleven-entry table made 30,000 XP
+// level 11 while every quest and document called level 10 the cap.
+let levelCap = { ok: true, why: [] };
+{
+  const table = loadLevels();
+  const check = (condition, why) => { if (!condition) { levelCap.ok = false; levelCap.why.push(why); } };
+  check(table.errors.length === 0, `level validation failed: ${table.errors[0] ?? ""}`);
+  check(table.levels.length === 10, `the table has ${table.levels.length} levels, not 10`);
+  check(levelForXp(table.levels, 0) === 1, "0 xp is not level 1");
+  check(levelForXp(table.levels, 15000) === 9, "15,000 xp is not level 9");
+  check(levelForXp(table.levels, 29999) === 9, "29,999 xp passed level 9");
+  check(levelForXp(table.levels, 30000) === 10, "30,000 xp is not the level-10 cap");
+  if (levelCap.why.length) failures.push(`the level cap is broken: ${levelCap.why[0]}`);
+}
+
 // Visibility commands: levels, leaderboard, map and shortcuts.
 let visibility = { ok: true, why: [] };
 {
@@ -2707,6 +2722,28 @@ let memoryQuest = { ok: true, why: [] };
   check(state.objects.find((object) => object.id === "memory-rose")?.holder === "mq", "the memory rose reward was not paid");
   checkpointIdentities(state);
   check(state.identities.memory?.memory?.facts?.["ledger-word"]?.word === "ledger", "the fact did not survive a checkpoint");
+
+  const crescent = table.byWord.get("crescent");
+  check(crescent?.npc === "silver-owl", "the crescent fact is not taught by the silver owl");
+  actor = state.actors.find((entry) => entry.id === "mq");
+  actor.level = 9;
+  actor.quests.completed = [...new Set([...actor.quests.completed, "moon-stag"])];
+  run([{ kind: "questAccept", actorId: "mq", questId: "garden-moon" }]);
+  actor = state.actors.find((entry) => entry.id === "mq");
+  check(actor.quests.active.some((entry) => entry.id === "garden-moon"), "the crescent garden quest was not accepted");
+  run([{ kind: "learnFact", actorId: "mq", fact: crescent }]);
+  actor = state.actors.find((entry) => entry.id === "mq");
+  actor.room = 88;
+  run([{ kind: "talk", actorId: "mq", npcId: "silver-owl" }]);
+  actor = state.actors.find((entry) => entry.id === "mq");
+  actor.room = 6;
+  run([{ kind: "questAnswer", actorId: "mq", word: "crescent" }]);
+  run([{ kind: "move", actorId: "mq", dir: "east", to: 98 }]);
+  run([{ kind: "move", actorId: "mq", dir: "east", to: 99 }]);
+  actor = state.actors.find((entry) => entry.id === "mq");
+  check(actor.quests.completed.includes("garden-moon"), "the crescent garden quest did not complete");
+  check(state.objects.find((object) => object.id === "moon-seed")?.holder === "mq", "the moon seed reward was not paid");
+  check(loadTitles().titles.some((title) => title.id === "moongardener" && title.quest === "garden-moon"), "the moon gardener title is missing");
   if (memoryQuest.why.length) { memoryQuest.ok = false; failures.push(`the memory quest is broken: ${memoryQuest.why[0]}`); }
 }
 
@@ -3066,6 +3103,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"safe".padEnd(26)}  ${(safe.ok ? "2 rooms" : "BROKEN").padStart(5)}   == no combat`);
   console.log(`${"duels".padEnd(26)}  ${(duels.ok ? "Ring rules" : "BROKEN").padStart(5)}   == consent and no loot`);
   console.log(`${"guilds".padEnd(26)}  ${(guilds.ok ? "create, rank, chat" : "BROKEN").padStart(5)}   == roster and chat`);
+  console.log(`${"levelCap".padEnd(26)}  ${(levelCap.ok ? "10 @ 30k" : "BROKEN").padStart(5)}   == level table`);
   console.log(`${"guildVault".padEnd(26)}  ${(guildVault.ok ? "20 slots" : "BROKEN").padStart(5)}   == deposit, reset, disband`);
   console.log(`${"repeatable".padEnd(26)}  ${(repeatable.ok ? "80 xp" : "BROKEN").padStart(5)}   == cycle, deliver`);
   console.log(`${"social".padEnd(26)}  ${(social.ok ? "70 xp" : "BROKEN").padStart(5)}   == talk, quest`);
@@ -3073,6 +3111,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"ignore".padEnd(26)}  ${(ignore.ok ? "5 paths" : "BROKEN").padStart(5)}   == tell, mail, chat`);
   console.log(`${"titles".padEnd(26)}  ${(titles.ok ? "3 earned" : "BROKEN").padStart(5)}   == select, persist`);
   console.log(`${"memoryQuest".padEnd(26)}  ${(memoryQuest.ok ? "150 xp" : "BROKEN").padStart(5)}   == fact, recall`);
+  console.log(`${"gardenMoon".padEnd(26)}  ${(memoryQuest.ok ? "300 xp" : "BROKEN").padStart(5)}   == crescent, seed`);
   console.log(`${"quests".padEnd(26)}  ${(quests.ok ? "accept, advance, pay" : "BROKEN").padStart(5)}   == facts, once`);
   console.log(`${"aggression".padEnd(26)}  ${(aggression.ok ? "1 duel" : "BROKEN").padStart(5)}   == mobs start fights`);
   console.log(`${"combat2".padEnd(26)}  ${(combat2.ok ? "weapons, armour, xp" : "BROKEN").padStart(5)}   == fight and grow`);

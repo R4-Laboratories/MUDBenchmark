@@ -89,9 +89,9 @@ whistle, sing, hum, mutter, shout, clap, cry, apologize, congratulate, battle (c
 equipment, quests [active|available|done|all|<id>], quest accept <id>, quest abandon <id>, deliver <thing> to <name>,
 levels, leaderboard (top/lb), map [zone], shortcuts, tutorial (first),
 guild create <name>, guild join <name>, guild leave, guild who, guild list, guild chat <text>,
-guild rank <member> <rank>, guild disband, vault, deposit <item>, withdraw <item>, ignore/unignore <name>, ignoring, titles, title <id|none>, recall <word>, talk <name>, spells, train <spell>, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search, turn, push, ring, world, help, go <direction>`;
+guild rank <member> <rank>, guild disband, vault, deposit <item>, withdraw <item>, ignore/unignore <name>, ignoring, titles, title <id|none>, facts, recall <word>, talk <name>, spells, train <spell>, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search, turn, push, ring, world, help, go <direction>`;
 
-const FAST_COMMANDS = "look, examine <thing>, inventory, score, equipment, quests, say <text>, tell <name> <text>, global <text>, talk <name>, who, north/south/east/west/up/down, take/drop/wear/wield, attack <name>, flee, cast <spell>, buy/sell/list, open/close, quest accept <id>, deliver <thing> to <name>, guild create/join/leave/who/chat, vault/deposit/withdraw, ignore/unignore, titles/title, recall, wait, search, world, help, wave/nod/bow/laugh";
+const FAST_COMMANDS = "look, examine <thing>, inventory, score, equipment, quests, say <text>, tell <name> <text>, global <text>, talk <name>, who, north/south/east/west/up/down, take/drop/wear/wield, attack <name>, flee, cast <spell>, buy/sell/list, open/close, quest accept <id>, deliver <thing> to <name>, guild create/join/leave/who/chat, vault/deposit/withdraw, ignore/unignore, titles/title, facts, recall, wait, search, world, help, wave/nod/bow/laugh";
 
 const VERBS = new Set([
   "look", "l", "examine", "x", "ex", "who", "wh", "awake", "aw", "answer", "claim", "say", "tell", "mail", "go",
@@ -102,7 +102,7 @@ const VERBS = new Set([
   "laugh", "sigh", "shrug", "dance", "score", "sc", "stats", "quests", "q", "j", "quest", "guild", "gc",
   "gchat", "deliver", "talk", "spells", "train", "cast", "study", "recite", "search", "sr", "turn", "push", "ring", "world", "status", "help", "h", "?",
   "vault", "gvault", "bank", "gvlt", "deposit", "dep", "store", "ds", "withdraw", "wd", "retrieve", "wdr",
-  "ignore", "ign", "mute", "unignore", "unign", "unmute", "ignoring", "ignored", "ignores", "titles", "title", "recall", "remember", "mem",
+  "ignore", "ign", "mute", "unignore", "unign", "unmute", "ignoring", "ignored", "ignores", "titles", "title", "facts", "recall", "remember", "mem",
   "levels", "leaderboard", "top", "lb", "ranks", "map", "shortcuts", "tutorial", "first", "firststeps",
   "smile", "grin", "frown", "cheer", "salute", "point", "ponder", "stretch", "shiver", "yawn", "wink", "hug", "highfive", "poke", "whistle", "sing", "hum", "mutter", "shout", "clap", "cry", "apologize", "congratulate", "battle", "combat", "bt",
 ]);
@@ -197,6 +197,7 @@ const FREE_VERBS = new Set([
   "vault", "gvault", "bank", "gvlt",
   "ignoring", "ignored", "ignores", "titles",
   "recall", "remember", "mem",
+  "facts", "memory", "knowledge",
   "levels", "leaderboard", "top", "lb", "ranks", "map", "shortcuts", "tutorial", "first", "firststeps",
   "smile", "grin", "frown", "cheer", "salute", "point", "ponder", "stretch", "shiver", "yawn", "wink", "hug", "highfive", "poke", "whistle", "sing", "hum", "mutter", "shout", "clap", "cry", "apologize", "congratulate", "battle", "combat", "bt",
 ]);

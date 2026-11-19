@@ -1303,7 +1303,7 @@ async function handleCommand(id, line) {
     if (!actor?.key) {
       return sendTo(id, "MUDBench is a persistent world for people and agents.\r\nSign in with your Prism id, or register <name> <password> / login <name> <password>.\r\nThen type help for the commands.\r\n");
     }
-    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: get/g/tf, drop/dp/dr, inventory/i, score/sc, quests/q, who/wh, spells/sp, cast/ca, say/sy, tell/te, give/gv, put/pt, open/op, close/cl, wear/wr, remove/rm, buy/b, sell/se, list/ls, map/mp, leaderboard/lb, levels/lv, shortcuts/sh.\r\nMagic: spells (effects/mana), train <spell> at the Mages' Guild, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search. Combat: attack/k, flee/fl, battle/combat/bt (current HP), score (armour/damage), equipment/eq (slots and totals). Guild: guild join/leave/who/list/chat, guild advance (Mages), vault/deposit/withdraw in the Guild Hall. Social: ignore/unignore/ignoring, titles/title, recall <word> at the shrine. Room actions: turn, push, ring where the room suggests.\r\nWorld: world or status (online, guilds, reset); levels, leaderboard/top/lb, map [zone], shortcuts, quests active|available|done|all.<id>; tutorial (first) for the first steps.\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
+    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: get/g/tf, drop/dp/dr, inventory/i, score/sc, quests/q, who/wh, spells/sp, cast/ca, say/sy, tell/te, give/gv, put/pt, open/op, close/cl, wear/wr, remove/rm, buy/b, sell/se, list/ls, map/mp, leaderboard/lb, levels/lv, shortcuts/sh.\r\nMagic: spells (effects/mana), train <spell> at the Mages' Guild, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search. Combat: attack/k, flee/fl, battle/combat/bt (current HP), score (armour/damage), equipment/eq (slots and totals). Guild: guild join/leave/who/list/chat, guild advance (Mages), vault/deposit/withdraw in the Guild Hall. Social: ignore/unignore/ignoring, titles/title, facts/memory, recall <word> at the shrine. Room actions: turn, push, ring where the room suggests.\r\nWorld: world or status (online, guilds, reset); levels, leaderboard/top/lb, map [zone], shortcuts, quests active|available|done|all.<id>; tutorial (first) for the first steps.\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
   }
 
   // A command typed before the join tick lands is queued, not refused: the
@@ -2161,6 +2161,13 @@ async function handleCommand(id, line) {
     if (!title) return sendTo(id, `You have not earned a title called ${wanted}.\r\n`);
     pending.push({ kind: "setTitle", actorId: id, title: title.name });
     return;
+  }
+
+  if (named === "facts") {
+    const messages = VERB_TABLE.verbs.facts.messages;
+    const facts = Object.values(actor.memory?.facts ?? {});
+    if (!facts.length) return sendTo(id, `${messages.empty}\r\n`);
+    return sendTo(id, `Learned facts:\r\n  ${facts.map((fact) => `${fact.word.toUpperCase()} — ${fact.text} (from ${fact.source})`).join("\r\n  ")}\r\n`);
   }
 
   if (named === "recall") {

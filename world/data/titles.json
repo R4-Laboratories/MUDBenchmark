@@ -19,6 +19,11 @@
       "id": "gardenkeeper",
       "name": "Gardenkeeper",
       "quest": "memory-garden"
+    },
+    {
+      "id": "moongardener",
+      "name": "Moon Gardener",
+      "quest": "garden-moon"
     }
   ]
 }

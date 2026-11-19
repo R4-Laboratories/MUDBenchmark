@@ -1358,6 +1358,41 @@
         "object": "memory-rose"
       },
       "complete": "The rememberer takes the rose and sets it in the bed. The garden remembers with you."
+    },
+    {
+      "id": "garden-moon",
+      "name": "The Moon in the Garden",
+      "level": 9,
+      "giver": "the rememberer",
+      "description": "The silver owl keeps the crescent word. Learn it, recall it at the shrine, and bring the garden its moon seed.",
+      "requires": [
+        "memory-garden",
+        "moon-stag"
+      ],
+      "objectives": [
+        {
+          "kind": "talk",
+          "npc": "silver-owl",
+          "count": 1,
+          "text": "Learn the crescent word from the silver owl"
+        },
+        {
+          "kind": "answer",
+          "word": "crescent",
+          "fact": "moon-word",
+          "text": "Recall the crescent word at the shrine"
+        },
+        {
+          "kind": "visit",
+          "room": 99,
+          "text": "Visit the Rose Walk"
+        }
+      ],
+      "rewards": {
+        "xp": 300,
+        "object": "moon-seed"
+      },
+      "complete": "The rememberer plants the moon seed. A white crescent opens under the glass roses."
     }
   ]
 }

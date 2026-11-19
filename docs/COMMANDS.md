@@ -28,6 +28,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `duel` | `challenge`, `du` | actor |
 | `eat` | `taste`, `ea` | object |
 | `extinguish` | `douse`, `snuff`, `ext` | object |
+| `facts` | `memory`, `knowledge` | none |
 | `flee` | `run`, `fl` | none |
 | `give` | `gv` | object to actor |
 | `guild` | `guilds` | subcommand |
@@ -165,6 +166,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `clerk-errand` | The Clerk's Errand | 3 | Deliver a clerk's seal to the guild clerk | 80 xp |
 | `hall-word` | A Word in the Hall | 2 | Talk to the market woman; Talk to the guild clerk | 70 xp |
 | `memory-garden` | The Garden Remembers | 3 | Learn the ledger word from the guild clerk; Recall the ledger word at the shrine; Visit the Memory Garden | 150 xp |
+| `garden-moon` | The Moon in the Garden | 9 | Learn the crescent word from the silver owl; Recall the crescent word at the shrine; Visit the Rose Walk | 300 xp |
 
 ## Rooms
 

@@ -656,6 +656,16 @@
         "shrine": "The shrine is where a learned word is spoken.",
         "recalled": "You recall: %s"
       }
+    },
+    "facts": {
+      "aliases": [
+        "memory",
+        "knowledge"
+      ],
+      "argument": "none",
+      "messages": {
+        "empty": "You have not learned any facts yet."
+      }
     }
   }
 }

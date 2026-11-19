@@ -837,6 +837,12 @@
       "level": "some-true",
       "statement": "Production v0.81.0 serves 100 rooms, 14 zones, 50 quests, 47 mobiles and 95 objects. The Memory Garden adds three safe rooms east of the shrine, the rememberer and garden wisp, two keepsakes, and The Garden Remembers quest. NPC facts are stored per character, mirrored to R4, and recalled at the shrine; an answer objective with a fact cannot complete without learning it, and recall falls back to R4 context when the local note is missing. R4 is active, Gemini reports configured false, signups stay open. Gate 44594786579 green.",
       "authority": "wick production v0.81.0 2026-11-19; release 44596483287; gate 44594786579; /health and /world"
+    },
+    {
+      "id": "MB-135",
+      "level": "build",
+      "statement": "v0.82 adds the crescent fact from the silver owl, The Moon in the Garden follow-up (300 xp, moon seed, Moon Gardener title) and the facts/memory command. The world is 100 rooms/14 zones/51 quests/47 mobiles/96 objects with 5 titles. tools/live-session.mjs starts an isolated real server, seeds a level-10 character, fights the eclipse regent over WebSocket and walks the Memory Garden quest; the run won 11 rounds (21 events, 47.6% hits) and found the 30,000-XP level-11 bug. The level table is now ten levels capped at 30,000 and the gate covers levelCap and gardenMoon.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }
