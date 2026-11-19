@@ -161,6 +161,7 @@ export function buildActionMenu(state = null) {
       menu.add(`examine ${object.name}`);
       if (object.takeable) menu.add(`take ${object.name}`);
       if (object.container) menu.add(object.open ? `close ${object.name}` : `open ${object.name}`);
+      for (const item of object.contents ?? []) menu.add(`take ${item} from ${object.name}`);
       if (object.forSale && object.price != null) menu.add(`buy ${object.name}`);
     }
     for (const npc of room.npcs ?? []) {

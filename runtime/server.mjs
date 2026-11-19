@@ -522,6 +522,9 @@ function selfState(actor) {
         open: object.open === true,
         forSale: object.forSale === true,
         price: object.price ?? null,
+        contents: object.open === true
+          ? state.objects.filter((item) => item.inside === object.id && !item.eaten).map((item) => item.name)
+          : [],
       }))
     : [];
   const npcsHere = actor?.key
