@@ -176,6 +176,131 @@ export function buildActionMenu(state = null) {
   return [...menu].slice(0, 32);
 }
 
+const DIRECTION_ALIASES = {
+  n: "north", s: "south", e: "east", w: "west", u: "up", d: "down",
+};
+const FREE_VERBS = new Set([
+  "look", "l", "who", "wh", "awake", "aw", "say", "tell", "mail", "global",
+  "gossip", "gos", "goss", "trade", "channels", "inventory", "i", "inv",
+  "equipment", "eq", "score", "sc", "stats", "quests", "q", "j", "spells",
+  "world", "status", "help", "h", "?", "wait", "wave", "nod", "bow", "laugh",
+  "sigh", "shrug", "dance", "flee", "search", "sr", "answer", "claim",
+  "guild", "gc", "gchat", "quest", "deliver", "train", "list", "buy", "sell",
+]);
+const TARGET_VERBS = new Set([
+  "examine", "x", "ex", "take", "get", "g", "grab", "drop", "dr", "discard",
+  "wear", "don", "remove", "wield", "unwield", "eat", "light", "extinguish",
+  "open", "close", "shut", "talk", "attack", "kill", "hit", "buy", "sell",
+  "cast", "study", "recite",
+]);
+
+const wordsOf = (value) => String(value ?? "").toLowerCase().split(/[^a-z0-9]+/).filter((word) => word.length > 1);
+
+const stateVocabulary = (state = null) => {
+  const known = new Set(["here", "room", "self", "me", "inventory", "all", "the", "a", "an"]);
+  const add = (value) => { for (const word of wordsOf(value)) known.add(word); };
+  const room = state?.room;
+  if (room) {
+    add(room.name);
+    for (const detail of room.details ?? []) add(detail);
+    for (const exit of room.exits ?? []) add(typeof exit === "string" ? exit : exit?.dir);
+    for (const object of room.objects ?? []) {
+      add(object.name);
+      for (const item of object.contents ?? []) add(item);
+    }
+    for (const npc of room.npcs ?? []) add(npc.name);
+    for (const action of room.actions ?? []) { add(action.verb); add(action.target); }
+  }
+  for (const item of state?.self?.inventory_names ?? []) add(item);
+  for (const item of state?.self?.worn ?? []) add(item);
+  add(state?.self?.wielding);
+  for (const spell of state?.self?.spells ?? []) add(spell);
+  return known;
+};
+
+/** Conservative pre-send validation: only reject clear misses. */
+export function validateCommand(command, state = null) {
+  const raw = String(command ?? "").trim();
+  if (!raw) return { ok: false, reason: "empty command" };
+  const parts = raw.split(/\s+/);
+  let verb = parts[0].toLowerCase();
+  let rest = parts.slice(1);
+  if (DIRECTION_ALIASES[verb]) verb = DIRECTION_ALIASES[verb];
+  if (verb === "go") {
+    if (!rest.length) return { ok: false, reason: "go needs a direction" };
+    verb = String(rest[0]).toLowerCase().replace(/[^a-z]/g, "");
+    rest = rest.slice(1);
+    if (DIRECTION_ALIASES[verb]) verb = DIRECTION_ALIASES[verb];
+  }
+  if (["north", "south", "east", "west", "up", "down"].includes(verb)) {
+    const exits = new Set((state?.room?.exits ?? []).map((exit) => (typeof exit === "string" ? exit : exit?.dir)).filter(Boolean));
+    if (exits.size && !exits.has(verb)) return { ok: false, reason: `no ${verb} exit here` };
+    return { ok: true };
+  }
+  if (FREE_VERBS.has(verb)) {
+    if (verb === "search" && rest.length) return { ok: false, reason: "search takes no target" };
+    return { ok: true };
+  }
+  if (!TARGET_VERBS.has(verb)) return { ok: false, reason: `unknown command ${verb}` };
+  if (!rest.length) return { ok: false, reason: `${verb} needs a target` };
+  const target = rest.join(" ");
+  if (verb === "attack" && state?.room?.safe) return { ok: false, reason: "this is a safe room" };
+  if (["take", "get", "g", "grab"].includes(verb) && !/\bfrom\b/i.test(target)) {
+    const targetWords = new Set(wordsOf(target));
+    const content = (state?.room?.objects ?? [])
+      .flatMap((object) => (object.contents ?? []).map((item) => ({ item, container: object.name })))
+      .find((entry) => {
+        const itemWords = wordsOf(entry.item);
+        return itemWords.length > 0 && itemWords.every((word) => targetWords.has(word));
+      });
+    if (content) return { ok: false, reason: `${content.item} is inside ${content.container}` };
+  }
+  if (verb === "cast") {
+    const spell = String(rest[0] ?? "").toLowerCase();
+    if (state?.self?.spells?.length && !state.self.spells.map((value) => String(value).toLowerCase()).includes(spell)) {
+      return { ok: false, reason: `unknown spell ${spell}` };
+    }
+  }
+  if (verb === "open" || verb === "close") {
+    const object = (state?.room?.objects ?? []).find((entry) => String(entry.name).toLowerCase().includes(target.toLowerCase()));
+    if (verb === "open" && object?.open) return { ok: false, reason: "already open" };
+    if (verb === "close" && object && object.open === false) return { ok: false, reason: "already closed" };
+  }
+  const known = stateVocabulary(state);
+  const tokens = wordsOf(target).filter((word) => word.length > 2);
+  if (tokens.length && !tokens.some((word) => known.has(word))) {
+    return { ok: false, reason: `cannot see ${target}` };
+  }
+  return { ok: true };
+}
+
+/** Prefer a legal menu action over sending a command the server will reject. */
+export function repairCommand(command, state = null, reason = "") {
+  const raw = String(command ?? "").trim();
+  const parts = raw.split(/\s+/);
+  let verb = parts[0].toLowerCase();
+  let rest = parts.slice(1);
+  if (DIRECTION_ALIASES[verb]) verb = DIRECTION_ALIASES[verb];
+  const menu = buildActionMenu(state);
+  if (verb === "search" && rest.length) return "search";
+  if (verb === "open") {
+    const target = rest.join(" ");
+    const closed = menu.find((action) => action.startsWith("close ") && action.includes(target.toLowerCase()));
+    if (closed) return closed;
+  }
+  if (verb === "take" || verb === "get" || verb === "g") {
+    const target = rest.join(" ").toLowerCase();
+    const from = menu.find((action) => action.startsWith("take ") && action.includes(" from ") && action.includes(target));
+    if (from) return from;
+  }
+  if (verb === "attack" && state?.room?.safe) return "look";
+  if (verb === "cast" && /unknown spell/.test(reason)) return "spells";
+  const tokens = wordsOf(rest.join(" ")).filter((word) => word.length > 2);
+  const match = menu.find((action) => tokens.some((token) => action.toLowerCase().includes(token)));
+  if (match) return match;
+  return "look";
+}
+
 export function buildUserPrompt({ turn = 1, observation = "", director = [], state = null, note = "", fast = false, actions: injected = null, memory = "", r4 = "" } = {}) {
   const steering = director.length
     ? director.map((line) => `- ${line}`).join("\n")

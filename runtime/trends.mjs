@@ -76,6 +76,35 @@ export function summarizeTrends(spans) {
       tokens_out: aiTurns.reduce((sum, span) => sum + (number(span["ai.completion_tokens"]) ?? 0), 0),
       thinking_tokens: aiTurns.reduce((sum, span) => sum + (number(span["ai.thinking_tokens"]) ?? 0), 0),
       commands: countBy(ai.map((span) => verb(span["ai.command"] ?? span["output.command"]))),
+      invalid: ai.filter((span) => span["ai.invalid"] === true || span["ai.invalid"] === "true").length,
+      invalid_rate: ai.length ? ai.filter((span) => span["ai.invalid"] === true || span["ai.invalid"] === "true").length / ai.length : null,
+      loops: ai.filter((span) => span["ai.loop"] === true || span["ai.loop"] === "true").length,
+      memory_hits: ai.filter((span) => span["ai.memory_hit"] === true || span["ai.memory_hit"] === "true").length,
+      r4_hits: ai.filter((span) => span["ai.r4_hit"] === true || span["ai.r4_hit"] === "true").length,
+      rooms_seen_max: (() => {
+        const values = ai.map((span) => number(span["ai.rooms_seen"])).filter((n) => n !== null);
+        return values.length ? Math.max(...values) : null;
+      })(),
+      by_model: (() => {
+        const groups = new Map();
+        for (const span of ai) {
+          const model = span["ai.model"] ?? span.model ?? "unknown";
+          const entry = groups.get(model) ?? { turns: 0, latencies: [], invalid: 0, loops: 0 };
+          entry.turns += 1;
+          const latency = number(span["ai.latency_ms"] ?? span["telemetry.latency_ms"]);
+          if (latency !== null) entry.latencies.push(latency);
+          if (span["ai.invalid"] === true || span["ai.invalid"] === "true") entry.invalid += 1;
+          if (span["ai.loop"] === true || span["ai.loop"] === "true") entry.loops += 1;
+          groups.set(model, entry);
+        }
+        return Object.fromEntries([...groups.entries()].map(([model, entry]) => [model, {
+          turns: entry.turns,
+          p50: percentile(entry.latencies, 50),
+          p95: percentile(entry.latencies, 95),
+          invalid: entry.invalid,
+          loops: entry.loops,
+        }]));
+      })(),
       prompt_versions: countBy(ai.map((span) => span["ai.prompt_version"])),
       reasonings: countBy(ai.map((span) => span["ai.reasoning"])),
       deliberate: ai.filter((span) => span["ai.deliberate"] === true || span["ai.deliberate"] === "true").length,

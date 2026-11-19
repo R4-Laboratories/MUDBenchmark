@@ -184,6 +184,9 @@ Rehearsed 2026-11-16:
   service with scoped retrieval, a note journal and an authenticated game
   proxy; the browser injects R4 CONTEXT and falls back to local memory if the
   sidecar is down (MB-101);
+- v0.68.0 (grounded actions) validates commands against the current room and
+  repairs invalid targets before they reach the server; adds invalid/loop/
+  coverage/memory/R4 scorecards by model (MB-103);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

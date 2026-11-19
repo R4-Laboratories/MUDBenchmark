@@ -35,7 +35,7 @@ import { assemble } from "../runtime/router.mjs";
 import { AREA_PERIOD, armorOf, attackRoll, checkpointIdentities, initialState, nextFrom, phaseAt, releaseHeldObjects, step, upgradeState } from "../runtime/world.mjs";
 import { join } from "node:path";
 import { buildCandidates } from "./candidate.mjs";
-import { PROVIDERS, buildSystemPrompt, buildUserPrompt, normalizeBase, parseBrain, requestFor, replyFrom, trimHistory } from "../runtime/web/ai.mjs";
+import { PROVIDERS, buildSystemPrompt, buildUserPrompt, normalizeBase, parseBrain, requestFor, replyFrom, trimHistory, validateCommand, repairCommand } from "../runtime/web/ai.mjs";
 import { emptyMemory, rememberResult, memoryPrompt, loopWarning, breakLoop, shouldBreakLoop } from "../runtime/web/memory.mjs";
 import { verifyPrismSession, verifyPersonaOwner, verifySessionKey, sessionWithinWindow } from "../runtime/prism-auth.mjs";
 import { decodeIdentityRequest, identityAdmits } from "../runtime/identity.mjs";
@@ -221,6 +221,25 @@ let webAI = { ok: true, why: [] };
     },
   });
   check(fastUser.includes("ACTIONS:") && fastUser.includes("north") && fastUser.includes("examine plaque") && fastUser.includes("take a grey cloak") && fastUser.includes("say <text>"), "the fast prompt did not inject the legal/social actions");
+  const guardState = {
+    room: {
+      name: "The Atrium", safe: true, details: ["plaque"],
+      exits: [{ dir: "north" }, { dir: "east" }],
+      objects: [
+        { name: "an oaken chest", open: true, container: true, contents: ["a copper coin"] },
+        { name: "a grey cloak", takeable: true },
+      ],
+      npcs: [{ name: "a bard", aggression: 0 }], actions: [],
+    },
+    self: { inventory_names: ["a grey cloak"], spells: ["spark"] },
+  };
+  check(validateCommand("look", guardState).ok, "a basic command was rejected");
+  check(validateCommand("go north", guardState).ok, "go north was rejected");
+  check(validateCommand("say hello", guardState).ok, "speech was rejected");
+  check(!validateCommand("search an oaken chest", guardState).ok && repairCommand("search an oaken chest", guardState) === "search", "search target was not repaired");
+  check(!validateCommand("take copper coin", guardState).ok && repairCommand("take copper coin", guardState).includes("from"), "a contained item was not repaired to take-from");
+  check(!validateCommand("open an oaken chest", guardState).ok && repairCommand("open an oaken chest", guardState).startsWith("close"), "an already-open container was not repaired");
+  check(!validateCommand("attack a bard", guardState).ok && repairCommand("attack a bard", guardState) === "look", "safe-room combat was not repaired");
   const reasoned = replyFrom("custom", { choices: [{ message: { content: "", reasoning_content: "COMMAND: look" } }] });
   check(reasoned.text === "", "reasoning content was treated as the answer");
   const native = replyFrom("ollama", { message: { content: "THOUGHT: x\nCOMMAND: look" } });
@@ -1196,9 +1215,12 @@ let telemetry = { ok: true, why: [] };
     prompt_tokens: 100, completion_tokens: 20, thinking_tokens: 15,
     parse_ok: true, command: "look", thought_chars: 40, turn: 2, tick: 9,
     fast: true, deliberate: true, reasoning: "auto", prompt_version: "r4-direct-2",
+    invalid: true, invalid_reason: "already open", repair: "close chest", loop: true,
+    memory_hit: true, r4_hit: true, rooms_seen: 5,
   });
   check(metric?.latency_ms === 1234 && metric?.command === "look", "a valid AI turn metric was refused");
   check(metric?.fast === true && metric?.deliberate === true && metric?.reasoning === "auto" && metric?.prompt_version === "r4-direct-2", "the AI turn metric lost its mode");
+  check(metric?.invalid === true && metric?.loop === true && metric?.memory_hit === true && metric?.r4_hit === true && metric?.rooms_seen === 5, "the AI turn metric lost the scorecard fields");
   check(normalizeAiTurn({ kind: "other", provider: "x" }) === null, "an unknown metric kind was accepted");
   check(normalizeAiTurn({ kind: "ai.turn", provider: "x", error: "x".repeat(500) })?.error.length === 200, "an error string was not bounded");
   const attrs = aiTurnAttributes(metric);
@@ -1208,7 +1230,7 @@ let telemetry = { ok: true, why: [] };
     { name: "world.client", at: "2026-11-17T00:00:00Z", "client.transport": "websocket" },
     { name: "world.disconnect", at: "2026-11-17T00:01:00Z", duration_ms: 60000, "client.transport": "websocket" },
     { name: "world.session", at: "2026-11-17T00:00:30Z", "session.kind": "login" },
-    { name: "ai.turn", at: "2026-11-17T00:00:40Z", "ai.latency_ms": 1000, "ai.parse_ok": true, "ai.command": "look", "ai.prompt_tokens": 10, "ai.completion_tokens": 2, "ai.provider": "openai", "ai.fast": true, "ai.prompt_version": "r4-direct-1" },
+    { name: "ai.turn", at: "2026-11-17T00:00:40Z", "ai.latency_ms": 1000, "ai.parse_ok": true, "ai.command": "look", "ai.prompt_tokens": 10, "ai.completion_tokens": 2, "ai.provider": "openai", "ai.model": "test", "ai.fast": true, "ai.prompt_version": "r4-direct-1", "ai.invalid": true, "ai.loop": true, "ai.memory_hit": true, "ai.r4_hit": true, "ai.rooms_seen": 5 },
     { name: "ai.turn", at: "2026-11-17T00:00:45Z", "ai.latency_ms": 3000, "ai.parse_ok": false, "ai.error": "timeout", "ai.timeout": true, "ai.provider": "openai" },
     { name: "world.input", at: "2026-11-17T00:00:41Z", text: "look" },
     { name: "world.input", at: "2026-11-17T00:00:42Z", text: "north" },
@@ -1218,6 +1240,7 @@ let telemetry = { ok: true, why: [] };
   const trends = summarizeTrends(spans);
   check(trends.ai.turns === 2 && trends.ai.parsed === 0.5, "the AI trend counts are wrong");
   check(trends.ai.by_mode.direct.turns === 1 && trends.ai.by_mode.full.turns === 1 && trends.ai.prompt_versions["r4-direct-1"] === 1, "the AI mode trends are wrong");
+  check(trends.ai.invalid === 1 && trends.ai.loops === 1 && trends.ai.rooms_seen_max === 5 && trends.ai.by_model.test?.turns === 1, "the AI scorecard trends are wrong");
   check(trends.ai.latency_ms.p50 === 1000 && trends.ai.latency_ms.max === 3000, "the AI latency percentiles are wrong");
   check(trends.commands.accepted === 2 && trends.commands.refused === 1, "the command trend counts are wrong");
   check(trends.world.online.latest === 1 && trends.world.levels.max === 4, "the world trend counts are wrong");

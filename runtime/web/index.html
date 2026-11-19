@@ -857,7 +857,7 @@
 <script type="module">
   import {
     PROVIDERS, DEFAULT_GOAL, buildSystemPrompt, buildUserPrompt,
-    parseBrain, buildActionMenu, requestFor, replyFrom, trimHistory, normalizeBase,
+    parseBrain, buildActionMenu, validateCommand, repairCommand, requestFor, replyFrom, trimHistory, normalizeBase,
   } from "/ai.mjs";
   import { emptyMemory, rememberResult, memoryPrompt, loopWarning, breakLoop, shouldBreakLoop } from "/memory.mjs";
   import { signIn as prismSignIn, reset as prismReset, load as loadSession, save as saveSession, personaSignIn, personaRetire, nextPersonaEpoch, createRecoveryKit, restoreRecoveryKit, characterHandoff, characterRevoke, signChallenge } from "/prism-auth.mjs";
@@ -1016,6 +1016,7 @@
     demoToken: null, demoTokenExpires: 0, demoWaiters: [],
     memory: null, memoryKey: null, commandRoom: null, exits: [],
     r4Waiters: [], r4DownUntil: 0,
+    lastInvalid: null, lastValidation: null, loopBroken: false, lastR4: false,
   };
   const shortId = (id) => (id ? `${id.slice(0, 15)}…` : "—");
 
@@ -2063,6 +2064,10 @@
     AI.exits = [];
     AI.r4Waiters = [];
     AI.r4DownUntil = 0;
+    AI.lastInvalid = null;
+    AI.lastValidation = null;
+    AI.loopBroken = false;
+    AI.lastR4 = false;
     AI.lastReply = null;
     AI.lastParsed = null;
     AI.lastLatency = 0;
@@ -2282,6 +2287,10 @@
         ["Latency p95", ms(data.ai?.latency_ms?.p95)],
         ["Direct p50", ms(data.ai?.by_mode?.direct?.p50)],
         ["Full p50", ms(data.ai?.by_mode?.full?.p50)],
+        ["Invalid", pct(data.ai?.invalid_rate)],
+        ["Loops", count(data.ai?.loops)],
+        ["Rooms max", count(data.ai?.rooms_seen_max)],
+        ["R4 hits", count(data.ai?.r4_hits)],
         ["Tokens in", count(data.ai?.tokens_in)],
         ["Tokens out", count(data.ai?.tokens_out)],
         ["Online max", count(data.world?.online?.max)],
@@ -2403,6 +2412,9 @@
       ["Prompt tokens", AI.usage.prompt ? String(AI.usage.prompt) : "—"],
       ["Completion tokens", AI.usage.completion ? String(AI.usage.completion) : "—"],
       ["Last latency", AI.lastLatency ? `${(AI.lastLatency / 1000).toFixed(1)}s` : "—"],
+      ["Invalid", AI.lastValidation?.invalid ? "yes" : "no"],
+      ["Rooms seen", String(Object.keys(AI.memory?.rooms ?? {}).length)],
+      ["R4", AI.lastR4 ? "hit" : "local"],
       ["Context", `${messages.length} msgs · ${contextChars} chars`],
       ["Last command", AI.lastCommand || "—"],
       ["Error", AI.lastError || "—"],
@@ -2695,6 +2707,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         try {
           const r4 = await requestR4Context(`${AI.room || ""} ${observation}`);
           r4Text = String(r4?.context ?? "").trim();
+          AI.lastR4 = Boolean(r4Text);
         } catch {
           AI.r4DownUntil = Date.now() + 60_000;
         }
@@ -2719,7 +2732,13 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       if (AI.nudge) notes.push("You repeated a command. Do something different: move, examine, take, talk, or check your inventory.");
       const loop = loopWarning(AI.recent);
       if (loop) notes.push(loop);
+      if (AI.lastInvalid) {
+        notes.push(`Your previous command "${AI.lastInvalid.command}" was rejected (${AI.lastInvalid.reason}); use ACTIONS.`);
+      }
       AI.nudge = false;
+      AI.lastInvalid = null;
+      AI.lastValidation = null;
+      AI.loopBroken = false;
       const actions = buildActionMenu(promptState);
       const deliberate = needsReasoning();
       const system = buildSystemPrompt({ name: AI.name || "an autonomous player", goal: DEFAULT_GOAL, fast: AI.config.fast, deliberate });
@@ -2767,6 +2786,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         if (forced && forced !== parsed.command) {
           parsed.command = forced;
           parsed.thought = `Loop broken: ${forced}.`;
+          AI.loopBroken = true;
           addChat("system", `Loop guard: a repeated command was replaced with "${forced}".`);
         }
       }
@@ -2788,6 +2808,13 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         fast: Boolean(AI.config.fast),
         deliberate,
         reasoning: AI.config.reasoning,
+        invalid: Boolean(AI.lastValidation?.invalid),
+        invalid_reason: AI.lastValidation?.reason ?? null,
+        repair: AI.lastValidation?.repaired ?? null,
+        loop: Boolean(AI.loopBroken),
+        memory_hit: Boolean(memoryText.includes("Known:")),
+        r4_hit: Boolean(r4Text),
+        rooms_seen: Object.keys(memory.rooms).length,
         prompt_version: AI.config.fast ? "r4-direct-2" : "full-1",
         turn,
         tick: AI.lastTick,
@@ -2798,6 +2825,17 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       AI.latencies.push(latency);
       AI.usage.prompt += usage?.input_tokens ?? usage?.prompt_tokens ?? 0;
       AI.usage.completion += usage?.output_tokens ?? usage?.completion_tokens ?? 0;
+      const attempted = parsed.command;
+      const validation = validateCommand(attempted, promptState);
+      let repaired = null;
+      if (!validation.ok) {
+        repaired = repairCommand(attempted, promptState, validation.reason);
+        addChat("system", `Command guard: "${attempted}" (${validation.reason}) → "${repaired}".`);
+        parsed.command = repaired;
+        parsed.thought = parsed.thought || `Command guard: ${repaired}.`;
+      }
+      AI.lastValidation = { invalid: !validation.ok, reason: validation.reason, repaired };
+      if (!validation.ok) AI.lastInvalid = { command: attempted, reason: validation.reason, repaired };
       AI.lastCommand = parsed.command;
       let recent = [...AI.recent, parsed.command];
       const stuck = recent.length >= 5 && recent.slice(-5).every((command) => command === parsed.command);

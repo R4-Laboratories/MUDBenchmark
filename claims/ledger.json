@@ -651,6 +651,12 @@
       "level": "some-true",
       "statement": "Production v0.67.0 runs the R4 memory sidecar on wick and injects R4 CONTEXT into the AI prompt. A 14-turn Gemini run reached p50 917ms / p95 1205ms with zero errors, used say/talk and movement/examine/take/wear, and carried prior-room context (Market Square, The Gilded Rat) into later turns. The sidecar recorded 29 calls at p50 4ms / p95 64ms / max 239ms. Warm restart is 13.6s with no model download; the local browser memory remains the fallback.",
       "authority": "wick production v0.67.0 2026-11-19; release 44439824019; gate 44438484443; /api/sysinfo; /trends; ai.r4 spans; headless Gemini run"
+    },
+    {
+      "id": "MB-103",
+      "level": "build",
+      "statement": "AI commands are validated before send: unknown verbs/targets, search targets, already-open containers, contained items without take-from, unknown spells and safe-room attacks are rejected and repaired from the current action menu; the original attempt is remembered for the next prompt and an ai.invalid metric is recorded. The trends scorecard now reports invalid rate, loops, rooms seen, memory hits, R4 hits and per-model p50/p95/invalid/loops. A live mock repeatedly sending \"search an oaken chest\" produced only \"search\" and then moved on under the loop guard, with no server Usage errors.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

@@ -39,6 +39,13 @@ export function normalizeAiTurn(value) {
     fast: value.fast === true,
     deliberate: value.deliberate === true,
     reasoning: text(value.reasoning, 16),
+    invalid: value.invalid === true,
+    invalid_reason: text(value.invalid_reason, 120),
+    repair: text(value.repair, 80),
+    loop: value.loop === true,
+    memory_hit: value.memory_hit === true,
+    r4_hit: value.r4_hit === true,
+    rooms_seen: number(value.rooms_seen, 100_000),
     prompt_version: text(value.prompt_version, 32),
   };
 }
@@ -61,6 +68,13 @@ export function aiTurnAttributes(metric) {
     "ai.fast": metric.fast,
     "ai.deliberate": metric.deliberate,
     "ai.reasoning": metric.reasoning,
+    "ai.invalid": metric.invalid,
+    "ai.invalid_reason": metric.invalid_reason,
+    "ai.repair": metric.repair,
+    "ai.loop": metric.loop,
+    "ai.memory_hit": metric.memory_hit,
+    "ai.r4_hit": metric.r4_hit,
+    "ai.rooms_seen": metric.rooms_seen,
     "ai.prompt_version": metric.prompt_version,
   };
 }
