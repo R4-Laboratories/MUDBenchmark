@@ -669,6 +669,12 @@
       "level": "build",
       "statement": "The deploy readiness check now waits 10s after flipping units and probes login assets plus /health for up to 50s instead of 16s. This addresses the repeated transient \"login assets: false\" rollback where the world was still starting; the previous release deployed cleanly on an immediate retry.",
       "gate": "deploy/mudbench-deploy.sh"
+    },
+    {
+      "id": "MB-106",
+      "level": "some-true",
+      "statement": "Production v0.68.2 serves grounded actions and scorecards alongside the R4 sidecar. The AI trend set reports 416 turns at Gemini p50 1091ms / p95 1651ms, rooms_seen_max 26, r4_hits 414, loops 36 and zero errors; the invalid field is recorded for every turn (0 on that sample). The hardened deploy script waited for login assets plus /health and v0.68.2 deployed without the transient rollback. The R4 sidecar remains active and loopback-only.",
+      "authority": "wick production v0.68.2 2026-11-19; release 44445659872; gate 44444625540; /trends; /health; R4 /api/sysinfo; deploy log"
     }
   ]
 }

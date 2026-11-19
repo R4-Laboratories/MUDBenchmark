@@ -177,13 +177,13 @@ Only after A/B:
 
 ## Sequence
 
-| Release | Scope | Acceptance |
+| Release | Scope | Status |
 | --- | --- | --- |
-| v0.66.0 | R4 spike report + validated context API; no production dependency | 30 observations, p95 <150ms, restart persistence, report |
-| v0.66.1 | Production memory service + fallback + Model inspector | 20-turn revisit recall, no cross-character leakage |
-| v0.67.0 | Command grounding + scorecards + deterministic loop test | invalid <2%, loop rate measured, no regression |
-| v0.68.0 | Social memory + second outdoor region + guild rank 6 | map/quest gates, scripted social walk |
-| v0.69.0 | Stream audience and launch hardening | live card, quota alerts, restore drill |
+| v0.66.0 | R4 spike report, native prime/GCD concept index | **done** (MB-100) |
+| v0.67.0 | R4 loopback sidecar, scoped retrieval, note journal, game proxy, fallback | **done** (MB-101/102) |
+| v0.68.0–2 | Command grounding, invalid/loop/coverage/R4 scorecards, deploy readiness | **done** (MB-103/104/105/106) |
+| v0.69.0 | Social memory, second outdoor region, guild rank 6 | next |
+| v0.70.0 | Stream audience and launch hardening | after world work |
 
 ## Risks
 
