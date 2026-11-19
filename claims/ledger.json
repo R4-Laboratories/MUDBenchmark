@@ -705,6 +705,12 @@
       "level": "build",
       "statement": "Stream v3 adds a last-run archive (name, room, end time, peak viewers, public highlights) served by /stream and rendered on /watch with JSON download; live highlights gain a Download clip action. Gemini demo token responses include per-account remaining/minute/global quota and the Model inspector shows demo turns left with a low-quota chat warning. Operators can set SIGNUP_MODE=closed to refuse new legacy/Prism accounts while preserving existing logins; /health reports the mode.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-112",
+      "level": "some-true",
+      "statement": "Production v0.70.0 serves the stream archive and launch controls: a real Gemini stream was started, a highlight marked, stopped, and /stream plus /watch returned the last run (name, room, peak viewers, highlight) with Download last run. /api/demo reports globalRemaining; token responses carry per-account remaining/minute; SIGNUP_MODE is open and reported by /health. A copied state corrupted in /tmp restored from world.json.1 and served 11 accounts/35 mobiles on port 8092 without touching production. The world remains 80 rooms/36 quests/35 mobiles/71 objects.",
+      "authority": "play.r4labs.org v0.70.0 2026-11-19; release 44461671964; gate 44460742321; headless stream run; /stream last; /watch last card; restore drill /tmp copy"
     }
   ]
 }
