@@ -22,44 +22,44 @@ used about **1.1 GB** of memory.
 
 | Case | Latency | Result |
 | --- | ---: | --- |
-| initial context call | 388 ms | wiki sentences dominated; no game memory yet |
-| second call, after indexing one game note | 9.0 s | game note ranked first, then wiki |
-| third call | 14.5 s | cache/vocabulary work dominated |
-| restart | ~2 min | 23k-sentence corpus load |
+| cold first start | ~2 min | zeta tables + 23,466 wiki sentences; **no model download** |
+| warm restart | 13.6 s | cache load only |
+| initial scoped context | 192 ms | game memory ranked first |
+| warm scoped context | 5–20 ms | scoped notes only |
+| remember call | 10–20 ms | append note journal |
+| resident memory | ~760 MB | no generation model |
 
-The per-turn indexing path (`index_single_sentence` → vocabulary rebuild →
-`save_manifold_cache`) is the latency source. The shared wiki corpus also
-competes with game memory: the first call returned generic geography, not the
-Atrium.
+The original 9–14 s measurements came from per-turn indexing and rewriting the
+349 MB cache. The full router is viable when the request path is split:
+
+- `/api/context` only routes and retrieves; it never indexes or saves;
+- `/api/remember` appends to a small `memory_notes.jsonl` journal;
+- query scope is **identity only**, so the shared wiki cannot drown the game
+  notes;
+- the journal is replayed at startup, and a restart returns the same fact
+  (`silver key` / `crypt chest`) in 10 ms.
 
 ## Decision
 
-**No production deployment of the full router as-is.** It misses the plan's
-acceptance gate by orders of magnitude (p95 <150 ms, bounded context, relevant
-game concepts).
+**Conditional go for a loopback memory sidecar, not for a per-turn voice
+model.** The service is deployed as `mudbench-memory.service` on wick:
 
-The useful part — text to integers, prime factors, shared-factor retrieval —
-is implemented natively in `runtime/web/memory.mjs` as the **R4-lite concept
-index**:
+- patched prime-router with the split context/remember endpoints;
+- `USE_OLLAMA=0`; no model download or generation;
+- loopback only, never public;
+- the game server proxies `r4-context` / `r4-remember` over the authenticated
+  socket;
+- the browser gets `R4 CONTEXT` plus the local `MEMORY` fallback.
 
-- each word maps to a stable prime;
-- each note is a set of word primes;
-- retrieval counts shared primes (the discrete GCD analogue), with a same-room
-  and useful-command boost;
-- the index is per character and fast enough for every turn;
-- the existing room/command/stale/exits memory remains the outer structure.
+The native prime/GCD concept index in `runtime/web/memory.mjs` remains the
+instant fallback and still covers the game when the sidecar is down.
 
-This gives the game a working concept recall path now, without a 1.1 GB Python
-service or a 9-second turn.
+## Still required for the full router
 
-## Conditions to revisit the full router
-
-1. Run a **game-only corpus** (no shared wiki) for character scope.
-2. Index asynchronously, not on the request path.
-3. Save the cache on a timer or checkpoint, not after every observation.
-4. Prove p95 <150 ms over 100 game queries.
-5. Prove the top-3 results are game concepts, not unrelated wiki sentences.
-6. Keep a local-memory fallback and a visible health state.
-
-Until then, the prime/GCD concept index in `memory.mjs` is the production
-memory layer.
+1. Trim the startup cache to game-only data if the 349 MB cache becomes an
+   operational burden.
+2. Add retention/compaction for `memory_notes.jsonl`.
+3. Prove p95 <150 ms over 100 mixed game queries on wick, not only the dev
+   machine.
+4. Keep a health indicator and a visible fallback state.
+5. Do not use the router's voice endpoint for game commands.

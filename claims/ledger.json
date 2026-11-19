@@ -639,6 +639,12 @@
       "level": "build",
       "statement": "The R4 router spike is documented in docs/R4-SPIKE.md. The full prime-router server indexed 23,466 wiki sentences at ~1.1 GB, started in ~2 minutes, returned wiki noise on the first game query and took 9.0-14.5s once per-turn indexing/cache work entered the path. It fails the p95 <150ms gate, so it is not deployed. The useful prime/GCD idea is implemented natively in memory.mjs: words map to stable primes, notes are prime sets, retrieval scores shared primes with room/command boosts, and the selected notes are injected as Known: each turn. The gate recalls the plaque/Vault fact from a later query.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-101",
+      "level": "build",
+      "statement": "The R4 memory sidecar is deployed on wick as a patched prime-router service on loopback: /api/context routes and retrieves only the character-scoped notes, /api/remember appends to memory_notes.jsonl, and the journal is replayed at startup. The game server proxies r4-context/r4-remember over the authenticated socket and the browser injects R4 CONTEXT ahead of the local MEMORY block, with a 60-second circuit breaker to local memory if the sidecar is unavailable. Local end-to-end calls measured 3-62ms; wick retrieval measured 11.5ms. The 349MB cache loads in 13.6s warm; no model is downloaded or used.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

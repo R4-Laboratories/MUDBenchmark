@@ -1015,6 +1015,7 @@
     highlights: [], streaming: false, timeouts: 0, lastPoll: null, state: null,
     demoToken: null, demoTokenExpires: 0, demoWaiters: [],
     memory: null, memoryKey: null, commandRoom: null, exits: [],
+    r4Waiters: [], r4DownUntil: 0,
   };
   const shortId = (id) => (id ? `${id.slice(0, 15)}…` : "—");
 
@@ -1927,6 +1928,30 @@
     try { localStorage.setItem(AI.memoryKey, JSON.stringify(AI.memory)); } catch {}
   }
 
+  function requestR4Context(text) {
+    return new Promise((resolve, reject) => {
+      if (AI.socket?.readyState !== WebSocket.OPEN) {
+        reject(new Error("The AI is not connected."));
+        return;
+      }
+      const waiter = {
+        resolve,
+        reject,
+        timer: setTimeout(() => {
+          AI.r4Waiters = AI.r4Waiters.filter((entry) => entry !== waiter);
+          reject(new Error("R4 context timed out."));
+        }, 2000),
+      };
+      AI.r4Waiters.push(waiter);
+      AI.socket.send(`r4-context ${String(text ?? "").replace(/\s+/g, " ").slice(0, 4000)}\n`);
+    });
+  }
+
+  function rememberR4(text) {
+    if (AI.socket?.readyState !== WebSocket.OPEN) return;
+    AI.socket.send(`r4-remember ${String(text ?? "").replace(/\s+/g, " ").slice(0, 4000)}\n`);
+  }
+
   function requestDemoToken() {
     return new Promise((resolve, reject) => {
       if (AI.socket?.readyState !== WebSocket.OPEN) {
@@ -2036,6 +2061,8 @@
     AI.memoryKey = null;
     AI.commandRoom = null;
     AI.exits = [];
+    AI.r4Waiters = [];
+    AI.r4DownUntil = 0;
     AI.lastReply = null;
     AI.lastParsed = null;
     AI.lastLatency = 0;
@@ -2501,6 +2528,20 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         }
         return;
       }
+      const r4Line = text.match(/^#r4-(context|remember) (.*)\r?\n?$/);
+      if (r4Line) {
+        if (r4Line[1] === "context") {
+          let payload = null;
+          try { payload = JSON.parse(r4Line[2]); } catch {}
+          const waiters = AI.r4Waiters.splice(0);
+          for (const waiter of waiters) {
+            clearTimeout(waiter.timer);
+            if (payload?.error) waiter.reject(new Error(payload.error));
+            else waiter.resolve(payload);
+          }
+        }
+        return;
+      }
       const demoLine = text.match(/^#demo-token (.*)\r?\n?$/);
       if (demoLine) {
         let payload = null;
@@ -2649,6 +2690,15 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
     const started = performance.now();
     try {
       const memory = ensureMemory();
+      let r4Text = "";
+      if (Date.now() >= AI.r4DownUntil) {
+        try {
+          const r4 = await requestR4Context(`${AI.room || ""} ${observation}`);
+          r4Text = String(r4?.context ?? "").trim();
+        } catch {
+          AI.r4DownUntil = Date.now() + 60_000;
+        }
+      }
       if (AI.lastCommand && AI.commandRoom) {
         rememberResult(memory, {
           room: AI.commandRoom,
@@ -2680,6 +2730,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         state: promptState,
         actions,
         memory: memoryText,
+        r4: r4Text,
         fast: AI.config.fast,
         note: notes.join(" "),
       });
@@ -2788,6 +2839,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       AI.commandRoom = AI.room || AI.state?.room?.name || null;
       if (AI.socket?.readyState === WebSocket.OPEN) AI.socket.send(`${parsed.command}\n`);
       else throw new Error("The AI is not connected.");
+      rememberR4(`Turn ${turn} in ${AI.room || "the world"}: ${observation} I chose ${parsed.command}.`);
       AI.lastError = null;
       AI.timeouts = 0;
       setAIStatus("live");

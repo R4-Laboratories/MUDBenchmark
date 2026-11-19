@@ -1,0 +1,163 @@
+diff --git a/server.py b/server.py
+index 154fd3f..7aa467d 100644
+--- a/server.py
++++ b/server.py
+@@ -1260,7 +1260,7 @@ def generate_geometric_response_with_trajectory(prompt_text, S, max_len=30, grav
+         
+     return " ".join(generated), trajectory, S_local
+ 
+-def retrieve_geometric_resonance(prompt_text, routing_data, top_n=3, state_vector: np.ndarray = None, identity: str | None = None):
++def retrieve_geometric_resonance(prompt_text, routing_data, top_n=3, state_vector: np.ndarray = None, identity: str | None = None, include_shared: bool = True):
+     """
+     Finds the sentences in the corpus that have the highest topological
+     resonance (cosine similarity multiplied by local slice energy) and prime factor matches.
+@@ -1286,7 +1286,7 @@ def retrieve_geometric_resonance(prompt_text, routing_data, top_n=3, state_vecto
+     all_windows = set(CORPUS_INDEX.keys()) | set(scoped_index.keys())
+ 
+     for win_idx in all_windows:
+-        shared_items = CORPUS_INDEX.get(win_idx, [])
++        shared_items = CORPUS_INDEX.get(win_idx, []) if include_shared else []
+         scoped_items = scoped_index.get(win_idx, [])
+         if not shared_items and not scoped_items:
+             continue
+@@ -1425,6 +1425,7 @@ def index_corpus(corpus_text: str):
+     return indexed_count
+ 
+ CACHE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "manifold_cache.json")
++MEMORY_NOTES_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "memory_notes.jsonl")
+ 
+ # GloVe flag — set to True once GloVe vectors are loaded into VOCAB_VECTORS
+ GLOVE_LOADED = False
+@@ -1566,7 +1567,7 @@ def save_manifold_cache(filepath: str):
+ # Ollama config
+ OLLAMA_URL   = os.environ.get("OLLAMA_URL", "http://127.0.0.1:11434")
+ OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "gemma4:e2b")
+-USE_OLLAMA   = True  # Set False to revert to geometric-retrieval-only mode
++USE_OLLAMA   = os.environ.get("USE_OLLAMA", "0").lower() in ("1", "true", "yes")
+ 
+ VOCAB_LIST = []
+ VOCAB_MATRIX = None
+@@ -2588,6 +2589,81 @@ class RouterAPIHandler(BaseHTTPRequestHandler):
+                 self.send_header("Content-Type", "application/json")
+                 self.end_headers()
+                 self.wfile.write(json.dumps({"error": str(e)}).encode('utf-8'))
++        elif self.path == "/api/context":
++            _record_request("/api/context")
++            try:
++                payload = self._read_json_body()
++                text = str(payload.get("text", "")).strip()
++                identity = str(payload.get("identity", "")).strip()
++                limit = max(1, min(12, int(payload.get("limit", 8))))
++                if not text or not identity:
++                    self.send_response(400)
++                    self.send_header("Content-Type", "application/json")
++                    self.end_headers()
++                    self.wfile.write(json.dumps({"error": "text and identity are required"}).encode("utf-8"))
++                    return
++                started = time.time()
++                active_state = get_brain_state(identity)
++                routing_data = route_query_to_manifold(text, include_eigenvalues=True, identity=identity, state_vector=active_state)
++                include_shared = bool(payload.get("include_shared", False))
++                resonances = retrieve_geometric_resonance(text, routing_data, top_n=limit, state_vector=active_state, identity=identity, include_shared=include_shared)
++                concepts = [{
++                    "text": str(sent)[:240],
++                    "score": round(float(rel), 5),
++                    "window": int(win),
++                    "kappa": float(kappa),
++                    "deficit_angle": float(deficit),
++                } for sent, rel, win, kappa, deficit in resonances]
++                context = "\n".join(item["text"] for item in concepts)[:2400]
++                active_state = evolve_brain_state(text, gamma=0.5, identity=identity)
++                digest = hashlib.sha256(np.array(active_state).tobytes()).hexdigest()[:12]
++                response = {
++                    "identity": identity,
++                    "concepts": concepts,
++                    "context": context,
++                    "tokens": len(context.split()),
++                    "state_version": digest,
++                    "latency_ms": round((time.time() - started) * 1000, 2),
++                    "metrics": {
++                        "window_index": routing_data["routed"].get("window_index"),
++                        "kappa": routing_data["routed"].get("metrics", {}).get("kappa"),
++                        "deficit_angle": routing_data["routed"].get("metrics", {}).get("deficit_angle"),
++                    },
++                }
++                self.send_response(200)
++                self.send_header("Content-Type", "application/json")
++                self.end_headers()
++                self.wfile.write(json.dumps(response).encode("utf-8"))
++            except Exception as e:
++                self.send_response(500)
++                self.send_header("Content-Type", "application/json")
++                self.end_headers()
++                self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
++        elif self.path == "/api/remember":
++            _record_request("/api/remember")
++            try:
++                payload = self._read_json_body()
++                text = str(payload.get("text", "")).strip()
++                identity = str(payload.get("identity", "")).strip()
++                if not text or not identity:
++                    self.send_response(400)
++                    self.send_header("Content-Type", "application/json")
++                    self.end_headers()
++                    self.wfile.write(json.dumps({"error": "text and identity are required"}).encode("utf-8"))
++                    return
++                started = time.time()
++                evolve_brain_state(text, gamma=0.5, identity=identity)
++                index_single_sentence(text, identity=identity)
++                append_memory_note(identity, text)
++                self.send_response(200)
++                self.send_header("Content-Type", "application/json")
++                self.end_headers()
++                self.wfile.write(json.dumps({"ok": True, "memory_latency_ms": round((time.time() - started) * 1000, 2)}).encode("utf-8"))
++            except Exception as e:
++                self.send_response(500)
++                self.send_header("Content-Type", "application/json")
++                self.end_headers()
++                self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
+         elif self.path == "/api/preload":
+             _record_request("/api/preload")
+             try:
+@@ -2960,6 +3036,30 @@ def index_single_sentence(s: str, identity: str | None = None):
+     build_2nd_order_transitions()
+     build_transitions_2nd_by_first()
+ 
++def append_memory_note(identity, text):
++    with open(MEMORY_NOTES_FILE, "a", encoding="utf-8") as handle:
++        handle.write(json.dumps({"identity": identity, "text": text, "at": time.time()}) + "\n")
++
++
++def load_memory_notes():
++    if not os.path.exists(MEMORY_NOTES_FILE):
++        return 0
++    loaded = 0
++    with open(MEMORY_NOTES_FILE, "r", encoding="utf-8") as handle:
++        for line in handle:
++            try:
++                note = json.loads(line)
++                text = str(note.get("text", "")).strip()
++                identity = str(note.get("identity", "")).strip()
++                if text and identity:
++                    index_single_sentence(text, identity=identity)
++                    loaded += 1
++            except Exception:
++                continue
++    print(f"[+] Loaded {loaded} game memory notes")
++    return loaded
++
++
+ def run_server(port=8000):
+     # 1. Start Ollama and verify OLLAMA_MODEL is pulled
+     print("[*] Verifying Ollama service status...")
+@@ -3023,6 +3123,10 @@ def run_server(port=8000):
+ 
+     # Try to load cached manifold model first (sub-second boot)
+     cache_loaded = load_manifold_cache(CACHE_FILE)
++    # Game notes are the journal, not the 349MB cache. Rebuild the scoped
++    # corpus from the small append-only file after cache load.
++    CORPUS_INDEX_BY_ID.clear()
++    load_memory_notes()
+     
+     # Count total indexed sentences
+     total_sentences = sum(len(items) for items in CORPUS_INDEX.values())

@@ -207,6 +207,8 @@ let webAI = { ok: true, why: [] };
   check(deliberate.body.reasoning_effort === undefined, "standard mode changed the provider reasoning setting");
   const fastSystem = buildSystemPrompt({ name: "scout", fast: true });
   check(fastSystem.includes("ACTIONS is a shortlist") && fastSystem.includes("say <text>") && fastSystem.includes("THOUGHT"), "the fast system prompt lost the free-form/social contract");
+  const r4User = buildUserPrompt({ turn: 1, observation: "[The Atrium]", r4: "vault: the true word is amber" });
+  check(r4User.includes("R4 CONTEXT:") && r4User.includes("true word is amber"), "the R4 context block was not injected");
   const fastUser = buildUserPrompt({
     turn: 1,
     observation: "[The Atrium]",
@@ -1142,13 +1144,15 @@ let stream = { ok: true, why: [] };
   check(/action === "poll"/.test(serverText) && /action === "chat"/.test(serverText), "the streamer has no poll or chat controls");
   check(/pathname === "\/stream"/.test(serverText) && /mudbenchmark\/stream\/1/.test(serverText), "the public stream status endpoint is missing");
   check(/pathname === "\/api\/demo"/.test(serverText) && /pathname === "\/api\/gemini\/v1\/chat\/completions"/.test(serverText), "the Gemini demo routes are missing");
+  check(/r4-context/.test(serverText) && /R4_URL/.test(serverText), "the R4 memory proxy is missing");
   check(/GEMINI_API_KEY/.test(serverText) && /x-demo-token/.test(serverText) && /GEMINI_DAILY_TURNS/.test(serverText), "the Gemini proxy lost its key, token or quota");
   check(/inventory_names/.test(serverText) && /active_quests/.test(serverText) && /details: Object.keys\(room.details/.test(serverText), "the self state lost the injected room context");
   check(/isVote/.test(serverText) && /vote a or vote b/.test(serverText), "spectators cannot vote");
-  check(/\^\(stream\|metric\|session-key\|rebind\|demo-token\)/.test(serverText), "control verbs still consume the player rate limit");
+  check(/\^\(stream\|metric\|session-key\|rebind\|demo-token\|r4-context\|r4-remember\)/.test(serverText), "control verbs still consume the player rate limit");
   const page = readFileSync(join(root, "runtime/web/index.html"), "utf8");
   check(/id="ai-stream"/.test(page) && /#stream-chat/.test(page), "the AI panel has no Go live path");
   check(/gemini-demo/.test(page) && /requestDemoToken/.test(page) && /#demo-token/.test(page), "the UI has no Gemini demo path");
+  check(/r4-context/.test(page) && /r4-remember/.test(page) && /requestR4Context/.test(page), "the UI has no R4 context path");
   const watch = readFileSync(join(root, "runtime/web/watch.html"), "utf8");
   check(/WebSocket\(`\$\{scheme\}\/\/\$\{location\.host\}\/live`\)/.test(watch), "the watch page does not connect to /live");
   check(/function renderPoll/.test(watch) && /highlight-card/.test(watch), "the watch page has no poll or highlight");

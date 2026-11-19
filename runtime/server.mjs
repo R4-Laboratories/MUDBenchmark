@@ -167,6 +167,9 @@ const MAX_ACCOUNTS = Number(process.env.MAX_ACCOUNTS ?? 500);
 // receives a short-lived demo token over its authenticated game socket; the
 // proxy checks that token and a per-Prism quota before forwarding.
 const GEMINI_KEY = process.env.GEMINI_API_KEY ?? process.env.GEMINI_KEY ?? "";
+// Optional R4 memory sidecar. The game proxies it over the authenticated
+// socket; the browser never talks to the Python service directly.
+const R4_URL = process.env.R4_URL ?? "http://127.0.0.1:8000";
 const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
 const GEMINI_BASE = process.env.GEMINI_BASE ?? "https://generativelanguage.googleapis.com/v1beta/openai";
 const GEMINI_DAILY_TURNS = Math.max(1, Number(process.env.GEMINI_DAILY_TURNS ?? 100));
@@ -594,6 +597,35 @@ function selfState(actor) {
   };
 }
 
+async function r4Call(path, payload, timeout = 2000) {
+  if (!R4_URL) throw new Error("the R4 memory service is not configured");
+  const started = Date.now();
+  try {
+    const res = await fetch(`${R4_URL.replace(/\/+$/, "")}${path}`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(timeout),
+    });
+    const data = await res.json();
+    recordSpan("ai.r4", {
+      "ai.r4.path": path,
+      "ai.r4.status": res.status,
+      "ai.r4.latency_ms": Date.now() - started,
+    }, Date.now() - started);
+    if (!res.ok) throw new Error(data?.error ?? `R4 returned ${res.status}`);
+    return data;
+  } catch (error) {
+    recordSpan("ai.r4", {
+      "ai.r4.path": path,
+      "ai.r4.status": 0,
+      "ai.r4.latency_ms": Date.now() - started,
+      "ai.r4.error": String(error.message).slice(0, 120),
+    }, Date.now() - started);
+    throw error;
+  }
+}
+
 async function handleCommand(id, line) {
   const raw = line.trim();
   if (!raw) return;
@@ -705,6 +737,21 @@ async function handleCommand(id, line) {
     const expires = Date.now() + 30 * 60 * 1000;
     demoAccess.set(token, { prism: actor.key, expires });
     return sendTo(id, `#demo-token ${JSON.stringify({ token, expires, ...demoStatus() })}\r\n`);
+  }
+
+  if (verb === "r4-context" || verb === "r4-remember") {
+    if (!actor?.key) return sendTo(id, `#${verb} ${JSON.stringify({ error: "Sign in with a Prism account first." })}\r\n`);
+    const text = restRaw.join(" ").trim();
+    if (!text) return sendTo(id, `#${verb} ${JSON.stringify({ error: "No text supplied." })}\r\n`);
+    const identity = `prism:${actor.key}:${actor.name}`;
+    try {
+      const data = verb === "r4-context"
+        ? await r4Call("/api/context", { identity, text, limit: 6 }, 2500)
+        : await r4Call("/api/remember", { identity, text }, 2500);
+      return sendTo(id, `#${verb} ${JSON.stringify(data)}\r\n`);
+    } catch (error) {
+      return sendTo(id, `#${verb} ${JSON.stringify({ error: String(error.message).slice(0, 160) })}\r\n`);
+    }
   }
 
   if (verb === "stream") {
@@ -2132,7 +2179,7 @@ async function handle(id, line) {
   // The login handshake, the owner console and the stream telemetry are not
   // game commands. They have their own checks and must not consume the player's
   // global line budget: a busy AI publishes several stream events per turn.
-  if (!/^(stream|metric|session-key|rebind|demo-token)\b/i.test(raw) && !allowCommand(id)) {
+  if (!/^(stream|metric|session-key|rebind|demo-token|r4-context|r4-remember)\b/i.test(raw) && !allowCommand(id)) {
     return sendTo(id, "Slow down.\r\n");
   }
   return handleCommand(id, line);

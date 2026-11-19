@@ -116,7 +116,7 @@ Rules:
 - ACTIONS is a shortlist of what is in this room. You may use any legal command from the COMMANDS line, including speech.
 - To talk to players, use say <text>, tell <name> <text>, or global <text>. To talk to an NPC, use talk <name>.
 - Never invent a command. Never output quit. Keep the three labels.
-- Use only what ROOM, STATE, MEMORY, QUESTS and DIRECTOR show.
+- Use only what ROOM, STATE, R4 CONTEXT, MEMORY, QUESTS and DIRECTOR show.
 - Follow the director unless it is impossible.
 - If you are unsure, look, examine, inventory, or score.
 
@@ -176,7 +176,7 @@ export function buildActionMenu(state = null) {
   return [...menu].slice(0, 32);
 }
 
-export function buildUserPrompt({ turn = 1, observation = "", director = [], state = null, note = "", fast = false, actions: injected = null, memory = "" } = {}) {
+export function buildUserPrompt({ turn = 1, observation = "", director = [], state = null, note = "", fast = false, actions: injected = null, memory = "", r4 = "" } = {}) {
   const steering = director.length
     ? director.map((line) => `- ${line}`).join("\n")
     : "none";
@@ -195,12 +195,14 @@ export function buildUserPrompt({ turn = 1, observation = "", director = [], sta
   const menu = actions.join(", ");
   const questBlock = quests ? `QUESTS:\n${quests}` : "";
   const memoryBlock = memory ? `MEMORY:\n${memory}\n` : "";
+  const r4Block = r4 ? `R4 CONTEXT:\n${r4}\n` : "";
   if (fast) {
     return `TURN ${turn}
 ROOM:
 ${observation.trim() || "(no new text)"}
 ${sheet ? `\nSTATE:\n${sheet}\n` : ""}
 ACTIONS: ${menu}
+${r4Block ? `\n${r4Block}` : ""}
 ${memoryBlock ? `\n${memoryBlock}` : ""}
 ${questBlock ? `${questBlock}\n` : ""}
 DIRECTOR:
@@ -213,6 +215,7 @@ ROOM:
 ${observation.trim() || "(no new text)"}
 ${sheet ? `\nSTATE:\n${sheet}\n` : ""}
 ${menu ? `ACTIONS: ${menu}\n` : ""}
+${r4Block ? `${r4Block}\n` : ""}
 ${memoryBlock ? `${memoryBlock}\n` : ""}
 ${questBlock ? `${questBlock}\n` : ""}
 DIRECTOR:
