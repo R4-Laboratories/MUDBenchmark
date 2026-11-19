@@ -1010,6 +1010,92 @@
         "xp": 220
       },
       "complete": "The hermit holds the shard to the light and does not blink."
+    },
+    {
+      "id": "first-steps",
+      "name": "First Steps",
+      "level": 1,
+      "giver": "the bard",
+      "description": "A short tour for a new arrival: stand in the Atrium, then walk north into the Corridor.",
+      "objectives": [
+        {
+          "kind": "visit",
+          "room": 1,
+          "text": "Stand in the Atrium"
+        },
+        {
+          "kind": "visit",
+          "room": 2,
+          "text": "Walk north into the Corridor"
+        }
+      ],
+      "rewards": {
+        "xp": 20
+      },
+      "complete": "The bard nods. The first step is always the same."
+    },
+    {
+      "id": "salt-ward",
+      "name": "The Salt Ward",
+      "level": 7,
+      "giver": "the tide hermit",
+      "description": "The salt wraith guards the heart. Bring the hermit a shard and wear the ward it makes.",
+      "requires": [
+        "salt-heart"
+      ],
+      "objectives": [
+        {
+          "kind": "kill",
+          "npc": "salt-wraith",
+          "count": 1,
+          "text": "Defeat the salt wraith"
+        },
+        {
+          "kind": "collect",
+          "object": "salt-shard",
+          "count": 1,
+          "text": "Carry a salt shard"
+        }
+      ],
+      "rewards": {
+        "xp": 260,
+        "object": "salt-ward"
+      },
+      "complete": "The hermit presses the salt ward into your hand. It is cold and steady."
+    },
+    {
+      "id": "fen-deep",
+      "name": "The Deep Fen",
+      "level": 8,
+      "giver": "the heron keeper",
+      "description": "The heron keeper wants a wisp glass from the deepest fen and a look at the green heart.",
+      "requires": [
+        "fen-heart"
+      ],
+      "objectives": [
+        {
+          "kind": "visit",
+          "room": 80,
+          "text": "Return to the Green Heart"
+        },
+        {
+          "kind": "kill",
+          "npc": "fen-wisp",
+          "count": 1,
+          "text": "Defeat a fen wisp"
+        },
+        {
+          "kind": "collect",
+          "object": "wisp-glass",
+          "count": 1,
+          "text": "Carry a piece of wisp glass"
+        }
+      ],
+      "rewards": {
+        "xp": 320,
+        "object": "fen-charm"
+      },
+      "complete": "The heron keeper ties the charm around your neck. The reeds go still."
     }
   ]
 }

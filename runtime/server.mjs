@@ -542,6 +542,7 @@ const ALIASES = {
   ca: "cast", stu: "study", re: "recite", tu: "turn", pu: "push", ri: "ring",
   chars: "characters", pl: "play", cr: "create", pw: "password", qq: "quit",
   tf: "take", dp: "drop", combat: "battle", bt: "battle",
+  first: "tutorial", firststeps: "tutorial",
 };
 
 // One compact, hidden line per accepted command. It carries only what the
@@ -1247,6 +1248,10 @@ async function handleCommand(id, line) {
     return sendTo(id, `${worldStatusText(worldStatus(state, ROOMS))}\r\n`);
   }
 
+  if (verb === "tutorial") {
+    return sendTo(id, `First steps:\r\n  1. look — read the room and its exits.\r\n  2. score — your level, HP, gear and quests.\r\n  3. quests — available quests; accept First Steps with: quest accept first-steps.\r\n  4. north — walk to the Corridor and complete the tour.\r\n  5. talk bard — meet the first NPC.\r\n  6. map, levels, leaderboard — see the world and the standings.\r\n  7. shortcuts — every fast command.\r\nWatch an AI from the setup panel, or read /stats for the public telemetry.\r\n`);
+  }
+
   if (verb === "help" || verb === "commands") {
     const names = Object.keys(VERB_TABLE.verbs).sort().join(", ");
     const channels = CHANNELS.channels.map((channel) => channel.name).join(", ");
@@ -1254,7 +1259,7 @@ async function handleCommand(id, line) {
     if (!actor?.key) {
       return sendTo(id, "MUDBench is a persistent world for people and agents.\r\nSign in with your Prism id, or register <name> <password> / login <name> <password>.\r\nThen type help for the commands.\r\n");
     }
-    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: get/g/tf, drop/dp/dr, inventory/i, score/sc, quests/q, who/wh, spells/sp, cast/ca, say/sy, tell/te, give/gv, put/pt, open/op, close/cl, wear/wr, remove/rm, buy/b, sell/se, list/ls, map/mp, leaderboard/lb, levels/lv, shortcuts/sh.\r\nMagic: spells (effects/mana), train <spell> at the Mages' Guild, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search. Combat: attack/k, flee/fl, battle/combat/bt (current HP), score (armour/damage), equipment/eq (slots and totals). Guild: guild join/leave/who/list/chat, guild advance (Mages). Room actions: turn, push, ring where the room suggests.\r\nWorld: world or status (online, guilds, reset); levels, leaderboard/top/lb, map [zone], shortcuts, quests active|available|done|all.<id>.\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
+    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: get/g/tf, drop/dp/dr, inventory/i, score/sc, quests/q, who/wh, spells/sp, cast/ca, say/sy, tell/te, give/gv, put/pt, open/op, close/cl, wear/wr, remove/rm, buy/b, sell/se, list/ls, map/mp, leaderboard/lb, levels/lv, shortcuts/sh.\r\nMagic: spells (effects/mana), train <spell> at the Mages' Guild, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search. Combat: attack/k, flee/fl, battle/combat/bt (current HP), score (armour/damage), equipment/eq (slots and totals). Guild: guild join/leave/who/list/chat, guild advance (Mages). Room actions: turn, push, ring where the room suggests.\r\nWorld: world or status (online, guilds, reset); levels, leaderboard/top/lb, map [zone], shortcuts, quests active|available|done|all.<id>; tutorial (first) for the first steps.\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
   }
 
   // A command typed before the join tick lands is queued, not refused: the

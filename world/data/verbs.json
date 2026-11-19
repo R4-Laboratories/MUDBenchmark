@@ -534,6 +534,16 @@
       "messages": {
         "list": "The current fight is shown above."
       }
+    },
+    "tutorial": {
+      "aliases": [
+        "first",
+        "firststeps"
+      ],
+      "argument": "none",
+      "messages": {
+        "list": "The first steps are shown above."
+      }
     }
   }
 }

@@ -3498,6 +3498,36 @@
       "value": 18,
       "examine": "A shard of white salt that does not melt.",
       "forSale": false
+    },
+    {
+      "id": "salt-ward",
+      "name": "a salt ward",
+      "room": 81,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "neck",
+      "armor": 2,
+      "value": 28,
+      "examine": "A disc of white salt on a chain of black iron.",
+      "forSale": false
+    },
+    {
+      "id": "fen-charm",
+      "name": "a fen charm",
+      "room": 71,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "neck",
+      "armor": 1,
+      "value": 22,
+      "examine": "A knot of green reeds around a shard of wisp glass.",
+      "forSale": false
     }
   ],
   "climate": {

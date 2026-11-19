@@ -759,6 +759,12 @@
       "level": "some-true",
       "statement": "Production v0.74.0 serves combat status effects and scaled spells: spark/ember burn, bog hound bleed, fen staff/salt wraith chill, violence-pulse ticks, chill armour loss, Mend cleansing, and effect text in score/battle/AI prompts. Spell power scales with level/focus and shield scales. The world is 85 rooms/11 zones/38 quests/38 mobiles/76 objects; the Salt Caves, shortcuts/socials, /stats and onboarding remain. Gate 44551041030 green.",
       "authority": "wick production v0.74.0 2026-11-19; release 44552816091; gate 44551041030; /health and /world; magic gate"
+    },
+    {
+      "id": "MB-121",
+      "level": "build",
+      "statement": "First Steps adds a level-1 guided tour from the bard (visit Atrium, walk north) and a tutorial/first/firststeps command that lists look/score/quests/quest accept first-steps/north/talk/map/shortcuts. Deeper chains add The Salt Ward (kill salt wraith, carry shard, reward salt ward neck armour) and The Deep Fen (visit green heart, kill fen wisp, carry wisp glass, reward fen charm). The world is 85 rooms/41 quests/78 objects/38 mobiles/11 zones. The gate accepts and completes First Steps for 20 XP and validates all references.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

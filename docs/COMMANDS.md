@@ -51,6 +51,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `takeFrom` | — | object from object |
 | `talk` | `greet`, `tk` | actor |
 | `tell` | `whisper`, `te` | actor text |
+| `tutorial` | `first`, `firststeps` | none |
 | `unwield` | `sheathe`, `uw` | none |
 | `wait` | `wa` | none |
 | `wear` | `don`, `wr` | object |
@@ -143,6 +144,9 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `guild-fen` | The Fen Wisp | 8 | Defeat a fen wisp; Carry a piece of wisp glass | 220 xp |
 | `salt-crab` | The Brine Crab | 5 | Defeat the brine crab; Carry a salt pearl | 160 xp |
 | `salt-heart` | The Salt Heart | 6 | Reach the Salt Heart; Carry a salt shard | 220 xp |
+| `first-steps` | First Steps | 1 | Stand in the Atrium; Walk north into the Corridor | 20 xp |
+| `salt-ward` | The Salt Ward | 7 | Defeat the salt wraith; Carry a salt shard | 260 xp |
+| `fen-deep` | The Deep Fen | 8 | Return to the Green Heart; Defeat a fen wisp; Carry a piece of wisp glass | 320 xp |
 
 ## Rooms
 

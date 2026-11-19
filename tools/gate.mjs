@@ -1598,6 +1598,24 @@ let visibility = { ok: true, why: [] };
   if (visibility.why.length) { visibility.ok = false; failures.push(`visibility is broken: ${visibility.why[0]}`); }
 }
 
+// First Steps: the guided level-1 tour and its tutorial command.
+let firstSteps = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, world.levels, questTable.quests);
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
+  const check = (condition, why) => { if (!condition) { firstSteps.ok = false; firstSteps.why.push(why); } };
+  const quest = questTable.quests.find((entry) => entry.id === "first-steps");
+  check(Boolean(quest) && quest.level === 1, "the First Steps quest is missing");
+  state.actors.push({ id: "n", key: "new", account: "new", name: "new", room: 1, visited: [1], level: 1, xp: 0, maxHp: 10, hp: 10, maxMana: 5, mana: 5, spellbook: [], guild: null, guildRank: null, wielding: null, quests: { active: [], completed: [] } });
+  run([{ kind: "questAccept", actorId: "n", questId: "first-steps" }]);
+  run([{ kind: "move", actorId: "n", dir: "north", to: 2 }]);
+  const actor = state.actors.find((entry) => entry.id === "n");
+  check(actor.quests.completed.includes("first-steps"), "the First Steps tour did not complete");
+  check(actor.xp >= 20, "the First Steps quest did not pay XP");
+  if (firstSteps.why.length) { firstSteps.ok = false; failures.push(`first steps are broken: ${firstSteps.why[0]}`); }
+}
+
 // The Hollow Fen: a second outdoor region, the green key/chest and the
 // green-heart shortcut.
 let fen = { ok: true, why: [] };
@@ -2670,6 +2688,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"fen".padEnd(26)}  ${(fen.ok ? "10 rooms" : "BROKEN").padStart(5)}   == key, chest, shortcut`);
   console.log(`${"visibility".padEnd(26)}  ${(visibility.ok ? "levels, map" : "BROKEN").padStart(5)}   == board, shortcuts`);
   console.log(`${"salt".padEnd(26)}  ${(salt.ok ? "5 rooms" : "BROKEN").padStart(5)}   == key, chest, shortcut`);
+  console.log(`${"firstSteps".padEnd(26)}  ${(firstSteps.ok ? "20 xp" : "BROKEN").padStart(5)}   == tour, quest`);
   console.log(`${"pinned".padEnd(26)}  ${(identityPin.ok ? "revoked" : "BROKEN").padStart(5)}   == old log refused`);
   console.log(`${"takeover".padEnd(26)}  ${(takeover.ok ? "1 actor" : "BROKEN").padStart(5)}   == leave then login`);
   console.log(`${"characters".padEnd(26)}  ${(characters.ok ? "2 chars" : "BROKEN").padStart(5)}   == create, switch`);

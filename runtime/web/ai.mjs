@@ -87,7 +87,7 @@ buy <thing>, sell <thing>, list, wait, wave, nod, bow, laugh, sigh, shrug, dance
 smile, grin, frown, cheer, salute, point, ponder, stretch, shiver, yawn, wink, hug, highfive, poke,
 whistle, sing, hum, mutter, shout, clap, cry, apologize, congratulate, battle (combat/bt), score,
 equipment, quests [active|available|done|all|<id>], quest accept <id>, quest abandon <id>, deliver <thing> to <name>,
-levels, leaderboard (top/lb), map [zone], shortcuts,
+levels, leaderboard (top/lb), map [zone], shortcuts, tutorial (first),
 guild create <name>, guild join <name>, guild leave, guild who, guild list, guild chat <text>,
 guild rank <member> <rank>, guild disband, talk <name>, spells, train <spell>, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search, turn, push, ring, world, help, go <direction>`;
 
@@ -101,7 +101,7 @@ const VERBS = new Set([
   "wear", "remove", "eat", "light", "extinguish", "buy", "sell", "list", "wait", "wave", "nod", "bow",
   "laugh", "sigh", "shrug", "dance", "score", "sc", "stats", "quests", "q", "j", "quest", "guild", "gc",
   "gchat", "deliver", "talk", "spells", "train", "cast", "study", "recite", "search", "sr", "turn", "push", "ring", "world", "status", "help", "h", "?",
-  "levels", "leaderboard", "top", "lb", "ranks", "map", "shortcuts",
+  "levels", "leaderboard", "top", "lb", "ranks", "map", "shortcuts", "tutorial", "first", "firststeps",
   "smile", "grin", "frown", "cheer", "salute", "point", "ponder", "stretch", "shiver", "yawn", "wink", "hug", "highfive", "poke", "whistle", "sing", "hum", "mutter", "shout", "clap", "cry", "apologize", "congratulate", "battle", "combat", "bt",
 ]);
 
@@ -192,7 +192,7 @@ const FREE_VERBS = new Set([
   "world", "status", "help", "h", "?", "wait", "wave", "nod", "bow", "laugh",
   "sigh", "shrug", "dance", "flee", "search", "sr", "answer", "claim",
   "guild", "gc", "gchat", "quest", "deliver", "train", "list", "buy", "sell",
-  "levels", "leaderboard", "top", "lb", "ranks", "map", "shortcuts",
+  "levels", "leaderboard", "top", "lb", "ranks", "map", "shortcuts", "tutorial", "first", "firststeps",
   "smile", "grin", "frown", "cheer", "salute", "point", "ponder", "stretch", "shiver", "yawn", "wink", "hug", "highfive", "poke", "whistle", "sing", "hum", "mutter", "shout", "clap", "cry", "apologize", "congratulate", "battle", "combat", "bt",
 ]);
 const TARGET_VERBS = new Set([

@@ -213,6 +213,8 @@ Rehearsed 2026-11-16:
 - v0.74.0 (status) adds burn/bleed/chill effects from spells, weapons and
   enemy tactics, timed ticks, chill armour loss, Mend cleansing and effect
   display in score/battle/prompts (MB-119);
+- v0.75.0 (first steps) adds the beginner tour and tutorial command, plus
+  The Salt Ward and The Deep Fen reward chains; 41 quests (MB-121);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);
