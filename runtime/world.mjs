@@ -619,6 +619,7 @@ export function step({ state, rooms, intents, actions = [] }) {
       if (actor.room !== action.room) continue;
       if (action.requires?.spell && !(actor.spellbook ?? []).includes(action.requires.spell)) continue;
       if (action.requires?.item && !next.objects.some((object) => object.id === action.requires.item && object.holder === actor.id && !object.eaten)) continue;
+      if (action.requires?.fact && !actor.memory?.facts?.[action.requires.fact]) continue;
       for (const effect of action.effects ?? []) {
         if (effect.kind === "revealExit") {
           const found = new Set(actor.found ?? []);
@@ -631,6 +632,15 @@ export function step({ state, rooms, intents, actions = [] }) {
           const object = next.objects.find((entry) => entry.id === effect.object);
           if (object) {
             object.holder = actor.id;
+            object.room = null;
+            object.inside = null;
+            object.worn = false;
+          }
+        } else if (effect.kind === "consume") {
+          const object = next.objects.find((entry) => entry.id === effect.object);
+          if (object && object.holder === actor.id && !object.eaten) {
+            object.eaten = true;
+            object.holder = null;
             object.room = null;
             object.inside = null;
             object.worn = false;

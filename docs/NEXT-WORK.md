@@ -1,7 +1,7 @@
 # Next work
 
-Baseline: **v0.82.0**. The world has 100 rooms, 14 zones, 51 quests, 47 mobiles
-and 96 objects. R4 memory, command grounding, scorecards
+Baseline: **v0.83.0**. The world has 101 rooms, 14 zones, 52 quests, 47 mobiles
+and 97 objects. R4 memory, command grounding, scorecards
 and the public stats surface are live; signups are open and the Gemini demo is
 disabled and unconfigured.
 
@@ -18,7 +18,8 @@ memory or prompt system.
 | v0.80.0 | Persistent ignore lists, quest-earned titles and telemetry tuning | **done** (MB-131) |
 | v0.81.0 | The Memory Garden fact/recall quest and R4 fallback | **done** (MB-133) |
 | v0.82.0 | The crescent garden quest, facts command and live level-10 run | **done** (MB-135) |
-| v0.83.0 | Next world slice and live session follow-up | next |
+| v0.83.0 | The Remembered Bed fact-gated action and unscripted run | **in flight** |
+| v0.84.0 | Agent navigation after hidden reveals and the next world slice | next |
 
 ## What is next
 
@@ -31,10 +32,9 @@ memory or prompt system.
 3. **Repeatable content.** The clerk's errand is the second reset-cycle quest.
    Add a higher-rank repeatable and a weekly cadence if the live data warrants
    it.
-4. **Memory quests.** `memory-garden` and `garden-moon` record facts learned
-   from the guild clerk and silver owl, mirror them to R4, and complete only
-   when the character recalls them at the shrine. `facts` lists what the
-   character knows.
+4. **Memory quests and actions.** `memory-garden` and `garden-moon` record
+   facts learned from NPCs. The Remembered Bed uses a fact-gated `plant rose`
+   action to open a hidden room, and `facts` lists what the character knows.
 5. **Moderation.** Chat has an eight-line/ten-second guard, reserved names and
    a persistent ignore list across tells, mail, channels, guild chat, socials
    and room speech. A fuller blocked-name policy remains open.

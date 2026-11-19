@@ -68,6 +68,14 @@ The same run found a real progression defect: 30,000 XP produced level 11
 because the table had eleven thresholds. The table is now ten levels ending at
 30,000 XP, and the gate asserts the cap.
 
+## Unscripted model run (v0.83)
+
+`docs/UNSCRIPTED-RUN.md` records qwen2.5:7b against the isolated Memory Garden.
+The model took the rose and planted it in both attempts; the second attempt
+also entered the hidden room and took the bloom, but never returned to the
+rememberer. The fact/action server contract worked; the remaining gap is model
+navigation and NPC follow-through after a hidden reveal.
+
 ## What would change the conclusion
 
 A fresh human or unscripted-agent session in the level 8-10 band, especially

@@ -2684,10 +2684,12 @@ let memoryQuest = { ok: true, why: [] };
 {
   const world = loadWorld({ mode: "single" });
   let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, undefined, questTable.quests);
-  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
+  const actionTable = loadActions({ world });
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents, actions: actionTable.actions }); state = result.state; return result.events; };
   const check = (condition, why) => { if (!condition) { memoryQuest.ok = false; memoryQuest.why.push(why); } };
   const table = loadFacts();
   check(table.errors.length === 0, `fact validation failed: ${table.errors[0] ?? ""}`);
+  check(actionTable.errors.length === 0, `fact action validation failed: ${actionTable.errors[0] ?? ""}`);
   const ledger = table.byWord.get("ledger");
   check(ledger?.npc === "guild-clerk", "the ledger fact is not taught by the guild clerk");
   check(table.facts.every((fact) => world.npcs.some((npc) => npc.id === fact.npc)), "a fact names an unknown npc");
@@ -2744,6 +2746,36 @@ let memoryQuest = { ok: true, why: [] };
   check(actor.quests.completed.includes("garden-moon"), "the crescent garden quest did not complete");
   check(state.objects.find((object) => object.id === "moon-seed")?.holder === "mq", "the moon seed reward was not paid");
   check(loadTitles().titles.some((title) => title.id === "moongardener" && title.quest === "garden-moon"), "the moon gardener title is missing");
+
+  // A fact-gated action reveals the hidden Remembered Bed. Without the word it
+  // must not move the map; with the word and the rose it opens a real exit.
+  actor = state.actors.find((entry) => entry.id === "mq");
+  actor.level = 4;
+  actor.quests.completed = [...new Set([...actor.quests.completed, "memory-garden"])];
+  actor.room = 100;
+  run([{ kind: "questAccept", actorId: "mq", questId: "remembered-bed" }]);
+  run([{ kind: "talk", actorId: "mq", npcId: "rememberer" }]);
+  actor = state.actors.find((entry) => entry.id === "mq");
+  actor.room = 98;
+  check(findAction(actionTable.actions, { verb: "plant", target: "rose", room: 98 })?.id === "plant-memory", "plant rose does not resolve");
+  run([{ kind: "action", actorId: "mq", actionId: "plant-memory", messages: { actor: "planted", others: "plants" } }]);
+  actor = state.actors.find((entry) => entry.id === "mq");
+  check(!(actor.found ?? []).includes("98:down"), "the fact-gated action opened without the fact");
+  run([{ kind: "learnFact", actorId: "mq", fact: table.byWord.get("garden") }]);
+  actor = state.actors.find((entry) => entry.id === "mq");
+  check(actor.memory?.facts?.["garden-word"]?.word === "garden", "the garden fact was not learned");
+  check(state.objects.find((object) => object.id === "memory-rose")?.holder === "mq", "the memory rose is not held for the action");
+  run([{ kind: "action", actorId: "mq", actionId: "plant-memory", messages: { actor: "planted", others: "plants" } }]);
+  actor = state.actors.find((entry) => entry.id === "mq");
+  check(actor.found.includes("98:down"), "the fact-gated action did not reveal the stair");
+  check(state.objects.find((object) => object.id === "memory-rose")?.eaten === true, "the planted rose was not consumed");
+  run([{ kind: "move", actorId: "mq", dir: "down", to: 101 }]);
+  actor = state.actors.find((entry) => entry.id === "mq");
+  check(actor.room === 101, "the hidden Remembered Bed was not reachable");
+  run([{ kind: "take", actorId: "mq", objectId: "remembered-bloom", messages: { actor: "taken", others: "takes" } }]);
+  actor = state.actors.find((entry) => entry.id === "mq");
+  check(actor.quests.completed.includes("remembered-bed"), "the Remembered Bed quest did not complete");
+  check(loadTitles().titles.some((title) => title.id === "bedkeeper" && title.quest === "remembered-bed"), "the bedkeeper title is missing");
   if (memoryQuest.why.length) { memoryQuest.ok = false; failures.push(`the memory quest is broken: ${memoryQuest.why[0]}`); }
 }
 
@@ -3112,6 +3144,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"titles".padEnd(26)}  ${(titles.ok ? "3 earned" : "BROKEN").padStart(5)}   == select, persist`);
   console.log(`${"memoryQuest".padEnd(26)}  ${(memoryQuest.ok ? "150 xp" : "BROKEN").padStart(5)}   == fact, recall`);
   console.log(`${"gardenMoon".padEnd(26)}  ${(memoryQuest.ok ? "300 xp" : "BROKEN").padStart(5)}   == crescent, seed`);
+  console.log(`${"factAction".padEnd(26)}  ${(memoryQuest.ok ? "1 room" : "BROKEN").padStart(5)}   == word, rose`);
   console.log(`${"quests".padEnd(26)}  ${(quests.ok ? "accept, advance, pay" : "BROKEN").padStart(5)}   == facts, once`);
   console.log(`${"aggression".padEnd(26)}  ${(aggression.ok ? "1 duel" : "BROKEN").padStart(5)}   == mobs start fights`);
   console.log(`${"combat2".padEnd(26)}  ${(combat2.ok ? "weapons, armour, xp" : "BROKEN").padStart(5)}   == fight and grow`);

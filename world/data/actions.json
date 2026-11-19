@@ -429,6 +429,34 @@
         "actor": "You step into the dawn gate. The sky folds and the Moonlit Gate is beneath you.",
         "others": "%a steps into the dawn and vanishes."
       }
+    },
+    {
+      "id": "plant-memory",
+      "verb": "plant",
+      "target": "rose",
+      "room": 98,
+      "requires": {
+        "fact": "garden-word",
+        "item": "memory-rose"
+      },
+      "effects": [
+        {
+          "kind": "revealExit",
+          "dir": "down"
+        },
+        {
+          "kind": "consume",
+          "object": "memory-rose"
+        },
+        {
+          "kind": "message",
+          "text": "The roots part and a stair opens beneath the bed."
+        }
+      ],
+      "messages": {
+        "actor": "You press the memory rose into the bed. The roots part and a stair opens downward.",
+        "others": "%a plants a rose; the garden floor opens."
+      }
     }
   ]
 }

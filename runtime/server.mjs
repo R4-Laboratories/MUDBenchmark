@@ -143,6 +143,12 @@ for (const quest of QUESTS.quests) {
     }
   }
 }
+for (const action of ACTION_TABLE.actions) {
+  if (action.requires?.fact && !FACTS.byId.has(action.requires.fact)) {
+    console.error(`actions: ${action.id} requires unknown fact ${action.requires.fact}`);
+    process.exit(1);
+  }
+}
 
 const WORD = loaded.task.word;
 // Levels at which some room states the word. A claim is sourced if the actor
@@ -620,6 +626,7 @@ function selfState(actor) {
     ? ACTION_TABLE.actions.filter((action) => action.room === actor.room)
         .filter((action) => !action.requires?.spell || (actor.spellbook ?? []).includes(action.requires.spell))
         .filter((action) => !action.requires?.item || state.objects.some((object) => object.id === action.requires.item && object.holder === actor.id && !object.eaten))
+        .filter((action) => !action.requires?.fact || Boolean(actor.memory?.facts?.[action.requires.fact]))
         .map((action) => ({ verb: action.verb, target: action.target }))
     : [];
   const activeQuests = actor?.key
@@ -1426,6 +1433,9 @@ async function handleCommand(id, line) {
     }
     if (roomAction.requires?.item && !state.objects.some((object) => object.id === roomAction.requires.item && object.holder === id && !object.eaten)) {
       return sendTo(id, `You need ${roomAction.requires.item} to do that.\r\n`);
+    }
+    if (roomAction.requires?.fact && !actor.memory?.facts?.[roomAction.requires.fact]) {
+      return sendTo(id, "You have not learned the word for that.\r\n");
     }
     pending.push({ kind: "action", actorId: id, actionId: roomAction.id, messages: roomAction.messages });
     recordSpan("world.action", {

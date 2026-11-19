@@ -236,6 +236,9 @@ Rehearsed 2026-11-16:
 - v0.82.0 (live garden) adds the crescent fact, The Moon in the Garden
   follow-up, the `facts` command, a reproducible live-server session and the
   level-10 cap fix; 51 quests (MB-135);
+- v0.83.0 (remembered bed) adds a fact-gated `plant rose` action that consumes
+  the memory rose and opens a hidden room, the Remembered Bed quest, Bedkeeper
+  title and an unscripted qwen2.5:7b run; 101 rooms / 52 quests (MB-137);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

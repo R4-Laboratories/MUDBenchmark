@@ -24,6 +24,11 @@
       "id": "moongardener",
       "name": "Moon Gardener",
       "quest": "garden-moon"
+    },
+    {
+      "id": "bedkeeper",
+      "name": "Bedkeeper",
+      "quest": "remembered-bed"
     }
   ]
 }

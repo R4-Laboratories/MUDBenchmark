@@ -167,6 +167,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `hall-word` | A Word in the Hall | 2 | Talk to the market woman; Talk to the guild clerk | 70 xp |
 | `memory-garden` | The Garden Remembers | 3 | Learn the ledger word from the guild clerk; Recall the ledger word at the shrine; Visit the Memory Garden | 150 xp |
 | `garden-moon` | The Moon in the Garden | 9 | Learn the crescent word from the silver owl; Recall the crescent word at the shrine; Visit the Rose Walk | 300 xp |
+| `remembered-bed` | The Remembered Bed | 4 | Talk to the rememberer; Enter the Remembered Bed; Carry the remembered bloom | 220 xp |
 
 ## Rooms
 
@@ -272,4 +273,5 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 98 | The Memory Garden | garden | yes | west 6, east 99, north 100 |
 | 99 | The Rose Walk | garden | yes | west 98 |
 | 100 | The Rememberer's Bench | garden | yes | south 98 |
+| 101 | The Remembered Bed | garden | yes | up 98 |
 

@@ -1800,7 +1800,10 @@
       "ambient": [
         "A rose opens without sound.",
         "The garden is very still."
-      ]
+      ],
+      "secretExits": {
+        "down": 101
+      }
     },
     "99": {
       "name": "The Rose Walk",
@@ -1834,6 +1837,23 @@
       "ambient": [
         "The rememberer turns a page that is not there.",
         "The tree creaks once."
+      ]
+    },
+    "101": {
+      "name": "The Remembered Bed",
+      "text": "A low room of roots and white soil beneath the garden. A single bloom grows from a bed of remembered things, and a stair of roots climbs back to the garden.",
+      "safe": true,
+      "exits": {
+        "up": 98
+      },
+      "details": {
+        "roots": "The roots are pale and warm.",
+        "bloom": "The bloom is white with a dark heart.",
+        "soil": "The soil holds small, unbroken reflections."
+      },
+      "ambient": [
+        "A root shifts.",
+        "The bloom turns toward you."
       ]
     }
   },
@@ -3035,7 +3055,8 @@
       "rooms": [
         98,
         99,
-        100
+        100,
+        101
       ]
     }
   ],
@@ -4238,6 +4259,17 @@
       ],
       "value": 50,
       "examine": "A seed of white glass with a tiny crescent inside.",
+      "forSale": false
+    },
+    {
+      "id": "remembered-bloom",
+      "name": "a remembered bloom",
+      "room": 101,
+      "flags": [
+        "takeable"
+      ],
+      "value": 80,
+      "examine": "A white bloom with a dark heart; it is warm and faintly moving.",
       "forSale": false
     }
   ],

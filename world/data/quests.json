@@ -1393,6 +1393,39 @@
         "object": "moon-seed"
       },
       "complete": "The rememberer plants the moon seed. A white crescent opens under the glass roses."
+    },
+    {
+      "id": "remembered-bed",
+      "name": "The Remembered Bed",
+      "level": 4,
+      "giver": "the rememberer",
+      "description": "The rememberer says the garden keeps a bed beneath the roses. Plant the memory rose, go down, and bring back the bloom.",
+      "requires": [
+        "memory-garden"
+      ],
+      "objectives": [
+        {
+          "kind": "talk",
+          "npc": "rememberer",
+          "count": 1,
+          "text": "Talk to the rememberer"
+        },
+        {
+          "kind": "visit",
+          "room": 101,
+          "text": "Enter the Remembered Bed"
+        },
+        {
+          "kind": "collect",
+          "object": "remembered-bloom",
+          "count": 1,
+          "text": "Carry the remembered bloom"
+        }
+      ],
+      "rewards": {
+        "xp": 220
+      },
+      "complete": "The rememberer sets the bloom among the roots. The bed remembers another year."
     }
   ]
 }

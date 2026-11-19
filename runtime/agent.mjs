@@ -50,7 +50,9 @@ open <thing>, close <thing>, wear <thing>, remove <thing>, eat <thing>, light <t
 buy <thing>, sell <thing>, list, wave, nod, bow, laugh, sigh, shrug, dance, score,
 quests, quest accept <id>, quest abandon <id>, deliver <thing> to <name>,
 guild create <name>, guild join <name>, guild leave, guild who, guild list, guild chat <text>,
-guild rank <member> <rank>, guild disband, talk <name>, help, quit.
+guild rank <member> <rank>, guild disband, vault, deposit <item>, withdraw <item>,
+ignore <name>, unignore <name>, ignoring, titles, title <id|none>, facts,
+recall <word>, plant <thing>, talk <name>, help, quit.
 
 The route: the Vault is north then east of the Atrium; the Shrine is east, north, north.
 Read the word in the Vault. At the Shrine use answer <word>. claim is a separate puzzle.
@@ -64,6 +66,7 @@ const COMMANDS = new Set([
   "inventory", "i", "take", "get", "drop", "put", "open", "close", "wear", "remove",
   "eat", "light", "extinguish", "buy", "sell", "list", "wave", "nod", "bow", "laugh",
   "sigh", "shrug", "dance", "score", "quests", "quest", "guild", "gc", "gchat", "deliver", "talk", "help",
+  "vault", "deposit", "withdraw", "ignore", "unignore", "ignoring", "titles", "title", "facts", "recall", "plant",
 ]);
 
 const log = (...parts) => {
