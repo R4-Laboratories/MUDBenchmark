@@ -16,7 +16,7 @@ import { readSpanTail, readSpansTail, redactSpans } from "./spans.mjs";
 import { summarizeTrends } from "./trends.mjs";
 import { step, initialState, digestState, phaseAt, upgradeState, releaseHeldObjects, checkpointIdentities, armorOf, nextFrom, TICK_MS } from "./world.mjs";
 import { equipmentText, weaponOf } from "./equipment.mjs";
-import { maxManaFor, spellById, spellLine, trainableSpells, trainingCost } from "./magic.mjs";
+import { maxManaFor, spellById, spellLine, spellPower, trainableSpells, trainingCost } from "./magic.mjs";
 import { findAction, loadActions } from "./actions.mjs";
 import { loadWorld } from "./worlddata.mjs";
 import { describe as renderRoom, examine } from "./view.mjs";
@@ -609,6 +609,7 @@ function selfState(actor) {
     inventory: state.objects.filter((object) => object.holder === actor.id && !object.worn).length,
     armor: armorOf(actor, state.objects),
     damage: weaponOf(actor, state.objects)?.damage ?? 0,
+    spell_power: spellPower(actor, weaponOf(actor, state.objects)?.damage ?? 0),
     inventory_names: state.objects.filter((object) => object.holder === actor.id && !object.worn && !object.eaten).map((object) => object.name),
     wielding: state.objects.find((object) => object.id === actor.wielding)?.name ?? null,
     worn: state.objects.filter((object) => object.holder === actor.id && object.worn).map((object) => object.name),
@@ -1383,6 +1384,7 @@ async function handleCommand(id, line) {
     const trainable = trainableSpells(actor);
     const parts = [
       `Mana ${actor.mana ?? maxManaFor(actor)}/${actor.maxMana ?? maxManaFor(actor)}.`,
+      `Spell power ${spellPower(actor, weaponOf(actor, state.objects)?.damage ?? 0)}.`,
       `Known: ${known.length ? known.map((spell) => spellLine(spell)).join("; ") : "none"}.`,
     ];
     if (trainable.length) parts.push(`Trainable: ${trainable.map((spell) => `${spell.name} (${spell.mana} mana, level ${spell.level}, ${spell.cost ?? 0} coins)`).join("; ")}.`);

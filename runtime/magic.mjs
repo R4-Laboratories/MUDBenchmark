@@ -45,6 +45,12 @@ export function spellById(id) {
   return SPELL_BY_ID.get(String(id ?? "").toLowerCase()) ?? null;
 }
 
+export function spellPower(actor, focus = 0) {
+  const level = Math.max(1, actor?.level ?? 1);
+  const gear = Math.max(0, Number(focus) || 0);
+  return Math.floor(level / 3) + Math.floor(gear / 2);
+}
+
 export function maxManaFor(actor) {
   return 3 + Math.max(1, actor?.level ?? 1) * 2 + (actor?.guild === "mages" ? 4 : 0);
 }

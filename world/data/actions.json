@@ -300,6 +300,49 @@
         "actor": "You step into the green heart. The root folds around you and the chamber is gone.",
         "others": "%a steps into the green heart and vanishes."
       }
+    },
+    {
+      "id": "unlock-salt-chest",
+      "verb": "unlock",
+      "target": "chest",
+      "room": 84,
+      "requires": {
+        "item": "brine-key"
+      },
+      "effects": [
+        {
+          "kind": "open",
+          "object": "salt-chest"
+        },
+        {
+          "kind": "message",
+          "text": "The salt band cracks and the chest opens."
+        }
+      ],
+      "messages": {
+        "actor": "You fit the brine key to the chest. The salt band cracks.",
+        "others": "%a unlocks the salt-crusted chest."
+      }
+    },
+    {
+      "id": "enter-salt-heart",
+      "verb": "enter",
+      "target": "heart",
+      "room": 85,
+      "effects": [
+        {
+          "kind": "teleport",
+          "room": 81
+        },
+        {
+          "kind": "message",
+          "text": "The salt pillar folds around you and sets you down at the stair."
+        }
+      ],
+      "messages": {
+        "actor": "You step into the salt heart. The cave folds and the stair is beneath you.",
+        "others": "%a steps into the salt heart and vanishes."
+      }
     }
   ]
 }

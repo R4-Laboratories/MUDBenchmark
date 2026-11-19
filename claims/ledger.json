@@ -735,6 +735,12 @@
       "level": "some-true",
       "statement": "Production v0.72.0 serves the visibility and stats layer: 115 verb keys with shortcuts, 30 socials, battle/score/spell/equipment detail, a livelier wandering-animal cadence, snap-to-latest panels, and /stats. The public stats page rendered 11 world cards, 12 AI cards, model rows, 12 command bars, 11 leaderboard rows and the stream panel with no JS errors. /leaderboard returns 11 rows. The world remains 80 rooms/36 quests/35 mobiles/71 objects; R4 and Gemini remain active. Combat formulas were already covered by the gate; this release makes their state visible rather than changing the verified arithmetic.",
       "authority": "play.r4labs.org v0.72.0 2026-11-19; release 44469988320; gate 44468634475; /stats headless render; /leaderboard; /health"
+    },
+    {
+      "id": "MB-117",
+      "level": "build",
+      "statement": "Spell power now scales with level and equipped focus: spark/mend add the scaling power, shield adds a level/focus ward, and score/equipment/spells show armor, damage and spell power. The Salt Caves add five rooms, three mobiles, five objects, a keyed chest, a return shortcut and two quests, bringing the world to 85 rooms/38 quests/38 mobiles/76 objects/11 zones. First-run First steps and watch-page spectator prompts explain the game. The gate covers spell power, the salt walk/chest/shortcut and all world references.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

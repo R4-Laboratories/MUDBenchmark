@@ -207,6 +207,9 @@ Rehearsed 2026-11-16:
   battle/score/spell/equipment visibility, livelier animal cadence, snap-to-
   latest panels and the public /stats dashboard with an all-time leaderboard
   endpoint (MB-114/115);
+- v0.73.0 (depth) scales spells with level/focus, adds the five-room Salt
+  Caves and two quests (85 rooms / 38 quests), and adds first-run and
+  spectator onboarding prompts (MB-117);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

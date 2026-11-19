@@ -54,7 +54,7 @@ import { worldStatus, worldStatusText } from "../runtime/worldstatus.mjs";
 import { redactCommand, sanitizeIntent, sanitizeState, scrubSecrets, scrubSpan } from "../runtime/telemetry-policy.mjs";
 import { planRetention } from "../runtime/retention.mjs";
 import { equipmentOf, equipmentText } from "../runtime/equipment.mjs";
-import { maxManaFor } from "../runtime/magic.mjs";
+import { maxManaFor, spellPower } from "../runtime/magic.mjs";
 import { trainingCost } from "../runtime/magic.mjs";
 import { findAction, loadActions } from "../runtime/actions.mjs";
 import { auditAccounts } from "../runtime/account-audit.mjs";
@@ -1353,8 +1353,9 @@ let magic = { ok: true, why: [] };
   check(actor.hp > 5, "mend did not heal");
   run([{ kind: "cast", actorId: "m", spellId: "shield" }]);
   actor = state.actors.find((entry) => entry.id === "m");
-  check((actor.armorBonus ?? 0) === 2 && actor.buffUntil > state.tick, "shield did not add a timed armour bonus");
-  check(armorOf(actor, state.objects) >= 2, "the shield bonus is not in armourOf");
+  check((actor.armorBonus ?? 0) >= 3 && actor.buffUntil > state.tick, "shield did not add a level-scaled timed armour bonus");
+  check(armorOf(actor, state.objects) >= 3, "the shield bonus is not in armourOf");
+  check(spellPower({ level: 1 }, 0) === 0 && spellPower({ level: 6 }, 0) === 2 && spellPower({ level: 6 }, 4) === 4, "spell power does not scale with level/focus");
   actor.room = 9;
   actor.mana = 20;
   run([{ kind: "cast", actorId: "m", spellId: "recall" }]);
@@ -1622,6 +1623,31 @@ let fen = { ok: true, why: [] };
   actor = state.actors.find((entry) => entry.id === "f");
   check(actor.room === 71, "the green-heart shortcut did not return to the fen gate");
   if (fen.why.length) { fen.ok = false; failures.push(`the Hollow Fen is broken: ${fen.why[0]}`); }
+}
+
+// The Salt Caves: a second new zone with a keyed chest and a shortcut.
+let salt = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, world.levels, questTable.quests);
+  const table = loadActions({ world });
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents, actions: table.actions }); state = result.state; return result.events; };
+  const check = (condition, why) => { if (!condition) { salt.ok = false; salt.why.push(why); } };
+  check(table.errors.length === 0, `salt action validation failed: ${table.errors[0] ?? ""}`);
+  check(world.rooms[32]?.exits?.down === 81 && world.rooms[81]?.exits?.up === 32, "the Salt Caves are not connected to the lighthouse");
+  check(world.rooms[85]?.exits?.west === 83 && world.rooms[85]?.exits?.south === 84, "the Salt Heart exits are wrong");
+  state.actors.push({ id: "s", key: "salt", account: "salt", name: "salt", room: 81, visited: [81], level: 7, xp: 3000, maxHp: 22, hp: 22, maxMana: 20, mana: 20, spellbook: [], guild: null, guildRank: null, wielding: null, quests: { active: [], completed: [] }, found: [] });
+  for (const [dir, to] of [["east", 82], ["east", 84]]) run([{ kind: "move", actorId: "s", dir, to }]);
+  let actor = state.actors.find((entry) => entry.id === "s");
+  check(actor.room === 84, "the salt walk did not reach the vault");
+  state.objects.find((o) => o.id === "brine-key").holder = "s";
+  run([{ kind: "action", actorId: "s", actionId: "unlock-salt-chest", messages: { actor: "unlocked", others: "unlocks" } }]);
+  check(state.objects.find((o) => o.id === "salt-chest")?.open === true, "the brine key did not open the salt chest");
+  run([{ kind: "move", actorId: "s", dir: "north", to: 85 }]);
+  run([{ kind: "action", actorId: "s", actionId: "enter-salt-heart", messages: { actor: "entered", others: "enters" } }]);
+  actor = state.actors.find((entry) => entry.id === "s");
+  check(actor.room === 81, "the salt-heart shortcut did not return to the stair");
+  if (salt.why.length) { salt.ok = false; failures.push(`the Salt Caves are broken: ${salt.why[0]}`); }
 }
 
 // The state file is atomic, backed up, and fail-loud.
@@ -2638,6 +2664,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"aiMemory".padEnd(26)}  ${(aiMemory.ok ? "rooms, stale" : "BROKEN").padStart(5)}   == exits, loop guard`);
   console.log(`${"fen".padEnd(26)}  ${(fen.ok ? "10 rooms" : "BROKEN").padStart(5)}   == key, chest, shortcut`);
   console.log(`${"visibility".padEnd(26)}  ${(visibility.ok ? "levels, map" : "BROKEN").padStart(5)}   == board, shortcuts`);
+  console.log(`${"salt".padEnd(26)}  ${(salt.ok ? "5 rooms" : "BROKEN").padStart(5)}   == key, chest, shortcut`);
   console.log(`${"pinned".padEnd(26)}  ${(identityPin.ok ? "revoked" : "BROKEN").padStart(5)}   == old log refused`);
   console.log(`${"takeover".padEnd(26)}  ${(takeover.ok ? "1 actor" : "BROKEN").padStart(5)}   == leave then login`);
   console.log(`${"characters".padEnd(26)}  ${(characters.ok ? "2 chars" : "BROKEN").padStart(5)}   == create, switch`);

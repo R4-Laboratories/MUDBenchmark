@@ -958,6 +958,58 @@
         "guildXp": 120
       },
       "complete": "The archmage sets the glass in a bowl of water. It does not sink."
+    },
+    {
+      "id": "salt-crab",
+      "name": "The Brine Crab",
+      "level": 5,
+      "giver": "the tide hermit",
+      "description": "A brine crab guards the hall. The hermit wants its pearl.",
+      "objectives": [
+        {
+          "kind": "kill",
+          "npc": "brine-crab",
+          "count": 1,
+          "text": "Defeat the brine crab"
+        },
+        {
+          "kind": "collect",
+          "object": "salt-pearl",
+          "count": 1,
+          "text": "Carry a salt pearl"
+        }
+      ],
+      "rewards": {
+        "xp": 160
+      },
+      "complete": "The hermit sets the pearl in a bowl of brine."
+    },
+    {
+      "id": "salt-heart",
+      "name": "The Salt Heart",
+      "level": 6,
+      "giver": "the tide hermit",
+      "description": "The salt wraith guards the heart. Bring the hermit a shard.",
+      "requires": [
+        "salt-crab"
+      ],
+      "objectives": [
+        {
+          "kind": "visit",
+          "room": 85,
+          "text": "Reach the Salt Heart"
+        },
+        {
+          "kind": "collect",
+          "object": "salt-shard",
+          "count": 1,
+          "text": "Carry a salt shard"
+        }
+      ],
+      "rewards": {
+        "xp": 220
+      },
+      "complete": "The hermit holds the shard to the light and does not blink."
     }
   ]
 }

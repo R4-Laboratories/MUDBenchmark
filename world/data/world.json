@@ -585,15 +585,17 @@
     },
     "32": {
       "name": "The Lighthouse",
-      "text": "A white tower stands at the end of the point. The lamp room is dark, and the keeper's cottage leans against the rock. The docks are south, and the sea is below. The tower door is open; the great lamp is cold.",
+      "text": "A white tower stands at the end of the point. The lamp room is dark, and the keeper's cottage leans against the rock. The docks are south, and the sea is below. The tower door is open; the great lamp is cold. A salt stair descends beneath the lighthouse.",
       "safe": false,
       "exits": {
-        "south": 31
+        "south": 31,
+        "down": 81
       },
       "details": {
         "tower": "The tower door is open. The stair spirals up into dark.",
         "lamp": "The great lamp is cold; its brass is green with salt.",
-        "sea": "The sea is black and moving beyond the rocks."
+        "sea": "The sea is black and moving beyond the rocks.",
+        "stair": "A stair of wet stone descends into the rock."
       },
       "ambient": [
         "The wind pulls at the tower.",
@@ -1470,6 +1472,97 @@
         "The root pulses.",
         "A seed drifts past your face."
       ]
+    },
+    "81": {
+      "name": "The Salt Stair",
+      "text": "A stair of wet stone descends through the cliff. Salt crusts the walls and the air tastes of iron. The lighthouse is up; a brine hall opens east.",
+      "safe": false,
+      "exits": {
+        "up": 32,
+        "east": 82
+      },
+      "details": {
+        "stair": "The steps are worn smooth by water.",
+        "salt": "White salt crusts every ledge.",
+        "air": "The air is cold and mineral."
+      },
+      "ambient": [
+        "Water runs down the stair.",
+        "The salt glitters in the dark."
+      ]
+    },
+    "82": {
+      "name": "The Brine Hall",
+      "text": "A wide hall of wet black rock. Shallow brine covers the floor, and a crab the size of a dog picks through it. The stair is west; a tide shrine waits north, and a kelp vault opens east.",
+      "safe": false,
+      "exits": {
+        "west": 81,
+        "north": 83,
+        "east": 84
+      },
+      "details": {
+        "floor": "The brine is ankle deep and warm.",
+        "crab": "The crab's shell is crusted with salt.",
+        "walls": "The walls are furred with kelp."
+      },
+      "ambient": [
+        "Brine slaps the rock.",
+        "Something clicks under the water."
+      ]
+    },
+    "83": {
+      "name": "The Tide Shrine",
+      "text": "A shrine of green stone half-drowned in brine. A hermit sits on the altar, and a brine key hangs from a chain. The hall is south; the salt heart waits east.",
+      "safe": false,
+      "exits": {
+        "south": 82,
+        "east": 85
+      },
+      "details": {
+        "altar": "The altar is carved with a wave.",
+        "hermit": "The hermit is wrapped in oilskin.",
+        "key": "A key of green salt hangs from a chain."
+      },
+      "ambient": [
+        "The brine rises and falls.",
+        "The hermit hums."
+      ]
+    },
+    "84": {
+      "name": "The Kelp Vault",
+      "text": "A vault of kelp and black rock. A chest of salt-crusted iron waits against the wall. The hall is west, and the salt heart is north.",
+      "safe": false,
+      "exits": {
+        "west": 82,
+        "north": 85
+      },
+      "details": {
+        "chest": "The chest is bound with a band of salt.",
+        "kelp": "The kelp moves without water.",
+        "floor": "The floor is a single wet slab."
+      },
+      "ambient": [
+        "Kelp drips in the dark.",
+        "The chest ticks."
+      ]
+    },
+    "85": {
+      "name": "The Salt Heart",
+      "text": "A round cave around a pillar of white salt. The pillar glows faintly and the air is dry. The shrine is west, and the kelp vault is south.",
+      "safe": false,
+      "exits": {
+        "west": 83,
+        "south": 84
+      },
+      "details": {
+        "pillar": "The salt pillar is warm and faintly luminous.",
+        "floor": "The floor is dry and cracked.",
+        "air": "The air is still and sharp."
+      },
+      "ambient": [
+        "The pillar pulses.",
+        "Salt dust hangs in the air."
+      ]
     }
   },
   "task": {
@@ -2240,6 +2333,68 @@
         "The green key opens the vault.",
         "The heart is older than the mill."
       ]
+    },
+    {
+      "id": "brine-crab",
+      "name": "a brine crab",
+      "room": 82,
+      "home": 82,
+      "period": 26,
+      "jitter": 4,
+      "behaviour": "wander",
+      "zone": "salt",
+      "hp": 16,
+      "damage": 3,
+      "armor": 2,
+      "aggression": 45,
+      "xp": 24,
+      "loot": [
+        "salt-pearl"
+      ],
+      "description": "A crab the size of a dog, shell crusted with salt.",
+      "examine": "Its claws are stained green."
+    },
+    {
+      "id": "tide-hermit",
+      "name": "the tide hermit",
+      "room": 83,
+      "home": 83,
+      "period": 240,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "zone": "salt",
+      "hp": 30,
+      "damage": 0,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 0,
+      "description": "A figure in oilskin sits on the drowned altar.",
+      "examine": "The hermit's hands are webbed with old scars.",
+      "dialogue": [
+        "The tide keeps what it takes.",
+        "The brine key opens the vault.",
+        "The salt heart is older than the lighthouse."
+      ]
+    },
+    {
+      "id": "salt-wraith",
+      "name": "a salt wraith",
+      "room": 85,
+      "home": 85,
+      "period": 120,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "zone": "salt",
+      "hp": 24,
+      "damage": 5,
+      "armor": 1,
+      "aggression": 70,
+      "xp": 45,
+      "loot": [
+        "salt-shard"
+      ],
+      "description": "A tall shape of white salt and cold air.",
+      "examine": "The wraith has no face, only a seam of black."
     }
   ],
   "zones": [
@@ -2381,6 +2536,17 @@
         78,
         79,
         80
+      ]
+    },
+    {
+      "id": "salt",
+      "name": "The Salt Caves",
+      "rooms": [
+        81,
+        82,
+        83,
+        84,
+        85
       ]
     }
   ],
@@ -3264,6 +3430,68 @@
       "damage": 5,
       "value": 30,
       "examine": "A staff of black willow with a green glass cap.",
+      "forSale": false
+    },
+    {
+      "id": "salt-pearl",
+      "name": "a salt pearl",
+      "room": 82,
+      "flags": [
+        "takeable"
+      ],
+      "value": 14,
+      "examine": "A pearl of white salt, cold to the touch.",
+      "forSale": false
+    },
+    {
+      "id": "brine-key",
+      "name": "a brine key",
+      "room": 83,
+      "flags": [
+        "takeable"
+      ],
+      "value": 16,
+      "examine": "A green salt key, hard as iron.",
+      "forSale": false
+    },
+    {
+      "id": "salt-chest",
+      "name": "a salt-crusted chest",
+      "room": 84,
+      "flags": [
+        "fixed",
+        "container"
+      ],
+      "capacity": 2,
+      "open": false,
+      "value": 0,
+      "examine": "A chest bound with a band of salt.",
+      "forSale": false
+    },
+    {
+      "id": "tide-charm",
+      "name": "a tide charm",
+      "inside": "salt-chest",
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "neck",
+      "armor": 1,
+      "value": 22,
+      "examine": "A green glass charm on a cord of kelp.",
+      "forSale": false
+    },
+    {
+      "id": "salt-shard",
+      "name": "a salt shard",
+      "room": 85,
+      "flags": [
+        "takeable"
+      ],
+      "value": 18,
+      "examine": "A shard of white salt that does not melt.",
       "forSale": false
     }
   ],

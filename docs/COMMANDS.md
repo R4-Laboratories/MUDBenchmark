@@ -141,6 +141,8 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `fen-beacon` | The Old Beacon | 6 | Enter the Old Beacon; Carry the green key | 200 xp |
 | `fen-heart` | The Green Heart | 7 | Reach the Green Heart; Carry the green seed | 280 xp |
 | `guild-fen` | The Fen Wisp | 8 | Defeat a fen wisp; Carry a piece of wisp glass | 220 xp |
+| `salt-crab` | The Brine Crab | 5 | Defeat the brine crab; Carry a salt pearl | 160 xp |
+| `salt-heart` | The Salt Heart | 6 | Reach the Salt Heart; Carry a salt shard | 220 xp |
 
 ## Rooms
 
@@ -177,7 +179,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 29 | The Smuggler's Cache | undercroft | no | west 27, south 28 |
 | 30 | The Harbor Quay | harbor | no | north 19, east 31 |
 | 31 | The Docks | harbor | no | west 30, north 32, down 33 |
-| 32 | The Lighthouse | harbor | no | south 31 |
+| 32 | The Lighthouse | harbor | no | south 31, down 81 |
 | 33 | The Ring | harbor | no | up 31 |
 | 34 | The Mages' Guild | arcanum | yes | down 1 |
 | 35 | The Lantern Stair | lantern | yes | down 8, north 36 |
@@ -226,4 +228,9 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 78 | The Old Beacon | fen | no | west 77, north 79 |
 | 79 | The Fen Vault | fen | no | south 78, east 80 |
 | 80 | The Green Heart | fen | no | west 79 |
+| 81 | The Salt Stair | salt | no | up 32, east 82 |
+| 82 | The Brine Hall | salt | no | west 81, north 83, east 84 |
+| 83 | The Tide Shrine | salt | no | south 82, east 85 |
+| 84 | The Kelp Vault | salt | no | west 82, north 85 |
+| 85 | The Salt Heart | salt | no | west 83, south 84 |
 

@@ -14,7 +14,7 @@ import { levelForXp, nextLevelXp } from "./levels.mjs";
 import { applyQuestEvent, emptyProgress, normalizeQuestState, questById, questMet } from "./quests.mjs";
 import { RANKS, guildId, guildLevelFor, rankAtLeast, removeMember, successor, validGuildName, perksFor } from "./guilds.mjs";
 import { armorOf, slotOf, weaponOf } from "./equipment.mjs";
-import { maxManaFor, spellById } from "./magic.mjs";
+import { maxManaFor, spellById, spellPower } from "./magic.mjs";
 
 export { armorOf } from "./equipment.mjs";
 
@@ -84,8 +84,10 @@ function awardXp(state, actor, amount, events) {
 }
 
 function applySpell(state, actor, spell, target, events) {
+  const focus = weaponOf(actor, state.objects)?.damage ?? 0;
+  const power = spellPower(actor, focus);
   if (spell.effect === "damage" && target) {
-    const damage = 1 + nextFrom(state.tick * 7 + actor.room, spell.damage ?? 4);
+    const damage = 1 + nextFrom(state.tick * 7 + actor.room, spell.damage ?? 4) + power;
     target.hp = (target.hp ?? 0) - damage;
     events.push({ room: actor.room, text: `${actor.name} speaks a word; ${target.name} is struck by a spark.`, exceptId: actor.id });
     events.push({ onlyId: actor.id, text: `Your spark strikes ${target.name} for ${damage}.` });
@@ -96,11 +98,12 @@ function applySpell(state, actor, spell, target, events) {
       awardXp(state, actor, target.xp ?? spell.xp ?? 0, events);
     }
   } else if (spell.effect === "heal") {
-    const amount = spell.heal + Math.floor((actor.level ?? 1) / 2);
+    const amount = spell.heal + Math.floor((actor.level ?? 1) / 2) + Math.floor(focus / 2);
     actor.hp = Math.min(actor.maxHp, (actor.hp ?? 0) + amount);
     events.push({ onlyId: actor.id, text: `You mend ${amount} health.\r\n` });
   } else if (spell.effect === "shield") {
-    actor.armorBonus = (actor.armorBonus ?? 0) + (spell.armor ?? 0);
+    const ward = (spell.armor ?? 0) + Math.floor((actor.level ?? 1) / 5) + Math.floor(focus / 3);
+    actor.armorBonus = (actor.armorBonus ?? 0) + ward;
     actor.buffUntil = state.tick + (spell.ticks ?? 120);
     events.push({ onlyId: actor.id, text: "A shield settles around you.\r\n" });
   } else if (spell.effect === "recall") {
