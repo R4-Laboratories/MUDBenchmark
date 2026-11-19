@@ -663,6 +663,12 @@
       "level": "build",
       "statement": "Command grounding is now recorded before telemetry: invalid attempts, repair target, loop guard, memory/R4 hits and rooms seen are sent in the same ai.turn metric as the command that actually ran. The validator also accepts nouns present in the current observation when the state line lags, and repairs a take on a for-sale object to buy instead of examine. The gate covers contained items, for-sale items, observation names, search targets, already-open containers and safe-room attacks.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-105",
+      "level": "build",
+      "statement": "The deploy readiness check now waits 10s after flipping units and probes login assets plus /health for up to 50s instead of 16s. This addresses the repeated transient \"login assets: false\" rollback where the world was still starting; the previous release deployed cleanly on an immediate retry.",
+      "gate": "bash -n deploy/mudbench-deploy.sh"
     }
   ]
 }
