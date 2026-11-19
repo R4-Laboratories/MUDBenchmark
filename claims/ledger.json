@@ -668,7 +668,7 @@
       "id": "MB-105",
       "level": "build",
       "statement": "The deploy readiness check now waits 10s after flipping units and probes login assets plus /health for up to 50s instead of 16s. This addresses the repeated transient \"login assets: false\" rollback where the world was still starting; the previous release deployed cleanly on an immediate retry.",
-      "gate": "bash -n deploy/mudbench-deploy.sh"
+      "gate": "deploy/mudbench-deploy.sh"
     }
   ]
 }
