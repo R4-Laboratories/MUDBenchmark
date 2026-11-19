@@ -202,6 +202,7 @@ const stateVocabulary = (state = null) => {
   const room = state?.room;
   if (room) {
     add(room.name);
+    add(room.text);
     for (const detail of room.details ?? []) add(detail);
     for (const exit of room.exits ?? []) add(typeof exit === "string" ? exit : exit?.dir);
     for (const object of room.objects ?? []) {
@@ -245,6 +246,14 @@ export function validateCommand(command, state = null) {
   if (!rest.length) return { ok: false, reason: `${verb} needs a target` };
   const target = rest.join(" ");
   if (verb === "attack" && state?.room?.safe) return { ok: false, reason: "this is a safe room" };
+  if (["take", "get", "g", "grab"].includes(verb)) {
+    const forSale = (state?.room?.objects ?? []).find((object) => {
+      const targetWords = new Set(wordsOf(target));
+      const objectWords = wordsOf(object.name);
+      return object.forSale && objectWords.length && objectWords.every((word) => targetWords.has(word));
+    });
+    if (forSale) return { ok: false, reason: `${forSale.name} is for sale; use buy` };
+  }
   if (["take", "get", "g", "grab"].includes(verb) && !/\bfrom\b/i.test(target)) {
     const targetWords = new Set(wordsOf(target));
     const content = (state?.room?.objects ?? [])
@@ -290,6 +299,11 @@ export function repairCommand(command, state = null, reason = "") {
   }
   if (verb === "take" || verb === "get" || verb === "g") {
     const target = rest.join(" ").toLowerCase();
+    const forSale = (state?.room?.objects ?? []).find((object) => object.forSale && target.includes(String(object.name).toLowerCase().replace(/^an? /, "")));
+    if (forSale) {
+      const buy = menu.find((action) => action.startsWith("buy ") && action.toLowerCase().includes(String(forSale.name).toLowerCase()));
+      if (buy) return buy;
+    }
     const from = menu.find((action) => action.startsWith("take ") && action.includes(" from ") && action.includes(target));
     if (from) return from;
   }

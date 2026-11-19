@@ -2725,7 +2725,9 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       const stateRoom = AI.state?.room?.name === AI.room
         ? AI.state.room
         : { name: AI.room, safe: false, details: [], exits: (AI.exits ?? []).map((dir) => ({ dir })), objects: [], npcs: [], actions: [] };
-      const promptState = AI.state ? { ...AI.state, room: stateRoom } : { room: stateRoom };
+      const promptState = AI.state
+        ? { ...AI.state, room: { ...stateRoom, text: observation } }
+        : { room: { ...stateRoom, text: observation } };
       const exits = stateRoom.exits ?? [];
       const memoryText = memoryPrompt(memory, { room: AI.room || stateRoom.name, exits, query: observation });
       const notes = [];
@@ -2790,6 +2792,17 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
           addChat("system", `Loop guard: a repeated command was replaced with "${forced}".`);
         }
       }
+      const attempted = parsed.command;
+      const validation = validateCommand(attempted, promptState);
+      let repaired = null;
+      if (!validation.ok) {
+        repaired = repairCommand(attempted, promptState, validation.reason);
+        addChat("system", `Command guard: "${attempted}" (${validation.reason}) → "${repaired}".`);
+        parsed.command = repaired;
+        parsed.thought = parsed.thought || `Command guard: ${repaired}.`;
+      }
+      AI.lastValidation = { invalid: !validation.ok, reason: validation.reason, repaired };
+      if (!validation.ok) AI.lastInvalid = { command: attempted, reason: validation.reason, repaired };
       AI.lastLatency = latency;
       AI.lastReply = { text, usage: usage ?? null, latency_ms: latency, at: new Date().toISOString() };
       AI.lastParsed = parsed;
@@ -2825,17 +2838,6 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       AI.latencies.push(latency);
       AI.usage.prompt += usage?.input_tokens ?? usage?.prompt_tokens ?? 0;
       AI.usage.completion += usage?.output_tokens ?? usage?.completion_tokens ?? 0;
-      const attempted = parsed.command;
-      const validation = validateCommand(attempted, promptState);
-      let repaired = null;
-      if (!validation.ok) {
-        repaired = repairCommand(attempted, promptState, validation.reason);
-        addChat("system", `Command guard: "${attempted}" (${validation.reason}) → "${repaired}".`);
-        parsed.command = repaired;
-        parsed.thought = parsed.thought || `Command guard: ${repaired}.`;
-      }
-      AI.lastValidation = { invalid: !validation.ok, reason: validation.reason, repaired };
-      if (!validation.ok) AI.lastInvalid = { command: attempted, reason: validation.reason, repaired };
       AI.lastCommand = parsed.command;
       let recent = [...AI.recent, parsed.command];
       const stuck = recent.length >= 5 && recent.slice(-5).every((command) => command === parsed.command);

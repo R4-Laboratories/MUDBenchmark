@@ -228,6 +228,7 @@ let webAI = { ok: true, why: [] };
       objects: [
         { name: "an oaken chest", open: true, container: true, contents: ["a copper coin"] },
         { name: "a grey cloak", takeable: true },
+        { name: "a short sword", takeable: true, forSale: true, price: 30 },
       ],
       npcs: [{ name: "a bard", aggression: 0 }], actions: [],
     },
@@ -240,6 +241,9 @@ let webAI = { ok: true, why: [] };
   check(!validateCommand("take copper coin", guardState).ok && repairCommand("take copper coin", guardState).includes("from"), "a contained item was not repaired to take-from");
   check(!validateCommand("open an oaken chest", guardState).ok && repairCommand("open an oaken chest", guardState).startsWith("close"), "an already-open container was not repaired");
   check(!validateCommand("attack a bard", guardState).ok && repairCommand("attack a bard", guardState) === "look", "safe-room combat was not repaired");
+  check(!validateCommand("take short sword", guardState).ok && repairCommand("take short sword", guardState).startsWith("buy"), "a for-sale take was not repaired to buy");
+  const observed = { room: { name: "The Storeroom", text: "The shelves hold a short sword and a leather jerkin. Exits: west.", exits: [{ dir: "west" }], objects: [], npcs: [], details: [] } };
+  check(validateCommand("take short sword", observed).ok, "observation names were not available to the validator");
   const reasoned = replyFrom("custom", { choices: [{ message: { content: "", reasoning_content: "COMMAND: look" } }] });
   check(reasoned.text === "", "reasoning content was treated as the answer");
   const native = replyFrom("ollama", { message: { content: "THOUGHT: x\nCOMMAND: look" } });
