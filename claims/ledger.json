@@ -627,6 +627,12 @@
       "level": "build",
       "statement": "The direct action menu now includes the contents of open containers as take <item> from <container>, reducing invented take/open/search commands. The server exposes contents only while the container is open. The gate still passes the AI and item suites.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-99",
+      "level": "some-true",
+      "statement": "Production v0.65.1 serves persistent per-character AI memory and open-container context. A real 37-turn Gemini run recorded p50 1067ms / p95 1603ms, zero errors, and varied commands (examine, talk, movement, take, wear, search, open, look). The memory prompt showed rooms seen, tried commands, stale counts and unexplored exits; a deliberately repeating mock traversed five rooms while the loop guard kept the run live. Memory is browser-local per character, not yet the R4 integer/GCD router or a portable server store.",
+      "authority": "wick production v0.65.1 2026-11-19; release 44427528628; gate 44426430216; /trends; headless Gemini run; repeating-mock loop test"
     }
   ]
 }
