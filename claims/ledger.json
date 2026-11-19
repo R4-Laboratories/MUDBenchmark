@@ -867,6 +867,12 @@
       "level": "build",
       "statement": "v0.84 adds a shared route ledger to runtime/web/memory.mjs: noteRoom records a recent room trail, memoryPrompt prints the route, loopWarning detects A-B-A-B and A-B-C-A-B-C cycles, and breakLoop prefers exits whose target rooms are unvisited before falling back to a fresh direction. The browser AI and CLI agent both use it; the CLI agent sends an unexplored exit instead of look on an unparseable reply. The gate covers route memory, room-cycle detection and unvisited-exit choice. The unscripted qwen2.5:7b run completed the Remembered Bed in seven turns (take rose, plant, down, take bloom, up, north, talk) with exit code 0.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-140",
+      "level": "some-true",
+      "statement": "Production v0.84.0 serves 101 rooms, 14 zones, 52 quests, 47 mobiles and 97 objects. The browser AI and CLI agent share a recent-room route, unexplored-target exit choice and route-cycle detection; the CLI agent sends an unexplored exit rather than look on an unparseable reply. The unscripted qwen2.5:7b Remembered Bed run completes in seven turns (take rose, plant, down, take bloom, up, north, talk) with exit code 0. R4 active, signups open, Gemini configured false. Gate 44623699986 green.",
+      "authority": "wick production v0.84.0 2026-11-19; release 44625071763; gate 44623699986; /health and /world; unscripted report"
     }
   ]
 }
