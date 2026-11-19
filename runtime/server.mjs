@@ -1810,6 +1810,9 @@ async function handleCommand(id, line) {
     if (view !== "active" && view !== "available" && view !== "default") {
       return sendTo(id, `Usage: quests [active|available|done|all|<id>]. Completed ${completed.length}/${QUESTS.quests.length}.\r\n`);
     }
+    if (view === "default" && completed.length) {
+      sendTo(id, `completed: ${completed.map((quest) => quest.name).join(", ")}\r\n`);
+    }
     return sendTo(id, `Quests: ${active.length} active · ${available.length} available · ${completed.length}/${QUESTS.quests.length} done. Use quests all or quests <id>.\r\n`);
   }
 
