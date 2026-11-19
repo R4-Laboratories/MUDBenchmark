@@ -181,9 +181,9 @@ Only after A/B:
 | --- | --- | --- |
 | v0.66.0 | R4 spike report, native prime/GCD concept index | **done** (MB-100) |
 | v0.67.0 | R4 loopback sidecar, scoped retrieval, note journal, game proxy, fallback | **done** (MB-101/102) |
-| v0.68.0–2 | Command grounding, invalid/loop/coverage/R4 scorecards, deploy readiness | **done** (MB-103/104/105/106) |
-| v0.69.0 | Social memory, second outdoor region, guild rank 6 | next |
-| v0.70.0 | Stream audience and launch hardening | after world work |
+| v0.68.0–3 | Command grounding, scorecards, deploy readiness, R4 journal/benchmark hardening | **done** (MB-103–107) |
+| v0.69.0 | Social memory, Hollow Fen, guild level 6 | **done** (MB-108/109/110) |
+| v0.70.0 | Stream audience and launch hardening | next |
 
 ## Risks
 
