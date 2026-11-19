@@ -210,6 +210,9 @@ Rehearsed 2026-11-16:
 - v0.73.0 (depth) scales spells with level/focus, adds the five-room Salt
   Caves and two quests (85 rooms / 38 quests), and adds first-run and
   spectator onboarding prompts (MB-117);
+- v0.74.0 (status) adds burn/bleed/chill effects from spells, weapons and
+  enemy tactics, timed ticks, chill armour loss, Mend cleansing and effect
+  display in score/battle/prompts (MB-119);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

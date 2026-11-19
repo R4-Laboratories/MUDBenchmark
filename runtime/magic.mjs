@@ -6,8 +6,8 @@
 export const SPELLS = [
   {
     id: "spark", cost: 15, name: "Spark", level: 1, mana: 3, target: "npc", effect: "damage",
-    damage: 4, xp: 3,
-    description: "A beginner's attack. One to four damage.",
+    damage: 4, xp: 3, status: "burn",
+    description: "A beginner's attack. One to four damage and a short burn.",
     train: "The archmage traces a spark between two fingers.",
   },
   {

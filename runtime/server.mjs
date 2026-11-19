@@ -610,6 +610,7 @@ function selfState(actor) {
     armor: armorOf(actor, state.objects),
     damage: weaponOf(actor, state.objects)?.damage ?? 0,
     spell_power: spellPower(actor, weaponOf(actor, state.objects)?.damage ?? 0),
+    effects: (actor.effects ?? []).map((effect) => ({ id: effect.id, name: effect.name, rounds: effect.rounds })),
     inventory_names: state.objects.filter((object) => object.holder === actor.id && !object.worn && !object.eaten).map((object) => object.name),
     wielding: state.objects.find((object) => object.id === actor.wielding)?.name ?? null,
     worn: state.objects.filter((object) => object.holder === actor.id && object.worn).map((object) => object.name),
@@ -1761,8 +1762,9 @@ async function handleCommand(id, line) {
       fights.push(`${other.name} — ${hp ?? "?"}/${max ?? "?"} hp${other.room === actor.room ? "" : " (elsewhere)"}`);
     }
     const weapon = weaponOf(actor, state.objects);
-    if (!fights.length) return sendTo(id, `You are not in a fight. ${weapon ? `Damage ${weapon.damage}; ` : ""}armour ${armorOf(actor, state.objects)}.\r\n`);
-    return sendTo(id, `Battle (${actor.hp}/${actor.maxHp} hp):\r\n  ${[...new Set(fights)].join("\r\n  ")}\r\n`);
+    const effects = (actor.effects ?? []).length ? ` · ${(actor.effects ?? []).map((effect) => `${effect.name} ${effect.rounds}`).join(", ")}` : "";
+    if (!fights.length) return sendTo(id, `You are not in a fight. ${weapon ? `Damage ${weapon.damage}; ` : ""}armour ${armorOf(actor, state.objects)}${effects}.\r\n`);
+    return sendTo(id, `Battle (${actor.hp}/${actor.maxHp} hp${effects}):\r\n  ${[...new Set(fights)].join("\r\n  ")}\r\n`);
   }
 
   if (named === "score") {
@@ -1771,7 +1773,8 @@ async function handleCommand(id, line) {
     const armor = armorOf(actor, state.objects);
     const nextXp = nextLevelXp(state.levels, actor.level);
     const stateQ = normalizeQuestState(actor.quests, QUESTS.quests);
-    const line = `Level ${actor.level} (${actor.xp}${nextXp === null ? "" : `/${nextXp}`} xp), ${actor.hp}/${actor.maxHp} hp, mana ${actor.mana ?? maxManaFor(actor)}/${actor.maxMana ?? maxManaFor(actor)}, armour ${armor}, damage ${weapon?.damage ?? 0}, ${weapon ? `wielding ${weapon.name}` : "unarmed"}${actor.guild ? `, guild ${actor.guild}` : ""}, ${stateQ.active.length} active/${stateQ.completed.length} done quests.`;
+    const effects = (actor.effects ?? []).length ? ` Effects: ${(actor.effects ?? []).map((effect) => `${effect.name} ${effect.rounds}`).join(", ")}.` : "";
+    const line = `Level ${actor.level} (${actor.xp}${nextXp === null ? "" : `/${nextXp}`} xp), ${actor.hp}/${actor.maxHp} hp, mana ${actor.mana ?? maxManaFor(actor)}/${actor.maxMana ?? maxManaFor(actor)}, armour ${armor}, damage ${weapon?.damage ?? 0}, spell power ${spellPower(actor, weapon?.damage ?? 0)}, ${weapon ? `wielding ${weapon.name}` : "unarmed"}${actor.guild ? `, guild ${actor.guild}` : ""}, ${stateQ.active.length} active/${stateQ.completed.length} done quests.${effects}`;
     return sendTo(id, `${render(messages.line, { words: line })}\r\n`);
   }
 

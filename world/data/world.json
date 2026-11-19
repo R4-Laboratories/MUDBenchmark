@@ -2250,7 +2250,8 @@
         "cinder-fang"
       ],
       "description": "A lean hound the colour of cooling slag.",
-      "examine": "Its hide is cracked like a dried riverbed, and heat shows through the cracks."
+      "examine": "Its hide is cracked like a dried riverbed, and heat shows through the cracks.",
+      "status": "burn"
     },
     {
       "id": "ember-warden",
@@ -2310,7 +2311,8 @@
         "bog-fang"
       ],
       "description": "A lean hound the colour of wet peat.",
-      "examine": "Its fur is matted with mud and its eyes are yellow."
+      "examine": "Its fur is matted with mud and its eyes are yellow.",
+      "status": "bleed"
     },
     {
       "id": "heron-keeper",
@@ -2394,7 +2396,8 @@
         "salt-shard"
       ],
       "description": "A tall shape of white salt and cold air.",
-      "examine": "The wraith has no face, only a seam of black."
+      "examine": "The wraith has no face, only a seam of black.",
+      "status": "chill"
     }
   ],
   "zones": [
@@ -3331,7 +3334,8 @@
       "damage": 6,
       "value": 35,
       "examine": "A blade of black iron with a red edge. It hums when the flame moves.",
-      "forSale": false
+      "forSale": false,
+      "status": "burn"
     },
     {
       "id": "wisp-glass",
@@ -3430,7 +3434,8 @@
       "damage": 5,
       "value": 30,
       "examine": "A staff of black willow with a green glass cap.",
-      "forSale": false
+      "forSale": false,
+      "status": "chill"
     },
     {
       "id": "salt-pearl",

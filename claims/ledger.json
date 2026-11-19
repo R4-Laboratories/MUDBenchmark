@@ -747,6 +747,12 @@
       "level": "some-true",
       "statement": "Production v0.73.0 serves 85 rooms, 11 zones, 38 quests, 38 mobiles and 76 objects. Spell power scales with level and equipped focus (spark/mend support, shield ward), and score/equipment/spells show armor/damage/spell power. The Salt Caves add five rooms, two quests, a brine-key chest and a return shortcut. First steps and watch-page spectator prompts are live. Shortcuts cover 115 verb keys and 30 socials; /stats and /leaderboard remain. Gate 44540055374 and the real-holo/crash-recovery tests pass after restoring the quests completed line.",
       "authority": "wick production v0.73.0 2026-11-19; release 44541604675; gate 44540055374; /health and /world; /llms; holo/crash tests"
+    },
+    {
+      "id": "MB-119",
+      "level": "build",
+      "statement": "Combat now has timed status effects: spark and the ember brand apply burn, cinder hounds apply burn, bog hounds apply bleed, fen staffs and salt wraiths apply chill. Effects tick on the violence pulse, chill reduces armor, mend cleanses bleeding/burning, score/battle and the AI prompt show effects, and death/reset clears them. Spell damage/heal/shield scale with level and equipped focus. The gate checks spell power scaling, spark burn, mend cleanse and shield scaling; world/holo tests remain green.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

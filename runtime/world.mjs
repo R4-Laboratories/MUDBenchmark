@@ -83,12 +83,62 @@ function awardXp(state, actor, amount, events) {
   }
 }
 
+const STATUS = {
+  burn: { id: "burn", name: "burning", damage: 1, rounds: 2 },
+  bleed: { id: "bleed", name: "bleeding", damage: 1, rounds: 3 },
+  chill: { id: "chill", name: "chilled", damage: 0, rounds: 2, armor: 1 },
+};
+
+function addStatus(target, id) {
+  const definition = STATUS[id];
+  if (!definition || !target) return null;
+  target.effects ??= [];
+  const existing = target.effects.find((effect) => effect.id === id);
+  if (existing) {
+    existing.rounds = Math.max(existing.rounds ?? 0, definition.rounds);
+    return existing;
+  }
+  const effect = { ...definition };
+  target.effects.push(effect);
+  return effect;
+}
+
+function statusArmorPenalty(target) {
+  return (target?.effects ?? []).filter((effect) => effect.id === "chill").length;
+}
+
+function tickStatuses(next, events) {
+  for (const target of [...next.actors, ...next.npcs]) {
+    if (!target.effects?.length || target.dead) continue;
+    const room = target.room;
+    for (const effect of [...target.effects]) {
+      if (effect.damage > 0) {
+        const current = target.hp ?? 0;
+        const damage = Math.min(effect.damage, Math.max(0, current - 1));
+        if (damage > 0) {
+          target.hp = current - damage;
+          if (next.actors.includes(target)) {
+            events.push({ onlyId: target.id, text: `You take ${damage} from ${effect.name}.\r\n` });
+          }
+          if (room != null) events.push({ room, text: `${target.name} suffers from ${effect.name}.`, exceptId: target.id });
+        }
+      }
+      effect.rounds = (effect.rounds ?? 1) - 1;
+      if (effect.rounds <= 0) {
+        target.effects = target.effects.filter((entry) => entry !== effect);
+        if (next.actors.includes(target)) events.push({ onlyId: target.id, text: `The ${effect.name} fades.\r\n` });
+      }
+    }
+  }
+}
+
 function applySpell(state, actor, spell, target, events) {
   const focus = weaponOf(actor, state.objects)?.damage ?? 0;
   const power = spellPower(actor, focus);
   if (spell.effect === "damage" && target) {
     const damage = 1 + nextFrom(state.tick * 7 + actor.room, spell.damage ?? 4) + power;
     target.hp = (target.hp ?? 0) - damage;
+    if (spell.status) addStatus(target, spell.status);
     events.push({ room: actor.room, text: `${actor.name} speaks a word; ${target.name} is struck by a spark.`, exceptId: actor.id });
     events.push({ onlyId: actor.id, text: `Your spark strikes ${target.name} for ${damage}.` });
     if (target.hp <= 0) {
@@ -100,7 +150,8 @@ function applySpell(state, actor, spell, target, events) {
   } else if (spell.effect === "heal") {
     const amount = spell.heal + Math.floor((actor.level ?? 1) / 2) + Math.floor(focus / 2);
     actor.hp = Math.min(actor.maxHp, (actor.hp ?? 0) + amount);
-    events.push({ onlyId: actor.id, text: `You mend ${amount} health.\r\n` });
+    actor.effects = (actor.effects ?? []).filter((effect) => effect.id === "chill");
+    events.push({ onlyId: actor.id, text: `You mend ${amount} health; bleeding and burning are cleansed.\r\n` });
   } else if (spell.effect === "shield") {
     const ward = (spell.armor ?? 0) + Math.floor((actor.level ?? 1) / 5) + Math.floor(focus / 3);
     actor.armorBonus = (actor.armorBonus ?? 0) + ward;
@@ -492,10 +543,11 @@ export function step({ state, rooms, intents, actions = [] }) {
     duels: (state.duels ?? []).map((duel) => ({ ...duel })),
     mail: (state.mail ?? []).map((letter) => ({ ...letter })),
     engagements: (state.engagements ?? []).map((e) => ({ ...e })),
-    npcs: state.npcs.map((n) => ({ ...n, clock: { ...n.clock } })),
+    npcs: state.npcs.map((n) => ({ ...n, clock: { ...n.clock }, effects: (n.effects ?? []).map((effect) => ({ ...effect })) })),
     actors: state.actors.map((a) => ({
       ...a,
       visited: [...a.visited],
+      effects: (a.effects ?? []).map((effect) => ({ ...effect })),
       quests: normalizeQuestState(a.quests, state.quests ?? []),
     })),
     objects: state.objects.map((o) => ({ ...o })),
@@ -1722,9 +1774,13 @@ export function step({ state, rooms, intents, actions = [] }) {
       const weapon = next.actors.includes(attacker) ? weaponOf(attacker, next.objects) : null;
       const weaponDamage = weapon?.damage ?? 0;
       const npcDamage = next.npcs.includes(attacker) ? (attacker.damage ?? 0) : null;
-      const targetArmor = next.actors.includes(target) ? armorOf(target, next.objects) : (target.armor ?? 0);
+      const targetArmor = (next.actors.includes(target) ? armorOf(target, next.objects) : (target.armor ?? 0)) - statusArmorPenalty(target);
       const roll = attackRoll({ tick: next.tick, attackerId: attacker.id, weaponDamage, npcDamage, targetArmor });
-      if (roll.hit) target.hp -= roll.damage;
+      if (roll.hit) {
+        target.hp -= roll.damage;
+        const status = weapon?.status ?? attacker.status ?? null;
+        if (status) addStatus(target, status);
+      }
       const killed = roll.hit && target.hp <= 0;
       const detail = {
         attacker: attacker.id,
@@ -1782,6 +1838,7 @@ export function step({ state, rooms, intents, actions = [] }) {
             target.wielding = null;
           }
           target.hp = target.maxHp ?? 10;
+          target.effects = [];
           target.room = next.start;
           if (!target.visited.includes(next.start)) target.visited.push(next.start);
           const inRing = rooms[deathRoom]?.arena === true;
@@ -1797,6 +1854,8 @@ export function step({ state, rooms, intents, actions = [] }) {
     }
   }
 
+  if (violenceDue) tickStatuses(next, events);
+
   if (areaDue) {
     // The old MUD reset: the world returns to its starting arrangement and the
     // cycle advances, so a long session is a series of games, not one drift.
@@ -1809,7 +1868,7 @@ export function step({ state, rooms, intents, actions = [] }) {
     }
     next.engagements = [];
     next.duels = [];
-    for (const actor of next.actors) actor.wielding = null;
+    for (const actor of next.actors) { actor.wielding = null; actor.effects = []; }
     next.objects = next.objects.filter((object) => !object.ephemeral);
     for (const object of next.objects) {
       object.holder = null;
