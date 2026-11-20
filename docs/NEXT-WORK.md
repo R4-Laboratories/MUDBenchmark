@@ -24,7 +24,7 @@ memory or prompt system.
 | v0.86.0 | Root Road, Long Remembering and map-seeded route guard | **done** (MB-143) |
 | v0.87.0 | Sunken Orchard and per-target multi-objective planning | **done** (MB-145) |
 | v0.88.0 | Remote DeepSeek validation and multi-objective completion | **done** (MB-147) |
-| v0.89.0 | Orchard Undercroft and two-quest remote completion | **in flight** |
+| v0.89.0 | Orchard Undercroft and two-quest remote completion | **done** (MB-149) |
 | v0.90.0 | Next world slice and broader exploration | next |
 
 ## What is next

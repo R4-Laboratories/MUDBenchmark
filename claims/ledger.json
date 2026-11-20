@@ -927,6 +927,12 @@
       "level": "build",
       "statement": "v0.89 adds the Orchard Undercroft (rooms 109-111) below the Old Press, a vat hound (50 mobiles), the press seed (100 objects), the level-8 Press Beneath quest (56 quests) and the Presskeeper title (10 titles). AGENT_OBJECTIVES supports >Room dependencies so a delivery cannot be attempted before its item objective. A remote DeepSeek run completed Press Beneath and the clerk errand (two simultaneous quests) in 31 turns with exit code 0; no local inference. The gate covers the undercroft connections, press quest, title and the existing objective planner invariants.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-150",
+      "level": "some-true",
+      "statement": "Production v0.89.0 serves 111 rooms, 14 zones, 56 quests, 50 mobiles, 100 objects and 10 titles. The Orchard Undercroft adds rooms 109-111, a vat hound, the press seed, the Press Beneath quest and the Presskeeper title. AGENT_OBJECTIVES supports >Room dependencies. A remote DeepSeek run completed Press Beneath and the clerk errand in 31 turns with both quests complete and exit code 0; no local inference. R4 active, signups open, Gemini configured false. Gate 44694165018 green.",
+      "authority": "wick production v0.89.0 2026-11-20; release 44695181382; gate 44694165018; /health and /world; remote run report"
     }
   ]
 }
