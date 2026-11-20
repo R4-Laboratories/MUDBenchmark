@@ -11,7 +11,7 @@ import { homedir } from "node:os";
 import { join as joinPath } from "node:path";
 import { createHash, randomBytes } from "node:crypto";
 import { WebSocketServer } from "ws";
-import { recordSpan, digest, TELEMETRY_LOG } from "./telemetry.mjs";
+import { recordSpan, digest, TELEMETRY_LOG, PLAYER_LOG_FILE, ensurePlayerLog } from "./telemetry.mjs";
 import { readSpanTail, readSpansTail, redactSpans } from "./spans.mjs";
 import { summarizeTrends } from "./trends.mjs";
 import { summarizePlayers } from "./playerstats.mjs";
@@ -70,6 +70,9 @@ if (loaded.errors.length > 0) {
   for (const problem of loaded.errors) console.error(`world: ${problem}`);
   process.exit(1);
 }
+const playerSeed = ensurePlayerLog();
+if (playerSeed.created) console.log(`player stats: seeded ${playerSeed.kept} spans`);
+
 const ACTION_TABLE = loadActions({ world: loaded });
 if (ACTION_TABLE.errors.length > 0) {
   for (const problem of ACTION_TABLE.errors) console.error(`actions: ${problem}`);
@@ -3095,9 +3098,9 @@ const web = http.createServer(async (req, res) => {
   if (pathname === "/players") {
     // Aggregate player sessions and outcomes. Account keys and character names
     // stay in the span log; this public view returns counts and rates only.
-    const summary = summarizePlayers(readSpansTail(TELEMETRY_LOG));
+    const summary = summarizePlayers(readSpansTail(PLAYER_LOG_FILE, { maxBytes: 16 * 1024 * 1024 }));
     res.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
-    res.end(JSON.stringify({ ...summary, file: TELEMETRY_LOG }));
+    res.end(JSON.stringify({ ...summary, file: PLAYER_LOG_FILE }));
     return;
   }
 

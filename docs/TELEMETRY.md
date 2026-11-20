@@ -14,6 +14,15 @@ convenience, not the only record. The file rotates at
 `TELEMETRY_MAX_BYTES` (64 MiB by default); the archive keeps a timestamp and a
 new live file is started.
 
+The full log is dominated by tick spans. A compact player log sits beside it
+(`PLAYER_LOG`, default `spans.players.jsonl` next to `TELEMETRY_LOG`) and keeps
+only `world.session`, `world.disconnect`, `world.quest`, `world.transition`,
+`world.combat`, `world.snapshot` and `world.input`. `GET /players` reads that
+small file. On first start the server seeds it from the existing main log, so a
+release does not start the player view empty; it rotates at
+`PLAYER_MAX_BYTES` (16 MiB by default). The main log remains the complete
+record.
+
 | Span | What it carries |
 | --- | --- |
 | `world.client` | transport, origin, connection id |
@@ -70,7 +79,8 @@ The first useful questions are:
 ## Players
 
 `GET /players` and `tools/players.mjs` answer the player-behaviour questions
-that the AI trend view cannot:
+that the AI trend view cannot. The endpoint reads the compact player log; the
+CLI accepts either log:
 
 ```sh
 node tools/players.mjs /path/to/spans.jsonl
@@ -117,7 +127,7 @@ archive and a byte cap.
 ## Retention and privacy
 
 - Production should set `TELEMETRY_LOG` to a durable directory, not `/tmp`.
-- The span log is server-side. `/spans` is the public redacted view and `/players` is aggregate-only.
+- The span log is server-side. `/spans` is the public redacted view and `/players` is aggregate-only. The compact player log is server-side too; it is smaller but has the same privacy boundary.
 - `login`, `register`, `password`, `adopt`, `prism`, `session-key`, `rebind` and
   `metric` inputs are recorded as verb + length + policy only. `tell`, `mail`
   and guild chat keep metadata, not bodies. `world.tick` intents and the

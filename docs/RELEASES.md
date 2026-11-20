@@ -294,6 +294,9 @@ Rehearsed 2026-11-16:
 - v0.91.10 (player stats) adds `GET /players`, `tools/players.mjs` and a
   `/stats` panel for sessions, human/AI mix, playtime, per-quest completion,
   combat outcomes, rooms and level distribution, aggregate-only (MB-171);
+- v0.91.11 (player log) keeps a compact player-event log beside the full span
+  log, seeds it from the existing log on first start and serves `/players` from
+  it, so sparse session records survive the tail window (MB-172);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

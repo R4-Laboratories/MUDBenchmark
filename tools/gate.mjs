@@ -47,6 +47,7 @@ import { loadStateFile, saveStateFile } from "../runtime/state.mjs";
 import { acceptLinkRequest, completeLink, createDevice, createLinkOffer, createPrism, createRecovery, linkCode, recoverPrism, requestLink, revokeDevice, signAction, verifyAction } from "../runtime/web/prism-id.mjs";
 import { openKit, sealKit } from "../runtime/web/recovery-kit.mjs";
 import { readSpanTail, redactSpans, summarizeSpans } from "../runtime/spans.mjs";
+import { PLAYER_SPAN_NAMES, selectPlayerLines } from "../runtime/telemetry.mjs";
 import { admissionAdmits, decodeAdmissionRequest } from "./admission.mjs";
 import { measureCandidates } from "./measure.mjs";
 import { normalizePrismId, ownerAllowed, rebindPlan, tokenHash } from "../runtime/rebind.mjs";
@@ -1408,6 +1409,16 @@ let telemetry = { ok: true, why: [] };
   check(retention.remove.some((file) => file.path.endsWith("spans.old")), "retention kept an expired archive");
   check(retention.keep.some((file) => file.path.endsWith("spans.new")), "retention dropped a recent archive");
   check(retention.remove.some((file) => file.path.endsWith("spans.huge")), "retention did not enforce the byte cap");
+
+  const compact = selectPlayerLines([
+    JSON.stringify({ name: "world.tick", "world.tick": 1 }),
+    JSON.stringify({ name: "world.session", "actor.id": "a", "session.ai": false }),
+    JSON.stringify({ name: "world.quest", "actor.id": "a", "quest.action": "accept" }),
+    JSON.stringify({ name: "ai.turn", "ai.provider": "x" }),
+  ].join("\n"));
+  check(PLAYER_SPAN_NAMES.has("world.session") && PLAYER_SPAN_NAMES.has("world.quest") && !PLAYER_SPAN_NAMES.has("world.tick"), "the compact player span set is wrong");
+  check(compact.includes("world.session") && compact.includes("world.quest") && !compact.includes("world.tick") && !compact.includes("ai.turn"), "the compact player log kept the wrong spans");
+  check(/ensurePlayerLog\(\)/.test(serverSource), "the server does not seed the compact player log");
 
   const statusWorld = loadWorld({ mode: "single" });
   let statusState = initialState(statusWorld.rooms, statusWorld.npcs, statusWorld.objects, statusWorld.start, statusWorld.climate, channelTable.channels, statusWorld.levels, questTable.quests);
