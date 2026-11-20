@@ -969,6 +969,12 @@
       "level": "build",
       "statement": "v0.91.2 refuses to start an AI persona when the browser reports memory-only storage, because the next reload would create another orphan Prism identity. The guard is gated by a static check and complements the v0.91.1 rule that AI personas require the human Prism account, prefer existing characters and use random names for new ones.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-157",
+      "level": "some-true",
+      "statement": "Production v0.91.2 serves the Prism/AI character fix. AI personas require a human Prism sign-in, never create a standalone AI account, prefer existing characters, and use random names for new AI/human characters with collision retry. Memory-only windows cannot start an AI persona. /names.mjs is served (200) and the deployed page contains the storage guard. The world remains 114 rooms/14 zones/58 quests/51 mobiles/101 objects/11 titles. R4 active, signups open, Gemini configured false. Gate 44760655145 and release 44764060225.",
+      "authority": "wick production v0.91.2 2026-11-20; release 44764060225; gate 44760655145; /health, /world, /names.mjs and deployed index"
     }
   ]
 }
