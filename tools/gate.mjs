@@ -348,7 +348,10 @@ let characterNames = { ok: true, why: [] };
   }
   check(/^[a-z]+-[a-z]+-[0-9]{2,4}$/.test(randomCharacterName(random)), "randomCharacterName returned an invalid name");
   check(web.includes("/names.mjs"), "the page does not load the name generator");
-  check(!web.includes('prismSignIn("ai"'), "the AI still has a standalone Prism account fallback");
+  check((web.match(/prismSignIn\("ai"/g) ?? []).length === 1, "the old AI account path is not limited to recovery");
+  check(web.includes("No old AI session is stored in this browser"), "the old AI recovery path is missing");
+  check(web.includes("Recover old AI characters"), "the recovery panel is missing");
+  check(serverSource.includes("recover-list") && serverSource.includes("transferCharacter"), "the server transfer path is missing");
   check(web.includes("AI personas use your Prism account"), "the AI does not require the human Prism login");
   check(web.includes("randomCharacterName()"), "the human create form does not suggest a random name");
   check(web.includes("chooseCharacter"), "the AI does not use the shared character choice");
@@ -529,6 +532,16 @@ let prismLogin = { ok: true, why: [] };
   if (state.identities["legacy-test"]?.kind !== "character" || state.identities["legacy-test"]?.owner !== "legacy-test") {
     prismLogin.why.push("a legacy character is not owned by its account");
   }
+  // Recovery moves an old AI account's character to the human account.
+  const oldKey = `sha256:${"e".repeat(64)}`;
+  const humanKey = `sha256:${"f".repeat(64)}`;
+  run([{ kind: "join", actorId: "rec", name: "rec" }]);
+  run([{ kind: "createCharacter", accountKey: oldKey, name: "oldscout", actorId: "rec" }]);
+  run([{ kind: "transferCharacter", actorId: "rec", fromKey: oldKey, toKey: humanKey, characterKey: "oldscout" }]);
+  if (state.identities.oldscout?.owner !== humanKey) prismLogin.why.push("the old AI character did not move to the human account");
+  if ((state.accounts[humanKey]?.characters ?? []).includes("oldscout") !== true) prismLogin.why.push("the human account did not receive the recovered character");
+  if ((state.accounts[oldKey]?.characters ?? []).includes("oldscout")) prismLogin.why.push("the old account kept the recovered character");
+
   const upgraded = upgradeState({ identities: { "old-name": { name: "old-name" } } }, initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, world.levels, questTable.quests));
   if (upgraded.accounts["old-name"]?.kind !== "legacy") prismLogin.why.push("upgradeState did not create an account");
   if (upgraded.identities["old-name"]?.kind !== "character") prismLogin.why.push("upgradeState did not create a character");

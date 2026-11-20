@@ -270,6 +270,10 @@ Rehearsed 2026-11-16:
   names for new AI/human characters with collision retry (MB-155);
 - v0.91.2 (storage guard) refuses to start an AI persona in a memory-only/private
   window, where the next reload would create another orphan identity (MB-155);
+- v0.91.3 (AI recovery) adds the explicit old-AI-session transfer: a signed
+  `prism/character-transfer/1` action moves a selected orphaned character to the
+  signed-in human Prism account, with session verification and ownership checks
+  (MB-158);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

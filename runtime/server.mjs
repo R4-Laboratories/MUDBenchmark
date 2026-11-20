@@ -32,7 +32,7 @@ import { loadFacts, factForNpc, contextHasWord } from "./facts.mjs";
 import { hashPassword, verifyPassword, validName, validPassword, accountCapReached } from "./accounts.mjs";
 import { allowCommand as allowInput, DEFAULT_INTERVAL_MS } from "./allowance.mjs";
 import { chatAllowed } from "./moderation.mjs";
-import { verifyPrismSession, verifyPersonaOwner, verifySessionKey, prismDisplay } from "./prism-auth.mjs";
+import { verifyPrismSession, verifyPersonaOwner, verifyPrismAction, verifySessionKey, prismDisplay } from "./prism-auth.mjs";
 import { CREDENTIAL, identityAdmits } from "./identity.mjs";
 import { normalizePrismId, ownerAllowed, rebindPlan } from "./rebind.mjs";
 import { normalizeStreamEvent, publicStreamText } from "./stream.mjs";
@@ -1086,6 +1086,68 @@ async function handleCommand(id, line) {
     if (!session) return sendTo(id, "Sign in with your Prism id first.\r\n");
     if (!sessionConfirmed(session)) return sendTo(id, "Confirm your session first.\r\n");
     return sendCharacters(id, session);
+  }
+
+  if (verb === "recover-list") {
+    const human = accountSessions.get(id);
+    if (!human || human.kind !== "prism") return sendTo(id, "Sign in with your Prism id first.\r\n");
+    if (!sessionConfirmed(human)) return sendTo(id, "Confirm your session first.\r\n");
+    if (human.owner) return sendTo(id, "Sign in as the human account, not the AI persona.\r\n");
+    const token = restRaw[0];
+    if (!token || token.length > PRISM_LOGIN_MAX) return sendTo(id, "Usage: recover-list <old AI session>.\r\n");
+    let session;
+    try { session = JSON.parse(Buffer.from(token, "base64url").toString("utf8")); } catch {
+      return sendTo(id, "The old AI session is malformed.\r\n");
+    }
+    const prismId = session?.envelope?.body?.prism;
+    const pinned = prismId ? identityStore.prisms[prismId] ?? null : null;
+    const verdict = await verifyPrismSession(session, { origin: transports.get(id)?.origin ?? null, pinned, revokedBefore: identityStore.revokedBefore ?? null, blocked: identityStore.blocked ?? [] });
+    if (!verdict.ok) return sendTo(id, `Old AI session refused: ${verdict.reason}.\r\n`);
+    if (!pinned || pinned.root !== verdict.root) {
+      identityStore.prisms[verdict.prism] = { records: verdict.records, root: verdict.root, updated: new Date().toISOString() };
+      saveIdentityStore();
+    }
+    const old = state.accounts?.[verdict.prism];
+    const characters = old && !old.retired ? [...(old.characters ?? [])] : [];
+    sendTo(id, `#recover-list ${JSON.stringify({ account: prismDisplay(verdict.prism), characters })}\r\n`);
+    return sendTo(id, characters.length
+      ? `Old AI account ${prismDisplay(verdict.prism)} has ${characters.length} character${characters.length === 1 ? "" : "s"}.\r\n`
+      : `Old AI account ${prismDisplay(verdict.prism)} has no characters.\r\n`);
+  }
+
+  if (verb === "recover") {
+    const human = accountSessions.get(id);
+    if (!human || human.kind !== "prism") return sendTo(id, "Sign in with your Prism id first.\r\n");
+    if (!sessionConfirmed(human)) return sendTo(id, "Confirm your session first.\r\n");
+    if (human.owner) return sendTo(id, "Sign in as the human account, not the AI persona.\r\n");
+    const token = restRaw[0];
+    if (!token || token.length > PRISM_LOGIN_MAX) return sendTo(id, "Usage: recover <transfer action>.\r\n");
+    let transfer;
+    try { transfer = JSON.parse(Buffer.from(token, "base64url").toString("utf8")); } catch {
+      return sendTo(id, "The transfer action is malformed.\r\n");
+    }
+    const body = transfer?.envelope?.body;
+    const fromKey = body?.prism;
+    if (!body || !fromKey || body.action !== "prism/character-transfer/1") return sendTo(id, "That is not a character transfer.\r\n");
+    const pinned = identityStore.prisms[fromKey] ?? null;
+    const verdict = await verifyPrismAction(transfer.envelope, {
+      origin: transports.get(id)?.origin ?? null,
+      records: transfer.records ?? [],
+      pinned,
+      action: "prism/character-transfer/1",
+      expected: { to: human.key },
+    });
+    if (!verdict.ok) return sendTo(id, `Transfer refused: ${verdict.reason}.\r\n`);
+    if (fromKey === human.key) return sendTo(id, "That account is already yours.\r\n");
+    const old = state.accounts?.[fromKey];
+    if (!old || old.retired) return sendTo(id, "The old account is not available.\r\n");
+    if (old.owner && old.owner !== human.key) return sendTo(id, "That old account belongs to another Prism id.\r\n");
+    const characterKey = body.payload?.character;
+    const character = state.identities?.[characterKey];
+    if (!character || character.owner !== fromKey || character.retired) return sendTo(id, "That character is not on the old account.\r\n");
+    pending.push({ kind: "transferCharacter", actorId: id, fromKey, toKey: human.key, characterKey });
+    setTimeout(() => sendCharacters(id, human), 350);
+    return sendTo(id, `Recovering ${characterKey} to ${prismDisplay(human.key)}.\r\n`);
   }
 
   if (verb === "handoff" || verb === "revoke-handoff") {

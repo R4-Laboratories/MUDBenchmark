@@ -303,7 +303,9 @@ verifies it against your pinned log, and the persona account stores `owner` and
 the same time. **Reset identity** retires the persona and tombstones its
 characters; the next start creates a new persona. The AI requires a human Prism
 sign-in and no longer creates a standalone AI account. A new persona opens its
-existing characters first; otherwise it creates a random name. A device
+existing characters first; otherwise it creates a random name. If this browser
+still has an old standalone AI session, the characters panel can recover its
+characters with an explicit old-account-signed transfer. A device
 revoked elsewhere is refused once a surviving
 device has logged in with the newer public log; the server pins that log in
 `identities.json`.

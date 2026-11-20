@@ -175,6 +175,18 @@ export async function characterHandoff(store = "default", app = location.origin,
   return { envelope };
 }
 
+export async function characterTransfer(store = "ai", app = location.origin, character, to) {
+  const session = await read(store);
+  if (!session?.prism || !character || !to) return null;
+  const envelope = await Prism.signAction(
+    session,
+    "prism/character-transfer/1",
+    { character, to, audience: app },
+    { audience: app, now: Date.now() },
+  );
+  return { envelope, records: [...session.log.values()] };
+}
+
 export async function characterRevoke(store = "default", app = location.origin, character, persona) {
   const session = await read(store);
   if (!session?.prism || !character || !persona) return null;

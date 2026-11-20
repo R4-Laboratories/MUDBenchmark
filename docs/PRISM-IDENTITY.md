@@ -313,6 +313,13 @@ that owner action.
 - A new persona opens its existing characters first. If it has none, the panel
   creates a random name such as `cider-otter-42`; a collision retries with a
   fresh random name. The old fixed `scout` default is gone.
+- **Old standalone AI accounts** can be recovered explicitly. If this browser
+  still holds the old AI session, the characters panel offers *Recover old AI
+  characters*. The old account signs a `prism/character-transfer/1` action for
+  one character; the signed-in human account is the destination. The server
+  verifies the old session and action, refuses a persona owned by another
+  human, and moves the character's ownership and account list entry. The
+  account is not merged; only the chosen character moves.
 
 ## Character handoff
 

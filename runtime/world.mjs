@@ -1259,6 +1259,28 @@ export function step({ state, rooms, intents, actions = [] }) {
       continue;
     }
 
+    if (intent.kind === "transferCharacter") {
+      const actor = find(intent.actorId);
+      const from = next.accounts[intent.fromKey];
+      let to = next.accounts[intent.toKey];
+      const character = next.identities[intent.characterKey];
+      if (!actor || !from || !character || !character.owner || character.owner !== intent.fromKey || intent.fromKey === intent.toKey || character.retired) continue;
+      if (!to) {
+        to = {
+          kind: "prism", name: intent.toKey, characters: [], claimedFrom: null,
+          passwordHash: null, salt: null, tokenHash: null, retired: false, mergedInto: null,
+        };
+        next.accounts[intent.toKey] = to;
+      }
+      if (to.retired || (to.characters ?? []).includes(intent.characterKey)) continue;
+      from.characters = (from.characters ?? []).filter((name) => name !== intent.characterKey);
+      to.characters = [...(to.characters ?? []), intent.characterKey];
+      const { delegate, delegatedAt, delegatedBy, ...rest } = character;
+      next.identities[intent.characterKey] = { ...rest, owner: intent.toKey };
+      events.push({ onlyId: actor.id, text: `Recovered ${intent.characterKey} to this Prism account.\r\n` });
+      continue;
+    }
+
     if (intent.kind === "handoffCharacter") {
       const character = next.identities[intent.characterKey];
       const account = next.accounts[intent.persona];

@@ -29,6 +29,7 @@ memory or prompt system.
 | v0.91.0 | Observed-action verification and repeatable orchard work | **done** (MB-153) |
 | v0.91.1 | Prism AI login and random character names | **done** (MB-155) |
 | v0.91.2 | Memory-only AI start guard | **done** (MB-156) |
+| v0.91.3 | Old AI character recovery | **in flight** |
 | backlog | Optional content and live-player tuning | optional |
 
 ## What is next

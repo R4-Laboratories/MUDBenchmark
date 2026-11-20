@@ -728,6 +728,13 @@
           <div class="row"><button type="submit">Create character</button></div>
         </form>
         <p class="small muted" id="character-hint"></p>
+        <details id="recover-old" hidden>
+          <summary>Recover old AI characters</summary>
+          <p class="small muted">If this browser still has an old standalone AI Prism account, its characters can be moved to the signed-in human account. Only characters from the old account are transferred.</p>
+          <div class="row"><button type="button" id="recover-scan">Find old AI characters</button></div>
+          <div id="recover-list"></div>
+          <p class="small muted" id="recover-status"></p>
+        </details>
         <div class="row"><button type="button" id="sign-out">Sign out</button></div>
       </section>
 
@@ -866,7 +873,7 @@
     parseBrain, buildActionMenu, validateCommand, repairCommand, requestFor, replyFrom, trimHistory, normalizeBase,
   } from "/ai.mjs";
   import { emptyMemory, rememberResult, memoryPrompt, loopWarning, breakLoop, shouldBreakLoop, publicMemoryText } from "/memory.mjs";
-  import { signIn as prismSignIn, reset as prismReset, load as loadSession, save as saveSession, personaSignIn, personaRetire, nextPersonaEpoch, createRecoveryKit, restoreRecoveryKit, characterHandoff, characterRevoke, signChallenge } from "/prism-auth.mjs";
+  import { signIn as prismSignIn, reset as prismReset, load as loadSession, save as saveSession, personaSignIn, personaRetire, nextPersonaEpoch, createRecoveryKit, restoreRecoveryKit, characterHandoff, characterRevoke, characterTransfer, signChallenge } from "/prism-auth.mjs";
   import { randomCharacterName, uniqueCharacterName, chooseCharacter } from "/names.mjs";
   import { createLinkOffer, parseLinkUri, requestLink, acceptLinkRequest, completeLink, linkCode, revokeDevice, resolvePrism, linkQr } from "/prism-id.mjs";
 
@@ -882,6 +889,10 @@
   const createCharacterForm = document.getElementById("create-character-form");
   const newCharacter = document.getElementById("new-character");
   const characterHint = document.getElementById("character-hint");
+  const recoverOld = document.getElementById("recover-old");
+  const recoverScan = document.getElementById("recover-scan");
+  const recoverList = document.getElementById("recover-list");
+  const recoverStatus = document.getElementById("recover-status");
   const charactersButton = document.getElementById("characters-button");
   const signOut = document.getElementById("sign-out");
   const recoveryPass = document.getElementById("recovery-pass");
@@ -1150,6 +1161,11 @@
         try { renderCharacters(JSON.parse(charactersLine[1])); } catch {}
         return;
       }
+      const recoverLine = text.match(/^#recover-list (.*)\r?\n?$/);
+      if (recoverLine) {
+        try { renderRecovery(JSON.parse(recoverLine[1])); } catch {}
+        return;
+      }
       if (/^#state /.test(text)) return;
       if (/^#tick \d+\r?\n?$/.test(text)) return;
       append(text);
@@ -1271,7 +1287,63 @@
       newCharacter.value = randomCharacterName();
     }
     renderHandoff();
+    refreshRecovery();
   }
+
+  async function refreshRecovery() {
+    try {
+      const old = await loadSession("ai");
+      recoverOld.hidden = !old?.prism;
+    } catch {
+      recoverOld.hidden = true;
+    }
+  }
+
+  function renderRecovery(info) {
+    recoverList.innerHTML = "";
+    const names = Array.isArray(info?.characters) ? info.characters : [];
+    if (!names.length) {
+      recoverStatus.textContent = info?.account ? `${info.account} has no characters to recover.` : "No old AI characters found.";
+      return;
+    }
+    recoverStatus.textContent = `${info.account ?? "Old AI account"}: choose a character to move.`;
+    for (const name of names) {
+      const row = document.createElement("div");
+      row.className = "row";
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = `Recover ${name}`;
+      button.addEventListener("click", async () => {
+        try {
+          const human = prismSession ?? await loadSession("default");
+          if (!human?.prism) throw new Error("Sign in with your Prism id first.");
+          const transfer = await characterTransfer("ai", location.origin, name, human.prism);
+          if (!transfer) throw new Error("The old AI session is not available.");
+          send(`recover ${b64uJson(transfer)}`, `recover ${name}`);
+          recoverStatus.textContent = `Recovering ${name}…`;
+        } catch (error) {
+          recoverStatus.textContent = `Recover: ${error.message}`;
+          recoverStatus.className = "small err";
+        }
+      });
+      row.appendChild(button);
+      recoverList.appendChild(row);
+    }
+  }
+
+  recoverScan.addEventListener("click", async () => {
+    try {
+      const old = await loadSession("ai");
+      if (!old?.prism) throw new Error("No old AI session is stored in this browser.");
+      const session = await prismSignIn("ai", location.origin);
+      send(`recover-list ${b64uJson(session)}`, "recover-list [old AI hidden]");
+      recoverStatus.textContent = "Looking for old AI characters…";
+      recoverStatus.className = "small muted";
+    } catch (error) {
+      recoverStatus.textContent = `Recovery: ${error.message}`;
+      recoverStatus.className = "small err";
+    }
+  });
 
   function renderHandoff() {
     const own = characterState.characters ?? [];
