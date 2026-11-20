@@ -1598,6 +1598,31 @@
         "xp": 700
       },
       "complete": "The keeper sets the bloom in an empty cup. The spring runs clear."
+    },
+    {
+      "id": "orchard-work",
+      "name": "Orchard Work",
+      "level": 9,
+      "giver": "the orchard keeper",
+      "description": "The keeper needs a cider bloom for the press each cycle. Bring one back; the white bed grows another.",
+      "requires": [
+        "cider-spring"
+      ],
+      "repeat": "reset",
+      "objectives": [
+        {
+          "kind": "deliver",
+          "npc": "orchard-keeper",
+          "object": "cider-bloom",
+          "count": 1,
+          "text": "Deliver a cider bloom to the orchard keeper"
+        }
+      ],
+      "rewards": {
+        "xp": 250,
+        "guildXp": 40
+      },
+      "complete": "The keeper presses the bloom and sets the cup out for the next cycle."
     }
   ]
 }

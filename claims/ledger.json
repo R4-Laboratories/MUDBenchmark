@@ -945,6 +945,12 @@
       "level": "some-true",
       "statement": "Production v0.90.0 serves 114 rooms, 14 zones, 57 quests, 51 mobiles, 101 objects and 11 titles. The Cider Spring adds rooms 112-114, the spring keeper and spring fact, the cider bloom, the Cider Spring quest and Springkeeper title. The CLI agent route lock keeps mid-route commands on the BFS path; a remote DeepSeek run completed Press Beneath, Cider Spring and First Bed in 23 turns with all three quests complete and exit code 0. R4 active, signups open, Gemini configured false. Gate 44741022352 green.",
       "authority": "wick production v0.90.0 2026-11-20; release 44742243354; gate 44741022352; /health and /world; remote run report"
+    },
+    {
+      "id": "MB-153",
+      "level": "build",
+      "statement": "v0.91 makes agent objective actions observation-confirmed: take, deliver, recall, talk, plant, wear/wield and trade clear only after the server success line, while failed actions remain pending. Adds Orchard Work, a repeatable cider-bloom delivery to the orchard keeper (58 quests). The world remains 114 rooms/14 zones/51 mobiles/101 objects/11 titles. A remote DeepSeek run completed Press Beneath, Cider Spring and First Bed in 24 turns with all actions confirmed and exit code 0; no local inference. The gate covers success/failure parsing, the repeatable quest and all prior content.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

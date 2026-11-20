@@ -173,6 +173,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `three-rememberings` | The Three Rememberings | 7 | Talk to the orchard keeper; Recall the orchard word at the shrine; Carry an orchard seed; Talk to the guild clerk | 500 xp |
 | `press-beneath` | The Press Beneath | 8 | Talk to the orchard keeper; Reach the Seed Vault; Carry the press seed | 600 xp |
 | `cider-spring` | The Cider Spring | 9 | Talk to the spring keeper; Reach the White Bed; Carry a cider bloom | 700 xp |
+| `orchard-work` | Orchard Work | 9 | Deliver a cider bloom to the orchard keeper | 250 xp |
 
 ## Rooms
 

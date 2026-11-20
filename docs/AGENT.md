@@ -216,7 +216,10 @@ ordered variant. A movement command that contradicts the known next step is
 replaced by that step, and an objective action attempted in the wrong room is
 redirected onto the route. While a destination is known and no objective is
 current, the route lock turns any non-quit command into the next BFS step, so
-the model cannot spend turns looking around mid-route. Non-movement actions at the right target remain the
+the model cannot spend turns looking around mid-route. Objective actions are
+not cleared when sent: the next observation must confirm the take, delivery,
+recall, talk or plant with the server's own success line. A failed action stays
+on the objective list and can be retried. Non-movement actions at the right target remain the
 model's choice. The CLI agent prints the hint as a `NAVIGATE:` block before
 asking the model.
 

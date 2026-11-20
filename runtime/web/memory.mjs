@@ -299,6 +299,23 @@ export function nextStep(memory, from, to) {
   return pathTo(memory, from, to)[0] ?? null;
 }
 
+/** Did the command's next observation confirm the intended action? */
+export function observedCommandSuccess(command, text) {
+  const verb = String(command ?? "").trim().split(/\s+/)[0]?.toLowerCase();
+  const seen = String(text ?? "");
+  if (!verb) return false;
+  if (["take", "get", "g", "grab", "tf"].includes(verb)) return /You take/i.test(seen);
+  if (verb === "deliver" || verb === "handin" || verb === "dv") return /You deliver/i.test(seen);
+  if (verb === "recall" || verb === "remember" || verb === "mem") return /You recall/i.test(seen);
+  if (verb === "talk" || verb === "greet" || verb === "tk") return /says:|You will remember/i.test(seen);
+  if (verb === "attack" || verb === "kill" || verb === "hit") return /You attack|You strike|strikes|dies/i.test(seen);
+  if (verb === "plant") return /planted|You press/i.test(seen);
+  if (verb === "wear" || verb === "wield" || verb === "remove" || verb === "unwield") return /You (wear|wield|remove|unwield)/i.test(seen);
+  if (verb === "drop" || verb === "discard") return /You drop/i.test(seen);
+  if (verb === "buy" || verb === "sell") return /You (buy|sell)/i.test(seen);
+  return true;
+}
+
 /** The nearest target with a known route, or null when none is known. */
 export function nearestTarget(memory, from, targets = []) {
   let best = null;

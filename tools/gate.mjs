@@ -39,7 +39,7 @@ import { AREA_PERIOD, armorOf, attackRoll, checkpointIdentities, initialState, n
 import { join } from "node:path";
 import { buildCandidates } from "./candidate.mjs";
 import { PROVIDERS, buildSystemPrompt, buildUserPrompt, normalizeBase, parseBrain, requestFor, replyFrom, trimHistory, validateCommand, repairCommand } from "../runtime/web/ai.mjs";
-import { emptyMemory, noteRoom, rememberResult, memoryPrompt, loopWarning, breakLoop, shouldBreakLoop, pathTo, nextStep, routeHint, nearestTarget, seedMap } from "../runtime/web/memory.mjs";
+import { emptyMemory, noteRoom, rememberResult, memoryPrompt, loopWarning, breakLoop, shouldBreakLoop, pathTo, nextStep, routeHint, nearestTarget, seedMap, observedCommandSuccess } from "../runtime/web/memory.mjs";
 import { verifyPrismSession, verifyPersonaOwner, verifySessionKey, sessionWithinWindow } from "../runtime/prism-auth.mjs";
 import { decodeIdentityRequest, identityAdmits } from "../runtime/identity.mjs";
 import { loadStateFile, saveStateFile } from "../runtime/state.mjs";
@@ -323,6 +323,10 @@ let aiMemory = { ok: true, why: [] };
     { name: "The Guild Hall", exits: [{ dir: "south", room: "The Gilded Rat" }] },
   ]);
   check(pathTo(seeded, "Market Square", "The Guild Hall").join(",") === "west,north", "the published map did not seed a route");
+  check(observedCommandSuccess("take press seed", "You take a press seed."), "the take success check missed a take");
+  check(!observedCommandSuccess("deliver seal", "Nobody here answers to that."), "the delivery check accepted a failure");
+  check(observedCommandSuccess("recall orchard", "You recall: the orchard keeps ORCHARD."), "the recall success check missed a recall");
+  check(!observedCommandSuccess("take press seed", "There is no press seed here."), "the take check accepted a miss");
   if (aiMemory.why.length) { aiMemory.ok = false; failures.push(`the AI memory is broken: ${aiMemory.why[0]}`); }
 }
 
@@ -2895,6 +2899,8 @@ let memoryQuest = { ok: true, why: [] };
   actor = state.actors.find((entry) => entry.id === "mq");
   check(actor.quests.completed.includes("cider-spring"), "the cider-spring quest did not complete");
   check(loadTitles().titles.some((title) => title.id === "springkeeper" && title.quest === "cider-spring"), "the springkeeper title is missing");
+  const work = questTable.quests.find((quest) => quest.id === "orchard-work");
+  check(work?.repeat === "reset" && work?.rewards?.guildXp === 40, "the repeatable orchard work is missing");
   if (memoryQuest.why.length) { memoryQuest.ok = false; failures.push(`the memory quest is broken: ${memoryQuest.why[0]}`); }
 }
 
@@ -3269,6 +3275,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"threeMem".padEnd(26)}  ${(memoryQuest.ok ? "500 xp" : "BROKEN").padStart(5)}   == four goals`);
   console.log(`${"pressBeneath".padEnd(26)}  ${(memoryQuest.ok ? "600 xp" : "BROKEN").padStart(5)}   == seed, vault`);
   console.log(`${"ciderSpring".padEnd(26)}  ${(memoryQuest.ok ? "700 xp" : "BROKEN").padStart(5)}   == bloom`);
+  console.log(`${"orchardWork".padEnd(26)}  ${(memoryQuest.ok ? "250 xp" : "BROKEN").padStart(5)}   == repeat`);
   console.log(`${"quests".padEnd(26)}  ${(quests.ok ? "accept, advance, pay" : "BROKEN").padStart(5)}   == facts, once`);
   console.log(`${"aggression".padEnd(26)}  ${(aggression.ok ? "1 duel" : "BROKEN").padStart(5)}   == mobs start fights`);
   console.log(`${"combat2".padEnd(26)}  ${(combat2.ok ? "weapons, armour, xp" : "BROKEN").padStart(5)}   == fight and grow`);

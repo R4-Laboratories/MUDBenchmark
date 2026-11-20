@@ -217,6 +217,26 @@ The route lock kept every mid-route turn on the BFS next step, and the
 objective guards handled the talk/take actions at each target. This is the
 shortest broad run so far.
 
+## Verified three-quest run (v0.91)
+
+The same three-quest remote scenario was re-run after objective actions became
+observation-confirmed.
+
+| Result | Value |
+| --- | --- |
+| Turns | **24** |
+| Press Beneath | complete |
+| Cider Spring | complete |
+| First Bed | complete |
+| Press seed | yes |
+| Cider bloom | yes |
+| First seed | yes |
+| Exit code | 0 |
+
+A successful take, delivery, recall, talk or plant now clears its objective
+only after the server's success line is seen. A failed action remains pending
+instead of being counted as done.
+
 ## Multi-objective planner (v0.87)
 
 `AGENT_OBJECTIVES` now carries `Room:action` entries and chooses the nearest

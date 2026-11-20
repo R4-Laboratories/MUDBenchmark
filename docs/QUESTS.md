@@ -109,4 +109,6 @@ shrine before returning to the First Bed. The Sunken Orchard adds
 clerk can be visited in any order. The Orchard Undercroft adds `press-beneath`:
 talk to the keeper, reach the Seed Vault and carry back the press seed. The
 Cider Spring adds `cider-spring`: talk to the spring keeper, reach the White
-Bed and carry back the cider bloom.
+Bed and carry back the cider bloom. `orchard-work` is the repeatable delivery
+loop: bring a cider bloom to the orchard keeper, who consumes it; the White Bed
+grows another each cycle.

@@ -262,6 +262,9 @@ Rehearsed 2026-11-16:
 - v0.90.0 (cider spring) adds three rooms below the Seed Vault, the spring
   keeper, the cider bloom, the Cider Spring quest, a strict route lock and a
   23-turn three-quest remote DeepSeek run; 114 rooms / 57 quests (MB-151);
+- v0.91.0 (verified actions) makes objective completion wait for the server's
+  success line and adds repeatable Orchard Work; a 24-turn three-quest remote
+  run completes with every action confirmed (MB-153);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

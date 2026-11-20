@@ -14,7 +14,7 @@
 import { appendFileSync, readFileSync } from "node:fs";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { emptyMemory, noteRoom, rememberResult, memoryPrompt, loopWarning, breakLoop, shouldBreakLoop, routeHint, nearestTarget, seedMap, nextStep } from "./web/memory.mjs";
+import { emptyMemory, noteRoom, rememberResult, memoryPrompt, loopWarning, breakLoop, shouldBreakLoop, routeHint, nearestTarget, seedMap, nextStep, observedCommandSuccess } from "./web/memory.mjs";
 
 const WS_URL = process.env.WS_URL ?? "ws://127.0.0.1:8090";
 const NAME = process.env.HARNESS_NAME ?? process.env.AGENT_NAME ?? "agent";
@@ -114,6 +114,7 @@ let lastRoom = "";
 let lastExits = [];
 let recent = [];
 let waitingForRoom = false;
+let pendingObjective = null;
 const nav = emptyMemory();
 const messages = [{ role: "system", content: SYSTEM }];
 
@@ -264,6 +265,16 @@ async function turn() {
     setTimeout(() => process.exit(0), 300);
     return;
   }
+  if (pendingObjective) {
+    if (observedCommandSuccess(pendingObjective.command, seen)) {
+      const index = OBJECTIVES.indexOf(pendingObjective.objective);
+      if (index >= 0) OBJECTIVES.splice(index, 1);
+      log(`objective confirmed: ${pendingObjective.objective.room}`);
+    } else {
+      log(`objective not confirmed: ${pendingObjective.objective.room}`);
+    }
+    pendingObjective = null;
+  }
   const room = roomFrom(seen);
   if (!room) {
     if (!waitingForRoom) {
@@ -336,10 +347,9 @@ async function turn() {
       waypointIndex += 1;
       log(`waypoint ${waypointIndex}/${WAYPOINTS.length}: ${WAYPOINTS[waypointIndex]?.room ?? "done"}`);
     }
-    if (objective && room?.name === objective.room && (!objective.action || command.toLowerCase().startsWith(objective.action.toLowerCase()))) {
-      const index = OBJECTIVES.indexOf(objective);
-      if (index >= 0) OBJECTIVES.splice(index, 1);
-      log(`objective ${objective.room}: ${objective.action || "arrived"} (${OBJECTIVES.length} left)`);
+    if (objective && room?.name === objective.room && objective.action && command.toLowerCase().startsWith(objective.action.split(/\s+/)[0]?.toLowerCase())) {
+      pendingObjective = { objective, command };
+      log(`objective attempted: ${objective.room}: ${objective.action}`);
     }
     if (/^answer\s+/i.test(command)) answered = true;
     log(`turn ${turns}: ${command}`);

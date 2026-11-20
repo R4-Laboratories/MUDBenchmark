@@ -82,7 +82,8 @@ DeepSeek runs then completed the Root Archive in 5 turns and all four Three
 Rememberings objectives in 24 turns without local inference. The two-quest
 Press Beneath / Clerk Errand run completed in 31 turns with an objective
 dependency guard. The three-quest Press Beneath / Cider Spring / First Bed run
-then completed in 23 turns with the route lock enabled.
+then completed in 23 turns with the route lock enabled; after objective
+verification was added it completed in 24 turns with every action confirmed.
 
 ## What would change the conclusion
 

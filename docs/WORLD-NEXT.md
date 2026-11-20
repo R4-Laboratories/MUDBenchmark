@@ -4,7 +4,7 @@ This was the queued AberMUD-style content and systems track. The v0.47/v0.48 sli
 have landed: eight equipment slots, six spells and the Mages' Guild, eleven
 Lantern Quarter/Undervault rooms, five personal quests, a guild ledger quest,
 a searchable secret stair, three data-driven room actions and mage rank advancement. The world is now 114 rooms
-and 57 quests. The foundation from v0.46 remains:
+and 58 quests. The foundation from v0.46 remains:
 short command forms, `equipment`, `world`/`status`, the hidden `#state` line,
 and the AI prompt/router state layer.
 
@@ -31,6 +31,7 @@ and the AI prompt/router state layer.
 | M19 | **done** — The Sunken Orchard: three rooms below the Root Road, the orchard keeper, the windfall seed and the four-objective Three Rememberings quest; 108 rooms / 55 quests | multi-objective planner, orchard word, seed, town/shrine/garden objectives, every exit reciprocal |
 | M20 | **done** — The Orchard Undercroft: three rooms below the Old Press, a vat hound, the press seed and the Press Beneath quest; 111 rooms / 56 quests | press walk, underseed, dependent multi-quest remote run, every exit reciprocal |
 | M21 | **done** — The Cider Spring: three rooms below the Seed Vault, the spring keeper, the cider bloom and the Cider Spring quest; 114 rooms / 57 quests | spring walk, bloom, three-quest remote run, every exit reciprocal |
+| M22 | **done** — Orchard Work: a repeatable cider-bloom delivery for the orchard keeper, plus observed-action verification for agent objectives; 58 quests | repeat cycle, deliver/consume, objective confirmation, every prior check |
 
 ## Rules that keep the model green
 
