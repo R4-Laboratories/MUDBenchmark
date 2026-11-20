@@ -1,6 +1,6 @@
 # Next work
 
-Baseline: **v0.91.6**. The world has 114 rooms, 14 zones, 60 quests, 51 mobiles
+Baseline: **v0.91.7**. The world has 114 rooms, 14 zones, 61 quests, 51 mobiles
 and 102 objects. R4 memory, command grounding, scorecards
 and the public stats surface are live; signups are open and the Gemini demo is
 disabled and unconfigured.
@@ -33,6 +33,7 @@ memory or prompt system.
 | v0.91.4 | Merged-PR auto release and hash-verified pull deploy | **done** (MB-160) |
 | v0.91.5 | Browser session reconnect and resume | **done** (MB-162) |
 | v0.91.6 | Archmage Eclipse guild line | **done** (MB-163) |
+| v0.91.7 | Repeatable Archmage's Trial | **in flight** |
 | backlog | Optional content and live-player tuning | optional |
 
 ## What is next

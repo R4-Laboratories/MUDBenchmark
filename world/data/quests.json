@@ -1688,6 +1688,40 @@
         "object": "archmage-signet"
       },
       "complete": "The archmage closes the crown and hands you the signet. The guild ledger has a new page."
+    },
+    {
+      "id": "guild-trial",
+      "name": "The Archmage's Trial",
+      "level": 10,
+      "giver": "the archmage",
+      "description": "The archmage repeats the eclipse trial each cycle. Defeat the regent, carry the sigil back to the guild hall, and the ledger opens a new page.",
+      "scope": "guild",
+      "guild": "mages",
+      "rank": "archmage",
+      "requires": [
+        "guild-dawn"
+      ],
+      "repeat": "reset",
+      "objectives": [
+        {
+          "kind": "kill",
+          "npc": "eclipse-regent",
+          "count": 1,
+          "text": "Defeat the eclipse regent"
+        },
+        {
+          "kind": "deliver",
+          "npc": "archmage",
+          "object": "regent-sigil",
+          "count": 1,
+          "text": "Deliver the regent's sigil to the archmage"
+        }
+      ],
+      "rewards": {
+        "xp": 300,
+        "guildXp": 120
+      },
+      "complete": "The archmage closes the ledger and sets the page aside for the next cycle."
     }
   ]
 }

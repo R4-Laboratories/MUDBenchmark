@@ -1017,6 +1017,12 @@
       "level": "some-true",
       "statement": "Production v0.91.6 serves 114 rooms, 14 zones, 60 quests, 51 mobiles (50 alive at the final read), 102 objects and 11 titles. PR #18 added the rank-10 Mages Guild line: The Eclipse Ledger and The Dawn Archive, with guild XP and the archmage signet. The merged-PR chain auto-published v0.91.6; wick verified the manifest hashes, replayed vectors and deployed. R4 active, signups open, Gemini configured false. Gate 44804011007 green.",
       "authority": "GitHub PR #18 merge 62fd187 2026-11-20; main Gate 44804011007; publish 44805284073; release v0.91.6; wick deploy output and /world"
+    },
+    {
+      "id": "MB-165",
+      "level": "build",
+      "statement": "v0.91.7 adds The Archmage's Trial, a rank-10 Mages Guild reset-cycle quest. It requires guild-dawn, kills the eclipse regent, delivers the regent sigil to the archmage (consuming it) and pays 300 XP + 120 guild XP. The world is 114 rooms/14 zones/61 quests/51 mobiles/102 objects/11 titles. The gate covers two cycles: accept, kill, deliver, complete, advance the cycle and accept again.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }
