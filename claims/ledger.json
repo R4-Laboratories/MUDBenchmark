@@ -963,6 +963,12 @@
       "level": "build",
       "statement": "v0.91.1 fixes Prism/AI character loss. The AI no longer creates a standalone Prism account or uses the fixed scout default: it requires a human Prism sign-in, chooses the account first existing character unless a new name was explicitly requested, and gives a new account a random character name. Name collisions retry with a new random name. The human create form suggests a random name when the account is empty. The choices live in runtime/web/names.mjs (randomCharacterName, uniqueCharacterName, chooseCharacter) and the page serves /names.mjs. The gate covers random-name validity/uniqueness, existing-character preference, explicit-new behavior, blank-account creation, removed standalone fallback and the served module.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-156",
+      "level": "build",
+      "statement": "v0.91.2 refuses to start an AI persona when the browser reports memory-only storage, because the next reload would create another orphan Prism identity. The guard is gated by a static check and complements the v0.91.1 rule that AI personas require the human Prism account, prefer existing characters and use random names for new ones.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

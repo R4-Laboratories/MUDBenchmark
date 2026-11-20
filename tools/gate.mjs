@@ -353,6 +353,7 @@ let characterNames = { ok: true, why: [] };
   check(web.includes("randomCharacterName()"), "the human create form does not suggest a random name");
   check(web.includes("chooseCharacter"), "the AI does not use the shared character choice");
   check(serverSource.includes("/names.mjs"), "the server does not serve the name generator");
+  check(web.includes("Open a normal window or use a recovery kit before starting the AI"), "a memory-only window can still start an orphan AI persona");
   const existing = chooseCharacter({ wanted: "scout", explicit: false, characters: ["alder-fox-42"], random });
   check(existing.action === "play" && existing.name === "alder-fox-42", "the AI did not prefer an existing character");
   const explicitNew = chooseCharacter({ wanted: "scout", explicit: true, characters: ["alder-fox-42"], random });

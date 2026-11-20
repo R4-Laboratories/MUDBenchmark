@@ -2030,8 +2030,12 @@
       return;
     }
 
-    if (session.storage === "memory") showHint("This window cannot keep the session; a reload will create a new one.", true);
-    else if (!session.persisted) showHint("The browser did not grant persistent storage; it may evict the session.", false);
+    if (session.storage === "memory") {
+      showHint("This window cannot keep the Prism id. Open a normal window or use a recovery kit before starting the AI.", true);
+      setAIStatus("storage");
+      return;
+    }
+    if (!session.persisted) showHint("The browser did not grant persistent storage; it may evict the session.", false);
 
     AI.config = config;
     AI.identity = session;
