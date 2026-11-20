@@ -277,6 +277,9 @@ Rehearsed 2026-11-16:
 - v0.91.4 (auto deploy) publishes a tagged release automatically when a merged
   PR has a green Gate on main, writes a hash-bound release manifest, and makes
   the pull deployer verify both assets before extraction (MB-160);
+- v0.91.5 (reconnect) restores a Prism browser session after a region restart,
+  resumes the active character only when no other session controls it, and adds
+  a headless-Chrome reconnect test to the Gate (MB-162);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

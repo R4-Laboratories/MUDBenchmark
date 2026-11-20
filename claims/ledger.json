@@ -999,6 +999,12 @@
       "level": "some-true",
       "statement": "Production v0.91.4 was published by the merged-PR chain and pulled by wick. PR #16 merged at 6ad92c3; main Gate 44787440309 was green; publish.yml 44788675560 created v0.91.4 with release-manifest.json. Wick deploy fetched the manifest, verified MUDBench.holo sha256/size and runtime.tar.gz sha256/size, replayed vectors, and deployed v0.91.4. Direct pushes and the pacing loop are skipped; AUTO_RELEASE=off pauses publication; no inbound runner or SSH path was added. Gate 44787440309 green.",
       "authority": "GitHub PR #16 merge 6ad92c3 2026-11-20; main Gate 44787440309; publish run 44788675560; release v0.91.4; wick deploy output with manifest hashes and /health"
+    },
+    {
+      "id": "MB-162",
+      "level": "some-true",
+      "statement": "Production v0.91.5 serves browser session reconnect. PR #17 rebased the original #13 work onto v0.91.4, preserving its authorship, and merged as 156b467. Both Gate runs passed, including the headless-Chrome reconnect test (restart, Prism resume, competing tab, interrupted quit). publish.yml auto-created v0.91.5 with release-manifest.json; wick verified both hashes, replayed vectors and deployed. The original PR #13 is closed as superseded. Gate 44794521467 green; release 44795760558.",
+      "authority": "GitHub PR #17 merge 156b467 2026-11-20; main Gate 44794521467; publish 44795760558; release v0.91.5; wick deploy output; /health"
     }
   ]
 }
