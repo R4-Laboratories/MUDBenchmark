@@ -139,6 +139,15 @@ destination after the Guild Hall conversation.
   the town-spanning Long Remembering run to completion in 13 turns.
 - The 7B model is slow enough that a 12-turn run can use the full 600 s bound.
 
+## Multi-objective planner (v0.87)
+
+`AGENT_OBJECTIVES` now carries `Room:action` entries and chooses the nearest
+unfinished target, rather than following a fixed waypoint order. The gate
+covers the current-room case, nearest-target choice and wrong-room action
+redirection. A new unscripted run was **not** completed for this slice: the
+local 7B model was stopped to avoid overloading the development laptop. The
+planner and content are gated; the next run should use a remote API model.
+
 ## Limits
 
 - One local 7B model, not a production player.

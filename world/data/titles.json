@@ -39,6 +39,11 @@
       "id": "roadkeeper",
       "name": "Roadkeeper",
       "quest": "long-remembering"
+    },
+    {
+      "id": "orchardkeeper",
+      "name": "Orchardkeeper",
+      "quest": "three-rememberings"
     }
   ]
 }

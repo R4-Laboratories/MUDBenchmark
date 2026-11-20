@@ -191,12 +191,15 @@ instead of sending `look`, it takes an unexplored exit.
 `pathTo` runs a breadth-first search over the known room graph and `routeHint`
 prints the next step toward a destination. The CLI agent seeds that graph from
 the public `/llms.txt` room table, so it can plan across rooms it has never
-visited. `AGENT_DESTINATION` sets one target; `AGENT_OBJECTIVES` chooses the
-nearest of several targets; `AGENT_WAYPOINTS="The Root Archive:talk|The First
-Bed:take"` sequences targets and advances after the action verb succeeds at
-each waypoint. A movement command that contradicts the known next step is
-replaced by that step; non-movement actions remain the model's choice. The CLI
-agent prints the hint as a `NAVIGATE:` block before asking the model.
+visited. `AGENT_DESTINATION` sets one target. `AGENT_OBJECTIVES` takes an
+unordered list of `Room:action` entries and always chooses the nearest
+unfinished target; when the room is reached, the action guard sends that
+action. `AGENT_WAYPOINTS="The Root Archive:talk|The First Bed:take"` is the
+ordered variant. A movement command that contradicts the known next step is
+replaced by that step, and an objective action attempted in the wrong room is
+redirected onto the route. Non-movement actions at the right target remain the
+model's choice. The CLI agent prints the hint as a `NAVIGATE:` block before
+asking the model.
 
 ## Memory, the rolling window, and prime-router
 

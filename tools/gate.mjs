@@ -314,6 +314,8 @@ let aiMemory = { ok: true, why: [] };
   check(routeHint(graph, "The Atrium", "The Moon").includes("No known route"), "the route hint invented an unknown path");
   const nearest = nearestTarget(graph, "The Atrium", ["The Moon", "The Vault"]);
   check(nearest?.target === "The Vault" && nearest.path.length === 2, "the nearest-objective planner chose the wrong target");
+  const here = nearestTarget(graph, "The Vault", ["The Vault", "The Moon"]);
+  check(here?.target === "The Vault" && here.path.length === 0, "the nearest-objective planner skipped the current room");
   const seeded = emptyMemory();
   seedMap(seeded, [
     { name: "Market Square", exits: [{ dir: "west", room: "The Gilded Rat" }, { dir: "north", room: "The Atrium" }] },
@@ -2842,6 +2844,28 @@ let memoryQuest = { ok: true, why: [] };
   actor = state.actors.find((entry) => entry.id === "mq");
   check(actor.quests.completed.includes("long-remembering"), "the long-remembering quest did not complete");
   check(loadTitles().titles.some((title) => title.id === "roadkeeper" && title.quest === "long-remembering"), "the roadkeeper title is missing");
+  check(world.rooms[104]?.exits?.down === 106 && world.rooms[106]?.exits?.up === 104, "the orchard is not connected to the root road");
+  check(world.rooms[106]?.exits?.north === 108 && world.rooms[106]?.exits?.east === 107, "the orchard exits are wrong");
+
+  actor = state.actors.find((entry) => entry.id === "mq");
+  actor.level = 7;
+  actor.room = 108;
+  run([{ kind: "questAccept", actorId: "mq", questId: "three-rememberings" }]);
+  check(state.actors.find((entry) => entry.id === "mq").quests.active.some((entry) => entry.id === "three-rememberings"), "the three-rememberings quest was not accepted");
+  run([{ kind: "talk", actorId: "mq", npcId: "orchard-keeper" }]);
+  run([{ kind: "learnFact", actorId: "mq", fact: table.byWord.get("orchard") }]);
+  actor = state.actors.find((entry) => entry.id === "mq");
+  actor.room = 6;
+  run([{ kind: "questAnswer", actorId: "mq", word: "orchard" }]);
+  actor = state.actors.find((entry) => entry.id === "mq");
+  actor.room = 107;
+  run([{ kind: "take", actorId: "mq", objectId: "orchard-seed", messages: { actor: "taken", others: "takes" } }]);
+  actor = state.actors.find((entry) => entry.id === "mq");
+  actor.room = 24;
+  run([{ kind: "talk", actorId: "mq", npcId: "guild-clerk" }]);
+  actor = state.actors.find((entry) => entry.id === "mq");
+  check(actor.quests.completed.includes("three-rememberings"), "the three-rememberings quest did not complete");
+  check(loadTitles().titles.some((title) => title.id === "orchardkeeper" && title.quest === "three-rememberings"), "the orchardkeeper title is missing");
   if (memoryQuest.why.length) { memoryQuest.ok = false; failures.push(`the memory quest is broken: ${memoryQuest.why[0]}`); }
 }
 
@@ -3213,6 +3237,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"factAction".padEnd(26)}  ${(memoryQuest.ok ? "1 room" : "BROKEN").padStart(5)}   == word, rose`);
   console.log(`${"rootArchive".padEnd(26)}  ${(memoryQuest.ok ? "260 xp" : "BROKEN").padStart(5)}   == seed, quest`);
   console.log(`${"longRoad".padEnd(26)}  ${(memoryQuest.ok ? "400 xp" : "BROKEN").padStart(5)}   == town, root`);
+  console.log(`${"threeMem".padEnd(26)}  ${(memoryQuest.ok ? "500 xp" : "BROKEN").padStart(5)}   == four goals`);
   console.log(`${"quests".padEnd(26)}  ${(quests.ok ? "accept, advance, pay" : "BROKEN").padStart(5)}   == facts, once`);
   console.log(`${"aggression".padEnd(26)}  ${(aggression.ok ? "1 duel" : "BROKEN").padStart(5)}   == mobs start fights`);
   console.log(`${"combat2".padEnd(26)}  ${(combat2.ok ? "weapons, armour, xp" : "BROKEN").padStart(5)}   == fight and grow`);

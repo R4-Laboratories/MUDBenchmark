@@ -1492,6 +1492,46 @@
         "xp": 400
       },
       "complete": "The rememberer hears the town's answer through the roots. The First Bed opens another ring."
+    },
+    {
+      "id": "three-rememberings",
+      "name": "The Three Rememberings",
+      "level": 7,
+      "giver": "the orchard keeper",
+      "description": "The orchard keeper wants the town, the shrine and the windfall to remember together. The order does not matter.",
+      "requires": [
+        "long-remembering"
+      ],
+      "objectives": [
+        {
+          "kind": "talk",
+          "npc": "orchard-keeper",
+          "count": 1,
+          "text": "Talk to the orchard keeper"
+        },
+        {
+          "kind": "answer",
+          "word": "orchard",
+          "fact": "orchard-word",
+          "text": "Recall the orchard word at the shrine"
+        },
+        {
+          "kind": "collect",
+          "object": "orchard-seed",
+          "count": 1,
+          "text": "Carry an orchard seed"
+        },
+        {
+          "kind": "talk",
+          "npc": "guild-clerk",
+          "count": 1,
+          "text": "Talk to the guild clerk"
+        }
+      ],
+      "rewards": {
+        "xp": 500
+      },
+      "complete": "The press closes on the seed. Three places remember the same orchard."
     }
   ]
 }

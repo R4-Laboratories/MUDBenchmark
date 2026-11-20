@@ -29,7 +29,13 @@ const PRIME_ID = process.env.PRIME_ROUTER_IDENTITY ?? `mudbench-${NAME}`;
 const STOP_ON_QUEST = process.env.AGENT_STOP_ON_QUEST === "1";
 const DESTINATION = process.env.AGENT_DESTINATION ?? "";
 const LLMS_URL = process.env.LLMS_URL ?? `${WS_URL.replace(/^ws/, "http").replace(/\/$/, "")}/llms.txt`;
-const OBJECTIVES = (process.env.AGENT_OBJECTIVES ?? "").split(",").map((value) => value.trim()).filter(Boolean);
+const OBJECTIVES = (process.env.AGENT_OBJECTIVES ?? "")
+  .split("|")
+  .map((part) => {
+    const [room, action] = part.split(":");
+    return room?.trim() ? { room: room.trim(), action: (action ?? "").trim() } : null;
+  })
+  .filter(Boolean);
 const DIRECTIONS = new Set(["north", "south", "east", "west", "up", "down", "n", "s", "e", "w", "u", "d"]);
 const WAYPOINTS = (process.env.AGENT_WAYPOINTS ?? "")
   .split("|")
@@ -241,28 +247,33 @@ async function turn() {
     setTimeout(() => process.exit(0), 300);
     return;
   }
+  const room = roomFrom(seen);
+  if (!room) {
+    log("waiting for room state");
+    await send("look");
+    return;
+  }
   turns += 1;
   if (turns > MAX_TURNS) { try { socket.send("quit\n"); } catch {} return; }
-  const room = roomFrom(seen);
   if (lastCommand && lastRoom) rememberResult(nav, { room: lastRoom, command: lastCommand, observation: seen, tick: turns, exits: lastExits });
   if (room) noteRoom(nav, room.name, room.exits);
-  if (room) {
-    const reached = OBJECTIVES.indexOf(room.name);
-    if (reached >= 0) OBJECTIVES.splice(reached, 1);
-  }
   const waypoint = WAYPOINTS[waypointIndex] ?? null;
   const objective = !waypoint && !DESTINATION && OBJECTIVES.length
-    ? (nearestTarget(nav, room?.name ?? lastRoom, OBJECTIVES)?.target ?? OBJECTIVES[0])
+    ? (() => {
+        const best = nearestTarget(nav, room?.name ?? lastRoom, OBJECTIVES.map((entry) => entry.room));
+        return best ? OBJECTIVES.find((entry) => entry.room === best.target) ?? OBJECTIVES[0] : OBJECTIVES[0];
+      })()
     : null;
-  const destination = waypoint?.room ?? (DESTINATION || objective);
+  const destination = waypoint?.room ?? (DESTINATION || objective?.room);
   const navText = memoryPrompt(nav, { room: room?.name ?? lastRoom, exits: room?.exits ?? [], query: seen });
   const hint = room && destination ? routeHint(nav, room.name, destination) : "";
   const routeNext = room && destination ? nextStep(nav, room.name, destination) : null;
+  const objectiveNote = objective ? `OBJECTIVE: ${objective.room} — ${objective.action || "arrive"}.` : "";
   const warning = loopWarning(recent, nav.trail);
   if (process.env.AGENT_DEBUG_NAV === "1") log(`nav room=${room?.name ?? "?"} dest=${destination ?? "?"} next=${routeNext ?? "?"} hint=${hint}`);
   busy = true;
   try {
-    const reply = await ask([seen, navText ? `NAVIGATION:\n${navText}` : "", hint ? `NAVIGATE: ${hint}` : "", warning ? `NOTE: ${warning}` : ""].filter(Boolean).join("\n\n"));
+    const reply = await ask([seen, navText ? `NAVIGATION:\n${navText}` : "", hint ? `NAVIGATE: ${hint}` : "", objectiveNote, warning ? `NOTE: ${warning}` : ""].filter(Boolean).join("\n\n"));
     let { command, ok } = parse(reply);
     if (!ok) {
       const forced = breakLoop(recent, room?.exits ?? [], nav);
@@ -284,9 +295,26 @@ async function turn() {
       log(`route guard: ${command} → ${routeNext}`);
       command = routeNext;
     }
+    if (objective && objective.action) {
+      const actionVerb = objective.action.split(/\s+/)[0]?.toLowerCase();
+      if (room?.name === objective.room) {
+        if (!command.toLowerCase().startsWith(actionVerb)) {
+          log(`objective guard: ${command} → ${objective.action}`);
+          command = objective.action;
+        }
+      } else if (routeNext && command.toLowerCase().startsWith(actionVerb)) {
+        log(`wrong-room objective: ${command} → ${routeNext}`);
+        command = routeNext;
+      }
+    }
     if (waypoint && room?.name === waypoint.room && (!waypoint.action || command.toLowerCase().startsWith(waypoint.action.toLowerCase()))) {
       waypointIndex += 1;
       log(`waypoint ${waypointIndex}/${WAYPOINTS.length}: ${WAYPOINTS[waypointIndex]?.room ?? "done"}`);
+    }
+    if (objective && room?.name === objective.room && (!objective.action || command.toLowerCase().startsWith(objective.action.toLowerCase()))) {
+      const index = OBJECTIVES.indexOf(objective);
+      if (index >= 0) OBJECTIVES.splice(index, 1);
+      log(`objective ${objective.room}: ${objective.action || "arrived"} (${OBJECTIVES.length} left)`);
     }
     if (/^answer\s+/i.test(command)) answered = true;
     log(`turn ${turns}: ${command}`);

@@ -23,6 +23,12 @@
       "npc": "root-keeper",
       "word": "root",
       "text": "The root keeper says: \"The archive keeps the word ROOT. The garden grew from it.\""
+    },
+    {
+      "id": "orchard-word",
+      "npc": "orchard-keeper",
+      "word": "orchard",
+      "text": "The orchard keeper says: \"The orchard remembers the word ORCHARD. Say it where the shrine can hear.\""
     }
   ]
 }

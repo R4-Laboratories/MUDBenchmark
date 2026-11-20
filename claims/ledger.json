@@ -897,6 +897,12 @@
       "level": "some-true",
       "statement": "Production v0.86.0 serves 105 rooms, 14 zones, 54 quests, 48 mobiles, 98 objects and 8 titles. The Root Road connects the Root Archive to Market Square, and Long Remembering spans garden and town. The CLI agent seeds its route graph from /llms.txt, chooses nearest objectives, sequences waypoints and corrects off-route movement; the unscripted qwen2.5:7b run completes the town-spanning quest in 13 turns with exit code 0. R4 active, signups open, Gemini configured false. Gate 44669359440 green.",
       "authority": "wick production v0.86.0 2026-11-20; release 44670381309; gate 44669359440; /health and /world; unscripted report"
+    },
+    {
+      "id": "MB-145",
+      "level": "build",
+      "statement": "v0.87 adds the Sunken Orchard (rooms 106-108) below the Root Road, the orchard keeper and orchard fact (49 mobiles), the orchard seed (99 objects), the four-objective Three Rememberings quest (55 quests) and Orchardkeeper title (9 titles). AGENT_OBJECTIVES now takes unordered Room:action entries, chooses the nearest unfinished target including the current room, and redirects wrong-room objective actions onto the route. The gate covers the new rooms/quest, current-room nearest target, BFS path and wrong-room guards. No new unscripted run was completed; local 7B testing was stopped to avoid overloading the laptop.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

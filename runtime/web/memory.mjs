@@ -303,6 +303,7 @@ export function nextStep(memory, from, to) {
 export function nearestTarget(memory, from, targets = []) {
   let best = null;
   for (const target of Array.isArray(targets) ? targets : []) {
+    if (from === target) return { target, path: [] };
     const path = pathTo(memory, from, target);
     if (!path.length) continue;
     if (!best || path.length < best.path.length) best = { target, path };

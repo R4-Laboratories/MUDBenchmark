@@ -249,6 +249,10 @@ Rehearsed 2026-11-16:
   Square, the town-spanning Long Remembering quest, map-seeded BFS routes,
   nearest-objective choice and a movement guard; the 13-turn unscripted run
   completes (MB-143);
+- v0.87.0 (sunken orchard) adds three rooms below the Root Road, the orchard
+  keeper, the windfall seed, the four-objective Three Rememberings quest and
+  per-target `AGENT_OBJECTIVES` with wrong-room redirects; 108 rooms / 55
+  quests (MB-145);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

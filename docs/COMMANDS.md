@@ -170,6 +170,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `remembered-bed` | The Remembered Bed | 4 | Talk to the rememberer; Enter the Remembered Bed; Carry the remembered bloom | 220 xp |
 | `first-bed` | The First Bed | 5 | Talk to the root keeper; Reach the First Bed; Carry the first seed | 260 xp |
 | `long-remembering` | The Long Remembering | 6 | Talk to the guild clerk; Recall the root word at the shrine; Return to the First Bed | 400 xp |
+| `three-rememberings` | The Three Rememberings | 7 | Talk to the orchard keeper; Recall the orchard word at the shrine; Carry an orchard seed; Talk to the guild clerk | 500 xp |
 
 ## Rooms
 
@@ -278,6 +279,9 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 101 | The Remembered Bed | garden | yes | up 98, down 102 |
 | 102 | The Root Archive | garden | yes | up 101, east 103, south 104 |
 | 103 | The First Bed | garden | yes | west 102 |
-| 104 | The Root Road | garden | yes | north 102, east 105 |
+| 104 | The Root Road | garden | yes | north 102, east 105, down 106 |
 | 105 | The Root Gate | garden | yes | west 104, up 8 |
+| 106 | The Sunken Orchard | garden | yes | up 104, east 107, north 108 |
+| 107 | The Windfall | garden | yes | west 106 |
+| 108 | The Old Press | garden | yes | south 106 |
 

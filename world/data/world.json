@@ -1900,7 +1900,8 @@
       "safe": true,
       "exits": {
         "north": 102,
-        "east": 105
+        "east": 105,
+        "down": 106
       },
       "details": {
         "roots": "The roots are woven into a road.",
@@ -1928,6 +1929,59 @@
       "ambient": [
         "The gate breathes.",
         "A market voice leaks through the roots."
+      ]
+    },
+    "106": {
+      "name": "The Sunken Orchard",
+      "text": "A cavern orchard of pale trees rooted in black soil. The root road is above, a windfall lies east, and an old press waits north.",
+      "safe": true,
+      "exits": {
+        "up": 104,
+        "east": 107,
+        "north": 108
+      },
+      "details": {
+        "trees": "The trees are pale and heavy with grey fruit.",
+        "soil": "The soil is black and warm.",
+        "road": "The root road climbs behind you."
+      },
+      "ambient": [
+        "A grey fruit falls without sound.",
+        "The trees lean toward the press."
+      ]
+    },
+    "107": {
+      "name": "The Windfall",
+      "text": "A shallow hollow under the orchard trees, carpeted with fallen grey fruit. A single seed of pale wood rests on the soil. The orchard is west.",
+      "safe": true,
+      "exits": {
+        "west": 106
+      },
+      "details": {
+        "fruit": "The fruit is grey and cold.",
+        "seed": "The seed is pale wood with a green seam.",
+        "soil": "The soil is soft and deep."
+      },
+      "ambient": [
+        "Something turns under the leaves.",
+        "The seed is warm."
+      ]
+    },
+    "108": {
+      "name": "The Old Press",
+      "text": "A stone press grown over with roots at the orchard's north end. The orchard keeper stands beside it, and the orchard is south.",
+      "safe": true,
+      "exits": {
+        "south": 106
+      },
+      "details": {
+        "press": "The press is cold and dry.",
+        "keeper": "The keeper's hands are stained black.",
+        "roots": "The roots hold the press together."
+      },
+      "ambient": [
+        "The press creaks once.",
+        "The keeper listens to the trees."
       ]
     }
   },
@@ -2967,6 +3021,28 @@
         "The first seed is not for eating.",
         "The archive keeps the names the garden cannot."
       ]
+    },
+    {
+      "id": "orchard-keeper",
+      "name": "the orchard keeper",
+      "room": 108,
+      "home": 108,
+      "period": 240,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "zone": "garden",
+      "hp": 30,
+      "damage": 0,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 0,
+      "description": "A small figure stands beside the old press.",
+      "examine": "The keeper's hands are stained with black soil.",
+      "dialogue": [
+        "The orchard remembers the word ORCHARD.",
+        "The windfall keeps one seed for the press.",
+        "The town remembers what the roots carry."
+      ]
     }
   ],
   "zones": [
@@ -3156,7 +3232,10 @@
         102,
         103,
         104,
-        105
+        105,
+        106,
+        107,
+        108
       ]
     }
   ],
@@ -4381,6 +4460,17 @@
       ],
       "value": 90,
       "examine": "A white seed with a green seam; it is warm and very light.",
+      "forSale": false
+    },
+    {
+      "id": "orchard-seed",
+      "name": "an orchard seed",
+      "room": 107,
+      "flags": [
+        "takeable"
+      ],
+      "value": 110,
+      "examine": "A seed of pale wood with a green seam; it is warm and heavy.",
       "forSale": false
     }
   ],
