@@ -915,6 +915,12 @@
       "level": "build",
       "statement": "v0.88 adds MODEL_PROVIDER=opencode to the CLI agent: each turn runs opencode run with deepseek/deepseek-flash, parses the text event and sends one command, with no local inference. The agent now waits for room state without spamming look, and the objective guards handle per-target actions. Remote DeepSeek runs completed the Root Archive in 5 turns (seed, keeper, First Bed) and all four Three Rememberings objectives in 24 turns (shrine, guild clerk, windfall seed, orchard keeper) with exit code 0. The world remains 108 rooms/14 zones/55 quests/49 mobiles/99 objects/9 titles. The gate covers all content and planner invariants; the remote runs are recorded in docs/UNSCRIPTED-RUN.md.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-148",
+      "level": "some-true",
+      "statement": "Production v0.88.0 serves 108 rooms, 14 zones, 55 quests, 49 mobiles, 99 objects and 9 titles. The CLI agent supports MODEL_PROVIDER=opencode with deepseek/deepseek-flash and no local inference; the no-room look loop is fixed. Remote DeepSeek runs completed the Root Archive in 5 turns and all four Three Rememberings objectives in 24 turns with exit code 0. R4 active, signups open, Gemini configured false. Gate 44683093412 green.",
+      "authority": "wick production v0.88.0 2026-11-20; release 44684011168; gate 44683093412; /health and /world; remote run reports"
     }
   ]
 }
