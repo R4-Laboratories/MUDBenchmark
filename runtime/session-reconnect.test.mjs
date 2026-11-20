@@ -98,13 +98,14 @@ test("browser reconnects after a region restart without losing the player sessio
   await readyServer();
   const profile = join(directory, "chrome");
   const chrome = start(process.env.CHROME_BIN ?? "google-chrome", [
-    "--headless=new", "--disable-gpu", "--disable-background-networking",
-    "--no-first-run", "--remote-debugging-port=0", `--user-data-dir=${profile}`, "about:blank",
+    "--headless=new", "--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu",
+    "--disable-background-networking", "--no-first-run", "--remote-debugging-port=0",
+    `--user-data-dir=${profile}`, "about:blank",
   ], { stdio: "ignore" });
   const debugPort = await until(async () => {
     if (chrome.exitCode !== null || chrome.signalCode !== null) throw new Error("browser exited");
     return Number((await readFile(join(profile, "DevToolsActivePort"), "utf8")).split("\n")[0]);
-  }, "Chrome DevTools");
+  }, "Chrome DevTools", 45000);
   const tabs = await (await fetch(`http://127.0.0.1:${debugPort}/json/list`)).json();
   const debugSocket = new WebSocket(tabs.find((tab) => tab.type === "page").webSocketDebuggerUrl);
   debugSockets.push(debugSocket);
