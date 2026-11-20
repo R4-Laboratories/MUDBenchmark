@@ -288,6 +288,9 @@ Rehearsed 2026-11-16:
 - v0.91.8 (moderation) adds a 3-24 character new-name policy with token-aware
   reserved words, leetspeak folding and a legacy-safe login path, plus a
   durable `report <name> <reason>` queue that shares the chat guard (MB-167);
+- v0.91.9 (generated names) replaces the `root` adjective with `rooted` so
+  every random character name passes the v0.91.8 token policy, and the Gate
+  checks every adjective/noun pair (MB-169);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

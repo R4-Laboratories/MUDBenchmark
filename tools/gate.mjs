@@ -26,7 +26,7 @@ import { loadChannels } from "../runtime/channels.mjs";
 import { loadSocials } from "../runtime/socials.mjs";
 import { hashPassword, verifyPassword, validName, validNewName, validPassword, accountCapReached } from "../runtime/accounts.mjs";
 import { CHAT_LIMIT, CHAT_WINDOW_MS, REPORT_INTERVAL_MS, REPORT_REASON_MAX, chatAllowed, reportAllowed, reportRecord } from "../runtime/moderation.mjs";
-import { randomCharacterName, uniqueCharacterName, chooseCharacter } from "../runtime/web/names.mjs";
+import { ADJECTIVES, NOUNS, randomCharacterName, uniqueCharacterName, chooseCharacter } from "../runtime/web/names.mjs";
 import { loadTitles, earnedTitles } from "../runtime/titles.mjs";
 import { loadFacts, contextHasWord } from "../runtime/facts.mjs";
 import { allowCommand, DEFAULT_INTERVAL_MS } from "../runtime/allowance.mjs";
@@ -347,6 +347,12 @@ let characterNames = { ok: true, why: [] };
     seen.add(name);
   }
   check(/^[a-z]+-[a-z]+-[0-9]{2,4}$/.test(randomCharacterName(random)), "randomCharacterName returned an invalid name");
+  for (const adjective of ADJECTIVES) {
+    for (const noun of NOUNS) {
+      const generated = `${adjective}-${noun}-42`;
+      check(validNewName(generated), `generated name ${generated} is refused by the new-name policy`);
+    }
+  }
   check(web.includes("/names.mjs"), "the page does not load the name generator");
   check((web.match(/prismSignIn\("ai"/g) ?? []).length === 1, "the old AI account path is not limited to recovery");
   check(web.includes("No old AI session is stored in this browser"), "the old AI recovery path is missing");
