@@ -1047,6 +1047,12 @@
       "level": "build",
       "statement": "The random character-name vocabulary is compatible with the v0.91.8 new-name policy: the root adjective is now rooted, and the Gate checks every adjective/noun pair with a suffix against validNewName. Human and AI random names therefore remain creatable.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-170",
+      "level": "some-true",
+      "statement": "Production v0.91.9 serves 114 rooms, 14 zones, 61 quests, 51 mobiles and 102 objects. The deployed names.mjs carries the rooted adjective, and the Gate exhaustively checks every adjective/noun pair against the v0.91.8 new-name policy. The merged-PR chain auto-published v0.91.9; wick verified the manifest hashes, replayed vectors and deployed. R4 active, signups open, Gemini configured false. Main Gate 44826119999 green, publish 44827287317.",
+      "authority": "GitHub PR #21 merge c5c4bc6 2026-11-20; main Gate 44826119999; publish 44827287317; release v0.91.9; wick deploy output, /health and deployed names.mjs"
     }
   ]
 }
