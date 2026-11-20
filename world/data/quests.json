@@ -1623,6 +1623,71 @@
         "guildXp": 40
       },
       "complete": "The keeper presses the bloom and sets the cup out for the next cycle."
+    },
+    {
+      "id": "guild-eclipse",
+      "name": "The Eclipse Ledger",
+      "level": 10,
+      "giver": "the archmage",
+      "description": "The archmage wants the regent's sigil for the guild ledger. Reach the Throne of Ash and bring it back.",
+      "scope": "guild",
+      "guild": "mages",
+      "rank": "archmage",
+      "requires": [
+        "guild-ember",
+        "guild-fen",
+        "eclipse-throne"
+      ],
+      "objectives": [
+        {
+          "kind": "visit",
+          "room": 96,
+          "text": "Reach the Throne of Ash"
+        },
+        {
+          "kind": "collect",
+          "object": "regent-sigil",
+          "count": 1,
+          "text": "Carry the regent's sigil"
+        }
+      ],
+      "rewards": {
+        "xp": 400,
+        "guildXp": 200
+      },
+      "complete": "The archmage sets the regent's sigil beside the ledger. The eclipse in the stone opens one eye."
+    },
+    {
+      "id": "guild-dawn",
+      "name": "The Dawn Archive",
+      "level": 10,
+      "giver": "the archmage",
+      "description": "The archmage wants the dawn crown studied above the Throne of Ash. Bring it to the guild.",
+      "scope": "guild",
+      "guild": "mages",
+      "rank": "archmage",
+      "requires": [
+        "guild-eclipse"
+      ],
+      "objectives": [
+        {
+          "kind": "visit",
+          "room": 97,
+          "text": "Reach the Dawn Gate"
+        },
+        {
+          "kind": "collect",
+          "object": "dawn-crown",
+          "count": 1,
+          "text": "Carry the dawn crown"
+        }
+      ],
+      "rewards": {
+        "xp": 500,
+        "guildXp": 250,
+        "object": "archmage-signet"
+      },
+      "complete": "The archmage closes the crown and hands you the signet. The guild ledger has a new page."
     }
   ]
 }

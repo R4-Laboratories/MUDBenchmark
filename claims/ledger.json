@@ -1005,6 +1005,12 @@
       "level": "some-true",
       "statement": "Production v0.91.5 serves browser session reconnect. PR #17 rebased the original #13 work onto v0.91.4, preserving its authorship, and merged as 156b467. Both Gate runs passed, including the headless-Chrome reconnect test (restart, Prism resume, competing tab, interrupted quit). publish.yml auto-created v0.91.5 with release-manifest.json; wick verified both hashes, replayed vectors and deployed. The original PR #13 is closed as superseded. Gate 44794521467 green; release 44795760558.",
       "authority": "GitHub PR #17 merge 156b467 2026-11-20; main Gate 44794521467; publish 44795760558; release v0.91.5; wick deploy output; /health"
+    },
+    {
+      "id": "MB-163",
+      "level": "build",
+      "statement": "v0.91.6 adds the archmage Mages Guild line: guild-eclipse (rank archmage, requires guild-ember/guild-fen/eclipse-throne; visit the Throne of Ash and collect the regent sigil; 200 guild XP) and guild-dawn (requires guild-eclipse; visit the Dawn Gate, collect the dawn crown; 250 guild XP and the archmage signet neck armour). The world is 114 rooms/14 zones/60 quests/51 mobiles/102 objects/11 titles. The gate covers archmage advancement, prerequisite acceptance, visit/collect completion, both guild XP rewards and the signet.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }
