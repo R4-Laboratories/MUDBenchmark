@@ -153,7 +153,8 @@
         "east": 9,
         "west": 10,
         "south": 11,
-        "up": 35
+        "up": 35,
+        "down": 105
       },
       "details": {
         "fountain": "The fountain is a bearded face with water spilling from its mouth. Coins lie in the basin.",
@@ -1863,7 +1864,8 @@
       "safe": true,
       "exits": {
         "up": 101,
-        "east": 103
+        "east": 103,
+        "south": 104
       },
       "details": {
         "roots": "The roots are pale and warm.",
@@ -1890,6 +1892,42 @@
       "ambient": [
         "The soil breathes.",
         "The seed turns toward the light."
+      ]
+    },
+    "104": {
+      "name": "The Root Road",
+      "text": "A low road of packed roots beneath the garden, wide enough for two. The Root Archive is north, and a gate of pale wood waits east.",
+      "safe": true,
+      "exits": {
+        "north": 102,
+        "east": 105
+      },
+      "details": {
+        "roots": "The roots are woven into a road.",
+        "road": "The road is warm and slightly springy.",
+        "gate": "The gate is pale wood bound with root."
+      },
+      "ambient": [
+        "The road creaks underfoot.",
+        "A root taps against the gate."
+      ]
+    },
+    "105": {
+      "name": "The Root Gate",
+      "text": "A round gate of pale wood at the end of the root road. A stair of roots climbs to Market Square above. The road is west.",
+      "safe": true,
+      "exits": {
+        "west": 104,
+        "up": 8
+      },
+      "details": {
+        "gate": "The gate opens at a touch.",
+        "stair": "The stair is made of roots and daylight.",
+        "market": "Boots pass over the grate above."
+      },
+      "ambient": [
+        "The gate breathes.",
+        "A market voice leaks through the roots."
       ]
     }
   },
@@ -3116,7 +3154,9 @@
         100,
         101,
         102,
-        103
+        103,
+        104,
+        105
       ]
     }
   ],

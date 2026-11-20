@@ -26,6 +26,7 @@ const HOLO_PORT = Number(process.env.LIVE_HOLO_PORT ?? 8084);
 const PASSWORD = "live-pass";
 const MODEL = process.env.MODEL_NAME ?? "qwen2.5:7b";
 const SCENARIO = process.env.SCENARIO ?? "remembered";
+const QUEST_ID = SCENARIO === "long" ? "long-remembering" : SCENARIO === "root" ? "first-bed" : "remembered-bed";
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 rmSync(OUT, { recursive: true, force: true });
@@ -35,7 +36,7 @@ const world = loadWorld({ mode: "single" });
 const channels = loadChannels();
 const levels = loadLevels();
 const quests = loadQuests();
-const start = SCENARIO === "root" ? 101 : 98;
+const start = SCENARIO === "long" ? 105 : SCENARIO === "root" ? 101 : 98;
 const state = initialState(world.rooms, world.npcs, world.objects, start, world.climate, channels.channels, levels.levels, quests.quests);
 const rose = state.objects.find((object) => object.id === "memory-rose");
 if (SCENARIO !== "root" && rose) {
@@ -53,11 +54,14 @@ state.accounts.tester = {
 state.identities.tester = {
   kind: "character", owner: "tester", name: "tester", role: 0, level: 10, xp: 30000,
   guild: null, guildRank: null,
-  quests: SCENARIO === "root"
-    ? { active: [{ id: "first-bed", progress: emptyProgress() }], completed: ["hall-word", "memory-garden", "remembered-bed"] }
-    : { active: [{ id: "remembered-bed", progress: emptyProgress() }], completed: ["hall-word", "memory-garden"] },
+  quests: SCENARIO === "long"
+    ? { active: [{ id: "long-remembering", progress: { ...emptyProgress(), visits: [103] } }], completed: ["hall-word", "memory-garden", "remembered-bed", "first-bed"] }
+    : SCENARIO === "root"
+      ? { active: [{ id: "first-bed", progress: emptyProgress() }], completed: ["hall-word", "memory-garden", "remembered-bed"] }
+      : { active: [{ id: "remembered-bed", progress: emptyProgress() }], completed: ["hall-word", "memory-garden"] },
   spellbook: ["spark", "mend", "shield", "recall"], maxMana: 27, questCycles: {},
-  ignored: [], title: "Gardenkeeper", memory: { facts: SCENARIO === "root" ? { "garden-word": fact, "root-word": rootFact } : { "garden-word": fact } },
+  ignored: [], title: "Gardenkeeper", found: SCENARIO === "long" ? ["98:down"] : [],
+  memory: { facts: SCENARIO === "long" || SCENARIO === "root" ? { "garden-word": fact, "root-word": rootFact } : { "garden-word": fact } },
 };
 const stateFile = join(OUT, "state.json");
 writeFileSync(stateFile, JSON.stringify(state, null, 2));
@@ -116,12 +120,14 @@ try {
       MODEL_NAME: MODEL,
       AGENT_NAME: "tester",
       AGENT_PASSWORD: PASSWORD,
-      AGENT_GOAL: SCENARIO === "root"
-        ? "You are in The Remembered Bed. Go down to The Root Archive, talk to the root keeper, go east to The First Bed, and take the first seed. The First Bed quest is active."
-        : "You are in the Memory Garden. Use these commands in order, one per turn: take memory rose; plant rose; down; take remembered bloom; up; north; talk rememberer. Do not repeat look. The plant opens a hidden stair down.",
-      AGENT_DESTINATION: SCENARIO === "root" ? "The Root Archive" : "The Rememberer's Bench",
-      AGENT_WAYPOINTS: SCENARIO === "root" ? "The Root Archive:talk|The First Bed:take|The Root Archive:talk" : "",
-      MAX_TURNS: "12",
+      AGENT_GOAL: SCENARIO === "long"
+        ? "You are at The Root Gate. Go up to Market Square, west to The Gilded Rat, north to The Guild Hall, and talk guild clerk. Then go south, east to Market Square, north to The Atrium, east to The Storeroom, north to The Cell, north to The Shrine, and type exactly: recall root. The Long Remembering quest is active."
+        : SCENARIO === "root"
+          ? "You are in The Remembered Bed. Go down to The Root Archive, talk to the root keeper, go east to The First Bed, and take the first seed. The First Bed quest is active."
+          : "You are in the Memory Garden. Use these commands in order, one per turn: take memory rose; plant rose; down; take remembered bloom; up; north; talk rememberer. Do not repeat look. The plant opens a hidden stair down.",
+      AGENT_DESTINATION: SCENARIO === "root" ? "The Root Archive" : SCENARIO === "long" ? "The Guild Hall" : "The Rememberer's Bench",
+      AGENT_WAYPOINTS: SCENARIO === "root" ? "The Root Archive:talk|The First Bed:take|The Root Archive:talk" : SCENARIO === "long" ? "The Guild Hall:talk|The Shrine:recall" : "",
+      MAX_TURNS: process.env.AGENT_MAX_TURNS ?? "16",
       AGENT_STOP_ON_QUEST: "1",
       MODEL_TIMEOUT_MS: "120000",
       AGENT_LOG: join(OUT, "agent.jsonl"),
@@ -130,9 +136,34 @@ try {
   });
   agent.stdout.on("data", (chunk) => { agentLog += chunk; });
   agent.stderr.on("data", (chunk) => { agentLog += chunk; });
+  const questDone = () => {
+    try {
+      const lines = readFileSync(join(OUT, "spans.jsonl"), "utf8").trim().split("\n").filter(Boolean);
+      return lines.some((line) => {
+        try {
+          const span = JSON.parse(line);
+          return span.name === "world.quest" && span["quest.id"] === QUEST_ID && span["quest.action"] === "complete";
+        } catch { return false; }
+      });
+    } catch { return false; }
+  };
   exitCode = await new Promise((resolve) => {
-    const timer = setTimeout(() => { agent.kill("SIGKILL"); resolve(124); }, 600_000);
-    agent.on("close", (code) => { clearTimeout(timer); resolve(code ?? 1); });
+    let settled = false;
+    const finish = (code) => {
+      if (settled) return;
+      settled = true;
+      clearInterval(poll);
+      clearTimeout(timer);
+      resolve(code);
+    };
+    const poll = setInterval(() => {
+      if (questDone()) {
+        try { agent.kill("SIGTERM"); } catch {}
+        finish(0);
+      }
+    }, 1200);
+    const timer = setTimeout(() => { agent.kill("SIGKILL"); finish(124); }, 600_000);
+    agent.on("close", (code) => finish(code ?? 1));
   });
 } catch (error) {
   serverLog += `unscripted run: ${error.message}\n`;
@@ -152,8 +183,8 @@ const planted = span("world.action").some((entry) => entry["action.id"] === "pla
 const hidden = span("world.transition").some((entry) => String(entry["room.to"]) === "101");
 const bloom = span("world.object").some((entry) => entry["object.id"] === "remembered-bloom");
 const seed = span("world.object").some((entry) => entry["object.id"] === "first-seed");
-const quest = span("world.quest").some((entry) => entry["quest.id"] === (SCENARIO === "root" ? "first-bed" : "remembered-bed") && entry["quest.action"] === "complete");
-const talked = span("world.talk").some((entry) => entry["npc.id"] === (SCENARIO === "root" ? "root-keeper" : "rememberer"));
+const quest = span("world.quest").some((entry) => entry["quest.id"] === QUEST_ID && entry["quest.action"] === "complete");
+const talked = span("world.talk").some((entry) => entry["npc.id"] === (SCENARIO === "long" ? "guild-clerk" : SCENARIO === "root" ? "root-keeper" : "rememberer"));
 const turns = (agentLog.match(/^turn \d+:/gm) ?? []).length;
 const report = { scenario: SCENARIO, exitCode, model: MODEL, turns, planted, hidden, bloom, seed, quest, talked, agentLog: agentLog.slice(-12000) };
 writeFileSync(join(OUT, "report.json"), JSON.stringify(report, null, 2));

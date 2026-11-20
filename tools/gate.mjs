@@ -39,7 +39,7 @@ import { AREA_PERIOD, armorOf, attackRoll, checkpointIdentities, initialState, n
 import { join } from "node:path";
 import { buildCandidates } from "./candidate.mjs";
 import { PROVIDERS, buildSystemPrompt, buildUserPrompt, normalizeBase, parseBrain, requestFor, replyFrom, trimHistory, validateCommand, repairCommand } from "../runtime/web/ai.mjs";
-import { emptyMemory, noteRoom, rememberResult, memoryPrompt, loopWarning, breakLoop, shouldBreakLoop, pathTo, nextStep, routeHint } from "../runtime/web/memory.mjs";
+import { emptyMemory, noteRoom, rememberResult, memoryPrompt, loopWarning, breakLoop, shouldBreakLoop, pathTo, nextStep, routeHint, nearestTarget, seedMap } from "../runtime/web/memory.mjs";
 import { verifyPrismSession, verifyPersonaOwner, verifySessionKey, sessionWithinWindow } from "../runtime/prism-auth.mjs";
 import { decodeIdentityRequest, identityAdmits } from "../runtime/identity.mjs";
 import { loadStateFile, saveStateFile } from "../runtime/state.mjs";
@@ -312,6 +312,15 @@ let aiMemory = { ok: true, why: [] };
   check(nextStep(graph, "The Atrium", "The Vault") === "north", "the next-step planner chose the wrong exit");
   check(routeHint(graph, "The Atrium", "The Vault").includes("north"), "the route hint did not name the next exit");
   check(routeHint(graph, "The Atrium", "The Moon").includes("No known route"), "the route hint invented an unknown path");
+  const nearest = nearestTarget(graph, "The Atrium", ["The Moon", "The Vault"]);
+  check(nearest?.target === "The Vault" && nearest.path.length === 2, "the nearest-objective planner chose the wrong target");
+  const seeded = emptyMemory();
+  seedMap(seeded, [
+    { name: "Market Square", exits: [{ dir: "west", room: "The Gilded Rat" }, { dir: "north", room: "The Atrium" }] },
+    { name: "The Gilded Rat", exits: [{ dir: "east", room: "Market Square" }, { dir: "north", room: "The Guild Hall" }] },
+    { name: "The Guild Hall", exits: [{ dir: "south", room: "The Gilded Rat" }] },
+  ]);
+  check(pathTo(seeded, "Market Square", "The Guild Hall").join(",") === "west,north", "the published map did not seed a route");
   if (aiMemory.why.length) { aiMemory.ok = false; failures.push(`the AI memory is broken: ${aiMemory.why[0]}`); }
 }
 
@@ -2808,6 +2817,31 @@ let memoryQuest = { ok: true, why: [] };
   actor = state.actors.find((entry) => entry.id === "mq");
   check(actor.quests.completed.includes("first-bed"), "the first-bed quest did not complete");
   check(loadTitles().titles.some((title) => title.id === "rootkeeper" && title.quest === "first-bed"), "the rootkeeper title is missing");
+  check(world.rooms[8]?.exits?.down === 105 && world.rooms[105]?.exits?.up === 8, "the root road is not connected to Market Square");
+  check(world.rooms[102]?.exits?.south === 104 && world.rooms[104]?.exits?.north === 102, "the root road is not connected to the archive");
+
+  actor = state.actors.find((entry) => entry.id === "mq");
+  actor.level = 6;
+  run([{ kind: "questAccept", actorId: "mq", questId: "long-remembering" }]);
+  check(state.actors.find((entry) => entry.id === "mq").quests.active.some((entry) => entry.id === "long-remembering"), "the long-remembering quest was not accepted");
+  actor = state.actors.find((entry) => entry.id === "mq");
+  actor.room = 24;
+  run([{ kind: "talk", actorId: "mq", npcId: "guild-clerk" }]);
+  run([{ kind: "learnFact", actorId: "mq", fact: table.byWord.get("root") }]);
+  actor = state.actors.find((entry) => entry.id === "mq");
+  actor.room = 6;
+  run([{ kind: "questAnswer", actorId: "mq", word: "root" }]);
+  run([{ kind: "move", actorId: "mq", dir: "east", to: 98 }]);
+  run([{ kind: "move", actorId: "mq", dir: "north", to: 100 }]);
+  run([{ kind: "move", actorId: "mq", dir: "south", to: 98 }]);
+  // The First Bed is reached through the archive; move directly in this fixture.
+  actor = state.actors.find((entry) => entry.id === "mq");
+  actor.room = 103;
+  run([{ kind: "move", actorId: "mq", dir: "west", to: 102 }]);
+  run([{ kind: "move", actorId: "mq", dir: "east", to: 103 }]);
+  actor = state.actors.find((entry) => entry.id === "mq");
+  check(actor.quests.completed.includes("long-remembering"), "the long-remembering quest did not complete");
+  check(loadTitles().titles.some((title) => title.id === "roadkeeper" && title.quest === "long-remembering"), "the roadkeeper title is missing");
   if (memoryQuest.why.length) { memoryQuest.ok = false; failures.push(`the memory quest is broken: ${memoryQuest.why[0]}`); }
 }
 
@@ -3178,6 +3212,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"gardenMoon".padEnd(26)}  ${(memoryQuest.ok ? "300 xp" : "BROKEN").padStart(5)}   == crescent, seed`);
   console.log(`${"factAction".padEnd(26)}  ${(memoryQuest.ok ? "1 room" : "BROKEN").padStart(5)}   == word, rose`);
   console.log(`${"rootArchive".padEnd(26)}  ${(memoryQuest.ok ? "260 xp" : "BROKEN").padStart(5)}   == seed, quest`);
+  console.log(`${"longRoad".padEnd(26)}  ${(memoryQuest.ok ? "400 xp" : "BROKEN").padStart(5)}   == town, root`);
   console.log(`${"quests".padEnd(26)}  ${(quests.ok ? "accept, advance, pay" : "BROKEN").padStart(5)}   == facts, once`);
   console.log(`${"aggression".padEnd(26)}  ${(aggression.ok ? "1 duel" : "BROKEN").padStart(5)}   == mobs start fights`);
   console.log(`${"combat2".padEnd(26)}  ${(combat2.ok ? "weapons, armour, xp" : "BROKEN").padStart(5)}   == fight and grow`);

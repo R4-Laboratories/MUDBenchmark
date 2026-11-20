@@ -169,6 +169,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `garden-moon` | The Moon in the Garden | 9 | Learn the crescent word from the silver owl; Recall the crescent word at the shrine; Visit the Rose Walk | 300 xp |
 | `remembered-bed` | The Remembered Bed | 4 | Talk to the rememberer; Enter the Remembered Bed; Carry the remembered bloom | 220 xp |
 | `first-bed` | The First Bed | 5 | Talk to the root keeper; Reach the First Bed; Carry the first seed | 260 xp |
+| `long-remembering` | The Long Remembering | 6 | Talk to the guild clerk; Recall the root word at the shrine; Return to the First Bed | 400 xp |
 
 ## Rooms
 
@@ -181,7 +182,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 5 | The Cell | temple | no | south 3, north 6, down 25 |
 | 6 | The Shrine | temple | yes | south 5, north 7, east 98 |
 | 7 | The Chancel | temple | yes | south 6 |
-| 8 | Market Square | town | yes | north 1, east 9, west 10, south 11, up 35 |
+| 8 | Market Square | town | yes | north 1, east 9, west 10, south 11, up 35, down 105 |
 | 9 | The Smithy | town | yes | west 8 |
 | 10 | The Gilded Rat | town | yes | east 8, up 12, north 24 |
 | 11 | The King's Road | town | no | north 8, south 15, east 16, west 17 |
@@ -275,6 +276,8 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 99 | The Rose Walk | garden | yes | west 98 |
 | 100 | The Rememberer's Bench | garden | yes | south 98 |
 | 101 | The Remembered Bed | garden | yes | up 98, down 102 |
-| 102 | The Root Archive | garden | yes | up 101, east 103 |
+| 102 | The Root Archive | garden | yes | up 101, east 103, south 104 |
 | 103 | The First Bed | garden | yes | west 102 |
+| 104 | The Root Road | garden | yes | north 102, east 105 |
+| 105 | The Root Gate | garden | yes | west 104, up 8 |
 

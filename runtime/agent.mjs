@@ -12,7 +12,7 @@
 //   WS_URL=wss://play.r4labs.org node agent.mjs
 
 import { appendFileSync, readFileSync } from "node:fs";
-import { emptyMemory, noteRoom, rememberResult, memoryPrompt, loopWarning, breakLoop, shouldBreakLoop, routeHint } from "./web/memory.mjs";
+import { emptyMemory, noteRoom, rememberResult, memoryPrompt, loopWarning, breakLoop, shouldBreakLoop, routeHint, nearestTarget, seedMap, nextStep } from "./web/memory.mjs";
 
 const WS_URL = process.env.WS_URL ?? "ws://127.0.0.1:8090";
 const NAME = process.env.HARNESS_NAME ?? process.env.AGENT_NAME ?? "agent";
@@ -28,6 +28,9 @@ const LOG = process.env.AGENT_LOG ?? "";
 const PRIME_ID = process.env.PRIME_ROUTER_IDENTITY ?? `mudbench-${NAME}`;
 const STOP_ON_QUEST = process.env.AGENT_STOP_ON_QUEST === "1";
 const DESTINATION = process.env.AGENT_DESTINATION ?? "";
+const LLMS_URL = process.env.LLMS_URL ?? `${WS_URL.replace(/^ws/, "http").replace(/\/$/, "")}/llms.txt`;
+const OBJECTIVES = (process.env.AGENT_OBJECTIVES ?? "").split(",").map((value) => value.trim()).filter(Boolean);
+const DIRECTIONS = new Set(["north", "south", "east", "west", "up", "down", "n", "s", "e", "w", "u", "d"]);
 const WAYPOINTS = (process.env.AGENT_WAYPOINTS ?? "")
   .split("|")
   .map((part) => {
@@ -102,6 +105,28 @@ let recent = [];
 const nav = emptyMemory();
 const messages = [{ role: "system", content: SYSTEM }];
 
+// The public room table lets the agent plan across rooms it has not visited.
+async function loadPublicMap() {
+  try {
+    const text = await fetch(LLMS_URL, { signal: AbortSignal.timeout(3000) }).then((response) => response.text());
+    const rows = text.split(/\r?\n/).map((line) => line.match(/^\|\s*(\d+)\s*\|\s*([^|]+?)\s*\|\s*([^|]*?)\s*\|\s*([^|]*?)\s*\|\s*([^|]*?)\s*\|$/)).filter(Boolean);
+    const byId = new Map(rows.map((row) => [row[1], row[2].trim()]));
+    const rooms = rows.map((row) => ({
+      name: row[2].trim(),
+      exits: row[5].split(",").map((part) => part.trim()).filter((part) => part && part !== "none").map((part) => {
+        const [dir, id] = part.split(/\s+/);
+        return { dir, room: byId.get(id) ?? null };
+      }),
+    }));
+    seedMap(nav, rooms);
+    log(`map: ${rooms.length} rooms seeded`);
+  } catch (error) {
+    log(`map: unavailable (${error.message})`);
+  }
+}
+
+await loadPublicMap();
+
 const trim = () => {
   const rest = messages.slice(1).slice(-MEMORY_TURNS * 2);
   messages.splice(1, messages.length - 1, ...rest);
@@ -123,24 +148,29 @@ function parse(text) {
   return { command: "look", ok: false };
 }
 
+function mapExits(name) {
+  return Object.entries(nav.map?.[name] ?? {}).map(([dir, room]) => ({ dir, room }));
+}
+
 function roomFrom(text) {
-  const line = String(text).split(/\r?\n/).find((entry) => entry.trim().startsWith("#state "));
+  const bracket = [...String(text).matchAll(/^\[([^\]]+)\]/gm)].at(-1)?.[1] ?? null;
+  let stateRoom = null;
+  const line = String(text).split(/\r?\n/).filter((entry) => entry.trim().startsWith("#state ")).at(-1);
   if (line) {
     try {
       const state = JSON.parse(line.trim().slice(7));
-      const room = state.room ?? state.self?.room;
-      if (room?.name) {
-        return {
-          name: room.name,
-          exits: (room.exits ?? []).map((exit) => (typeof exit === "string" ? { dir: exit, room: null } : { dir: exit.dir, room: exit.room ?? null })).filter((exit) => exit.dir),
-        };
-      }
+      stateRoom = state.room ?? state.self?.room ?? null;
     } catch {}
   }
-  const name = String(text).match(/^\[([^\]]+)\]/m)?.[1];
+  const name = bracket ?? stateRoom?.name ?? null;
   if (!name) return null;
-  const exits = String(text).match(/^Exits:\s*(.+)$/m)?.[1] ?? "";
-  return { name, exits: exits.split(/,\s*/).map((dir) => ({ dir: dir.trim(), room: null })).filter((exit) => exit.dir) };
+  const stateExits = stateRoom?.name === name
+    ? (stateRoom.exits ?? []).map((exit) => (typeof exit === "string" ? { dir: exit, room: null } : { dir: exit.dir, room: exit.room ?? null })).filter((exit) => exit.dir)
+    : [];
+  const exits = stateExits.length ? stateExits : mapExits(name);
+  if (exits.length) return { name, exits };
+  const directions = String(text).match(/^Exits:\s*(.+)$/m)?.[1] ?? "";
+  return { name, exits: directions.split(/,\s*/).map((dir) => ({ dir: dir.trim(), room: null })).filter((exit) => exit.dir) };
 }
 
 async function ask(observedText) {
@@ -216,11 +246,20 @@ async function turn() {
   const room = roomFrom(seen);
   if (lastCommand && lastRoom) rememberResult(nav, { room: lastRoom, command: lastCommand, observation: seen, tick: turns, exits: lastExits });
   if (room) noteRoom(nav, room.name, room.exits);
+  if (room) {
+    const reached = OBJECTIVES.indexOf(room.name);
+    if (reached >= 0) OBJECTIVES.splice(reached, 1);
+  }
   const waypoint = WAYPOINTS[waypointIndex] ?? null;
-  const destination = waypoint?.room ?? DESTINATION;
+  const objective = !waypoint && !DESTINATION && OBJECTIVES.length
+    ? (nearestTarget(nav, room?.name ?? lastRoom, OBJECTIVES)?.target ?? OBJECTIVES[0])
+    : null;
+  const destination = waypoint?.room ?? (DESTINATION || objective);
   const navText = memoryPrompt(nav, { room: room?.name ?? lastRoom, exits: room?.exits ?? [], query: seen });
   const hint = room && destination ? routeHint(nav, room.name, destination) : "";
+  const routeNext = room && destination ? nextStep(nav, room.name, destination) : null;
   const warning = loopWarning(recent, nav.trail);
+  if (process.env.AGENT_DEBUG_NAV === "1") log(`nav room=${room?.name ?? "?"} dest=${destination ?? "?"} next=${routeNext ?? "?"} hint=${hint}`);
   busy = true;
   try {
     const reply = await ask([seen, navText ? `NAVIGATION:\n${navText}` : "", hint ? `NAVIGATE: ${hint}` : "", warning ? `NOTE: ${warning}` : ""].filter(Boolean).join("\n\n"));
@@ -239,6 +278,12 @@ async function turn() {
     }
     command = command.replace(/^talk\s+(?:to|with|the)\s+/i, "talk ").replace(/^speak\s+(?:to|with|the)\s+/i, "talk ");
     command = command.replace(/^(talk\s+[a-z ]+?)\s+in\s+the\s+.*$/i, "$1");
+    const first = command.split(/\s+/)[0]?.toLowerCase();
+    const mapped = first === "n" ? "north" : first === "s" ? "south" : first === "e" ? "east" : first === "w" ? "west" : first === "u" ? "up" : first === "d" ? "down" : first;
+    if (routeNext && DIRECTIONS.has(first) && mapped !== routeNext) {
+      log(`route guard: ${command} → ${routeNext}`);
+      command = routeNext;
+    }
     if (waypoint && room?.name === waypoint.room && (!waypoint.action || command.toLowerCase().startsWith(waypoint.action.toLowerCase()))) {
       waypointIndex += 1;
       log(`waypoint ${waypointIndex}/${WAYPOINTS.length}: ${WAYPOINTS[waypointIndex]?.room ?? "done"}`);

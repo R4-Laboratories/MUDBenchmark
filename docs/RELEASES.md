@@ -245,6 +245,10 @@ Rehearsed 2026-11-16:
 - v0.85.0 (root archive) adds two rooms below the Remembered Bed, the first-bed
   quest, the first seed, BFS route hints and waypoint sequencing; the broader
   unscripted run completes in nine turns (MB-141);
+- v0.86.0 (root road) adds a two-room shortcut from the Root Archive to Market
+  Square, the town-spanning Long Remembering quest, map-seeded BFS routes,
+  nearest-objective choice and a movement guard; the 13-turn unscripted run
+  completes (MB-143);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

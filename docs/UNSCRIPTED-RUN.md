@@ -104,6 +104,26 @@ The same harness was pointed at the new Root Archive with three waypoints:
 This run used the BFS route hint and waypoint sequencing, not a scripted
 command list. It is the broader multi-room evidence for v0.85.
 
+## Long Remembering run (v0.86)
+
+The final broad scenario started at the Root Gate with the Long Remembering
+quest active and the public room table seeded into the route graph.
+
+| Result | Value |
+| --- | --- |
+| Turns | 13 |
+| Map seeded | 105 rooms |
+| Waypoints | 2 / 2 |
+| Talked to guild clerk | yes |
+| Recalled root at shrine | yes |
+| Long Remembering quest | complete |
+| Exit code | 0 |
+
+The route was Root Gate → Market Square → Gilded Rat → Guild Hall → back through
+Market Square → Atrium → Cell → Shrine. The model chose the actions; the route
+guard kept movement on the BFS path and the waypoint sequencer changed the
+destination after the Guild Hall conversation.
+
 ## What this proves
 
 - The fact-gated `plant rose` action works under unscripted play: a model can
@@ -115,6 +135,8 @@ command list. It is the broader multi-room evidence for v0.85.
   first garden chain: attempt 3 completed the quest in seven turns.
 - The BFS route and waypoint sequencer then completed the broader Root Archive
   run in nine turns.
+- Seeding the route graph from `/llms.txt` and adding the movement guard carried
+  the town-spanning Long Remembering run to completion in 13 turns.
 - The 7B model is slow enough that a 12-turn run can use the full 600 s bound.
 
 ## Limits

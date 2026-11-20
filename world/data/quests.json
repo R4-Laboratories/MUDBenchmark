@@ -1459,6 +1459,39 @@
         "xp": 260
       },
       "complete": "The keeper sets the seed in the archive. The first bed is named again."
+    },
+    {
+      "id": "long-remembering",
+      "name": "The Long Remembering",
+      "level": 6,
+      "giver": "the rememberer",
+      "description": "Carry the root word from the archive to the town. Talk to the guild clerk, recall it at the shrine, then return to the First Bed.",
+      "requires": [
+        "first-bed"
+      ],
+      "objectives": [
+        {
+          "kind": "talk",
+          "npc": "guild-clerk",
+          "count": 1,
+          "text": "Talk to the guild clerk"
+        },
+        {
+          "kind": "answer",
+          "word": "root",
+          "fact": "root-word",
+          "text": "Recall the root word at the shrine"
+        },
+        {
+          "kind": "visit",
+          "room": 103,
+          "text": "Return to the First Bed"
+        }
+      ],
+      "rewards": {
+        "xp": 400
+      },
+      "complete": "The rememberer hears the town's answer through the roots. The First Bed opens another ring."
     }
   ]
 }

@@ -34,6 +34,11 @@
       "id": "rootkeeper",
       "name": "Rootkeeper",
       "quest": "first-bed"
+    },
+    {
+      "id": "roadkeeper",
+      "name": "Roadkeeper",
+      "quest": "long-remembering"
     }
   ]
 }

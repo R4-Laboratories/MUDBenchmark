@@ -130,6 +130,7 @@ export const emptyMemory = () => ({
   notes: [],
   social: [],
   trail: [],
+  map: {},
   updated: null,
 });
 
@@ -167,6 +168,10 @@ export function noteRoom(memory, room, exits = []) {
     entry.exits ??= {};
     entry.exits[dir] = target;
   }
+  if (entry.exits) {
+    memory.map ??= {};
+    memory.map[room] = { ...(memory.map[room] ?? {}), ...entry.exits };
+  }
   if (memory.lastRoom !== room) {
     entry.visits += 1;
     memory.lastRoom = room;
@@ -174,6 +179,21 @@ export function noteRoom(memory, room, exits = []) {
     memory.trail ??= [];
     memory.trail.push(room);
     if (memory.trail.length > 60) memory.trail.splice(0, memory.trail.length - 60);
+  }
+  return memory;
+}
+
+/** Seed the route graph from a published room table without marking visits. */
+export function seedMap(memory, rooms = []) {
+  if (!memory) return memory;
+  memory.map ??= {};
+  for (const room of Array.isArray(rooms) ? rooms : []) {
+    if (!room?.name) continue;
+    const exits = {};
+    for (const exit of room.exits ?? []) {
+      if (exit?.dir && exit?.room) exits[exit.dir] = exit.room;
+    }
+    if (Object.keys(exits).length) memory.map[room.name] = { ...(memory.map[room.name] ?? {}), ...exits };
   }
   return memory;
 }
@@ -261,12 +281,12 @@ export function pathTo(memory, from, to) {
   const seen = new Set([from]);
   while (queue.length) {
     const [room, path] = queue.shift();
-    const exits = memory.rooms?.[room]?.exits ?? {};
+    const exits = memory.map?.[room] ?? memory.rooms?.[room]?.exits ?? {};
     for (const [dir, target] of Object.entries(exits)) {
       if (!target || seen.has(target)) continue;
       const next = [...path, dir];
       if (target === to) return next;
-      if (memory.rooms?.[target]) {
+      if (memory.map?.[target] || memory.rooms?.[target]) {
         seen.add(target);
         queue.push([target, next]);
       }
@@ -277,6 +297,17 @@ export function pathTo(memory, from, to) {
 
 export function nextStep(memory, from, to) {
   return pathTo(memory, from, to)[0] ?? null;
+}
+
+/** The nearest target with a known route, or null when none is known. */
+export function nearestTarget(memory, from, targets = []) {
+  let best = null;
+  for (const target of Array.isArray(targets) ? targets : []) {
+    const path = pathTo(memory, from, target);
+    if (!path.length) continue;
+    if (!best || path.length < best.path.length) best = { target, path };
+  }
+  return best;
 }
 
 export function routeHint(memory, from, to) {

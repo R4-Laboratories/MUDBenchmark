@@ -102,4 +102,6 @@ Remembered Bed extends facts beyond answers: the `plant rose` action requires
 the garden-word fact and consumes the memory rose, opening a hidden room. The
 `remembered-bed` quest visits that room and brings back the bloom. The Root
 Archive below it adds `first-bed`: talk to the root keeper, reach the First Bed
-and carry back the first seed.
+and carry back the first seed. The Root Road connects that archive to Market
+Square, and `long-remembering` carries the root word to the guild clerk and the
+shrine before returning to the First Bed.
