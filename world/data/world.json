@@ -4647,6 +4647,21 @@
       "value": 160,
       "examine": "A pale bloom that smells of cider and cold stone.",
       "forSale": false
+    },
+    {
+      "id": "archmage-signet",
+      "name": "the archmage's signet",
+      "room": 34,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "neck",
+      "armor": 3,
+      "value": 220,
+      "examine": "A black signet ring on a silver chain; the stone holds a small eclipse.",
+      "forSale": false
     }
   ],
   "climate": {

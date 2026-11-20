@@ -174,6 +174,8 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `press-beneath` | The Press Beneath | 8 | Talk to the orchard keeper; Reach the Seed Vault; Carry the press seed | 600 xp |
 | `cider-spring` | The Cider Spring | 9 | Talk to the spring keeper; Reach the White Bed; Carry a cider bloom | 700 xp |
 | `orchard-work` | Orchard Work | 9 | Deliver a cider bloom to the orchard keeper | 250 xp |
+| `guild-eclipse` | The Eclipse Ledger | 10 | Reach the Throne of Ash; Carry the regent's sigil | 400 xp |
+| `guild-dawn` | The Dawn Archive | 10 | Reach the Dawn Gate; Carry the dawn crown | 500 xp |
 
 ## Rooms
 

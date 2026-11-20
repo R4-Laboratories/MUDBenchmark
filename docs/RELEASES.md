@@ -280,6 +280,9 @@ Rehearsed 2026-11-16:
 - v0.91.5 (reconnect) restores a Prism browser session after a region restart,
   resumes the active character only when no other session controls it, and adds
   a headless-Chrome reconnect test to the Gate (MB-162);
+- v0.91.6 (archmage line) adds The Eclipse Ledger and The Dawn Archive, two
+  rank-10 Mage quests using the Eclipse Court and the archmage's signet reward;
+  60 quests / 102 objects (MB-163);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);
