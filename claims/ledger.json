@@ -1035,6 +1035,12 @@
       "level": "build",
       "statement": "New accounts and characters enforce a 3-24 character name with at least one letter and a token-aware reserved-word policy (exact, numeric suffix, 'the' prefix, hyphen/underscore token, compact form and leetspeak folding); login keeps the legacy 1-24 shape and original reserved set so existing short or old reserved names still work. The report verb records a signed-in reporter, known target and trimmed reason (max 500) to a durable JSONL queue without world state or public span text, shares the 8/10s chat guard, and allows one report per identity per 30 seconds across reconnects. The gate covers the blocked and accepted name sets, the verb shape, and the report record builder.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-168",
+      "level": "some-true",
+      "statement": "Production v0.91.8 serves 114 rooms, 14 zones, 61 quests, 51 mobiles and 102 objects. It adds the 3-24 character new-name policy with token-aware reserved words and the durable report <name> <reason> queue; /llms.txt lists the report verb. The merged-PR chain auto-published v0.91.8; wick verified the manifest hashes, replayed vectors and deployed. R4 active, signups open, Gemini configured false. Main Gate 44822282035 green, publish 44823483752.",
+      "authority": "GitHub PR #20 merge 9866917 2026-11-20; main Gate 44822282035; publish 44823483752; release v0.91.8; wick deploy output, /health, /world and /llms.txt"
     }
   ]
 }
