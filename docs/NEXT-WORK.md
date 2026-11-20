@@ -30,6 +30,7 @@ memory or prompt system.
 | v0.91.1 | Prism AI login and random character names | **done** (MB-155) |
 | v0.91.2 | Memory-only AI start guard | **done** (MB-156) |
 | v0.91.3 | Old AI character recovery | **done** (MB-158) |
+| v0.91.4 | Merged-PR auto release and hash-verified pull deploy | **in flight** |
 | backlog | Optional content and live-player tuning | optional |
 
 ## What is next

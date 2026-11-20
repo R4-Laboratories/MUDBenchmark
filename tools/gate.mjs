@@ -3263,6 +3263,37 @@ let loop = { ok: true, why: [], count: 0, admitted: 0, winner: null };
   }
 }
 
+// A release is a tagged, hash-manifested artifact; the pull deployer verifies it.
+let releaseManifest = { ok: true, why: [] };
+{
+  const check = (condition, why) => { if (!condition) { releaseManifest.ok = false; releaseManifest.why.push(why); } };
+  const dir = mkdtempSync(join(tmpdir(), "mudbench-release-"));
+  const holo = join(dir, "MUDBench.holo");
+  const runtime = join(dir, "runtime.tar.gz");
+  const out = join(dir, "release-manifest.json");
+  writeFileSync(holo, "holo");
+  writeFileSync(runtime, "runtime");
+  const run = spawnSync("python3", [
+    join(root, "deploy/release-manifest.py"),
+    "--tag", "v9.9.9", "--commit", "abc", "--gate-run", "123",
+    "--holo", holo, "--runtime", runtime, "--out", out,
+  ], { cwd: root, encoding: "utf8" });
+  check(run.status === 0, `release manifest exited ${run.status}: ${(run.stderr ?? "").slice(0, 160)}`);
+  let manifest = null;
+  try { manifest = JSON.parse(readFileSync(out, "utf8")); } catch {}
+  check(manifest?.schema === "mudbenchmark/release/1" && manifest?.tag === "v9.9.9", "release manifest shape/tag is wrong");
+  check(manifest?.assets?.["MUDBench.holo"]?.sha256 === createHash("sha256").update("holo").digest("hex"), "release manifest holo hash is wrong");
+  check(manifest?.assets?.["runtime.tar.gz"]?.size === 7, "release manifest runtime size is wrong");
+  const deployScript = readFileSync(join(root, "deploy/mudbench-deploy.sh"), "utf8");
+  check(deployScript.includes("release-manifest.json") && deployScript.includes("ALLOW_UNMANIFESTED"), "deployer does not verify the release manifest");
+  check(deployScript.includes("--ignore-scripts"), "deployer installs runtime scripts");
+  const publishWorkflow = readFileSync(join(root, ".github/workflows/publish.yml"), "utf8");
+  check(publishWorkflow.includes("workflow_run") && publishWorkflow.includes("merged_at"), "merged-PR publisher is missing");
+  check(publishWorkflow.includes("release-manifest.py") && publishWorkflow.includes("AUTO_RELEASE"), "publisher lacks the manifest or pause switch");
+  rmSync(dir, { recursive: true, force: true });
+  if (releaseManifest.why.length) failures.push(`release publishing is broken: ${releaseManifest.why[0]}`);
+}
+
 if (process.argv.includes("--json")) {
   process.stdout.write(`${JSON.stringify({ measured, ratchet, loop, failures }, null, 2)}\n`);
 } else {
@@ -3301,6 +3332,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"ember".padEnd(26)}  ${(ember.ok ? "10 rooms" : "BROKEN").padStart(5)}   == door, quest, shortcut`);
   console.log(`${"aiMemory".padEnd(26)}  ${(aiMemory.ok ? "rooms, stale" : "BROKEN").padStart(5)}   == exits, loop guard`);
   console.log(`${"characterNames".padEnd(26)}  ${(characterNames.ok ? "random, scoped" : "BROKEN").padStart(5)}   == AI, human`);
+  console.log(`${"releaseManifest".padEnd(26)}  ${(releaseManifest.ok ? "hash, tag" : "BROKEN").padStart(5)}   == pull deploy`);
   console.log(`${"fen".padEnd(26)}  ${(fen.ok ? "10 rooms" : "BROKEN").padStart(5)}   == key, chest, shortcut`);
   console.log(`${"visibility".padEnd(26)}  ${(visibility.ok ? "levels, map" : "BROKEN").padStart(5)}   == board, shortcuts`);
   console.log(`${"salt".padEnd(26)}  ${(salt.ok ? "5 rooms" : "BROKEN").padStart(5)}   == key, chest, shortcut`);

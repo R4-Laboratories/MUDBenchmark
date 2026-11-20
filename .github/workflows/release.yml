@@ -103,6 +103,16 @@ jobs:
       - name: Package the runtime
         run: tar --exclude=node_modules -czf runtime.tar.gz runtime world/data
 
+      - name: Write the release manifest
+        env:
+          TAG: ${{ inputs.tag }}
+          SHA: ${{ inputs.sha }}
+        run: |
+          set -euo pipefail
+          HOLO=$(find artifact -name 'MUDBench.holo' | head -1)
+          test -n "$HOLO"
+          python3 deploy/release-manifest.py --tag "$TAG" --commit "$SHA" --gate-run "$RUN_ID" --holo "$HOLO" --runtime runtime.tar.gz --out release-manifest.json
+
       - name: Create the release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -120,7 +130,7 @@ jobs:
           test -n "$ADMISSION"
           KERNEL=$(sed -n 's/.*"kernel": "\(sha256:[0-9a-f]*\)".*/\1/p' "$RECEIPT")
           AKERNEL=$(sed -n 's/.*"kernel": "\(sha256:[0-9a-f]*\)".*/\1/p' "$ADMISSION")
-          gh release create "$TAG" "$HOLO" "$MANIFEST" "$RECEIPT" "$ADMISSION" runtime.tar.gz \
+          gh release create "$TAG" "$HOLO" "$MANIFEST" "$RECEIPT" "$ADMISSION" runtime.tar.gz release-manifest.json \
             --repo "$GITHUB_REPOSITORY" \
             --title "$TAG" \
             --notes "Released from ${{ inputs.sha }} by the Gate run $RUN_URL. Identity kernel $KERNEL; every kind-7 verdict is in identity-receipt.json. Admission kernel $AKERNEL; every admission verdict is in admission-receipt.json.${NOTES:+ $NOTES}" \

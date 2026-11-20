@@ -23,6 +23,7 @@ UNIT_WORLD="$HOME/.config/systemd/user/mudbench-world.service"
 STAGE="$HOME/.mudbench/artifacts"
 TOKEN_FILE="$HOME/.config/mudbench-github.token"
 KEEP=3
+ALLOW_UNMANIFESTED="${MUDBENCH_ALLOW_UNMANIFESTED:-0}"
 
 say() { printf '%s\n' "$*"; }
 die() { printf 'deploy: %s\n' "$*" >&2; exit 1; }
@@ -88,8 +89,12 @@ if [[ "$TAG" == "latest" && "$TAG_NAME" == "$(cat "$HOME/.mudbench/deployed-tag"
 fi
 HOLO_URL=$(asset_url "$RELEASE" MUDBench.holo)
 RUNTIME_URL=$(asset_url "$RELEASE" runtime.tar.gz)
+MANIFEST_URL=$(asset_url "$RELEASE" release-manifest.json)
 [[ -n "$HOLO_URL" ]] || die "release $TAG_NAME has no MUDBench.holo"
 [[ -n "$RUNTIME_URL" ]] || die "release $TAG_NAME has no runtime.tar.gz — refusing to deploy half a world"
+if [[ -z "$MANIFEST_URL" && "$ALLOW_UNMANIFESTED" != "1" ]]; then
+  die "release $TAG_NAME has no release-manifest.json; refusing unverified assets (set MUDBENCH_ALLOW_UNMANIFESTED=1 only for a deliberate legacy rollback)"
+fi
 
 PREV_HOLO=$(current_dir "$UNIT_HOLO")
 PREV_WORLD=$(current_dir "$UNIT_WORLD")
@@ -101,12 +106,37 @@ fetch_asset "$HOLO_URL" "$DEST/MUDBench.holo.part"
 mv "$DEST/MUDBench.holo.part" "$DEST/MUDBench.holo"
 fetch_asset "$RUNTIME_URL" "$DEST/runtime.tar.gz.part"
 mv "$DEST/runtime.tar.gz.part" "$DEST/runtime.tar.gz"
+if [[ -n "$MANIFEST_URL" ]]; then
+  fetch_asset "$MANIFEST_URL" "$DEST/release-manifest.json.part"
+  mv "$DEST/release-manifest.json.part" "$DEST/release-manifest.json"
+  say "verifying release manifest"
+  python3 - "$DEST/release-manifest.json" "$DEST/MUDBench.holo" "$DEST/runtime.tar.gz" "$TAG_NAME" <<'PY'
+import hashlib
+import json
+import os
+import sys
+
+manifest_path, holo, runtime, tag = sys.argv[1:5]
+with open(manifest_path, encoding="utf-8") as handle:
+    manifest = json.load(handle)
+if manifest.get("schema") != "mudbenchmark/release/1":
+    raise SystemExit("release manifest has an unknown schema")
+if manifest.get("tag") != tag:
+    raise SystemExit(f"release manifest is for {manifest.get('tag')}, not {tag}")
+for name, path in (("MUDBench.holo", holo), ("runtime.tar.gz", runtime)):
+    record = (manifest.get("assets") or {}).get(name) or {}
+    digest = hashlib.sha256(open(path, "rb").read()).hexdigest()
+    if digest != record.get("sha256") or os.path.getsize(path) != record.get("size"):
+        raise SystemExit(f"{name} does not match the release manifest")
+    print(f"  {name}: {digest[:16]}… {os.path.getsize(path)} bytes")
+PY
+fi
 tar -xzf "$DEST/runtime.tar.gz" -C "$DEST"
 
 # The runtime needs its dependencies; the tarball deliberately has no node_modules.
 if [[ ! -d "$DEST/runtime/node_modules" ]]; then
   say "installing runtime dependencies"
-  ( cd "$DEST/runtime" && npm ci --omit=dev --no-audit --no-fund >/tmp/mudbench-deploy-npm.log 2>&1 ) \
+  ( cd "$DEST/runtime" && npm ci --omit=dev --ignore-scripts --no-audit --no-fund >/tmp/mudbench-deploy-npm.log 2>&1 ) \
     || die "npm ci failed — see /tmp/mudbench-deploy-npm.log"
 fi
 
