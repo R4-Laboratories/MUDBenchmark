@@ -993,6 +993,12 @@
       "level": "build",
       "statement": "v0.91.4 adds a pull-based continuous release path: publish.yml runs only for a merged PR whose main Gate is green, reuses the Gate holo artifact, packages runtime.tar.gz, writes release-manifest.json with tag/commit/gate-run and SHA-256/size for both assets, bumps the patch tag and publishes. The wick deployer refuses a release without a manifest, verifies both hashes before extraction, and installs runtime dependencies with --ignore-scripts. Direct pushes and the pacing loop are skipped; AUTO_RELEASE=off pauses publishing. The gate covers the manifest script, deployer verification strings and publisher shape. No inbound runner or SSH path is added to wick.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-161",
+      "level": "some-true",
+      "statement": "Production v0.91.4 was published by the merged-PR chain and pulled by wick. PR #16 merged at 6ad92c3; main Gate 44787440309 was green; publish.yml 44788675560 created v0.91.4 with release-manifest.json. Wick deploy fetched the manifest, verified MUDBench.holo sha256/size and runtime.tar.gz sha256/size, replayed vectors, and deployed v0.91.4. Direct pushes and the pacing loop are skipped; AUTO_RELEASE=off pauses publication; no inbound runner or SSH path was added. Gate 44787440309 green.",
+      "authority": "GitHub PR #16 merge 6ad92c3 2026-11-20; main Gate 44787440309; publish run 44788675560; release v0.91.4; wick deploy output with manifest hashes and /health"
     }
   ]
 }

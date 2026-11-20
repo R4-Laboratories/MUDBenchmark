@@ -1,6 +1,6 @@
 # Next work
 
-Baseline: **v0.91.0**. The world has 114 rooms, 14 zones, 58 quests, 51 mobiles
+Baseline: **v0.91.4**. The world has 114 rooms, 14 zones, 58 quests, 51 mobiles
 and 101 objects. R4 memory, command grounding, scorecards
 and the public stats surface are live; signups are open and the Gemini demo is
 disabled and unconfigured.
@@ -30,7 +30,7 @@ memory or prompt system.
 | v0.91.1 | Prism AI login and random character names | **done** (MB-155) |
 | v0.91.2 | Memory-only AI start guard | **done** (MB-156) |
 | v0.91.3 | Old AI character recovery | **done** (MB-158) |
-| v0.91.4 | Merged-PR auto release and hash-verified pull deploy | **in flight** |
+| v0.91.4 | Merged-PR auto release and hash-verified pull deploy | **done** (MB-160) |
 | backlog | Optional content and live-player tuning | optional |
 
 ## What is next
