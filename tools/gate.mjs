@@ -41,7 +41,7 @@ import { join } from "node:path";
 import { buildCandidates } from "./candidate.mjs";
 import { PROVIDERS, buildSystemPrompt, buildUserPrompt, normalizeBase, parseBrain, requestFor, replyFrom, trimHistory, validateCommand, repairCommand } from "../runtime/web/ai.mjs";
 import { emptyMemory, noteRoom, rememberResult, memoryPrompt, loopWarning, breakLoop, shouldBreakLoop, pathTo, nextStep, routeHint, nearestTarget, seedMap, observedCommandSuccess } from "../runtime/web/memory.mjs";
-import { verifyPrismSession, verifyPersonaOwner, verifySessionKey, sessionWithinWindow } from "../runtime/prism-auth.mjs";
+import { verifyPrismSession, verifyPersonaOwner, verifyPrismAction, verifySessionKey, sessionWithinWindow } from "../runtime/prism-auth.mjs";
 import { decodeIdentityRequest, identityAdmits } from "../runtime/identity.mjs";
 import { loadStateFile, saveStateFile } from "../runtime/state.mjs";
 import { acceptLinkRequest, completeLink, createDevice, createLinkOffer, createPrism, createRecovery, linkCode, recoverPrism, requestLink, revokeDevice, signAction, verifyAction } from "../runtime/web/prism-id.mjs";
@@ -846,6 +846,25 @@ let persona = { ok: true, why: [] };
   check(state.accounts[personaId]?.retiredAt === 9, "a non-owner retired the persona");
 
   if (persona.why.length) { persona.ok = false; failures.push(`personas are broken: ${persona.why[0]}`); }
+}
+
+// Old AI transfers are signed by the old account and verified before a move.
+let prismTransfer = { ok: true, why: [] };
+{
+  const check = (condition, why) => { if (!condition) { prismTransfer.ok = false; prismTransfer.why.push(why); } };
+  const origin = "https://play.r4labs.org";
+  const now = Date.now();
+  const oldAi = await createPrism({});
+  const human = await createPrism({});
+  const action = await signAction(oldAi, "prism/character-transfer/1", { character: "oldscout", to: human.prism, audience: origin }, { audience: origin, now });
+  const records = [...oldAi.log.values()];
+  const good = await verifyPrismAction(action, { origin, records, action: "prism/character-transfer/1", expected: { to: human.prism }, now });
+  check(good.ok && good.prism === oldAi.prism && good.payload?.character === "oldscout", "a signed old-account transfer was not accepted");
+  const wrongUser = await createPrism({});
+  const wrongAction = await signAction(oldAi, "prism/character-transfer/1", { character: "oldscout", to: wrongUser.prism, audience: origin }, { audience: origin, now: now + 1 });
+  const wrong = await verifyPrismAction(wrongAction, { origin, records, action: "prism/character-transfer/1", expected: { to: human.prism }, now: now + 1 });
+  check(!wrong.ok, "a transfer to another account was accepted");
+  if (prismTransfer.why.length) failures.push(`prism transfer is broken: ${prismTransfer.why[0]}`);
 }
 
 // X7: an account owns more than one character; the character is the game name.
@@ -3291,6 +3310,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"pinned".padEnd(26)}  ${(identityPin.ok ? "revoked" : "BROKEN").padStart(5)}   == old log refused`);
   console.log(`${"takeover".padEnd(26)}  ${(takeover.ok ? "1 actor" : "BROKEN").padStart(5)}   == leave then login`);
   console.log(`${"characters".padEnd(26)}  ${(characters.ok ? "2 chars" : "BROKEN").padStart(5)}   == create, switch`);
+  console.log(`${"prismTransfer".padEnd(26)}  ${(prismTransfer.ok ? "signed" : "BROKEN").padStart(5)}   == old AI, human`);
   console.log(`${"persona".padEnd(26)}  ${(persona.ok ? "owner" : "BROKEN").padStart(5)}   == human, tombstone`);
   console.log(`${"recovery".padEnd(26)}  ${(recovery.ok ? "kit" : "BROKEN").padStart(5)}   == new device, old refused`);
   console.log(`${"handoff".padEnd(26)}  ${(handoff.ok ? "delegated" : "BROKEN").padStart(5)}   == owner kept`);
