@@ -1071,6 +1071,12 @@
       "level": "build",
       "statement": "Historical player sessions without session.ai are classified by joining the matching world.prism record (prism.id to account.key, prism.ai); world.prism is part of the compact player log. Sessions with neither signal report as ai_unknown, and /stats shows that count. The Gate covers the fallback and the compact selection.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-174",
+      "level": "some-true",
+      "statement": "Production v0.91.12 serves 114 rooms, 14 zones, 61 quests, 51 mobiles and 102 objects. GET /players reads the compact player log and reports 967 spans, 8 sessions, 6 unique accounts, 4 human, 2 AI, 2 AI-unknown and 4,315,229 ms of completed playtime; /stats serves the player panel. The response contains no account keys or character names. The merged-PR chain auto-published v0.91.12; wick verified the manifest hashes, replayed vectors and deployed. R4 active, signups open, Gemini configured false. Main Gate 44836599012 green, publish 44837623672.",
+      "authority": "GitHub PR #24 merge d96446f 2026-11-20; main Gate 44836599012; publish 44837623672; release v0.91.12; wick deploy output, /players, /stats and compact player log"
     }
   ]
 }

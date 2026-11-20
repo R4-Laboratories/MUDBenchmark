@@ -38,7 +38,7 @@ memory or prompt system.
 | v0.91.9 | Generated names pass the new-name policy | **done** (MB-169) |
 | v0.91.10 | Player-session, quest and combat statistics | **done** (MB-171) |
 | v0.91.11 | Compact player log for the player view | **done** (MB-172) |
-| v0.91.12 | Historical AI/human session inference | **in flight** |
+| v0.91.12 | Historical AI/human session inference | **done** (MB-173) |
 | backlog | Optional content and live-player tuning | optional |
 
 ## What is next
