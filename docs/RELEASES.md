@@ -297,6 +297,9 @@ Rehearsed 2026-11-16:
 - v0.91.11 (player log) keeps a compact player-event log beside the full span
   log, seeds it from the existing log on first start and serves `/players` from
   it, so sparse session records survive the tail window (MB-172);
+- v0.91.12 (player history) reads historical AI/human sessions through the
+  matching `world.prism` record, includes `world.prism` in the compact log and
+  shows the unknown-AI count on `/stats` (MB-173);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

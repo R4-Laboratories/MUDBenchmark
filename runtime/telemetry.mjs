@@ -19,8 +19,8 @@ const PLAYER_LOG = process.env.PLAYER_LOG
   ?? (LOG.endsWith(".jsonl") ? `${LOG.slice(0, -6)}.players.jsonl` : `${LOG}.players.jsonl`);
 export const PLAYER_LOG_FILE = PLAYER_LOG;
 export const PLAYER_SPAN_NAMES = new Set([
-  "world.session", "world.disconnect", "world.quest", "world.transition",
-  "world.combat", "world.snapshot", "world.input",
+  "world.session", "world.disconnect", "world.prism", "world.quest",
+  "world.transition", "world.combat", "world.snapshot", "world.input",
 ]);
 const SERVICE = process.env.OTEL_SERVICE_NAME ?? "mudbench";
 const MAX_BYTES = Number(process.env.TELEMETRY_MAX_BYTES ?? 64 * 1024 * 1024);

@@ -16,8 +16,8 @@ new live file is started.
 
 The full log is dominated by tick spans. A compact player log sits beside it
 (`PLAYER_LOG`, default `spans.players.jsonl` next to `TELEMETRY_LOG`) and keeps
-only `world.session`, `world.disconnect`, `world.quest`, `world.transition`,
-`world.combat`, `world.snapshot` and `world.input`. `GET /players` reads that
+only `world.session`, `world.disconnect`, `world.prism`, `world.quest`,
+`world.transition`, `world.combat`, `world.snapshot` and `world.input`. `GET /players` reads that
 small file. On first start the server seeds it from the existing main log, so a
 release does not start the player view empty; it rotates at
 `PLAYER_MAX_BYTES` (16 MiB by default). The main log remains the complete
@@ -90,7 +90,9 @@ node tools/players.mjs --json /path/to/spans.jsonl
 The summary is aggregate-only:
 
 - sessions: logins, registrations, Prism/legacy, human/AI, unique accounts and
-  characters, returning accounts, active days;
+  characters, returning accounts, active days (where `session.ai` is absent,
+  the matching `world.prism` record supplies `prism.ai`; legacy sessions with
+  neither stay in `ai_unknown`);
 - playtime: completed connections, open connections, total/average/median/max
   duration (playtime covers completed connections; open ones are counted
   separately);
