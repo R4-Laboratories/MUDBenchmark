@@ -32,14 +32,19 @@ const aiFlag = (session) => {
 };
 
 const latestActors = (snapshots) => {
-  const latest = snapshots[snapshots.length - 1];
-  if (!latest) return { at: null, actors: [] };
-  try {
-    const actors = JSON.parse(latest["world.actors"] ?? "[]");
-    return { at: latest.at ?? null, actors: Array.isArray(actors) ? actors : [] };
-  } catch {
-    return { at: latest.at ?? null, actors: [] };
+  // The newest snapshot is often taken with nobody online. Use the most recent
+  // snapshot that actually holds players so the level distribution stays
+  // descriptive instead of collapsing to zero between sessions.
+  for (let index = snapshots.length - 1; index >= 0; index -= 1) {
+    const snapshot = snapshots[index];
+    try {
+      const actors = JSON.parse(snapshot["world.actors"] ?? "[]");
+      if (Array.isArray(actors) && actors.length) return { at: snapshot.at ?? null, actors };
+    } catch {
+      // skip a malformed snapshot
+    }
   }
+  return { at: snapshots[snapshots.length - 1]?.at ?? null, actors: [] };
 };
 
 export function summarizePlayers(spans) {

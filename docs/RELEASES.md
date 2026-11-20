@@ -300,6 +300,9 @@ Rehearsed 2026-11-16:
 - v0.91.12 (player history) reads historical AI/human sessions through the
   matching `world.prism` record, includes `world.prism` in the compact log and
   shows the unknown-AI count on `/stats` (MB-173);
+- v0.91.13 (level view) uses the most recent snapshot that actually holds
+  players for the level distribution, so `/players` and `/stats` do not
+  collapse to zero between sessions (MB-175);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);
