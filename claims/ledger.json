@@ -1065,6 +1065,12 @@
       "level": "build",
       "statement": "The player statistics view reads a compact player-event log beside the full span log instead of the last 4 MiB of the full log. The compact log keeps only world.session, world.disconnect, world.quest, world.transition, world.combat, world.snapshot and world.input; it rotates at PLAYER_MAX_BYTES (16 MiB) and is seeded from the existing main log on first start. GET /players reads it, so sparse session records survive the tail window. The Gate checks the selected span set and the seed call.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-173",
+      "level": "build",
+      "statement": "Historical player sessions without session.ai are classified by joining the matching world.prism record (prism.id to account.key, prism.ai); world.prism is part of the compact player log. Sessions with neither signal report as ai_unknown, and /stats shows that count. The Gate covers the fallback and the compact selection.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

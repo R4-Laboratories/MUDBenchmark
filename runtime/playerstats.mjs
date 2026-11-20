@@ -52,6 +52,19 @@ export function summarizePlayers(spans) {
   const inputs = all.filter((span) => span.name === "world.input");
   const snapshots = all.filter((span) => span.name === "world.snapshot");
 
+  const prismAi = new Map();
+  for (const span of all) {
+    if (span.name !== "world.prism") continue;
+    const id = text(span["prism.id"]);
+    if (id) prismAi.set(id, flag(span["prism.ai"]));
+  }
+  const aiFor = (session) => {
+    const explicit = aiFlag(session);
+    if (explicit !== null) return explicit;
+    const account = text(session["account.key"]);
+    return account ? prismAi.get(account) ?? null : null;
+  };
+
   const times = all.map((span) => span.at).filter((at) => typeof at === "string").sort();
   const sessionByActor = new Map();
   const accountSessions = new Map();
@@ -59,15 +72,15 @@ export function summarizePlayers(spans) {
   for (const session of sessions) {
     const actor = text(session["actor.id"]);
     const account = text(session["account.key"]);
-    if (actor) sessionByActor.set(actor, { account, ai: aiFlag(session) });
+    if (actor) sessionByActor.set(actor, { account, ai: aiFor(session) });
     if (account) accountSessions.set(account, (accountSessions.get(account) ?? 0) + 1);
     if (session["actor.name"]) characters.add(String(session["actor.name"]).toLowerCase());
   }
   const accountOf = (span) => sessionByActor.get(text(span["actor.id"]))?.account ?? null;
   const isPlayer = (id) => sessionByActor.has(text(id));
 
-  const ai = sessions.filter((session) => aiFlag(session) === true).length;
-  const human = sessions.filter((session) => aiFlag(session) === false).length;
+  const ai = sessions.filter((session) => aiFor(session) === true).length;
+  const human = sessions.filter((session) => aiFor(session) === false).length;
   const aiUnknown = sessions.length - ai - human;
   const registrations = sessions.filter((session) => session["session.kind"] === "register").length;
   const prism = sessions.filter((session) => flag(session["session.prism"])).length;

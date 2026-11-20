@@ -1413,11 +1413,12 @@ let telemetry = { ok: true, why: [] };
   const compact = selectPlayerLines([
     JSON.stringify({ name: "world.tick", "world.tick": 1 }),
     JSON.stringify({ name: "world.session", "actor.id": "a", "session.ai": false }),
+    JSON.stringify({ name: "world.prism", "prism.id": "acct-a", "prism.ai": true }),
     JSON.stringify({ name: "world.quest", "actor.id": "a", "quest.action": "accept" }),
     JSON.stringify({ name: "ai.turn", "ai.provider": "x" }),
   ].join("\n"));
-  check(PLAYER_SPAN_NAMES.has("world.session") && PLAYER_SPAN_NAMES.has("world.quest") && !PLAYER_SPAN_NAMES.has("world.tick"), "the compact player span set is wrong");
-  check(compact.includes("world.session") && compact.includes("world.quest") && !compact.includes("world.tick") && !compact.includes("ai.turn"), "the compact player log kept the wrong spans");
+  check(PLAYER_SPAN_NAMES.has("world.session") && PLAYER_SPAN_NAMES.has("world.prism") && PLAYER_SPAN_NAMES.has("world.quest") && !PLAYER_SPAN_NAMES.has("world.tick"), "the compact player span set is wrong");
+  check(compact.includes("world.session") && compact.includes("world.prism") && compact.includes("world.quest") && !compact.includes("world.tick") && !compact.includes("ai.turn"), "the compact player log kept the wrong spans");
   check(/ensurePlayerLog\(\)/.test(serverSource), "the server does not seed the compact player log");
 
   const statusWorld = loadWorld({ mode: "single" });
@@ -1441,7 +1442,8 @@ let playerStats = { ok: true, why: [] };
   const check = (condition, why) => { if (!condition) { playerStats.ok = false; playerStats.why.push(why); } };
   const spans = [
     { name: "world.session", at: "2026-11-20T00:00:00Z", "actor.id": "h1", "actor.name": "alice", "account.key": "acct-h", "session.kind": "register", "session.prism": false, "session.ai": false },
-    { name: "world.session", at: "2026-11-20T00:01:00Z", "actor.id": "a1", "actor.name": "ember-fox-42", "account.key": "acct-ai", "session.kind": "login", "session.prism": true, "session.ai": true },
+    { name: "world.session", at: "2026-11-20T00:01:00Z", "actor.id": "a1", "actor.name": "ember-fox-42", "account.key": "acct-ai", "session.kind": "login", "session.prism": true },
+    { name: "world.prism", at: "2026-11-20T00:01:00Z", "actor.id": "a1", "prism.id": "acct-ai", "prism.ai": true },
     { name: "world.session", at: "2026-11-20T00:02:00Z", "actor.id": "h2", "actor.name": "alice", "account.key": "acct-h", "session.kind": "login", "session.prism": false, "session.ai": false },
     { name: "world.disconnect", "actor.id": "h1", duration_ms: 60000 },
     { name: "world.disconnect", "actor.id": "a1", duration_ms: 120000 },
