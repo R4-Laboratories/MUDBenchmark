@@ -1011,6 +1011,12 @@
       "level": "build",
       "statement": "v0.91.6 adds the archmage Mages Guild line: guild-eclipse (rank archmage, requires guild-ember/guild-fen/eclipse-throne; visit the Throne of Ash and collect the regent sigil; 200 guild XP) and guild-dawn (requires guild-eclipse; visit the Dawn Gate, collect the dawn crown; 250 guild XP and the archmage signet neck armour). The world is 114 rooms/14 zones/60 quests/51 mobiles/102 objects/11 titles. The gate covers archmage advancement, prerequisite acceptance, visit/collect completion, both guild XP rewards and the signet.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-164",
+      "level": "some-true",
+      "statement": "Production v0.91.6 serves 114 rooms, 14 zones, 60 quests, 51 mobiles (50 alive at the final read), 102 objects and 11 titles. PR #18 added the rank-10 Mages Guild line: The Eclipse Ledger and The Dawn Archive, with guild XP and the archmage signet. The merged-PR chain auto-published v0.91.6; wick verified the manifest hashes, replayed vectors and deployed. R4 active, signups open, Gemini configured false. Gate 44804011007 green.",
+      "authority": "GitHub PR #18 merge 62fd187 2026-11-20; main Gate 44804011007; publish 44805284073; release v0.91.6; wick deploy output and /world"
     }
   ]
 }

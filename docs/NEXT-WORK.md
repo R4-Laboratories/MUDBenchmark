@@ -32,7 +32,7 @@ memory or prompt system.
 | v0.91.3 | Old AI character recovery | **done** (MB-158) |
 | v0.91.4 | Merged-PR auto release and hash-verified pull deploy | **done** (MB-160) |
 | v0.91.5 | Browser session reconnect and resume | **done** (MB-162) |
-| v0.91.6 | Archmage Eclipse guild line | **in flight** |
+| v0.91.6 | Archmage Eclipse guild line | **done** (MB-163) |
 | backlog | Optional content and live-player tuning | optional |
 
 ## What is next
