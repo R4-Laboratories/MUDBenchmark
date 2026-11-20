@@ -624,6 +624,19 @@
         "list": "Ignoring: %s."
       }
     },
+    "report": {
+      "aliases": [
+        "rep"
+      ],
+      "argument": "actor text",
+      "messages": {
+        "usage": "Report whom, and why? report <name> <reason>.",
+        "missing": "No one named %s has been here.",
+        "self": "You cannot report yourself.",
+        "empty": "Add a reason so the operator can review it.",
+        "recorded": "Your report about %s has been recorded for the operator."
+      }
+    },
     "titles": {
       "aliases": [
         "titlelist",

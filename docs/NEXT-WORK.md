@@ -34,6 +34,7 @@ memory or prompt system.
 | v0.91.5 | Browser session reconnect and resume | **done** (MB-162) |
 | v0.91.6 | Archmage Eclipse guild line | **done** (MB-163) |
 | v0.91.7 | Repeatable Archmage's Trial | **done** (MB-165) |
+| v0.91.8 | Blocked-name policy and player reports | **in flight** |
 | backlog | Optional content and live-player tuning | optional |
 
 ## What is next
@@ -52,7 +53,10 @@ memory or prompt system.
    action to open a hidden room, and `facts` lists what the character knows.
 5. **Moderation.** Chat has an eight-line/ten-second guard, reserved names and
    a persistent ignore list across tells, mail, channels, guild chat, socials
-   and room speech. A fuller blocked-name policy remains open.
+   and room speech. New names enforce a 3-24 character shape and a token-aware
+   reserved-word policy; `report <name> <reason>` writes a durable operator
+   queue while sharing the chat guard. The remaining gap is a routine operator
+   review loop, not another player-facing control.
 
 ## Historical workstreams
 
