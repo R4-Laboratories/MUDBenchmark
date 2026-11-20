@@ -1457,6 +1457,7 @@ let playerStats = { ok: true, why: [] };
     { name: "world.combat", "actor.id": "h1", "target.id": "a1", outcome: "killed" },
     { name: "world.combat", "actor.id": "a1", "target.id": "h1", outcome: "miss" },
     { name: "world.snapshot", at: "2026-11-20T00:03:00Z", "world.actors": JSON.stringify([{ level: 3, guild: "mages" }, { level: 8, guild: null }]) },
+    { name: "world.snapshot", at: "2026-11-20T00:04:00Z", "world.actors": "[]" },
     { name: "world.input", "actor.id": "h1", text: "look" },
     { name: "world.input", "actor.id": "a1", text: "north" },
     { name: "world.input", "actor.id": "h2", text: "slow", refused: "too-fast" },

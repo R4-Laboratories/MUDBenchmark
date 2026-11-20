@@ -1077,6 +1077,12 @@
       "level": "some-true",
       "statement": "Production v0.91.12 serves 114 rooms, 14 zones, 61 quests, 51 mobiles and 102 objects. GET /players reads the compact player log and reports 967 spans, 8 sessions, 6 unique accounts, 4 human, 2 AI, 2 AI-unknown and 4,315,229 ms of completed playtime; /stats serves the player panel. The response contains no account keys or character names. The merged-PR chain auto-published v0.91.12; wick verified the manifest hashes, replayed vectors and deployed. R4 active, signups open, Gemini configured false. Main Gate 44836599012 green, publish 44837623672.",
       "authority": "GitHub PR #24 merge d96446f 2026-11-20; main Gate 44836599012; publish 44837623672; release v0.91.12; wick deploy output, /players, /stats and compact player log"
+    },
+    {
+      "id": "MB-175",
+      "level": "build",
+      "statement": "The player level distribution uses the most recent world.snapshot whose world.actors array is non-empty, not simply the newest snapshot. Snapshots taken with nobody online therefore do not collapse the average, maximum, distribution or guilded count to zero. The Gate includes a populated snapshot followed by an empty one and still reports the populated levels.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }
