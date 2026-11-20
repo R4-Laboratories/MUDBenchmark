@@ -981,6 +981,12 @@
       "level": "build",
       "statement": "v0.91.3 adds explicit recovery for old standalone AI characters. The characters panel scans the old ai Prism session and sends a signed prism/character-transfer/1 action; the server verifies the old account session and action with verifyPrismAction, refuses a persona owned by another human, and transferCharacter moves the chosen character owner and account list entry to the signed-in human Prism account. The old account remains; only the chosen character moves. The fixed scout default, random new names and memory-only AI guard remain. The gate covers transfer ownership/list changes, recovery UI strings and both Prism names/static paths.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-159",
+      "level": "some-true",
+      "statement": "Production v0.91.3 serves the old-AI recovery flow. The deployed page contains the Recover old AI characters panel and /names.mjs returns 200. The server verifies the old account signed prism/character-transfer/1 action and moves only the chosen character to the signed-in human Prism account; the gate covers the signed action and wrong-destination refusal. The world remains 114 rooms/14 zones/58 quests/51 mobiles/101 objects/11 titles. R4 active, signups open, Gemini configured false. Gate 44776703806 and release 44778482804.",
+      "authority": "wick production v0.91.3 2026-11-20; release 44778482804; gate 44776703806; /health, /names.mjs and deployed index; signed-transfer gate"
     }
   ]
 }
