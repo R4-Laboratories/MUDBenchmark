@@ -172,6 +172,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `long-remembering` | The Long Remembering | 6 | Talk to the guild clerk; Recall the root word at the shrine; Return to the First Bed | 400 xp |
 | `three-rememberings` | The Three Rememberings | 7 | Talk to the orchard keeper; Recall the orchard word at the shrine; Carry an orchard seed; Talk to the guild clerk | 500 xp |
 | `press-beneath` | The Press Beneath | 8 | Talk to the orchard keeper; Reach the Seed Vault; Carry the press seed | 600 xp |
+| `cider-spring` | The Cider Spring | 9 | Talk to the spring keeper; Reach the White Bed; Carry a cider bloom | 700 xp |
 
 ## Rooms
 
@@ -287,5 +288,8 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 108 | The Old Press | garden | yes | south 106, down 109 |
 | 109 | The Press Cellar | garden | yes | up 108, east 110, north 111 |
 | 110 | The Fermenting Vat | garden | no | west 109 |
-| 111 | The Seed Vault | garden | yes | south 109 |
+| 111 | The Seed Vault | garden | yes | south 109, north 112 |
+| 112 | The Cider Spring | garden | yes | south 111, east 113 |
+| 113 | The White Bed | garden | yes | west 112, north 114 |
+| 114 | The Spring Keeper's Rest | garden | yes | south 113 |
 

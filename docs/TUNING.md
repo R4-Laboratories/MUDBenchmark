@@ -81,7 +81,8 @@ turns. The server contract and the navigation guards both worked. The remote
 DeepSeek runs then completed the Root Archive in 5 turns and all four Three
 Rememberings objectives in 24 turns without local inference. The two-quest
 Press Beneath / Clerk Errand run completed in 31 turns with an objective
-dependency guard.
+dependency guard. The three-quest Press Beneath / Cider Spring / First Bed run
+then completed in 23 turns with the route lock enabled.
 
 ## What would change the conclusion
 

@@ -214,7 +214,9 @@ action. Append `>Room` to hold an objective until another objective is done,
 for example `The Guild Hall:deliver seal>The Rat Warren`. `AGENT_WAYPOINTS="The Root Archive:talk|The First Bed:take"` is the
 ordered variant. A movement command that contradicts the known next step is
 replaced by that step, and an objective action attempted in the wrong room is
-redirected onto the route. Non-movement actions at the right target remain the
+redirected onto the route. While a destination is known and no objective is
+current, the route lock turns any non-quit command into the next BFS step, so
+the model cannot spend turns looking around mid-route. Non-movement actions at the right target remain the
 model's choice. The CLI agent prints the hint as a `NAVIGATE:` block before
 asking the model.
 

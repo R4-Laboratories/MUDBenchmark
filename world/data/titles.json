@@ -49,6 +49,11 @@
       "id": "presskeeper",
       "name": "Presskeeper",
       "quest": "press-beneath"
+    },
+    {
+      "id": "springkeeper",
+      "name": "Springkeeper",
+      "quest": "cider-spring"
     }
   ]
 }

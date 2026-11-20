@@ -29,6 +29,12 @@
       "npc": "orchard-keeper",
       "word": "orchard",
       "text": "The orchard keeper says: \"The orchard remembers the word ORCHARD. Say it where the shrine can hear.\""
+    },
+    {
+      "id": "spring-word",
+      "npc": "spring-keeper",
+      "word": "spring",
+      "text": "The spring keeper says: \"The spring remembers the word SPRING.\""
     }
   ]
 }

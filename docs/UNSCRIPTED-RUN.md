@@ -191,6 +191,32 @@ be attempted before the seal was taken.
 | Orchard keeper talk | yes |
 | Exit code | 0 |
 
+## Three-quest remote run (v0.90)
+
+The final broad run used remote DeepSeek and three simultaneous quests:
+
+- **Press Beneath** — orchard keeper, Seed Vault, press seed.
+- **Cider Spring** — spring keeper, White Bed, cider bloom.
+- **First Bed** — root keeper, First Bed, first seed.
+
+All objectives were action-only (talk, take, visit), avoiding the answer and
+delivery edge cases.
+
+| Result | Value |
+| --- | --- |
+| Turns | **23** |
+| Press Beneath | complete |
+| Cider Spring | complete |
+| First Bed | complete |
+| Press seed | yes |
+| Cider bloom | yes |
+| First seed | yes |
+| Exit code | 0 |
+
+The route lock kept every mid-route turn on the BFS next step, and the
+objective guards handled the talk/take actions at each target. This is the
+shortest broad run so far.
+
 ## Multi-objective planner (v0.87)
 
 `AGENT_OBJECTIVES` now carries `Room:action` entries and chooses the nearest

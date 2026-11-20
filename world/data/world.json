@@ -2026,7 +2026,8 @@
       "text": "A dry vault of seed drawers under the cellar. A press seed rests on a stone shelf, and the cellar is south.",
       "safe": true,
       "exits": {
-        "south": 109
+        "south": 109,
+        "north": 112
       },
       "details": {
         "drawers": "Every drawer is labeled with a season.",
@@ -2036,6 +2037,59 @@
       "ambient": [
         "A drawer clicks open.",
         "The seed smells of cider."
+      ]
+    },
+    "112": {
+      "name": "The Cider Spring",
+      "text": "A spring of clear cider rises in a stone bowl under the seed vault. The water runs east through a channel, and the vault is south.",
+      "safe": true,
+      "exits": {
+        "south": 111,
+        "east": 113
+      },
+      "details": {
+        "spring": "The spring is cold and sweet.",
+        "bowl": "The bowl is carved with apple leaves.",
+        "channel": "The channel runs toward the white bed."
+      },
+      "ambient": [
+        "The spring ticks.",
+        "The cider smells of autumn."
+      ]
+    },
+    "113": {
+      "name": "The White Bed",
+      "text": "A shallow bed of white gravel under the spring channel. A single pale bloom grows at the water's edge, and the spring is west.",
+      "safe": true,
+      "exits": {
+        "west": 112,
+        "north": 114
+      },
+      "details": {
+        "gravel": "The gravel is white and warm.",
+        "bloom": "The bloom is pale and open.",
+        "water": "The water is very clear."
+      },
+      "ambient": [
+        "The bloom turns.",
+        "Water moves under the gravel."
+      ]
+    },
+    "114": {
+      "name": "The Spring Keeper's Rest",
+      "text": "A dry alcove above the white bed, with a low seat and a shelf of empty cups. The spring keeper waits here. The bed is south.",
+      "safe": true,
+      "exits": {
+        "south": 113
+      },
+      "details": {
+        "seat": "The seat is worn smooth.",
+        "cups": "Every cup is empty.",
+        "shelf": "The shelf smells of cider."
+      },
+      "ambient": [
+        "A cup rings softly.",
+        "The keeper listens to the spring."
       ]
     }
   },
@@ -3114,6 +3168,28 @@
       "xp": 120,
       "description": "A wet black hound circles the vat.",
       "examine": "Its coat smells of cider and iron."
+    },
+    {
+      "id": "spring-keeper",
+      "name": "the spring keeper",
+      "room": 114,
+      "home": 114,
+      "period": 240,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "zone": "garden",
+      "hp": 30,
+      "damage": 0,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 0,
+      "description": "A quiet figure sits above the white bed.",
+      "examine": "The keeper's hands are clean and cold.",
+      "dialogue": [
+        "The spring remembers the word SPRING.",
+        "The white bed keeps one bloom for the cups.",
+        "The orchard drinks from here."
+      ]
     }
   ],
   "zones": [
@@ -3309,7 +3385,10 @@
         108,
         109,
         110,
-        111
+        111,
+        112,
+        113,
+        114
       ]
     }
   ],
@@ -4556,6 +4635,17 @@
       ],
       "value": 140,
       "examine": "A dark, heavy seed that smells of cider.",
+      "forSale": false
+    },
+    {
+      "id": "cider-bloom",
+      "name": "a cider bloom",
+      "room": 113,
+      "flags": [
+        "takeable"
+      ],
+      "value": 160,
+      "examine": "A pale bloom that smells of cider and cold stone.",
       "forSale": false
     }
   ],

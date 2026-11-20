@@ -1565,6 +1565,39 @@
         "xp": 600
       },
       "complete": "The keeper sets the press seed in the old press. The cellar goes quiet."
+    },
+    {
+      "id": "cider-spring",
+      "name": "The Cider Spring",
+      "level": 9,
+      "giver": "the spring keeper",
+      "description": "The spring keeper wants the pale bloom from the white bed. Talk to the keeper, reach the bed and carry the bloom back.",
+      "requires": [
+        "press-beneath"
+      ],
+      "objectives": [
+        {
+          "kind": "talk",
+          "npc": "spring-keeper",
+          "count": 1,
+          "text": "Talk to the spring keeper"
+        },
+        {
+          "kind": "visit",
+          "room": 113,
+          "text": "Reach the White Bed"
+        },
+        {
+          "kind": "collect",
+          "object": "cider-bloom",
+          "count": 1,
+          "text": "Carry a cider bloom"
+        }
+      ],
+      "rewards": {
+        "xp": 700
+      },
+      "complete": "The keeper sets the bloom in an empty cup. The spring runs clear."
     }
   ]
 }

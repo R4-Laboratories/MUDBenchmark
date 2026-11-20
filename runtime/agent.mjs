@@ -41,6 +41,7 @@ const OBJECTIVES = (process.env.AGENT_OBJECTIVES ?? "")
   })
   .filter(Boolean);
 const DIRECTIONS = new Set(["north", "south", "east", "west", "up", "down", "n", "s", "e", "w", "u", "d"]);
+const ROUTE_LOCK = process.env.AGENT_ROUTE_LOCK !== "0";
 const WAYPOINTS = (process.env.AGENT_WAYPOINTS ?? "")
   .split("|")
   .map((part) => {
@@ -312,7 +313,10 @@ async function turn() {
     command = command.replace(/^(talk\s+[a-z ]+?)\s+in\s+the\s+.*$/i, "$1");
     const first = command.split(/\s+/)[0]?.toLowerCase();
     const mapped = first === "n" ? "north" : first === "s" ? "south" : first === "e" ? "east" : first === "w" ? "west" : first === "u" ? "up" : first === "d" ? "down" : first;
-    if (routeNext && DIRECTIONS.has(first) && mapped !== routeNext) {
+    if (ROUTE_LOCK && routeNext && command.toLowerCase() !== "quit" && command.toLowerCase() !== routeNext) {
+      log(`route lock: ${command} → ${routeNext}`);
+      command = routeNext;
+    } else if (routeNext && DIRECTIONS.has(first) && mapped !== routeNext) {
       log(`route guard: ${command} → ${routeNext}`);
       command = routeNext;
     }

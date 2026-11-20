@@ -259,6 +259,9 @@ Rehearsed 2026-11-16:
 - v0.89.0 (undercroft) adds three rooms below the Old Press, the press seed, the
   Press Beneath quest, objective dependencies and a two-quest remote DeepSeek
   run; 111 rooms / 56 quests (MB-149);
+- v0.90.0 (cider spring) adds three rooms below the Seed Vault, the spring
+  keeper, the cider bloom, the Cider Spring quest, a strict route lock and a
+  23-turn three-quest remote DeepSeek run; 114 rooms / 57 quests (MB-151);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

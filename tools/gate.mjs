@@ -2881,6 +2881,20 @@ let memoryQuest = { ok: true, why: [] };
   actor = state.actors.find((entry) => entry.id === "mq");
   check(actor.quests.completed.includes("press-beneath"), "the press-beneath quest did not complete");
   check(loadTitles().titles.some((title) => title.id === "presskeeper" && title.quest === "press-beneath"), "the presskeeper title is missing");
+  check(world.rooms[111]?.exits?.north === 112 && world.rooms[112]?.exits?.south === 111, "the cider spring is not connected to the seed vault");
+  check(world.rooms[112]?.exits?.east === 113 && world.rooms[113]?.exits?.north === 114, "the cider spring exits are wrong");
+
+  actor = state.actors.find((entry) => entry.id === "mq");
+  actor.level = 9;
+  actor.room = 114;
+  run([{ kind: "questAccept", actorId: "mq", questId: "cider-spring" }]);
+  check(state.actors.find((entry) => entry.id === "mq").quests.active.some((entry) => entry.id === "cider-spring"), "the cider-spring quest was not accepted");
+  run([{ kind: "talk", actorId: "mq", npcId: "spring-keeper" }]);
+  run([{ kind: "move", actorId: "mq", dir: "south", to: 113 }]);
+  run([{ kind: "take", actorId: "mq", objectId: "cider-bloom", messages: { actor: "taken", others: "takes" } }]);
+  actor = state.actors.find((entry) => entry.id === "mq");
+  check(actor.quests.completed.includes("cider-spring"), "the cider-spring quest did not complete");
+  check(loadTitles().titles.some((title) => title.id === "springkeeper" && title.quest === "cider-spring"), "the springkeeper title is missing");
   if (memoryQuest.why.length) { memoryQuest.ok = false; failures.push(`the memory quest is broken: ${memoryQuest.why[0]}`); }
 }
 
@@ -3254,6 +3268,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"longRoad".padEnd(26)}  ${(memoryQuest.ok ? "400 xp" : "BROKEN").padStart(5)}   == town, root`);
   console.log(`${"threeMem".padEnd(26)}  ${(memoryQuest.ok ? "500 xp" : "BROKEN").padStart(5)}   == four goals`);
   console.log(`${"pressBeneath".padEnd(26)}  ${(memoryQuest.ok ? "600 xp" : "BROKEN").padStart(5)}   == seed, vault`);
+  console.log(`${"ciderSpring".padEnd(26)}  ${(memoryQuest.ok ? "700 xp" : "BROKEN").padStart(5)}   == bloom`);
   console.log(`${"quests".padEnd(26)}  ${(quests.ok ? "accept, advance, pay" : "BROKEN").padStart(5)}   == facts, once`);
   console.log(`${"aggression".padEnd(26)}  ${(aggression.ok ? "1 duel" : "BROKEN").padStart(5)}   == mobs start fights`);
   console.log(`${"combat2".padEnd(26)}  ${(combat2.ok ? "weapons, armour, xp" : "BROKEN").padStart(5)}   == fight and grow`);
