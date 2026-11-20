@@ -39,7 +39,7 @@ import { AREA_PERIOD, armorOf, attackRoll, checkpointIdentities, initialState, n
 import { join } from "node:path";
 import { buildCandidates } from "./candidate.mjs";
 import { PROVIDERS, buildSystemPrompt, buildUserPrompt, normalizeBase, parseBrain, requestFor, replyFrom, trimHistory, validateCommand, repairCommand } from "../runtime/web/ai.mjs";
-import { emptyMemory, noteRoom, rememberResult, memoryPrompt, loopWarning, breakLoop, shouldBreakLoop } from "../runtime/web/memory.mjs";
+import { emptyMemory, noteRoom, rememberResult, memoryPrompt, loopWarning, breakLoop, shouldBreakLoop, pathTo, nextStep, routeHint } from "../runtime/web/memory.mjs";
 import { verifyPrismSession, verifyPersonaOwner, verifySessionKey, sessionWithinWindow } from "../runtime/prism-auth.mjs";
 import { decodeIdentityRequest, identityAdmits } from "../runtime/identity.mjs";
 import { loadStateFile, saveStateFile } from "../runtime/state.mjs";
@@ -303,6 +303,15 @@ let aiMemory = { ok: true, why: [] };
   ], route) === "east", "the loop guard did not prefer an unvisited room");
   check(shouldBreakLoop(route, { room: "The Atrium", command: "north", recent: ["north", "south", "north", "south"] }), "the route loop did not trigger the loop guard");
   check(shouldBreakLoop(memory, { room: "The Atrium", command: "examine plaque", recent: [] }), "the stale memory did not trigger the loop guard");
+  const graph = emptyMemory();
+  noteRoom(graph, "The Atrium", [{ dir: "north", room: "The Corridor" }, { dir: "east", room: "The Storeroom" }]);
+  noteRoom(graph, "The Corridor", [{ dir: "south", room: "The Atrium" }, { dir: "east", room: "The Vault" }]);
+  noteRoom(graph, "The Vault", [{ dir: "west", room: "The Corridor" }]);
+  const path = pathTo(graph, "The Atrium", "The Vault");
+  check(path.length === 2 && path[0] === "north" && path[1] === "east", "the room graph did not find the shortest path");
+  check(nextStep(graph, "The Atrium", "The Vault") === "north", "the next-step planner chose the wrong exit");
+  check(routeHint(graph, "The Atrium", "The Vault").includes("north"), "the route hint did not name the next exit");
+  check(routeHint(graph, "The Atrium", "The Moon").includes("No known route"), "the route hint invented an unknown path");
   if (aiMemory.why.length) { aiMemory.ok = false; failures.push(`the AI memory is broken: ${aiMemory.why[0]}`); }
 }
 
@@ -2787,6 +2796,18 @@ let memoryQuest = { ok: true, why: [] };
   actor = state.actors.find((entry) => entry.id === "mq");
   check(actor.quests.completed.includes("remembered-bed"), "the Remembered Bed quest did not complete");
   check(loadTitles().titles.some((title) => title.id === "bedkeeper" && title.quest === "remembered-bed"), "the bedkeeper title is missing");
+
+  actor = state.actors.find((entry) => entry.id === "mq");
+  actor.level = 5;
+  run([{ kind: "questAccept", actorId: "mq", questId: "first-bed" }]);
+  check(state.actors.find((entry) => entry.id === "mq").quests.active.some((entry) => entry.id === "first-bed"), "the first-bed quest was not accepted");
+  run([{ kind: "move", actorId: "mq", dir: "down", to: 102 }]);
+  run([{ kind: "talk", actorId: "mq", npcId: "root-keeper" }]);
+  run([{ kind: "move", actorId: "mq", dir: "east", to: 103 }]);
+  run([{ kind: "take", actorId: "mq", objectId: "first-seed", messages: { actor: "taken", others: "takes" } }]);
+  actor = state.actors.find((entry) => entry.id === "mq");
+  check(actor.quests.completed.includes("first-bed"), "the first-bed quest did not complete");
+  check(loadTitles().titles.some((title) => title.id === "rootkeeper" && title.quest === "first-bed"), "the rootkeeper title is missing");
   if (memoryQuest.why.length) { memoryQuest.ok = false; failures.push(`the memory quest is broken: ${memoryQuest.why[0]}`); }
 }
 
@@ -3156,6 +3177,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"memoryQuest".padEnd(26)}  ${(memoryQuest.ok ? "150 xp" : "BROKEN").padStart(5)}   == fact, recall`);
   console.log(`${"gardenMoon".padEnd(26)}  ${(memoryQuest.ok ? "300 xp" : "BROKEN").padStart(5)}   == crescent, seed`);
   console.log(`${"factAction".padEnd(26)}  ${(memoryQuest.ok ? "1 room" : "BROKEN").padStart(5)}   == word, rose`);
+  console.log(`${"rootArchive".padEnd(26)}  ${(memoryQuest.ok ? "260 xp" : "BROKEN").padStart(5)}   == seed, quest`);
   console.log(`${"quests".padEnd(26)}  ${(quests.ok ? "accept, advance, pay" : "BROKEN").padStart(5)}   == facts, once`);
   console.log(`${"aggression".padEnd(26)}  ${(aggression.ok ? "1 duel" : "BROKEN").padStart(5)}   == mobs start fights`);
   console.log(`${"combat2".padEnd(26)}  ${(combat2.ok ? "weapons, armour, xp" : "BROKEN").padStart(5)}   == fight and grow`);

@@ -12,7 +12,7 @@
 //   WS_URL=wss://play.r4labs.org node agent.mjs
 
 import { appendFileSync, readFileSync } from "node:fs";
-import { emptyMemory, noteRoom, rememberResult, memoryPrompt, loopWarning, breakLoop, shouldBreakLoop } from "./web/memory.mjs";
+import { emptyMemory, noteRoom, rememberResult, memoryPrompt, loopWarning, breakLoop, shouldBreakLoop, routeHint } from "./web/memory.mjs";
 
 const WS_URL = process.env.WS_URL ?? "ws://127.0.0.1:8090";
 const NAME = process.env.HARNESS_NAME ?? process.env.AGENT_NAME ?? "agent";
@@ -27,6 +27,15 @@ const GOAL = process.env.AGENT_GOAL ?? "Read the word in the Vault (north then e
 const LOG = process.env.AGENT_LOG ?? "";
 const PRIME_ID = process.env.PRIME_ROUTER_IDENTITY ?? `mudbench-${NAME}`;
 const STOP_ON_QUEST = process.env.AGENT_STOP_ON_QUEST === "1";
+const DESTINATION = process.env.AGENT_DESTINATION ?? "";
+const WAYPOINTS = (process.env.AGENT_WAYPOINTS ?? "")
+  .split("|")
+  .map((part) => {
+    const [room, action] = part.split(":");
+    return room?.trim() ? { room: room.trim(), action: (action ?? "").trim() } : null;
+  })
+  .filter(Boolean);
+let waypointIndex = 0;
 
 if (!PASSWORD) {
   console.error("Set HARNESS_PASSWORD (or AGENT_PASSWORD) to the character's password.");
@@ -88,6 +97,7 @@ let busy = false;
 let lastSend = 0;
 let lastCommand = "";
 let lastRoom = "";
+let lastExits = [];
 let recent = [];
 const nav = emptyMemory();
 const messages = [{ role: "system", content: SYSTEM }];
@@ -204,13 +214,16 @@ async function turn() {
   turns += 1;
   if (turns > MAX_TURNS) { try { socket.send("quit\n"); } catch {} return; }
   const room = roomFrom(seen);
-  if (lastCommand && lastRoom) rememberResult(nav, { room: lastRoom, command: lastCommand, observation: seen, tick: turns });
-  if (room) noteRoom(nav, room.name);
+  if (lastCommand && lastRoom) rememberResult(nav, { room: lastRoom, command: lastCommand, observation: seen, tick: turns, exits: lastExits });
+  if (room) noteRoom(nav, room.name, room.exits);
+  const waypoint = WAYPOINTS[waypointIndex] ?? null;
+  const destination = waypoint?.room ?? DESTINATION;
   const navText = memoryPrompt(nav, { room: room?.name ?? lastRoom, exits: room?.exits ?? [], query: seen });
+  const hint = room && destination ? routeHint(nav, room.name, destination) : "";
   const warning = loopWarning(recent, nav.trail);
   busy = true;
   try {
-    const reply = await ask([seen, navText ? `NAVIGATION:\n${navText}` : "", warning ? `NOTE: ${warning}` : ""].filter(Boolean).join("\n\n"));
+    const reply = await ask([seen, navText ? `NAVIGATION:\n${navText}` : "", hint ? `NAVIGATE: ${hint}` : "", warning ? `NOTE: ${warning}` : ""].filter(Boolean).join("\n\n"));
     let { command, ok } = parse(reply);
     if (!ok) {
       const forced = breakLoop(recent, room?.exits ?? [], nav);
@@ -224,12 +237,19 @@ async function turn() {
         command = forced;
       }
     }
+    command = command.replace(/^talk\s+(?:to|with|the)\s+/i, "talk ").replace(/^speak\s+(?:to|with|the)\s+/i, "talk ");
+    command = command.replace(/^(talk\s+[a-z ]+?)\s+in\s+the\s+.*$/i, "$1");
+    if (waypoint && room?.name === waypoint.room && (!waypoint.action || command.toLowerCase().startsWith(waypoint.action.toLowerCase()))) {
+      waypointIndex += 1;
+      log(`waypoint ${waypointIndex}/${WAYPOINTS.length}: ${WAYPOINTS[waypointIndex]?.room ?? "done"}`);
+    }
     if (/^answer\s+/i.test(command)) answered = true;
     log(`turn ${turns}: ${command}`);
     recent = [...recent, command].slice(-12);
     await send(command);
     lastCommand = command;
     lastRoom = room?.name ?? lastRoom;
+    lastExits = room?.exits ?? lastExits;
     if (command.toLowerCase() === "quit") {
       setTimeout(() => process.exit(0), 300);
     }

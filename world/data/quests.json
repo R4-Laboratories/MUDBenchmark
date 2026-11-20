@@ -1426,6 +1426,39 @@
         "xp": 220
       },
       "complete": "The rememberer sets the bloom among the roots. The bed remembers another year."
+    },
+    {
+      "id": "first-bed",
+      "name": "The First Bed",
+      "level": 5,
+      "giver": "the root keeper",
+      "description": "The root keeper wants the first seed from the oldest bed. Talk to the keeper, walk east, and bring the seed back.",
+      "requires": [
+        "remembered-bed"
+      ],
+      "objectives": [
+        {
+          "kind": "talk",
+          "npc": "root-keeper",
+          "count": 1,
+          "text": "Talk to the root keeper"
+        },
+        {
+          "kind": "visit",
+          "room": 103,
+          "text": "Reach the First Bed"
+        },
+        {
+          "kind": "collect",
+          "object": "first-seed",
+          "count": 1,
+          "text": "Carry the first seed"
+        }
+      ],
+      "rewards": {
+        "xp": 260
+      },
+      "complete": "The keeper sets the seed in the archive. The first bed is named again."
     }
   ]
 }

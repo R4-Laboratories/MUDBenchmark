@@ -74,7 +74,9 @@ because the table had eleven thresholds. The table is now ten levels ending at
 Before route memory, the model planted in both attempts but looped before the
 hand-in. After the shared route ledger and loop guard, the third run finished
 the Remembered Bed in seven turns: take rose, plant, down, take bloom, up,
-north, talk. The server contract and the navigation guard both worked.
+north, talk. The BFS route and waypoint sequencer then completed the broader
+Root Archive run in nine turns. The server contract and the navigation guard
+both worked.
 
 ## What would change the conclusion
 

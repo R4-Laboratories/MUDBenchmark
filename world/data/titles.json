@@ -29,6 +29,11 @@
       "id": "bedkeeper",
       "name": "Bedkeeper",
       "quest": "remembered-bed"
+    },
+    {
+      "id": "rootkeeper",
+      "name": "Rootkeeper",
+      "quest": "first-bed"
     }
   ]
 }

@@ -151,8 +151,8 @@ const trimRoom = (room) => {
   }
 };
 
-/** Record a room visit and its place in the recent route. */
-export function noteRoom(memory, room) {
+/** Record a room visit, its exits and its place in the recent route. */
+export function noteRoom(memory, room, exits = []) {
   if (!memory || !room) return memory;
   const entry = memory.rooms[room] ?? (memory.rooms[room] = {
     visits: 0,
@@ -160,6 +160,13 @@ export function noteRoom(memory, room) {
     lastTick: 0,
     commands: {},
   });
+  for (const exit of Array.isArray(exits) ? exits : []) {
+    const dir = typeof exit === "string" ? exit : exit?.dir;
+    const target = typeof exit === "string" ? null : exit?.room ?? null;
+    if (!dir) continue;
+    entry.exits ??= {};
+    entry.exits[dir] = target;
+  }
   if (memory.lastRoom !== room) {
     entry.visits += 1;
     memory.lastRoom = room;
@@ -172,9 +179,9 @@ export function noteRoom(memory, room) {
 }
 
 /** Record the result of the command issued in `room` on the previous turn. */
-export function rememberResult(memory, { room, command, observation, tick = 0, at = Date.now() } = {}) {
+export function rememberResult(memory, { room, command, observation, tick = 0, at = Date.now(), exits = [] } = {}) {
   if (!memory || !room || !command) return memory;
-  const entry = noteRoom(memory, room).rooms[room];
+  const entry = noteRoom(memory, room, exits).rooms[room];
   entry.lastTick = tick;
   memory.updated = at;
   const known = entry.commands[command] ?? (entry.commands[command] = {
@@ -246,6 +253,40 @@ export function memoryPrompt(memory, { room = null, exits = [], limit = 8, query
 }
 
 /** A compact warning when the recent command cycle is repeating. */
+/** Shortest known route as an array of directions, or [] when unknown. */
+export function pathTo(memory, from, to) {
+  if (!memory || !from || !to) return [];
+  if (from === to) return [];
+  const queue = [[from, []]];
+  const seen = new Set([from]);
+  while (queue.length) {
+    const [room, path] = queue.shift();
+    const exits = memory.rooms?.[room]?.exits ?? {};
+    for (const [dir, target] of Object.entries(exits)) {
+      if (!target || seen.has(target)) continue;
+      const next = [...path, dir];
+      if (target === to) return next;
+      if (memory.rooms?.[target]) {
+        seen.add(target);
+        queue.push([target, next]);
+      }
+    }
+  }
+  return [];
+}
+
+export function nextStep(memory, from, to) {
+  return pathTo(memory, from, to)[0] ?? null;
+}
+
+export function routeHint(memory, from, to) {
+  if (!from || !to) return "";
+  const path = pathTo(memory, from, to);
+  if (path.length) return `Toward ${to}: ${path[0]} (${path.length} move${path.length === 1 ? "" : "s"}).`;
+  if (from === to) return `You are at ${to}.`;
+  return `No known route to ${to}; explore a new exit.`;
+}
+
 export function loopWarning(recent = [], trail = []) {
   const list = Array.isArray(recent) ? recent : [];
   const route = Array.isArray(trail) ? trail : [];

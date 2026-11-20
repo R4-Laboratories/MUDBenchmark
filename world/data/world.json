@@ -1844,7 +1844,8 @@
       "text": "A low room of roots and white soil beneath the garden. A single bloom grows from a bed of remembered things, and a stair of roots climbs back to the garden.",
       "safe": true,
       "exits": {
-        "up": 98
+        "up": 98,
+        "down": 102
       },
       "details": {
         "roots": "The roots are pale and warm.",
@@ -1854,6 +1855,41 @@
       "ambient": [
         "A root shifts.",
         "The bloom turns toward you."
+      ]
+    },
+    "102": {
+      "name": "The Root Archive",
+      "text": "A long room under the remembered bed, walled with roots and tablets of pressed earth. A root keeper sits at a low desk, and a passage runs east. The bed is above.",
+      "safe": true,
+      "exits": {
+        "up": 101,
+        "east": 103
+      },
+      "details": {
+        "roots": "The roots are pale and warm.",
+        "tablets": "Each tablet holds a name and a season.",
+        "desk": "The desk is grown, not built."
+      },
+      "ambient": [
+        "A root turns like a page.",
+        "The keeper writes without ink."
+      ]
+    },
+    "103": {
+      "name": "The First Bed",
+      "text": "A small chamber around a bed of black soil. A single seed rests in the soil, and the root archive is west.",
+      "safe": true,
+      "exits": {
+        "west": 102
+      },
+      "details": {
+        "soil": "The soil is black and warm.",
+        "seed": "The seed is white with a green seam.",
+        "bed": "The bed is the oldest thing in the garden."
+      },
+      "ambient": [
+        "The soil breathes.",
+        "The seed turns toward the light."
       ]
     }
   },
@@ -2871,6 +2907,28 @@
       "xp": 0,
       "description": "A small light drifts above the white rose.",
       "examine": "The wisp is warm and does not speak."
+    },
+    {
+      "id": "root-keeper",
+      "name": "the root keeper",
+      "room": 102,
+      "home": 102,
+      "period": 240,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "zone": "garden",
+      "hp": 30,
+      "damage": 0,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 0,
+      "description": "A small figure sits at a desk grown from roots.",
+      "examine": "The keeper's hands are stained with black soil.",
+      "dialogue": [
+        "Every bed remembers who planted it.",
+        "The first seed is not for eating.",
+        "The archive keeps the names the garden cannot."
+      ]
     }
   ],
   "zones": [
@@ -3056,7 +3114,9 @@
         98,
         99,
         100,
-        101
+        101,
+        102,
+        103
       ]
     }
   ],
@@ -4270,6 +4330,17 @@
       ],
       "value": 80,
       "examine": "A white bloom with a dark heart; it is warm and faintly moving.",
+      "forSale": false
+    },
+    {
+      "id": "first-seed",
+      "name": "the first seed",
+      "room": 103,
+      "flags": [
+        "takeable"
+      ],
+      "value": 90,
+      "examine": "A white seed with a green seam; it is warm and very light.",
       "forSale": false
     }
   ],

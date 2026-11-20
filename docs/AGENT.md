@@ -188,6 +188,12 @@ whose target is unvisited before it falls back to a direction not in the last
 six commands. The CLI agent also uses the route on an unparseable reply:
 instead of sending `look`, it takes an unexplored exit.
 
+`pathTo` runs a breadth-first search over the known room graph and `routeHint`
+prints the next step toward a destination. `AGENT_DESTINATION` sets one target;
+`AGENT_WAYPOINTS="The Root Archive:talk|The First Bed:take"` sequences targets
+and advances after the action verb succeeds at each waypoint. The CLI agent
+prints the hint as a `NAVIGATE:` block before asking the model.
+
 ## Memory, the rolling window, and prime-router
 
 The model conversation is a bounded window: `MEMORY_TURNS` (default 12) keeps

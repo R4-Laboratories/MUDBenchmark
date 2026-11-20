@@ -100,4 +100,6 @@ follow-up `garden-moon` uses the silver owl's crescent fact, the shrine and the
 Rose Walk; its reward is the moon seed and the Moon Gardener title. The
 Remembered Bed extends facts beyond answers: the `plant rose` action requires
 the garden-word fact and consumes the memory rose, opening a hidden room. The
-`remembered-bed` quest visits that room and brings back the bloom.
+`remembered-bed` quest visits that room and brings back the bloom. The Root
+Archive below it adds `first-bed`: talk to the root keeper, reach the First Bed
+and carry back the first seed.

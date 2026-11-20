@@ -242,6 +242,9 @@ Rehearsed 2026-11-16:
 - v0.84.0 (route memory) adds a shared room trail, unexplored-target exits and
   room-cycle detection to both agents; the unscripted qwen2.5:7b run completes
   the Remembered Bed in seven turns (MB-139);
+- v0.85.0 (root archive) adds two rooms below the Remembered Bed, the first-bed
+  quest, the first seed, BFS route hints and waypoint sequencing; the broader
+  unscripted run completes in nine turns (MB-141);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

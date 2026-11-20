@@ -87,6 +87,23 @@ talk rememberer
 The agent stopped cleanly on `Quest complete: The Remembered Bed` instead of
 waiting for the model timeout.
 
+## Root Archive run (v0.85)
+
+The same harness was pointed at the new Root Archive with three waypoints:
+`The Root Archive:talk`, `The First Bed:take`, `The Root Archive:talk`.
+
+| Result | Value |
+| --- | --- |
+| Turns | 9 |
+| Waypoints | 3 / 3 |
+| Took first seed | yes |
+| Talked to root keeper | yes |
+| Finished First Bed quest | yes |
+| Exit code | 0 |
+
+This run used the BFS route hint and waypoint sequencing, not a scripted
+command list. It is the broader multi-room evidence for v0.85.
+
 ## What this proves
 
 - The fact-gated `plant rose` action works under unscripted play: a model can
@@ -94,8 +111,10 @@ waiting for the model timeout.
   stair.
 - The hidden room and the bloom are reachable through the action.
 - The remaining gap after attempts 1-2 was model navigation and NPC interaction
-  after the reveal. The route ledger and loop guard closed that gap for this
-  run: attempt 3 completed the quest in seven turns.
+  after the reveal. The route ledger and loop guard closed that gap for the
+  first garden chain: attempt 3 completed the quest in seven turns.
+- The BFS route and waypoint sequencer then completed the broader Root Archive
+  run in nine turns.
 - The 7B model is slow enough that a 12-turn run can use the full 600 s bound.
 
 ## Limits

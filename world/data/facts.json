@@ -17,6 +17,12 @@
       "npc": "silver-owl",
       "word": "crescent",
       "text": "The silver owl says: \"The moonwell keeps what is reflected. The word is CRESCENT.\""
+    },
+    {
+      "id": "root-word",
+      "npc": "root-keeper",
+      "word": "root",
+      "text": "The root keeper says: \"The archive keeps the word ROOT. The garden grew from it.\""
     }
   ]
 }

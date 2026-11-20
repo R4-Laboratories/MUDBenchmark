@@ -2748,6 +2748,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
           observation,
           tick: AI.lastTick,
           at: Date.now(),
+          exits: AI.state?.room?.exits ?? (AI.exits ?? []).map((dir) => ({ dir, room: null })),
         });
         saveMemory();
       }
