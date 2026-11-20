@@ -21,7 +21,7 @@ memory or prompt system.
 | v0.83.0 | The Remembered Bed fact-gated action and unscripted run | **done** (MB-137) |
 | v0.84.0 | Route memory, room-loop detection and unscripted completion | **done** (MB-139) |
 | v0.85.0 | Root Archive, BFS route hints and waypoint run | **done** (MB-141) |
-| v0.86.0 | Root Road, Long Remembering and map-seeded route guard | **in flight** |
+| v0.86.0 | Root Road, Long Remembering and map-seeded route guard | **done** (MB-143) |
 | v0.87.0 | Next world slice and multi-objective sessions | next |
 
 ## What is next

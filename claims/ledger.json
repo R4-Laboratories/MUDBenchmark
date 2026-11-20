@@ -891,6 +891,12 @@
       "level": "build",
       "statement": "v0.86 adds the Root Road (rooms 104-105) connecting the Root Archive to Market Square, the level-6 Long Remembering quest (talk guild clerk, recall root at shrine, visit First Bed) and the Roadkeeper title. The CLI agent seeds its route graph from /llms.txt, supports nearest-objective choice and a movement guard that follows the BFS next step while leaving non-movement actions to the model. The world is 105 rooms/14 zones/54 quests/48 mobiles/98 objects/8 titles. The unscripted qwen2.5:7b run completes the town-spanning quest in 13 turns with exit code 0. The gate covers the root road, longRoad quest, BFS shortest path, nearest target and published-map seeding.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-144",
+      "level": "some-true",
+      "statement": "Production v0.86.0 serves 105 rooms, 14 zones, 54 quests, 48 mobiles, 98 objects and 8 titles. The Root Road connects the Root Archive to Market Square, and Long Remembering spans garden and town. The CLI agent seeds its route graph from /llms.txt, chooses nearest objectives, sequences waypoints and corrects off-route movement; the unscripted qwen2.5:7b run completes the town-spanning quest in 13 turns with exit code 0. R4 active, signups open, Gemini configured false. Gate 44669359440 green.",
+      "authority": "wick production v0.86.0 2026-11-20; release 44670381309; gate 44669359440; /health and /world; unscripted report"
     }
   ]
 }
