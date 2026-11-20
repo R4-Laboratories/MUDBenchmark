@@ -48,6 +48,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `quests` | `journal`, `q` | none |
 | `recall` | `remember`, `mem` | word |
 | `remove` | `doff`, `rm` | object |
+| `report` | `rep` | actor text |
 | `say` | `sy` | text |
 | `score` | `stats`, `sc` | none |
 | `sell` | `vend`, `se` | object |

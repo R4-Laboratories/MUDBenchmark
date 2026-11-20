@@ -1029,6 +1029,12 @@
       "level": "some-true",
       "statement": "Production v0.91.7 serves 114 rooms, 14 zones, 61 quests, 51 mobiles (50 alive at the final read), 102 objects and 11 titles. PR #19 added The Archmage's Trial, a reset-cycle repeatable that kills the eclipse regent and delivers the regent sigil for 300 XP + 120 guild XP. The merged-PR chain auto-published v0.91.7; wick verified the manifest hashes, replayed vectors and deployed. R4 active, signups open, Gemini configured false. Main scheduled Gate 44812672859 green.",
       "authority": "GitHub PR #19 merge c6bb545 2026-11-20; scheduled Gate 44812672859; publish 44814218639; release v0.91.7; wick deploy output and /world"
+    },
+    {
+      "id": "MB-167",
+      "level": "build",
+      "statement": "New accounts and characters enforce a 3-24 character name with at least one letter and a token-aware reserved-word policy (exact, numeric suffix, 'the' prefix, hyphen/underscore token, compact form and leetspeak folding); login keeps the legacy 1-24 shape and original reserved set so existing short or old reserved names still work. The report verb records a signed-in reporter, known target and trimmed reason (max 500) to a durable JSONL queue without world state or public span text, shares the 8/10s chat guard, and allows one report per identity per 30 seconds across reconnects. The gate covers the blocked and accepted name sets, the verb shape, and the report record builder.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

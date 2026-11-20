@@ -77,6 +77,15 @@ socials and the room's account of a say. The speaker is told the tell or
 letter was not accepted; the listener sees nothing. The filter is by identity
 key, so changing a display name does not bypass it.
 
+## Reports
+
+`report <name> <reason>` records a durable operator report without putting the
+reason into world state or a public span. It shares the chat window, allows one report per identity per 30
+seconds, needs a signed-in reporter, and refuses an empty reason or a
+self-report. The operator
+reads `~/.mudbench/state/reports.jsonl` on the host; `docs/MODERATION.md` has
+the record shape and the review path.
+
 ## Not here yet
 
 Channel history, a mail reader that lists without delivering, and offline

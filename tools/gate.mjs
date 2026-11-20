@@ -24,8 +24,8 @@ import { describe as renderRoom, examine } from "../runtime/view.mjs";
 import { loadVerbs } from "../runtime/verbs.mjs";
 import { loadChannels } from "../runtime/channels.mjs";
 import { loadSocials } from "../runtime/socials.mjs";
-import { hashPassword, verifyPassword, validName, validPassword, accountCapReached } from "../runtime/accounts.mjs";
-import { CHAT_LIMIT, CHAT_WINDOW_MS, chatAllowed } from "../runtime/moderation.mjs";
+import { hashPassword, verifyPassword, validName, validNewName, validPassword, accountCapReached } from "../runtime/accounts.mjs";
+import { CHAT_LIMIT, CHAT_WINDOW_MS, REPORT_INTERVAL_MS, REPORT_REASON_MAX, chatAllowed, reportAllowed, reportRecord } from "../runtime/moderation.mjs";
 import { randomCharacterName, uniqueCharacterName, chooseCharacter } from "../runtime/web/names.mjs";
 import { loadTitles, earnedTitles } from "../runtime/titles.mjs";
 import { loadFacts, contextHasWord } from "../runtime/facts.mjs";
@@ -466,6 +466,28 @@ let accounts = { ok: true, why: [] };
   if (!validName("alice-1") || validName("a b") || validName("admin") || validName("Moderator") || !validPassword("sixsix") || validPassword("short")) {
     accounts.ok = false;
     accounts.why.push("name or password validation is wrong");
+  }
+  // New names add a minimum length and a token-aware impersonation policy.
+  // The shape check stays permissive so a legacy short name can still log in.
+  if (!validName("ab") || validNewName("ab")) {
+    accounts.ok = false;
+    accounts.why.push("the new-name minimum length is wrong");
+  }
+  if (!validName("root") || validNewName("root")) {
+    accounts.ok = false;
+    accounts.why.push("the legacy-login and new-name reserved sets are not distinct");
+  }
+  for (const name of ["admin2", "the-admin", "4dm1n", "4dm1n1", "w1zard", "w1zard2", "mod_team", "gm", "sysadmin", "support", "root", "themod", "the4dm1n2", "game-master", "123", "___"]) {
+    if (validNewName(name)) {
+      accounts.ok = false;
+      accounts.why.push(`the reserved-name policy admitted ${name}`);
+    }
+  }
+  for (const name of ["alice-1", "badminton", "wizardry", "modest", "supportive", "a-b"]) {
+    if (!validNewName(name)) {
+      accounts.ok = false;
+      accounts.why.push(`the reserved-name policy refused ${name}`);
+    }
   }
   if (accountCapReached(499, 500) || !accountCapReached(500, 500) || accountCapReached(1, 0)) {
     accounts.ok = false;
@@ -2048,6 +2070,31 @@ let chatGuard = { ok: true, why: [] };
   if (chatGuard.why.length) failures.push(`the chat guard is broken: ${chatGuard.why[0]}`);
 }
 
+// A player report is a durable operator record, never world state. The verb is
+// present, an empty reason is refused, and the stored text is bounded.
+let moderation = { ok: true, why: [] };
+{
+  const check = (condition, why) => { if (!condition) { moderation.ok = false; moderation.why.push(why); } };
+  const base = {
+    at: "2026-11-20T00:00:00.000Z",
+    tick: 42,
+    reporter: "alice",
+    reporterName: "alice",
+    target: "bob",
+    targetName: "bob",
+  };
+  check(verbTable.verbs.report?.argument === "actor text", "the report verb is missing or has the wrong argument");
+  check(reportRecord({ ...base, reason: "   " }) === null, "an empty report reason was accepted");
+  check(reportRecord({ ...base, target: "", reason: "spam" }) === null, "a report with no target was accepted");
+  const record = reportRecord({ ...base, reason: "  repeated spam  " });
+  check(record?.reason === "repeated spam", "the report reason was not trimmed");
+  check(reportRecord({ ...base, reason: "x".repeat(REPORT_REASON_MAX + 50) }).reason.length === REPORT_REASON_MAX, "the report reason was not capped");
+  check(reportAllowed(undefined, 1000), "a first report was refused");
+  check(!reportAllowed(1000, 1000 + REPORT_INTERVAL_MS - 1), "a second report was allowed inside the interval");
+  check(reportAllowed(1000, 1000 + REPORT_INTERVAL_MS), "the report interval never reopened");
+  if (moderation.why.length) { moderation.ok = false; failures.push(`moderation is broken: ${moderation.why[0]}`); }
+}
+
 // A safe room refuses combat; an unsafe one begins it. The two-hour reset is
 // the world's clock, not a heartbeat.
 let safe = { ok: true, why: [] };
@@ -3411,6 +3458,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"repeatable".padEnd(26)}  ${(repeatable.ok ? "80 xp" : "BROKEN").padStart(5)}   == cycle, deliver`);
   console.log(`${"social".padEnd(26)}  ${(social.ok ? "70 xp" : "BROKEN").padStart(5)}   == talk, quest`);
   console.log(`${"chatGuard".padEnd(26)}  ${(chatGuard.ok ? "8/10s" : "BROKEN").padStart(5)}   == rate limit`);
+  console.log(`${"moderation".padEnd(26)}  ${(moderation.ok ? "names, report" : "BROKEN").padStart(5)}   == new-name policy`);
   console.log(`${"ignore".padEnd(26)}  ${(ignore.ok ? "5 paths" : "BROKEN").padStart(5)}   == tell, mail, chat`);
   console.log(`${"titles".padEnd(26)}  ${(titles.ok ? "3 earned" : "BROKEN").padStart(5)}   == select, persist`);
   console.log(`${"memoryQuest".padEnd(26)}  ${(memoryQuest.ok ? "150 xp" : "BROKEN").padStart(5)}   == fact, recall`);

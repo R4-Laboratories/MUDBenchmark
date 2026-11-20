@@ -29,9 +29,9 @@ import { GUILD_HALL, GUILD_VAULT_CAPACITY, RANKS, guildId, guildVaultHolder, ran
 import { buildLlms } from "./llms.mjs";
 import { loadTitles, earnedTitles, titleLookup } from "./titles.mjs";
 import { loadFacts, factForNpc, contextHasWord } from "./facts.mjs";
-import { hashPassword, verifyPassword, validName, validPassword, accountCapReached } from "./accounts.mjs";
+import { hashPassword, verifyPassword, validName, validNewName, validPassword, accountCapReached } from "./accounts.mjs";
 import { allowCommand as allowInput, DEFAULT_INTERVAL_MS } from "./allowance.mjs";
-import { chatAllowed } from "./moderation.mjs";
+import { chatAllowed, reportAllowed, reportRecord } from "./moderation.mjs";
 import { verifyPrismSession, verifyPersonaOwner, verifyPrismAction, verifySessionKey, prismDisplay } from "./prism-auth.mjs";
 import { CREDENTIAL, identityAdmits } from "./identity.mjs";
 import { normalizePrismId, ownerAllowed, rebindPlan } from "./rebind.mjs";
@@ -50,6 +50,7 @@ const WEB_PORT = Number(process.env.WEB_PORT ?? 8090);
 const STATE_FILE = process.env.STATE_FILE ?? joinPath(homedir(), ".mudbench", "state", "world.json");
 const IDENTITY_FILE = process.env.IDENTITY_FILE ?? joinPath(homedir(), ".mudbench", "state", "identities.json");
 const TRACE_FILE = process.env.TRACE_FILE ?? "/tmp/mudbench-trace.jsonl";
+const REPORT_FILE = process.env.REPORT_FILE ?? joinPath(homedir(), ".mudbench", "state", "reports.jsonl");
 const PRISM_ORIGINS = (process.env.PRISM_ORIGINS ?? "").split(",").map((value) => value.trim()).filter(Boolean);
 const PRISM_LOGIN_MAX = 262144;
 const PRISM_RECORDS_MAX = 64;
@@ -230,6 +231,7 @@ const RATE_WINDOW_MS = 5000;
 const RATE_MAX = 12;
 const buckets = new Map();
 const chatWindows = new Map();
+const reportTimes = new Map();
 
 function allowCommand(id) {
   const now = Date.now();
@@ -1269,7 +1271,7 @@ async function handleCommand(id, line) {
     if (!sessionConfirmed(session)) return sendTo(id, "Confirm your session first.\r\n");
     if (state.accounts[session.key]?.retired) return sendTo(id, "This persona is retired.\r\n");
     const name = rest[0];
-    if (!validName(name)) return sendTo(id, "Names are 1-24 letters, digits, - or _.\r\n");
+    if (!validNewName(name)) return sendTo(id, "New names are 3-24 letters, digits, - or _, and cannot claim an operator role.\r\n");
     if (state.identities[name] || state.accounts[name]) return sendTo(id, "That name is taken.\r\n");
     if (state.accounts[session.key]?.characters?.includes(name)) return sendTo(id, "That character is already on this account.\r\n");
     pending.push({ kind: "createCharacter", accountKey: session.key, name, actorId: id });
@@ -1287,7 +1289,7 @@ async function handleCommand(id, line) {
     const key = rest[0];
     const password = restRaw.slice(1).join(" ");
     if (!SIGNUPS_OPEN) return sendTo(id, "New accounts are closed right now. The operator can open them.\r\n");
-    if (!validName(key)) return sendTo(id, "Names are 1-24 letters, digits, - or _.\r\n");
+    if (!validNewName(key)) return sendTo(id, "New names are 3-24 letters, digits, - or _, and cannot claim an operator role.\r\n");
     if (!validPassword(password)) return sendTo(id, "Passwords are at least 6 characters.\r\n");
     if (accountCapReached(Object.keys(state.accounts ?? {}).length, MAX_ACCOUNTS)) {
       return sendTo(id, "The world has reached its account cap; no new account can be created right now.\r\n");
@@ -1383,7 +1385,7 @@ async function handleCommand(id, line) {
     if (!actor?.key) {
       return sendTo(id, "MUDBench is a persistent world for people and agents.\r\nSign in with your Prism id, or register <name> <password> / login <name> <password>.\r\nThen type help for the commands.\r\n");
     }
-    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: get/g/tf, drop/dp/dr, inventory/i, score/sc, quests/q, who/wh, spells/sp, cast/ca, say/sy, tell/te, give/gv, put/pt, open/op, close/cl, wear/wr, remove/rm, buy/b, sell/se, list/ls, map/mp, leaderboard/lb, levels/lv, shortcuts/sh.\r\nMagic: spells (effects/mana), train <spell> at the Mages' Guild, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search. Combat: attack/k, flee/fl, battle/combat/bt (current HP), score (armour/damage), equipment/eq (slots and totals). Guild: guild join/leave/who/list/chat, guild advance (Mages), vault/deposit/withdraw in the Guild Hall. Social: ignore/unignore/ignoring, titles/title, facts/memory, recall <word> at the shrine. Room actions: turn, push, ring where the room suggests.\r\nWorld: world or status (online, guilds, reset); levels, leaderboard/top/lb, map [zone], shortcuts, quests active|available|done|all.<id>; tutorial (first) for the first steps.\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
+    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: get/g/tf, drop/dp/dr, inventory/i, score/sc, quests/q, who/wh, spells/sp, cast/ca, say/sy, tell/te, give/gv, put/pt, open/op, close/cl, wear/wr, remove/rm, buy/b, sell/se, list/ls, map/mp, leaderboard/lb, levels/lv, shortcuts/sh.\r\nMagic: spells (effects/mana), train <spell> at the Mages' Guild, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search. Combat: attack/k, flee/fl, battle/combat/bt (current HP), score (armour/damage), equipment/eq (slots and totals). Guild: guild join/leave/who/list/chat, guild advance (Mages), vault/deposit/withdraw in the Guild Hall. Social: ignore/unignore/ignoring, report/rep, titles/title, facts/memory, recall <word> at the shrine. Room actions: turn, push, ring where the room suggests.\r\nWorld: world or status (online, guilds, reset); levels, leaderboard/top/lb, map [zone], shortcuts, quests active|available|done|all.<id>; tutorial (first) for the first steps.\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
   }
 
   // A command typed before the join tick lands is queued, not refused: the
@@ -1476,7 +1478,7 @@ async function handleCommand(id, line) {
   const words = rest.join(" ");
   // The input allowance stops machine-gun commands; this stops a person or
   // agent flooding every room channel. It is per connection, not per name.
-  const CHAT_VERBS = new Set(["say", "tell", "mail", "global", "guildchat"]);
+  const CHAT_VERBS = new Set(["say", "tell", "mail", "global", "guildchat", "report"]);
   if (CHAT_VERBS.has(named)) {
     const verdict = chatAllowed(chatWindows.get(id) ?? [], Date.now());
     if (!verdict.allowed) return sendTo(id, "You are speaking too quickly. Wait a moment.\r\n");
@@ -2220,6 +2222,43 @@ async function handleCommand(id, line) {
     const names = (actor.ignored ?? []).map((key) => state.identities[key]?.name ?? key);
     if (!names.length) return sendTo(id, `${messages.empty}\r\n`);
     return sendTo(id, `${render(messages.list, { words: names.join(", ") })}\r\n`);
+  }
+
+  if (named === "report") {
+    const messages = VERB_TABLE.verbs.report.messages;
+    if (!actor?.key) return sendTo(id, "Sign in to report someone.\r\n");
+    const name = rest[0];
+    if (!name) return sendTo(id, `${messages.usage}\r\n`);
+    const entry = findIdentity(name);
+    if (!entry) return sendTo(id, `${render(messages.missing, { words: name })}\r\n`);
+    const [key, identity] = entry;
+    if (key === actor.key) return sendTo(id, `${messages.self}\r\n`);
+    if (!reportAllowed(reportTimes.get(actor.key))) {
+      return sendTo(id, "You have already sent a report recently. Wait a moment.\r\n");
+    }
+    const record = reportRecord({
+      at: new Date().toISOString(),
+      tick: state.tick,
+      reporter: actor.key,
+      reporterName: actor.name,
+      target: key,
+      targetName: identity.name,
+      reason: restRaw.slice(1).join(" "),
+    });
+    if (!record) return sendTo(id, `${messages.empty}\r\n`);
+    try {
+      appendFileSync(REPORT_FILE, `${JSON.stringify(record)}\n`);
+    } catch {
+      return sendTo(id, "The report could not be recorded; try again later.\r\n");
+    }
+    reportTimes.set(actor.key, Date.now());
+    recordSpan("world.report", {
+      "actor.id": id,
+      "target.id": key,
+      "world.tick": state.tick,
+      "text.length": record.reason.length,
+    }, 0);
+    return sendTo(id, `${render(messages.recorded, { words: identity.name })}\r\n`);
   }
 
   if (named === "titles") {

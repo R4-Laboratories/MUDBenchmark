@@ -285,6 +285,9 @@ Rehearsed 2026-11-16:
   60 quests / 102 objects (MB-163);
 - v0.91.7 (archmage trial) adds the reset-cycle Archmage's Trial, consuming the
   regent's sigil for repeatable high-rank guild XP; 61 quests (MB-165);
+- v0.91.8 (moderation) adds a 3-24 character new-name policy with token-aware
+  reserved words, leetspeak folding and a legacy-safe login path, plus a
+  durable `report <name> <reason>` queue that shares the chat guard (MB-167);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);
