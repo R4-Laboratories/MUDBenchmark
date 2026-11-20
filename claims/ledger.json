@@ -1059,6 +1059,12 @@
       "level": "build",
       "statement": "Player statistics are aggregate-only and built from the existing span log: world.session now records session.ai, actor.level, actor.guild and completed-quest count; GET /players and tools/players.mjs summarize sessions, human/AI mix, unique accounts/characters, returning accounts, playtime for completed connections, per-quest actor/completer completion, combat hits/misses/NPC kills/PvP kills/player deaths, room visits, level distribution and command counts. The Gate checks the synthetic summary and that serialized output contains no account key or character name.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-172",
+      "level": "build",
+      "statement": "The player statistics view reads a compact player-event log beside the full span log instead of the last 4 MiB of the full log. The compact log keeps only world.session, world.disconnect, world.quest, world.transition, world.combat, world.snapshot and world.input; it rotates at PLAYER_MAX_BYTES (16 MiB) and is seeded from the existing main log on first start. GET /players reads it, so sparse session records survive the tail window. The Gate checks the selected span set and the seed call.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }
