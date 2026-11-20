@@ -33,7 +33,7 @@ memory or prompt system.
 | v0.91.4 | Merged-PR auto release and hash-verified pull deploy | **done** (MB-160) |
 | v0.91.5 | Browser session reconnect and resume | **done** (MB-162) |
 | v0.91.6 | Archmage Eclipse guild line | **done** (MB-163) |
-| v0.91.7 | Repeatable Archmage's Trial | **in flight** |
+| v0.91.7 | Repeatable Archmage's Trial | **done** (MB-165) |
 | backlog | Optional content and live-player tuning | optional |
 
 ## What is next
