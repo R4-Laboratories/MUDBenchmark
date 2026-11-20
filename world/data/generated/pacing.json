@@ -1,9 +1,17 @@
 {
   "schema": "mudbenchmark/pacing/1",
-  "candidate": "c-09c54744b4d9",
-  "report": "a8f54b53c358dea0f29c26fa7c8f1535111fee455604e299c4d62b50780e6da3",
-  "worldHash": "a49f53d32ad18f0237c5a461999ab99a249f85b7062152f5b2dbd9015605be43",
+  "candidate": "c-d95ee8787fc1",
+  "report": "487f5aa376c1badaebffa0dbb147d3a2c75196866b974ef6dd14b808814d5844",
+  "worldHash": "8d2cb3c177932f1930b2a783b70aebc2495b5d46d0ee5b0e82bf48c4c28194b9",
   "changes": [
+    {
+      "group": "hostile-damage",
+      "collection": "npcs",
+      "target": "boar",
+      "field": "damage",
+      "from": 2,
+      "to": 3
+    },
     {
       "group": "hostile-hp",
       "collection": "npcs",
@@ -36,9 +44,9 @@
     "benefit": true,
     "bounds": true,
     "checks": true,
-    "candidate": "c-09c54744b4d9",
-    "report": "a8f54b53c358dea0f29c26fa7c8f1535111fee455604e299c4d62b50780e6da3",
-    "worldHash": "a49f53d32ad18f0237c5a461999ab99a249f85b7062152f5b2dbd9015605be43",
+    "candidate": "c-d95ee8787fc1",
+    "report": "487f5aa376c1badaebffa0dbb147d3a2c75196866b974ef6dd14b808814d5844",
+    "worldHash": "8d2cb3c177932f1930b2a783b70aebc2495b5d46d0ee5b0e82bf48c4c28194b9",
     "kernel": "sha256:cc0cd971f1090692e7fad9ad7b23a3a35dada64168de74110b321d3e31c30258"
   }
 }
