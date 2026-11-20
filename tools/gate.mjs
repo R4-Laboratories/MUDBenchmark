@@ -26,6 +26,7 @@ import { loadChannels } from "../runtime/channels.mjs";
 import { loadSocials } from "../runtime/socials.mjs";
 import { hashPassword, verifyPassword, validName, validPassword, accountCapReached } from "../runtime/accounts.mjs";
 import { CHAT_LIMIT, CHAT_WINDOW_MS, chatAllowed } from "../runtime/moderation.mjs";
+import { randomCharacterName, uniqueCharacterName, chooseCharacter } from "../runtime/web/names.mjs";
 import { loadTitles, earnedTitles } from "../runtime/titles.mjs";
 import { loadFacts, contextHasWord } from "../runtime/facts.mjs";
 import { allowCommand, DEFAULT_INTERVAL_MS } from "../runtime/allowance.mjs";
@@ -328,6 +329,39 @@ let aiMemory = { ok: true, why: [] };
   check(observedCommandSuccess("recall orchard", "You recall: the orchard keeps ORCHARD."), "the recall success check missed a recall");
   check(!observedCommandSuccess("take press seed", "There is no press seed here."), "the take check accepted a miss");
   if (aiMemory.why.length) { aiMemory.ok = false; failures.push(`the AI memory is broken: ${aiMemory.why[0]}`); }
+}
+
+// New AI/human characters get a random valid name and the AI never falls back
+// to a separate standalone Prism account.
+let characterNames = { ok: true, why: [] };
+{
+  const check = (condition, why) => { if (!condition) { characterNames.ok = false; characterNames.why.push(why); } };
+  let seed = 12345;
+  const random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
+  const seen = new Set();
+  for (let i = 0; i < 40; i += 1) {
+    const name = uniqueCharacterName([...seen], random);
+    check(/^[a-z]+-[a-z]+-[0-9]{2,4}$/.test(name), `random name ${name} is not a valid character name`);
+    check(name.length <= 24, `random name ${name} is too long`);
+    check(!seen.has(name), `random name ${name} was repeated`);
+    seen.add(name);
+  }
+  check(/^[a-z]+-[a-z]+-[0-9]{2,4}$/.test(randomCharacterName(random)), "randomCharacterName returned an invalid name");
+  check(web.includes("/names.mjs"), "the page does not load the name generator");
+  check(!web.includes('prismSignIn("ai"'), "the AI still has a standalone Prism account fallback");
+  check(web.includes("AI personas use your Prism account"), "the AI does not require the human Prism login");
+  check(web.includes("randomCharacterName()"), "the human create form does not suggest a random name");
+  check(web.includes("chooseCharacter"), "the AI does not use the shared character choice");
+  check(serverSource.includes("/names.mjs"), "the server does not serve the name generator");
+  const existing = chooseCharacter({ wanted: "scout", explicit: false, characters: ["alder-fox-42"], random });
+  check(existing.action === "play" && existing.name === "alder-fox-42", "the AI did not prefer an existing character");
+  const explicitNew = chooseCharacter({ wanted: "scout", explicit: true, characters: ["alder-fox-42"], random });
+  check(explicitNew.action === "create" && explicitNew.name === "scout", "an explicit new character was not created");
+  const blankNew = chooseCharacter({ explicit: false, characters: [], random });
+  check(blankNew.action === "create" && /^[a-z]+-[a-z]+-[0-9]{2,4}$/.test(blankNew.name), "a blank new account did not get a random name");
+  const present = chooseCharacter({ wanted: "alder-fox-42", explicit: true, characters: ["alder-fox-42"], random });
+  check(present.action === "play", "an existing explicit character was not played");
+  if (characterNames.why.length) failures.push(`character names are broken: ${characterNames.why[0]}`);
 }
 
 // The world is a map, not a pile of rooms: every room has a real description,
@@ -3233,6 +3267,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"actions".padEnd(26)}  ${(actions.ok ? "11 verbs" : "BROKEN").padStart(5)}   == reveal, open, last`);
   console.log(`${"ember".padEnd(26)}  ${(ember.ok ? "10 rooms" : "BROKEN").padStart(5)}   == door, quest, shortcut`);
   console.log(`${"aiMemory".padEnd(26)}  ${(aiMemory.ok ? "rooms, stale" : "BROKEN").padStart(5)}   == exits, loop guard`);
+  console.log(`${"characterNames".padEnd(26)}  ${(characterNames.ok ? "random, scoped" : "BROKEN").padStart(5)}   == AI, human`);
   console.log(`${"fen".padEnd(26)}  ${(fen.ok ? "10 rooms" : "BROKEN").padStart(5)}   == key, chest, shortcut`);
   console.log(`${"visibility".padEnd(26)}  ${(visibility.ok ? "levels, map" : "BROKEN").padStart(5)}   == board, shortcuts`);
   console.log(`${"salt".padEnd(26)}  ${(salt.ok ? "5 rooms" : "BROKEN").padStart(5)}   == key, chest, shortcut`);

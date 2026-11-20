@@ -301,8 +301,10 @@ Prism id: your device signs a `prism/persona-owner/1` action, the server
 verifies it against your pinned log, and the persona account stores `owner` and
 `ai: true`. The AI panel names the character; you can play another character at
 the same time. **Reset identity** retires the persona and tombstones its
-characters; the next start creates a new persona. Without a human sign-in the
-AI uses its own account. A device revoked elsewhere is refused once a surviving
+characters; the next start creates a new persona. The AI requires a human Prism
+sign-in and no longer creates a standalone AI account. A new persona opens its
+existing characters first; otherwise it creates a random name. A device
+revoked elsewhere is refused once a surviving
 device has logged in with the newer public log; the server pins that log in
 `identities.json`.
 

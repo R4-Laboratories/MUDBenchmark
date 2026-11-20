@@ -27,6 +27,7 @@ memory or prompt system.
 | v0.89.0 | Orchard Undercroft and two-quest remote completion | **done** (MB-149) |
 | v0.90.0 | Cider Spring, route lock and three-quest remote completion | **done** (MB-151) |
 | v0.91.0 | Observed-action verification and repeatable orchard work | **done** (MB-153) |
+| v0.91.1 | Prism AI login and random character names | **in flight** |
 | backlog | Optional content and live-player tuning | optional |
 
 ## What is next

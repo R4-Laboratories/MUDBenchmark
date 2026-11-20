@@ -957,6 +957,12 @@
       "level": "some-true",
       "statement": "Production v0.91.0 serves 114 rooms, 14 zones, 58 quests, 51 mobiles (48 currently alive), 101 objects and 11 titles. Agent objectives now clear only after the server success line; repeatable Orchard Work consumes a cider bloom each cycle. A remote DeepSeek run completed Press Beneath, Cider Spring and First Bed in 24 turns with every action confirmed and exit code 0; no local inference. R4 active, signups open, Gemini configured false. Gate 44754535782 green.",
       "authority": "wick production v0.91.0 2026-11-20; release 44755887124; gate 44754535782; /health and /world; remote run report"
+    },
+    {
+      "id": "MB-155",
+      "level": "build",
+      "statement": "v0.91.1 fixes Prism/AI character loss. The AI no longer creates a standalone Prism account or uses the fixed scout default: it requires a human Prism sign-in, chooses the account first existing character unless a new name was explicitly requested, and gives a new account a random character name. Name collisions retry with a new random name. The human create form suggests a random name when the account is empty. The choices live in runtime/web/names.mjs (randomCharacterName, uniqueCharacterName, chooseCharacter) and the page serves /names.mjs. The gate covers random-name validity/uniqueness, existing-character preference, explicit-new behavior, blank-account creation, removed standalone fallback and the served module.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

@@ -521,7 +521,7 @@
       <section id="ai-live" aria-label="AI Studio">
         <div id="ai-head">
           <div class="run-title">
-            <strong id="ai-title">scout</strong>
+            <strong id="ai-title">AI</strong>
             <div class="run-meta">
               <span id="ai-sub">ready</span>
               <button type="button" id="model-edit" aria-haspopup="dialog" aria-expanded="false" title="Change model">Change</button>
@@ -599,8 +599,8 @@
           </div>
           <div class="field">
             <label for="ai-character">Character name</label>
-            <input id="ai-character" autocomplete="off" maxlength="24" placeholder="scout">
-            <p class="small muted">Created if missing. The AI signs in with its Prism id.</p>
+            <input id="ai-character" autocomplete="off" maxlength="24" placeholder="auto (random)">
+            <p class="small muted">Existing characters open automatically; a new one gets a random name.</p>
           </div>
           <div class="field">
             <label for="ai-base">Base URL</label>
@@ -643,7 +643,7 @@
         <details class="small muted">
           <summary>How this works</summary>
           <p>1. Pick a brain. Ollama is free and local; OpenAI and Anthropic need a key.</p>
-          <p>2. When you are signed in, the AI is a persona of your Prism id; your device signs the owner action. If you are not signed in, it uses its own account.</p>
+          <p>2. When you are signed in, the AI is a persona of your Prism id; your device signs the owner action. Sign in with Prism first; the AI does not create a separate account.</p>
           <p>3. It sees the same room text you do, types one command per turn, and waits for the server like any player.</p>
           <p>4. Send direction in the Director chat. The AI replies there and its private reasoning appears in Mind.</p>
           <p>5. A compact memory of rooms, tried commands and stale results is kept per character in this browser and injected every turn. A loop guard breaks repeated observation commands instead of pausing the run.</p>
@@ -660,7 +660,7 @@
         <div class="plan-list">
           <div class="plan-row"><span>Brain</span><b id="plan-brain">Ollama</b></div>
           <div class="plan-row"><span>Model</span><b id="plan-model">llama3.2</b></div>
-          <div class="plan-row"><span>Character</span><b id="plan-character">scout</b></div>
+          <div class="plan-row"><span>Character</span><b id="plan-character">auto</b></div>
           <div class="plan-row"><span>Mode</span><b id="plan-mode">Standard</b></div>
         </div>
         <ol class="plan-steps">
@@ -867,6 +867,7 @@
   } from "/ai.mjs";
   import { emptyMemory, rememberResult, memoryPrompt, loopWarning, breakLoop, shouldBreakLoop, publicMemoryText } from "/memory.mjs";
   import { signIn as prismSignIn, reset as prismReset, load as loadSession, save as saveSession, personaSignIn, personaRetire, nextPersonaEpoch, createRecoveryKit, restoreRecoveryKit, characterHandoff, characterRevoke, signChallenge } from "/prism-auth.mjs";
+  import { randomCharacterName, uniqueCharacterName, chooseCharacter } from "/names.mjs";
   import { createLinkOffer, parseLinkUri, requestLink, acceptLinkRequest, completeLink, linkCode, revokeDevice, resolvePrism, linkQr } from "/prism-id.mjs";
 
   const log = document.getElementById("log");
@@ -1016,7 +1017,7 @@
     turn: 0, commands: 0, latencies: [], usage: { prompt: 0, completion: 0 },
     history: [], director: [], transcript: [], thoughts: [], room: "",
     lastCommand: "", startedAt: null, recent: [], nudge: false, lastError: null,
-    character: "scout", lastRequest: null, lastReply: null, lastParsed: null, lastLatency: 0,
+    character: "", characterExplicit: false, createRetries: 0, lastRequest: null, lastReply: null, lastParsed: null, lastLatency: 0,
     persona: null, owner: null, personaAudience: null, tickFrom: null, lastTick: null,
     highlights: [], streaming: false, timeouts: 0, lastPoll: null, state: null,
     demoToken: null, demoTokenExpires: 0, demoWaiters: [],
@@ -1265,7 +1266,10 @@
     account.style.display = "none";
     characterHint.textContent = characterState.characters.length
       ? "Pick a character, or create another. Switching takes over that character."
-      : "Choose a name; it is the name other players see.";
+      : "A random name is suggested; replace it with any name you like.";
+    if (!characterState.characters.length && !newCharacter.value.trim()) {
+      newCharacter.value = randomCharacterName();
+    }
     renderHandoff();
   }
 
@@ -1750,7 +1754,7 @@
   function syncModelSummary() {
     const provider = PROVIDERS[aiProvider.value] ?? PROVIDERS.ollama;
     const model = aiModel.value.trim() || "no model";
-    const character = aiCharacter.value.trim() || "scout";
+    const character = aiCharacter.value.trim() || "auto";
     const summary = `${provider?.label ?? aiProvider.value} · ${model}`;
     if (watchSummary) watchSummary.textContent = summary;
     if (planBrain) planBrain.textContent = provider?.label ?? aiProvider.value;
@@ -1780,7 +1784,7 @@
     aiProvider.value = wanted === "gemini-demo" && !DEMO.configured ? "ollama" : wanted;
     aiBase.value = config.base ?? PROVIDERS[aiProvider.value].base;
     aiModel.value = config.model ?? PROVIDERS[aiProvider.value].model;
-    aiCharacter.value = config.character ?? "scout";
+    aiCharacter.value = config.character === "scout" ? "" : (config.character ?? "");
     aiFast.checked = config.fast !== false;
     aiReasoning.value = config.reasoning ?? "auto";
     aiKey.value = "";
@@ -1813,40 +1817,31 @@
   }
 
   aiReset.addEventListener("click", async () => {
-    if (AI.owner) {
-      if (!confirm("Retire this AI persona? Its characters are tombstoned; the next start creates a new persona.")) return;
-      if (playSocket?.readyState !== WebSocket.OPEN) {
-        showHint("Connect the page before retiring the persona.", true);
-        return;
-      }
-      if (AI.running) stopAI();
-      try {
-        const retire = await personaRetire("default", location.origin, AI.persona, AI.personaAudience);
-        if (!retire) throw new Error("Sign in with your Prism id first.");
-        send(`retire-persona ${b64uJson(retire)}`, "retire-persona [owner hidden]");
-        nextPersonaEpoch();
-        AI.identity = null;
-        AI.persona = null;
-        AI.owner = null;
-        AI.personaAudience = null;
-        aiIdentity.textContent = "Persona retired. The next start creates a new persona under your Prism id.";
-        aiTitle.textContent = "AI";
-        showHint("The next AI start creates a new persona; the old one is tombstoned.", false);
-      } catch (error) {
-        showHint(`Persona: ${error.message}`, true);
-      }
+    if (!AI.owner) {
+      showHint("Sign in with your Prism id first. AI personas use your Prism account.", true);
       return;
     }
-    if (!confirm("Reset the AI's Prism id? The current AI character will be orphaned.")) return;
+    if (!confirm("Retire this AI persona? Its characters are tombstoned; the next start creates a new persona.")) return;
+    if (playSocket?.readyState !== WebSocket.OPEN) {
+      showHint("Connect the page before retiring the persona.", true);
+      return;
+    }
     if (AI.running) stopAI();
-    await prismReset("ai");
-    AI.identity = null;
-    AI.persona = null;
-    AI.owner = null;
-    AI.personaAudience = null;
-    aiIdentity.textContent = "The next start creates a new AI Prism id.";
-    aiTitle.textContent = "AI";
-    showHint("AI identity reset. The next start is a new character.", false);
+    try {
+      const retire = await personaRetire("default", location.origin, AI.persona, AI.personaAudience);
+      if (!retire) throw new Error("Sign in with your Prism id first.");
+      send(`retire-persona ${b64uJson(retire)}`, "retire-persona [owner hidden]");
+      nextPersonaEpoch();
+      AI.identity = null;
+      AI.persona = null;
+      AI.owner = null;
+      AI.personaAudience = null;
+      aiIdentity.textContent = "Persona retired. The next start creates a new persona under your Prism id.";
+      aiTitle.textContent = "AI";
+      showHint("The next AI start creates a new persona; the old one is tombstoned.", false);
+    } catch (error) {
+      showHint(`Persona: ${error.message}`, true);
+    }
   });
 
   aiForget.addEventListener("click", () => {
@@ -2030,13 +2025,9 @@
       return;
     }
     if (!session) {
-      try {
-        session = await prismSignIn("ai", location.origin);
-      } catch (error) {
-        showHint(`Prism: ${error.message}`, true);
-        setAIStatus("error");
-        return;
-      }
+      showHint("Sign in with your Prism id first. AI personas use your Prism account.", true);
+      setAIStatus("sign in");
+      return;
     }
 
     if (session.storage === "memory") showHint("This window cannot keep the session; a reload will create a new one.", true);
@@ -2073,7 +2064,9 @@
     AI.lastError = null;
     AI.room = "";
     AI.lastCommand = "";
-    AI.character = aiCharacter.value.trim() || "scout";
+    AI.character = aiCharacter.value.trim();
+    AI.characterExplicit = Boolean(AI.character);
+    AI.createRetries = 0;
     AI.lastRequest = null;
     AI.demoToken = null;
     AI.demoTokenExpires = 0;
@@ -2481,15 +2474,10 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       setAIStatus("signing in");
       try {
         // A fresh session on every open: a replayed envelope would be refused
-        // by the server's replay set, and a stale one could be expired. When
-        // the AI is owned, re-sign the persona, never the AI's own id.
-        let session = null;
-        if (AI.owner) {
-          session = await personaSignIn("default", location.origin);
-          if (!session) throw new Error("Sign in with your Prism id to own the AI.");
-        } else {
-          session = await prismSignIn("ai", location.origin);
-        }
+        // by the server's replay set, and a stale one could be expired. AI
+        // characters always live under the human Prism account's persona.
+        const session = await personaSignIn("default", location.origin);
+        if (!session) throw new Error("Sign in with your Prism id to own the AI.");
         AI.identity = session;
         AI.persona = session.persona ?? session.envelope?.body?.prism ?? AI.persona;
         AI.owner = session.ownerPrism ?? AI.owner;
@@ -2617,13 +2605,17 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
             const info = JSON.parse(charactersLine[1]);
             AI.lastTick = Number.isInteger(info.tick) ? info.tick : AI.lastTick;
             if (AI.tickFrom == null) AI.tickFrom = AI.lastTick;
-            const wanted = AI.character || info.characters[0] || "scout";
-            const line = info.characters.includes(wanted) ? `play ${wanted}` : `create ${wanted}`;
-            // The server's 250 ms input limit covers the sign-in too.
+            const current = Array.isArray(info.characters) ? info.characters : [];
+            const choice = chooseCharacter({
+              wanted: AI.character,
+              explicit: AI.characterExplicit,
+              characters: current,
+            });
+            AI.character = choice.name;
+            setAIStatus(`${choice.action === "play" ? "choosing" : "creating"} ${choice.name}`);
             setTimeout(() => {
-              if (ws.readyState === WebSocket.OPEN) ws.send(`${line}\n`);
+              if (ws.readyState === WebSocket.OPEN) ws.send(`${choice.action} ${choice.name}\n`);
             }, 350);
-            setAIStatus(info.characters.includes(wanted) ? `choosing ${wanted}` : `creating ${wanted}`);
           } catch {}
         }
         return;
@@ -2658,11 +2650,22 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         return;
       }
       if (/That name is taken\.|No character named/i.test(text)) {
+        AI.createRetries = (AI.createRetries ?? 0) + 1;
+        if (AI.createRetries <= 5) {
+          AI.character = uniqueCharacterName([AI.character].filter(Boolean));
+          AI.characterExplicit = false;
+          setAIStatus(`creating ${AI.character}`);
+          addChat("system", `That name is taken; trying ${AI.character}.`);
+          setTimeout(() => {
+            if (ws.readyState === WebSocket.OPEN) ws.send(`create ${AI.character}\n`);
+          }, 350);
+          return;
+        }
         AI.paused = true;
         AI.busy = false;
         updatePause();
         setAIStatus("choose another character");
-        addChat("system", "The AI's character is unavailable; set another Character name and start it.");
+        addChat("system", "The AI could not find a free character name; set one and start it.");
         return;
       }
       const signedAs = text.match(/Signing in as ([^\r\n.]+)\./i);

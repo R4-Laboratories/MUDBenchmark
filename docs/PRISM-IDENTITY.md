@@ -308,8 +308,11 @@ that owner action.
   `prism/persona-key/1` records from the log it sends, so the server never
   receives the human's other personas. It does receive the single owner action
   naming the AI persona.
-- Without a human sign-in the AI falls back to its own account and the panel
-  says so; sign in with your Prism id and restart it to own it.
+- The AI now requires a human Prism sign-in. There is no standalone AI Prism
+  account fallback: every AI character lives on a persona of the human account.
+- A new persona opens its existing characters first. If it has none, the panel
+  creates a random name such as `cider-otter-42`; a collision retries with a
+  fresh random name. The old fixed `scout` default is gone.
 
 ## Character handoff
 
