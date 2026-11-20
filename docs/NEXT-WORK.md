@@ -20,7 +20,7 @@ memory or prompt system.
 | v0.82.0 | The crescent garden quest, facts command and live level-10 run | **done** (MB-135) |
 | v0.83.0 | The Remembered Bed fact-gated action and unscripted run | **done** (MB-137) |
 | v0.84.0 | Route memory, room-loop detection and unscripted completion | **done** (MB-139) |
-| v0.85.0 | Root Archive, BFS route hints and waypoint run | **in flight** |
+| v0.85.0 | Root Archive, BFS route hints and waypoint run | **done** (MB-141) |
 | v0.86.0 | Broader live sessions and the next world slice | next |
 
 ## What is next

@@ -879,6 +879,12 @@
       "level": "build",
       "statement": "v0.85 adds BFS pathTo/routeHint over the shared room graph and AGENT_WAYPOINTS sequencing in the CLI agent. The Root Archive adds two rooms below the Remembered Bed (103 rooms/14 zones), the root keeper and root fact (48 mobiles), the first seed (98 objects), the level-5 first-bed quest (53 quests) and the Rootkeeper title (7 titles). The broader unscripted qwen2.5:7b run uses three waypoints (Root Archive talk, First Bed take, Root Archive talk) and completes the quest in nine turns with exit code 0. The gate covers shortest path, next step, route hints, unknown destinations and the new rooms/quest.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-142",
+      "level": "some-true",
+      "statement": "Production v0.85.0 serves 103 rooms, 14 zones, 53 quests, 48 mobiles, 98 objects and 7 titles. BFS pathTo/routeHint over the shared room graph and AGENT_WAYPOINTS sequencing guide the CLI agent; the Root Archive adds two rooms, the root keeper, first seed, first-bed quest and Rootkeeper title. The broader unscripted qwen2.5:7b run completes three waypoints and the First Bed quest in nine turns with exit code 0. R4 active, signups open, Gemini configured false. Gate 44646684011 green.",
+      "authority": "wick production v0.85.0 2026-11-20; release 44647807638; gate 44646684011; /health and /world; unscripted report"
     }
   ]
 }
