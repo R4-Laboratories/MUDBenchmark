@@ -76,6 +76,11 @@ active quest steps so the model can act without a long planning pass.
 `/llms.txt` is generated from the game tables, and `docs/COMMANDS.md` is
 generated and checked. More world content is additive.
 
+After a connection loss in an open page, the browser reauthenticates a Prism
+account and resumes its character only if no other session controls it. An
+explicit quit does not resume automatically; password accounts must log in
+again. Items and position are world state, not persistent character progression.
+
 ## Provenance
 
 The design descends from the `MUDBench` corpus in
