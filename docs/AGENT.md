@@ -210,7 +210,8 @@ the public `/llms.txt` room table, so it can plan across rooms it has never
 visited. `AGENT_DESTINATION` sets one target. `AGENT_OBJECTIVES` takes an
 unordered list of `Room:action` entries and always chooses the nearest
 unfinished target; when the room is reached, the action guard sends that
-action. `AGENT_WAYPOINTS="The Root Archive:talk|The First Bed:take"` is the
+action. Append `>Room` to hold an objective until another objective is done,
+for example `The Guild Hall:deliver seal>The Rat Warren`. `AGENT_WAYPOINTS="The Root Archive:talk|The First Bed:take"` is the
 ordered variant. A movement command that contradicts the known next step is
 replaced by that step, and an objective action attempted in the wrong room is
 redirected onto the route. Non-movement actions at the right target remain the

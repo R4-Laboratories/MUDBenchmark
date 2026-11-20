@@ -256,6 +256,9 @@ Rehearsed 2026-11-16:
 - v0.88.0 (remote agent) adds an OpenCode/DeepSeek provider path with no local
   inference, fixes the no-room loop, and validates both the 5-turn Root Archive
   and 24-turn four-objective Three Rememberings runs (MB-147);
+- v0.89.0 (undercroft) adds three rooms below the Old Press, the press seed, the
+  Press Beneath quest, objective dependencies and a two-quest remote DeepSeek
+  run; 111 rooms / 56 quests (MB-149);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

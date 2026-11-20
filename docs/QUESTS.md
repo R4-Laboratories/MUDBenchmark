@@ -106,4 +106,5 @@ and carry back the first seed. The Root Road connects that archive to Market
 Square, and `long-remembering` carries the root word to the guild clerk and the
 shrine before returning to the First Bed. The Sunken Orchard adds
 `three-rememberings`: the orchard keeper, the shrine, the windfall and the guild
-clerk can be visited in any order.
+clerk can be visited in any order. The Orchard Undercroft adds `press-beneath`:
+talk to the keeper, reach the Seed Vault and carry back the press seed.

@@ -35,8 +35,9 @@ const LLMS_URL = process.env.LLMS_URL ?? `${WS_URL.replace(/^ws/, "http").replac
 const OBJECTIVES = (process.env.AGENT_OBJECTIVES ?? "")
   .split("|")
   .map((part) => {
-    const [room, action] = part.split(":");
-    return room?.trim() ? { room: room.trim(), action: (action ?? "").trim() } : null;
+    const [spec, after] = part.split(">");
+    const [room, action] = spec.split(":");
+    return room?.trim() ? { room: room.trim(), action: (action ?? "").trim(), after: (after ?? "").trim() } : null;
   })
   .filter(Boolean);
 const DIRECTIONS = new Set(["north", "south", "east", "west", "up", "down", "n", "s", "e", "w", "u", "d"]);
@@ -277,10 +278,11 @@ async function turn() {
   if (lastCommand && lastRoom) rememberResult(nav, { room: lastRoom, command: lastCommand, observation: seen, tick: turns, exits: lastExits });
   if (room) noteRoom(nav, room.name, room.exits);
   const waypoint = WAYPOINTS[waypointIndex] ?? null;
-  const objective = !waypoint && !DESTINATION && OBJECTIVES.length
+  const available = OBJECTIVES.filter((entry) => !entry.after || !OBJECTIVES.some((other) => other.room === entry.after));
+  const objective = !waypoint && !DESTINATION && available.length
     ? (() => {
-        const best = nearestTarget(nav, room?.name ?? lastRoom, OBJECTIVES.map((entry) => entry.room));
-        return best ? OBJECTIVES.find((entry) => entry.room === best.target) ?? OBJECTIVES[0] : OBJECTIVES[0];
+        const best = nearestTarget(nav, room?.name ?? lastRoom, available.map((entry) => entry.room));
+        return best ? available.find((entry) => entry.room === best.target) ?? available[0] : available[0];
       })()
     : null;
   const destination = waypoint?.room ?? (DESTINATION || objective?.room);

@@ -79,7 +79,9 @@ Root Archive run in nine turns. Seeding the graph from `/llms.txt` and adding
 the movement guard completed the town-spanning Long Remembering run in 13
 turns. The server contract and the navigation guards both worked. The remote
 DeepSeek runs then completed the Root Archive in 5 turns and all four Three
-Rememberings objectives in 24 turns without local inference.
+Rememberings objectives in 24 turns without local inference. The two-quest
+Press Beneath / Clerk Errand run completed in 31 turns with an objective
+dependency guard.
 
 ## What would change the conclusion
 

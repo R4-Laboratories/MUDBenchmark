@@ -921,6 +921,12 @@
       "level": "some-true",
       "statement": "Production v0.88.0 serves 108 rooms, 14 zones, 55 quests, 49 mobiles, 99 objects and 9 titles. The CLI agent supports MODEL_PROVIDER=opencode with deepseek/deepseek-flash and no local inference; the no-room look loop is fixed. Remote DeepSeek runs completed the Root Archive in 5 turns and all four Three Rememberings objectives in 24 turns with exit code 0. R4 active, signups open, Gemini configured false. Gate 44683093412 green.",
       "authority": "wick production v0.88.0 2026-11-20; release 44684011168; gate 44683093412; /health and /world; remote run reports"
+    },
+    {
+      "id": "MB-149",
+      "level": "build",
+      "statement": "v0.89 adds the Orchard Undercroft (rooms 109-111) below the Old Press, a vat hound (50 mobiles), the press seed (100 objects), the level-8 Press Beneath quest (56 quests) and the Presskeeper title (10 titles). AGENT_OBJECTIVES supports >Room dependencies so a delivery cannot be attempted before its item objective. A remote DeepSeek run completed Press Beneath and the clerk errand (two simultaneous quests) in 31 turns with exit code 0; no local inference. The gate covers the undercroft connections, press quest, title and the existing objective planner invariants.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

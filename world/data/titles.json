@@ -44,6 +44,11 @@
       "id": "orchardkeeper",
       "name": "Orchardkeeper",
       "quest": "three-rememberings"
+    },
+    {
+      "id": "presskeeper",
+      "name": "Presskeeper",
+      "quest": "press-beneath"
     }
   ]
 }

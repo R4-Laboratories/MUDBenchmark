@@ -27,7 +27,8 @@ const PASSWORD = "live-pass";
 const PROVIDER = process.env.AGENT_PROVIDER ?? "ollama";
 const MODEL = process.env.AGENT_MODEL ?? (PROVIDER === "opencode" ? "deepseek/deepseek-flash" : "qwen2.5:7b");
 const SCENARIO = process.env.SCENARIO ?? "remembered";
-const QUEST_ID = SCENARIO === "multi" ? "three-rememberings" : SCENARIO === "long" ? "long-remembering" : SCENARIO === "root" ? "first-bed" : "remembered-bed";
+const QUEST_IDS = SCENARIO === "broad" ? ["press-beneath", "clerk-errand"] : [SCENARIO === "multi" ? "three-rememberings" : SCENARIO === "long" ? "long-remembering" : SCENARIO === "root" ? "first-bed" : "remembered-bed"];
+const QUEST_ID = QUEST_IDS[0];
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 rmSync(OUT, { recursive: true, force: true });
@@ -37,7 +38,7 @@ const world = loadWorld({ mode: "single" });
 const channels = loadChannels();
 const levels = loadLevels();
 const quests = loadQuests();
-const start = SCENARIO === "multi" ? 6 : SCENARIO === "long" ? 105 : SCENARIO === "root" ? 101 : 98;
+const start = SCENARIO === "broad" ? 108 : SCENARIO === "multi" ? 6 : SCENARIO === "long" ? 105 : SCENARIO === "root" ? 101 : 98;
 const state = initialState(world.rooms, world.npcs, world.objects, start, world.climate, channels.channels, levels.levels, quests.quests);
 const rose = state.objects.find((object) => object.id === "memory-rose");
 if (SCENARIO !== "root" && rose) {
@@ -55,15 +56,17 @@ state.accounts.tester = {
 state.identities.tester = {
   kind: "character", owner: "tester", name: "tester", role: 0, level: 10, xp: 30000,
   guild: null, guildRank: null,
-  quests: SCENARIO === "multi"
-    ? { active: [{ id: "three-rememberings", progress: emptyProgress() }], completed: ["hall-word", "memory-garden", "remembered-bed", "first-bed", "long-remembering"] }
-    : SCENARIO === "long"
+  quests: SCENARIO === "broad"
+    ? { active: [{ id: "press-beneath", progress: emptyProgress() }, { id: "clerk-errand", progress: emptyProgress() }], completed: ["hall-word", "memory-garden", "remembered-bed", "first-bed", "long-remembering", "three-rememberings"] }
+    : SCENARIO === "multi"
+      ? { active: [{ id: "three-rememberings", progress: emptyProgress() }], completed: ["hall-word", "memory-garden", "remembered-bed", "first-bed", "long-remembering"] }
+      : SCENARIO === "long"
       ? { active: [{ id: "long-remembering", progress: { ...emptyProgress(), visits: [103] } }], completed: ["hall-word", "memory-garden", "remembered-bed", "first-bed"] }
       : SCENARIO === "root"
         ? { active: [{ id: "first-bed", progress: emptyProgress() }], completed: ["hall-word", "memory-garden", "remembered-bed"] }
         : { active: [{ id: "remembered-bed", progress: emptyProgress() }], completed: ["hall-word", "memory-garden"] },
   spellbook: ["spark", "mend", "shield", "recall"], maxMana: 27, questCycles: {},
-  ignored: [], title: "Gardenkeeper", found: SCENARIO === "long" || SCENARIO === "multi" ? ["98:down"] : [],
+  ignored: [], title: "Gardenkeeper", found: SCENARIO === "long" || SCENARIO === "multi" || SCENARIO === "broad" ? ["98:down"] : [],
   memory: { facts: SCENARIO === "multi" ? { "garden-word": fact, "root-word": rootFact, "orchard-word": { id: "orchard-word", word: "orchard", text: "The orchard keeps ORCHARD.", source: "orchard-keeper", tick: 0 } } : SCENARIO === "long" || SCENARIO === "root" ? { "garden-word": fact, "root-word": rootFact } : { "garden-word": fact } },
 };
 const stateFile = join(OUT, "state.json");
@@ -123,18 +126,21 @@ try {
       MODEL_NAME: MODEL,
       AGENT_NAME: "tester",
       AGENT_PASSWORD: PASSWORD,
-      AGENT_GOAL: SCENARIO === "multi"
-        ? "You are at The Shrine. The Three Rememberings is active. Start by typing exactly: recall orchard. Then complete the remaining goals in any order: talk to the guild clerk at The Guild Hall, take an orchard seed at The Windfall, and talk to the orchard keeper at The Old Press."
-        : SCENARIO === "long"
+      AGENT_GOAL: SCENARIO === "broad"
+        ? "You are at The Old Press. Complete two quests in any order: (1) Press Beneath: talk orchard keeper, go down and north to The Seed Vault, take the press seed; (2) Clerk Errand: go to The Rat Warren, take the clerk seal, then deliver the clerk seal to the guild clerk at The Guild Hall."
+        : SCENARIO === "multi"
+          ? "You are at The Shrine. The Three Rememberings is active. Start by typing exactly: recall orchard. Then complete the remaining goals in any order: talk to the guild clerk at The Guild Hall, take an orchard seed at The Windfall, and talk to the orchard keeper at The Old Press."
+          : SCENARIO === "long"
           ? "You are at The Root Gate. Go up to Market Square, west to The Gilded Rat, north to The Guild Hall, and talk guild clerk. Then go south, east to Market Square, north to The Atrium, east to The Storeroom, north to The Cell, north to The Shrine, and type exactly: recall root. The Long Remembering quest is active."
           : SCENARIO === "root"
           ? "You are in The Remembered Bed. Go down to The Root Archive, talk to the root keeper, go east to The First Bed, and take the first seed. The First Bed quest is active."
           : "You are in the Memory Garden. Use these commands in order, one per turn: take memory rose; plant rose; down; take remembered bloom; up; north; talk rememberer. Do not repeat look. The plant opens a hidden stair down.",
-      AGENT_DESTINATION: SCENARIO === "root" ? "The Root Archive" : SCENARIO === "long" ? "The Guild Hall" : SCENARIO === "multi" ? "" : "The Rememberer's Bench",
+      AGENT_DESTINATION: SCENARIO === "root" ? "The Root Archive" : SCENARIO === "long" ? "The Guild Hall" : SCENARIO === "multi" || SCENARIO === "broad" ? "" : "The Rememberer's Bench",
       AGENT_WAYPOINTS: SCENARIO === "root" ? "The Root Archive:talk|The First Bed:take|The Root Archive:talk" : SCENARIO === "long" ? "The Guild Hall:talk|The Shrine:recall" : "",
-      AGENT_OBJECTIVES: SCENARIO === "multi" ? "The Shrine:recall orchard|The Guild Hall:talk guild clerk|The Windfall:take orchard seed|The Old Press:talk orchard keeper" : "",
+      AGENT_OBJECTIVES: SCENARIO === "multi" ? "The Shrine:recall orchard|The Guild Hall:talk guild clerk|The Windfall:take orchard seed|The Old Press:talk orchard keeper" : SCENARIO === "broad" ? "The Old Press:talk orchard keeper|The Seed Vault:take press seed|The Rat Warren:take clerk seal|The Guild Hall:deliver clerk seal to guild clerk>The Rat Warren" : "",
+      AGENT_STOP_ON_QUEST: SCENARIO === "broad" ? "0" : "1",
       MAX_TURNS: process.env.AGENT_MAX_TURNS ?? "16",
-      AGENT_STOP_ON_QUEST: "1",
+
       MODEL_TIMEOUT_MS: "120000",
       AGENT_LOG: join(OUT, "agent.jsonl"),
     },
@@ -145,12 +151,14 @@ try {
   const questDone = () => {
     try {
       const lines = readFileSync(join(OUT, "spans.jsonl"), "utf8").trim().split("\n").filter(Boolean);
-      return lines.some((line) => {
+      const done = new Set();
+      for (const line of lines) {
         try {
           const span = JSON.parse(line);
-          return span.name === "world.quest" && span["quest.id"] === QUEST_ID && span["quest.action"] === "complete";
-        } catch { return false; }
-      });
+          if (span.name === "world.quest" && span["quest.action"] === "complete") done.add(span["quest.id"]);
+        } catch {}
+      }
+      return QUEST_IDS.every((id) => done.has(id));
     } catch { return false; }
   };
   exitCode = await new Promise((resolve) => {
@@ -188,13 +196,14 @@ const span = (name) => spans.filter((entry) => entry.name === name);
 const planted = span("world.action").some((entry) => entry["action.id"] === "plant-memory");
 const hidden = span("world.transition").some((entry) => String(entry["room.to"]) === "101");
 const bloom = span("world.object").some((entry) => entry["object.id"] === "remembered-bloom");
-const seedId = SCENARIO === "multi" ? "orchard-seed" : SCENARIO === "long" ? null : "first-seed";
+const seedId = SCENARIO === "broad" ? "press-seed" : SCENARIO === "multi" ? "orchard-seed" : SCENARIO === "long" ? null : "first-seed";
 const seed = seedId ? span("world.object").some((entry) => entry["object.id"] === seedId) : false;
-const quest = span("world.quest").some((entry) => entry["quest.id"] === QUEST_ID && entry["quest.action"] === "complete");
-const talked = span("world.talk").some((entry) => entry["npc.id"] === (SCENARIO === "multi" ? "orchard-keeper" : SCENARIO === "long" ? "guild-clerk" : SCENARIO === "root" ? "root-keeper" : "rememberer"));
+const questState = Object.fromEntries(QUEST_IDS.map((id) => [id, span("world.quest").some((entry) => entry["quest.id"] === id && entry["quest.action"] === "complete")]));
+const quest = QUEST_IDS.every((id) => questState[id]);
+const talked = span("world.talk").some((entry) => entry["npc.id"] === (SCENARIO === "broad" ? "orchard-keeper" : SCENARIO === "multi" ? "orchard-keeper" : SCENARIO === "long" ? "guild-clerk" : SCENARIO === "root" ? "root-keeper" : "rememberer"));
 const turns = (agentLog.match(/^turn \d+:/gm) ?? []).length;
-const report = { scenario: SCENARIO, exitCode, model: MODEL, turns, planted, hidden, bloom, seed, quest, talked, agentLog: agentLog.slice(-12000) };
+const report = { scenario: SCENARIO, exitCode, model: MODEL, turns, planted, hidden, bloom, seed, quest, quests: questState, talked, agentLog: agentLog.slice(-12000) };
 writeFileSync(join(OUT, "report.json"), JSON.stringify(report, null, 2));
-console.log(JSON.stringify({ scenario: SCENARIO, exitCode, model: MODEL, turns, planted, hidden, bloom, seed, quest, talked }, null, 2));
+console.log(JSON.stringify({ scenario: SCENARIO, exitCode, model: MODEL, turns, planted, hidden, bloom, seed, quest, quests: questState, talked }, null, 2));
 if (!agentLog.trim()) console.log("no agent output");
 process.exit(exitCode === 0 ? 0 : 1);

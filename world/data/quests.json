@@ -1532,6 +1532,39 @@
         "xp": 500
       },
       "complete": "The press closes on the seed. Three places remember the same orchard."
+    },
+    {
+      "id": "press-beneath",
+      "name": "The Press Beneath",
+      "level": 8,
+      "giver": "the orchard keeper",
+      "description": "The orchard keeper wants the press seed from the vault beneath the old press. Talk to the keeper, find the vault, and carry the seed back.",
+      "requires": [
+        "three-rememberings"
+      ],
+      "objectives": [
+        {
+          "kind": "talk",
+          "npc": "orchard-keeper",
+          "count": 1,
+          "text": "Talk to the orchard keeper"
+        },
+        {
+          "kind": "visit",
+          "room": 111,
+          "text": "Reach the Seed Vault"
+        },
+        {
+          "kind": "collect",
+          "object": "press-seed",
+          "count": 1,
+          "text": "Carry the press seed"
+        }
+      ],
+      "rewards": {
+        "xp": 600
+      },
+      "complete": "The keeper sets the press seed in the old press. The cellar goes quiet."
     }
   ]
 }

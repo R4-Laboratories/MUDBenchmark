@@ -1972,7 +1972,8 @@
       "text": "A stone press grown over with roots at the orchard's north end. The orchard keeper stands beside it, and the orchard is south.",
       "safe": true,
       "exits": {
-        "south": 106
+        "south": 106,
+        "down": 109
       },
       "details": {
         "press": "The press is cold and dry.",
@@ -1982,6 +1983,59 @@
       "ambient": [
         "The press creaks once.",
         "The keeper listens to the trees."
+      ]
+    },
+    "109": {
+      "name": "The Press Cellar",
+      "text": "A low cellar beneath the old press, walled with roots and damp stone. The press is above, a vat room waits east, and a seed vault lies north.",
+      "safe": true,
+      "exits": {
+        "up": 108,
+        "east": 110,
+        "north": 111
+      },
+      "details": {
+        "roots": "The roots come through the ceiling.",
+        "stone": "The stone is cold and wet.",
+        "press": "The press creaks above."
+      },
+      "ambient": [
+        "A drop falls.",
+        "The vat room hums."
+      ]
+    },
+    "110": {
+      "name": "The Fermenting Vat",
+      "text": "A round room around a vat of black cider. A vat hound circles the rim, and the cellar is west.",
+      "safe": false,
+      "exits": {
+        "west": 109
+      },
+      "details": {
+        "vat": "The vat is full of slow black cider.",
+        "hound": "The hound's coat is wet and dark.",
+        "rim": "The rim is worn smooth."
+      },
+      "ambient": [
+        "The vat bubbles.",
+        "The hound's claws click."
+      ]
+    },
+    "111": {
+      "name": "The Seed Vault",
+      "text": "A dry vault of seed drawers under the cellar. A press seed rests on a stone shelf, and the cellar is south.",
+      "safe": true,
+      "exits": {
+        "south": 109
+      },
+      "details": {
+        "drawers": "Every drawer is labeled with a season.",
+        "seed": "The press seed is dark and heavy.",
+        "shelf": "The shelf is warm."
+      },
+      "ambient": [
+        "A drawer clicks open.",
+        "The seed smells of cider."
       ]
     }
   },
@@ -3043,6 +3097,23 @@
         "The windfall keeps one seed for the press.",
         "The town remembers what the roots carry."
       ]
+    },
+    {
+      "id": "vat-hound",
+      "name": "a vat hound",
+      "room": 110,
+      "home": 110,
+      "period": 40,
+      "jitter": 4,
+      "behaviour": "sentinel",
+      "zone": "garden",
+      "hp": 18,
+      "damage": 2,
+      "armor": 1,
+      "aggression": 60,
+      "xp": 120,
+      "description": "A wet black hound circles the vat.",
+      "examine": "Its coat smells of cider and iron."
     }
   ],
   "zones": [
@@ -3235,7 +3306,10 @@
         105,
         106,
         107,
-        108
+        108,
+        109,
+        110,
+        111
       ]
     }
   ],
@@ -4471,6 +4545,17 @@
       ],
       "value": 110,
       "examine": "A seed of pale wood with a green seam; it is warm and heavy.",
+      "forSale": false
+    },
+    {
+      "id": "press-seed",
+      "name": "a press seed",
+      "room": 111,
+      "flags": [
+        "takeable"
+      ],
+      "value": 140,
+      "examine": "A dark, heavy seed that smells of cider.",
       "forSale": false
     }
   ],

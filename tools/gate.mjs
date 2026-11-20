@@ -2866,6 +2866,21 @@ let memoryQuest = { ok: true, why: [] };
   actor = state.actors.find((entry) => entry.id === "mq");
   check(actor.quests.completed.includes("three-rememberings"), "the three-rememberings quest did not complete");
   check(loadTitles().titles.some((title) => title.id === "orchardkeeper" && title.quest === "three-rememberings"), "the orchardkeeper title is missing");
+  check(world.rooms[108]?.exits?.down === 109 && world.rooms[109]?.exits?.up === 108, "the undercroft is not connected to the old press");
+  check(world.rooms[109]?.exits?.north === 111 && world.rooms[109]?.exits?.east === 110, "the undercroft exits are wrong");
+
+  actor = state.actors.find((entry) => entry.id === "mq");
+  actor.level = 8;
+  actor.room = 108;
+  run([{ kind: "questAccept", actorId: "mq", questId: "press-beneath" }]);
+  check(state.actors.find((entry) => entry.id === "mq").quests.active.some((entry) => entry.id === "press-beneath"), "the press-beneath quest was not accepted");
+  run([{ kind: "talk", actorId: "mq", npcId: "orchard-keeper" }]);
+  run([{ kind: "move", actorId: "mq", dir: "down", to: 109 }]);
+  run([{ kind: "move", actorId: "mq", dir: "north", to: 111 }]);
+  run([{ kind: "take", actorId: "mq", objectId: "press-seed", messages: { actor: "taken", others: "takes" } }]);
+  actor = state.actors.find((entry) => entry.id === "mq");
+  check(actor.quests.completed.includes("press-beneath"), "the press-beneath quest did not complete");
+  check(loadTitles().titles.some((title) => title.id === "presskeeper" && title.quest === "press-beneath"), "the presskeeper title is missing");
   if (memoryQuest.why.length) { memoryQuest.ok = false; failures.push(`the memory quest is broken: ${memoryQuest.why[0]}`); }
 }
 
@@ -3238,6 +3253,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"rootArchive".padEnd(26)}  ${(memoryQuest.ok ? "260 xp" : "BROKEN").padStart(5)}   == seed, quest`);
   console.log(`${"longRoad".padEnd(26)}  ${(memoryQuest.ok ? "400 xp" : "BROKEN").padStart(5)}   == town, root`);
   console.log(`${"threeMem".padEnd(26)}  ${(memoryQuest.ok ? "500 xp" : "BROKEN").padStart(5)}   == four goals`);
+  console.log(`${"pressBeneath".padEnd(26)}  ${(memoryQuest.ok ? "600 xp" : "BROKEN").padStart(5)}   == seed, vault`);
   console.log(`${"quests".padEnd(26)}  ${(quests.ok ? "accept, advance, pay" : "BROKEN").padStart(5)}   == facts, once`);
   console.log(`${"aggression".padEnd(26)}  ${(aggression.ok ? "1 duel" : "BROKEN").padStart(5)}   == mobs start fights`);
   console.log(`${"combat2".padEnd(26)}  ${(combat2.ok ? "weapons, armour, xp" : "BROKEN").padStart(5)}   == fight and grow`);

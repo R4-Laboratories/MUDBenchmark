@@ -171,6 +171,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `first-bed` | The First Bed | 5 | Talk to the root keeper; Reach the First Bed; Carry the first seed | 260 xp |
 | `long-remembering` | The Long Remembering | 6 | Talk to the guild clerk; Recall the root word at the shrine; Return to the First Bed | 400 xp |
 | `three-rememberings` | The Three Rememberings | 7 | Talk to the orchard keeper; Recall the orchard word at the shrine; Carry an orchard seed; Talk to the guild clerk | 500 xp |
+| `press-beneath` | The Press Beneath | 8 | Talk to the orchard keeper; Reach the Seed Vault; Carry the press seed | 600 xp |
 
 ## Rooms
 
@@ -283,5 +284,8 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 105 | The Root Gate | garden | yes | west 104, up 8 |
 | 106 | The Sunken Orchard | garden | yes | up 104, east 107, north 108 |
 | 107 | The Windfall | garden | yes | west 106 |
-| 108 | The Old Press | garden | yes | south 106 |
+| 108 | The Old Press | garden | yes | south 106, down 109 |
+| 109 | The Press Cellar | garden | yes | up 108, east 110, north 111 |
+| 110 | The Fermenting Vat | garden | no | west 109 |
+| 111 | The Seed Vault | garden | yes | south 109 |
 

@@ -170,6 +170,27 @@ The multi run used the nearest-objective planner, the map-seeded BFS route and
 the objective guards. It wandered at times but the guards kept the route and
 the target actions on track. The no-room spam loop was fixed during this run.
 
+## Two-quest remote run (v0.89)
+
+The final broad run used remote DeepSeek and two simultaneous quests:
+
+- **Press Beneath** — talk to the orchard keeper, reach the Seed Vault, take the
+  press seed.
+- **The Clerk's Errand** — take the clerk seal from the Rat Warren and deliver
+  it to the guild clerk.
+
+The delivery objective carried a `>The Rat Warren` dependency so it could not
+be attempted before the seal was taken.
+
+| Result | Value |
+| --- | --- |
+| Turns | **31** |
+| Press Beneath | complete |
+| Clerk's Errand | complete |
+| Press seed | yes |
+| Orchard keeper talk | yes |
+| Exit code | 0 |
+
 ## Multi-objective planner (v0.87)
 
 `AGENT_OBJECTIVES` now carries `Room:action` entries and chooses the nearest
