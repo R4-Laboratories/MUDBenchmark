@@ -35,6 +35,7 @@ memory or prompt system.
 | v0.91.6 | Archmage Eclipse guild line | **done** (MB-163) |
 | v0.91.7 | Repeatable Archmage's Trial | **done** (MB-165) |
 | v0.91.8 | Blocked-name policy and player reports | **done** (MB-167) |
+| v0.91.9 | Generated names pass the new-name policy | **in flight** |
 | backlog | Optional content and live-player tuning | optional |
 
 ## What is next

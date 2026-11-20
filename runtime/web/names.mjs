@@ -1,14 +1,14 @@
 // Player and AI character names. Names are lower-case words with a short
 // numeric suffix so a fresh persona never collides with an older "scout".
 
-const ADJECTIVES = [
+export const ADJECTIVES = [
   "amber", "ash", "bright", "calm", "cider", "dawn", "deep", "ember",
   "fen", "frost", "garden", "glass", "grey", "hollow", "moon", "moss",
-  "pale", "quiet", "rain", "root", "salt", "silver", "still", "stone",
+  "pale", "quiet", "rain", "rooted", "salt", "silver", "still", "stone",
   "thorn", "tide", "white", "wild",
 ];
 
-const NOUNS = [
+export const NOUNS = [
   "badger", "beacon", "bloom", "crow", "fern", "fox", "hare", "heron",
   "lantern", "moth", "otter", "owl", "reed", "rose", "seed", "sparrow",
   "stag", "stone", "thistle", "wisp", "wolf",

@@ -1041,6 +1041,12 @@
       "level": "some-true",
       "statement": "Production v0.91.8 serves 114 rooms, 14 zones, 61 quests, 51 mobiles and 102 objects. It adds the 3-24 character new-name policy with token-aware reserved words and the durable report <name> <reason> queue; /llms.txt lists the report verb. The merged-PR chain auto-published v0.91.8; wick verified the manifest hashes, replayed vectors and deployed. R4 active, signups open, Gemini configured false. Main Gate 44822282035 green, publish 44823483752.",
       "authority": "GitHub PR #20 merge 9866917 2026-11-20; main Gate 44822282035; publish 44823483752; release v0.91.8; wick deploy output, /health, /world and /llms.txt"
+    },
+    {
+      "id": "MB-169",
+      "level": "build",
+      "statement": "The random character-name vocabulary is compatible with the v0.91.8 new-name policy: the root adjective is now rooted, and the Gate checks every adjective/noun pair with a suffix against validNewName. Human and AI random names therefore remain creatable.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }
