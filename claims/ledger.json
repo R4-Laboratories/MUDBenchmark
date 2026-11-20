@@ -987,6 +987,12 @@
       "level": "some-true",
       "statement": "Production v0.91.3 serves the old-AI recovery flow. The deployed page contains the Recover old AI characters panel and /names.mjs returns 200. The server verifies the old account signed prism/character-transfer/1 action and moves only the chosen character to the signed-in human Prism account; the gate covers the signed action and wrong-destination refusal. The world remains 114 rooms/14 zones/58 quests/51 mobiles/101 objects/11 titles. R4 active, signups open, Gemini configured false. Gate 44776703806 and release 44778482804.",
       "authority": "wick production v0.91.3 2026-11-20; release 44778482804; gate 44776703806; /health, /names.mjs and deployed index; signed-transfer gate"
+    },
+    {
+      "id": "MB-160",
+      "level": "build",
+      "statement": "v0.91.4 adds a pull-based continuous release path: publish.yml runs only for a merged PR whose main Gate is green, reuses the Gate holo artifact, packages runtime.tar.gz, writes release-manifest.json with tag/commit/gate-run and SHA-256/size for both assets, bumps the patch tag and publishes. The wick deployer refuses a release without a manifest, verifies both hashes before extraction, and installs runtime dependencies with --ignore-scripts. Direct pushes and the pacing loop are skipped; AUTO_RELEASE=off pauses publishing. The gate covers the manifest script, deployer verification strings and publisher shape. No inbound runner or SSH path is added to wick.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }
