@@ -18,7 +18,7 @@ new live file is started.
 | --- | --- |
 | `world.client` | transport, origin, connection id |
 | `world.disconnect` | transport and connection duration |
-| `world.session` | login/register, actor, account key, Prism or legacy |
+| `world.session` | login/register, actor, account key, Prism or legacy, AI/human, level, guild and completed-quest count |
 | `world.input` | accepted or refused command, actor, tick, latency |
 | `world.transition` | move, room from/to, admission verdict |
 | `world.snapshot` | every 240 ticks: online, accounts, characters, rooms, mobiles, objects, reset countdown, phase, weather, actor levels/equipment/quests, guilds |
@@ -67,6 +67,36 @@ The first useful questions are:
 - Which rooms and quests are actually used?
 - Do audience messages change the AI's next command?
 
+## Players
+
+`GET /players` and `tools/players.mjs` answer the player-behaviour questions
+that the AI trend view cannot:
+
+```sh
+node tools/players.mjs /path/to/spans.jsonl
+node tools/players.mjs --json /path/to/spans.jsonl
+```
+
+The summary is aggregate-only:
+
+- sessions: logins, registrations, Prism/legacy, human/AI, unique accounts and
+  characters, returning accounts, active days;
+- playtime: completed connections, open connections, total/average/median/max
+  duration (playtime covers completed connections; open ones are counted
+  separately);
+- quests: accepted, completed, abandoned, completion rate, and a per-quest
+  actor/completer table;
+- combat: rounds, hits, misses, NPC kills, PvP kills and player deaths;
+- rooms: visits, unique rooms, average rooms per account and the top rooms;
+- levels: the latest snapshot's average, maximum, distribution and guilded
+  count;
+- commands: accepted/refused and the average per connection.
+
+The public `/stats` page renders the same summary. It never receives an account
+key, character name, chat line, tell or mail body; the per-account join stays
+inside the server process. `docs/MODERATION.md` covers the separate report
+queue.
+
 Once a question has enough data to state a rate with an interval, it can become
 an `open` claim in `claims/ledger.json`; only a gate-tested checker becomes a
 `build` claim.
@@ -87,7 +117,7 @@ archive and a byte cap.
 ## Retention and privacy
 
 - Production should set `TELEMETRY_LOG` to a durable directory, not `/tmp`.
-- The span log is server-side. `/spans` is the public redacted view.
+- The span log is server-side. `/spans` is the public redacted view and `/players` is aggregate-only.
 - `login`, `register`, `password`, `adopt`, `prism`, `session-key`, `rebind` and
   `metric` inputs are recorded as verb + length + policy only. `tell`, `mail`
   and guild chat keep metadata, not bodies. `world.tick` intents and the

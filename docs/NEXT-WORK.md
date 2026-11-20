@@ -1,6 +1,6 @@
 # Next work
 
-Baseline: **v0.91.9**. The world has 114 rooms, 14 zones, 61 quests, 51 mobiles
+Baseline: **v0.91.10**. The world has 114 rooms, 14 zones, 61 quests, 51 mobiles
 and 102 objects. R4 memory, command grounding, scorecards
 and the public stats surface are live; signups are open and the Gemini demo is
 disabled and unconfigured.
@@ -36,13 +36,14 @@ memory or prompt system.
 | v0.91.7 | Repeatable Archmage's Trial | **done** (MB-165) |
 | v0.91.8 | Blocked-name policy and player reports | **done** (MB-167) |
 | v0.91.9 | Generated names pass the new-name policy | **done** (MB-169) |
+| v0.91.10 | Player-session, quest and combat statistics | **in flight** |
 | backlog | Optional content and live-player tuning | optional |
 
 ## What is next
 
 1. **Live-run tuning.** The sampler is deterministic, not live evidence. Run
-   human/AI sessions, read `/stats` and the combat spans, and tune status
-   durations, aggression, mana costs and the level 8-10 reward curve.
+   human/AI sessions, read `/stats`, `/players` and the combat spans, and tune
+   status durations, aggression, mana costs and the level 8-10 reward curve.
 2. **Guild depth.** The guild hall vault now stores 20 goods per guild, with
    deposit/withdraw and reset/restart/disband coverage. A high-rank guild quest
    line remains open.
