@@ -139,6 +139,37 @@ destination after the Guild Hall conversation.
   the town-spanning Long Remembering run to completion in 13 turns.
 - The 7B model is slow enough that a 12-turn run can use the full 600 s bound.
 
+## Remote DeepSeek runs (v0.88)
+
+Both runs below used `MODEL_PROVIDER=opencode MODEL_NAME=deepseek/deepseek-flash`
+through the OpenCode CLI. No Ollama or local model process was used.
+
+### Root Archive
+
+| Result | Value |
+| --- | --- |
+| Turns | **5** |
+| Took first seed | yes |
+| Talked to root keeper | yes |
+| First Bed quest | complete |
+| Exit code | 0 |
+
+### Three Rememberings
+
+| Result | Value |
+| --- | --- |
+| Turns | **24** |
+| Objectives | **4 / 4** |
+| Took orchard seed | yes |
+| Talked to orchard keeper | yes |
+| Long Remembering prerequisite | already complete |
+| Three Rememberings quest | complete |
+| Exit code | 0 |
+
+The multi run used the nearest-objective planner, the map-seeded BFS route and
+the objective guards. It wandered at times but the guards kept the route and
+the target actions on track. The no-room spam loop was fixed during this run.
+
 ## Multi-objective planner (v0.87)
 
 `AGENT_OBJECTIVES` now carries `Room:action` entries and chooses the nearest
@@ -150,9 +181,11 @@ planner and content are gated; the next run should use a remote API model.
 
 ## Limits
 
-- One local 7B model, not a production player.
+- Remote DeepSeek through OpenCode, not a local model and not a production player.
 - The character, fact and quest were seeded.
-- The holo is a verifier double for this run; the real model is covered by the
+- The holo is a verifier double for these runs; the real model is covered by the
   gate and release artifact.
+- The remote provider is paid/free according to the OpenCode model; it is not a
+  local or offline model.
 - These results are a prompt/navigation data point, not a claim that an
   unscripted agent can finish the whole world.

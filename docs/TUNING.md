@@ -77,7 +77,9 @@ the Remembered Bed in seven turns: take rose, plant, down, take bloom, up,
 north, talk. The BFS route and waypoint sequencer then completed the broader
 Root Archive run in nine turns. Seeding the graph from `/llms.txt` and adding
 the movement guard completed the town-spanning Long Remembering run in 13
-turns. The server contract and the navigation guards both worked.
+turns. The server contract and the navigation guards both worked. The remote
+DeepSeek runs then completed the Root Archive in 5 turns and all four Three
+Rememberings objectives in 24 turns without local inference.
 
 ## What would change the conclusion
 

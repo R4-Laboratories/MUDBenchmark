@@ -253,6 +253,9 @@ Rehearsed 2026-11-16:
   keeper, the windfall seed, the four-objective Three Rememberings quest and
   per-target `AGENT_OBJECTIVES` with wrong-room redirects; 108 rooms / 55
   quests (MB-145);
+- v0.88.0 (remote agent) adds an OpenCode/DeepSeek provider path with no local
+  inference, fixes the no-room loop, and validates both the 5-turn Root Archive
+  and 24-turn four-objective Three Rememberings runs (MB-147);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

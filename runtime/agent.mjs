@@ -12,6 +12,8 @@
 //   WS_URL=wss://play.r4labs.org node agent.mjs
 
 import { appendFileSync, readFileSync } from "node:fs";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { emptyMemory, noteRoom, rememberResult, memoryPrompt, loopWarning, breakLoop, shouldBreakLoop, routeHint, nearestTarget, seedMap, nextStep } from "./web/memory.mjs";
 
 const WS_URL = process.env.WS_URL ?? "ws://127.0.0.1:8090";
@@ -19,13 +21,14 @@ const NAME = process.env.HARNESS_NAME ?? process.env.AGENT_NAME ?? "agent";
 const PASSWORD = process.env.HARNESS_PASSWORD ?? process.env.AGENT_PASSWORD ?? "";
 const PROVIDER = process.env.MODEL_PROVIDER ?? process.env.AGENT_PROVIDER ?? "ollama";
 const BASE = process.env.MODEL_BASE_URL ?? (PROVIDER === "prime-router" ? "http://127.0.0.1:8000" : PROVIDER === "ollama" ? "http://127.0.0.1:11434" : "https://api.example.com/v1");
-const MODEL = process.env.MODEL_NAME ?? "qwen2.5:7b";
+const MODEL = process.env.MODEL_NAME ?? (PROVIDER === "opencode" ? "deepseek/deepseek-flash" : "qwen2.5:7b");
 const MAX_TURNS = Number(process.env.MAX_TURNS ?? 24);
 const MEMORY_TURNS = Number(process.env.MEMORY_TURNS ?? 12);
 const TIMEOUT = Number(process.env.MODEL_TIMEOUT_MS ?? 90000);
 const GOAL = process.env.AGENT_GOAL ?? "Read the word in the Vault (north then east of the Atrium), then reach the Shrine (east, north, north) and use answer <word>. Explore, trade, fight or speak as you wish.";
 const LOG = process.env.AGENT_LOG ?? "";
 const PRIME_ID = process.env.PRIME_ROUTER_IDENTITY ?? `mudbench-${NAME}`;
+const runOpenCode = promisify(execFile);
 const STOP_ON_QUEST = process.env.AGENT_STOP_ON_QUEST === "1";
 const DESTINATION = process.env.AGENT_DESTINATION ?? "";
 const LLMS_URL = process.env.LLMS_URL ?? `${WS_URL.replace(/^ws/, "http").replace(/\/$/, "")}/llms.txt`;
@@ -108,6 +111,7 @@ let lastCommand = "";
 let lastRoom = "";
 let lastExits = [];
 let recent = [];
+let waitingForRoom = false;
 const nav = emptyMemory();
 const messages = [{ role: "system", content: SYSTEM }];
 
@@ -182,7 +186,18 @@ function roomFrom(text) {
 async function ask(observedText) {
   messages.push({ role: "user", content: observedText });
   let reply = "";
-  if (PROVIDER === "prime-router") {
+  if (PROVIDER === "opencode") {
+    const prompt = `${SYSTEM}\n\n${observedText}\n\nReturn exactly one game command and nothing else. Do not use tools, do not explain, and do not wrap the command in code fences.`;
+    const { stdout } = await runOpenCode("opencode", ["run", "--model", MODEL, "--format", "json", "--archived", prompt], {
+      timeout: TIMEOUT,
+      maxBuffer: 8 * 1024 * 1024,
+    });
+    const texts = String(stdout).split(/\r?\n/).map((line) => {
+      try { return JSON.parse(line); } catch { return null; }
+    }).filter((entry) => entry?.type === "text").map((entry) => entry.part?.text ?? "");
+    reply = texts.join("\n").trim();
+    if (!reply) throw new Error("opencode returned no text");
+  } else if (PROVIDER === "prime-router") {
     const res = await fetch(`${BASE}/api/chat`, {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -249,10 +264,14 @@ async function turn() {
   }
   const room = roomFrom(seen);
   if (!room) {
-    log("waiting for room state");
-    await send("look");
+    if (!waitingForRoom) {
+      waitingForRoom = true;
+      log("waiting for room state");
+      await send("look");
+    }
     return;
   }
+  waitingForRoom = false;
   turns += 1;
   if (turns > MAX_TURNS) { try { socket.send("quit\n"); } catch {} return; }
   if (lastCommand && lastRoom) rememberResult(nav, { room: lastRoom, command: lastCommand, observation: seen, tick: turns, exits: lastExits });

@@ -1,6 +1,6 @@
 # Next work
 
-Baseline: **v0.87.0**. The world has 108 rooms, 14 zones, 55 quests, 49 mobiles
+Baseline: **v0.88.0**. The world has 108 rooms, 14 zones, 55 quests, 49 mobiles
 and 99 objects. R4 memory, command grounding, scorecards
 and the public stats surface are live; signups are open and the Gemini demo is
 disabled and unconfigured.
@@ -23,7 +23,8 @@ memory or prompt system.
 | v0.85.0 | Root Archive, BFS route hints and waypoint run | **done** (MB-141) |
 | v0.86.0 | Root Road, Long Remembering and map-seeded route guard | **done** (MB-143) |
 | v0.87.0 | Sunken Orchard and per-target multi-objective planning | **done** (MB-145) |
-| v0.88.0 | Remote-model session and the next world slice | next |
+| v0.88.0 | Remote DeepSeek validation and multi-objective completion | **in flight** |
+| v0.89.0 | Next world slice and broader remote sessions | next |
 
 ## What is next
 

@@ -24,7 +24,8 @@ const PORT = Number(process.env.LIVE_PORT ?? 8099);
 const TELNET = Number(process.env.LIVE_TELNET ?? 4012);
 const HOLO_PORT = Number(process.env.LIVE_HOLO_PORT ?? 8084);
 const PASSWORD = "live-pass";
-const MODEL = process.env.MODEL_NAME ?? "qwen2.5:7b";
+const PROVIDER = process.env.AGENT_PROVIDER ?? "ollama";
+const MODEL = process.env.AGENT_MODEL ?? (PROVIDER === "opencode" ? "deepseek/deepseek-flash" : "qwen2.5:7b");
 const SCENARIO = process.env.SCENARIO ?? "remembered";
 const QUEST_ID = SCENARIO === "multi" ? "three-rememberings" : SCENARIO === "long" ? "long-remembering" : SCENARIO === "root" ? "first-bed" : "remembered-bed";
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -117,8 +118,8 @@ try {
     env: {
       ...process.env,
       WS_URL: `ws://127.0.0.1:${PORT}`,
-      MODEL_PROVIDER: "ollama",
-      MODEL_BASE_URL: "http://127.0.0.1:11434",
+      MODEL_PROVIDER: PROVIDER,
+      MODEL_BASE_URL: process.env.AGENT_BASE_URL ?? "http://127.0.0.1:11434",
       MODEL_NAME: MODEL,
       AGENT_NAME: "tester",
       AGENT_PASSWORD: PASSWORD,

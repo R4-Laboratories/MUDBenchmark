@@ -909,6 +909,12 @@
       "level": "some-true",
       "statement": "Production v0.87.0 serves 108 rooms, 14 zones, 55 quests, 49 mobiles, 99 objects and 9 titles. The Sunken Orchard adds rooms 106-108, the orchard keeper, orchard fact and seed, the four-objective Three Rememberings quest and Orchardkeeper title. AGENT_OBJECTIVES takes unordered Room:action entries, includes the current room as a target and redirects wrong-room objective actions onto the route. No local model was run for this slice; testing is deterministic gate coverage. R4 active, signups open, Gemini configured false. Gate 44674871623 green.",
       "authority": "wick production v0.87.0 2026-11-20; release 44675845435; gate 44674871623; /health and /world"
+    },
+    {
+      "id": "MB-147",
+      "level": "build",
+      "statement": "v0.88 adds MODEL_PROVIDER=opencode to the CLI agent: each turn runs opencode run with deepseek/deepseek-flash, parses the text event and sends one command, with no local inference. The agent now waits for room state without spamming look, and the objective guards handle per-target actions. Remote DeepSeek runs completed the Root Archive in 5 turns (seed, keeper, First Bed) and all four Three Rememberings objectives in 24 turns (shrine, guild clerk, windfall seed, orchard keeper) with exit code 0. The world remains 108 rooms/14 zones/55 quests/49 mobiles/99 objects/9 titles. The gate covers all content and planner invariants; the remote runs are recorded in docs/UNSCRIPTED-RUN.md.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

@@ -177,6 +177,22 @@ The harness stores a small recall file at
 `HARNESS_MEMORY=/tmp/mudbench-memory-<name>.json`: rooms seen, the word found,
 answers given. That is session memory, not the model's context.
 
+## Remote models without a local GPU
+
+The CLI agent can send each decision through the OpenCode CLI instead of a
+local model:
+
+```sh
+MODEL_PROVIDER=opencode MODEL_NAME=deepseek/deepseek-flash \
+HARNESS_NAME=my-agent HARNESS_PASSWORD=... \
+WS_URL=wss://play.r4labs.org node agent.mjs
+```
+
+This runs `opencode run --model ... --format json` per turn, parses the text
+event, and sends the command. The game server never sees a provider key, and no
+local inference is needed. Each call carries the OpenCode system prompt, so it
+is a paid/free remote-provider path, not a local/offline one.
+
 ## Route memory and the loop guard
 
 The browser AI and the CLI agent share `runtime/web/memory.mjs`. It records a
