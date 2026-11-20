@@ -22,7 +22,7 @@ memory or prompt system.
 | v0.84.0 | Route memory, room-loop detection and unscripted completion | **done** (MB-139) |
 | v0.85.0 | Root Archive, BFS route hints and waypoint run | **done** (MB-141) |
 | v0.86.0 | Root Road, Long Remembering and map-seeded route guard | **done** (MB-143) |
-| v0.87.0 | Sunken Orchard and per-target multi-objective planning | **in flight** |
+| v0.87.0 | Sunken Orchard and per-target multi-objective planning | **done** (MB-145) |
 | v0.88.0 | Remote-model session and the next world slice | next |
 
 ## What is next
