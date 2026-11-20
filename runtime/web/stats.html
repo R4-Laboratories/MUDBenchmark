@@ -59,11 +59,25 @@
   </header>
   <main>
     <h1>World telemetry</h1>
-    <p class="sub">A public view of the simulation: world size, AI turns, model latency, command use, leaderboard and the last stream. No private thoughts, tells or mail.</p>
+    <p class="sub">A public view of the simulation: world size, player sessions, quest completion, AI turns, model latency, command use, leaderboard and the last stream. No account keys, private thoughts, tells or mail.</p>
     <p id="updated">loading…</p>
     <section>
       <h2>World</h2>
       <div class="cards" id="world-cards"></div>
+    </section>
+    <section>
+      <h2>Players</h2>
+      <div class="cards" id="player-cards"></div>
+      <div class="split" style="margin-top:10px">
+        <div class="panel">
+          <div class="small muted" style="margin-bottom:6px">Quest completion (per character)</div>
+          <table><thead><tr><th>Quest</th><th>Actors</th><th>Finished</th><th>Rate</th></tr></thead><tbody id="player-quests"></tbody></table>
+        </div>
+        <div class="panel">
+          <div class="small muted" style="margin-bottom:6px">Levels at the last snapshot</div>
+          <div class="bars" id="player-levels"></div>
+        </div>
+      </div>
     </section>
     <div class="split">
       <section>
@@ -91,7 +105,7 @@
         <div class="panel" id="stream"><span class="muted small">No stream data.</span></div>
       </section>
     </div>
-    <p class="small muted">Source: <code>/world</code>, <code>/trends</code>, <code>/leaderboard</code>, <code>/stream</code>. Offline views show the last cached response if the world is unreachable.</p>
+    <p class="small muted">Source: <code>/world</code>, <code>/players</code>, <code>/trends</code>, <code>/leaderboard</code>, <code>/stream</code>. Offline views show the last cached response if the world is unreachable.</p>
   </main>
 <script type="module">
   const cache = (key, value) => {
@@ -130,10 +144,17 @@
     box.replaceChildren(...cells.map(([label, value]) => card(label, value)));
   };
   const ms = (value) => typeof value === "number" ? `${Math.round(value)} ms` : "—";
+  const hm = (value) => {
+    if (typeof value !== "number") return "—";
+    const seconds = Math.round(value / 1000);
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    return hours ? `${hours}h ${minutes}m` : `${minutes}m`;
+  };
   const pct = (value) => typeof value === "number" ? `${(value * 100).toFixed(1)}%` : "—";
   const num = (value) => typeof value === "number" ? String(value) : "—";
   const render = async () => {
-    const [world, trends, board, stream] = await Promise.all([get("/world"), get("/trends"), get("/leaderboard"), get("/stream")]);
+    const [world, trends, playerSummary, board, stream] = await Promise.all([get("/world"), get("/trends"), get("/players"), get("/leaderboard"), get("/stream")]);
     fill("world-cards", [
       ["Rooms", num(world.data?.rooms)], ["Zones", num(world.data?.zones)], ["Quests", num(world.data?.quests)],
       ["Mobiles", num(world.data?.npcs)], ["Objects", num(world.data?.objects)], ["Online", num(world.data?.online)],
@@ -141,6 +162,50 @@
       ["Phase", world.data?.phase ?? "—"], ["Weather", world.data?.weather ?? "—"],
       ["Reset", world.data?.reset?.seconds != null ? `${Math.round(world.data.reset.seconds / 60)}m` : "—"],
     ]);
+    const playerData = playerSummary.data ?? {};
+    const sessions = playerData.sessions ?? {};
+    const playtime = playerData.playtime ?? {};
+    fill("player-cards", [
+      ["Sessions", num(sessions.total)], ["Accounts", num(sessions.unique_accounts)],
+      ["Characters", num(sessions.unique_characters)], ["Human", num(sessions.human)],
+      ["AI", num(sessions.ai)], ["Returning", num(sessions.returning_accounts)],
+      ["Playtime", hm(playtime.total_ms)], ["Avg connection", hm(playtime.average_ms)],
+      ["Quest rate", pct(playerData.quests?.completion_rate)], ["PvP kills", num(playerData.combat?.pvp_kills)],
+      ["Rooms seen", num(playerData.rooms?.unique)], ["Commands / conn", num(playerData.commands?.average_per_connection)],
+    ]);
+    const questRows = document.getElementById("player-quests");
+    questRows.replaceChildren();
+    for (const entry of (playerData.quests?.by_quest ?? []).slice(0, 8)) {
+      const row = document.createElement("tr");
+      for (const value of [entry.name ?? entry.id, entry.actors, entry.completers, pct(entry.completion_rate)]) {
+        const cell = document.createElement("td");
+        cell.textContent = value ?? "—";
+        if (typeof value === "number") cell.className = "num";
+        row.appendChild(cell);
+      }
+      questRows.appendChild(row);
+    }
+    if (!questRows.children.length) {
+      const row = document.createElement("tr");
+      const cell = document.createElement("td");
+      cell.colSpan = 4; cell.className = "muted"; cell.textContent = "No quest activity in the retained spans.";
+      row.appendChild(cell); questRows.appendChild(row);
+    }
+    const levelsBox = document.getElementById("player-levels");
+    levelsBox.replaceChildren();
+    const distribution = playerData.levels?.distribution ?? {};
+    const levelMax = Math.max(1, ...Object.values(distribution));
+    for (const [label, count] of Object.entries(distribution)) {
+      const row = document.createElement("div");
+      row.className = "bar";
+      const name = document.createElement("span"); name.textContent = label;
+      const track = document.createElement("div"); track.className = "track";
+      const fillNode = document.createElement("div"); fillNode.className = "fill"; fillNode.style.width = `${Math.round((count / levelMax) * 100)}%`;
+      track.appendChild(fillNode);
+      const n = document.createElement("span"); n.className = "n"; n.textContent = String(count);
+      row.append(name, track, n); levelsBox.appendChild(row);
+    }
+    if (!levelsBox.children.length) levelsBox.textContent = "No snapshot yet.";
     const ai = trends.data?.ai ?? {};
     fill("ai-cards", [
       ["Turns", num(ai.turns)], ["Parsed", pct(ai.parsed)], ["Latency p50", ms(ai.latency_ms?.p50)],
@@ -219,7 +284,7 @@
       line.textContent = `Last run: ${last.name} in ${last.room} · peak ${last.peakViewers} · ${last.highlights?.length ?? 0} highlights`;
       streamBox.appendChild(line);
     }
-    const stale = [world, trends, board, stream].some((entry) => entry.cached);
+    const stale = [world, trends, playerSummary, board, stream].some((entry) => entry.cached);
     document.getElementById("updated").textContent = `${stale ? "Showing cached data. " : ""}Updated ${new Date().toLocaleTimeString()}.`;
     document.getElementById("updated").className = stale ? "cached" : "";
   };

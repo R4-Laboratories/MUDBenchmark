@@ -1053,6 +1053,12 @@
       "level": "some-true",
       "statement": "Production v0.91.9 serves 114 rooms, 14 zones, 61 quests, 51 mobiles and 102 objects. The deployed names.mjs carries the rooted adjective, and the Gate exhaustively checks every adjective/noun pair against the v0.91.8 new-name policy. The merged-PR chain auto-published v0.91.9; wick verified the manifest hashes, replayed vectors and deployed. R4 active, signups open, Gemini configured false. Main Gate 44826119999 green, publish 44827287317.",
       "authority": "GitHub PR #21 merge c5c4bc6 2026-11-20; main Gate 44826119999; publish 44827287317; release v0.91.9; wick deploy output, /health and deployed names.mjs"
+    },
+    {
+      "id": "MB-171",
+      "level": "build",
+      "statement": "Player statistics are aggregate-only and built from the existing span log: world.session now records session.ai, actor.level, actor.guild and completed-quest count; GET /players and tools/players.mjs summarize sessions, human/AI mix, unique accounts/characters, returning accounts, playtime for completed connections, per-quest actor/completer completion, combat hits/misses/NPC kills/PvP kills/player deaths, room visits, level distribution and command counts. The Gate checks the synthetic summary and that serialized output contains no account key or character name.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

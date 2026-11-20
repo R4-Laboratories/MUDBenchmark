@@ -54,6 +54,7 @@ import { deleteLegacy } from "./delete-legacy.mjs";
 import { normalizeStreamEvent, publicStreamText } from "../runtime/stream.mjs";
 import { normalizeAiTurn, aiTurnAttributes } from "../runtime/metrics.mjs";
 import { summarizeTrends } from "../runtime/trends.mjs";
+import { playerLines, summarizePlayers } from "../runtime/playerstats.mjs";
 import { worldStatus, worldStatusText } from "../runtime/worldstatus.mjs";
 import { redactCommand, sanitizeIntent, sanitizeState, scrubSecrets, scrubSpan } from "../runtime/telemetry-policy.mjs";
 import { planRetention } from "../runtime/retention.mjs";
@@ -1308,6 +1309,8 @@ let stream = { ok: true, why: [] };
   check(/action === "poll"/.test(serverText) && /action === "chat"/.test(serverText), "the streamer has no poll or chat controls");
   check(/pathname === "\/stream"/.test(serverText) && /mudbenchmark\/stream\/1/.test(serverText), "the public stream status endpoint is missing");
   check(/pathname === "\/stats"/.test(serverText) && /pathname === "\/leaderboard"/.test(serverText) && existsSync(join(root, "runtime/web/stats.html")), "the public stats page or leaderboard endpoint is missing");
+  const statsPage = readFileSync(join(root, "runtime/web/stats.html"), "utf8");
+  check(/pathname === "\/players"/.test(serverText) && /id="player-cards"/.test(statsPage) && /fetch\(\/players\)|get\("\/players"\)/.test(statsPage), "the public player statistics view is missing");
   check(/pathname === "\/api\/demo"/.test(serverText) && /pathname === "\/api\/gemini\/v1\/chat\/completions"/.test(serverText), "the Gemini demo routes are missing");
   check(/r4-context/.test(serverText) && /R4_URL/.test(serverText), "the R4 memory proxy is missing");
   check(/lastLive/.test(serverText) && /publicLast/.test(serverText), "the stream archive is missing");
@@ -1418,6 +1421,49 @@ let telemetry = { ok: true, why: [] };
   check(worldStatusText(status).includes("alice") && worldStatusText(status).includes("level 4"), "the human world status is missing the actor");
 
   if (telemetry.why.length) { telemetry.ok = false; failures.push(`the telemetry foundation is broken: ${telemetry.why[0]}`); }
+}
+
+// Player statistics are aggregate-only: sessions, playtime, quest completion,
+// combat and rooms are described without account keys or character names.
+let playerStats = { ok: true, why: [] };
+{
+  const check = (condition, why) => { if (!condition) { playerStats.ok = false; playerStats.why.push(why); } };
+  const spans = [
+    { name: "world.session", at: "2026-11-20T00:00:00Z", "actor.id": "h1", "actor.name": "alice", "account.key": "acct-h", "session.kind": "register", "session.prism": false, "session.ai": false },
+    { name: "world.session", at: "2026-11-20T00:01:00Z", "actor.id": "a1", "actor.name": "ember-fox-42", "account.key": "acct-ai", "session.kind": "login", "session.prism": true, "session.ai": true },
+    { name: "world.session", at: "2026-11-20T00:02:00Z", "actor.id": "h2", "actor.name": "alice", "account.key": "acct-h", "session.kind": "login", "session.prism": false, "session.ai": false },
+    { name: "world.disconnect", "actor.id": "h1", duration_ms: 60000 },
+    { name: "world.disconnect", "actor.id": "a1", duration_ms: 120000 },
+    { name: "world.quest", "actor.id": "h1", "quest.id": "q1", "quest.name": "The First Step", "quest.action": "accept" },
+    { name: "world.quest", "actor.id": "h1", "quest.id": "q1", "quest.name": "The First Step", "quest.action": "complete" },
+    { name: "world.quest", "actor.id": "a1", "quest.id": "q1", "quest.name": "The First Step", "quest.action": "accept" },
+    { name: "world.transition", "actor.id": "h1", "room.to": 2, "action.kind": "move" },
+    { name: "world.transition", "actor.id": "a1", "room.to": 2, "action.kind": "move" },
+    { name: "world.transition", "actor.id": "h1", "room.to": 3, "action.kind": "move" },
+    { name: "world.combat", "actor.id": "h1", "target.id": "npc", outcome: "killed" },
+    { name: "world.combat", "actor.id": "h1", "target.id": "a1", outcome: "killed" },
+    { name: "world.combat", "actor.id": "a1", "target.id": "h1", outcome: "miss" },
+    { name: "world.snapshot", at: "2026-11-20T00:03:00Z", "world.actors": JSON.stringify([{ level: 3, guild: "mages" }, { level: 8, guild: null }]) },
+    { name: "world.input", "actor.id": "h1", text: "look" },
+    { name: "world.input", "actor.id": "a1", text: "north" },
+    { name: "world.input", "actor.id": "h2", text: "slow", refused: "too-fast" },
+  ];
+  const stats = summarizePlayers(spans);
+  check(stats.sessions.total === 3 && stats.sessions.logins === 2 && stats.sessions.registrations === 1, "the session counts are wrong");
+  check(stats.sessions.prism === 1 && stats.sessions.legacy === 2 && stats.sessions.human === 2 && stats.sessions.ai === 1, "the session mix is wrong");
+  check(stats.sessions.unique_accounts === 2 && stats.sessions.unique_characters === 2 && stats.sessions.returning_accounts === 1, "the unique-player counts are wrong");
+  check(stats.playtime.connections === 3 && stats.playtime.completed === 2 && stats.playtime.open === 1, "the connection counts are wrong");
+  check(stats.playtime.total_ms === 180000 && stats.playtime.average_ms === 90000 && stats.playtime.median_ms === 60000, "the playtime aggregates are wrong");
+  check(stats.quests.accepted === 2 && stats.quests.completed === 1 && stats.quests.completion_rate === 0.5, "the quest counts are wrong");
+  check(stats.quests.by_quest[0]?.actors === 2 && stats.quests.by_quest[0]?.completers === 1 && stats.quests.by_quest[0]?.completion_rate === 0.5, "the per-quest completion is wrong");
+  check(stats.combat.rounds === 3 && stats.combat.kills === 2 && stats.combat.npc_kills === 1 && stats.combat.pvp_kills === 1 && stats.combat.player_deaths === 1, "the combat counts are wrong");
+  check(stats.rooms.visits === 3 && stats.rooms.unique === 2 && stats.rooms.average_per_account === 1.5, "the room counts are wrong");
+  check(stats.commands.accepted === 2 && stats.commands.refused === 1 && stats.commands.average_per_connection === 1, "the command counts are wrong");
+  check(stats.levels.actors === 2 && stats.levels.average === 5.5 && stats.levels.max === 8 && stats.levels.distribution["1-4"] === 1 && stats.levels.distribution["8-10"] === 1 && stats.levels.guilded === 1, "the level distribution is wrong");
+  const serialized = JSON.stringify(stats);
+  check(!serialized.includes("acct-h") && !serialized.includes("acct-ai") && !serialized.includes("alice") && !serialized.includes("ember-fox-42"), "the player statistics leaked an account key or character name");
+  check(playerLines(stats).some((line) => line.includes("sessions 3")) && playerLines(stats).some((line) => line.includes("quests accepted 2")), "the player summary lines are wrong");
+  if (playerStats.why.length) { playerStats.ok = false; failures.push(`player statistics are broken: ${playerStats.why[0]}`); }
 }
 
 // The short forms players type, and the equipment view they expose.
@@ -3465,6 +3511,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"social".padEnd(26)}  ${(social.ok ? "70 xp" : "BROKEN").padStart(5)}   == talk, quest`);
   console.log(`${"chatGuard".padEnd(26)}  ${(chatGuard.ok ? "8/10s" : "BROKEN").padStart(5)}   == rate limit`);
   console.log(`${"moderation".padEnd(26)}  ${(moderation.ok ? "names, report" : "BROKEN").padStart(5)}   == new-name policy`);
+  console.log(`${"playerStats".padEnd(26)}  ${(playerStats.ok ? "sessions, quests" : "BROKEN").padStart(5)}   == aggregate only`);
   console.log(`${"ignore".padEnd(26)}  ${(ignore.ok ? "5 paths" : "BROKEN").padStart(5)}   == tell, mail, chat`);
   console.log(`${"titles".padEnd(26)}  ${(titles.ok ? "3 earned" : "BROKEN").padStart(5)}   == select, persist`);
   console.log(`${"memoryQuest".padEnd(26)}  ${(memoryQuest.ok ? "150 xp" : "BROKEN").padStart(5)}   == fact, recall`);

@@ -14,6 +14,7 @@ import { WebSocketServer } from "ws";
 import { recordSpan, digest, TELEMETRY_LOG } from "./telemetry.mjs";
 import { readSpanTail, readSpansTail, redactSpans } from "./spans.mjs";
 import { summarizeTrends } from "./trends.mjs";
+import { summarizePlayers } from "./playerstats.mjs";
 import { step, initialState, digestState, phaseAt, upgradeState, releaseHeldObjects, checkpointIdentities, armorOf, nextFrom, TICK_MS } from "./world.mjs";
 import { equipmentText, weaponOf } from "./equipment.mjs";
 import { maxManaFor, spellById, spellLine, spellPower, trainableSpells, trainingCost } from "./magic.mjs";
@@ -2647,12 +2648,18 @@ function onTick() {
   for (const intent of intents) {
     if (intent.kind !== "login" && intent.kind !== "register") continue;
     const actor = actorById(intent.actorId);
+    const accountKey = actor?.account ?? intent.account ?? null;
+    const account = accountKey ? state.accounts?.[accountKey] : null;
     recordSpan("world.session", {
       "actor.id": intent.actorId,
       "actor.name": actor?.name ?? intent.key ?? null,
-      "account.key": actor?.account ?? intent.account ?? null,
+      "account.key": accountKey,
       "session.kind": intent.kind,
       "session.prism": Boolean(intent.prism),
+      "session.ai": account?.ai === true,
+      "actor.level": actor?.level ?? null,
+      "actor.guild": actor?.guild ?? null,
+      "actor.quests.completed": actor?.quests?.completed?.length ?? null,
       "world.tick": state.tick,
     }, 0);
   }
@@ -3082,6 +3089,15 @@ const web = http.createServer(async (req, res) => {
     status.actions = ACTION_TABLE.actions.length;
     res.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
     res.end(JSON.stringify(status));
+    return;
+  }
+
+  if (pathname === "/players") {
+    // Aggregate player sessions and outcomes. Account keys and character names
+    // stay in the span log; this public view returns counts and rates only.
+    const summary = summarizePlayers(readSpansTail(TELEMETRY_LOG));
+    res.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
+    res.end(JSON.stringify({ ...summary, file: TELEMETRY_LOG }));
     return;
   }
 
