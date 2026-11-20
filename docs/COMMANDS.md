@@ -176,6 +176,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `orchard-work` | Orchard Work | 9 | Deliver a cider bloom to the orchard keeper | 250 xp |
 | `guild-eclipse` | The Eclipse Ledger | 10 | Reach the Throne of Ash; Carry the regent's sigil | 400 xp |
 | `guild-dawn` | The Dawn Archive | 10 | Reach the Dawn Gate; Carry the dawn crown | 500 xp |
+| `guild-trial` | The Archmage's Trial | 10 | Defeat the eclipse regent; Deliver the regent's sigil to the archmage | 300 xp |
 
 ## Rooms
 
