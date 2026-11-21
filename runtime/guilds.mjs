@@ -17,6 +17,15 @@ export function guildId(name) {
   return name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 32);
 }
 
+/** Wardens rank perks: scout armour, ranger damage, warden both. */
+export function wardenBonus(actor) {
+  if (actor?.guild !== "wardens") return { armor: 0, damage: 0 };
+  if (actor.guildRank === "warden") return { armor: 1, damage: 1 };
+  if (actor.guildRank === "ranger") return { armor: 0, damage: 1 };
+  if (actor.guildRank === "scout") return { armor: 1, damage: 0 };
+  return { armor: 0, damage: 0 };
+}
+
 export const rankAtLeast = (rank, wanted, ranks = RANKS) => {
   const have = ranks.indexOf(rank);
   const need = ranks.indexOf(wanted);

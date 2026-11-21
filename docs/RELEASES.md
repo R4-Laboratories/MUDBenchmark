@@ -319,6 +319,9 @@ Rehearsed 2026-11-16:
   characters with a one-time completion/abandon note. Ember Deep, Hollow Fen,
   Salt Caves, Moonlit Reach and the Memory Garden keep their rooms, gear, keys
   and actions as exploration content (MB-183);
+- v0.91.17 (zone gear) adds four armour drops to the Ember, Fen, Salt and Moon
+  mobiles and gives the Wardens passive rank perks: scout +1 armour, ranger +1
+  damage, warden both (MB-185);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

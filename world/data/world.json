@@ -2815,7 +2815,8 @@
       "aggression": 100,
       "xp": 140,
       "loot": [
-        "ember-ore"
+        "ember-ore",
+        "ember-gauntlets"
       ],
       "description": "A tall figure of black iron stands at the edge of the flame.",
       "examine": "The warden is jointed like a furnace door, and its eyes are coals."
@@ -2855,7 +2856,8 @@
       "aggression": 55,
       "xp": 26,
       "loot": [
-        "bog-fang"
+        "bog-fang",
+        "fen-mantle"
       ],
       "description": "A lean hound the colour of wet peat.",
       "examine": "Its fur is matted with mud and its eyes are yellow.",
@@ -2940,7 +2942,8 @@
       "aggression": 70,
       "xp": 45,
       "loot": [
-        "salt-shard"
+        "salt-shard",
+        "salt-bracers"
       ],
       "description": "A tall shape of white salt and cold air.",
       "examine": "The wraith has no face, only a seam of black.",
@@ -3003,7 +3006,8 @@
       "aggression": 80,
       "xp": 90,
       "loot": [
-        "moon-antler"
+        "moon-antler",
+        "moon-greaves"
       ],
       "status": "chill",
       "description": "A tall stag with antlers of clear glass.",
@@ -4749,6 +4753,62 @@
       ],
       "value": 90,
       "examine": "A pale blue stone with a cloud inside it. The moonwell light makes it answer."
+    },
+    {
+      "id": "ember-gauntlets",
+      "name": "ember-forged gauntlets",
+      "room": 70,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "hands",
+      "armor": 2,
+      "value": 55,
+      "examine": "Black iron gauntlets with a red seam at the knuckles. They hold the heat of the First Flame."
+    },
+    {
+      "id": "fen-mantle",
+      "name": "a fen mantle",
+      "room": 80,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "cloak",
+      "armor": 2,
+      "value": 60,
+      "examine": "A mantle of woven reed and grey wool. It smells of rain and deep water."
+    },
+    {
+      "id": "salt-bracers",
+      "name": "salt-crusted bracers",
+      "room": 85,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "hands",
+      "armor": 2,
+      "value": 65,
+      "examine": "Bracers of pale leather crusted with salt. They are heavier than they look."
+    },
+    {
+      "id": "moon-greaves",
+      "name": "moonlit greaves",
+      "room": 91,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "feet",
+      "armor": 2,
+      "value": 70,
+      "examine": "Greaves of white metal that hold a faint moonlight after the sun goes."
     }
   ],
   "climate": {

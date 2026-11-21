@@ -86,6 +86,18 @@ Guild Hall and its per-guild vault; their rosters and vaults are separate.
 `guild advance` promotes in the guild's own hall. A player-founded guild still
 uses the generic leader/officer/member ranks and does not advance this way.
 
+### Wardens rank perks
+
+| Rank | Perk |
+| --- | --- |
+| scout | +1 armour |
+| ranger | +1 weapon damage |
+| warden | +1 armour and +1 weapon damage |
+
+The perks are passive while the character is in the Wardens and are part of
+`armorOf`, the combat damage roll and `score`/`equipment`. They do not stack with
+a second guild because a character has one guild.
+
 ## What is live, and what is not
 
 Guild quests, guild XP, ranks, the level-6 three-active-quest perk and the

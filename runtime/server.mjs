@@ -26,7 +26,7 @@ import { loadChannels, resolveChannel } from "./channels.mjs";
 import { loadSocials, resolveSocial } from "./socials.mjs";
 import { loadLevels, nextLevelXp } from "./levels.mjs";
 import { availableQuests, loadQuestArchive, loadQuests, migrateQuestState, normalizeQuestState, questById, questLines, validateQuestReferences } from "./quests.mjs";
-import { GUILD_HALL, GUILD_VAULT_CAPACITY, RANKS, guildId, guildVaultHolder, rankAtLeast, validGuildName } from "./guilds.mjs";
+import { GUILD_HALL, GUILD_VAULT_CAPACITY, RANKS, guildId, guildVaultHolder, rankAtLeast, validGuildName, wardenBonus } from "./guilds.mjs";
 import { buildLlms } from "./llms.mjs";
 import { loadTitles, earnedTitles, titleLookup } from "./titles.mjs";
 import { loadFacts, factForNpc, contextHasWord } from "./facts.mjs";
@@ -1969,7 +1969,7 @@ async function handleCommand(id, line) {
     const stateQ = normalizeQuestState(actor.quests, QUESTS.quests);
     const effects = (actor.effects ?? []).length ? ` Effects: ${(actor.effects ?? []).map((effect) => `${effect.name} ${effect.rounds}`).join(", ")}.` : "";
     const title = actor.title ? ` Title ${actor.title}.` : "";
-    const line = `Level ${actor.level} (${actor.xp}${nextXp === null ? "" : `/${nextXp}`} xp), ${actor.hp}/${actor.maxHp} hp, mana ${actor.mana ?? maxManaFor(actor)}/${actor.maxMana ?? maxManaFor(actor)}, armour ${armor}, damage ${weapon?.damage ?? 0}, spell power ${spellPower(actor, weapon?.damage ?? 0)}, ${weapon ? `wielding ${weapon.name}` : "unarmed"}${actor.guild ? `, guild ${actor.guild}` : ""}, ${stateQ.active.length} active/${stateQ.completed.length} done quests.${title}${effects}`;
+    const line = `Level ${actor.level} (${actor.xp}${nextXp === null ? "" : `/${nextXp}`} xp), ${actor.hp}/${actor.maxHp} hp, mana ${actor.mana ?? maxManaFor(actor)}/${actor.maxMana ?? maxManaFor(actor)}, armour ${armor}, damage ${(weapon?.damage ?? 0) + wardenBonus(actor).damage}, spell power ${spellPower(actor, weapon?.damage ?? 0)}, ${weapon ? `wielding ${weapon.name}` : "unarmed"}${actor.guild ? `, guild ${actor.guild}` : ""}, ${stateQ.active.length} active/${stateQ.completed.length} done quests.${title}${effects}`;
     return sendTo(id, `${render(messages.line, { words: line })}\r\n`);
   }
 

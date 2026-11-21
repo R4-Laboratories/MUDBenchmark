@@ -11,7 +11,9 @@ attacker's id seed every roll, so a replay fights the same fight.
    damage 0, not silence.
 2. **Damage** for a character is `1..4 + weapon.damage`. Unarmed is `1..4`.
    A mobile's `Damage` is its whole blow (`1..Damage`), not a bonus.
-3. **Armour** is the sum of worn items with `armor`; a jerkin is 1.
+3. **Armour** is the sum of worn items with `armor`; a jerkin is 1. Wardens
+   rank perks add +1 armour at scout and warden, and +1 damage at ranger and
+   warden.
 4. **Both sides swing.** Attacking starts an engagement in each direction, so
    a mob or player fights back on the same pulse. There is no fleeing: a fight
    ends only with a death or with the fight reaching a safe room.
