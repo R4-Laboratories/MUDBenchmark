@@ -110,9 +110,9 @@ strong secrets, secure transport, and only hosts that trust one another. Prism
 accounts, automatic browser redirects, offline play, multi-hop parent policy,
 player-presented credentials, item import, and account or world conflict merging
 are not implemented. `MUD_REGION_ALLOWED_SKILLS` is an optional JSON array of
-recognized skill IDs; if unset, all built-in skills are allowed. Current world items reset and are not persistent character
-inventory, so transferring them needs a separate item-identity and persistence
-design.
+recognized skill IDs; if unset, all built-in skills are allowed. Carried items
+stay with the source region and are not imported; transferring them would need
+item-identity and ownership rules that do not exist yet.
 
 Run the local two-process check with `node --test runtime/federation.test.mjs`.
 It also tests quest progress during a peer outage, process-kill recovery and
