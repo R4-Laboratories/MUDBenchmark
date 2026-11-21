@@ -4,12 +4,15 @@ Two configured MUDBenchmark servers retain independent world state. A player on
 a legacy password account can run `travel east` or `travel west`, then reconnect
 and log in at the destination. Character XP, level, spells, and quest progress
 move; carried items remain in the source region. Guild membership and privileges
-are local to each region. The source signs the transferred progression and
-skills with its Ed25519 key. The destination verifies that signature against
-its configured issuer key, checks that the skills exist and fit the claimed
-level, and stores the signed snapshot with the character. Each region may
-disable skills it does not recognize; the disabled skills remain with the
-character and can become usable again elsewhere.
+are local to each region, and so are faction standing, forge components, the
+Ring record, titles, discovered exits/details, ignored players and AI memory:
+the transfer carries the progression named above, not the whole character
+record. The source signs the transferred progression and skills with its Ed25519
+key. The destination verifies that signature against its configured issuer key,
+checks that the skills exist and fit the claimed level, and stores the signed
+snapshot with the character. Each region may disable skills it does not
+recognize; the disabled skills remain with the character and can become usable
+again elsewhere.
 
 This is an experimental, mutually trusted two-region handoff, not a production
 federation or a CIRIS integration. Transfers require both servers online. An
@@ -24,6 +27,8 @@ When a peer is unavailable, its neighbors can continue running their own
 worlds, but travel to that peer cannot complete. In federation mode, changes to
 online character progression are checkpointed before gameplay results are
 sent; a failed write stops the server rather than acknowledging that progress.
+The outgoing-transfer marker and the leave are written in the same checkpoint,
+so a crash at the handoff leaves a durable retry rather than a silent departure.
 This synchronous full-state write can add latency and has not been load-tested.
 Other world changes remain subject to periodic checkpoints and resets, so an
 abrupt crash may still roll back recent world activity. This is not a guarantee
@@ -32,10 +37,10 @@ against disk or power failure.
 The operators choose a seed rules fingerprint and configure it on both
 servers. Each server refuses to start federation if its local rules differ,
 and peers compare that fingerprint and the transfer protocol before travel.
-This only covers the files listed in `runtime/federation.mjs`, not map or
-content compatibility. It is self-reported: it does not prove a region runs
-trusted code, certify membership, implement a parent server, or support policy
-revocation.
+The fingerprint covers the runtime progression rules and the world, level,
+quest and skill data listed in `runtime/federation.mjs`, so two regions must
+run the same game content. It does not prove a region runs trusted code,
+certify membership, implement a parent server, or support policy revocation.
 
 A signed snapshot proves which trusted region made the claim; it does not prove
 the player earned a skill according to the rules, nor does it provide an

@@ -9,8 +9,9 @@ export const FEDERATION_PROTOCOL = "mudbenchmark/region-transfer/1";
 export function rulesFingerprint() {
   const files = [
     "./world.mjs", "./generated/Pulses.mjs", "./levels.mjs", "./quests.mjs",
-    "./guilds.mjs", "./equipment.mjs", "./magic.mjs",
-    "../world/data/levels.json", "../world/data/quests.json",
+    "./guilds.mjs", "./equipment.mjs", "./magic.mjs", "./techniques.mjs",
+    "./factions.mjs", "./forge.mjs",
+    "../world/data/levels.json", "../world/data/quests.json", "../world/data/world.json",
   ];
   const hash = createHash("sha256");
   for (const file of files) {

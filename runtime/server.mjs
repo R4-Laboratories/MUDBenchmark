@@ -493,10 +493,10 @@ async function travel(id, destination) {
     const current = actorById(id);
     if (!current || current.key !== name || !transports.has(id)) throw new Error("session ended");
     checkpointIdentities(state);
-    pending.push({ kind: "leave", actorId: id });
-    onTick();
     const liveAccount = state.accounts[name];
     const character = state.identities[name];
+    // The outgoing marker and the leave are written in the same tick, so a
+    // crash can never leave a departed session with no durable retry.
     liveAccount.federation = {
       status: "outgoing", to: destination, transferId: randomUUID(),
       characterId: liveAccount.federation?.characterId ?? randomUUID(),
@@ -507,8 +507,9 @@ async function travel(id, destination) {
         maxMana: character.maxMana, questCycles: character.questCycles,
       }),
     };
+    pending.push({ kind: "leave", actorId: id });
+    onTick();
     accountSessions.delete(id);
-    federationSave();
     try {
       await deliverTransfer(name);
       sendTo(id, `Transferred to ${destination}. Reconnect there and log in with the same account.\r\n`);
@@ -3266,7 +3267,6 @@ function onTick() {
     for (const line of lines) handleCommand(id, line).catch(() => {});
   }
 
-  if (!FEDERATION && (result.checkpoint || identityChanged)) saveState();
   // The trace written into the span stream, not a second file: from these a run
   // can be reconstructed with nothing but the record.
   const safeIntents = intents.map(sanitizeIntent);
