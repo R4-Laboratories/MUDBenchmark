@@ -25,7 +25,7 @@ import { loadVerbs, render, resolve } from "./verbs.mjs";
 import { loadChannels, resolveChannel } from "./channels.mjs";
 import { loadSocials, resolveSocial } from "./socials.mjs";
 import { loadLevels, nextLevelXp } from "./levels.mjs";
-import { availableQuests, loadQuests, normalizeQuestState, questById, questLines, validateQuestReferences } from "./quests.mjs";
+import { availableQuests, loadQuestArchive, loadQuests, migrateQuestState, normalizeQuestState, questById, questLines, validateQuestReferences } from "./quests.mjs";
 import { GUILD_HALL, GUILD_VAULT_CAPACITY, RANKS, guildId, guildVaultHolder, rankAtLeast, validGuildName } from "./guilds.mjs";
 import { buildLlms } from "./llms.mjs";
 import { loadTitles, earnedTitles, titleLookup } from "./titles.mjs";
@@ -106,6 +106,7 @@ if (LEVELS.errors.length > 0) {
 }
 
 const QUESTS = loadQuests();
+const QUEST_ARCHIVE = loadQuestArchive();
 // Quest collectibles are not merchandise. Selling one could strand a character
 // on a line they cannot repeat, so the shop refuses them by data, not by name.
 const QUEST_OBJECTS = new Set((QUESTS.quests ?? []).flatMap((quest) =>
@@ -281,6 +282,18 @@ function loadState() {
 
 let state = loadState();
 if (!state.guilds) state.guilds = {};
+// The 20-quest budget retired the rest. Normalize every saved character and
+// leave a one-time note for any active quest that is no longer live.
+let questMigrationCount = 0;
+for (const identity of Object.values(state.identities ?? {})) {
+  const migrated = migrateQuestState(identity.quests, QUESTS.quests, QUEST_ARCHIVE.quests);
+  identity.quests = migrated.quests;
+  if (migrated.notes.length) {
+    identity.questMigration = migrated.notes;
+    questMigrationCount += migrated.notes.length;
+  }
+}
+if (questMigrationCount) console.log(`quests: migrated ${questMigrationCount} retired active quest${questMigrationCount === 1 ? "" : "s"}`);
 if (!state.guilds.mages) {
   state.guilds.mages = {
     id: "mages",
@@ -373,6 +386,13 @@ const npcsIn = (room) => state.npcs.filter((n) => n.room === room && !n.dead);
 function sendTo(id, text) {
   const t = transports.get(id);
   if (t) t.send(text);
+}
+
+function questMigrationNotice(character) {
+  const notes = character?.questMigration;
+  if (!Array.isArray(notes) || notes.length === 0) return null;
+  const words = notes.map((note) => `${note.name} (${note.status})`).join(", ");
+  return `The world retired ${notes.length} quest${notes.length === 1 ? "" : "s"} you were carrying: ${words}.`;
 }
 
 // The owner console answers in one machine-readable line. The operator tool
@@ -1275,6 +1295,11 @@ async function handleCommand(id, line) {
     if (!account || account.retired || !character || (!owns && !delegated) || (owns && !account.characters?.includes(name))) {
       return sendTo(id, `No character named ${name} on this account.\r\n`);
     }
+    const migration = questMigrationNotice(character);
+    if (migration) {
+      sendTo(id, `${migration}\r\n`);
+      pending.push({ kind: "clearQuestMigration", key: name });
+    }
     if (pending.some((intent) => intent.kind === "login" && intent.key === name && intent.actorId !== id)) {
       return sendTo(id, `${name} is signing in elsewhere. Choose the character to try again.\r\n`);
     }
@@ -1353,6 +1378,11 @@ async function handleCommand(id, line) {
     // password, because the kinds must match.
     if (!identityAdmits({ presented, stored, authenticated: passwordOk, audience: true, window: true, unseen: true, shape: true, expiry: true })) {
       return sendTo(id, "That name and password do not match.\r\n");
+    }
+    const migration = questMigrationNotice(character);
+    if (migration) {
+      sendTo(id, `${migration}\r\n`);
+      pending.push({ kind: "clearQuestMigration", key: characterKey });
     }
     accountSessions.set(id, { key, kind: "legacy" });
     takeover(characterKey, id);
@@ -2722,7 +2752,7 @@ function progressionSnapshot(actor) {
 
 function onTick() {
   const intents = pending.splice(0);
-  const identityChanged = intents.some((intent) => ["login", "register", "password", "claim", "claimLegacy", "rebindLegacy", "createCharacter", "ownAccount", "retireAccount", "handoffCharacter", "revokeHandoff", "train", "guildAdvance", "ignore", "unignore", "setTitle", "learnFact"].includes(intent.kind));
+  const identityChanged = intents.some((intent) => ["login", "register", "password", "claim", "claimLegacy", "rebindLegacy", "createCharacter", "ownAccount", "retireAccount", "handoffCharacter", "revokeHandoff", "train", "guildAdvance", "ignore", "unignore", "setTitle", "learnFact", "clearQuestMigration"].includes(intent.kind));
   const previousProgress = new Map(state.actors.filter((actor) => actor.key)
     .map((actor) => [actor.id, progressionSnapshot(actor)]));
   const result = step({ state, rooms: ROOMS, intents, actions: ACTION_TABLE.actions });

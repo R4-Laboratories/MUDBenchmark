@@ -804,6 +804,12 @@ export function step({ state, rooms, intents, actions = [] }) {
       continue;
     }
 
+    if (intent.kind === "clearQuestMigration") {
+      const identity = next.identities[intent.key];
+      if (identity) delete identity.questMigration;
+      continue;
+    }
+
     if (intent.kind === "questAccept" || intent.kind === "questAbandon") {
       const actor = find(intent.actorId);
       if (!actor?.key) continue;

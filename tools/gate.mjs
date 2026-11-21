@@ -31,7 +31,7 @@ import { loadTitles, earnedTitles } from "../runtime/titles.mjs";
 import { loadFacts, contextHasWord } from "../runtime/facts.mjs";
 import { allowCommand, DEFAULT_INTERVAL_MS } from "../runtime/allowance.mjs";
 import { loadLevels, levelForXp } from "../runtime/levels.mjs";
-import { loadQuests, validateQuestReferences } from "../runtime/quests.mjs";
+import { loadQuestArchive, loadQuests, migrateQuestState, validateQuestReferences } from "../runtime/quests.mjs";
 import { GUILD_HALL, GUILD_VAULT_CAPACITY, guildId, guildVaultHolder, validGuildName, guildLevelFor, perksFor } from "../runtime/guilds.mjs";
 import { DEFAULT_TURNS, trimMessages } from "../runtime/memory.mjs";
 import { buildLlms } from "../runtime/llms.mjs";
@@ -1038,7 +1038,7 @@ let claim = { ok: true, why: [] };
   state.identities[legacyKey] = {
     ...state.identities[legacyKey],
     level: 5, xp: 500, guild: "g1", guildRank: "officer",
-    quests: { active: [{ id: "word", progress: {} }], completed: ["scroll"] },
+    quests: { active: [{ id: "word", progress: {} }], completed: ["guardian"] },
   };
   state.guilds.g1 = { id: "g1", name: "The Keepers", founder: legacyKey, created: 0, members: { [legacyKey]: "officer" }, invites: [legacyKey] };
   state.mail.push({ id: "m1", from: legacyKey, fromKey: legacyKey, toKey: legacyKey, text: "old letter", tick: 0, read: false });
@@ -1058,7 +1058,7 @@ let claim = { ok: true, why: [] };
   check(claimed?.owner === prismKey && claimed?.name === legacyKey, "the claimed character did not move to the Prism account");
   check(claimed?.level === 5 && claimed?.xp === 500, "the claim lost the old progression");
   check(claimed?.guild === "g1" && claimed?.guildRank === "officer", "the claim lost the old guild");
-  check(claimed?.quests?.completed?.includes("scroll") && claimed?.quests?.active?.some((entry) => entry.id === "word"), "the claim lost the old quests");
+  check(claimed?.quests?.completed?.includes("guardian") && claimed?.quests?.active?.some((entry) => entry.id === "word"), "the claim lost the old quests");
   check(legacyAccount?.retired === true && legacyAccount?.mergedInto === prismKey, "the old account was not tombstoned");
   check(legacyAccount?.passwordHash === null && legacyAccount?.tokenHash === null, "the old credentials were not cleared");
   check(state.mail[0]?.toKey === legacyKey && state.mail[0]?.fromKey === legacyKey, "the old mail keys moved");
@@ -1654,11 +1654,7 @@ let lantern = { ok: true, why: [] };
   check(world.rooms[37]?.exits?.west === 36 && world.rooms[36]?.exits?.east === 37, "the Spellwright's Shop is not connected");
   check(world.rooms[40]?.exits?.west === 39 && world.rooms[39]?.exits?.east === 40, "the High Walk is not connected");
   state.actors.push({ id: "l", key: "lina", account: "lina", name: "lina", room: 37, visited: [1, 35, 36, 37], level: 5, xp: 400, maxHp: 18, hp: 18, maxMana: 17, mana: 17, spellbook: [], guild: null, guildRank: null, wielding: null, quests: { active: [], completed: [] } });
-  state.objects.find((o) => o.id === "note").holder = "l";
-  run([{ kind: "questAccept", actorId: "l", questId: "errand" }]);
-  run([{ kind: "deliver", actorId: "l", objectId: "note", npcId: "spellwright", messages: { actor: "delivered", others: "delivered" } }]);
   let actor = state.actors.find((entry) => entry.id === "l");
-  check(actor?.quests?.completed?.includes("errand"), "the spellwright errand did not complete");
   actor.room = 38;
   state.objects.find((o) => o.id === "charm").holder = "l";
   run([{ kind: "questAccept", actorId: "l", questId: "familiar" }]);
@@ -1690,12 +1686,12 @@ let lantern = { ok: true, why: [] };
   check(actor.quests.active.filter((entry) => ["guild-mirror", "guild-warden"].includes(entry.id)).length === 2, "guild-quest-2 did not allow a second active guild quest");
   state.guilds.mages.perks = [];
   actor.quests.active = [];
-  state.guilds.mages.xp = 60;
-  for (const id of ["sigil-1", "sigil-2", "sigil-3"]) state.objects.find((o) => o.id === id).holder = "l";
-  run([{ kind: "questAccept", actorId: "l", questId: "guild-sigils" }]);
+  actor.room = 41;
+  state.objects.find((o) => o.id === "mirror-shard").holder = "l";
+  run([{ kind: "questAccept", actorId: "l", questId: "guild-mirror" }]);
   actor = state.actors.find((entry) => entry.id === "l");
-  check(actor?.quests?.completed?.includes("guild-sigils"), "the repeatable guild sigil quest did not complete");
-  check(state.guilds.mages.level === 2 && state.guilds.mages.perks?.includes("hall-chest"), "guild level/perk did not rise");
+  check(actor.quests.completed.includes("guild-mirror"), "the guild mirror quest did not complete");
+  check(state.guilds.mages.xp === 100 && state.guilds.mages.level === 2 && state.guilds.mages.perks?.includes("hall-chest"), "guild xp did not raise the level/perk");
   actor.guildRank = "adept";
   actor.spellbook = ["spark", "mend", "light", "shield"];
   run([{ kind: "guildAdvance", actorId: "l", guildId: "mages", rank: "magician" }]);
@@ -1703,7 +1699,7 @@ let lantern = { ok: true, why: [] };
   check(actor?.guildRank === "magician" && state.guilds.mages.members.lina === "magician", "magician advancement did not take");
   actor.level = 10;
   actor.xp = 30000;
-  actor.quests.completed.push("guild-ember", "guild-fen", "eclipse-throne");
+  actor.quests.completed.push("guild-warden", "reliquary");
   run([{ kind: "guildAdvance", actorId: "l", guildId: "mages", rank: "archmage" }]);
   actor = state.actors.find((entry) => entry.id === "l");
   check(actor?.guildRank === "archmage" && state.guilds.mages.members.lina === "archmage", "archmage advancement did not take");
@@ -1711,12 +1707,8 @@ let lantern = { ok: true, why: [] };
   state.guilds.mages.perks = ["guild-quest-3"];
   actor = state.actors.find((entry) => entry.id === "l");
   actor.room = 96;
-  run([{ kind: "questAccept", actorId: "l", questId: "guild-eclipse" }]);
-  check(state.actors.find((entry) => entry.id === "l").quests.active.some((entry) => entry.id === "guild-eclipse"), "the archmage eclipse quest was not accepted");
-  run([{ kind: "take", actorId: "l", objectId: "regent-sigil", messages: { actor: "taken", others: "takes" } }]);
-  actor = state.actors.find((entry) => entry.id === "l");
-  check(actor.quests.completed.includes("guild-eclipse"), "the archmage eclipse quest did not complete");
   run([{ kind: "questAccept", actorId: "l", questId: "guild-dawn" }]);
+  check(state.actors.find((entry) => entry.id === "l").quests.active.some((entry) => entry.id === "guild-dawn"), "the archmage dawn quest was not accepted");
   actor = state.actors.find((entry) => entry.id === "l");
   const crown = state.objects.find((object) => object.id === "dawn-crown");
   crown.holder = "l";
@@ -1744,14 +1736,8 @@ let lantern = { ok: true, why: [] };
   state.cycle = (state.cycle ?? 0) + 1;
   run([{ kind: "questAccept", actorId: "l", questId: "guild-trial" }]);
   check(state.actors.find((entry) => entry.id === "l").quests.active.some((entry) => entry.id === "guild-trial"), "the archmage trial did not return next cycle");
-  run([{ kind: "questAccept", actorId: "l", questId: "guild-sigils" }]);
-  actor = state.actors.find((entry) => entry.id === "l");
-  check(actor?.quests?.completed?.includes("guild-sigils"), "the repeatable quest was lost in the same cycle");
-  state.cycle = 1;
-  run([{ kind: "questAccept", actorId: "l", questId: "guild-sigils" }]);
-  actor = state.actors.find((entry) => entry.id === "l");
-  check(actor?.quests?.completed?.includes("guild-sigils"), "the reset-cycle quest did not complete again");
   check(state.objects.find((o) => o.id === "spell-scroll").holder === "l", "the spell scroll was not held for the guild quest");
+  actor = state.actors.find((entry) => entry.id === "l");
   actor.room = 40;
   run([{ kind: "move", actorId: "l", dir: "down", to: 41 }]);
   check(actor.room === 40, "the secret exit was usable before it was found");
@@ -1857,15 +1843,12 @@ let ember = { ok: true, why: [] };
   run([{ kind: "move", actorId: "e", dir: "east", to: 61 }]);
   actor = state.actors.find((entry) => entry.id === "e");
   check(actor.room === 61, "the quiet door did not open into the Ashen Threshold");
-  run([{ kind: "questAccept", actorId: "e", questId: "ember-door" }]);
   state.objects.find((o) => o.id === "first-coal").holder = "e";
   for (const [dir, to] of [["east", 63], ["north", 64], ["north", 66], ["north", 68], ["north", 69], ["east", 70]]) {
     run([{ kind: "move", actorId: "e", dir, to }]);
   }
   actor = state.actors.find((entry) => entry.id === "e");
   check(actor.room === 70, "the Ember Deep walk did not reach the First Flame");
-  check(actor.quests.completed.includes("ember-door"), "Beyond the Quiet Door did not complete");
-  check(state.objects.find((o) => o.id === "ember-brand")?.holder === "e", "the ember brand reward did not reach the actor");
   actor.room = 69;
   state.objects.find((o) => o.id === "ash-key").holder = "e";
   run([{ kind: "action", actorId: "e", actionId: "unlock-ember-chest", messages: { actor: "unlocked", others: "unlocks" } }]);
@@ -1956,9 +1939,6 @@ let fen = { ok: true, why: [] };
   check(state.objects.find((o) => o.id === "fen-chest")?.open === true, "the green key did not open the fen chest");
   run([{ kind: "move", actorId: "f", dir: "east", to: 80 }]);
   state.objects.find((o) => o.id === "green-seed").holder = "f";
-  run([{ kind: "questAccept", actorId: "f", questId: "fen-heart" }]);
-  actor = state.actors.find((entry) => entry.id === "f");
-  check(actor.quests.completed.includes("fen-heart"), "The Green Heart did not complete");
   run([{ kind: "action", actorId: "f", actionId: "enter-green-heart", messages: { actor: "entered", others: "enters" } }]);
   actor = state.actors.find((entry) => entry.id === "f");
   check(actor.room === 71, "the green-heart shortcut did not return to the fen gate");
@@ -2002,9 +1982,6 @@ let moon = { ok: true, why: [] };
   check(table.errors.length === 0, `moon action validation failed: ${table.errors[0] ?? ""}`);
   check(world.rooms[18]?.exits?.east === 86 && world.rooms[86]?.exits?.west === 18, "the Moonlit Reach is not connected to the deep forest");
   check(world.zones.some((zone) => zone.id === "moon" && zone.rooms.includes(91)), "the Moonlit Reach zone is missing");
-  const moonQuests = ["moon-hare", "moon-well", "moon-stag"].map((id) => questTable.quests.find((quest) => quest.id === id));
-  check(moonQuests.every(Boolean), "a Moonlit quest is missing");
-  check(moonQuests[1]?.requires?.includes("moon-hare") && moonQuests[2]?.requires?.includes("moon-well"), "the Moonlit quest chain is not connected");
   check(world.objects.find((o) => o.id === "moon-key")?.room === 88, "the moon key is not in the owl grove");
   check(findAction(table.actions, { verb: "open", target: "chest", room: 89 })?.id === "open-moon-chest", "open chest does not resolve in the Moonwell");
   check(findAction(table.actions, { verb: "enter", target: "moon", room: 91 })?.id === "enter-moon", "enter moon does not resolve at the Moon Throne");
@@ -2039,17 +2016,10 @@ let eclipse = { ok: true, why: [] };
   check(world.rooms[91]?.exits?.up === 92 && world.rooms[92]?.exits?.down === 91, "the Eclipse Court is not connected to the Moon Throne");
   check(world.rooms[97]?.exits?.down === 96, "the Dawn Gate does not return to the throne");
   check(world.zones.some((zone) => zone.id === "eclipse" && zone.rooms.includes(97)), "the Eclipse Court zone is missing");
-  const chain = ["eclipse-stair", "eclipse-vault", "eclipse-throne"].map((id) => questTable.quests.find((quest) => quest.id === id));
-  check(chain.every(Boolean), "an Eclipse quest is missing");
-  check(chain[0]?.requires?.includes("moon-stag"), "the Eclipse chain does not follow the moon stag");
-  check(chain[1]?.requires?.includes("eclipse-stair") && chain[2]?.requires?.includes("eclipse-vault"), "the Eclipse chain is not connected");
-  check(chain[2]?.level === 10, "the capstone quest is not level 10");
   check(findAction(table.actions, { verb: "open", target: "chest", room: 95 })?.id === "open-eclipse-chest", "open chest does not resolve in the Mirror Vault");
   check(findAction(table.actions, { verb: "enter", target: "gate", room: 97 })?.id === "enter-dawn-gate", "enter gate does not resolve at the Dawn Gate");
 
-  state.actors.push({ id: "ec", key: "eclipse", account: "eclipse", name: "eclipse", room: 91, visited: [91], level: 10, xp: 30000, maxHp: 28, hp: 28, maxMana: 27, mana: 27, spellbook: ["spark", "mend", "shield"], guild: "mages", guildRank: "magician", wielding: null, quests: { active: [], completed: ["moon-stag"] }, found: [] });
-  run([{ kind: "questAccept", actorId: "ec", questId: "eclipse-stair" }]);
-  check(actorNow().quests.active.some((entry) => entry.id === "eclipse-stair"), "the Eclipse Stair quest was not accepted");
+  state.actors.push({ id: "ec", key: "eclipse", account: "eclipse", name: "eclipse", room: 91, visited: [91], level: 10, xp: 30000, maxHp: 28, hp: 28, maxMana: 27, mana: 27, spellbook: ["spark", "mend", "shield"], guild: "mages", guildRank: "magician", wielding: null, quests: { active: [], completed: [] }, found: [] });
   for (const [dir, to] of [["up", 92], ["north", 93]]) run([{ kind: "move", actorId: "ec", dir, to }]);
   let actor = actorNow();
   check(actor.room === 93, "the Eclipse walk did not reach the Starless Hall");
@@ -2059,22 +2029,15 @@ let eclipse = { ok: true, why: [] };
   run([{ kind: "move", actorId: "ec", dir: "east", to: 94 }]);
   run([{ kind: "take", actorId: "ec", objectId: "eclipse-key", messages: { actor: "taken", others: "takes" } }]);
   actor = actorNow();
-  check(actor.quests.completed.includes("eclipse-stair"), "the Eclipse Stair quest did not complete");
   check(state.objects.find((object) => object.id === "eclipse-key")?.holder === "ec", "the eclipse key was not taken");
 
-  run([{ kind: "questAccept", actorId: "ec", questId: "eclipse-vault" }]);
-  check(actorNow().quests.active.some((entry) => entry.id === "eclipse-vault"), "the Mirror Vault quest was not accepted");
   run([{ kind: "move", actorId: "ec", dir: "west", to: 93 }]);
   run([{ kind: "move", actorId: "ec", dir: "west", to: 95 }]);
   run([{ kind: "action", actorId: "ec", actionId: "open-eclipse-chest", messages: { actor: "opened", others: "opens" } }]);
   check(state.objects.find((object) => object.id === "eclipse-chest")?.open === true, "the eclipse key did not open the black chest");
   run([{ kind: "takeFrom", actorId: "ec", objectId: "dawn-crown", containerId: "eclipse-chest", messages: { actor: "taken", others: "takes" } }]);
-  actor = actorNow();
-  check(actor.quests.completed.includes("eclipse-vault"), "the Mirror Vault quest did not complete");
-  check(state.objects.find((object) => object.id === "eclipse-ward")?.holder === "ec", "the Eclipse Ward reward was not paid");
+  check(state.objects.find((object) => object.id === "dawn-crown")?.holder === "ec", "the dawn crown was not taken");
 
-  run([{ kind: "questAccept", actorId: "ec", questId: "eclipse-throne" }]);
-  check(actorNow().quests.active.some((entry) => entry.id === "eclipse-throne"), "the Throne of Ash quest was not accepted");
   run([{ kind: "move", actorId: "ec", dir: "east", to: 93 }]);
   run([{ kind: "move", actorId: "ec", dir: "east", to: 94 }]);
   run([{ kind: "move", actorId: "ec", dir: "north", to: 96 }]);
@@ -2083,9 +2046,7 @@ let eclipse = { ok: true, why: [] };
   for (let i = 0; i < 40; i += 1) run([]);
   run([{ kind: "take", actorId: "ec", objectId: "regent-sigil", messages: { actor: "taken", others: "takes" } }]);
   actor = actorNow();
-  check(actor.quests.completed.includes("eclipse-throne"), "the Throne of Ash quest did not complete");
-  check(state.objects.find((object) => object.id === "dawn-blade")?.holder === "ec", "the dawn blade reward was not paid");
-  check(actor.xp >= 32100, `the capstone paid ${actor.xp} xp, not the expected total`);
+  check(state.objects.find((object) => object.id === "regent-sigil")?.holder === "ec", "the regent sigil was not taken");
 
   run([{ kind: "move", actorId: "ec", dir: "up", to: 97 }]);
   run([{ kind: "action", actorId: "ec", actionId: "enter-dawn-gate", messages: { actor: "entered", others: "enters" } }]);
@@ -2643,7 +2604,7 @@ let persistence = { ok: true, why: [] };
   state.guilds.wardens = { id: "wardens", name: "Wardens", founder: "alice", created: 0, members: { alice: "leader" }, invites: [] };
   state.actors[0].guild = "wardens";
   state.actors[0].guildRank = "leader";
-  state.actors[0].quests = { active: [{ id: "word", progress: {} }], completed: ["scroll"] };
+  state.actors[0].quests = { active: [{ id: "word", progress: {} }], completed: ["guardian"] };
   run([{ kind: "take", actorId: "a", objectId: "satchel", messages: say("take") }]);
   run([{ kind: "take", actorId: "a", objectId: "cloak", messages: say("take") }]);
   run([{ kind: "put", actorId: "a", objectId: "cloak", containerId: "satchel", messages: say("put") }]);
@@ -2656,14 +2617,14 @@ let persistence = { ok: true, why: [] };
   check(object("cloak").inside === "satchel", "a bag lost what was inside it on logout");
   check(state.identities.alice.inventory === undefined, "the identity recorded an inventory it should not keep");
   check(state.identities.alice.level === 3 && state.identities.alice.xp === 120, "progression was not written on logout");
-  check(state.identities.alice.guild === "wardens" && state.identities.alice.guildRank === "leader" && state.identities.alice.quests.completed.includes("scroll"), "guild or quest progress was lost on logout");
+  check(state.identities.alice.guild === "wardens" && state.identities.alice.guildRank === "leader" && state.identities.alice.quests.completed.includes("guardian"), "guild or quest progress was lost on logout");
 
   run([{ kind: "join", actorId: "b", name: "alice" }]);
   run([{ kind: "login", actorId: "b", key: "alice", token: null, authenticated: true }]);
   const returning = state.actors.find((actor) => actor.id === "b");
   check(returning.room === 1, "the returning character did not wake at the start");
   check(returning.level === 3 && returning.xp === 120, "level or experience was not restored on login");
-  check(returning.guild === "wardens" && returning.guildRank === "leader" && returning.quests.completed.includes("scroll"), "guild or quest progress was not restored on login");
+  check(returning.guild === "wardens" && returning.guildRank === "leader" && returning.quests.completed.includes("guardian"), "guild or quest progress was not restored on login");
   check(state.objects.every((o) => o.holder !== "b"), "items were restored to a hand across logout");
   check(object("satchel").room === 2 && object("scroll").room === 2, "logout items did not stay in the world");
 
@@ -2809,12 +2770,34 @@ let quests = { ok: true, why: [] };
     quests.ok = false;
     quests.why.push(problem);
   }
+  const archive = loadQuestArchive();
+  const check = (condition, why) => { if (!condition) { quests.ok = false; quests.why.push(why); } };
+  check(questTable.quests.length === 20, `the live quest count is ${questTable.quests.length}, not 20`);
+  check(archive.quests.length === 41 && archive.errors.length === 0, "the retired quest archive is not 41 valid definitions");
+  const liveIds = new Set(questTable.quests.map((quest) => quest.id));
+  const archiveIds = new Set(archive.quests.map((quest) => quest.id));
+  check([...liveIds].every((id) => !archiveIds.has(id)), "a quest is both live and archived");
+  check(questTable.quests.every((quest) => (quest.requires ?? []).every((id) => liveIds.has(id))), "a kept quest requires a retired quest");
+  for (const problem of validateQuestReferences(archive.quests, { rooms: world.rooms, npcs: world.npcs, objects: world.objects })) {
+    quests.ok = false;
+    quests.why.push(`archive: ${problem}`);
+  }
+  const migrated = migrateQuestState({
+    active: [
+      { id: "ember-door", progress: { visits: [61, 70], collected: { "first-coal": 1 } } },
+      { id: "fen-heart", progress: {} },
+      { id: "guardian", progress: {} },
+    ],
+    completed: ["scroll", "word"],
+  }, questTable.quests, archive.quests);
+  check(migrated.quests.active.length === 1 && migrated.quests.active[0].id === "guardian", "migration dropped a live active quest");
+  check(migrated.quests.completed.length === 2 && migrated.quests.completed.includes("word") && migrated.quests.completed.includes("scroll"), "migration kept a retired completion");
+  check(migrated.notes.length === 2 && migrated.notes.find((note) => note.id === "ember-door")?.status === "completed" && migrated.notes.find((note) => note.id === "fen-heart")?.status === "abandoned", "migration notes are wrong");
   const npcs = world.npcs.filter((npc) => npc.id !== "vault-guardian");
   let state = initialState(world.rooms, npcs, world.objects, world.start, world.climate, channelTable.channels, undefined, questTable.quests);
   const say = (text) => ({ actor: text, others: text });
   const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
   const object = (id) => state.objects.find((o) => o.id === id);
-  const check = (condition, why) => { if (!condition) { quests.ok = false; quests.why.push(why); } };
   const questState = () => state.actors[0].quests;
 
   run([{ kind: "join", actorId: "a", name: "alice" }]);
@@ -2825,15 +2808,17 @@ let quests = { ok: true, why: [] };
   check(!questState().active.some((entry) => entry.id === "guardian"), "a quest whose prerequisite was unearned was accepted");
   state.actors[0].level = 1;
 
-  run([{ kind: "questAccept", actorId: "a", questId: "scroll" }]);
-  check(questState().active.some((entry) => entry.id === "scroll"), "a quest was not accepted");
-  run([{ kind: "move", actorId: "a", dir: "north", to: 2 }]);
-  run([{ kind: "take", actorId: "a", objectId: "scroll", messages: say("take") }]);
-  check(questState().completed.includes("scroll"), "a collect quest did not complete when the item was held");
+  state.actors[0].level = 2;
+  run([{ kind: "questAccept", actorId: "a", questId: "telescope" }]);
+  check(questState().active.some((entry) => entry.id === "telescope"), "a quest was not accepted");
+  state.actors[0].room = 32;
+  run([{ kind: "take", actorId: "a", objectId: "telescope", messages: say("take") }]);
+  check(questState().completed.includes("telescope"), "a collect quest did not complete when the item was held");
   check(questState().active.length === 0, "a completed quest stayed active");
-  check(state.actors[0].xp >= 15, "a quest did not pay experience");
-  run([{ kind: "questAccept", actorId: "a", questId: "scroll" }]);
+  check(state.actors[0].xp >= 30, "a quest did not pay experience");
+  run([{ kind: "questAccept", actorId: "a", questId: "telescope" }]);
   check(questState().active.length === 0, "a completed quest could be accepted again");
+  state.actors[0].room = 2;
 
   run([{ kind: "questAccept", actorId: "a", questId: "word" }]);
   check(questState().active.some((entry) => entry.id === "word"), "the word quest was not accepted");
@@ -2868,51 +2853,7 @@ let quests = { ok: true, why: [] };
   if (!quests.ok) failures.push(`quests are broken: ${quests.why[0]}`);
 }
 
-// Repeatable work: the clerk's errand pays once per reset cycle, and the
-// delivered seal is consumed so the next cycle needs a fresh one.
-let repeatable = { ok: true, why: [] };
-{
-  const world = loadWorld({ mode: "single" });
-  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, undefined, questTable.quests);
-  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
-  const check = (condition, why) => { if (!condition) { repeatable.ok = false; repeatable.why.push(why); } };
-  state.guilds.mages = { id: "mages", name: "The Mages' Guild", founder: "archmage", created: 0, members: { rep: "apprentice" }, invites: [], ranks: ["apprentice", "adept", "magician", "archmage"], xp: 0, level: 1, perks: [], vault: [] };
-  state.actors.push({ id: "r", key: "rep", account: "rep", name: "rep", room: 24, visited: [24], level: 5, xp: 0, maxHp: 18, hp: 18, maxMana: 17, mana: 17, spellbook: [], guild: "mages", guildRank: "apprentice", wielding: null, quests: { active: [], completed: [] }, found: [] });
-  run([{ kind: "questAccept", actorId: "r", questId: "clerk-errand" }]);
-  let actor = state.actors.find((entry) => entry.id === "r");
-  check(actor.quests.active.some((entry) => entry.id === "clerk-errand"), "the clerk errand was not accepted");
-  // The hall is room 24; the seal is in the rat warren, room 28.
-  actor.room = 28;
-  actor.visited = [...new Set([...actor.visited, 28])];
-  run([{ kind: "take", actorId: "r", objectId: "clerk-seal", messages: { actor: "taken", others: "takes" } }]);
-  actor = state.actors.find((entry) => entry.id === "r");
-  actor.room = 24;
-  run([{ kind: "deliver", actorId: "r", objectId: "clerk-seal", npcId: "guild-clerk", messages: { actor: "delivered", others: "delivers", target: "receives" } }]);
-  actor = state.actors.find((entry) => entry.id === "r");
-  check(actor.quests.completed.includes("clerk-errand"), "the clerk errand did not complete");
-  check((state.guilds.mages.xp ?? 0) === 20, "the clerk errand did not pay guild xp");
-  check(state.objects.find((object) => object.id === "clerk-seal")?.eaten === true, "the delivered seal was not consumed");
-  run([{ kind: "questAccept", actorId: "r", questId: "clerk-errand" }]);
-  actor = state.actors.find((entry) => entry.id === "r");
-  check(!actor.quests.active.some((entry) => entry.id === "clerk-errand"), "the errand repeated inside the same cycle");
-  state.cycle = (state.cycle ?? 0) + 1;
-  run([{ kind: "questAccept", actorId: "r", questId: "clerk-errand" }]);
-  actor = state.actors.find((entry) => entry.id === "r");
-  check(actor.quests.active.some((entry) => entry.id === "clerk-errand"), "the errand did not return next cycle");
-  const seal = state.objects.find((object) => object.id === "clerk-seal");
-  seal.eaten = false;
-  seal.holder = null;
-  seal.room = 28;
-  seal.inside = null;
-  actor.room = 28;
-  run([{ kind: "take", actorId: "r", objectId: "clerk-seal", messages: { actor: "taken", others: "takes" } }]);
-  actor = state.actors.find((entry) => entry.id === "r");
-  actor.room = 24;
-  run([{ kind: "deliver", actorId: "r", objectId: "clerk-seal", npcId: "guild-clerk", messages: { actor: "delivered", others: "delivers", target: "receives" } }]);
-  actor = state.actors.find((entry) => entry.id === "r");
-  check(actor.quests.completed.includes("clerk-errand") && (state.guilds.mages.xp ?? 0) === 40, "the second errand did not pay");
-  if (repeatable.why.length) { repeatable.ok = false; failures.push(`the repeatable errand is broken: ${repeatable.why[0]}`); }
-}
+// Repeatable work is covered by the guild trial in the Lantern block.
 
 // Social quests: talking to a named mobile advances a talk objective.
 let social = { ok: true, why: [] };
@@ -2985,10 +2926,10 @@ let titles = { ok: true, why: [] };
   const world = loadWorld({ mode: "single" });
   let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, undefined, questTable.quests);
   const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
-  state.actors.push({ id: "t", key: "titled", account: "titled", name: "titled", room: 1, visited: [1], level: 10, xp: 30000, maxHp: 28, hp: 28, maxMana: 27, mana: 27, spellbook: [], guild: null, guildRank: null, wielding: null, quests: { active: [], completed: ["first-steps", "eclipse-throne"] }, ignored: [], title: null });
+  state.actors.push({ id: "t", key: "titled", account: "titled", name: "titled", room: 1, visited: [1], level: 10, xp: 30000, maxHp: 28, hp: 28, maxMana: 27, mana: 27, spellbook: [], guild: null, guildRank: null, wielding: null, quests: { active: [], completed: ["first-steps", "guild-dawn"] }, ignored: [], title: null });
   const earned = earnedTitles(table.titles, state.actors[0].quests.completed);
   check(earned.length === 2, "the earned titles do not follow completed quests");
-  check(table.titles.some((title) => title.id === "gardenkeeper" && title.quest === "memory-garden"), "the garden title is missing");
+  check(table.titles.some((title) => title.id === "dawnbringer" && title.quest === "guild-dawn"), "the dawn title is missing");
   run([{ kind: "setTitle", actorId: "t", title: "Dawnbringer" }]);
   let actor = state.actors.find((entry) => entry.id === "t");
   check(actor.title === "Dawnbringer", "the title was not worn");
@@ -3000,93 +2941,33 @@ let titles = { ok: true, why: [] };
   if (titles.why.length) { titles.ok = false; failures.push(`titles are broken: ${titles.why[0]}`); }
 }
 
-// Facts are learned from an NPC, persist on the character, and gate an answer
-// objective. A learned word can be recalled; a missing word cannot complete it.
-let memoryQuest = { ok: true, why: [] };
+// The Memory Garden is exploration now: facts, a fact-gated action and the
+// rooms survive, while the retired Garden quests do not.
+let memoryGarden = { ok: true, why: [] };
 {
   const world = loadWorld({ mode: "single" });
+  const table = loadActions({ world });
+  const facts = loadFacts();
+  const check = (condition, why) => { if (!condition) { memoryGarden.ok = false; memoryGarden.why.push(why); } };
+  check(table.errors.length === 0, `action validation failed: ${table.errors[0] ?? ""}`);
+  check(facts.errors.length === 0, `fact validation failed: ${facts.errors[0] ?? ""}`);
+  check(facts.byWord.has("garden") && facts.byWord.has("ledger") && facts.byWord.has("crescent"), "a garden fact is missing");
+  check(!questTable.quests.some((quest) => quest.id === "memory-garden"), "the retired memory quest is still loaded");
+  check(world.rooms[98]?.exits?.east === 99 && world.rooms[98]?.exits?.north === 100 && world.rooms[100]?.exits?.south === 98, "the Memory Garden is not connected");
+  check(world.rooms[8]?.exits?.down === 105 && world.rooms[105]?.exits?.up === 8, "the root road is not connected to Market Square");
+  check(world.rooms[104]?.exits?.down === 106 && world.rooms[106]?.exits?.up === 104, "the orchard is not connected to the root road");
+  check(world.rooms[109]?.exits?.north === 111 && world.rooms[112]?.exits?.east === 113 && world.rooms[113]?.exits?.north === 114, "the orchard undercroft or cider spring exits are wrong");
+  check(findAction(table.actions, { verb: "plant", target: "rose", room: 98 })?.id === "plant-memory", "plant rose does not resolve");
   let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, undefined, questTable.quests);
-  const actionTable = loadActions({ world });
-  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents, actions: actionTable.actions }); state = result.state; return result.events; };
-  const check = (condition, why) => { if (!condition) { memoryQuest.ok = false; memoryQuest.why.push(why); } };
-  const table = loadFacts();
-  check(table.errors.length === 0, `fact validation failed: ${table.errors[0] ?? ""}`);
-  check(actionTable.errors.length === 0, `fact action validation failed: ${actionTable.errors[0] ?? ""}`);
-  const ledger = table.byWord.get("ledger");
-  check(ledger?.npc === "guild-clerk", "the ledger fact is not taught by the guild clerk");
-  check(table.facts.every((fact) => world.npcs.some((npc) => npc.id === fact.npc)), "a fact names an unknown npc");
-  for (const quest of questTable.quests) {
-    for (const objective of quest.objectives) {
-      if (objective.kind === "answer" && objective.fact && !table.byId.has(objective.fact)) {
-        memoryQuest.ok = false;
-        memoryQuest.why.push(`${quest.id} names unknown fact ${objective.fact}`);
-      }
-    }
-  }
-  check(contextHasWord({ context: "the shrine wants LEDGER", concepts: [] }, "ledger"), "R4 context did not match its word");
-  check(!contextHasWord({ context: "the shrine wants AMBER" }, "ledger"), "R4 context matched the wrong word");
-
-  state.actors.push({ id: "mq", key: "memory", account: "memory", name: "memory", room: 24, visited: [24], level: 3, xp: 400, maxHp: 14, hp: 14, maxMana: 11, mana: 11, spellbook: [], guild: null, guildRank: null, wielding: null, quests: { active: [], completed: ["hall-word"] }, ignored: [], memory: { facts: {} }, found: [] });
-  run([{ kind: "questAccept", actorId: "mq", questId: "memory-garden" }]);
-  let actor = state.actors.find((entry) => entry.id === "mq");
-  check(actor.quests.active.some((entry) => entry.id === "memory-garden"), "the memory quest was not accepted");
-  run([{ kind: "talk", actorId: "mq", npcId: "guild-clerk" }]);
-  actor = state.actors.find((entry) => entry.id === "mq");
-  check((actor.quests.active[0]?.progress?.talked?.["guild-clerk"] ?? 0) === 1, "the clerk talk did not advance the memory quest");
-  actor.room = 6;
-  run([{ kind: "questAnswer", actorId: "mq", word: "ledger" }]);
-  actor = state.actors.find((entry) => entry.id === "mq");
-  run([{ kind: "move", actorId: "mq", dir: "east", to: 98 }]);
-  actor = state.actors.find((entry) => entry.id === "mq");
-  check(!actor.quests.completed.includes("memory-garden"), "the memory quest completed without the fact");
-  run([{ kind: "learnFact", actorId: "mq", fact: ledger }]);
-  actor = state.actors.find((entry) => entry.id === "mq");
-  check(actor.memory?.facts?.["ledger-word"]?.word === "ledger", "the fact was not stored on the character");
-  check(actor.quests.completed.includes("memory-garden"), "learning the fact did not complete the memory quest");
-  check(state.objects.find((object) => object.id === "memory-rose")?.holder === "mq", "the memory rose reward was not paid");
-  checkpointIdentities(state);
-  check(state.identities.memory?.memory?.facts?.["ledger-word"]?.word === "ledger", "the fact did not survive a checkpoint");
-
-  const crescent = table.byWord.get("crescent");
-  check(crescent?.npc === "silver-owl", "the crescent fact is not taught by the silver owl");
-  actor = state.actors.find((entry) => entry.id === "mq");
-  actor.level = 9;
-  actor.quests.completed = [...new Set([...actor.quests.completed, "moon-stag"])];
-  run([{ kind: "questAccept", actorId: "mq", questId: "garden-moon" }]);
-  actor = state.actors.find((entry) => entry.id === "mq");
-  check(actor.quests.active.some((entry) => entry.id === "garden-moon"), "the crescent garden quest was not accepted");
-  run([{ kind: "learnFact", actorId: "mq", fact: crescent }]);
-  actor = state.actors.find((entry) => entry.id === "mq");
-  actor.room = 88;
-  run([{ kind: "talk", actorId: "mq", npcId: "silver-owl" }]);
-  actor = state.actors.find((entry) => entry.id === "mq");
-  actor.room = 6;
-  run([{ kind: "questAnswer", actorId: "mq", word: "crescent" }]);
-  run([{ kind: "move", actorId: "mq", dir: "east", to: 98 }]);
-  run([{ kind: "move", actorId: "mq", dir: "east", to: 99 }]);
-  actor = state.actors.find((entry) => entry.id === "mq");
-  check(actor.quests.completed.includes("garden-moon"), "the crescent garden quest did not complete");
-  check(state.objects.find((object) => object.id === "moon-seed")?.holder === "mq", "the moon seed reward was not paid");
-  check(loadTitles().titles.some((title) => title.id === "moongardener" && title.quest === "garden-moon"), "the moon gardener title is missing");
-
-  // A fact-gated action reveals the hidden Remembered Bed. Without the word it
-  // must not move the map; with the word and the rose it opens a real exit.
-  actor = state.actors.find((entry) => entry.id === "mq");
-  actor.level = 4;
-  actor.quests.completed = [...new Set([...actor.quests.completed, "memory-garden"])];
-  actor.room = 100;
-  run([{ kind: "questAccept", actorId: "mq", questId: "remembered-bed" }]);
-  run([{ kind: "talk", actorId: "mq", npcId: "rememberer" }]);
-  actor = state.actors.find((entry) => entry.id === "mq");
-  actor.room = 98;
-  check(findAction(actionTable.actions, { verb: "plant", target: "rose", room: 98 })?.id === "plant-memory", "plant rose does not resolve");
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents, actions: table.actions }); state = result.state; return result.events; };
+  state.actors.push({ id: "mq", key: "memory", account: "memory", name: "memory", room: 98, visited: [98], level: 4, xp: 400, maxHp: 18, hp: 18, maxMana: 11, mana: 11, spellbook: [], guild: null, guildRank: null, wielding: null, quests: { active: [], completed: [] }, ignored: [], memory: { facts: {} }, found: [] });
+  state.objects.find((object) => object.id === "memory-rose").holder = "mq";
   run([{ kind: "action", actorId: "mq", actionId: "plant-memory", messages: { actor: "planted", others: "plants" } }]);
-  actor = state.actors.find((entry) => entry.id === "mq");
+  let actor = state.actors.find((entry) => entry.id === "mq");
   check(!(actor.found ?? []).includes("98:down"), "the fact-gated action opened without the fact");
-  run([{ kind: "learnFact", actorId: "mq", fact: table.byWord.get("garden") }]);
+  run([{ kind: "learnFact", actorId: "mq", fact: facts.byWord.get("garden") }]);
   actor = state.actors.find((entry) => entry.id === "mq");
   check(actor.memory?.facts?.["garden-word"]?.word === "garden", "the garden fact was not learned");
-  check(state.objects.find((object) => object.id === "memory-rose")?.holder === "mq", "the memory rose is not held for the action");
   run([{ kind: "action", actorId: "mq", actionId: "plant-memory", messages: { actor: "planted", others: "plants" } }]);
   actor = state.actors.find((entry) => entry.id === "mq");
   check(actor.found.includes("98:down"), "the fact-gated action did not reveal the stair");
@@ -3094,101 +2975,8 @@ let memoryQuest = { ok: true, why: [] };
   run([{ kind: "move", actorId: "mq", dir: "down", to: 101 }]);
   actor = state.actors.find((entry) => entry.id === "mq");
   check(actor.room === 101, "the hidden Remembered Bed was not reachable");
-  run([{ kind: "take", actorId: "mq", objectId: "remembered-bloom", messages: { actor: "taken", others: "takes" } }]);
-  actor = state.actors.find((entry) => entry.id === "mq");
-  check(actor.quests.completed.includes("remembered-bed"), "the Remembered Bed quest did not complete");
-  check(loadTitles().titles.some((title) => title.id === "bedkeeper" && title.quest === "remembered-bed"), "the bedkeeper title is missing");
-
-  actor = state.actors.find((entry) => entry.id === "mq");
-  actor.level = 5;
-  run([{ kind: "questAccept", actorId: "mq", questId: "first-bed" }]);
-  check(state.actors.find((entry) => entry.id === "mq").quests.active.some((entry) => entry.id === "first-bed"), "the first-bed quest was not accepted");
-  run([{ kind: "move", actorId: "mq", dir: "down", to: 102 }]);
-  run([{ kind: "talk", actorId: "mq", npcId: "root-keeper" }]);
-  run([{ kind: "move", actorId: "mq", dir: "east", to: 103 }]);
-  run([{ kind: "take", actorId: "mq", objectId: "first-seed", messages: { actor: "taken", others: "takes" } }]);
-  actor = state.actors.find((entry) => entry.id === "mq");
-  check(actor.quests.completed.includes("first-bed"), "the first-bed quest did not complete");
-  check(loadTitles().titles.some((title) => title.id === "rootkeeper" && title.quest === "first-bed"), "the rootkeeper title is missing");
-  check(world.rooms[8]?.exits?.down === 105 && world.rooms[105]?.exits?.up === 8, "the root road is not connected to Market Square");
-  check(world.rooms[102]?.exits?.south === 104 && world.rooms[104]?.exits?.north === 102, "the root road is not connected to the archive");
-
-  actor = state.actors.find((entry) => entry.id === "mq");
-  actor.level = 6;
-  run([{ kind: "questAccept", actorId: "mq", questId: "long-remembering" }]);
-  check(state.actors.find((entry) => entry.id === "mq").quests.active.some((entry) => entry.id === "long-remembering"), "the long-remembering quest was not accepted");
-  actor = state.actors.find((entry) => entry.id === "mq");
-  actor.room = 24;
-  run([{ kind: "talk", actorId: "mq", npcId: "guild-clerk" }]);
-  run([{ kind: "learnFact", actorId: "mq", fact: table.byWord.get("root") }]);
-  actor = state.actors.find((entry) => entry.id === "mq");
-  actor.room = 6;
-  run([{ kind: "questAnswer", actorId: "mq", word: "root" }]);
-  run([{ kind: "move", actorId: "mq", dir: "east", to: 98 }]);
-  run([{ kind: "move", actorId: "mq", dir: "north", to: 100 }]);
-  run([{ kind: "move", actorId: "mq", dir: "south", to: 98 }]);
-  // The First Bed is reached through the archive; move directly in this fixture.
-  actor = state.actors.find((entry) => entry.id === "mq");
-  actor.room = 103;
-  run([{ kind: "move", actorId: "mq", dir: "west", to: 102 }]);
-  run([{ kind: "move", actorId: "mq", dir: "east", to: 103 }]);
-  actor = state.actors.find((entry) => entry.id === "mq");
-  check(actor.quests.completed.includes("long-remembering"), "the long-remembering quest did not complete");
-  check(loadTitles().titles.some((title) => title.id === "roadkeeper" && title.quest === "long-remembering"), "the roadkeeper title is missing");
-  check(world.rooms[104]?.exits?.down === 106 && world.rooms[106]?.exits?.up === 104, "the orchard is not connected to the root road");
-  check(world.rooms[106]?.exits?.north === 108 && world.rooms[106]?.exits?.east === 107, "the orchard exits are wrong");
-
-  actor = state.actors.find((entry) => entry.id === "mq");
-  actor.level = 7;
-  actor.room = 108;
-  run([{ kind: "questAccept", actorId: "mq", questId: "three-rememberings" }]);
-  check(state.actors.find((entry) => entry.id === "mq").quests.active.some((entry) => entry.id === "three-rememberings"), "the three-rememberings quest was not accepted");
-  run([{ kind: "talk", actorId: "mq", npcId: "orchard-keeper" }]);
-  run([{ kind: "learnFact", actorId: "mq", fact: table.byWord.get("orchard") }]);
-  actor = state.actors.find((entry) => entry.id === "mq");
-  actor.room = 6;
-  run([{ kind: "questAnswer", actorId: "mq", word: "orchard" }]);
-  actor = state.actors.find((entry) => entry.id === "mq");
-  actor.room = 107;
-  run([{ kind: "take", actorId: "mq", objectId: "orchard-seed", messages: { actor: "taken", others: "takes" } }]);
-  actor = state.actors.find((entry) => entry.id === "mq");
-  actor.room = 24;
-  run([{ kind: "talk", actorId: "mq", npcId: "guild-clerk" }]);
-  actor = state.actors.find((entry) => entry.id === "mq");
-  check(actor.quests.completed.includes("three-rememberings"), "the three-rememberings quest did not complete");
-  check(loadTitles().titles.some((title) => title.id === "orchardkeeper" && title.quest === "three-rememberings"), "the orchardkeeper title is missing");
-  check(world.rooms[108]?.exits?.down === 109 && world.rooms[109]?.exits?.up === 108, "the undercroft is not connected to the old press");
-  check(world.rooms[109]?.exits?.north === 111 && world.rooms[109]?.exits?.east === 110, "the undercroft exits are wrong");
-
-  actor = state.actors.find((entry) => entry.id === "mq");
-  actor.level = 8;
-  actor.room = 108;
-  run([{ kind: "questAccept", actorId: "mq", questId: "press-beneath" }]);
-  check(state.actors.find((entry) => entry.id === "mq").quests.active.some((entry) => entry.id === "press-beneath"), "the press-beneath quest was not accepted");
-  run([{ kind: "talk", actorId: "mq", npcId: "orchard-keeper" }]);
-  run([{ kind: "move", actorId: "mq", dir: "down", to: 109 }]);
-  run([{ kind: "move", actorId: "mq", dir: "north", to: 111 }]);
-  run([{ kind: "take", actorId: "mq", objectId: "press-seed", messages: { actor: "taken", others: "takes" } }]);
-  actor = state.actors.find((entry) => entry.id === "mq");
-  check(actor.quests.completed.includes("press-beneath"), "the press-beneath quest did not complete");
-  check(loadTitles().titles.some((title) => title.id === "presskeeper" && title.quest === "press-beneath"), "the presskeeper title is missing");
-  check(world.rooms[111]?.exits?.north === 112 && world.rooms[112]?.exits?.south === 111, "the cider spring is not connected to the seed vault");
-  check(world.rooms[112]?.exits?.east === 113 && world.rooms[113]?.exits?.north === 114, "the cider spring exits are wrong");
-
-  actor = state.actors.find((entry) => entry.id === "mq");
-  actor.level = 9;
-  actor.room = 114;
-  run([{ kind: "questAccept", actorId: "mq", questId: "cider-spring" }]);
-  check(state.actors.find((entry) => entry.id === "mq").quests.active.some((entry) => entry.id === "cider-spring"), "the cider-spring quest was not accepted");
-  run([{ kind: "talk", actorId: "mq", npcId: "spring-keeper" }]);
-  run([{ kind: "move", actorId: "mq", dir: "south", to: 113 }]);
-  run([{ kind: "take", actorId: "mq", objectId: "cider-bloom", messages: { actor: "taken", others: "takes" } }]);
-  actor = state.actors.find((entry) => entry.id === "mq");
-  check(actor.quests.completed.includes("cider-spring"), "the cider-spring quest did not complete");
-  check(loadTitles().titles.some((title) => title.id === "springkeeper" && title.quest === "cider-spring"), "the springkeeper title is missing");
-  const work = questTable.quests.find((quest) => quest.id === "orchard-work");
-  check(work?.repeat === "reset" && work?.rewards?.guildXp === 40, "the repeatable orchard work is missing");
-  if (memoryQuest.why.length) { memoryQuest.ok = false; failures.push(`the memory quest is broken: ${memoryQuest.why[0]}`); }
+  check(!loadTitles().titles.some((title) => title.quest === "remembered-bed"), "a retired Garden title is still loaded");
+  if (memoryGarden.why.length) { memoryGarden.ok = false; failures.push(`the Memory Garden is broken: ${memoryGarden.why[0]}`); }
 }
 
 // Guilds: one name, a roster, ranks, a chat that reaches only members, and a
@@ -3549,17 +3337,17 @@ if (process.argv.includes("--json")) {
   console.log(`${"magic".padEnd(26)}  ${(magic.ok ? "6 spells+scrolls" : "BROKEN").padStart(5)}   == mana, cast, study`);
   console.log(`${"lantern".padEnd(26)}  ${(lantern.ok ? "60 rooms" : "BROKEN").padStart(5)}   == errand, charm, secret`);
   console.log(`${"actions".padEnd(26)}  ${(actions.ok ? "11 verbs" : "BROKEN").padStart(5)}   == reveal, open, last`);
-  console.log(`${"ember".padEnd(26)}  ${(ember.ok ? "10 rooms" : "BROKEN").padStart(5)}   == door, quest, shortcut`);
+  console.log(`${"ember".padEnd(26)}  ${(ember.ok ? "10 rooms" : "BROKEN").padStart(5)}   == door, chest, shortcut`);
   console.log(`${"aiMemory".padEnd(26)}  ${(aiMemory.ok ? "rooms, stale" : "BROKEN").padStart(5)}   == exits, loop guard`);
   console.log(`${"characterNames".padEnd(26)}  ${(characterNames.ok ? "random, scoped" : "BROKEN").padStart(5)}   == AI, human`);
   console.log(`${"releaseManifest".padEnd(26)}  ${(releaseManifest.ok ? "hash, tag" : "BROKEN").padStart(5)}   == pull deploy`);
-  console.log(`${"guildEclipse".padEnd(26)}  ${(lantern.ok ? "2 quests" : "BROKEN").padStart(5)}   == archmage`);
+  console.log(`${"guildLine".padEnd(26)}  ${(lantern.ok ? "2 quests" : "BROKEN").padStart(5)}   == archmage`);
   console.log(`${"archmageTrial".padEnd(26)}  ${(lantern.ok ? "2 cycles" : "BROKEN").padStart(5)}   == repeat`);
   console.log(`${"fen".padEnd(26)}  ${(fen.ok ? "10 rooms" : "BROKEN").padStart(5)}   == key, chest, shortcut`);
   console.log(`${"visibility".padEnd(26)}  ${(visibility.ok ? "levels, map" : "BROKEN").padStart(5)}   == board, shortcuts`);
   console.log(`${"salt".padEnd(26)}  ${(salt.ok ? "5 rooms" : "BROKEN").padStart(5)}   == key, chest, shortcut`);
   console.log(`${"moon".padEnd(26)}  ${(moon.ok ? "6 rooms" : "BROKEN").padStart(5)}   == key, chest, shortcut`);
-  console.log(`${"eclipse".padEnd(26)}  ${(eclipse.ok ? "6 rooms" : "BROKEN").padStart(5)}   == chain, chest, gate`);
+  console.log(`${"eclipse".padEnd(26)}  ${(eclipse.ok ? "6 rooms" : "BROKEN").padStart(5)}   == chest, regent, gate`);
   console.log(`${"firstSteps".padEnd(26)}  ${(firstSteps.ok ? "20 xp" : "BROKEN").padStart(5)}   == tour, quest`);
   console.log(`${"pinned".padEnd(26)}  ${(identityPin.ok ? "revoked" : "BROKEN").padStart(5)}   == old log refused`);
   console.log(`${"takeover".padEnd(26)}  ${(takeover.ok ? "1 actor" : "BROKEN").padStart(5)}   == leave then login`);
@@ -3585,23 +3373,14 @@ if (process.argv.includes("--json")) {
   console.log(`${"guilds".padEnd(26)}  ${(guilds.ok ? "create, rank, chat" : "BROKEN").padStart(5)}   == roster and chat`);
   console.log(`${"levelCap".padEnd(26)}  ${(levelCap.ok ? "10 @ 30k" : "BROKEN").padStart(5)}   == level table`);
   console.log(`${"guildVault".padEnd(26)}  ${(guildVault.ok ? "20 slots" : "BROKEN").padStart(5)}   == deposit, reset, disband`);
-  console.log(`${"repeatable".padEnd(26)}  ${(repeatable.ok ? "80 xp" : "BROKEN").padStart(5)}   == cycle, deliver`);
   console.log(`${"social".padEnd(26)}  ${(social.ok ? "70 xp" : "BROKEN").padStart(5)}   == talk, quest`);
   console.log(`${"controls".padEnd(26)}  ${(controls.ok ? "t, all, drink" : "BROKEN").padStart(5)}   == short commands`);
   console.log(`${"chatGuard".padEnd(26)}  ${(chatGuard.ok ? "8/10s" : "BROKEN").padStart(5)}   == rate limit`);
   console.log(`${"moderation".padEnd(26)}  ${(moderation.ok ? "names, report" : "BROKEN").padStart(5)}   == new-name policy`);
   console.log(`${"playerStats".padEnd(26)}  ${(playerStats.ok ? "sessions, quests" : "BROKEN").padStart(5)}   == aggregate only`);
   console.log(`${"ignore".padEnd(26)}  ${(ignore.ok ? "5 paths" : "BROKEN").padStart(5)}   == tell, mail, chat`);
-  console.log(`${"titles".padEnd(26)}  ${(titles.ok ? "3 earned" : "BROKEN").padStart(5)}   == select, persist`);
-  console.log(`${"memoryQuest".padEnd(26)}  ${(memoryQuest.ok ? "150 xp" : "BROKEN").padStart(5)}   == fact, recall`);
-  console.log(`${"gardenMoon".padEnd(26)}  ${(memoryQuest.ok ? "300 xp" : "BROKEN").padStart(5)}   == crescent, seed`);
-  console.log(`${"factAction".padEnd(26)}  ${(memoryQuest.ok ? "1 room" : "BROKEN").padStart(5)}   == word, rose`);
-  console.log(`${"rootArchive".padEnd(26)}  ${(memoryQuest.ok ? "260 xp" : "BROKEN").padStart(5)}   == seed, quest`);
-  console.log(`${"longRoad".padEnd(26)}  ${(memoryQuest.ok ? "400 xp" : "BROKEN").padStart(5)}   == town, root`);
-  console.log(`${"threeMem".padEnd(26)}  ${(memoryQuest.ok ? "500 xp" : "BROKEN").padStart(5)}   == four goals`);
-  console.log(`${"pressBeneath".padEnd(26)}  ${(memoryQuest.ok ? "600 xp" : "BROKEN").padStart(5)}   == seed, vault`);
-  console.log(`${"ciderSpring".padEnd(26)}  ${(memoryQuest.ok ? "700 xp" : "BROKEN").padStart(5)}   == bloom`);
-  console.log(`${"orchardWork".padEnd(26)}  ${(memoryQuest.ok ? "250 xp" : "BROKEN").padStart(5)}   == repeat`);
+  console.log(`${"titles".padEnd(26)}  ${(titles.ok ? "2 earned" : "BROKEN").padStart(5)}   == select, persist`);
+  console.log(`${"memoryGarden".padEnd(26)}  ${(memoryGarden.ok ? "rooms, rose" : "BROKEN").padStart(5)}   == fact, action`);
   console.log(`${"quests".padEnd(26)}  ${(quests.ok ? "accept, advance, pay" : "BROKEN").padStart(5)}   == facts, once`);
   console.log(`${"aggression".padEnd(26)}  ${(aggression.ok ? "1 duel" : "BROKEN").padStart(5)}   == mobs start fights`);
   console.log(`${"combat2".padEnd(26)}  ${(combat2.ok ? "weapons, armour, xp" : "BROKEN").padStart(5)}   == fight and grow`);
