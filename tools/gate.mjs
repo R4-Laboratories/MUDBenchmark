@@ -1493,6 +1493,26 @@ let playerStats = { ok: true, why: [] };
   if (playerStats.why.length) { playerStats.ok = false; failures.push(`player statistics are broken: ${playerStats.why[0]}`); }
 }
 
+// Combat balance bands, including PvP and unseeded high-level play.
+let balanceBands = { ok: true, why: [] };
+{
+  const check = (condition, why) => { if (!condition) { balanceBands.ok = false; balanceBands.why.push(why); } };
+  const run = spawnSync(process.execPath, ["tools/balance.mjs", "--json", "--seeds=120"], { cwd: root, encoding: "utf8" });
+  check(run.status === 0, `balance sampler failed: ${(run.stderr || "").trim().split("\n")[0]}`);
+  let rows = [];
+  try { rows = JSON.parse(run.stdout).rows ?? []; } catch { check(false, "balance sampler did not return JSON"); }
+  const band = (name) => rows.filter((row) => row.band === name);
+  check(band("early").length === 2 && band("mid").length === 2 && band("high").length === 3 && band("capstone").length === 3, "a PvE balance band is missing");
+  check(band("unseeded").length === 2 && band("pvp").length === 3, "the unseeded or PvP balance band is missing");
+  const pvp = band("pvp");
+  check(pvp.every((row) => row.win >= 0.25 && row.win <= 0.75), `a PvP matchup is outside 25-75%: ${pvp.map((row) => `${row.name} ${Math.round(row.win * 100)}%`).join(", ")}`);
+  const unseeded = band("unseeded");
+  const regent = unseeded.find((row) => row.name.includes("regent"));
+  const star = unseeded.find((row) => row.name.includes("star hound"));
+  check(regent && regent.win < 0.5 && star && star.win > 0.2, "an unseeded high-level band is outside its expected difficulty");
+  if (balanceBands.why.length) { balanceBands.ok = false; failures.push(`the combat balance bands are broken: ${balanceBands.why[0]}`); }
+}
+
 // Controls: short take/kill/score, take-all, drink and grouped inventory.
 let controls = { ok: true, why: [] };
 {
@@ -3396,6 +3416,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"guildVault".padEnd(26)}  ${(guildVault.ok ? "20 slots" : "BROKEN").padStart(5)}   == deposit, reset, disband`);
   console.log(`${"social".padEnd(26)}  ${(social.ok ? "70 xp" : "BROKEN").padStart(5)}   == talk, quest`);
   console.log(`${"controls".padEnd(26)}  ${(controls.ok ? "t, all, drink" : "BROKEN").padStart(5)}   == short commands`);
+  console.log(`${"balanceBands".padEnd(26)}  ${(balanceBands.ok ? "PvE, PvP" : "BROKEN").padStart(5)}   == seeded bands`);
   console.log(`${"chatGuard".padEnd(26)}  ${(chatGuard.ok ? "8/10s" : "BROKEN").padStart(5)}   == rate limit`);
   console.log(`${"moderation".padEnd(26)}  ${(moderation.ok ? "names, report" : "BROKEN").padStart(5)}   == new-name policy`);
   console.log(`${"playerStats".padEnd(26)}  ${(playerStats.ok ? "sessions, quests" : "BROKEN").padStart(5)}   == aggregate only`);
