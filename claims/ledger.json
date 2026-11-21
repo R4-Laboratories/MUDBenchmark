@@ -1119,6 +1119,12 @@
       "level": "build",
       "statement": "The quest count is frozen at 61 in world/ratchet.json, with a documented target of 20 in docs/QUEST-BUDGET.md. The Gate reads the quest table and fails if the count exceeds the frozen ceiling; it prints quests 61 <= 61. No quest definitions were deleted in this release; the 20-slot composition and migration plan are recorded for a dedicated content pass.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-182",
+      "level": "some-true",
+      "statement": "Production v0.91.15 serves 115 rooms, 14 zones, 61 quests, 52 mobiles and 106 objects, with 15 accounts/characters and signups open. It serves the t/take-all, drink, coins and grouped-inventory controls; 20+5 HP combat with no fleeing; the Gilded Rat ale and three sellable treasures; the Wardens' Lodge and exploration ranks (including the repaired archmage path); the quest count frozen at 61 toward a 20-quest target; and the Pollinations keyless streaming provider in the deployed ai.mjs. The merged-PR chain auto-published v0.91.15; wick verified the manifest hashes, replayed vectors and deployed. R4 active. Main Gate 44848984472 green, publish 44849883462.",
+      "authority": "GitHub PR #27 merge a765cde 2026-11-21; main Gate 44848984472; publish 44849883462; release v0.91.15; wick deploy output, /health, /world, /llms.txt and deployed ai.mjs"
     }
   ]
 }
