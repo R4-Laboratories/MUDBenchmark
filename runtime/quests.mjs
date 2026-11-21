@@ -10,6 +10,7 @@ import { fileURLToPath } from "node:url";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_PATH = join(HERE, "..", "world", "data", "quests.json");
+const ARCHIVE_PATH = join(HERE, "..", "world", "data", "quests-archive.json");
 const KINDS = new Set(["visit", "kill", "collect", "deliver", "answer", "talk"]);
 
 export function loadQuests({ path = DEFAULT_PATH } = {}) {
@@ -52,6 +53,9 @@ export function loadQuests({ path = DEFAULT_PATH } = {}) {
 
 export const questById = (quests, id) => quests.find((quest) => quest.id === id) ?? null;
 
+/** Retired definitions are provenance and migration input, not live quests. */
+export const loadQuestArchive = ({ path = ARCHIVE_PATH } = {}) => loadQuests({ path });
+
 export const emptyProgress = () => ({ visits: [], kills: {}, collected: {}, delivered: {}, deliveredObjects: {}, answered: {}, talked: {} });
 
 export function normalizeProgress(progress = {}) {
@@ -77,6 +81,45 @@ export function normalizeQuestState(state = {}, quests = []) {
 
 const heldCount = (actor, objectId, objects) =>
   objects.filter((object) => object.holder === actor.id && object.id === objectId && !object.eaten).length;
+
+/** Whether a progress record already satisfies every objective. */
+export function progressMet(quest, progress = {}) {
+  const p = normalizeProgress(progress);
+  return quest.objectives.every((objective) => {
+    if (objective.kind === "visit") return p.visits.includes(objective.room);
+    if (objective.kind === "kill") return (p.kills[objective.npc] ?? 0) >= (objective.count ?? 1);
+    if (objective.kind === "deliver") {
+      return (p.delivered[objective.npc] ?? 0) >= (objective.count ?? 1)
+        && (!objective.object || (p.deliveredObjects[objective.npc] ?? []).includes(objective.object));
+    }
+    if (objective.kind === "answer") return p.answered[objective.word] === true;
+    if (objective.kind === "talk") return (p.talked[objective.npc] ?? 0) >= (objective.count ?? 1);
+    if (objective.kind === "collect") return (p.collected[objective.object] ?? 0) >= (objective.count ?? 1);
+    return false;
+  });
+}
+
+/**
+ * Normalize a character's quest record against the live table and report any
+ * retired active quests. A retired quest whose recorded progress is complete is
+ * reported as completed; everything else is abandoned. Retired rewards are not
+ * paid again.
+ */
+export function migrateQuestState(raw = {}, quests = [], archive = []) {
+  const notes = [];
+  const active = Array.isArray(raw.active) ? raw.active : [];
+  for (const entry of active) {
+    const id = typeof entry === "string" ? entry : entry?.id;
+    if (!id || questById(quests, id)) continue;
+    const retired = questById(archive, id);
+    notes.push({
+      id,
+      name: retired?.name ?? id,
+      status: retired && progressMet(retired, entry?.progress) ? "completed" : "abandoned",
+    });
+  }
+  return { quests: normalizeQuestState(raw, quests), notes };
+}
 
 /** Advance a quest's progress from one event. */
 export function applyQuestEvent(quest, progress, event, actor, objects) {

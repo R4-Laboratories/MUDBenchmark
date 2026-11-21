@@ -1,6 +1,6 @@
 # Next work
 
-Baseline: **v0.91.15**. The world has 115 rooms, 14 zones, 61 quests, 52 mobiles
+Baseline: **v0.91.16**. The world has 115 rooms, 14 zones, 20 quests, 52 mobiles
 and 106 objects. R4 memory, command grounding, scorecards
 and the public stats surface are live; signups are open and the Gemini demo is
 disabled and unconfigured.
@@ -42,6 +42,7 @@ memory or prompt system.
 | v0.91.13 | Level distribution from the last populated snapshot | **done** (MB-175) |
 | v0.91.14 | Publisher requires the PR merge commit | **done** (MB-176) |
 | v0.91.15 | Short commands, combat/economy, Wardens guild and free streaming default | **done** (MB-178–181) |
+| v0.91.16 | 20-quest spine, archive and migration | **in flight** |
 | backlog | Optional content and live-player tuning | optional |
 
 ## What is next
@@ -52,17 +53,16 @@ memory or prompt system.
 2. **Guild depth.** The Mages' Guild and the exploration-ranked Wardens are
    live, with the shared hall vault and the archmage path repaired. Wardens
    gear and a second guildhall are the next guild content.
-3. **Quest budget.** The count is frozen at 61; the finished target is 20.
-   `docs/QUEST-BUDGET.md` records the composition and the migration rule. The
-   pruning pass is deliberately separate because active chains and rewards
-   must be remapped, not dropped.
-4. **Repeatable content.** The clerk's errand is the second reset-cycle quest.
-   Add a higher-rank repeatable and a weekly cadence if the live data warrants
+3. **Quest budget.** The live table is now 20; 41 retired definitions are in
+   `world/data/quests-archive.json`, and active characters are migrated with a
+   completion/abandon note. `docs/QUEST-BUDGET.md` records the spine.
+4. **Repeatable content.** The Archmage's Trial is the reset-cycle repeatable.
+   Add a weekly cadence or a second high-rank loop if the play data warrants
    it.
-4. **Memory quests and actions.** `memory-garden` and `garden-moon` record
-   facts learned from NPCs. The Remembered Bed uses a fact-gated `plant rose`
-   action to open a hidden room, and `facts` lists what the character knows.
-5. **Moderation.** Chat has an eight-line/ten-second guard, reserved names and
+5. **Memory Garden actions.** The Garden keeps its facts and its fact-gated
+   `plant rose` action, but its quests are retired. Use the rooms for
+   exploration and gear, not another checklist.
+6. **Moderation.** Chat has an eight-line/ten-second guard, reserved names and
    a persistent ignore list across tells, mail, channels, guild chat, socials
    and room speech. New names enforce a 3-24 character shape and a token-aware
    reserved-word policy; `report <name> <reason>` writes a durable operator

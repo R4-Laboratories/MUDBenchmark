@@ -1,39 +1,77 @@
 # Quest budget
 
-The finished world should have **at most twenty quests**. The current world has
-sixty-one, so the count is frozen at 61 in `world/ratchet.json`: no new quest
-may be added while the budget is above 20.
+The live world has **20 quests**. The 41 retired definitions are in
+`world/data/quests-archive.json`; the count is enforced at 20 in
+`world/ratchet.json`. A new quest fails the Gate until an existing one is
+retired.
 
-The reason is design, not storage. A quest is a promise that a place matters.
-Sixty-one quests turn every zone into a checklist; twenty let a zone be a place
-to explore, fight and gear up, with a few memorable exceptions.
+A quest is a promise that a place matters. Twenty let a zone be a place to
+explore, fight and gear up, with a few memorable exceptions. The remaining
+zones keep their rooms, mobiles, gear, keys, secret exits and actions.
 
-## Target composition
+## The twenty
 
-| Slice | Quests | Purpose |
-| --- | --- | --- |
-| Temple and town core | 8 | tutorial, the Vault word, the first delivery, the first social and gear errands |
-| Harbor and midgame | 4 | lighthouse, spellwright, Mirror Pool and the drowned ledger |
-| High dungeons | 4 | the sigil chain, cistern, choir and reliquary |
-| Guild and endgame | 4 | the Mages' line and the Eclipse Court finish |
-| **Total** | **20** | |
+| # | Quest | Level | Scope |
+| --- | --- | --- | --- |
+| 1 | First Steps (`first-steps`) | 1 | world |
+| 2 | A Word in the Hall (`hall-word`) | 2 | world |
+| 3 | The True Word (`word`) | 1 | world |
+| 4 | The Vault Guardian (`guardian`) | 2 | world |
+| 5 | Bread for the Shop (`bread`) | 1 | world |
+| 6 | The Apprentice's Charm (`familiar`) | 2 | world |
+| 7 | The High Walk (`roof`) | 3 | world |
+| 8 | The Lighthouse Lens (`telescope`) | 2 | world |
+| 9 | A Message for the Spellwright (`errand`) | 1 | world |
+| 10 | What the Mirror Keeps (`mirror`) | 4 | world |
+| 11 | The Drowned Ledger (`ledger`) | 4 | world |
+| 12 | Three Parts of a Sigil (`sigils`) | 5 | world |
+| 13 | The Cistern Key (`cistern`) | 6 | world |
+| 14 | The Black Choir (`choir`) | 7 | world |
+| 15 | The Sealed Reliquary (`reliquary`) | 8 | world |
+| 16 | The Guild's Ledger (`guild-ledger`) | 3 | guild |
+| 17 | The Mirror Ledger (`guild-mirror`) | 6 | guild |
+| 18 | The Warden's Debt (`guild-warden`) | 7 | guild |
+| 19 | The Dawn Archive (`guild-dawn`) | 10 | guild |
+| 20 | The Archmage's Trial (`guild-trial`) | 10 | guild |
 
-The remaining zones — Ember Deep, Hollow Fen, Salt Caves, Moonlit Reach and the
-Memory Garden — become exploration and gearing spaces. They keep their mobiles,
-gear, keys, secret exits and atmosphere; they stop being quest hubs.
+The kept chain is:
 
-## How the cut will be made
+```
+first-steps, hall-word, word, guardian, bread, familiar, roof,
+telescope, errand, mirror, ledger, sigils, cistern, choir, reliquary,
+guild-ledger, guild-mirror, guild-warden, guild-dawn, guild-trial
+```
 
-1. Pick the twenty, rewrite prerequisites so no kept quest depends on a retired
-   one, and remap titles and guild ranks that point at retired ids.
-2. Move retired definitions to `world/data/quests-archive.json` rather than
-   deleting them, so the content can return in another form.
-3. Keep every retired item and room. Keys, sigils and lore can become gear,
-   treasure or room actions.
-4. Add a migration for active characters: an active retired quest is completed
-   if its objectives are already done, otherwise abandoned with a message; no
-   character is left pointing at a missing id.
-5. Lower the ratchet ceiling to the new count after the migration passes.
+`guild-dawn` requires `guild-warden` and `reliquary`, so the archmage finale
+now depends on the world chain rather than a retired Eclipse quest. The Dawn
+Crown remains inside the Eclipse chest, and the regent remains at the Throne of
+Ash, so the finale is still reachable through exploration.
 
-That is a dedicated content release, not a side effect of a combat or economy
-change. Until it lands, the freeze is the enforceable part.
+## Retired zones
+
+Ember Deep, Hollow Fen, Salt Caves, Moonlit Reach and the Memory Garden are
+exploration and gearing spaces. Their quests are archived, but their rooms,
+mobiles, treasure, keys, hidden exits and fact-gated actions remain.
+
+## Migration
+
+`migrateQuestState` runs on load and on the pure Gate test:
+
+- active and completed ids are normalized against the 20;
+- an active retired quest whose recorded progress satisfies every objective is
+  reported as **completed**;
+- otherwise it is reported as **abandoned**;
+- no retired reward is paid again;
+- the character receives a one-time login note, and the migration record is
+  cleared on the next checkpoint.
+
+Titles are now one per kept quest: Newcomer, Wordkeeper, Vaultkeeper,
+Mirrorwarden, Choirbane, Reliquarykeeper, Guildwarden, Dawnbringer and
+Trialkeeper. The retired Garden, Moon and Orchard titles left with their
+quests.
+
+## If a retired quest returns
+
+It must return as a new quest id or be re-admitted with a migration that
+remaps old ids. Reusing an id would make an old completion silently count as a
+new quest.

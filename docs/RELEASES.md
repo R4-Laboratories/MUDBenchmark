@@ -314,6 +314,11 @@ Rehearsed 2026-11-16:
   second guild with exploration ranks, the unreachable archmage promotion is
   repaired, and the quest count is frozen at 61 toward a 20-quest target
   (MB-178 through MB-181);
+- v0.91.16 (20-quest spine) cuts the live table from 61 to 20, archives the 41
+  retired definitions, remaps prerequisites and titles, and migrates active
+  characters with a one-time completion/abandon note. Ember Deep, Hollow Fen,
+  Salt Caves, Moonlit Reach and the Memory Garden keep their rooms, gear, keys
+  and actions as exploration content (MB-183);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

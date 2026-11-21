@@ -121,63 +121,22 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | --- | --- | --- | --- | --- |
 | `word` | The True Word | 1 | Enter the Vault; Answer the true word at the Shrine | 50 xp |
 | `guardian` | The Vault Guardian | 2 | Defeat the vault guardian | 80 xp |
-| `scroll` | A Curled Scroll | 1 | Carry the curled scroll | 15 xp |
 | `bread` | Bread for the Shop | 1 | Deliver a loaf to the shopkeeper | 10 xp |
-| `boar` | The Boar at the Edge | 1 | Defeat the wild boar | 40 xp |
-| `well` | The Well Key | 1 | Carry the brass key | 25 xp |
-| `ghoul` | The Crypt Ghoul | 3 | Defeat the crypt ghoul | 100 xp |
-| `smuggler` | The Smuggler's Cache | 3 | Defeat the smuggler | 80 xp |
 | `telescope` | The Lighthouse Lens | 2 | Carry the brass telescope | 30 xp |
 | `errand` | A Message for the Spellwright | 1 | Deliver the note to the spellwright | 25 xp |
 | `familiar` | The Apprentice's Charm | 2 | Enter the Familiar Yard; Carry the familiar charm | 40 xp |
 | `roof` | The High Walk | 3 | Reach the High Walk; Kill a rat | 60 xp |
 | `guild-ledger` | The Guild's Ledger | 3 | Carry the spell scroll to the archmage | 60 xp |
 | `mirror` | What the Mirror Keeps | 4 | Enter the Mirror Pool; Carry a mirror shard | 80 xp |
-| `wardstone` | The Wardstone | 5 | Defeat the warden; Carry the ward key | 120 xp |
 | `ledger` | The Drowned Ledger | 4 | Defeat the drowned clerk; Recover the drowned page | 100 xp |
 | `sigils` | Three Parts of a Sigil | 5 | Find the first sigil; Find the second sigil; Find the third sigil | 150 xp |
-| `guild-sigils` | The Sigil Trial | 5 | Find the first sigil; Find the second sigil; Find the third sigil | 120 xp |
 | `guild-mirror` | The Mirror Ledger | 6 | Enter the Mirror Pool; Carry a mirror shard | 120 xp |
 | `guild-warden` | The Warden's Debt | 7 | Defeat the warden; Carry the ward key | 200 xp |
 | `cistern` | The Cistern Key | 6 | Enter the Cistern; Carry the bone key | 90 xp |
 | `choir` | The Black Choir | 7 | Defeat the choir moth; Carry the black bell | 120 xp |
 | `reliquary` | The Sealed Reliquary | 8 | Enter the Sealed Reliquary; Carry the reliquary lens | 150 xp |
-| `last` | The Last Lantern | 8 | Reach the Last Lantern; Carry the last lantern | 180 xp |
-| `guild-choir` | The Choir Bell | 8 | Defeat the choir moth; Carry the black bell | 180 xp |
-| `guild-reliquary` | The Reliquary Lens | 9 | Enter the Sealed Reliquary; Carry the reliquary lens | 200 xp |
-| `ember-door` | Beyond the Quiet Door | 8 | Enter the Ashen Threshold; Reach the First Flame; Carry the first coal | 300 xp |
-| `ember-forge` | The Cinder Hound | 8 | Defeat the cinder hound; Carry a cinder fang | 220 xp |
-| `ember-key` | The Ash Key | 8 | Enter the Ember Chapel; Carry the ash key | 180 xp |
-| `ember-flame` | The Ember Lantern | 9 | Stand at the First Flame; Carry an ember lantern; Carry the first coal | 400 xp |
-| `guild-ember` | The Ember Warden | 9 | Defeat the ember warden; Carry the first coal | 260 xp |
-| `fen-reed` | The Wisp Glass | 5 | Enter the Fen Gate; Carry a piece of wisp glass | 160 xp |
-| `fen-hound` | The Bog Hound | 5 | Defeat the bog hound; Carry a bog fang | 180 xp |
-| `fen-beacon` | The Old Beacon | 6 | Enter the Old Beacon; Carry the green key | 200 xp |
-| `fen-heart` | The Green Heart | 7 | Reach the Green Heart; Carry the green seed | 280 xp |
-| `guild-fen` | The Fen Wisp | 8 | Defeat a fen wisp; Carry a piece of wisp glass | 220 xp |
-| `salt-crab` | The Brine Crab | 5 | Defeat the brine crab; Carry a salt pearl | 160 xp |
-| `salt-heart` | The Salt Heart | 6 | Reach the Salt Heart; Carry a salt shard | 220 xp |
 | `first-steps` | First Steps | 1 | Stand in the Atrium; Walk north into the Corridor | 20 xp |
-| `salt-ward` | The Salt Ward | 7 | Defeat the salt wraith; Carry a salt shard | 260 xp |
-| `fen-deep` | The Deep Fen | 8 | Return to the Green Heart; Defeat a fen wisp; Carry a piece of wisp glass | 320 xp |
-| `moon-hare` | The Moon Hare | 5 | Defeat the moon hare; Carry a moonpetal | 150 xp |
-| `moon-well` | The Moonwell | 6 | Reach the Moonwell; Carry a flask of moonwater | 190 xp |
-| `moon-stag` | The Moon Stag | 9 | Reach the Moon Throne; Defeat the moon stag; Carry a moon antler | 360 xp |
-| `eclipse-stair` | The Eclipse Stair | 9 | Climb the Eclipse Stair; Defeat the star hound; Carry the eclipse key | 280 xp |
-| `eclipse-vault` | The Mirror Vault | 10 | Enter the Mirror Vault; Carry the dawn crown | 450 xp |
-| `eclipse-throne` | The Throne of Ash | 10 | Reach the Throne of Ash; Defeat the eclipse regent; Carry the regent's sigil | 800 xp |
-| `clerk-errand` | The Clerk's Errand | 3 | Deliver a clerk's seal to the guild clerk | 80 xp |
 | `hall-word` | A Word in the Hall | 2 | Talk to the market woman; Talk to the guild clerk | 70 xp |
-| `memory-garden` | The Garden Remembers | 3 | Learn the ledger word from the guild clerk; Recall the ledger word at the shrine; Visit the Memory Garden | 150 xp |
-| `garden-moon` | The Moon in the Garden | 9 | Learn the crescent word from the silver owl; Recall the crescent word at the shrine; Visit the Rose Walk | 300 xp |
-| `remembered-bed` | The Remembered Bed | 4 | Talk to the rememberer; Enter the Remembered Bed; Carry the remembered bloom | 220 xp |
-| `first-bed` | The First Bed | 5 | Talk to the root keeper; Reach the First Bed; Carry the first seed | 260 xp |
-| `long-remembering` | The Long Remembering | 6 | Talk to the guild clerk; Recall the root word at the shrine; Return to the First Bed | 400 xp |
-| `three-rememberings` | The Three Rememberings | 7 | Talk to the orchard keeper; Recall the orchard word at the shrine; Carry an orchard seed; Talk to the guild clerk | 500 xp |
-| `press-beneath` | The Press Beneath | 8 | Talk to the orchard keeper; Reach the Seed Vault; Carry the press seed | 600 xp |
-| `cider-spring` | The Cider Spring | 9 | Talk to the spring keeper; Reach the White Bed; Carry a cider bloom | 700 xp |
-| `orchard-work` | Orchard Work | 9 | Deliver a cider bloom to the orchard keeper | 250 xp |
-| `guild-eclipse` | The Eclipse Ledger | 10 | Reach the Throne of Ash; Carry the regent's sigil | 400 xp |
 | `guild-dawn` | The Dawn Archive | 10 | Reach the Dawn Gate; Carry the dawn crown | 500 xp |
 | `guild-trial` | The Archmage's Trial | 10 | Defeat the eclipse regent; Deliver the regent's sigil to the archmage | 300 xp |
 

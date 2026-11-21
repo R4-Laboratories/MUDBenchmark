@@ -1125,6 +1125,12 @@
       "level": "some-true",
       "statement": "Production v0.91.15 serves 115 rooms, 14 zones, 61 quests, 52 mobiles and 106 objects, with 15 accounts/characters and signups open. It serves the t/take-all, drink, coins and grouped-inventory controls; 20+5 HP combat with no fleeing; the Gilded Rat ale and three sellable treasures; the Wardens' Lodge and exploration ranks (including the repaired archmage path); the quest count frozen at 61 toward a 20-quest target; and the Pollinations keyless streaming provider in the deployed ai.mjs. The merged-PR chain auto-published v0.91.15; wick verified the manifest hashes, replayed vectors and deployed. R4 active. Main Gate 44848984472 green, publish 44849883462.",
       "authority": "GitHub PR #27 merge a765cde 2026-11-21; main Gate 44848984472; publish 44849883462; release v0.91.15; wick deploy output, /health, /world, /llms.txt and deployed ai.mjs"
+    },
+    {
+      "id": "MB-183",
+      "level": "build",
+      "statement": "The live quest table is 20 and the retired 41 are in world/data/quests-archive.json. The kept spine is first-steps, hall-word, word, guardian, bread, familiar, roof, telescope, errand, mirror, ledger, sigils, cistern, choir, reliquary, guild-ledger, guild-mirror, guild-warden, guild-dawn and guild-trial. guild-dawn now requires guild-warden and reliquary. Titles are reduced to nine, one per kept quest. migrateQuestState normalizes active/completed ids, reports retired active quests as completed when their recorded progress is met and abandoned otherwise, and the server sends a one-time login note before clearing the migration record. The Gate checks count 20, archive 41, no live/archive overlap, no kept prerequisite on a retired quest, archive references, and the completed/abandoned migration notes.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

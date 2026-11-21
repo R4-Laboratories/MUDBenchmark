@@ -1,59 +1,15 @@
 {
+  "schema": "mudbenchmark/titles/1",
+  "note": "One title per kept quest. The quest budget is 20; retired titles were removed with their quests.",
   "titles": [
-    {
-      "id": "newcomer",
-      "name": "Newcomer",
-      "quest": "first-steps"
-    },
-    {
-      "id": "moonwarden",
-      "name": "Moonwarden",
-      "quest": "moon-stag"
-    },
-    {
-      "id": "dawnbringer",
-      "name": "Dawnbringer",
-      "quest": "eclipse-throne"
-    },
-    {
-      "id": "gardenkeeper",
-      "name": "Gardenkeeper",
-      "quest": "memory-garden"
-    },
-    {
-      "id": "moongardener",
-      "name": "Moon Gardener",
-      "quest": "garden-moon"
-    },
-    {
-      "id": "bedkeeper",
-      "name": "Bedkeeper",
-      "quest": "remembered-bed"
-    },
-    {
-      "id": "rootkeeper",
-      "name": "Rootkeeper",
-      "quest": "first-bed"
-    },
-    {
-      "id": "roadkeeper",
-      "name": "Roadkeeper",
-      "quest": "long-remembering"
-    },
-    {
-      "id": "orchardkeeper",
-      "name": "Orchardkeeper",
-      "quest": "three-rememberings"
-    },
-    {
-      "id": "presskeeper",
-      "name": "Presskeeper",
-      "quest": "press-beneath"
-    },
-    {
-      "id": "springkeeper",
-      "name": "Springkeeper",
-      "quest": "cider-spring"
-    }
+    { "id": "newcomer", "name": "Newcomer", "quest": "first-steps" },
+    { "id": "wordkeeper", "name": "Wordkeeper", "quest": "word" },
+    { "id": "vaultkeeper", "name": "Vaultkeeper", "quest": "guardian" },
+    { "id": "mirrorwarden", "name": "Mirrorwarden", "quest": "mirror" },
+    { "id": "choirbane", "name": "Choirbane", "quest": "choir" },
+    { "id": "reliquarykeeper", "name": "Reliquarykeeper", "quest": "reliquary" },
+    { "id": "guildwarden", "name": "Guildwarden", "quest": "guild-warden" },
+    { "id": "dawnbringer", "name": "Dawnbringer", "quest": "guild-dawn" },
+    { "id": "trialkeeper", "name": "Trialkeeper", "quest": "guild-trial" }
   ]
 }
