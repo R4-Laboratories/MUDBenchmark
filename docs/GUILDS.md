@@ -68,6 +68,24 @@ The two-hour reset leaves vault goods in the vault; a restart does too. When a
 guild disbands or loses its last member, its goods fall in the hall rather than
 vanishing. The account wipe releases vault goods the same way.
 
+## The two institutions
+
+Two guilds are world institutions rather than player-founded companies:
+
+| Guild | Where | Join | Ranks |
+| --- | --- | --- | --- |
+| The Mages' Guild | The Arcanum, above the Atrium | level 3, at room 34 | apprentice, adept, magician, archmage |
+| The Wardens | The Wardens' Lodge, above the Guild Hall | level 3, at room 115 | scout, ranger, warden |
+
+The Mages' ranks are earned through spells, level and the guild quest ledger.
+The Wardens' ranks are earned by ground covered: ranger needs level 5 and
+fifteen rooms explored; warden needs level 8 and thirty. No quest is required,
+so the exploration path does not add to the quest budget. Both guilds share the
+Guild Hall and its per-guild vault; their rosters and vaults are separate.
+
+`guild advance` promotes in the guild's own hall. A player-founded guild still
+uses the generic leader/officer/member ranks and does not advance this way.
+
 ## What is live, and what is not
 
 Guild quests, guild XP, ranks, the level-6 three-active-quest perk and the

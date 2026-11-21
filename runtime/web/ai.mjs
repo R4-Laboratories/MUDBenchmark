@@ -7,6 +7,14 @@
 // localStorage and goes only to the provider's own endpoint.
 
 export const PROVIDERS = {
+  pollinations: {
+    label: "Pollinations (free, no key)",
+    base: "https://text.pollinations.ai/openai",
+    model: "openai-fast",
+    needsKey: false,
+    keyMode: "none",
+    hint: "Anonymous public endpoint. No key and streaming, but best-effort: prompts may be logged by the service and rate limits change. Use Ollama or your own provider for privacy or reliability.",
+  },
   ollama: {
     label: "Ollama (local)",
     base: "http://localhost:11434/v1",
@@ -81,8 +89,8 @@ export function normalizeBase(input) {
 export const COMMANDS = `look, look <thing>, examine <thing>, who, say <text>, global <text>,
 tell <name> <text>, mail <name> <text>, channels, answer <word>, claim <word>,
 claim unknown, north, south, east, west, up, down (n/s/e/w/u/d), attack <name>,
-flee, wield <weapon>, unwield, inventory, take <thing>, drop <thing>, put <thing> in <thing>,
-open <thing>, close <thing>, wear <thing>, remove <thing>, eat <thing>, light <thing>,
+wield <weapon>, unwield, inventory [category], coins, take <thing>, take all, drop <thing>, put <thing> in <thing>,
+open <thing>, close <thing>, wear <thing>, remove <thing>, eat <thing>, drink <thing>, light <thing>,
 buy <thing>, sell <thing>, list, wait, wave, nod, bow, laugh, sigh, shrug, dance,
 smile, grin, frown, cheer, salute, point, ponder, stretch, shiver, yawn, wink, hug, highfive, poke,
 whistle, sing, hum, mutter, shout, clap, cry, apologize, congratulate, battle (combat/bt), score,
@@ -91,13 +99,13 @@ levels, leaderboard (top/lb), map [zone], shortcuts, tutorial (first),
 guild create <name>, guild join <name>, guild leave, guild who, guild list, guild chat <text>,
 guild rank <member> <rank>, guild disband, vault, deposit <item>, withdraw <item>, ignore/unignore <name>, ignoring, titles, title <id|none>, facts, recall <word>, talk <name>, spells, train <spell>, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search, turn, push, ring, world, help, go <direction>`;
 
-const FAST_COMMANDS = "look, examine <thing>, inventory, score, equipment, quests, say <text>, tell <name> <text>, global <text>, talk <name>, who, north/south/east/west/up/down, take/drop/wear/wield, attack <name>, flee, cast <spell>, buy/sell/list, open/close, quest accept <id>, deliver <thing> to <name>, guild create/join/leave/who/chat, vault/deposit/withdraw, ignore/unignore, titles/title, facts, recall, wait, search, world, help, wave/nod/bow/laugh";
+const FAST_COMMANDS = "look, examine <thing>, inventory, score, equipment, quests, say <text>, tell <name> <text>, global <text>, talk <name>, who, north/south/east/west/up/down, take/drop/wear/wield, take all, attack <name>, cast <spell>, buy/sell/list, open/close, quest accept <id>, deliver <thing> to <name>, guild create/join/leave/who/chat, vault/deposit/withdraw, ignore/unignore, titles/title, facts, recall, wait, search, world, help, wave/nod/bow/laugh";
 
 const VERBS = new Set([
-  "look", "l", "examine", "x", "ex", "who", "wh", "awake", "aw", "answer", "claim", "say", "tell", "mail", "go",
+  "look", "l", "examine", "x", "ex", "who", "wh", "awake", "aw", "answer", "claim", "say", "tell", "mail", "go", "coins", "money", "purse",
   "global", "gossip", "gos", "goss", "trade", "channels", "north", "south", "east", "west", "up", "down",
-  "n", "s", "e", "w", "u", "d", "attack", "kill", "flee", "wield", "unwield", "inventory",
-  "i", "inv", "equipment", "eq", "take", "get", "g", "grab", "drop", "dr", "put", "open", "close",
+  "n", "s", "e", "w", "u", "d", "attack", "kill", "wield", "unwield", "inventory",
+  "i", "inv", "equipment", "eq", "take", "get", "g", "t", "grab", "drink", "quaff", "drop", "dr", "put", "open", "close",
   "wear", "remove", "eat", "light", "extinguish", "buy", "sell", "list", "wait", "wave", "nod", "bow",
   "laugh", "sigh", "shrug", "dance", "score", "sc", "stats", "quests", "q", "j", "quest", "guild", "gc",
   "gchat", "deliver", "talk", "spells", "train", "cast", "study", "recite", "search", "sr", "turn", "push", "ring", "world", "status", "help", "h", "?",
@@ -192,7 +200,7 @@ const FREE_VERBS = new Set([
   "gossip", "gos", "goss", "trade", "channels", "inventory", "i", "inv",
   "equipment", "eq", "score", "sc", "stats", "quests", "q", "j", "spells",
   "world", "status", "help", "h", "?", "wait", "wave", "nod", "bow", "laugh",
-  "sigh", "shrug", "dance", "flee", "search", "sr", "answer", "claim",
+  "sigh", "shrug", "dance", "search", "sr", "answer", "claim", "coins", "money", "purse",
   "guild", "gc", "gchat", "quest", "deliver", "train", "list", "buy", "sell",
   "vault", "gvault", "bank", "gvlt",
   "ignoring", "ignored", "ignores", "titles",
@@ -202,7 +210,7 @@ const FREE_VERBS = new Set([
   "smile", "grin", "frown", "cheer", "salute", "point", "ponder", "stretch", "shiver", "yawn", "wink", "hug", "highfive", "poke", "whistle", "sing", "hum", "mutter", "shout", "clap", "cry", "apologize", "congratulate", "battle", "combat", "bt",
 ]);
 const TARGET_VERBS = new Set([
-  "examine", "x", "ex", "take", "get", "g", "grab", "drop", "dr", "discard",
+  "examine", "x", "ex", "take", "get", "g", "t", "grab", "drink", "quaff", "drop", "dr", "discard",
   "wear", "don", "remove", "wield", "unwield", "eat", "light", "extinguish",
   "open", "close", "shut", "talk", "attack", "kill", "hit", "buy", "sell",
   "cast", "study", "recite", "deposit", "dep", "store", "ds", "withdraw", "wd", "retrieve", "wdr",
@@ -260,8 +268,9 @@ export function validateCommand(command, state = null) {
   if (!TARGET_VERBS.has(verb)) return { ok: false, reason: `unknown command ${verb}` };
   if (!rest.length) return { ok: false, reason: `${verb} needs a target` };
   const target = rest.join(" ");
+  if (["take", "get", "g", "t", "grab"].includes(verb) && /^(all|everything)$/i.test(target.trim())) return { ok: true };
   if (verb === "attack" && state?.room?.safe) return { ok: false, reason: "this is a safe room" };
-  if (["take", "get", "g", "grab"].includes(verb)) {
+  if (["take", "get", "g", "t", "grab"].includes(verb)) {
     const forSale = (state?.room?.objects ?? []).find((object) => {
       const targetWords = new Set(wordsOf(target));
       const objectWords = wordsOf(object.name);
@@ -269,7 +278,7 @@ export function validateCommand(command, state = null) {
     });
     if (forSale) return { ok: false, reason: `${forSale.name} is for sale; use buy` };
   }
-  if (["take", "get", "g", "grab"].includes(verb) && !/\bfrom\b/i.test(target)) {
+  if (["take", "get", "g", "t", "grab"].includes(verb) && !/\bfrom\b/i.test(target)) {
     const targetWords = new Set(wordsOf(target));
     const content = (state?.room?.objects ?? [])
       .flatMap((object) => (object.contents ?? []).map((item) => ({ item, container: object.name })))
@@ -435,7 +444,24 @@ const reasoningEffortFor = (model) => {
 };
 
 export function requestFor(provider, config, system, messages) {
-  const base = normalizeBase(config.base);
+  const fallbackBase = provider === "pollinations" ? PROVIDERS.pollinations.base : "";
+  const base = normalizeBase(config.base || fallbackBase);
+  if (provider === "pollinations") {
+    // The public endpoint is already the OpenAI-compatible chat URL, not a
+    // /v1 base. It streams SSE without a key.
+    const root = base.replace(/\/+$/, "");
+    return {
+      url: /\/openai$/i.test(root) ? root : `${root}/openai`,
+      headers: { "content-type": "application/json" },
+      body: {
+        model: config.model ?? "openai-fast",
+        messages: [{ role: "system", content: system }, ...messages],
+        temperature: config.temperature ?? 0,
+        max_tokens: config.maxTokens ?? 300,
+        stream: true,
+      },
+    };
+  }
   if (provider === "ollama") {
     // Ollama's native chat endpoint is the only one that can switch thinking
     // off explicitly. The OpenAI-compatible path silently spends reasoning
@@ -521,6 +547,46 @@ export function requestFor(provider, config, system, messages) {
       ...(reasoning ? { reasoning_effort: reasoning } : {}),
     },
   };
+}
+
+/** Read an OpenAI-style SSE response and return the accumulated content. */
+export async function readSseText(response, onText = () => {}) {
+  if (!response?.body) return { text: "", usage: null };
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let text = "";
+  let usage = null;
+  const consume = (line) => {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith("data:")) return;
+    const data = trimmed.slice(5).trim();
+    if (!data || data === "[DONE]") return;
+    try {
+      const body = JSON.parse(data);
+      const delta = body.choices?.[0]?.delta;
+      if (typeof delta?.content === "string") {
+        text += delta.content;
+        onText(text);
+      }
+      if (body.usage) usage = body.usage;
+    } catch {
+      // a partial or non-JSON event is not a content delta
+    }
+  };
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    let index;
+    while ((index = buffer.indexOf("\n")) >= 0) {
+      consume(buffer.slice(0, index));
+      buffer = buffer.slice(index + 1);
+    }
+  }
+  buffer += decoder.decode();
+  if (buffer) consume(buffer);
+  return { text: text.trim(), usage };
 }
 
 export function replyFrom(provider, body) {

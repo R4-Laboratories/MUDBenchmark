@@ -8,7 +8,7 @@
 // uses. It does not change the world. Scenarios name gear and mobiles, so a
 // tuning change is judged against the content players actually meet.
 
-import { attackRoll } from "../runtime/world.mjs";
+import { attackRoll, maxHpForLevel } from "../runtime/world.mjs";
 import { loadWorld } from "../runtime/worlddata.mjs";
 
 const args = new Set(process.argv.slice(2));
@@ -67,7 +67,7 @@ const addEffect = (list, id) => {
 const simulate = (scenario, seed) => {
   const enemyDefinition = npcById.get(scenario.enemy);
   const gear = gearStats(scenario.gear);
-  const maxHp = 10 + (scenario.level - 1) * 2;
+  const maxHp = maxHpForLevel(scenario.level);
   const player = {
     hp: maxHp,
     maxHp,

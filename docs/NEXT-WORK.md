@@ -1,7 +1,7 @@
 # Next work
 
-Baseline: **v0.91.14**. The world has 114 rooms, 14 zones, 61 quests, 51 mobiles
-and 102 objects. R4 memory, command grounding, scorecards
+Baseline: **v0.91.15**. The world has 115 rooms, 14 zones, 61 quests, 52 mobiles
+and 106 objects. R4 memory, command grounding, scorecards
 and the public stats surface are live; signups are open and the Gemini demo is
 disabled and unconfigured.
 
@@ -41,6 +41,7 @@ memory or prompt system.
 | v0.91.12 | Historical AI/human session inference | **done** (MB-173) |
 | v0.91.13 | Level distribution from the last populated snapshot | **done** (MB-175) |
 | v0.91.14 | Publisher requires the PR merge commit | **done** (MB-176) |
+| v0.91.15 | Short commands, combat/economy, Wardens guild and free streaming default | **in flight** |
 | backlog | Optional content and live-player tuning | optional |
 
 ## What is next
@@ -48,10 +49,14 @@ memory or prompt system.
 1. **Live-run tuning.** The sampler is deterministic, not live evidence. Run
    human/AI sessions, read `/stats`, `/players` and the combat spans, and tune
    status durations, aggression, mana costs and the level 8-10 reward curve.
-2. **Guild depth.** The guild hall vault now stores 20 goods per guild, with
-   deposit/withdraw and reset/restart/disband coverage. A high-rank guild quest
-   line remains open.
-3. **Repeatable content.** The clerk's errand is the second reset-cycle quest.
+2. **Guild depth.** The Mages' Guild and the exploration-ranked Wardens are
+   live, with the shared hall vault and the archmage path repaired. Wardens
+   gear and a second guildhall are the next guild content.
+3. **Quest budget.** The count is frozen at 61; the finished target is 20.
+   `docs/QUEST-BUDGET.md` records the composition and the migration rule. The
+   pruning pass is deliberately separate because active chains and rewards
+   must be remapped, not dropped.
+4. **Repeatable content.** The clerk's errand is the second reset-cycle quest.
    Add a higher-rank repeatable and a weekly cadence if the live data warrants
    it.
 4. **Memory quests and actions.** `memory-garden` and `garden-moon` record

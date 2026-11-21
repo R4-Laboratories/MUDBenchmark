@@ -3,6 +3,38 @@
 
 export const SLOTS = ["head", "body", "hands", "feet", "cloak", "neck", "mainhand", "offhand"];
 
+const INVENTORY_GROUPS = [
+  { id: "weapons", label: "Weapons" },
+  { id: "armour", label: "Armour" },
+  { id: "containers", label: "Containers" },
+  { id: "light", label: "Light" },
+  { id: "food", label: "Food and drink" },
+  { id: "scrolls", label: "Scrolls" },
+  { id: "coins", label: "Coins" },
+  { id: "other", label: "Other" },
+];
+
+function inventoryGroup(object) {
+  const flags = object?.flags ?? [];
+  if (flags.includes("coin")) return "coins";
+  if (flags.includes("weapon")) return "weapons";
+  if (flags.includes("armor") || flags.includes("wearable")) return "armour";
+  if (flags.includes("container")) return "containers";
+  if (flags.includes("light")) return "light";
+  if (flags.includes("food") || flags.includes("drink")) return "food";
+  if (flags.includes("readable")) return "scrolls";
+  return "other";
+}
+
+/** Group carried objects so a large inventory stays readable. */
+export function inventoryGroups(objects = []) {
+  const buckets = new Map(INVENTORY_GROUPS.map((group) => [group.id, []]));
+  for (const object of objects) buckets.get(inventoryGroup(object)).push(object);
+  return INVENTORY_GROUPS
+    .map((group) => ({ ...group, items: buckets.get(group.id) }))
+    .filter((group) => group.items.length > 0);
+}
+
 export function slotOf(object) {
   if (object?.slot && SLOTS.includes(object.slot)) return object.slot;
   if ((object?.flags ?? []).includes("weapon")) return "mainhand";

@@ -201,7 +201,7 @@ export function loadWorld({ mode = "single", path = DEFAULT_PATH } = {}) {
   // silently does nothing.
   const objects = [];
   const seenObject = new Set();
-  const FLAGS = new Set(["takeable", "fixed", "container", "wearable", "food", "light", "readable", "coin", "weapon", "armor"]);
+  const FLAGS = new Set(["takeable", "fixed", "container", "wearable", "food", "drink", "light", "readable", "coin", "weapon", "armor"]);
   for (const object of raw.objects ?? []) {
     if (seenObject.has(object.id)) errors.push(`object id "${object.id}" is used twice`);
     seenObject.add(object.id);
@@ -226,9 +226,9 @@ export function loadWorld({ mode = "single", path = DEFAULT_PATH } = {}) {
     if (flags.includes("armor") && (!Number.isInteger(object.armor) || object.armor < 1)) {
       errors.push(`armor ${object.id} has no armor value`);
     }
-    if (flags.includes("food")) {
-      if (!Number.isInteger(object.bites) || object.bites < 1) errors.push(`food ${object.id} has no bites`);
-      if (object.heal !== undefined && (!Number.isInteger(object.heal) || object.heal < 0)) errors.push(`food ${object.id} has an invalid heal`);
+    if (flags.includes("food") || flags.includes("drink")) {
+      if (!Number.isInteger(object.bites) || object.bites < 1) errors.push(`consumable ${object.id} has no bites`);
+      if (object.heal !== undefined && (!Number.isInteger(object.heal) || object.heal < 0)) errors.push(`consumable ${object.id} has an invalid heal`);
     }
     if (flags.includes("coin") && (!Number.isInteger(object.value) || object.value < 1)) {
       errors.push(`coin ${object.id} has no integer value`);
