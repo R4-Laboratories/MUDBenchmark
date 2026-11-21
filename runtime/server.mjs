@@ -17,6 +17,7 @@ import { summarizeTrends } from "./trends.mjs";
 import { summarizePlayers } from "./playerstats.mjs";
 import { step, initialState, digestState, phaseAt, upgradeState, releaseHeldObjects, checkpointIdentities, armorOf, nextFrom, TICK_MS } from "./world.mjs";
 import { equipmentText, inventoryGroups, weaponOf } from "./equipment.mjs";
+import { techniqueForWeapon } from "./techniques.mjs";
 import { maxManaFor, spellById, spellLine, spellPower, trainableSpells, trainingCost } from "./magic.mjs";
 import { findAction, loadActions } from "./actions.mjs";
 import { loadWorld } from "./worlddata.mjs";
@@ -629,7 +630,7 @@ const ALIASES = {
   gv: "give", pt: "put", op: "open", cl: "close", wr: "wear", rm: "remove",
   ea: "eat", drink: "drink", quaff: "drink", li: "light", ext: "extinguish", b: "buy", se: "sell", ls: "list",
   sy: "say", te: "tell", m: "mail", ch: "channels", gl: "global", wi: "wield",
-  uw: "unwield", dv: "deliver", tk: "talk", du: "duel", wa: "wait",
+  uw: "unwield", tech: "technique", dv: "deliver", tk: "talk", du: "duel", wa: "wait",
   ad: "adopt", mp: "map", sh: "shortcuts", k: "attack", atk: "attack",
   an: "answer", clm: "claim", wld: "world", sp: "spells", tr: "train",
   ca: "cast", stu: "study", re: "recite", tu: "turn", pu: "push", ri: "ring",
@@ -1443,7 +1444,7 @@ async function handleCommand(id, line) {
     if (!actor?.key) {
       return sendTo(id, "MUDBench is a persistent world for people and agents.\r\nSign in with your Prism id, or register <name> <password> / login <name> <password>.\r\nThen type help for the commands.\r\n");
     }
-    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: take/t/g/tf, take all, drop/dp/dr, inventory/i, coins, standing/reputation, score/sc, quests/q, who/wh, spells/sp, cast/ca, say/sy, tell/te, give/gv, put/pt, open/op, close/cl, wear/wr, remove/rm, buy/b, sell/se, list/ls, drink, map/mp, leaderboard/lb, levels/lv, shortcuts/sh.\r\nMagic: spells (effects/mana), train <spell> at the Mages' Guild, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search. Combat: attack/kill/k, battle/combat/bt (current HP), score (armour/damage), equipment/eq (slots and totals). There is no fleeing a fight. Guild: guild join/leave/who/list/chat, guild advance (Mages, Wardens), vault/deposit/withdraw in the Guild Hall. Social: ignore/unignore/ignoring, report/rep, titles/title, facts/memory, recall <word> at the shrine. Room actions: turn, push, ring where the room suggests.\r\nWorld: world or status (online, guilds, reset); levels, leaderboard/top/lb, map [zone], shortcuts, quests active|available|done|all.<id>; tutorial (first) for the first steps.\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
+    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: take/t/g/tf, take all, drop/dp/dr, inventory/i, coins, standing/reputation, score/sc, quests/q, who/wh, spells/sp, cast/ca, say/sy, tell/te, give/gv, put/pt, open/op, close/cl, wear/wr, remove/rm, buy/b, sell/se, list/ls, drink, map/mp, leaderboard/lb, levels/lv, shortcuts/sh.\r\nMagic: spells (effects/mana), train <spell> at the Mages' Guild, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search. Combat: attack/kill/k, technique/tech (weapon move), battle/combat/bt (current HP), score (armour/damage), equipment/eq (slots and totals). There is no fleeing a fight. Guild: guild join/leave/who/list/chat, guild advance (Mages, Wardens), vault/deposit/withdraw in the Guild Hall. Social: ignore/unignore/ignoring, report/rep, titles/title, facts/memory, recall <word> at the shrine. Room actions: turn, push, ring where the room suggests.\r\nWorld: world or status (online, guilds, reset); levels, leaderboard/top/lb, map [zone], shortcuts, quests active|available|done|all.<id>; tutorial (first) for the first steps.\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
   }
 
   // A command typed before the join tick lands is queued, not refused: the
@@ -1852,6 +1853,31 @@ async function handleCommand(id, line) {
     const messages = VERB_TABLE.verbs.channels.messages;
     const open = CHANNELS.channels.filter((entry) => (actor.role ?? 0) >= entry.minRole).map((entry) => entry.name);
     return sendTo(id, `${open.length ? render(messages.list, { words: open.join(", ") }) : messages.none}\r\n`);
+  }
+
+  if (named === "technique") {
+    const messages = VERB_TABLE.verbs.technique.messages;
+    const weapon = weaponOf(actor, state.objects);
+    const technique = techniqueForWeapon(weapon);
+    if (!technique) return sendTo(id, `${messages.none}\r\n`);
+    if (!rest.length) {
+      const remaining = Math.max(0, (actor.techniqueCooldowns?.[technique.id] ?? -1) - state.tick);
+      return sendTo(id, `Technique: ${technique.name}. Use technique ${technique.id}.\r\n${remaining ? `${technique.name} ready in ${Math.ceil(remaining * 0.25)}s.\r\n` : ""}`);
+    }
+    const wanted = rest.join(" ").toLowerCase();
+    if (wanted !== technique.id && wanted !== technique.name.toLowerCase()) {
+      return sendTo(id, `${render(messages.unknown, { words: rest.join(" ") })}\r\n`);
+    }
+    const remaining = Math.max(0, (actor.techniqueCooldowns?.[technique.id] ?? -1) - state.tick);
+    if (remaining > 0) {
+      return sendTo(id, `${technique.name} is not ready (${Math.ceil(remaining * 0.25)}s).\r\n`);
+    }
+    const engagement = (state.engagements ?? []).find((entry) => entry.attackerId === id || entry.targetId === id);
+    if (!engagement) return sendTo(id, `${messages.noFight}\r\n`);
+    const targetId = engagement.attackerId === id ? engagement.targetId : engagement.attackerId;
+    pending.push({ kind: "technique", actorId: id, techniqueId: technique.id, targetId });
+    recordSpan("world.technique", { "actor.id": id, "technique.id": technique.id, "target.id": targetId, "world.tick": state.tick }, 0);
+    return;
   }
 
   if (named === "attack") {

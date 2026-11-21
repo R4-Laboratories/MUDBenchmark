@@ -89,7 +89,7 @@ export function normalizeBase(input) {
 export const COMMANDS = `look, look <thing>, examine <thing>, who, say <text>, global <text>,
 tell <name> <text>, mail <name> <text>, channels, answer <word>, claim <word>,
 claim unknown, north, south, east, west, up, down (n/s/e/w/u/d), attack <name>,
-wield <weapon>, unwield, inventory [category], coins, standing, take <thing>, take all, drop <thing>, put <thing> in <thing>,
+wield <weapon>, unwield, technique <name>, inventory [category], coins, standing, take <thing>, take all, drop <thing>, put <thing> in <thing>,
 open <thing>, close <thing>, wear <thing>, remove <thing>, eat <thing>, drink <thing>, light <thing>,
 buy <thing>, sell <thing>, list, wait, wave, nod, bow, laugh, sigh, shrug, dance,
 smile, grin, frown, cheer, salute, point, ponder, stretch, shiver, yawn, wink, hug, highfive, poke,
@@ -102,7 +102,7 @@ guild rank <member> <rank>, guild disband, vault, deposit <item>, withdraw <item
 const FAST_COMMANDS = "look, examine <thing>, inventory, standing, score, equipment, quests, say <text>, tell <name> <text>, global <text>, talk <name>, who, north/south/east/west/up/down, take/drop/wear/wield, take all, attack <name>, cast <spell>, buy/sell/list, open/close, quest accept <id>, deliver <thing> to <name>, guild create/join/leave/who/chat, vault/deposit/withdraw, ignore/unignore, titles/title, facts, recall, wait, search, world, help, wave/nod/bow/laugh";
 
 const VERBS = new Set([
-  "look", "l", "examine", "x", "ex", "who", "wh", "awake", "aw", "answer", "claim", "say", "tell", "mail", "go", "coins", "money", "purse", "standing", "reputation", "factions",
+  "look", "l", "examine", "x", "ex", "who", "wh", "awake", "aw", "answer", "claim", "say", "tell", "mail", "go", "coins", "money", "purse", "standing", "reputation", "factions", "technique", "tech",
   "global", "gossip", "gos", "goss", "trade", "channels", "north", "south", "east", "west", "up", "down",
   "n", "s", "e", "w", "u", "d", "attack", "kill", "wield", "unwield", "inventory",
   "i", "inv", "equipment", "eq", "take", "get", "g", "t", "grab", "drink", "quaff", "drop", "dr", "put", "open", "close",

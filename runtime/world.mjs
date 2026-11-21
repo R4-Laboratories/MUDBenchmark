@@ -16,6 +16,7 @@ import { GUILD_HALL, GUILD_VAULT_CAPACITY, RANKS, guildId, guildLevelFor, guildV
 import { armorOf, slotOf, weaponOf } from "./equipment.mjs";
 import { maxManaFor, spellById, spellPower } from "./magic.mjs";
 import { FACTIONS } from "./factions.mjs";
+import { TECHNIQUES, techniqueForWeapon, techniqueReady } from "./techniques.mjs";
 
 export { armorOf } from "./equipment.mjs";
 
@@ -1487,6 +1488,26 @@ export function step({ state, rooms, intents, actions = [] }) {
       continue;
     }
 
+    if (intent.kind === "technique") {
+      const technique = TECHNIQUES[intent.techniqueId];
+      if (!technique || !techniqueReady(actor, technique.id, next.tick)) continue;
+      const weapon = weaponOf(actor, next.objects);
+      const known = techniqueForWeapon(weapon);
+      if (!known || known.id !== technique.id) continue;
+      const target = next.npcs.find((n) => n.id === intent.targetId)
+        ?? next.actors.find((a) => a.id === intent.targetId);
+      if (!target || target.dead || target.room !== actor.room) continue;
+      if (!next.engagements.some((entry) =>
+        (entry.attackerId === actor.id && entry.targetId === target.id)
+        || (entry.attackerId === target.id && entry.targetId === actor.id))) continue;
+      if (technique.effect === "damage") actor.nextAttackBonus = technique.bonus;
+      else if (technique.effect === "status") actor.nextAttackStatus = technique.status;
+      else if (technique.effect === "stun") target.stunnedUntil = next.tick + technique.rounds;
+      actor.techniqueCooldowns = { ...(actor.techniqueCooldowns ?? {}), [technique.id]: next.tick + technique.cooldown };
+      events.push({ onlyId: actor.id, text: `You ready ${technique.name}.\r\n` });
+      continue;
+    }
+
     if (intent.kind === "wield") {
       const object = next.objects.find((o) => o.id === intent.objectId);
       if (!object || object.holder !== actor.id || object.eaten) continue;
@@ -1964,17 +1985,23 @@ export function step({ state, rooms, intents, actions = [] }) {
       const target = targetOf(engagement);
       // A snapshot can contain the reciprocal of a fight that has just ended.
       if (!attacker || !target || attacker.dead || target.dead || target.hp <= 0) continue;
+      if (next.actors.includes(attacker) && (attacker.stunnedUntil ?? -1) > next.tick) continue;
       const weapon = next.actors.includes(attacker) ? weaponOf(attacker, next.objects) : null;
       const rank = next.actors.includes(attacker) ? wardenBonus(attacker) : { armor: 0, damage: 0 };
-      const weaponDamage = (weapon?.damage ?? 0) + rank.damage;
+      const techniqueBonus = next.actors.includes(attacker) ? (attacker.nextAttackBonus ?? 0) : 0;
+      const techniqueStatus = next.actors.includes(attacker) ? (attacker.nextAttackStatus ?? null) : null;
+      const weaponDamage = (weapon?.damage ?? 0) + rank.damage + techniqueBonus;
       const npcDamage = next.npcs.includes(attacker) ? (attacker.damage ?? 0) : null;
-      const targetArmor = (next.actors.includes(target) ? armorOf(target, next.objects) : (target.armor ?? 0)) - statusArmorPenalty(target);
+      const guard = next.actors.includes(target) && (target.guardUntil ?? -1) > next.tick ? (target.guardArmor ?? 0) : 0;
+      const targetArmor = (next.actors.includes(target) ? armorOf(target, next.objects) : (target.armor ?? 0)) - statusArmorPenalty(target) + guard;
       const roll = attackRoll({ tick: next.tick, attackerId: attacker.id, weaponDamage, npcDamage, targetArmor });
       if (roll.hit) {
         target.hp -= roll.damage;
-        const status = weapon?.status ?? attacker.status ?? null;
+        const status = techniqueStatus ?? weapon?.status ?? attacker.status ?? null;
         if (status) addStatus(target, status);
       }
+      if (techniqueBonus) delete attacker.nextAttackBonus;
+      if (techniqueStatus) delete attacker.nextAttackStatus;
       const killed = roll.hit && target.hp <= 0;
       const detail = {
         attacker: attacker.id,

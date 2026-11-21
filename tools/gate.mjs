@@ -28,6 +28,7 @@ import { hashPassword, verifyPassword, validName, validNewName, validPassword, a
 import { CHAT_LIMIT, CHAT_WINDOW_MS, REPORT_INTERVAL_MS, REPORT_REASON_MAX, chatAllowed, reportAllowed, reportRecord } from "../runtime/moderation.mjs";
 import { ADJECTIVES, NOUNS, randomCharacterName, uniqueCharacterName, chooseCharacter } from "../runtime/web/names.mjs";
 import { loadTitles, earnedTitles } from "../runtime/titles.mjs";
+import { TECHNIQUES, techniqueForWeapon, techniqueReady } from "../runtime/techniques.mjs";
 import { loadFacts, contextHasWord } from "../runtime/facts.mjs";
 import { allowCommand, DEFAULT_INTERVAL_MS } from "../runtime/allowance.mjs";
 import { loadLevels, levelForXp } from "../runtime/levels.mjs";
@@ -1512,6 +1513,38 @@ let balanceBands = { ok: true, why: [] };
   const star = unseeded.find((row) => row.name.includes("star hound"));
   check(regent && regent.win < 0.5 && star && star.win > 0.2, "an unseeded high-level band is outside its expected difficulty");
   if (balanceBands.why.length) { balanceBands.ok = false; failures.push(`the combat balance bands are broken: ${balanceBands.why[0]}`); }
+}
+
+// Weapon techniques are properties of the weapon, not a class.
+let techniques = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, undefined, questTable.quests);
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
+  const check = (condition, why) => { if (!condition) { techniques.ok = false; techniques.why.push(why); } };
+  for (const id of ["sword", "greatsword", "club", "forge-hammer", "ember-brand", "fen-staff", "dawn-blade", "ember-forge-blade"]) {
+    check(Boolean(techniqueForWeapon(world.objects.find((object) => object.id === id))), `weapon ${id} has no technique`);
+  }
+  check(TECHNIQUES["power-strike"]?.bonus === 4 && TECHNIQUES.bash?.rounds === 12, "the technique definitions are wrong");
+  run([{ kind: "join", actorId: "t", name: "tech" }]);
+  run([{ kind: "login", actorId: "t", key: "tech", token: null, authenticated: true }]);
+  const actor = state.actors.find((entry) => entry.id === "t");
+  actor.room = 22;
+  const sword = state.objects.find((object) => object.id === "sword");
+  sword.holder = "t"; sword.room = null; sword.worn = false;
+  actor.wielding = "sword";
+  state.npcs.push({ id: "dummy", name: "a training dummy", room: 22, home: 22, hp: 100, maxHp: 100, damage: 0, armor: 0, aggression: 0, xp: 0, dead: false });
+  run([{ kind: "attack", actorId: "t", targetId: "dummy" }]);
+  run([{ kind: "technique", actorId: "t", techniqueId: "power-strike", targetId: "dummy" }]);
+  check(state.actors.find((entry) => entry.id === "t").nextAttackBonus === 4, "power strike did not set the next-attack bonus");
+  check(techniqueReady(state.actors.find((entry) => entry.id === "t"), "power-strike", 0) === false, "power strike was ready before its cooldown");
+  const club = state.objects.find((object) => object.id === "club");
+  club.holder = "t"; club.room = null;
+  state.actors.find((entry) => entry.id === "t").wielding = "club";
+  run([{ kind: "technique", actorId: "t", techniqueId: "bash", targetId: "dummy" }]);
+  check(state.npcs.find((npc) => npc.id === "dummy").stunnedUntil > state.tick, "bash did not stun the target");
+  check(/named === "technique"/.test(serverSource) && /world.technique/.test(serverSource), "the technique command or span is missing");
+  if (techniques.why.length) { techniques.ok = false; failures.push(`techniques are broken: ${techniques.why[0]}`); }
 }
 
 // Controls: short take/kill/score, take-all, drink and grouped inventory.
@@ -3434,6 +3467,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"social".padEnd(26)}  ${(social.ok ? "70 xp" : "BROKEN").padStart(5)}   == talk, quest`);
   console.log(`${"controls".padEnd(26)}  ${(controls.ok ? "t, all, drink" : "BROKEN").padStart(5)}   == short commands`);
   console.log(`${"factions".padEnd(26)}  ${(factionAllows({ ember: 6 }, "ember", 6) ? "4 contacts" : "BROKEN").padStart(5)}   == standing, shops`);
+  console.log(`${"techniques".padEnd(26)}  ${(techniques.ok ? "4 weapon moves" : "BROKEN").padStart(5)}   == cooldown, stun`);
   console.log(`${"balanceBands".padEnd(26)}  ${(balanceBands.ok ? "PvE, PvP" : "BROKEN").padStart(5)}   == seeded bands`);
   console.log(`${"chatGuard".padEnd(26)}  ${(chatGuard.ok ? "8/10s" : "BROKEN").padStart(5)}   == rate limit`);
   console.log(`${"moderation".padEnd(26)}  ${(moderation.ok ? "names, report" : "BROKEN").padStart(5)}   == new-name policy`);

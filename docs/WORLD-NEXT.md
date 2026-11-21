@@ -40,6 +40,7 @@ and the AI prompt/router state layer.
 | M28 | **done** — Zone gear: ember gauntlets, fen mantle, salt bracers and moon greaves drop from the retired-zone mobiles; Wardens ranks add scout armour, ranger damage, warden both; 110 objects | loot data, equipment slots, rank bonuses, score/equipment, every prior check |
 | M29 | **done** — Gear depth: iron cuirass and buckler at the smithy, plus warden/mirror shields, eclipse plate, ember boots, fen hood, salt hauberk, moon circlet and moon disc drops; `/players` reports hit rate, kill rate, average damage, PvP/NPC rounds and player death rate; 120 objects | slot coverage, loot data, combat rates, every prior check |
 | M30 | **done** — Faction standing: Ember/Fen/Salt/Moon kills raise persistent standing; the `standing` command, four quartermaster shops and five gated gear pieces (ember cloak/blade, fen cloak, salt shield, moon circlet); 124 objects | award/persist, rank thresholds, shop locks, `world.standing`, every prior check |
+| M31 | **done** — Weapon techniques: Power Strike (sword), Cleave (greatsword), Bash (club/hammer) and Chill Strike (fen staff), with tick cooldowns, setup effects and `world.technique` spans; no new quests | weapon data, cooldowns, reducer setup, stun/status, every prior check |
 
 ## Rules that keep the model green
 

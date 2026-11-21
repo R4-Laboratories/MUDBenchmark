@@ -3601,7 +3601,8 @@
       "value": 8,
       "examine": "The blade is plain, but well kept. The smith will not part with it cheaply.",
       "forSale": true,
-      "slot": "mainhand"
+      "slot": "mainhand",
+      "technique": "power-strike"
     },
     {
       "id": "club",
@@ -3614,7 +3615,8 @@
       "damage": 2,
       "value": 3,
       "examine": "A stout length of oak with a knotted head.",
-      "slot": "mainhand"
+      "slot": "mainhand",
+      "technique": "bash"
     },
     {
       "id": "jerkin",
@@ -3889,7 +3891,8 @@
       "damage": 5,
       "price": 30,
       "value": 15,
-      "armor": 0
+      "armor": 0,
+      "technique": "cleave"
     },
     {
       "id": "note",
@@ -4204,7 +4207,8 @@
       "forSale": true,
       "price": 40,
       "value": 20,
-      "examine": "A heavy hammer with a square head. The haft is wrapped in wire."
+      "examine": "A heavy hammer with a square head. The haft is wrapped in wire.",
+      "technique": "bash"
     },
     {
       "id": "ember-cloak",
@@ -4248,7 +4252,8 @@
       "value": 35,
       "examine": "A blade of black iron with a red edge. It hums when the flame moves.",
       "forSale": false,
-      "status": "burn"
+      "status": "burn",
+      "technique": "power-strike"
     },
     {
       "id": "wisp-glass",
@@ -4348,7 +4353,8 @@
       "value": 30,
       "examine": "A staff of black willow with a green glass cap.",
       "forSale": false,
-      "status": "chill"
+      "status": "chill",
+      "technique": "chill-strike"
     },
     {
       "id": "salt-pearl",
@@ -4621,7 +4627,8 @@
       "status": "burn",
       "value": 160,
       "examine": "A long blade of white glass with a line of dawn down its edge.",
-      "forSale": false
+      "forSale": false,
+      "technique": "cleave"
     },
     {
       "id": "clerk-seal",
@@ -4997,7 +5004,8 @@
       "forSale": true,
       "faction": "ember",
       "minStanding": 6,
-      "examine": "A blade of black iron with a red seam. The forge master will not sell it to a stranger."
+      "examine": "A blade of black iron with a red seam. The forge master will not sell it to a stranger.",
+      "technique": "power-strike"
     },
     {
       "id": "fen-warden-cloak",
