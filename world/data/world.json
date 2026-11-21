@@ -2801,7 +2801,9 @@
       ],
       "description": "A lean hound the colour of cooling slag.",
       "examine": "Its hide is cracked like a dried riverbed, and heat shows through the cracks.",
-      "status": "burn"
+      "status": "burn",
+      "faction": "ember",
+      "standing": 1
     },
     {
       "id": "ember-warden",
@@ -2822,7 +2824,9 @@
         "ember-gauntlets"
       ],
       "description": "A tall figure of black iron stands at the edge of the flame.",
-      "examine": "The warden is jointed like a furnace door, and its eyes are coals."
+      "examine": "The warden is jointed like a furnace door, and its eyes are coals.",
+      "faction": "ember",
+      "standing": 2
     },
     {
       "id": "fen-wisp",
@@ -2843,7 +2847,9 @@
         "fen-hood"
       ],
       "description": "A cold light drifts above the reeds.",
-      "examine": "The wisp is a small flame with no fuel and no heat."
+      "examine": "The wisp is a small flame with no fuel and no heat.",
+      "faction": "fen",
+      "standing": 1
     },
     {
       "id": "bog-hound",
@@ -2865,7 +2871,9 @@
       ],
       "description": "A lean hound the colour of wet peat.",
       "examine": "Its fur is matted with mud and its eyes are yellow.",
-      "status": "bleed"
+      "status": "bleed",
+      "faction": "fen",
+      "standing": 1
     },
     {
       "id": "heron-keeper",
@@ -2908,7 +2916,9 @@
         "salt-hauberk"
       ],
       "description": "A crab the size of a dog, shell crusted with salt.",
-      "examine": "Its claws are stained green."
+      "examine": "Its claws are stained green.",
+      "faction": "salt",
+      "standing": 1
     },
     {
       "id": "tide-hermit",
@@ -2952,7 +2962,9 @@
       ],
       "description": "A tall shape of white salt and cold air.",
       "examine": "The wraith has no face, only a seam of black.",
-      "status": "chill"
+      "status": "chill",
+      "faction": "salt",
+      "standing": 2
     },
     {
       "id": "moon-hare",
@@ -2973,7 +2985,9 @@
         "moon-circlet"
       ],
       "description": "A white hare with eyes like glass.",
-      "examine": "Its fur is silver at the tips."
+      "examine": "Its fur is silver at the tips.",
+      "faction": "moon",
+      "standing": 1
     },
     {
       "id": "silver-owl",
@@ -3018,7 +3032,9 @@
       ],
       "status": "chill",
       "description": "A tall stag with antlers of clear glass.",
-      "examine": "Its antlers hold a light that is not there."
+      "examine": "Its antlers hold a light that is not there.",
+      "faction": "moon",
+      "standing": 2
     },
     {
       "id": "eclipse-herald",
@@ -4204,7 +4220,9 @@
       "forSale": true,
       "price": 55,
       "value": 27,
-      "examine": "A cloak of dark wool with a red lining. It holds warmth like a banked fire."
+      "examine": "A cloak of dark wool with a red lining. It holds warmth like a banked fire.",
+      "faction": "ember",
+      "minStanding": 3
     },
     {
       "id": "first-coal",
@@ -4963,6 +4981,77 @@
       "armor": 2,
       "value": 70,
       "examine": "A disc of pale stone on a silver grip, balanced like a shield."
+    },
+    {
+      "id": "ember-forge-blade",
+      "name": "an ember-forged blade",
+      "room": 63,
+      "flags": [
+        "takeable",
+        "weapon"
+      ],
+      "slot": "mainhand",
+      "damage": 7,
+      "value": 90,
+      "price": 80,
+      "forSale": true,
+      "faction": "ember",
+      "minStanding": 6,
+      "examine": "A blade of black iron with a red seam. The forge master will not sell it to a stranger."
+    },
+    {
+      "id": "fen-warden-cloak",
+      "name": "a fen-warden's cloak",
+      "room": 80,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "cloak",
+      "armor": 3,
+      "value": 85,
+      "price": 75,
+      "forSale": true,
+      "faction": "fen",
+      "minStanding": 6,
+      "examine": "A heavy cloak of reed, wool and green glass. It carries the fen's quiet."
+    },
+    {
+      "id": "salt-warden-shield",
+      "name": "a salt-warden's shield",
+      "room": 83,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "offhand",
+      "armor": 3,
+      "value": 90,
+      "price": 80,
+      "forSale": true,
+      "faction": "salt",
+      "minStanding": 6,
+      "examine": "A shield of pale salt-iron, crusted white at the rim."
+    },
+    {
+      "id": "moon-blessed-circlet",
+      "name": "a moon-blessed circlet",
+      "room": 88,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "head",
+      "armor": 3,
+      "value": 95,
+      "price": 85,
+      "forSale": true,
+      "faction": "moon",
+      "minStanding": 6,
+      "examine": "A silver circlet set with a clear moonstone. It is warm under moonlight."
     }
   ],
   "climate": {
@@ -5035,6 +5124,24 @@
       "room": 63,
       "keeper": "forge-master",
       "name": "The Ember Forge"
+    },
+    {
+      "id": "fen-quartermaster",
+      "room": 80,
+      "keeper": "heron-keeper",
+      "name": "The Fen Wardens"
+    },
+    {
+      "id": "salt-quartermaster",
+      "room": 83,
+      "keeper": "tide-hermit",
+      "name": "The Salt Wardens"
+    },
+    {
+      "id": "moon-quartermaster",
+      "room": 88,
+      "keeper": "silver-owl",
+      "name": "The Moon Wardens"
     }
   ]
 }

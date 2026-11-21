@@ -98,6 +98,10 @@ The perks are passive while the character is in the Wardens and are part of
 `armorOf`, the combat damage roll and `score`/`equipment`. They do not stack with
 a second guild because a character has one guild.
 
+The four zone factions in `docs/FACTIONS.md` are separate from guilds: a
+character can hold all four standings, while guild membership is one at a
+time.
+
 ## What is live, and what is not
 
 Guild quests, guild XP, ranks, the level-6 three-active-quest perk and the

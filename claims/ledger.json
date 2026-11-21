@@ -1185,6 +1185,12 @@
       "level": "some-true",
       "statement": "Production v0.91.20 serves 115 rooms, 14 zones, 20 quests, 52 mobiles and 120 objects. The deterministic sampler now includes PvP (46%, 41%, 47% across three matchups) and unseeded high-level bands (51% level 8 vs star hound, 18% level 10 vs regent); the Gate checks them. No mob damage, armour, healing or level values changed. Live /players remains 43 rounds, 58.1% hit rate, 2.72 average damage, 0 PvP rounds and 0 player deaths. R4 active, signups open. Main Gate 44871499964 green, publish 44872286419.",
       "authority": "GitHub PR #32 merge b3fa3c1 2026-11-21; main Gate 44871499964; publish 44872286419; release v0.91.20; wick deploy output, /world and /players; tools/balance.mjs"
+    },
+    {
+      "id": "MB-193",
+      "level": "build",
+      "statement": "v0.91.21 adds four faction standing tracks: Ember (cinder hound/ember warden), Fen (bog hound/fen wisp), Salt (brine crab/salt wraith) and Moon (moon hare/moon stag). Kills award 1-2 standing, persisted on the character through logout/reset/restart. The `standing`/`reputation`/`factions` command shows ranks and next thresholds. Four quartermaster shops at the zone contacts list standing-locked stock; `buy` refuses below the threshold. Five gated pieces: ember cloak (Ember 3), ember-forged blade (Ember 6), fen-warden's cloak (Fen 6), salt-warden's shield (Salt 6) and moon-blessed circlet (Moon 6). `world.standing` spans record faction/value. The world is 115 rooms/14 zones/20 quests/52 mobiles/124 objects. The Gate covers rank thresholds, award, persistence, data, and shop locks.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

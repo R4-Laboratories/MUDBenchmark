@@ -27,6 +27,7 @@ import { loadSocials, resolveSocial } from "./socials.mjs";
 import { loadLevels, nextLevelXp } from "./levels.mjs";
 import { availableQuests, loadQuestArchive, loadQuests, migrateQuestState, normalizeQuestState, questById, questLines, validateQuestReferences } from "./quests.mjs";
 import { GUILD_HALL, GUILD_VAULT_CAPACITY, RANKS, guildId, guildVaultHolder, rankAtLeast, validGuildName, wardenBonus } from "./guilds.mjs";
+import { FACTIONS, factionAllows, standingsText } from "./factions.mjs";
 import { buildLlms } from "./llms.mjs";
 import { loadTitles, earnedTitles, titleLookup } from "./titles.mjs";
 import { loadFacts, factForNpc, contextHasWord } from "./facts.mjs";
@@ -623,6 +624,7 @@ const ALIASES = {
   gos: "gossip", goss: "gossip", gc: "guildchat", gchat: "guildchat",
   status: "world", time: "world", sr: "search",
   lb: "leaderboard", top: "leaderboard", ranks: "leaderboard",
+  standing: "standing", reputation: "standing", factions: "standing",
   lv: "levels", lvl: "levels",
   gv: "give", pt: "put", op: "open", cl: "close", wr: "wear", rm: "remove",
   ea: "eat", drink: "drink", quaff: "drink", li: "light", ext: "extinguish", b: "buy", se: "sell", ls: "list",
@@ -695,6 +697,7 @@ function selfState(actor) {
     discovered: [...(actor.found ?? [])],
     guild: actor.guild ?? null,
     guild_rank: actor.guildRank ?? null,
+    standing: { ...(actor.standing ?? {}) },
     title: actor.title ?? null,
     ignoring: (actor.ignored ?? []).length,
     memory_facts: Object.keys(actor.memory?.facts ?? {}).length,
@@ -1440,7 +1443,7 @@ async function handleCommand(id, line) {
     if (!actor?.key) {
       return sendTo(id, "MUDBench is a persistent world for people and agents.\r\nSign in with your Prism id, or register <name> <password> / login <name> <password>.\r\nThen type help for the commands.\r\n");
     }
-    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: take/t/g/tf, take all, drop/dp/dr, inventory/i, coins, score/sc, quests/q, who/wh, spells/sp, cast/ca, say/sy, tell/te, give/gv, put/pt, open/op, close/cl, wear/wr, remove/rm, buy/b, sell/se, list/ls, drink, map/mp, leaderboard/lb, levels/lv, shortcuts/sh.\r\nMagic: spells (effects/mana), train <spell> at the Mages' Guild, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search. Combat: attack/kill/k, battle/combat/bt (current HP), score (armour/damage), equipment/eq (slots and totals). There is no fleeing a fight. Guild: guild join/leave/who/list/chat, guild advance (Mages, Wardens), vault/deposit/withdraw in the Guild Hall. Social: ignore/unignore/ignoring, report/rep, titles/title, facts/memory, recall <word> at the shrine. Room actions: turn, push, ring where the room suggests.\r\nWorld: world or status (online, guilds, reset); levels, leaderboard/top/lb, map [zone], shortcuts, quests active|available|done|all.<id>; tutorial (first) for the first steps.\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
+    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: take/t/g/tf, take all, drop/dp/dr, inventory/i, coins, standing/reputation, score/sc, quests/q, who/wh, spells/sp, cast/ca, say/sy, tell/te, give/gv, put/pt, open/op, close/cl, wear/wr, remove/rm, buy/b, sell/se, list/ls, drink, map/mp, leaderboard/lb, levels/lv, shortcuts/sh.\r\nMagic: spells (effects/mana), train <spell> at the Mages' Guild, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search. Combat: attack/kill/k, battle/combat/bt (current HP), score (armour/damage), equipment/eq (slots and totals). There is no fleeing a fight. Guild: guild join/leave/who/list/chat, guild advance (Mages, Wardens), vault/deposit/withdraw in the Guild Hall. Social: ignore/unignore/ignoring, report/rep, titles/title, facts/memory, recall <word> at the shrine. Room actions: turn, push, ring where the room suggests.\r\nWorld: world or status (online, guilds, reset); levels, leaderboard/top/lb, map [zone], shortcuts, quests active|available|done|all.<id>; tutorial (first) for the first steps.\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
   }
 
   // A command typed before the join tick lands is queued, not refused: the
@@ -1871,7 +1874,11 @@ async function handleCommand(id, line) {
     const messages = VERB_TABLE.verbs.list.messages;
     if (!shopHere) return sendTo(id, `${messages.noShop}\r\n`);
     const stock = state.objects.filter((o) => o.room === actor.room && o.forSale && !o.eaten);
-    const lines = stock.map((o) => `${o.name} (${o.price})`);
+    const lines = stock.map((o) => {
+      const locked = o.faction && o.minStanding && !factionAllows(actor.standing, o.faction, o.minStanding);
+      const lock = locked ? ` [requires ${FACTIONS[o.faction]?.name ?? o.faction} standing ${o.minStanding}]` : "";
+      return `${o.name} (${o.price})${lock}`;
+    });
     sendTo(id, `${stock.length ? render(messages.stock, { words: lines.join(", ") }) : messages.empty}\r\n`);
     return sendTo(id, `${messages.buys}\r\n`);
   }
@@ -1881,6 +1888,9 @@ async function handleCommand(id, line) {
     if (!shopHere) return sendTo(id, `${messages.noShop}\r\n`);
     const object = findObject(words, (o) => o.room === actor.room && o.forSale && !o.eaten);
     if (!object) return sendTo(id, `${render(messages.missing, { words })}\r\n`);
+    if (object.faction && object.minStanding && !factionAllows(actor.standing, object.faction, object.minStanding)) {
+      return sendTo(id, `${object.name} requires ${FACTIONS[object.faction]?.name ?? object.faction} standing ${object.minStanding}.\r\n`);
+    }
     const coins = state.objects
       .filter((o) => o.holder === id && (o.flags ?? []).includes("coin") && !o.eaten)
       .sort((a, b) => b.value - a.value);
@@ -1971,6 +1981,10 @@ async function handleCommand(id, line) {
     const title = actor.title ? ` Title ${actor.title}.` : "";
     const line = `Level ${actor.level} (${actor.xp}${nextXp === null ? "" : `/${nextXp}`} xp), ${actor.hp}/${actor.maxHp} hp, mana ${actor.mana ?? maxManaFor(actor)}/${actor.maxMana ?? maxManaFor(actor)}, armour ${armor}, damage ${(weapon?.damage ?? 0) + wardenBonus(actor).damage}, spell power ${spellPower(actor, weapon?.damage ?? 0)}, ${weapon ? `wielding ${weapon.name}` : "unarmed"}${actor.guild ? `, guild ${actor.guild}` : ""}, ${stateQ.active.length} active/${stateQ.completed.length} done quests.${title}${effects}`;
     return sendTo(id, `${render(messages.line, { words: line })}\r\n`);
+  }
+
+  if (named === "standing") {
+    return sendTo(id, `${standingsText(actor.standing)}\r\n`);
   }
 
   if (named === "quests" || (named === "quest" && rest.length === 0)) {
@@ -2817,6 +2831,14 @@ function onTick() {
         "duel.action": event.duel.action,
         "duel.a": event.duel.a ?? null,
         "duel.b": event.duel.b ?? null,
+        "world.tick": state.tick,
+      }, 0);
+    }
+    if (event.standing) {
+      recordSpan("world.standing", {
+        "actor.id": event.onlyId ?? null,
+        "faction.id": event.standing.faction,
+        "faction.value": event.standing.value,
         "world.tick": state.tick,
       }, 0);
     }

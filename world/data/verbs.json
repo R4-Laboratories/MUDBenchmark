@@ -353,6 +353,16 @@
         "refused": "There is no fleeing combat. A fight ends only with a death."
       }
     },
+    "standing": {
+      "aliases": [
+        "reputation",
+        "factions"
+      ],
+      "argument": "none",
+      "messages": {
+        "list": "%s"
+      }
+    },
     "score": {
       "aliases": [
         "stats",

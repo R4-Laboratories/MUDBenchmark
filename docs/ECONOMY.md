@@ -30,6 +30,9 @@ change would be a rule change, not a rename.
 | The smithy | The Smithy | the smith |
 | The Gilded Rat | The Gilded Rat | the innkeeper |
 | The Ember Forge | The Cold Forge | the forge master |
+| The Fen Wardens | The Green Heart | the heron keeper |
+| The Salt Wardens | The Brine Hall | the tide hermit |
+| The Moon Wardens | The Owl Grove | the silver owl |
 
 `list` shows the stock in the room. `buy <thing>` spends coins; `sell <thing>`
 pays half the object's `value`, rounded down. A shop will not buy coins, and it
@@ -80,6 +83,24 @@ Each also drops its existing trophy. The gear is ordinary takeable loot, can
 be worn or sold at half value, and the two-hour reset returns it to its home
 room. A player who takes the room copy first simply finds no duplicate on the
 mobile.
+
+### Faction quartermasters
+
+The four exploration-zone contacts buy and sell like shops, but some stock is
+gated by faction standing. `standing` (or `reputation` / `factions`) shows the
+four values. A locked item appears in `list` with its faction and threshold;
+`buy` refuses it until the character has earned enough standing by fighting
+the zone's mobiles.
+
+| Item | Slot | Armour/damage | Standing | Price |
+| --- | --- | --- | --- | --- |
+| an ember cloak | cloak | armour 3 | Ember 3 | 55 |
+| an ember-forged blade | mainhand | damage 7 | Ember 6 | 80 |
+| a fen-warden's cloak | cloak | armour 3 | Fen 6 | 75 |
+| a salt-warden's shield | offhand | armour 3 | Salt 6 | 80 |
+| a moon-blessed circlet | head | armour 3 | Moon 6 | 85 |
+
+The world now has 124 objects.
 
 The second gear pass fills the thinner slots:
 

@@ -333,6 +333,11 @@ Rehearsed 2026-11-16:
   matchups and two unseeded high-level fights, and makes the bands a Gate
   check. PvP sits at 41–47%, unseeded level 8 is 51%, unseeded level 10 is 18%;
   no balance values changed (MB-191);
+- v0.91.21 (faction standing) adds Ember/Fen/Salt/Moon standing from zone
+  kills, the `standing` command, four quartermaster shops and five
+  standing-gated gear pieces. It replaces retired quest checklists with a
+  repeatable kill → standing → gear loop and adds `world.standing` spans
+  (MB-193);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

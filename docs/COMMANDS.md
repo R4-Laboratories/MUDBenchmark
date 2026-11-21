@@ -55,6 +55,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `score` | `stats`, `sc` | none |
 | `sell` | `vend`, `se` | object |
 | `shortcuts` | `sh` | none |
+| `standing` | `reputation`, `factions` | none |
 | `take` | `get`, `grab`, `tf`, `t` | object or all |
 | `takeFrom` | — | object from object |
 | `talk` | `greet`, `tk` | actor |

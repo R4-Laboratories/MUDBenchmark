@@ -33,6 +33,7 @@ import { allowCommand, DEFAULT_INTERVAL_MS } from "../runtime/allowance.mjs";
 import { loadLevels, levelForXp } from "../runtime/levels.mjs";
 import { loadQuestArchive, loadQuests, migrateQuestState, validateQuestReferences } from "../runtime/quests.mjs";
 import { GUILD_HALL, GUILD_VAULT_CAPACITY, guildId, guildVaultHolder, validGuildName, guildLevelFor, perksFor, wardenBonus } from "../runtime/guilds.mjs";
+import { FACTIONS, factionAllows, factionRank, standingsText } from "../runtime/factions.mjs";
 import { DEFAULT_TURNS, trimMessages } from "../runtime/memory.mjs";
 import { buildLlms } from "../runtime/llms.mjs";
 import { assemble } from "../runtime/router.mjs";
@@ -1521,6 +1522,10 @@ let controls = { ok: true, why: [] };
   check(verbTable.byAlias.get("k") === "attack", "k is not attack");
   check(verbTable.byAlias.get("sc") === "score", "sc is not score");
   check(verbTable.byAlias.get("coins") === "coins" && verbTable.byAlias.get("money") === "coins", "coins/money are not registered");
+  check(verbTable.byAlias.get("standing") === "standing" && verbTable.byAlias.get("reputation") === "standing" && verbTable.byAlias.get("factions") === "standing", "standing/reputation are not registered");
+  check(factionRank("ember", 0).name === "outsider" && factionRank("ember", 3).name === "spark" && factionRank("ember", 6).name === "forgefriend" && factionRank("ember", 10).name === "ember-sworn", "the faction ranks are wrong");
+  check(factionAllows({ ember: 5 }, "ember", 3) && !factionAllows({ ember: 2 }, "ember", 3), "the faction standing gate is wrong");
+  check(standingsText({ ember: 4 }).includes("The Ember Forge: 4") && standingsText({}).includes("The Moon Wardens: 0"), "the standing text is wrong");
   check(verbTable.byAlias.get("drink") === "drink" && verbTable.byAlias.get("quaff") === "drink", "drink/quaff are not registered");
   check(BASE_HP === 20 && HP_PER_LEVEL === 5 && maxHpForLevel(1) === 20 && maxHpForLevel(10) === 65, "the health curve is wrong");
   check(wardenBonus({ guild: "wardens", guildRank: "scout" }).armor === 1 && wardenBonus({ guild: "wardens", guildRank: "ranger" }).damage === 1 && wardenBonus({ guild: "wardens", guildRank: "warden" }).armor === 1 && wardenBonus({ guild: "wardens", guildRank: "warden" }).damage === 1, "the Wardens rank perks are wrong");
@@ -1679,6 +1684,13 @@ let lantern = { ok: true, why: [] };
   check(world.rooms[35]?.exits?.down === 8 && world.rooms[8]?.exits?.up === 35, "the Lantern Stair is not connected to Market Square");
   check(world.rooms[115]?.exits?.down === 24 && world.rooms[24]?.exits?.up === 115, "the Wardens' Lodge is not connected to the Guild Hall");
   check(world.npcs.some((npc) => npc.id === "warden-captain" && npc.room === 115), "the warden-captain is missing from the lodge");
+  for (const faction of ["fen", "salt", "moon"]) {
+    check((world.shops ?? []).some((shop) => shop.id === `${faction}-quartermaster`), `the ${faction} quartermaster shop is missing`);
+  }
+  for (const [id, faction] of [["ember-forge-blade", "ember"], ["fen-warden-cloak", "fen"], ["salt-warden-shield", "salt"], ["moon-blessed-circlet", "moon"]]) {
+    const object = world.objects.find((entry) => entry.id === id);
+    check(object?.faction === faction && object?.minStanding === 6 && object?.forSale === true, `the ${faction} quartermaster item is missing`);
+  }
   for (const [npcId, objectId, slot] of [["ember-warden", "ember-gauntlets", "hands"], ["bog-hound", "fen-mantle", "cloak"], ["salt-wraith", "salt-bracers", "hands"], ["moon-stag", "moon-greaves", "feet"]]) {
     const loot = world.npcs.find((npc) => npc.id === npcId)?.loot ?? [];
     const object = world.objects.find((entry) => entry.id === objectId);
@@ -1889,6 +1901,8 @@ let ember = { ok: true, why: [] };
   run([{ kind: "attack", actorId: "e", targetId: "ember-warden" }]);
   for (let i = 0; i < 40; i += 1) run([]);
   check(state.objects.find((object) => object.id === "ember-gauntlets")?.room === 70, "the ember gauntlets did not drop in the First Flame");
+  actor = state.actors.find((entry) => entry.id === "e");
+  check(actor.standing?.ember === 2, "the ember warden kill did not award Ember standing");
   actor = state.actors.find((entry) => entry.id === "e");
   actor.room = 69;
   state.objects.find((o) => o.id === "ash-key").holder = "e";
@@ -2646,6 +2660,7 @@ let persistence = { ok: true, why: [] };
   state.actors[0].guild = "wardens";
   state.actors[0].guildRank = "leader";
   state.actors[0].quests = { active: [{ id: "word", progress: {} }], completed: ["guardian"] };
+  state.actors[0].standing = { ember: 4 };
   run([{ kind: "take", actorId: "a", objectId: "satchel", messages: say("take") }]);
   run([{ kind: "take", actorId: "a", objectId: "cloak", messages: say("take") }]);
   run([{ kind: "put", actorId: "a", objectId: "cloak", containerId: "satchel", messages: say("put") }]);
@@ -2659,6 +2674,7 @@ let persistence = { ok: true, why: [] };
   check(state.identities.alice.inventory === undefined, "the identity recorded an inventory it should not keep");
   check(state.identities.alice.level === 3 && state.identities.alice.xp === 120, "progression was not written on logout");
   check(state.identities.alice.guild === "wardens" && state.identities.alice.guildRank === "leader" && state.identities.alice.quests.completed.includes("guardian"), "guild or quest progress was lost on logout");
+  check(state.identities.alice.standing?.ember === 4, "standing was lost on logout");
 
   run([{ kind: "join", actorId: "b", name: "alice" }]);
   run([{ kind: "login", actorId: "b", key: "alice", token: null, authenticated: true }]);
@@ -2666,6 +2682,7 @@ let persistence = { ok: true, why: [] };
   check(returning.room === 1, "the returning character did not wake at the start");
   check(returning.level === 3 && returning.xp === 120, "level or experience was not restored on login");
   check(returning.guild === "wardens" && returning.guildRank === "leader" && returning.quests.completed.includes("guardian"), "guild or quest progress was not restored on login");
+  check(returning.standing?.ember === 4, "standing was not restored on login");
   check(state.objects.every((o) => o.holder !== "b"), "items were restored to a hand across logout");
   check(object("satchel").room === 2 && object("scroll").room === 2, "logout items did not stay in the world");
 
@@ -3416,6 +3433,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"guildVault".padEnd(26)}  ${(guildVault.ok ? "20 slots" : "BROKEN").padStart(5)}   == deposit, reset, disband`);
   console.log(`${"social".padEnd(26)}  ${(social.ok ? "70 xp" : "BROKEN").padStart(5)}   == talk, quest`);
   console.log(`${"controls".padEnd(26)}  ${(controls.ok ? "t, all, drink" : "BROKEN").padStart(5)}   == short commands`);
+  console.log(`${"factions".padEnd(26)}  ${(factionAllows({ ember: 6 }, "ember", 6) ? "4 contacts" : "BROKEN").padStart(5)}   == standing, shops`);
   console.log(`${"balanceBands".padEnd(26)}  ${(balanceBands.ok ? "PvE, PvP" : "BROKEN").padStart(5)}   == seeded bands`);
   console.log(`${"chatGuard".padEnd(26)}  ${(chatGuard.ok ? "8/10s" : "BROKEN").padStart(5)}   == rate limit`);
   console.log(`${"moderation".padEnd(26)}  ${(moderation.ok ? "names, report" : "BROKEN").padStart(5)}   == new-name policy`);
