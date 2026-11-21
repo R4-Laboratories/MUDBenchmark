@@ -1239,6 +1239,12 @@
       "level": "build",
       "statement": "v0.91.25 adds a world event derived from the reset cycle: Ember/Fen/Salt/Moon rotate, the active faction's kills award double standing and its quartermaster stock takes 20% off, and world/GET /world show the event. It also adds the Ring duel ladder: a Ring win gives +1 win/+16 rating, a loss +1 loss/-16 (floor 0), both identities update immediately, and `ladder`/`pvp`/`duels` lists the board. `duel` with no target shows the character record. The world remains 115 rooms/14 zones/20 quests/55 mobiles/131 objects. The Gate covers rotation, discount, a full duel with identity records and ladder text.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-202",
+      "level": "some-true",
+      "statement": "Production v0.91.25 serves 115 rooms, 14 zones, 20 quests, 55 mobiles and 131 objects. GET /world reports The Ember Tide at cycle 0 with Ember standing doubled and 20% off the Ember Forge. The Ring ladder records wins, losses and rating on identities; ladder/pvp/duels and the duel record line are live. A pacing commit landed after the PR merge, but the publisher released from the PR merge commit a8924ff as intended. R4 active, signups open. Main Gate 44939382326 green, publish 44940136659.",
+      "authority": "GitHub PR #37 merge a8924ff 2026-11-21; main Gate 44939382326; publish 44940136659; release v0.91.25; wick deploy output, /world and /llms.txt"
     }
   ]
 }
