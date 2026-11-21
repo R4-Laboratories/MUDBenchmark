@@ -184,9 +184,13 @@ lock_hash=$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["outp
 # The world restart is asynchronous; a single probe immediately after the flip
 # can catch the old process or a half-open listener. Give it the same retry
 # window as the holo check before rolling back a good release.
+# Download the page before grep: a piped `grep -q` exits early and the writer
+# gets SIGPIPE, which `pipefail` turns into a false failure on a large page.
+probe_page="$(mktemp)"
 for _ in $(seq 1 25); do
   live_hash=$(curl -fsS -m 5 http://127.0.0.1:8090/prism-id.mjs 2>/dev/null | sha256sum | awk '{print $1}')
-  if curl -fsS -m 5 http://127.0.0.1:8090/ 2>/dev/null | grep -q 'id="prism-login"' \
+  if curl -fsS -m 5 http://127.0.0.1:8090/ -o "$probe_page" 2>/dev/null \
+     && grep -q 'id="prism-login"' "$probe_page" \
      && [[ -n "$lock_hash" && "$live_hash" == "$lock_hash" ]] \
      && curl -fsS -m 5 http://127.0.0.1:8090/ai.mjs >/dev/null 2>&1 \
      && curl -fsS -m 5 http://127.0.0.1:8090/recovery-kit.mjs >/dev/null 2>&1 \
@@ -196,6 +200,7 @@ for _ in $(seq 1 25); do
   fi
   sleep 2
 done
+rm -f "$probe_page"
 
 if [[ "$holo_ok" == "true" && "$assets_ok" == "true" ]] \
    && systemctl --user is-active --quiet mudbench-holo.service \

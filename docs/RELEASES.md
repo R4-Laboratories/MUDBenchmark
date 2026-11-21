@@ -367,7 +367,9 @@ Rehearsed 2026-11-16:
   and Ctrl+L; a compact Play HUD with HP/mana/XP, room/event, quest, exits and
   quick actions; an authenticated in-client World overview of players and
   fights while the public `/world` response stays aggregate; and public
-  `/series` world-pulse charts (MB-209);
+  `/series` world-pulse charts (MB-209). The first deploy exposed a
+  `curl | grep -q` SIGPIPE false rollback on the larger page; the deploy helper
+  now downloads the asset probe before grepping.
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

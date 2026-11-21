@@ -1287,6 +1287,12 @@
       "level": "build",
       "statement": "v0.91.29 adds terminal-grade input (persisted Up/Down command history, Tab completion from verbs and the current room, Ctrl+L clear), a compact Play HUD (HP/mana/XP bars, level, title, armour, damage, coins, room/zone/phase/weather/event, active quest, clickable exits and quick actions), and an authenticated in-client World overview of every online player and active fight over the player's own socket. The public GET /world response is now aggregate-only and no longer includes actor names, rooms, vitals, gear or top list. GET /series returns public minute-bucketed command, refusal, session, quest, combat and AI-turn counts plus p50 latency for the /stats world-pulse charts. The Gate covers the sanitized public status, overview fight shape, series buckets, HUD/world-panel source and chart source.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-210",
+      "level": "some-true",
+      "statement": "Production v0.91.29 serves 116 rooms, 14 zones, 20 quests, 57 mobiles and 145 objects; The Salt Surge is active. Public GET /world is aggregate-only and no longer includes actors or top; GET /series returns 60 one-minute buckets; the served page contains the HUD and World panel hooks; /stats contains the World pulse charts. The first v0.91.29 deploy rolled back on a false login-assets probe because curl | grep -q hit SIGPIPE under pipefail on the larger page; after downloading the page before grep on wick and in deploy/mudbench-deploy.sh, the redeploy succeeded. R4 active, signups open. Main Gate 44961678533 green, publish 44962358589.",
+      "authority": "GitHub PR #41 merge aab73bf 2026-11-21; main Gate 44961678533; publish 44962358589; release v0.91.29; wick deploy output and /world, /series, /, /stats, /health; local UX smoke and reconnect test"
     }
   ]
 }
