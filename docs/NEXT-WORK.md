@@ -55,6 +55,7 @@ memory or prompt system.
 | v0.91.26 | Unseeded high-level tuning scenario | **done** (MB-203) |
 | v0.91.27 | Set completion, character sheet, Guard and Training Yard | **done** (MB-205) |
 | v0.91.28 | Owner report view and accessibility pass | **done** (MB-207) |
+| PR #11 | Federated regions prototype: rebased onto v0.91.28, handoff/fingerprint fixes, CI green | **reviewed** (`71a776f`, draft) |
 | backlog | Optional content and live-player tuning | optional |
 
 ## What is next
@@ -84,6 +85,14 @@ memory or prompt system.
    reserved-word policy; `report <name> <reason>` writes a durable operator
    queue while sharing the chat guard. The remaining gap is a routine operator
    review loop, not another player-facing control.
+7. **Accessibility evidence.** The source contract is checked, but a manual
+   VoiceOver/NVDA pass, a colour-contrast audit and a keyboard-only playtest
+   remain open.
+8. **Federation.** Draft PR #11 is green on `71a776f` after rebasing onto
+   v0.91.28: the Gate, the three federation tests, crash recovery and browser
+   reconnect pass. It remains draft pending a two-region security review and a
+   checkpoint load test; production is unaffected while the federation
+   environment variables are unset.
 
 ## Historical workstreams
 
