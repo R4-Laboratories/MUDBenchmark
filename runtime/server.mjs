@@ -3378,6 +3378,29 @@ const web = http.createServer(async (req, res) => {
     return;
   }
 
+  if (pathname === "/reports") {
+    // The durable report queue is operator-only. The public server never
+    // exposes reasons, reporter names or target names without the owner token.
+    const header = req.headers["x-owner-token"];
+    const bearer = String(req.headers.authorization ?? "").replace(/^Bearer\s+/i, "");
+    const token = typeof header === "string" ? header : bearer;
+    if (!OWNER_TOKEN || !ownerAllowed(token, OWNER_TOKEN)) {
+      res.writeHead(401, { "content-type": "application/json", "cache-control": "no-store" });
+      res.end(JSON.stringify({ error: "owner token required" }));
+      return;
+    }
+    let reports = [];
+    try {
+      reports = readFileSync(REPORT_FILE, "utf8").trim().split("\n").filter(Boolean).map((line) => {
+        try { return JSON.parse(line); } catch { return null; }
+      }).filter(Boolean);
+    } catch {}
+    const limit = Math.min(200, Math.max(1, Number(new URL(req.url, "http://localhost").searchParams.get("limit")) || 50));
+    res.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
+    res.end(JSON.stringify({ schema: "mudbenchmark/reports/1", count: reports.length, reports: reports.slice(-limit) }));
+    return;
+  }
+
   if (pathname === "/stream") {
     // A small public status read for the landing page. The watch socket still
     // carries the event feed; this never exposes chat identities or commands.

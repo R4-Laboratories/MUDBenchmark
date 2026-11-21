@@ -472,6 +472,8 @@
     #stream-tools .spacer { display: none; }
     #stream-tools a { margin-left: auto; }
   }
+  .skip { position: absolute; left: 8px; top: -40px; z-index: 100; padding: 8px 10px; border-radius: 6px; background: var(--accent); color: #04110f; font-weight: 700; text-decoration: none; }
+  .skip:focus { top: 8px; }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
     #livebar.live .dot { animation: none; }
@@ -480,6 +482,7 @@
   </style>
 </head>
 <body>
+  <a class="skip" href="#main">Skip to game</a>
   <header>
     <div class="brand">
       <span class="brand-mark" aria-hidden="true">M</span>
@@ -503,7 +506,7 @@
       <button type="button" id="font-up" title="Larger text" aria-label="Larger text">A+</button>
     </div>
   </header>
-  <main>
+  <main id="main">
     <section id="terminal">
       <div id="livebar">
         <span class="dot"></span>

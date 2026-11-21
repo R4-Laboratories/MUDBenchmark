@@ -360,6 +360,9 @@ Rehearsed 2026-11-16:
   shield Guard and five readable lore pieces, a web Character sheet with shop
   item stats, and the Training Yard east of the Guild Hall; 116 rooms / 57
   mobiles / 145 objects (MB-205);
+- v0.91.28 (operator and access) adds the owner-token `/reports` JSON view,
+  a documented review path, a Skip to game link and explicit
+  focus/reduced-motion checks (MB-207);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

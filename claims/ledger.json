@@ -1269,6 +1269,12 @@
       "level": "some-true",
       "statement": "Production v0.91.27 serves 116 rooms, 14 zones, 20 quests, 57 mobiles and 145 objects. The Ashen/Red/Night sets are complete, shield Guard is live, five retired-zone lore readables exist, the web Character sheet and shop item stats are served, and the Training Yard is east of the Guild Hall with a passive dummy, trainer and practice gear. The Fen Rising is the active event. R4 active, signups open. Main Gate 44951327957 green, publish 44952060375.",
       "authority": "GitHub PR #39 merge b7c28ed 2026-11-21; main Gate 44951327957; publish 44952060375; release v0.91.27; wick deploy output, /world and /health; local Training Yard smoke"
+    },
+    {
+      "id": "MB-207",
+      "level": "build",
+      "statement": "v0.91.28 adds an owner-token /reports JSON endpoint returning the last N durable report records; unauthenticated requests return 401 and the token is read from x-owner-token or a Bearer header, never the URL. The review path is documented. The web shell adds a Skip to game link, explicit :focus-visible and prefers-reduced-motion rules, and a labelled log/announcer contract. The Gate checks the route/auth source and the accessibility source contract. Production data and game balance are unchanged.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }
