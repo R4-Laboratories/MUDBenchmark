@@ -2609,7 +2609,8 @@
       "aggression": 60,
       "xp": 35,
       "loot": [
-        "mirror-shard"
+        "mirror-shard",
+        "mirror-shield"
       ],
       "description": "A tall shape in the pool, made of reflected light and old anger.",
       "examine": "It has your face, and it is not your face.",
@@ -2633,7 +2634,8 @@
       "aggression": 70,
       "xp": 70,
       "loot": [
-        "ward-key"
+        "ward-key",
+        "warden-shield"
       ],
       "description": "A hulking shape of wet stone and iron, with a key at its belt.",
       "examine": "The warden was made to keep a door. It has forgotten which.",
@@ -2794,7 +2796,8 @@
       "aggression": 65,
       "xp": 26,
       "loot": [
-        "cinder-fang"
+        "cinder-fang",
+        "ember-boots"
       ],
       "description": "A lean hound the colour of cooling slag.",
       "examine": "Its hide is cracked like a dried riverbed, and heat shows through the cracks.",
@@ -2836,7 +2839,8 @@
       "aggression": 40,
       "xp": 30,
       "loot": [
-        "wisp-glass"
+        "wisp-glass",
+        "fen-hood"
       ],
       "description": "A cold light drifts above the reeds.",
       "examine": "The wisp is a small flame with no fuel and no heat."
@@ -2900,7 +2904,8 @@
       "aggression": 45,
       "xp": 24,
       "loot": [
-        "salt-pearl"
+        "salt-pearl",
+        "salt-hauberk"
       ],
       "description": "A crab the size of a dog, shell crusted with salt.",
       "examine": "Its claws are stained green."
@@ -2964,7 +2969,8 @@
       "aggression": 20,
       "xp": 12,
       "loot": [
-        "moonpetal"
+        "moonpetal",
+        "moon-circlet"
       ],
       "description": "A white hare with eyes like glass.",
       "examine": "Its fur is silver at the tips."
@@ -3007,7 +3013,8 @@
       "xp": 90,
       "loot": [
         "moon-antler",
-        "moon-greaves"
+        "moon-greaves",
+        "moon-disc"
       ],
       "status": "chill",
       "description": "A tall stag with antlers of clear glass.",
@@ -3069,7 +3076,10 @@
       "xp": 200,
       "status": "chill",
       "description": "A knight in armour the colour of a closed eye.",
-      "examine": "The knight's visor is a slit of darkness. It does not move until you do."
+      "examine": "The knight's visor is a slit of darkness. It does not move until you do.",
+      "loot": [
+        "eclipse-plate"
+      ]
     },
     {
       "id": "eclipse-regent",
@@ -4809,6 +4819,150 @@
       "armor": 2,
       "value": 70,
       "examine": "Greaves of white metal that hold a faint moonlight after the sun goes."
+    },
+    {
+      "id": "iron-cuirass",
+      "name": "an iron cuirass",
+      "room": 9,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "body",
+      "armor": 2,
+      "price": 18,
+      "value": 9,
+      "forSale": true,
+      "examine": "A plain iron cuirass, dented at the shoulder and sound at the ribs."
+    },
+    {
+      "id": "buckler",
+      "name": "a small buckler",
+      "room": 9,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "offhand",
+      "armor": 1,
+      "price": 9,
+      "value": 4,
+      "forSale": true,
+      "examine": "A light round buckler, easy to carry and quick to turn."
+    },
+    {
+      "id": "warden-shield",
+      "name": "the warden's shield",
+      "room": 43,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "offhand",
+      "armor": 3,
+      "value": 80,
+      "examine": "A heavy shield of black iron bearing the ward-mark of the Undervault."
+    },
+    {
+      "id": "mirror-shield",
+      "name": "a mirror shield",
+      "room": 41,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "offhand",
+      "armor": 2,
+      "value": 55,
+      "examine": "A shield of polished silver glass. The reflection is always a half-step late."
+    },
+    {
+      "id": "eclipse-plate",
+      "name": "eclipse plate",
+      "room": 94,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "body",
+      "armor": 3,
+      "value": 140,
+      "examine": "Black plate with a thin white seam. It is cold even under the eclipse."
+    },
+    {
+      "id": "ember-boots",
+      "name": "ember-tempered boots",
+      "room": 65,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "feet",
+      "armor": 2,
+      "value": 50,
+      "examine": "Boots of red-brown leather, hardened in the Ember Deep."
+    },
+    {
+      "id": "fen-hood",
+      "name": "a fen hood",
+      "room": 77,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "head",
+      "armor": 1,
+      "value": 35,
+      "examine": "A hood of oiled reed-fibre. Rain beads and runs off it."
+    },
+    {
+      "id": "salt-hauberk",
+      "name": "a salt-crusted hauberk",
+      "room": 82,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "body",
+      "armor": 2,
+      "value": 60,
+      "examine": "A hauberk of pale rings, crusted white where the brine dried."
+    },
+    {
+      "id": "moon-circlet",
+      "name": "a moonstone circlet",
+      "room": 87,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "head",
+      "armor": 2,
+      "value": 65,
+      "examine": "A thin circlet set with a cloudy moonstone. It catches light that is not there."
+    },
+    {
+      "id": "moon-disc",
+      "name": "a moon disc",
+      "room": 89,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "offhand",
+      "armor": 2,
+      "value": 70,
+      "examine": "A disc of pale stone on a silver grip, balanced like a shield."
     }
   ],
   "climate": {

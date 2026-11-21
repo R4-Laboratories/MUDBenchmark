@@ -159,18 +159,29 @@ export function summarizePlayers(spans) {
   let npcKills = 0;
   let pvpKills = 0;
   let playerDeaths = 0;
+  let pvpRounds = 0;
+  let npcRounds = 0;
+  let damageTotal = 0;
+  let damageHits = 0;
   const combatActors = new Set();
   for (const span of combats) {
     rounds += 1;
     const outcome = text(span.outcome);
+    const damage = number(span.damage);
     if (outcome === "miss") misses += 1;
     else {
       hits += 1;
       if (outcome === "killed") kills += 1;
+      if (damage !== null) {
+        damageTotal += damage;
+        damageHits += 1;
+      }
     }
     const attacker = text(span["actor.id"]);
     const target = text(span["target.id"]);
     if (attacker) combatActors.add(attacker);
+    if (isPlayer(attacker) && isPlayer(target)) pvpRounds += 1;
+    else if (isPlayer(attacker)) npcRounds += 1;
     if (outcome !== "killed") continue;
     if (isPlayer(target)) {
       playerDeaths += 1;
@@ -260,6 +271,12 @@ export function summarizePlayers(spans) {
       npc_kills: npcKills,
       pvp_kills: pvpKills,
       player_deaths: playerDeaths,
+      hit_rate: rate(hits, hits + misses),
+      kill_rate: rate(kills, rounds),
+      player_death_rate: rate(playerDeaths, rounds),
+      average_damage: damageHits ? damageTotal / damageHits : null,
+      pvp_rounds: pvpRounds,
+      npc_rounds: npcRounds,
       actors: combatActors.size,
     },
     rooms: {
@@ -307,7 +324,7 @@ export function playerLines(summary) {
     `session mix  human ${sessions.human}  ai ${sessions.ai}  unknown ${sessions.ai_unknown}  prism ${sessions.prism}  legacy ${sessions.legacy}`,
     `playtime ${duration(playtime.total_ms)}  avg ${duration(playtime.average_ms)}  median ${duration(playtime.median_ms)}  open ${playtime.open}`,
     `quests accepted ${quests.accepted}  completed ${quests.completed}  rate ${pct(quests.completion_rate)}  unique ${quests.unique_quests}`,
-    `combat rounds ${combat.rounds}  kills ${combat.kills}  npc ${combat.npc_kills}  pvp ${combat.pvp_kills}  player deaths ${combat.player_deaths}`,
+    `combat rounds ${combat.rounds}  hits ${pct(combat.hit_rate)}  avg dmg ${combat.average_damage?.toFixed(1) ?? "—"}  npc kills ${combat.npc_kills}  pvp kills ${combat.pvp_kills}  player deaths ${combat.player_deaths}`,
     `rooms visits ${rooms.visits}  unique ${rooms.unique}  avg/account ${rooms.average_per_account?.toFixed(1) ?? "—"}`,
     `levels actors ${levels.actors}  avg ${levels.average?.toFixed(1) ?? "—"}  max ${levels.max ?? "—"}  guilded ${levels.guilded}`,
     `commands accepted ${summary.commands.accepted}  refused ${summary.commands.refused}  per connection ${summary.commands.average_per_connection?.toFixed(1) ?? "—"}`,

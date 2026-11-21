@@ -1149,6 +1149,12 @@
       "level": "some-true",
       "statement": "Production v0.91.17 serves 115 rooms, 14 zones, 20 quests, 52 mobiles and 110 objects. The four zone gear drops are live (ember-gauntlets, fen-mantle, salt-bracers, moon-greaves), and Wardens rank perks apply in armorOf, the combat damage roll, score and equipment. The merged-PR chain auto-published v0.91.17; wick verified the manifest hashes, replayed vectors and deployed. R4 active, signups open. Main Gate 44860803072 green, publish 44861737056.",
       "authority": "GitHub PR #29 merge de55bcf 2026-11-21; main Gate 44860803072; publish 44861737056; release v0.91.17; wick deploy output, /world and /health"
+    },
+    {
+      "id": "MB-187",
+      "level": "build",
+      "statement": "v0.91.18 adds ten gear pieces: smithy iron cuirass (body 2, 18 coins) and buckler (offhand 1, 9 coins); warden's shield (offhand 3) from the warden, mirror shield (offhand 2) from the mirror-wraith, eclipse plate (body 3) from the sundial knight, ember-tempered boots (feet 2) from the cinder hound, fen hood (head 1) from the fen wisp, salt-crusted hauberk (body 2) from the brine crab, moonstone circlet (head 2) from the moon hare and moon disc (offhand 2) from the moon stag. The world is 115 rooms/14 zones/20 quests/52 mobiles/120 objects. Player statistics add hit_rate, kill_rate, average_damage, pvp_rounds, npc_rounds and player_death_rate; /stats shows hit rate and average damage. The Gate covers the gear slots/loot and the combat rates.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

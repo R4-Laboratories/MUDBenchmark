@@ -1,7 +1,7 @@
 # Next work
 
-Baseline: **v0.91.17**. The world has 115 rooms, 14 zones, 20 quests, 52 mobiles
-and 110 objects. R4 memory, command grounding, scorecards
+Baseline: **v0.91.18**. The world has 115 rooms, 14 zones, 20 quests, 52 mobiles
+and 120 objects. R4 memory, command grounding, scorecards
 and the public stats surface are live; signups are open and the Gemini demo is
 disabled and unconfigured.
 
@@ -44,6 +44,7 @@ memory or prompt system.
 | v0.91.15 | Short commands, combat/economy, Wardens guild and free streaming default | **done** (MB-178–181) |
 | v0.91.16 | 20-quest spine, archive and migration | **done** (MB-183) |
 | v0.91.17 | Zone gear drops and Wardens rank perks | **done** (MB-185) |
+| v0.91.18 | Body/offhand gear depth and combat rates | **in flight** |
 | backlog | Optional content and live-player tuning | optional |
 
 ## What is next
