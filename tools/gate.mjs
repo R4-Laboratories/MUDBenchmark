@@ -59,6 +59,8 @@ import { normalizeStreamEvent, publicStreamText } from "../runtime/stream.mjs";
 import { normalizeAiTurn, aiTurnAttributes } from "../runtime/metrics.mjs";
 import { summarizeTrends } from "../runtime/trends.mjs";
 import { playerLines, summarizePlayers } from "../runtime/playerstats.mjs";
+import { currentEvent, eventPrice } from "../runtime/events.mjs";
+import { duelLadderRows, duelLadderText } from "../runtime/visibility.mjs";
 import { worldStatus, worldStatusText } from "../runtime/worldstatus.mjs";
 import { redactCommand, sanitizeIntent, sanitizeState, scrubSecrets, scrubSpan } from "../runtime/telemetry-policy.mjs";
 import { planRetention } from "../runtime/retention.mjs";
@@ -1548,6 +1550,34 @@ let techniques = { ok: true, why: [] };
   if (techniques.why.length) { techniques.ok = false; failures.push(`techniques are broken: ${techniques.why[0]}`); }
 }
 
+// The world event rotates every reset; the Ring ladder is persistent.
+let worldEvent = { ok: true, why: [] };
+{
+  const check = (condition, why) => { if (!condition) { worldEvent.ok = false; worldEvent.why.push(why); } };
+  check(currentEvent(0).id === "ember" && currentEvent(1).id === "fen" && currentEvent(4).id === "ember", "the event rotation is wrong");
+  check(eventPrice({ forSale: true, price: 80, faction: "ember" }, 0) === 64, "the event discount is wrong");
+  check(eventPrice({ forSale: true, price: 80, faction: "fen" }, 0) === 80, "the event discounted the wrong faction");
+  const world = loadWorld({ mode: "single" });
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, undefined, questTable.quests);
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
+  state.identities.alice = { name: "alice", kind: "character", owner: "alice", level: 5, quests: { active: [], completed: [] } };
+  state.identities.bob = { name: "bob", kind: "character", owner: "bob", level: 5, quests: { active: [], completed: [] } };
+  state.actors.push({ id: "a", key: "alice", account: "alice", name: "alice", room: 33, visited: [33], level: 5, xp: 1500, maxHp: 40, hp: 40, maxMana: 17, mana: 17, spellbook: [], guild: null, guildRank: null, wielding: null, quests: { active: [], completed: [] }, ignored: [], memory: { facts: {} } });
+  state.actors.push({ id: "b", key: "bob", account: "bob", name: "bob", room: 33, visited: [33], level: 5, xp: 1500, maxHp: 40, hp: 1, maxMana: 17, mana: 17, spellbook: [], guild: null, guildRank: null, wielding: null, quests: { active: [], completed: [] }, ignored: [], memory: { facts: {} } });
+  run([{ kind: "duelChallenge", actorId: "a", targetId: "b" }]);
+  run([{ kind: "duelAccept", actorId: "b" }]);
+  run([{ kind: "attack", actorId: "a", targetId: "b" }]);
+  for (let i = 0; i < 40; i += 1) run([]);
+  const alice = state.identities.alice;
+  const bob = state.identities.bob;
+  check(alice.duelWins === 1 && alice.duelRating === 1016, "the duel winner was not recorded");
+  check(bob.duelLosses === 1 && bob.duelRating === 984, "the duel loser was not recorded");
+  check(duelLadderRows(state.identities).length === 2 && duelLadderText(state.identities).includes("alice"), "the duel ladder is wrong");
+  const status = worldStatus(state, world.rooms);
+  check(status.event?.id === "ember" && worldStatusText(status).includes("Event: The Ember Tide"), "the world status lost the event");
+  if (worldEvent.why.length) { worldEvent.ok = false; failures.push(`the world event or ladder is broken: ${worldEvent.why[0]}`); }
+}
+
 // Forge: upgrades consume components and coins, salvage returns components,
 // and three/four matching pieces give set bonuses.
 let forge = { ok: true, why: [] };
@@ -1998,6 +2028,7 @@ let ember = { ok: true, why: [] };
   }
   actor = state.actors.find((entry) => entry.id === "e");
   check(actor.room === 70, "the Ember Deep walk did not reach the First Flame");
+  state.cycle = 1; // Fen event, so the Ember award stays at its base value.
   const emberWarden = state.npcs.find((npc) => npc.id === "ember-warden");
   emberWarden.hp = 1;
   emberWarden.damage = 0;
@@ -3543,6 +3574,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"outlaws".padEnd(26)}  ${(nightBonus({ guild: "night-market", guildRank: "master" }).damage === 1 ? "Night Market" : "BROKEN").padStart(5)}   == guild, factions`);
   console.log(`${"techniques".padEnd(26)}  ${(techniques.ok ? "7 weapon moves" : "BROKEN").padStart(5)}   == cooldown, stun`);
   console.log(`${"forge".padEnd(26)}  ${(forge.ok ? "+1, salvage" : "BROKEN").padStart(5)}   == components, sets`);
+  console.log(`${"worldEvent".padEnd(26)}  ${(worldEvent.ok ? "Ember Tide" : "BROKEN").padStart(5)}   == rotation, ladder`);
   console.log(`${"balanceBands".padEnd(26)}  ${(balanceBands.ok ? "PvE, PvP" : "BROKEN").padStart(5)}   == seeded bands`);
   console.log(`${"chatGuard".padEnd(26)}  ${(chatGuard.ok ? "8/10s" : "BROKEN").padStart(5)}   == rate limit`);
   console.log(`${"moderation".padEnd(26)}  ${(moderation.ok ? "names, report" : "BROKEN").padStart(5)}   == new-name policy`);

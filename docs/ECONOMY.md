@@ -90,7 +90,8 @@ mobile.
 ### Faction quartermasters
 
 Six faction contacts buy and sell like shops, but some stock is gated by
-faction standing. `standing` (or `reputation` / `factions`) shows the six
+faction standing. The rotating world event takes 20% off the active faction's
+quartermaster stock. `standing` (or `reputation` / `factions`) shows the six
 values. A locked item appears in `list` with its faction and threshold;
 `buy` refuses it until the character has earned enough standing by fighting
 the zone's mobiles.

@@ -95,7 +95,7 @@ buy <thing>, sell <thing>, list, wait, wave, nod, bow, laugh, sigh, shrug, dance
 smile, grin, frown, cheer, salute, point, ponder, stretch, shiver, yawn, wink, hug, highfive, poke,
 whistle, sing, hum, mutter, shout, clap, cry, apologize, congratulate, battle (combat/bt), score,
 equipment, quests [active|available|done|all|<id>], quest accept <id>, quest abandon <id>, deliver <thing> to <name>,
-levels, leaderboard (top/lb), map [zone], shortcuts, tutorial (first),
+levels, leaderboard (top/lb), ladder (pvp/duels), map [zone], shortcuts, tutorial (first),
 guild create <name>, guild join <name>, guild leave, guild who, guild list, guild chat <text>,
 guild rank <member> <rank>, guild disband, vault, deposit <item>, withdraw <item>, ignore/unignore <name>, ignoring, titles, title <id|none>, facts, recall <word>, talk <name>, spells, train <spell>, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search, turn, push, ring, world, help, go <direction>`;
 
@@ -111,7 +111,7 @@ const VERBS = new Set([
   "gchat", "deliver", "talk", "spells", "train", "cast", "study", "recite", "search", "sr", "turn", "push", "ring", "world", "status", "help", "h", "?",
   "vault", "gvault", "bank", "gvlt", "deposit", "dep", "store", "ds", "withdraw", "wd", "retrieve", "wdr",
   "ignore", "ign", "mute", "unignore", "unign", "unmute", "ignoring", "ignored", "ignores", "titles", "title", "facts", "recall", "remember", "mem",
-  "levels", "leaderboard", "top", "lb", "ranks", "map", "shortcuts", "tutorial", "first", "firststeps",
+  "levels", "leaderboard", "top", "lb", "ranks", "ladder", "pvp", "duels", "map", "shortcuts", "tutorial", "first", "firststeps",
   "smile", "grin", "frown", "cheer", "salute", "point", "ponder", "stretch", "shiver", "yawn", "wink", "hug", "highfive", "poke", "whistle", "sing", "hum", "mutter", "shout", "clap", "cry", "apologize", "congratulate", "battle", "combat", "bt",
 ]);
 

@@ -585,6 +585,16 @@
         "list": "The level table is shown above."
       }
     },
+    "ladder": {
+      "aliases": [
+        "pvp",
+        "duels"
+      ],
+      "argument": "none",
+      "messages": {
+        "list": "%s"
+      }
+    },
     "leaderboard": {
       "aliases": [
         "top",

@@ -32,6 +32,29 @@ export function leaderboardRows(identities) {
     .sort((a, b) => b.level - a.level || b.xp - a.xp || a.name.localeCompare(b.name));
 }
 
+export function duelLadderRows(identities) {
+  return Object.entries(identities ?? {})
+    .map(([key, identity]) => ({
+      name: identity?.name ?? key,
+      wins: identity?.duelWins ?? 0,
+      losses: identity?.duelLosses ?? 0,
+      rating: identity?.duelRating ?? 1000,
+    }))
+    .filter((row) => row.wins + row.losses > 0)
+    .sort((a, b) => b.rating - a.rating || b.wins - a.wins || a.losses - b.losses || a.name.localeCompare(b.name));
+}
+
+export function duelLadderText(identities, limit = 10) {
+  const rows = duelLadderRows(identities);
+  if (!rows.length) return "The Ring ladder is empty. Duels begin at the Ring beneath the Docks.";
+  const lines = [`Ring ladder (${rows.length} duelists, top ${Math.min(limit, rows.length)}):`];
+  rows.slice(0, limit).forEach((row, index) => {
+    lines.push(`  ${String(index + 1).padStart(2)}. ${row.name} — rating ${row.rating}, ${row.wins}W/${row.losses}L`);
+  });
+  if (rows.length > limit) lines.push(`  … ${rows.length - limit} more.`);
+  return lines.join("\n");
+}
+
 export function leaderboardText(identities, limit = 10) {
   const rows = leaderboardRows(identities);
   if (!rows.length) return "No characters yet.";

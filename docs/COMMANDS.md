@@ -39,6 +39,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `ignore` | `ign`, `mute` | actor |
 | `ignoring` | `ignored`, `ignores` | none |
 | `inventory` | `i`, `inv` | optional category |
+| `ladder` | `pvp`, `duels` | none |
 | `leaderboard` | `top`, `lb`, `ranks` | none |
 | `levels` | `lv`, `lvl` | none |
 | `light` | `ignite`, `li` | object |

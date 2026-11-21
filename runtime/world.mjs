@@ -17,6 +17,7 @@ import { armorOf, setBonus, slotOf, weaponDamageOf, weaponOf } from "./equipment
 import { maxManaFor, spellById, spellPower } from "./magic.mjs";
 import { FACTIONS } from "./factions.mjs";
 import { TECHNIQUES, techniqueForWeapon, techniqueReady } from "./techniques.mjs";
+import { currentEvent } from "./events.mjs";
 
 export { armorOf } from "./equipment.mjs";
 
@@ -410,6 +411,9 @@ export function upgradeState(saved, base) {
       guildRank: guilds[identity.guild]?.members?.[name] ?? null,
       standing: { ...(identity.standing ?? {}) },
       components: { ...(identity.components ?? {}) },
+      duelWins: identity.duelWins ?? 0,
+      duelLosses: identity.duelLosses ?? 0,
+      duelRating: identity.duelRating ?? 1000,
       quests: identity.quests ?? { active: [], completed: [] },
     };
   };
@@ -535,6 +539,9 @@ export function checkpointIdentities(state) {
       guildRank: actor.guildRank ?? null,
       standing: { ...(actor.standing ?? {}) },
       components: { ...(actor.components ?? {}) },
+      duelWins: actor.duelWins ?? 0,
+      duelLosses: actor.duelLosses ?? 0,
+      duelRating: actor.duelRating ?? 1000,
       quests: actor.quests ?? { active: [], completed: [] },
       ignored: [...(actor.ignored ?? [])],
       title: actor.title ?? null,
@@ -691,6 +698,9 @@ export function step({ state, rooms, intents, actions = [] }) {
           guildRank: null,
           standing: {},
           components: {},
+          duelWins: 0,
+          duelLosses: 0,
+          duelRating: 1000,
           quests: { active: [], completed: [] },
           wielding: null,
           mana: 5, maxMana: 5, spellbook: [], armorBonus: 0, buffUntil: null, questCycles: {},
@@ -763,6 +773,9 @@ export function step({ state, rooms, intents, actions = [] }) {
       actor.guildRank = null;
       actor.standing = {};
       actor.components = {};
+      actor.duelWins = 0;
+      actor.duelLosses = 0;
+      actor.duelRating = 1000;
       actor.quests = { active: [], completed: [] };
       actor.maxHp = BASE_HP;
       actor.hp = BASE_HP;
@@ -1231,6 +1244,9 @@ export function step({ state, rooms, intents, actions = [] }) {
       actor.guildRank = actor.guild ? (next.guilds[actor.guild].members[actor.key] ?? null) : null;
       actor.standing = { ...(known.standing ?? {}) };
       actor.components = { ...(known.components ?? {}) };
+      actor.duelWins = known.duelWins ?? 0;
+      actor.duelLosses = known.duelLosses ?? 0;
+      actor.duelRating = known.duelRating ?? 1000;
       actor.quests = {
         active: [...(known.quests?.active ?? [])],
         completed: [...(known.quests?.completed ?? [])],
@@ -1431,6 +1447,9 @@ export function step({ state, rooms, intents, actions = [] }) {
           guildRank: actor.guildRank ?? null,
           standing: { ...(actor.standing ?? {}) },
           components: { ...(actor.components ?? {}) },
+          duelWins: actor.duelWins ?? 0,
+          duelLosses: actor.duelLosses ?? 0,
+          duelRating: actor.duelRating ?? 1000,
           quests: actor.quests ?? { active: [], completed: [] },
         };
       }
@@ -2093,10 +2112,11 @@ export function step({ state, rooms, intents, actions = [] }) {
             awardXp(next, attacker, target.xp ?? Math.max(1, target.maxHp ?? 1), events);
             advanceQuests(next, attacker, { kind: "kill", npc: target.id }, events);
             if (target.faction && FACTIONS[target.faction]) {
-              const gained = target.standing ?? 1;
+              const event = currentEvent(next.cycle ?? 0);
+              const gained = (target.standing ?? 1) * (target.faction === event.faction ? 2 : 1);
               attacker.standing ??= {};
               attacker.standing[target.faction] = (attacker.standing[target.faction] ?? 0) + gained;
-              events.push({ onlyId: attacker.id, text: `Your standing with ${FACTIONS[target.faction].name} rises by ${gained}.\r\n`, standing: { faction: target.faction, value: attacker.standing[target.faction] } });
+              events.push({ onlyId: attacker.id, text: `Your standing with ${FACTIONS[target.faction].name} rises by ${gained}${target.faction === event.faction ? " (event)" : ""}.\r\n`, standing: { faction: target.faction, value: attacker.standing[target.faction] } });
             }
           }
         } else {
@@ -2125,6 +2145,16 @@ export function step({ state, rooms, intents, actions = [] }) {
           next.duels = next.duels.filter((duel) => ![duel.challengerId, duel.targetId].includes(target.id));
           if (next.actors.includes(attacker)) {
             awardXp(next, attacker, Math.max(1, (target.level ?? 1) * 10), events);
+            if (inRing) {
+              attacker.duelWins = (attacker.duelWins ?? 0) + 1;
+              attacker.duelRating = (attacker.duelRating ?? 1000) + 16;
+              target.duelLosses = (target.duelLosses ?? 0) + 1;
+              target.duelRating = Math.max(0, (target.duelRating ?? 1000) - 16);
+              if (attacker.key) next.identities[attacker.key] = { ...next.identities[attacker.key], duelWins: attacker.duelWins, duelLosses: attacker.duelLosses ?? 0, duelRating: attacker.duelRating };
+              if (target.key) next.identities[target.key] = { ...next.identities[target.key], duelWins: target.duelWins ?? 0, duelLosses: target.duelLosses, duelRating: target.duelRating };
+              events.push({ duel: { action: "win", a: attacker.id, b: target.id } });
+              events.push({ onlyId: attacker.id, text: `You win the duel. Rating ${attacker.duelRating}.\r\n` });
+            }
           }
         }
         next.engagements = next.engagements.filter((e) => e !== engagement && e.attackerId !== target.id && e.targetId !== target.id);

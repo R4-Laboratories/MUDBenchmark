@@ -19,6 +19,7 @@ import { step, initialState, digestState, phaseAt, upgradeState, releaseHeldObje
 import { equipmentText, inventoryGroups, setBonus, weaponDamageOf, weaponOf } from "./equipment.mjs";
 import { techniqueForWeapon } from "./techniques.mjs";
 import { COMPONENTS, componentsText, componentForItem, salvageYield, upgradeCost } from "./forge.mjs";
+import { eventPrice, eventText } from "./events.mjs";
 import { maxManaFor, spellById, spellLine, spellPower, trainableSpells, trainingCost } from "./magic.mjs";
 import { findAction, loadActions } from "./actions.mjs";
 import { loadWorld } from "./worlddata.mjs";
@@ -42,7 +43,7 @@ import { normalizePrismId, ownerAllowed, rebindPlan } from "./rebind.mjs";
 import { normalizeStreamEvent, publicStreamText } from "./stream.mjs";
 import { normalizeAiTurn, aiTurnAttributes } from "./metrics.mjs";
 import { worldStatus, worldStatusText } from "./worldstatus.mjs";
-import { levelsText, leaderboardText, leaderboardRows, mapText, shortcutsText } from "./visibility.mjs";
+import { levelsText, leaderboardText, leaderboardRows, duelLadderText, mapText, shortcutsText } from "./visibility.mjs";
 import { redactCommand, sanitizeIntent, sanitizeState } from "./telemetry-policy.mjs";
 import { loadStateFile, saveStateFile } from "./state.mjs";
 
@@ -642,7 +643,7 @@ const ALIASES = {
   h: "help", "?": "help",
   gos: "gossip", goss: "gossip", gc: "guildchat", gchat: "guildchat",
   status: "world", time: "world", sr: "search",
-  lb: "leaderboard", top: "leaderboard", ranks: "leaderboard",
+  lb: "leaderboard", top: "leaderboard", ranks: "leaderboard", ladder: "ladder", pvp: "ladder", duels: "ladder",
   standing: "standing", reputation: "standing", factions: "standing",
   upgrade: "upgrade", improve: "upgrade", forge: "upgrade", salvage: "salvage", melt: "salvage", scrap: "salvage", components: "components", parts: "components", materials: "components",
   lv: "levels", lvl: "levels",
@@ -1441,6 +1442,10 @@ async function handleCommand(id, line) {
     return sendTo(id, `${leaderboardText(state.identities ?? {}, 10)}\r\n`);
   }
 
+  if (verb === "ladder") {
+    return sendTo(id, `${duelLadderText(state.identities ?? {}, 10)}\r\n`);
+  }
+
   if (verb === "map") {
     return sendTo(id, `${mapText(ROOMS, loaded.zones, actor.visited ?? [], actor.room, restRaw.join(" "))}\r\n`);
   }
@@ -1464,7 +1469,7 @@ async function handleCommand(id, line) {
     if (!actor?.key) {
       return sendTo(id, "MUDBench is a persistent world for people and agents.\r\nSign in with your Prism id, or register <name> <password> / login <name> <password>.\r\nThen type help for the commands.\r\n");
     }
-    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: take/t/g/tf, take all, drop/dp/dr, inventory/i, coins, standing/reputation, components, score/sc, quests/q, who/wh, spells/sp, cast/ca, say/sy, tell/te, give/gv, put/pt, open/op, close/cl, wear/wr, remove/rm, buy/b, sell/se, list/ls, drink, map/mp, leaderboard/lb, levels/lv, shortcuts/sh.\r\nMagic: spells (effects/mana), train <spell> at the Mages' Guild, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search. Combat: attack/kill/k, technique/tech (weapon move), battle/combat/bt (current HP), score (armour/damage), equipment/eq (slots and totals). Forge: upgrade/improve, salvage/melt, components at the Cold Forge. There is no fleeing a fight. Guild: guild join/leave/who/list/chat, guild advance (Mages, Wardens, Night Market), vault/deposit/withdraw in the Guild Hall. Social: ignore/unignore/ignoring, report/rep, titles/title, facts/memory, recall <word> at the shrine. Room actions: turn, push, ring where the room suggests.\r\nWorld: world or status (online, guilds, reset); levels, leaderboard/top/lb, map [zone], shortcuts, quests active|available|done|all.<id>; tutorial (first) for the first steps.\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
+    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: take/t/g/tf, take all, drop/dp/dr, inventory/i, coins, standing/reputation, components, score/sc, quests/q, who/wh, spells/sp, cast/ca, say/sy, tell/te, give/gv, put/pt, open/op, close/cl, wear/wr, remove/rm, buy/b, sell/se, list/ls, drink, map/mp, leaderboard/lb, ladder/pvp, levels/lv, shortcuts/sh.\r\nMagic: spells (effects/mana), train <spell> at the Mages' Guild, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search. Combat: attack/kill/k, technique/tech (weapon move), battle/combat/bt (current HP), score (armour/damage), equipment/eq (slots and totals). Forge: upgrade/improve, salvage/melt, components at the Cold Forge. There is no fleeing a fight. Guild: guild join/leave/who/list/chat, guild advance (Mages, Wardens, Night Market), vault/deposit/withdraw in the Guild Hall. Social: ignore/unignore/ignoring, report/rep, titles/title, facts/memory, recall <word> at the shrine. Room actions: turn, push, ring where the room suggests.\r\nWorld: world or status (online, guilds, reset); levels, leaderboard/top/lb, map [zone], shortcuts, quests active|available|done|all.<id>; tutorial (first) for the first steps.\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
   }
 
   // A command typed before the join tick lands is queued, not refused: the
@@ -1929,7 +1934,9 @@ async function handleCommand(id, line) {
         : guildLock
           ? ` [requires ${state.guilds[o.guild]?.name ?? o.guild} rank ${o.minRank}]`
           : "";
-      return `${o.name} (${o.price})${lock}`;
+      const price = eventPrice(o, state.cycle ?? 0);
+      const event = price !== o.price ? " [event]" : "";
+      return `${o.name} (${price})${event}${lock}`;
     });
     sendTo(id, `${stock.length ? render(messages.stock, { words: lines.join(", ") }) : messages.empty}\r\n`);
     return sendTo(id, `${messages.buys}\r\n`);
@@ -1949,6 +1956,7 @@ async function handleCommand(id, line) {
         return sendTo(id, `${object.name} requires ${state.guilds[object.guild]?.name ?? object.guild} rank ${object.minRank}.\r\n`);
       }
     }
+    const price = eventPrice(object, state.cycle ?? 0);
     const coins = state.objects
       .filter((o) => o.holder === id && (o.flags ?? []).includes("coin") && !o.eaten)
       .sort((a, b) => b.value - a.value);
@@ -1957,15 +1965,15 @@ async function handleCommand(id, line) {
     for (const coin of coins) {
       chosen.push(coin);
       paid += coin.value;
-      if (paid >= object.price) break;
+      if (paid >= price) break;
     }
     const paidWords = `${paid} coin${paid === 1 ? "" : "s"}`;
-    if (paid < object.price) return sendTo(id, `${render(messages.poor, { object: object.name, words: paidWords })}\r\n`);
+    if (paid < price) return sendTo(id, `${render(messages.poor, { object: object.name, words: paidWords })}\r\n`);
     pending.push({ kind: "buy", actorId: id, objectId: object.id, room: actor.room, coinIds: chosen.map((c) => c.id), messages: {
       actor: render(messages.actor, { object: object.name, words: paidWords }),
       others: render(messages.others, { actor: actor.name, object: object.name }),
     } });
-    recordSpan("world.trade", { "actor.id": id, "action.kind": "buy", "object.id": object.id, "price": object.price, "paid": paid, "room.id": actor.room, "world.tick": state.tick }, 0);
+    recordSpan("world.trade", { "actor.id": id, "action.kind": "buy", "object.id": object.id, "price": price, "paid": paid, "room.id": actor.room, "world.tick": state.tick }, 0);
     return;
   }
 
@@ -2539,7 +2547,7 @@ async function handleCommand(id, line) {
       const pending = state.duels.find((duel) => duel.state === "pending" && duel.targetId === id);
       if (active) return sendTo(id, "The duel is live. Fight, or leave the Ring.\r\n");
       if (pending) return sendTo(id, "A challenge waits. duel accept, or duel decline.\r\n");
-      return sendTo(id, `${messages.noDuel}\r\n`);
+      return sendTo(id, `Your duel record: ${actor.duelWins ?? 0}W/${actor.duelLosses ?? 0}L, rating ${actor.duelRating ?? 1000}.\r\n${messages.noDuel}\r\n`);
     }
     if (!inRing) return sendTo(id, `${messages.notArena}\r\n`);
     const target = findActor(action, (candidate) => candidate.room === actor.room && candidate.id !== id);
@@ -2871,8 +2879,8 @@ async function handle(id, line) {
 // --- the clock -----------------------------------------------------------
 
 function progressionSnapshot(actor) {
-  const { role, level, xp, guild, guildRank, quests, spellbook, maxMana, questCycles, ignored, title, memory, components } = actor;
-  return JSON.stringify({ role, level, xp, guild, guildRank, quests, spellbook, maxMana, questCycles, ignored, title, memory, components });
+  const { role, level, xp, guild, guildRank, quests, spellbook, maxMana, questCycles, ignored, title, memory, components, duelWins, duelLosses, duelRating } = actor;
+  return JSON.stringify({ role, level, xp, guild, guildRank, quests, spellbook, maxMana, questCycles, ignored, title, memory, components, duelWins, duelLosses, duelRating });
 }
 
 function onTick() {
