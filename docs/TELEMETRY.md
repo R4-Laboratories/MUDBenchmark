@@ -98,7 +98,7 @@ The summary is aggregate-only:
   separately);
 - quests: accepted, completed, abandoned, completion rate, and a per-quest
   actor/completer table;
-- combat: rounds, hits, misses, NPC kills, PvP kills and player deaths;
+- combat: rounds, hits, misses, NPC/PvP rounds, hit rate, kill rate, average damage, NPC kills, PvP kills, player deaths and player death rate;
 - rooms: visits, unique rooms, average rooms per account and the top rooms;
 - levels: the latest snapshot's average, maximum, distribution and guilded
   count;

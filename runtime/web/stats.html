@@ -171,7 +171,8 @@
       ["AI", num(sessions.ai)], ["AI unknown", num(sessions.ai_unknown)],
       ["Returning", num(sessions.returning_accounts)],
       ["Playtime", hm(playtime.total_ms)], ["Avg connection", hm(playtime.average_ms)],
-      ["Quest rate", pct(playerData.quests?.completion_rate)], ["PvP kills", num(playerData.combat?.pvp_kills)],
+      ["Quest rate", pct(playerData.quests?.completion_rate)], ["Hit rate", pct(playerData.combat?.hit_rate)],
+      ["Avg damage", num(playerData.combat?.average_damage)], ["PvP kills", num(playerData.combat?.pvp_kills)],
       ["Rooms seen", num(playerData.rooms?.unique)], ["Commands / conn", num(playerData.commands?.average_per_connection)],
     ]);
     const questRows = document.getElementById("player-quests");

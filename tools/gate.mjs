@@ -1465,9 +1465,9 @@ let playerStats = { ok: true, why: [] };
     { name: "world.transition", "actor.id": "h1", "room.to": 2, "action.kind": "move" },
     { name: "world.transition", "actor.id": "a1", "room.to": 2, "action.kind": "move" },
     { name: "world.transition", "actor.id": "h1", "room.to": 3, "action.kind": "move" },
-    { name: "world.combat", "actor.id": "h1", "target.id": "npc", outcome: "killed" },
-    { name: "world.combat", "actor.id": "h1", "target.id": "a1", outcome: "killed" },
-    { name: "world.combat", "actor.id": "a1", "target.id": "h1", outcome: "miss" },
+    { name: "world.combat", "actor.id": "h1", "target.id": "npc", outcome: "killed", damage: 3 },
+    { name: "world.combat", "actor.id": "h1", "target.id": "a1", outcome: "killed", damage: 2 },
+    { name: "world.combat", "actor.id": "a1", "target.id": "h1", outcome: "miss", damage: 0 },
     { name: "world.snapshot", at: "2026-11-20T00:03:00Z", "world.actors": JSON.stringify([{ level: 3, guild: "mages" }, { level: 8, guild: null }]) },
     { name: "world.snapshot", at: "2026-11-20T00:04:00Z", "world.actors": "[]" },
     { name: "world.input", "actor.id": "h1", text: "look" },
@@ -1483,6 +1483,7 @@ let playerStats = { ok: true, why: [] };
   check(stats.quests.accepted === 2 && stats.quests.completed === 1 && stats.quests.completion_rate === 0.5, "the quest counts are wrong");
   check(stats.quests.by_quest[0]?.actors === 2 && stats.quests.by_quest[0]?.completers === 1 && stats.quests.by_quest[0]?.completion_rate === 0.5, "the per-quest completion is wrong");
   check(stats.combat.rounds === 3 && stats.combat.kills === 2 && stats.combat.npc_kills === 1 && stats.combat.pvp_kills === 1 && stats.combat.player_deaths === 1, "the combat counts are wrong");
+  check(stats.combat.hit_rate === 2 / 3 && stats.combat.average_damage === 2.5 && stats.combat.pvp_rounds === 2 && stats.combat.npc_rounds === 1, "the combat rates are wrong");
   check(stats.rooms.visits === 3 && stats.rooms.unique === 2 && stats.rooms.average_per_account === 1.5, "the room counts are wrong");
   check(stats.commands.accepted === 2 && stats.commands.refused === 1 && stats.commands.average_per_connection === 1, "the command counts are wrong");
   check(stats.levels.actors === 2 && stats.levels.average === 5.5 && stats.levels.max === 8 && stats.levels.distribution["1-4"] === 1 && stats.levels.distribution["8-10"] === 1 && stats.levels.guilded === 1, "the level distribution is wrong");

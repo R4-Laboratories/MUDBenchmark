@@ -322,6 +322,9 @@ Rehearsed 2026-11-16:
 - v0.91.17 (zone gear) adds four armour drops to the Ember, Fen, Salt and Moon
   mobiles and gives the Wardens passive rank perks: scout +1 armour, ranger +1
   damage, warden both (MB-185);
+- v0.91.18 (gear depth) fills body and offhand with smithy stock and eight more
+  zone drops, and adds hit rate, kill rate, average damage, PvP/NPC rounds and
+  player death rate to `/players` and `/stats` (MB-187);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

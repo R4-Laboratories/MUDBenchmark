@@ -81,6 +81,23 @@ be worn or sold at half value, and the two-hour reset returns it to its home
 room. A player who takes the room copy first simply finds no duplicate on the
 mobile.
 
+The second gear pass fills the thinner slots:
+
+| Item | Slot | Armour | Source |
+| --- | --- | --- | --- |
+| an iron cuirass | body | 2 | the smithy, 18 coins |
+| a small buckler | offhand | 1 | the smithy, 9 coins |
+| the warden's shield | offhand | 3 | the warden |
+| a mirror shield | offhand | 2 | the mirror-wraith |
+| eclipse plate | body | 3 | the sundial knight |
+| ember-tempered boots | feet | 2 | the cinder hound |
+| a fen hood | head | 1 | the fen wisp |
+| a salt-crusted hauberk | body | 2 | the brine crab |
+| a moonstone circlet | head | 2 | the moon hare |
+| a moon disc | offhand | 2 | the moon stag |
+
+The world now has 120 objects. Body and offhand are no longer one-item slots.
+
 ## What is not here
 
 No bank, no player-to-player trade window beyond `give`, no weight or
