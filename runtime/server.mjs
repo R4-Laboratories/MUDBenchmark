@@ -27,7 +27,7 @@ import { loadChannels, resolveChannel } from "./channels.mjs";
 import { loadSocials, resolveSocial } from "./socials.mjs";
 import { loadLevels, nextLevelXp } from "./levels.mjs";
 import { availableQuests, loadQuestArchive, loadQuests, migrateQuestState, normalizeQuestState, questById, questLines, validateQuestReferences } from "./quests.mjs";
-import { GUILD_HALL, GUILD_VAULT_CAPACITY, RANKS, guildId, guildVaultHolder, rankAtLeast, validGuildName, wardenBonus } from "./guilds.mjs";
+import { GUILD_HALL, GUILD_VAULT_CAPACITY, RANKS, guildId, guildVaultHolder, rankAtLeast, progressionAtLeast, validGuildName, guildBonus } from "./guilds.mjs";
 import { FACTIONS, factionAllows, standingsText } from "./factions.mjs";
 import { buildLlms } from "./llms.mjs";
 import { loadTitles, earnedTitles, titleLookup } from "./titles.mjs";
@@ -324,6 +324,23 @@ if (!state.guilds.wardens) {
     ranks: ["scout", "ranger", "warden"],
     hall: 115,
     trainer: "warden-captain",
+    xp: 0,
+    level: 1,
+    perks: [],
+    vault: [],
+  };
+}
+if (!state.guilds["night-market"]) {
+  state.guilds["night-market"] = {
+    id: "night-market",
+    name: "The Night Market",
+    founder: "night-broker",
+    created: state.tick,
+    members: {},
+    invites: [],
+    ranks: ["runner", "cutpurse", "shadow", "master"],
+    hall: 29,
+    trainer: "night-broker",
     xp: 0,
     level: 1,
     perks: [],
@@ -1444,7 +1461,7 @@ async function handleCommand(id, line) {
     if (!actor?.key) {
       return sendTo(id, "MUDBench is a persistent world for people and agents.\r\nSign in with your Prism id, or register <name> <password> / login <name> <password>.\r\nThen type help for the commands.\r\n");
     }
-    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: take/t/g/tf, take all, drop/dp/dr, inventory/i, coins, standing/reputation, score/sc, quests/q, who/wh, spells/sp, cast/ca, say/sy, tell/te, give/gv, put/pt, open/op, close/cl, wear/wr, remove/rm, buy/b, sell/se, list/ls, drink, map/mp, leaderboard/lb, levels/lv, shortcuts/sh.\r\nMagic: spells (effects/mana), train <spell> at the Mages' Guild, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search. Combat: attack/kill/k, technique/tech (weapon move), battle/combat/bt (current HP), score (armour/damage), equipment/eq (slots and totals). There is no fleeing a fight. Guild: guild join/leave/who/list/chat, guild advance (Mages, Wardens), vault/deposit/withdraw in the Guild Hall. Social: ignore/unignore/ignoring, report/rep, titles/title, facts/memory, recall <word> at the shrine. Room actions: turn, push, ring where the room suggests.\r\nWorld: world or status (online, guilds, reset); levels, leaderboard/top/lb, map [zone], shortcuts, quests active|available|done|all.<id>; tutorial (first) for the first steps.\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
+    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: take/t/g/tf, take all, drop/dp/dr, inventory/i, coins, standing/reputation, score/sc, quests/q, who/wh, spells/sp, cast/ca, say/sy, tell/te, give/gv, put/pt, open/op, close/cl, wear/wr, remove/rm, buy/b, sell/se, list/ls, drink, map/mp, leaderboard/lb, levels/lv, shortcuts/sh.\r\nMagic: spells (effects/mana), train <spell> at the Mages' Guild, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search. Combat: attack/kill/k, technique/tech (weapon move), battle/combat/bt (current HP), score (armour/damage), equipment/eq (slots and totals). There is no fleeing a fight. Guild: guild join/leave/who/list/chat, guild advance (Mages, Wardens, Night Market), vault/deposit/withdraw in the Guild Hall. Social: ignore/unignore/ignoring, report/rep, titles/title, facts/memory, recall <word> at the shrine. Room actions: turn, push, ring where the room suggests.\r\nWorld: world or status (online, guilds, reset); levels, leaderboard/top/lb, map [zone], shortcuts, quests active|available|done|all.<id>; tutorial (first) for the first steps.\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
   }
 
   // A command typed before the join tick lands is queued, not refused: the
@@ -1901,8 +1918,14 @@ async function handleCommand(id, line) {
     if (!shopHere) return sendTo(id, `${messages.noShop}\r\n`);
     const stock = state.objects.filter((o) => o.room === actor.room && o.forSale && !o.eaten);
     const lines = stock.map((o) => {
-      const locked = o.faction && o.minStanding && !factionAllows(actor.standing, o.faction, o.minStanding);
-      const lock = locked ? ` [requires ${FACTIONS[o.faction]?.name ?? o.faction} standing ${o.minStanding}]` : "";
+      const factionLock = o.faction && o.minStanding && !factionAllows(actor.standing, o.faction, o.minStanding);
+      const guildRanks = o.guild ? (state.guilds[o.guild]?.ranks ?? RANKS) : RANKS;
+      const guildLock = o.guild && o.minRank && !(actor.guild === o.guild && progressionAtLeast(actor.guildRank, o.minRank, guildRanks));
+      const lock = factionLock
+        ? ` [requires ${FACTIONS[o.faction]?.name ?? o.faction} standing ${o.minStanding}]`
+        : guildLock
+          ? ` [requires ${state.guilds[o.guild]?.name ?? o.guild} rank ${o.minRank}]`
+          : "";
       return `${o.name} (${o.price})${lock}`;
     });
     sendTo(id, `${stock.length ? render(messages.stock, { words: lines.join(", ") }) : messages.empty}\r\n`);
@@ -1916,6 +1939,12 @@ async function handleCommand(id, line) {
     if (!object) return sendTo(id, `${render(messages.missing, { words })}\r\n`);
     if (object.faction && object.minStanding && !factionAllows(actor.standing, object.faction, object.minStanding)) {
       return sendTo(id, `${object.name} requires ${FACTIONS[object.faction]?.name ?? object.faction} standing ${object.minStanding}.\r\n`);
+    }
+    if (object.guild && object.minRank) {
+      const ranks = state.guilds[object.guild]?.ranks ?? RANKS;
+      if (actor.guild !== object.guild || !progressionAtLeast(actor.guildRank, object.minRank, ranks)) {
+        return sendTo(id, `${object.name} requires ${state.guilds[object.guild]?.name ?? object.guild} rank ${object.minRank}.\r\n`);
+      }
     }
     const coins = state.objects
       .filter((o) => o.holder === id && (o.flags ?? []).includes("coin") && !o.eaten)
@@ -2005,7 +2034,7 @@ async function handleCommand(id, line) {
     const stateQ = normalizeQuestState(actor.quests, QUESTS.quests);
     const effects = (actor.effects ?? []).length ? ` Effects: ${(actor.effects ?? []).map((effect) => `${effect.name} ${effect.rounds}`).join(", ")}.` : "";
     const title = actor.title ? ` Title ${actor.title}.` : "";
-    const line = `Level ${actor.level} (${actor.xp}${nextXp === null ? "" : `/${nextXp}`} xp), ${actor.hp}/${actor.maxHp} hp, mana ${actor.mana ?? maxManaFor(actor)}/${actor.maxMana ?? maxManaFor(actor)}, armour ${armor}, damage ${(weapon?.damage ?? 0) + wardenBonus(actor).damage}, spell power ${spellPower(actor, weapon?.damage ?? 0)}, ${weapon ? `wielding ${weapon.name}` : "unarmed"}${actor.guild ? `, guild ${actor.guild}` : ""}, ${stateQ.active.length} active/${stateQ.completed.length} done quests.${title}${effects}`;
+    const line = `Level ${actor.level} (${actor.xp}${nextXp === null ? "" : `/${nextXp}`} xp), ${actor.hp}/${actor.maxHp} hp, mana ${actor.mana ?? maxManaFor(actor)}/${actor.maxMana ?? maxManaFor(actor)}, armour ${armor}, damage ${(weapon?.damage ?? 0) + guildBonus(actor).damage}, spell power ${spellPower(actor, weapon?.damage ?? 0)}, ${weapon ? `wielding ${weapon.name}` : "unarmed"}${actor.guild ? `, guild ${actor.guild}` : ""}, ${stateQ.active.length} active/${stateQ.completed.length} done quests.${title}${effects}`;
     return sendTo(id, `${render(messages.line, { words: line })}\r\n`);
   }
 
@@ -2202,6 +2231,10 @@ async function handleCommand(id, line) {
         if (actor.room !== 115) return sendTo(id, "The Wardens meet in the lodge above the Guild Hall.\r\n");
         if ((actor.level ?? 1) < 3) return sendTo(id, "The warden-captain takes level 3 and above.\r\n");
       }
+      if (guild.id === "night-market") {
+        if (actor.room !== 29) return sendTo(id, "The Night Market meets in the Smuggler's Cache.\r\n");
+        if ((actor.level ?? 1) < 3) return sendTo(id, "The night broker takes level 3 and above.\r\n");
+      }
       pending.push({ kind: "guildJoin", actorId: id, guildId: guild.id });
       return;
     }
@@ -2212,7 +2245,7 @@ async function handleCommand(id, line) {
     }
     if (action === "advance") {
       const guild = state.guilds[actor.guild];
-      if (!guild || !["mages", "wardens"].includes(guild.id)) return sendTo(id, "Only the Mages' Guild and the Wardens advance ranks.\r\n");
+      if (!guild || !["mages", "wardens", "night-market"].includes(guild.id)) return sendTo(id, "Only the Mages' Guild, the Wardens and the Night Market advance ranks.\r\n");
       const ranks = guild.ranks ?? ["apprentice", "adept", "magician", "archmage"];
       const next = ranks[ranks.indexOf(actor.guildRank) + 1];
       if (!next) return sendTo(id, "There is no higher rank for you here.\r\n");
@@ -2229,7 +2262,7 @@ async function handleCommand(id, line) {
         if (next === "archmage" && ((actor.level ?? 1) < 10 || known < 4)) {
           return sendTo(id, "Archmage needs level 10 and four known spells.\r\n");
         }
-      } else {
+      } else if (guild.id === "wardens") {
         if (actor.room !== 115) return sendTo(id, "The warden-captain promotes in the lodge above the Guild Hall.\r\n");
         const explored = (actor.visited ?? []).length;
         if (next === "ranger" && ((actor.level ?? 1) < 5 || explored < 15)) {
@@ -2238,6 +2271,11 @@ async function handleCommand(id, line) {
         if (next === "warden" && ((actor.level ?? 1) < 8 || explored < 30)) {
           return sendTo(id, "Warden needs level 8 and thirty rooms explored.\r\n");
         }
+      } else {
+        if (actor.room !== 29) return sendTo(id, "The night broker promotes in the Smuggler's Cache.\r\n");
+        if (next === "cutpurse" && (actor.level ?? 1) < 5) return sendTo(id, "Cutpurse needs level 5.\r\n");
+        if (next === "shadow" && (actor.level ?? 1) < 8) return sendTo(id, "Shadow needs level 8.\r\n");
+        if (next === "master" && (actor.level ?? 1) < 10) return sendTo(id, "Master needs level 10.\r\n");
       }
       pending.push({ kind: "guildAdvance", actorId: id, guildId: guild.id, rank: next });
       return;

@@ -33,7 +33,7 @@ import { loadFacts, contextHasWord } from "../runtime/facts.mjs";
 import { allowCommand, DEFAULT_INTERVAL_MS } from "../runtime/allowance.mjs";
 import { loadLevels, levelForXp } from "../runtime/levels.mjs";
 import { loadQuestArchive, loadQuests, migrateQuestState, validateQuestReferences } from "../runtime/quests.mjs";
-import { GUILD_HALL, GUILD_VAULT_CAPACITY, guildId, guildVaultHolder, validGuildName, guildLevelFor, perksFor, wardenBonus } from "../runtime/guilds.mjs";
+import { GUILD_HALL, GUILD_VAULT_CAPACITY, guildId, guildVaultHolder, validGuildName, guildLevelFor, perksFor, wardenBonus, nightBonus, guildBonus, progressionAtLeast } from "../runtime/guilds.mjs";
 import { FACTIONS, factionAllows, factionRank, standingsText } from "../runtime/factions.mjs";
 import { DEFAULT_TURNS, trimMessages } from "../runtime/memory.mjs";
 import { buildLlms } from "../runtime/llms.mjs";
@@ -1563,6 +1563,11 @@ let controls = { ok: true, why: [] };
   check(BASE_HP === 20 && HP_PER_LEVEL === 5 && maxHpForLevel(1) === 20 && maxHpForLevel(10) === 65, "the health curve is wrong");
   check(wardenBonus({ guild: "wardens", guildRank: "scout" }).armor === 1 && wardenBonus({ guild: "wardens", guildRank: "ranger" }).damage === 1 && wardenBonus({ guild: "wardens", guildRank: "warden" }).armor === 1 && wardenBonus({ guild: "wardens", guildRank: "warden" }).damage === 1, "the Wardens rank perks are wrong");
   check(wardenBonus({ guild: "mages", guildRank: "archmage" }).armor === 0 && wardenBonus({ guild: "wardens", guildRank: "member" }).damage === 0, "a non-Wardens actor received a Wardens perk");
+  check(nightBonus({ guild: "night-market", guildRank: "cutpurse" }).armor === 1 && nightBonus({ guild: "night-market", guildRank: "shadow" }).damage === 1 && nightBonus({ guild: "night-market", guildRank: "master" }).armor === 1 && nightBonus({ guild: "night-market", guildRank: "master" }).damage === 1, "the Night Market rank perks are wrong");
+  check(!progressionAtLeast("runner", "cutpurse", ["runner", "cutpurse", "shadow", "master"]) && progressionAtLeast("shadow", "cutpurse", ["runner", "cutpurse", "shadow", "master"]), "the ascending guild rank gate is wrong");
+  check(guildBonus({ guild: "night-market", guildRank: "shadow" }).damage === 1 && guildBonus({ guild: "wardens", guildRank: "ranger" }).damage === 1 && guildBonus({ guild: "mages", guildRank: "archmage" }).damage === 0, "the guild bonus selector is wrong");
+  check(TECHNIQUES.backstab?.bonus === 6 && TECHNIQUES.rage?.bonus === 5 && TECHNIQUES.drain?.effect === "drain", "the outlaw techniques are missing");
+  check(/object.guild && object.minRank/.test(serverSource) && /The Night Market meets/.test(serverSource), "the Night Market join or shop lock is missing");
   const agentSource = readFileSync(join(root, "runtime/agent.mjs"), "utf8");
   const tuningSource = readFileSync(join(root, "tools/tuning-session.mjs"), "utf8");
   check(!/flee/.test(agentSource) && /take all/.test(agentSource) && /drink/.test(agentSource), "the CLI agent still exposes flee or lacks the new commands");
@@ -1724,6 +1729,18 @@ let lantern = { ok: true, why: [] };
     const object = world.objects.find((entry) => entry.id === id);
     check(object?.faction === faction && object?.minStanding === 6 && object?.forSale === true, `the ${faction} quartermaster item is missing`);
   }
+  for (const [id, faction] of [["ashen-robe", "ashen"], ["unholy-mace", "ashen"], ["red-axe", "red"], ["red-boots", "red"]]) {
+    const object = world.objects.find((entry) => entry.id === id);
+    check(object?.faction === faction && object?.forSale === true, `the ${faction} outlaw item is missing`);
+  }
+  for (const [id, rank] of [["night-cloak", "cutpurse"], ["thief-dagger", "runner"], ["assassin-blade", "shadow"]]) {
+    const object = world.objects.find((entry) => entry.id === id);
+    check(object?.guild === "night-market" && object?.minRank === rank && object?.forSale === true, `the Night Market item ${id} is missing`);
+  }
+  check(world.npcs.some((npc) => npc.id === "night-broker" && npc.room === 29) && world.npcs.some((npc) => npc.id === "ashen-priest" && npc.room === 58) && world.npcs.some((npc) => npc.id === "red-captain" && npc.room === 71), "an outlaw contact is missing");
+  for (const id of ["night-market", "ashen-quartermaster", "red-quartermaster"]) {
+    check((world.shops ?? []).some((shop) => shop.id === id), `the ${id} shop is missing`);
+  }
   for (const [npcId, objectId, slot] of [["ember-warden", "ember-gauntlets", "hands"], ["bog-hound", "fen-mantle", "cloak"], ["salt-wraith", "salt-bracers", "hands"], ["moon-stag", "moon-greaves", "feet"]]) {
     const loot = world.npcs.find((npc) => npc.id === npcId)?.loot ?? [];
     const object = world.objects.find((entry) => entry.id === objectId);
@@ -1836,6 +1853,15 @@ let lantern = { ok: true, why: [] };
   run([{ kind: "guildAdvance", actorId: "l", guildId: "wardens", rank: "ranger" }]);
   actor = state.actors.find((entry) => entry.id === "l");
   check(actor?.guildRank === "ranger" && state.guilds.wardens.members.lina === "ranger", "the Wardens did not advance a ranger");
+
+  state.guilds["night-market"] = { id: "night-market", name: "The Night Market", founder: "night-broker", created: 0, members: { lina: "runner" }, invites: [], ranks: ["runner", "cutpurse", "shadow", "master"], xp: 0, level: 1 };
+  actor = state.actors.find((entry) => entry.id === "l");
+  actor.guild = "night-market";
+  actor.guildRank = "runner";
+  actor.level = 10;
+  run([{ kind: "guildAdvance", actorId: "l", guildId: "night-market", rank: "cutpurse" }]);
+  actor = state.actors.find((entry) => entry.id === "l");
+  check(actor?.guildRank === "cutpurse" && state.guilds["night-market"].members.lina === "cutpurse", "the Night Market did not advance a cutpurse");
   if (lantern.why.length) { lantern.ok = false; failures.push(`the Lantern Quarter is broken: ${lantern.why[0]}`); }
 }
 
@@ -3466,8 +3492,9 @@ if (process.argv.includes("--json")) {
   console.log(`${"guildVault".padEnd(26)}  ${(guildVault.ok ? "20 slots" : "BROKEN").padStart(5)}   == deposit, reset, disband`);
   console.log(`${"social".padEnd(26)}  ${(social.ok ? "70 xp" : "BROKEN").padStart(5)}   == talk, quest`);
   console.log(`${"controls".padEnd(26)}  ${(controls.ok ? "t, all, drink" : "BROKEN").padStart(5)}   == short commands`);
-  console.log(`${"factions".padEnd(26)}  ${(factionAllows({ ember: 6 }, "ember", 6) ? "4 contacts" : "BROKEN").padStart(5)}   == standing, shops`);
-  console.log(`${"techniques".padEnd(26)}  ${(techniques.ok ? "4 weapon moves" : "BROKEN").padStart(5)}   == cooldown, stun`);
+  console.log(`${"factions".padEnd(26)}  ${(factionAllows({ ember: 6 }, "ember", 6) ? "6 contacts" : "BROKEN").padStart(5)}   == standing, shops`);
+  console.log(`${"outlaws".padEnd(26)}  ${(nightBonus({ guild: "night-market", guildRank: "master" }).damage === 1 ? "Night Market" : "BROKEN").padStart(5)}   == guild, factions`);
+  console.log(`${"techniques".padEnd(26)}  ${(techniques.ok ? "7 weapon moves" : "BROKEN").padStart(5)}   == cooldown, stun`);
   console.log(`${"balanceBands".padEnd(26)}  ${(balanceBands.ok ? "PvE, PvP" : "BROKEN").padStart(5)}   == seeded bands`);
   console.log(`${"chatGuard".padEnd(26)}  ${(chatGuard.ok ? "8/10s" : "BROKEN").padStart(5)}   == rate limit`);
   console.log(`${"moderation".padEnd(26)}  ${(moderation.ok ? "names, report" : "BROKEN").padStart(5)}   == new-name policy`);

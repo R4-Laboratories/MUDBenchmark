@@ -12,7 +12,7 @@ import { createHash } from "node:crypto";
 import { advance, due as pulseDue, makePulse } from "./generated/Pulses.mjs";
 import { levelForXp, nextLevelXp } from "./levels.mjs";
 import { applyQuestEvent, emptyProgress, normalizeQuestState, questById, questMet } from "./quests.mjs";
-import { GUILD_HALL, GUILD_VAULT_CAPACITY, RANKS, guildId, guildLevelFor, guildVaultHolder, isGuildVaultHolder, rankAtLeast, removeMember, successor, validGuildName, perksFor, wardenBonus } from "./guilds.mjs";
+import { GUILD_HALL, GUILD_VAULT_CAPACITY, RANKS, guildId, guildLevelFor, guildVaultHolder, isGuildVaultHolder, rankAtLeast, removeMember, successor, validGuildName, perksFor, guildBonus } from "./guilds.mjs";
 import { armorOf, slotOf, weaponOf } from "./equipment.mjs";
 import { maxManaFor, spellById, spellPower } from "./magic.mjs";
 import { FACTIONS } from "./factions.mjs";
@@ -999,13 +999,13 @@ export function step({ state, rooms, intents, actions = [] }) {
     if (intent.kind === "guildAdvance") {
       const actor = find(intent.actorId);
       const guild = next.guilds[intent.guildId];
-      if (!actor?.key || !guild || !["mages", "wardens"].includes(guild.id) || actor.guild !== guild.id) continue;
+      if (!actor?.key || !guild || !["mages", "wardens", "night-market"].includes(guild.id) || actor.guild !== guild.id) continue;
       const ranks = guild.ranks ?? ["apprentice", "adept", "magician", "archmage"];
       if (ranks.indexOf(intent.rank) !== ranks.indexOf(actor.guildRank) + 1) continue;
       actor.guildRank = intent.rank;
       guild.members[actor.key] = intent.rank;
       next.identities[actor.key] = { ...next.identities[actor.key], guildRank: intent.rank };
-      const promoter = guild.id === "mages" ? "The archmage" : "The warden-captain";
+      const promoter = guild.id === "mages" ? "The archmage" : guild.id === "wardens" ? "The warden-captain" : "The night broker";
       events.push({ onlyId: actor.id, text: `${promoter} names you ${intent.rank}.\r\n`, guild: { action: "advance", id: guild.id, name: guild.name } });
       continue;
     }
@@ -1502,6 +1502,7 @@ export function step({ state, rooms, intents, actions = [] }) {
         || (entry.attackerId === target.id && entry.targetId === actor.id))) continue;
       if (technique.effect === "damage") actor.nextAttackBonus = technique.bonus;
       else if (technique.effect === "status") actor.nextAttackStatus = technique.status;
+      else if (technique.effect === "drain") actor.nextAttackDrain = true;
       else if (technique.effect === "stun") target.stunnedUntil = next.tick + technique.rounds;
       actor.techniqueCooldowns = { ...(actor.techniqueCooldowns ?? {}), [technique.id]: next.tick + technique.cooldown };
       events.push({ onlyId: actor.id, text: `You ready ${technique.name}.\r\n` });
@@ -1987,9 +1988,10 @@ export function step({ state, rooms, intents, actions = [] }) {
       if (!attacker || !target || attacker.dead || target.dead || target.hp <= 0) continue;
       if (next.actors.includes(attacker) && (attacker.stunnedUntil ?? -1) > next.tick) continue;
       const weapon = next.actors.includes(attacker) ? weaponOf(attacker, next.objects) : null;
-      const rank = next.actors.includes(attacker) ? wardenBonus(attacker) : { armor: 0, damage: 0 };
+      const rank = next.actors.includes(attacker) ? guildBonus(attacker) : { armor: 0, damage: 0 };
       const techniqueBonus = next.actors.includes(attacker) ? (attacker.nextAttackBonus ?? 0) : 0;
       const techniqueStatus = next.actors.includes(attacker) ? (attacker.nextAttackStatus ?? null) : null;
+      const techniqueDrain = next.actors.includes(attacker) ? Boolean(attacker.nextAttackDrain) : false;
       const weaponDamage = (weapon?.damage ?? 0) + rank.damage + techniqueBonus;
       const npcDamage = next.npcs.includes(attacker) ? (attacker.damage ?? 0) : null;
       const guard = next.actors.includes(target) && (target.guardUntil ?? -1) > next.tick ? (target.guardArmor ?? 0) : 0;
@@ -1999,9 +2001,14 @@ export function step({ state, rooms, intents, actions = [] }) {
         target.hp -= roll.damage;
         const status = techniqueStatus ?? weapon?.status ?? attacker.status ?? null;
         if (status) addStatus(target, status);
+        if (techniqueDrain && next.actors.includes(attacker)) {
+          attacker.hp = Math.min(attacker.maxHp ?? 1, (attacker.hp ?? 0) + Math.ceil(roll.damage / 2));
+          events.push({ onlyId: attacker.id, text: `Drain restores ${Math.ceil(roll.damage / 2)} health.\r\n` });
+        }
       }
       if (techniqueBonus) delete attacker.nextAttackBonus;
       if (techniqueStatus) delete attacker.nextAttackStatus;
+      if (techniqueDrain) delete attacker.nextAttackDrain;
       const killed = roll.hit && target.hp <= 0;
       const detail = {
         attacker: attacker.id,

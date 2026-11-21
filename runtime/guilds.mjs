@@ -26,10 +26,33 @@ export function wardenBonus(actor) {
   return { armor: 0, damage: 0 };
 }
 
+/** Night Market rank perks: cutpurse armour, shadow damage, master both. */
+export function nightBonus(actor) {
+  if (actor?.guild !== "night-market") return { armor: 0, damage: 0 };
+  if (actor.guildRank === "master") return { armor: 1, damage: 1 };
+  if (actor.guildRank === "shadow") return { armor: 0, damage: 1 };
+  if (actor.guildRank === "cutpurse") return { armor: 1, damage: 0 };
+  return { armor: 0, damage: 0 };
+}
+
+/** The combat bonus from whichever guild the character belongs to. */
+export function guildBonus(actor) {
+  if (actor?.guild === "wardens") return wardenBonus(actor);
+  if (actor?.guild === "night-market") return nightBonus(actor);
+  return { armor: 0, damage: 0 };
+}
+
 export const rankAtLeast = (rank, wanted, ranks = RANKS) => {
   const have = ranks.indexOf(rank);
   const need = ranks.indexOf(wanted);
   return have >= 0 && need >= 0 && have <= need;
+};
+
+/** Ascending progression ranks (apprentice -> archmage, runner -> master). */
+export const progressionAtLeast = (rank, wanted, ranks = []) => {
+  const have = ranks.indexOf(rank);
+  const need = ranks.indexOf(wanted);
+  return have >= 0 && need >= 0 && have >= need;
 };
 
 export const GUILD_LEVELS = [0, 100, 300, 600, 1000, 1600];

@@ -12,6 +12,9 @@ adding another guild or a spellbook.
 | greatsword, dawn blade | Cleave | the next blow gains +2 damage | 36 ticks (9 s) |
 | club, forge hammer | Bash | the target loses its next combat round | 36 ticks (9 s) |
 | fen staff | Chill Strike | the next blow applies chill (-1 armour, two rounds) | 24 ticks (6 s) |
+| thief's dagger, assassin's blade | Backstab | the next blow gains +6 damage | 36 ticks (9 s) |
+| red company axe | Rage | the next blow gains +5 damage | 36 ticks (9 s) |
+| unholy mace | Drain | the next blow heals half the damage dealt | 36 ticks (9 s) |
 
 A technique sets up the next combat round; it does not deal damage itself. If
 the next blow misses, the setup is spent. The cooldown is per character and is

@@ -12,6 +12,8 @@ quest. It persists on the character and survives logout, reset and restart.
 | The Fen Wardens | the heron keeper | 80 | Hollow Fen |
 | The Salt Wardens | the tide hermit | 83 | Salt Caves |
 | The Moon Wardens | the silver owl | 88 | Moonlit Reach |
+| The Ashen Hand | the ashen priest | 58 | The Reliquary |
+| The Red Company | the red captain | 71 | Hollow Fen |
 
 The contacts are not guilds. The Mages' Guild and the Wardens are social
 institutions with ranks; these four are local standing tracks with
@@ -29,6 +31,11 @@ quartermasters. A character can hold all four standings at once.
 | a salt wraith | Salt | 2 |
 | a moon hare | Moon | 1 |
 | the moon stag | Moon | 2 |
+| the choir moth | Ashen | 2 |
+| the mirror-wraith | Ashen | 1 |
+| the star hound | Red | 1 |
+| the sundial knight | Red | 2 |
+| the eclipse regent | Red | 3 |
 
 A kill that raises standing emits a line and a `world.standing` span. The
 two-hour reset brings the mobiles back, so the loop repeats without a quest.

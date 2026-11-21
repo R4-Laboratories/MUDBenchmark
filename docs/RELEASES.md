@@ -341,6 +341,11 @@ Rehearsed 2026-11-16:
 - v0.91.22 (weapon techniques) adds Power Strike, Cleave, Bash and Chill
   Strike as weapon-family moves with tick cooldowns, setup effects and
   `world.technique` spans, giving non-Mages tactical combat choices (MB-195);
+- v0.91.23 (outlaw paths) adds the Night Market rank guild for
+  thieves/assassins, the Ashen Hand and Red Company factions for dark
+  priests/barbarians, Backstab/Rage/Drain techniques, and their quartermaster
+  gear. It uses one new guild and two standing tracks, not four rank guilds
+  (MB-197);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);
