@@ -1233,6 +1233,12 @@
       "level": "some-true",
       "statement": "Production v0.91.24 serves 115 rooms, 14 zones, 20 quests, 55 mobiles and 131 objects with ten shops. The Cold Forge loop is live: `components` lists persistent set components, `salvage` breaks held gear into max(1, floor(value/20)) + plus components, and `upgrade` raises weapons/armour to +1/+2/+3 for 2/4/6 components and 20/40/60 coins. Three matching set pieces add +1 armour and four add +1 damage. `world.forge` spans record the actions. The isolated socket test showed 10 components, +1 sword, salvage back to 9, and weapon damage 4. R4 active, signups open. Main Gate 44936520754 green, publish 44937196484.",
       "authority": "GitHub PR #36 merge ec91317 2026-11-21; main Gate 44936520754; publish 44937196484; release v0.91.24; wick deploy output, /world and /llms.txt; local forge smoke"
+    },
+    {
+      "id": "MB-201",
+      "level": "build",
+      "statement": "v0.91.25 adds a world event derived from the reset cycle: Ember/Fen/Salt/Moon rotate, the active faction's kills award double standing and its quartermaster stock takes 20% off, and world/GET /world show the event. It also adds the Ring duel ladder: a Ring win gives +1 win/+16 rating, a loss +1 loss/-16 (floor 0), both identities update immediately, and `ladder`/`pvp`/`duels` lists the board. `duel` with no target shows the character record. The world remains 115 rooms/14 zones/20 quests/55 mobiles/131 objects. The Gate covers rotation, discount, a full duel with identity records and ladder text.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

@@ -71,6 +71,12 @@ standing. `buy` refuses a locked item even if the character has the coins. The
 quartermaster items are the repeatable reward for clearing a zone's lair loop;
 the ordinary zone drops remain the mid-tier gear.
 
+## The rotating event
+
+One faction is ascendant each two-hour cycle. Its kills award double standing
+and its quartermaster stock is 20% off. `world` shows the current event; the
+rotation and PvP ladder are in `docs/EVENTS-AND-PVP.md`.
+
 ## Why this exists
 
 The live table is capped at 20 quests. Factions let the Ember Deep, Hollow Fen,

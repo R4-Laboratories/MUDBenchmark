@@ -6,6 +6,7 @@
 // periodic `world.snapshot` telemetry span.
 
 import { phaseAt, TICK_MS } from "./world.mjs";
+import { currentEvent } from "./events.mjs";
 
 function equipment(state, actor) {
   const worn = state.objects
@@ -54,12 +55,14 @@ export function worldStatus(state, rooms) {
     }))
     .sort((a, b) => b.members - a.members || a.name.localeCompare(b.name));
 
+  const event = currentEvent(state.cycle ?? 0);
   return {
     schema: "mudbenchmark/world/1",
     tick: state.tick,
     phase: phaseAt(state.tick, state.climate),
     weather: state.climate?.weather?.[state.weather]?.id ?? null,
     weatherText: state.climate?.weather?.[state.weather]?.text ?? null,
+    event,
     online: actors.length,
     accounts: Object.keys(state.accounts ?? {}).length,
     characters: Object.keys(state.identities ?? {}).length,
@@ -86,6 +89,7 @@ const duration = (seconds) => {
 export function worldStatusText(status) {
   const lines = [
     `MUDBench: ${status.online} online · ${status.rooms} rooms · ${status.phase} · ${status.weather ?? "clear"} · reset in ${duration(status.reset.seconds)}.`,
+    `Event: ${status.event?.name ?? "none"} — ${status.event?.text ?? ""}`,
     `Accounts ${status.accounts} · characters ${status.characters} · mobiles ${status.npcs} · objects ${status.objects}.`,
   ];
   if (!status.actors.length) {

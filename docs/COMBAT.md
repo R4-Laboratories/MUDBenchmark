@@ -80,6 +80,10 @@ starts a two-way engagement, `duel decline` refuses, and leaving forfeits. An
 arena death takes no goods. Every other unsafe room is open PvP: attacking a
 player is allowed, and death drops everything held where they fell.
 
+A Ring win records +1 win and +16 rating; the loser records +1 loss and −16.
+`ladder` (aliases `pvp`, `duels`) shows the ranked board, and `duel` with no
+target shows your own record. `docs/EVENTS-AND-PVP.md` records the contract.
+
 ## Safe rooms and PvP
 
 An attack in a safe room is refused; a fight that reaches one is cleared.

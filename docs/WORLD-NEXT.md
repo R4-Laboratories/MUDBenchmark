@@ -43,6 +43,7 @@ and the AI prompt/router state layer.
 | M31 | **done** — Weapon techniques: Power Strike (sword), Cleave (greatsword), Bash (club/hammer) and Chill Strike (fen staff), with tick cooldowns, setup effects and `world.technique` spans; no new quests | weapon data, cooldowns, reducer setup, stun/status, every prior check |
 | M32 | **done** — Outlaw paths: Night Market guild (runner/cutpurse/shadow/master), Ashen Hand and Red Company standing, Backstab/Rage/Drain techniques, daggers/axe/unholy mace and quartermaster gear; 131 objects / 55 mobiles | guild seed/advance, rank perks, faction standing, shop locks, new techniques, every prior check |
 | M33 | **done** — The forge: salvage into set components, +1..+3 upgrades with coins, 3/4-piece set bonuses, `components`/`upgrade`/`salvage` commands and `world.forge` spans; 131 objects | cost scaling, salvage yield, persistence, set counting, every prior check |
+| M34 | **done** — Events and PvP: Ember/Fen/Salt/Moon event rotation with doubled standing and 20% quartermaster discount, plus the persistent Ring duel ladder and `ladder`/`pvp`/`duels`; 131 objects | event rotation/discount, duel records/rating, ladder text, every prior check |
 
 ## Rules that keep the model green
 

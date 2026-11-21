@@ -76,7 +76,7 @@ remove <thing>, eat <thing>, drink <thing>, light <thing>, buy <thing>, sell <th
 list, wave, nod, bow, laugh, sigh, shrug, dance, score,
 quests, quest accept <id>, quest abandon <id>, deliver <thing> to <name>,
 guild create <name>, guild join <name>, guild leave, guild who, guild list, guild chat <text>,
-guild rank <member> <rank>, guild disband, vault, deposit <item>, withdraw <item>,
+guild rank <member> <rank>, guild disband, vault, deposit <item>, withdraw <item>, ladder,
 ignore <name>, unignore <name>, ignoring, titles, title <id|none>, facts,
 recall <word>, plant <thing>, talk <name>, help, quit.
 
@@ -92,7 +92,7 @@ const COMMANDS = new Set([
   "inventory", "i", "inv", "coins", "money", "purse", "standing", "reputation", "factions", "components", "parts", "materials", "upgrade", "improve", "forge", "salvage", "melt", "scrap", "technique", "tech", "take", "get", "t", "grab", "drop", "put", "open", "close", "wear", "remove",
   "eat", "drink", "quaff", "light", "extinguish", "buy", "sell", "list", "wave", "nod", "bow", "laugh",
   "sigh", "shrug", "dance", "score", "quests", "quest", "guild", "gc", "gchat", "deliver", "talk", "help",
-  "vault", "deposit", "withdraw", "ignore", "unignore", "ignoring", "titles", "title", "facts", "recall", "plant",
+  "vault", "deposit", "withdraw", "ladder", "pvp", "duels", "ignore", "unignore", "ignoring", "titles", "title", "facts", "recall", "plant",
 ]);
 
 const log = (...parts) => {

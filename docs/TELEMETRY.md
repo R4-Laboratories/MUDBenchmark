@@ -31,7 +31,7 @@ record.
 | `world.input` | accepted or refused command, actor, tick, latency |
 | `world.transition` | move, room from/to, admission verdict |
 | `world.snapshot` | every 240 ticks: online, accounts, characters, rooms, mobiles, objects, reset countdown, phase, weather, actor levels/equipment/quests, guilds |
-| `world.quest`, `world.combat`, `world.trade`, `world.object`, `world.guild`, `world.standing`, `world.forge`, `world.social`, `world.channel`, `world.tell`, `world.mail`, `world.claim`, `world.answer` | the corresponding game action; `world.standing` records the faction/value and `world.forge` records upgrade/salvage, object and component |
+| `world.quest`, `world.combat`, `world.trade`, `world.object`, `world.guild`, `world.standing`, `world.forge`, `world.duel`, `world.social`, `world.channel`, `world.tell`, `world.mail`, `world.claim`, `world.answer` | the corresponding game action; `world.standing` records faction/value, `world.forge` upgrade/salvage and `world.duel` begin/win |
 | `ai.turn` | provider, model, latency, prompt/completion/thinking tokens, parse result, command, thought length, timeout/error, turn, tick |
 | `agent.decision` | harness-only router context and layers |
 | `stream.viewer` | public watch join/leave and viewer count |
