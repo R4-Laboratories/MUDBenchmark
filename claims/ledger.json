@@ -1275,6 +1275,12 @@
       "level": "build",
       "statement": "v0.91.28 adds an owner-token /reports JSON endpoint returning the last N durable report records; unauthenticated requests return 401 and the token is read from x-owner-token or a Bearer header, never the URL. The review path is documented. The web shell adds a Skip to game link, explicit :focus-visible and prefers-reduced-motion rules, and a labelled log/announcer contract. The Gate checks the route/auth source and the accessibility source contract. Production data and game balance are unchanged.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-208",
+      "level": "some-true",
+      "statement": "Production v0.91.28 serves 116 rooms, 14 zones, 20 quests, 57 mobiles and 145 objects; The Fen Rising is active. GET /reports returns 401 without the owner token and is owner-readable with it; the review path and accessibility contract are documented. The web shell has the skip link, focus/reduced-motion rules and labelled log. R4 active, signups open. Main Gate 44953270553 green, publish 44954148839.",
+      "authority": "GitHub PR #40 merge cf4845d 2026-11-21; main Gate 44953270553; publish 44954148839; release v0.91.28; wick deploy output, /reports 401, /world and /health"
     }
   ]
 }
