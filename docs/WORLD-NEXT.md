@@ -4,7 +4,7 @@ This was the queued AberMUD-style content and systems track. The v0.47/v0.48 sli
 have landed: eight equipment slots, six spells and the Mages' Guild, eleven
 Lantern Quarter/Undervault rooms, five personal quests, a guild ledger quest,
 a searchable secret stair, three data-driven room actions and mage rank advancement. The world is now 115 rooms,
-20 quests and 124 objects. The foundation from v0.46 remains:
+20 quests and 131 objects. The foundation from v0.46 remains:
 short command forms, `equipment`, `world`/`status`, the hidden `#state` line,
 and the AI prompt/router state layer.
 
@@ -41,6 +41,7 @@ and the AI prompt/router state layer.
 | M29 | **done** — Gear depth: iron cuirass and buckler at the smithy, plus warden/mirror shields, eclipse plate, ember boots, fen hood, salt hauberk, moon circlet and moon disc drops; `/players` reports hit rate, kill rate, average damage, PvP/NPC rounds and player death rate; 120 objects | slot coverage, loot data, combat rates, every prior check |
 | M30 | **done** — Faction standing: Ember/Fen/Salt/Moon kills raise persistent standing; the `standing` command, four quartermaster shops and five gated gear pieces (ember cloak/blade, fen cloak, salt shield, moon circlet); 124 objects | award/persist, rank thresholds, shop locks, `world.standing`, every prior check |
 | M31 | **done** — Weapon techniques: Power Strike (sword), Cleave (greatsword), Bash (club/hammer) and Chill Strike (fen staff), with tick cooldowns, setup effects and `world.technique` spans; no new quests | weapon data, cooldowns, reducer setup, stun/status, every prior check |
+| M32 | **done** — Outlaw paths: Night Market guild (runner/cutpurse/shadow/master), Ashen Hand and Red Company standing, Backstab/Rage/Drain techniques, daggers/axe/unholy mace and quartermaster gear; 131 objects / 55 mobiles | guild seed/advance, rank perks, faction standing, shop locks, new techniques, every prior check |
 
 ## Rules that keep the model green
 

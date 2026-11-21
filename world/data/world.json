@@ -2617,7 +2617,9 @@
       "dialogue": [
         "You should not have looked.",
         "The pool keeps what it is given."
-      ]
+      ],
+      "faction": "ashen",
+      "standing": 1
     },
     {
       "id": "warden",
@@ -2711,7 +2713,9 @@
       "dialogue": [
         "The choir does not sing.",
         "The lantern is the last one."
-      ]
+      ],
+      "faction": "ashen",
+      "standing": 2
     },
     {
       "id": "reliquary-keeper",
@@ -3074,7 +3078,9 @@
       "xp": 110,
       "status": "bleed",
       "description": "A lean hound with a coat of fixed stars.",
-      "examine": "Its eyes are two points of white, and its teeth are very long."
+      "examine": "Its eyes are two points of white, and its teeth are very long.",
+      "faction": "red",
+      "standing": 1
     },
     {
       "id": "sundial-knight",
@@ -3095,7 +3101,9 @@
       "examine": "The knight's visor is a slit of darkness. It does not move until you do.",
       "loot": [
         "eclipse-plate"
-      ]
+      ],
+      "faction": "red",
+      "standing": 2
     },
     {
       "id": "eclipse-regent",
@@ -3116,7 +3124,9 @@
         "regent-sigil"
       ],
       "description": "A tall figure in a crown of burnt glass sits on the throne of ash.",
-      "examine": "The regent's hand is closed around a sigil. The crown ticks as it cools."
+      "examine": "The regent's hand is closed around a sigil. The crown ticks as it cools.",
+      "faction": "red",
+      "standing": 3
     },
     {
       "id": "rememberer",
@@ -3260,6 +3270,72 @@
         "The Wardens do not sit in halls. We walk the edges and come back with the map.",
         "Scout, ranger, warden. Rank is measured in ground covered, not in speeches.",
         "The fen eats the careless. The salt caves eat the proud. The moonlit reach eats both."
+      ]
+    },
+    {
+      "id": "night-broker",
+      "name": "the night broker",
+      "room": 29,
+      "home": 29,
+      "period": 180,
+      "jitter": 4,
+      "behaviour": "sentinel",
+      "zone": "undercroft",
+      "hp": 26,
+      "damage": 0,
+      "armor": 1,
+      "aggression": 0,
+      "xp": 0,
+      "description": "The night broker keeps to the shadows behind the smuggler's table.",
+      "examine": "A narrow figure in a dark coat, with a ledger no honest merchant would keep.",
+      "dialogue": [
+        "The Night Market takes what the daylight will not.",
+        "A runner carries. A cutpurse keeps. A shadow decides. A master owns the dark.",
+        "Bring me a blade and I will tell you whose hand it was made for."
+      ]
+    },
+    {
+      "id": "ashen-priest",
+      "name": "the ashen priest",
+      "room": 58,
+      "home": 58,
+      "period": 180,
+      "jitter": 4,
+      "behaviour": "sentinel",
+      "zone": "undervault",
+      "hp": 30,
+      "damage": 0,
+      "armor": 1,
+      "aggression": 0,
+      "xp": 0,
+      "description": "A grey figure stands beside the reliquary, face hidden under a hood of ash-cloth.",
+      "examine": "The priest's sleeves are stained with soot and old wax. A cracked symbol hangs at the throat.",
+      "dialogue": [
+        "The Hand does not promise light. It promises an answer.",
+        "The choir sings because it has forgotten how to stop.",
+        "Drain the false flame. Keep what it took."
+      ]
+    },
+    {
+      "id": "red-captain",
+      "name": "the red captain",
+      "room": 71,
+      "home": 71,
+      "period": 180,
+      "jitter": 4,
+      "behaviour": "sentinel",
+      "zone": "fen",
+      "hp": 36,
+      "damage": 0,
+      "armor": 2,
+      "aggression": 0,
+      "xp": 0,
+      "description": "A broad figure in red-stained leathers waits at the fen gate, axe across her knees.",
+      "examine": "Scarred knuckles, a chipped axe, and a grin that expects a fight.",
+      "dialogue": [
+        "The Red Company takes the field, not the hall.",
+        "Rage is a tool. Use it before it uses you.",
+        "The eclipse court is full of things worth killing. Bring me proof."
       ]
     }
   ],
@@ -5060,6 +5136,132 @@
       "faction": "moon",
       "minStanding": 6,
       "examine": "A silver circlet set with a clear moonstone. It is warm under moonlight."
+    },
+    {
+      "id": "night-cloak",
+      "name": "a night cloak",
+      "room": 29,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "cloak",
+      "armor": 2,
+      "value": 20,
+      "price": 40,
+      "forSale": true,
+      "guild": "night-market",
+      "minRank": "cutpurse",
+      "examine": "A cloak of matte black cloth with a dozen hidden pockets."
+    },
+    {
+      "id": "thief-dagger",
+      "name": "a thief's dagger",
+      "room": 29,
+      "flags": [
+        "takeable",
+        "weapon"
+      ],
+      "slot": "mainhand",
+      "damage": 3,
+      "value": 18,
+      "price": 35,
+      "forSale": true,
+      "guild": "night-market",
+      "minRank": "runner",
+      "technique": "backstab",
+      "examine": "A narrow blade with a dull finish and a quick balance."
+    },
+    {
+      "id": "assassin-blade",
+      "name": "an assassin's blade",
+      "room": 29,
+      "flags": [
+        "takeable",
+        "weapon"
+      ],
+      "slot": "mainhand",
+      "damage": 5,
+      "value": 45,
+      "price": 80,
+      "forSale": true,
+      "guild": "night-market",
+      "minRank": "shadow",
+      "technique": "backstab",
+      "examine": "A black blade with a single silver line down the spine."
+    },
+    {
+      "id": "ashen-robe",
+      "name": "an ashen robe",
+      "room": 58,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "body",
+      "armor": 2,
+      "value": 30,
+      "price": 60,
+      "forSale": true,
+      "faction": "ashen",
+      "minStanding": 3,
+      "examine": "Grey cloth woven with a thread that drinks the light."
+    },
+    {
+      "id": "unholy-mace",
+      "name": "an unholy mace",
+      "room": 58,
+      "flags": [
+        "takeable",
+        "weapon"
+      ],
+      "slot": "mainhand",
+      "damage": 4,
+      "value": 38,
+      "price": 75,
+      "forSale": true,
+      "faction": "ashen",
+      "minStanding": 6,
+      "technique": "drain",
+      "examine": "A black mace with a cracked symbol on the head. It is warm to the touch."
+    },
+    {
+      "id": "red-axe",
+      "name": "a red company axe",
+      "room": 71,
+      "flags": [
+        "takeable",
+        "weapon"
+      ],
+      "slot": "mainhand",
+      "damage": 6,
+      "value": 32,
+      "price": 65,
+      "forSale": true,
+      "faction": "red",
+      "minStanding": 3,
+      "technique": "rage",
+      "examine": "A heavy axe with a red-painted haft and a chipped edge."
+    },
+    {
+      "id": "red-boots",
+      "name": "red company boots",
+      "room": 71,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "feet",
+      "armor": 2,
+      "value": 28,
+      "price": 55,
+      "forSale": true,
+      "faction": "red",
+      "minStanding": 6,
+      "examine": "Scuffed leather boots with iron toe-caps."
     }
   ],
   "climate": {
@@ -5150,6 +5352,24 @@
       "room": 88,
       "keeper": "silver-owl",
       "name": "The Moon Wardens"
+    },
+    {
+      "id": "night-market",
+      "room": 29,
+      "keeper": "night-broker",
+      "name": "The Night Market"
+    },
+    {
+      "id": "ashen-quartermaster",
+      "room": 58,
+      "keeper": "ashen-priest",
+      "name": "The Ashen Hand"
+    },
+    {
+      "id": "red-quartermaster",
+      "room": 71,
+      "keeper": "red-captain",
+      "name": "The Red Company"
     }
   ]
 }

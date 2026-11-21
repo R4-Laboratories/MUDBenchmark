@@ -31,6 +31,20 @@ export const FACTIONS = {
     room: 88,
     ranks: ["outsider", "moonwatcher", "moonfriend", "moon-sworn"],
   },
+  ashen: {
+    id: "ashen",
+    name: "The Ashen Hand",
+    contact: "ashen-priest",
+    room: 58,
+    ranks: ["outsider", "acolyte", "ashfriend", "ash-sworn"],
+  },
+  red: {
+    id: "red",
+    name: "The Red Company",
+    contact: "red-captain",
+    room: 71,
+    ranks: ["outsider", "blooded", "redfriend", "red-sworn"],
+  },
 };
 
 export const STANDING_THRESHOLDS = [0, 3, 6, 10];

@@ -33,6 +33,9 @@ change would be a rule change, not a rename.
 | The Fen Wardens | The Green Heart | the heron keeper |
 | The Salt Wardens | The Brine Hall | the tide hermit |
 | The Moon Wardens | The Owl Grove | the silver owl |
+| The Night Market | The Smuggler's Cache | the night broker |
+| The Ashen Hand | The Reliquary | the ashen priest |
+| The Red Company | The Fen Gate | the red captain |
 
 `list` shows the stock in the room. `buy <thing>` spends coins; `sell <thing>`
 pays half the object's `value`, rounded down. A shop will not buy coins, and it
@@ -86,9 +89,9 @@ mobile.
 
 ### Faction quartermasters
 
-The four exploration-zone contacts buy and sell like shops, but some stock is
-gated by faction standing. `standing` (or `reputation` / `factions`) shows the
-four values. A locked item appears in `list` with its faction and threshold;
+Six faction contacts buy and sell like shops, but some stock is gated by
+faction standing. `standing` (or `reputation` / `factions`) shows the six
+values. A locked item appears in `list` with its faction and threshold;
 `buy` refuses it until the character has earned enough standing by fighting
 the zone's mobiles.
 
@@ -99,8 +102,12 @@ the zone's mobiles.
 | a fen-warden's cloak | cloak | armour 3 | Fen 6 | 75 |
 | a salt-warden's shield | offhand | armour 3 | Salt 6 | 80 |
 | a moon-blessed circlet | head | armour 3 | Moon 6 | 85 |
+| an ashen robe | body | armour 2 | Ashen 3 | 60 |
+| an unholy mace | mainhand | damage 4, Drain | Ashen 6 | 75 |
+| a red company axe | mainhand | damage 6, Rage | Red 3 | 65 |
+| red company boots | feet | armour 2 | Red 6 | 55 |
 
-The world now has 124 objects.
+The world now has 131 objects.
 
 The second gear pass fills the thinner slots:
 

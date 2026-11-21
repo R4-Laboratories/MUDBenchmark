@@ -31,8 +31,9 @@ export function wipePlayers(state, store) {
   state.duels = [];
   state.engagements = [];
 
-  // The Mages' Guild and the Wardens are world institutions; their rosters
-  // are player data. Any other guild was founded by players and goes with them. A vault item is
+  // The Mages' Guild, the Wardens and the Night Market are world institutions;
+  // their rosters are player data. Any other guild was founded by players and
+  // goes with them. A vault item is
   // world state, so it falls in the shared hall instead of vanishing.
   for (const [id, guild] of Object.entries(state.guilds ?? {})) {
     for (const objectId of guild.vault ?? []) {
@@ -45,7 +46,7 @@ export function wipePlayers(state, store) {
       object.worn = false;
     }
     guild.vault = [];
-    if (id !== "mages" && id !== "wardens") {
+    if (id !== "mages" && id !== "wardens" && id !== "night-market") {
       delete state.guilds[id];
       continue;
     }

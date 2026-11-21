@@ -68,14 +68,15 @@ The two-hour reset leaves vault goods in the vault; a restart does too. When a
 guild disbands or loses its last member, its goods fall in the hall rather than
 vanishing. The account wipe releases vault goods the same way.
 
-## The two institutions
+## The institutions
 
-Two guilds are world institutions rather than player-founded companies:
+Three guilds are world institutions rather than player-founded companies:
 
 | Guild | Where | Join | Ranks |
 | --- | --- | --- | --- |
 | The Mages' Guild | The Arcanum, above the Atrium | level 3, at room 34 | apprentice, adept, magician, archmage |
 | The Wardens | The Wardens' Lodge, above the Guild Hall | level 3, at room 115 | scout, ranger, warden |
+| The Night Market | The Smuggler's Cache, room 29 | level 3, at room 29 | runner, cutpurse, shadow, master |
 
 The Mages' ranks are earned through spells, level and the guild quest ledger.
 The Wardens' ranks are earned by ground covered: ranger needs level 5 and
@@ -97,6 +98,10 @@ uses the generic leader/officer/member ranks and does not advance this way.
 The perks are passive while the character is in the Wardens and are part of
 `armorOf`, the combat damage roll and `score`/`equipment`. They do not stack with
 a second guild because a character has one guild.
+
+The Night Market uses the same rank shape: runner joins, cutpurse adds +1
+armour, shadow +1 weapon damage, master both. `docs/OUTLAW-PATHS.md` covers the
+thief/assassin gear and the Ashen Hand / Red Company factions.
 
 The four zone factions in `docs/FACTIONS.md` are separate from guilds: a
 character can hold all four standings, while guild membership is one at a

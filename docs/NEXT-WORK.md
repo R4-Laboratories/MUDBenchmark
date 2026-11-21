@@ -1,7 +1,7 @@
 # Next work
 
-Baseline: **v0.91.22**. The world has 115 rooms, 14 zones, 20 quests, 52 mobiles
-and 124 objects. R4 memory, command grounding, scorecards
+Baseline: **v0.91.23**. The world has 115 rooms, 14 zones, 20 quests, 55 mobiles
+and 131 objects. R4 memory, command grounding, scorecards
 and the public stats surface are live; signups are open and the Gemini demo is
 disabled and unconfigured.
 
@@ -49,6 +49,7 @@ memory or prompt system.
 | v0.91.20 | PvP and unseeded balance bands | **done** (MB-191) |
 | v0.91.21 | Faction standing and quartermasters | **done** (MB-193) |
 | v0.91.22 | Weapon-family techniques | **done** (MB-195) |
+| v0.91.23 | Outlaw paths: Night Market, Ashen Hand, Red Company | **in flight** |
 | backlog | Optional content and live-player tuning | optional |
 
 ## What is next
@@ -59,11 +60,10 @@ memory or prompt system.
    three matchups) and unseeded high-level bands (51% at level 8, 18% at level
    10). No balance change is justified yet; the next pass needs a real human or
    unscripted PvP sample.
-2. **Outlaw paths and guild depth.** Thieves, assassins, dark priests and
-   barbarians are archetypes, not four more rank guilds. The next slice should
-   add them as outlaw paths/factions with quartermasters and techniques; a
-   single new rank guild, such as the Night Market for thieves and assassins,
-   is enough for the social layer.
+2. **Outlaw paths.** The Night Market is the third rank guild; the Ashen Hand
+   and Red Company are standing factions. Thieves/assassins use daggers and
+   Backstab, barbarians use axes and Rage, dark priests use unholy maces and
+   Drain. No further rank guilds are planned for these archetypes.
 3. **Quest budget.** The live table is now 20; 41 retired definitions are in
    `world/data/quests-archive.json`, and active characters are migrated with a
    completion/abandon note. `docs/QUEST-BUDGET.md` records the spine.
