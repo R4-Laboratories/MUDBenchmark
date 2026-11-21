@@ -12,6 +12,7 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { FACTIONS } from "./factions.mjs";
 import { spellById } from "./magic.mjs";
 
 // Resolved against this module, not the process working directory: the service
@@ -192,6 +193,8 @@ export function loadWorld({ mode = "single", path = DEFAULT_PATH } = {}) {
     if (npc.damage !== undefined && (!Number.isInteger(npc.damage) || npc.damage < 0)) errors.push(`npc ${npc.id} has an invalid damage`);
     if (npc.armor !== undefined && (!Number.isInteger(npc.armor) || npc.armor < 0)) errors.push(`npc ${npc.id} has an invalid armor`);
     if (npc.aggression !== undefined && (!Number.isInteger(npc.aggression) || npc.aggression < 0 || npc.aggression > 100)) errors.push(`npc ${npc.id} has an aggression outside 0..100`);
+    if (npc.faction !== undefined && !FACTIONS[npc.faction]) errors.push(`npc ${npc.id} has unknown faction ${npc.faction}`);
+    if (npc.standing !== undefined && (!Number.isInteger(npc.standing) || npc.standing < 1)) errors.push(`npc ${npc.id} has an invalid standing award`);
     npcs.push({ ...npc, behaviour, maxHp: npc.hp });
   }
 

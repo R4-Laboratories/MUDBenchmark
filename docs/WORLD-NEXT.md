@@ -4,7 +4,7 @@ This was the queued AberMUD-style content and systems track. The v0.47/v0.48 sli
 have landed: eight equipment slots, six spells and the Mages' Guild, eleven
 Lantern Quarter/Undervault rooms, five personal quests, a guild ledger quest,
 a searchable secret stair, three data-driven room actions and mage rank advancement. The world is now 115 rooms,
-20 quests and 120 objects. The foundation from v0.46 remains:
+20 quests and 124 objects. The foundation from v0.46 remains:
 short command forms, `equipment`, `world`/`status`, the hidden `#state` line,
 and the AI prompt/router state layer.
 
@@ -39,6 +39,7 @@ and the AI prompt/router state layer.
 | M27 | **done** — The 20-quest spine: 41 definitions archived, prerequisites remapped, titles consolidated, and active characters migrated with a one-time note; Ember/Fen/Salt/Moon/Garden become exploration zones | count, archive, live prerequisites, migration notes, every prior check |
 | M28 | **done** — Zone gear: ember gauntlets, fen mantle, salt bracers and moon greaves drop from the retired-zone mobiles; Wardens ranks add scout armour, ranger damage, warden both; 110 objects | loot data, equipment slots, rank bonuses, score/equipment, every prior check |
 | M29 | **done** — Gear depth: iron cuirass and buckler at the smithy, plus warden/mirror shields, eclipse plate, ember boots, fen hood, salt hauberk, moon circlet and moon disc drops; `/players` reports hit rate, kill rate, average damage, PvP/NPC rounds and player death rate; 120 objects | slot coverage, loot data, combat rates, every prior check |
+| M30 | **done** — Faction standing: Ember/Fen/Salt/Moon kills raise persistent standing; the `standing` command, four quartermaster shops and five gated gear pieces (ember cloak/blade, fen cloak, salt shield, moon circlet); 124 objects | award/persist, rank thresholds, shop locks, `world.standing`, every prior check |
 
 ## Rules that keep the model green
 

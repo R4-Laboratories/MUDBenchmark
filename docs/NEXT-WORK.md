@@ -1,7 +1,7 @@
 # Next work
 
-Baseline: **v0.91.20**. The world has 115 rooms, 14 zones, 20 quests, 52 mobiles
-and 120 objects. R4 memory, command grounding, scorecards
+Baseline: **v0.91.21**. The world has 115 rooms, 14 zones, 20 quests, 52 mobiles
+and 124 objects. R4 memory, command grounding, scorecards
 and the public stats surface are live; signups are open and the Gemini demo is
 disabled and unconfigured.
 
@@ -47,6 +47,7 @@ memory or prompt system.
 | v0.91.18 | Body/offhand gear depth and combat rates | **done** (MB-187) |
 | v0.91.19 | Remote tuning harness and no-change decision | **done** (MB-189) |
 | v0.91.20 | PvP and unseeded balance bands | **done** (MB-191) |
+| v0.91.21 | Faction standing and quartermasters | **in flight** |
 | backlog | Optional content and live-player tuning | optional |
 
 ## What is next

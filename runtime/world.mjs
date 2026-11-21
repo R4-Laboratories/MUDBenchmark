@@ -15,6 +15,7 @@ import { applyQuestEvent, emptyProgress, normalizeQuestState, questById, questMe
 import { GUILD_HALL, GUILD_VAULT_CAPACITY, RANKS, guildId, guildLevelFor, guildVaultHolder, isGuildVaultHolder, rankAtLeast, removeMember, successor, validGuildName, perksFor, wardenBonus } from "./guilds.mjs";
 import { armorOf, slotOf, weaponOf } from "./equipment.mjs";
 import { maxManaFor, spellById, spellPower } from "./magic.mjs";
+import { FACTIONS } from "./factions.mjs";
 
 export { armorOf } from "./equipment.mjs";
 
@@ -406,6 +407,7 @@ export function upgradeState(saved, base) {
       xp: identity.xp ?? 0,
       guild: guilds[identity.guild] ? identity.guild : null,
       guildRank: guilds[identity.guild]?.members?.[name] ?? null,
+      standing: { ...(identity.standing ?? {}) },
       quests: identity.quests ?? { active: [], completed: [] },
     };
   };
@@ -529,6 +531,7 @@ export function checkpointIdentities(state) {
       xp: actor.xp ?? 0,
       guild: actor.guild ?? null,
       guildRank: actor.guildRank ?? null,
+      standing: { ...(actor.standing ?? {}) },
       quests: actor.quests ?? { active: [], completed: [] },
       ignored: [...(actor.ignored ?? [])],
       title: actor.title ?? null,
@@ -683,6 +686,7 @@ export function step({ state, rooms, intents, actions = [] }) {
           xp: 0,
           guild: null,
           guildRank: null,
+          standing: {},
           quests: { active: [], completed: [] },
           wielding: null,
           mana: 5, maxMana: 5, spellbook: [], armorBonus: 0, buffUntil: null, questCycles: {},
@@ -753,6 +757,7 @@ export function step({ state, rooms, intents, actions = [] }) {
       actor.xp = 0;
       actor.guild = null;
       actor.guildRank = null;
+      actor.standing = {};
       actor.quests = { active: [], completed: [] };
       actor.maxHp = BASE_HP;
       actor.hp = BASE_HP;
@@ -1219,6 +1224,7 @@ export function step({ state, rooms, intents, actions = [] }) {
       actor.memory = { facts: { ...(known.memory?.facts ?? {}) } };
       actor.guild = next.guilds[known.guild] ? known.guild : null;
       actor.guildRank = actor.guild ? (next.guilds[actor.guild].members[actor.key] ?? null) : null;
+      actor.standing = { ...(known.standing ?? {}) };
       actor.quests = {
         active: [...(known.quests?.active ?? [])],
         completed: [...(known.quests?.completed ?? [])],
@@ -1417,6 +1423,7 @@ export function step({ state, rooms, intents, actions = [] }) {
           xp: actor.xp ?? 0,
           guild: actor.guild ?? null,
           guildRank: actor.guildRank ?? null,
+          standing: { ...(actor.standing ?? {}) },
           quests: actor.quests ?? { active: [], completed: [] },
         };
       }
@@ -2007,6 +2014,12 @@ export function step({ state, rooms, intents, actions = [] }) {
           if (next.actors.includes(attacker)) {
             awardXp(next, attacker, target.xp ?? Math.max(1, target.maxHp ?? 1), events);
             advanceQuests(next, attacker, { kind: "kill", npc: target.id }, events);
+            if (target.faction && FACTIONS[target.faction]) {
+              const gained = target.standing ?? 1;
+              attacker.standing ??= {};
+              attacker.standing[target.faction] = (attacker.standing[target.faction] ?? 0) + gained;
+              events.push({ onlyId: attacker.id, text: `Your standing with ${FACTIONS[target.faction].name} rises by ${gained}.\r\n`, standing: { faction: target.faction, value: attacker.standing[target.faction] } });
+            }
           }
         } else {
           // A dead character drops what they carry where they fell and wakes
