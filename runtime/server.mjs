@@ -16,8 +16,9 @@ import { readSpanTail, readSpansTail, redactSpans } from "./spans.mjs";
 import { summarizeTrends } from "./trends.mjs";
 import { summarizePlayers } from "./playerstats.mjs";
 import { step, initialState, digestState, phaseAt, upgradeState, releaseHeldObjects, checkpointIdentities, armorOf, nextFrom, TICK_MS } from "./world.mjs";
-import { equipmentText, inventoryGroups, weaponOf } from "./equipment.mjs";
+import { equipmentText, inventoryGroups, setBonus, weaponDamageOf, weaponOf } from "./equipment.mjs";
 import { techniqueForWeapon } from "./techniques.mjs";
+import { COMPONENTS, componentsText, componentForItem, salvageYield, upgradeCost } from "./forge.mjs";
 import { maxManaFor, spellById, spellLine, spellPower, trainableSpells, trainingCost } from "./magic.mjs";
 import { findAction, loadActions } from "./actions.mjs";
 import { loadWorld } from "./worlddata.mjs";
@@ -643,6 +644,7 @@ const ALIASES = {
   status: "world", time: "world", sr: "search",
   lb: "leaderboard", top: "leaderboard", ranks: "leaderboard",
   standing: "standing", reputation: "standing", factions: "standing",
+  upgrade: "upgrade", improve: "upgrade", forge: "upgrade", salvage: "salvage", melt: "salvage", scrap: "salvage", components: "components", parts: "components", materials: "components",
   lv: "levels", lvl: "levels",
   gv: "give", pt: "put", op: "open", cl: "close", wr: "wear", rm: "remove",
   ea: "eat", drink: "drink", quaff: "drink", li: "light", ext: "extinguish", b: "buy", se: "sell", ls: "list",
@@ -716,6 +718,7 @@ function selfState(actor) {
     guild: actor.guild ?? null,
     guild_rank: actor.guildRank ?? null,
     standing: { ...(actor.standing ?? {}) },
+    components: { ...(actor.components ?? {}) },
     title: actor.title ?? null,
     ignoring: (actor.ignored ?? []).length,
     memory_facts: Object.keys(actor.memory?.facts ?? {}).length,
@@ -726,8 +729,8 @@ function selfState(actor) {
     },
     inventory: state.objects.filter((object) => object.holder === actor.id && !object.worn).length,
     armor: armorOf(actor, state.objects),
-    damage: weaponOf(actor, state.objects)?.damage ?? 0,
-    spell_power: spellPower(actor, weaponOf(actor, state.objects)?.damage ?? 0),
+    damage: weaponDamageOf(weaponOf(actor, state.objects)),
+    spell_power: spellPower(actor, weaponDamageOf(weaponOf(actor, state.objects))),
     effects: (actor.effects ?? []).map((effect) => ({ id: effect.id, name: effect.name, rounds: effect.rounds })),
     inventory_names: state.objects.filter((object) => object.holder === actor.id && !object.worn && !object.eaten).map((object) => object.name),
     wielding: state.objects.find((object) => object.id === actor.wielding)?.name ?? null,
@@ -1461,7 +1464,7 @@ async function handleCommand(id, line) {
     if (!actor?.key) {
       return sendTo(id, "MUDBench is a persistent world for people and agents.\r\nSign in with your Prism id, or register <name> <password> / login <name> <password>.\r\nThen type help for the commands.\r\n");
     }
-    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: take/t/g/tf, take all, drop/dp/dr, inventory/i, coins, standing/reputation, score/sc, quests/q, who/wh, spells/sp, cast/ca, say/sy, tell/te, give/gv, put/pt, open/op, close/cl, wear/wr, remove/rm, buy/b, sell/se, list/ls, drink, map/mp, leaderboard/lb, levels/lv, shortcuts/sh.\r\nMagic: spells (effects/mana), train <spell> at the Mages' Guild, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search. Combat: attack/kill/k, technique/tech (weapon move), battle/combat/bt (current HP), score (armour/damage), equipment/eq (slots and totals). There is no fleeing a fight. Guild: guild join/leave/who/list/chat, guild advance (Mages, Wardens, Night Market), vault/deposit/withdraw in the Guild Hall. Social: ignore/unignore/ignoring, report/rep, titles/title, facts/memory, recall <word> at the shrine. Room actions: turn, push, ring where the room suggests.\r\nWorld: world or status (online, guilds, reset); levels, leaderboard/top/lb, map [zone], shortcuts, quests active|available|done|all.<id>; tutorial (first) for the first steps.\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
+    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: take/t/g/tf, take all, drop/dp/dr, inventory/i, coins, standing/reputation, components, score/sc, quests/q, who/wh, spells/sp, cast/ca, say/sy, tell/te, give/gv, put/pt, open/op, close/cl, wear/wr, remove/rm, buy/b, sell/se, list/ls, drink, map/mp, leaderboard/lb, levels/lv, shortcuts/sh.\r\nMagic: spells (effects/mana), train <spell> at the Mages' Guild, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search. Combat: attack/kill/k, technique/tech (weapon move), battle/combat/bt (current HP), score (armour/damage), equipment/eq (slots and totals). Forge: upgrade/improve, salvage/melt, components at the Cold Forge. There is no fleeing a fight. Guild: guild join/leave/who/list/chat, guild advance (Mages, Wardens, Night Market), vault/deposit/withdraw in the Guild Hall. Social: ignore/unignore/ignoring, report/rep, titles/title, facts/memory, recall <word> at the shrine. Room actions: turn, push, ring where the room suggests.\r\nWorld: world or status (online, guilds, reset); levels, leaderboard/top/lb, map [zone], shortcuts, quests active|available|done|all.<id>; tutorial (first) for the first steps.\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
   }
 
   // A command typed before the join tick lands is queued, not refused: the
@@ -1604,7 +1607,7 @@ async function handleCommand(id, line) {
     const trainable = trainableSpells(actor);
     const parts = [
       `Mana ${actor.mana ?? maxManaFor(actor)}/${actor.maxMana ?? maxManaFor(actor)}.`,
-      `Spell power ${spellPower(actor, weaponOf(actor, state.objects)?.damage ?? 0)}.`,
+      `Spell power ${spellPower(actor, weaponDamageOf(weaponOf(actor, state.objects)))}.`,
       `Known: ${known.length ? known.map((spell) => spellLine(spell)).join("; ") : "none"}.`,
     ];
     if (trainable.length) parts.push(`Trainable: ${trainable.map((spell) => `${spell.name} (${spell.mana} mana, level ${spell.level}, ${spell.cost ?? 0} coins)`).join("; ")}.`);
@@ -2022,7 +2025,7 @@ async function handleCommand(id, line) {
     }
     const weapon = weaponOf(actor, state.objects);
     const effects = (actor.effects ?? []).length ? ` · ${(actor.effects ?? []).map((effect) => `${effect.name} ${effect.rounds}`).join(", ")}` : "";
-    if (!fights.length) return sendTo(id, `You are not in a fight. ${weapon ? `Damage ${weapon.damage}; ` : ""}armour ${armorOf(actor, state.objects)}${effects}.\r\n`);
+    if (!fights.length) return sendTo(id, `You are not in a fight. ${weapon ? `Damage ${weaponDamageOf(weapon)}; ` : ""}armour ${armorOf(actor, state.objects)}${effects}.\r\n`);
     return sendTo(id, `Battle (${actor.hp}/${actor.maxHp} hp${effects}):\r\n  ${[...new Set(fights)].join("\r\n  ")}\r\n`);
   }
 
@@ -2034,12 +2037,56 @@ async function handleCommand(id, line) {
     const stateQ = normalizeQuestState(actor.quests, QUESTS.quests);
     const effects = (actor.effects ?? []).length ? ` Effects: ${(actor.effects ?? []).map((effect) => `${effect.name} ${effect.rounds}`).join(", ")}.` : "";
     const title = actor.title ? ` Title ${actor.title}.` : "";
-    const line = `Level ${actor.level} (${actor.xp}${nextXp === null ? "" : `/${nextXp}`} xp), ${actor.hp}/${actor.maxHp} hp, mana ${actor.mana ?? maxManaFor(actor)}/${actor.maxMana ?? maxManaFor(actor)}, armour ${armor}, damage ${(weapon?.damage ?? 0) + guildBonus(actor).damage}, spell power ${spellPower(actor, weapon?.damage ?? 0)}, ${weapon ? `wielding ${weapon.name}` : "unarmed"}${actor.guild ? `, guild ${actor.guild}` : ""}, ${stateQ.active.length} active/${stateQ.completed.length} done quests.${title}${effects}`;
+    const line = `Level ${actor.level} (${actor.xp}${nextXp === null ? "" : `/${nextXp}`} xp), ${actor.hp}/${actor.maxHp} hp, mana ${actor.mana ?? maxManaFor(actor)}/${actor.maxMana ?? maxManaFor(actor)}, armour ${armor}, damage ${weaponDamageOf(weapon) + guildBonus(actor).damage + setBonus(actor, state.objects).damage}, spell power ${spellPower(actor, weaponDamageOf(weapon))}, ${weapon ? `wielding ${weapon.name}` : "unarmed"}${actor.guild ? `, guild ${actor.guild}` : ""}, ${stateQ.active.length} active/${stateQ.completed.length} done quests.${title}${effects}`;
     return sendTo(id, `${render(messages.line, { words: line })}\r\n`);
   }
 
   if (named === "standing") {
     return sendTo(id, `${standingsText(actor.standing)}\r\n`);
+  }
+
+  if (named === "components") {
+    return sendTo(id, `${componentsText(actor.components)}\r\n`);
+  }
+
+  if (named === "upgrade" || named === "salvage") {
+    const messages = VERB_TABLE.verbs[named].messages;
+    const smith = state.npcs.find((npc) => npc.id === "forge-master" && npc.room === 63 && !npc.dead);
+    if (actor.room !== 63 || !smith) return sendTo(id, `${messages.noForge}\r\n`);
+    const object = findObject(words, (o) => o.holder === id && !o.eaten);
+    if (!object) return sendTo(id, `${render(messages.missing, { words })}\r\n`);
+    const forgeable = (object.flags ?? []).includes("weapon")
+      || (object.flags ?? []).includes("wearable")
+      || (object.flags ?? []).includes("armor");
+    if (!forgeable) return sendTo(id, `${messages.notGear}\r\n`);
+    if (QUEST_OBJECTS.has(object.id)) return sendTo(id, `${render(messages.quest, { object: object.name })}\r\n`);
+    if ((object.flags ?? []).includes("coin")) return sendTo(id, `${messages.coin}\r\n`);
+    if (named === "salvage") {
+      if (object.worn || actor.wielding === object.id) return sendTo(id, `${render(messages.worn, { object: object.name })}\r\n`);
+      const amount = salvageYield(object);
+      const component = componentForItem(object);
+      pending.push({ kind: "salvage", actorId: id, objectId: object.id, component, amount });
+      recordSpan("world.forge", { "actor.id": id, "forge.action": "salvage", "object.id": object.id, "component.id": component, "component.count": amount, "world.tick": state.tick }, 0);
+      return;
+    }
+    const cost = upgradeCost(object);
+    if ((object.plus ?? 0) >= 3) return sendTo(id, `${render(messages.max, { object: object.name })}\r\n`);
+    const held = actor.components?.[cost.component] ?? 0;
+    if (held < cost.count) return sendTo(id, `You need ${cost.count} ${COMPONENTS[cost.component] ?? cost.component}.\r\n`);
+    const coins = state.objects
+      .filter((o) => o.holder === id && (o.flags ?? []).includes("coin") && !o.eaten)
+      .sort((a, b) => b.value - a.value);
+    const chosen = [];
+    let paid = 0;
+    for (const coin of coins) {
+      chosen.push(coin);
+      paid += coin.value;
+      if (paid >= cost.coins) break;
+    }
+    if (paid < cost.coins) return sendTo(id, `${render(messages.poor, { object: object.name })}\r\n`);
+    pending.push({ kind: "upgrade", actorId: id, objectId: object.id, component: cost.component, count: cost.count, coins: cost.coins, coinIds: chosen.map((coin) => coin.id) });
+    recordSpan("world.forge", { "actor.id": id, "forge.action": "upgrade", "object.id": object.id, "component.id": cost.component, "component.count": cost.count, "coins": cost.coins, "world.tick": state.tick }, 0);
+    return;
   }
 
   if (named === "quests" || (named === "quest" && rest.length === 0)) {
@@ -2824,8 +2871,8 @@ async function handle(id, line) {
 // --- the clock -----------------------------------------------------------
 
 function progressionSnapshot(actor) {
-  const { role, level, xp, guild, guildRank, quests, spellbook, maxMana, questCycles, ignored, title, memory } = actor;
-  return JSON.stringify({ role, level, xp, guild, guildRank, quests, spellbook, maxMana, questCycles, ignored, title, memory });
+  const { role, level, xp, guild, guildRank, quests, spellbook, maxMana, questCycles, ignored, title, memory, components } = actor;
+  return JSON.stringify({ role, level, xp, guild, guildRank, quests, spellbook, maxMana, questCycles, ignored, title, memory, components });
 }
 
 function onTick() {

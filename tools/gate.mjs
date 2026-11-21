@@ -29,6 +29,7 @@ import { CHAT_LIMIT, CHAT_WINDOW_MS, REPORT_INTERVAL_MS, REPORT_REASON_MAX, chat
 import { ADJECTIVES, NOUNS, randomCharacterName, uniqueCharacterName, chooseCharacter } from "../runtime/web/names.mjs";
 import { loadTitles, earnedTitles } from "../runtime/titles.mjs";
 import { TECHNIQUES, techniqueForWeapon, techniqueReady } from "../runtime/techniques.mjs";
+import { COMPONENTS, componentForItem, componentsText, salvageYield, upgradeCost } from "../runtime/forge.mjs";
 import { loadFacts, contextHasWord } from "../runtime/facts.mjs";
 import { allowCommand, DEFAULT_INTERVAL_MS } from "../runtime/allowance.mjs";
 import { loadLevels, levelForXp } from "../runtime/levels.mjs";
@@ -61,7 +62,7 @@ import { playerLines, summarizePlayers } from "../runtime/playerstats.mjs";
 import { worldStatus, worldStatusText } from "../runtime/worldstatus.mjs";
 import { redactCommand, sanitizeIntent, sanitizeState, scrubSecrets, scrubSpan } from "../runtime/telemetry-policy.mjs";
 import { planRetention } from "../runtime/retention.mjs";
-import { equipmentOf, equipmentText, inventoryGroups } from "../runtime/equipment.mjs";
+import { equipmentOf, equipmentText, inventoryGroups, setBonus } from "../runtime/equipment.mjs";
 import { maxManaFor, spellPower } from "../runtime/magic.mjs";
 import { trainingCost } from "../runtime/magic.mjs";
 import { findAction, loadActions } from "../runtime/actions.mjs";
@@ -1547,6 +1548,49 @@ let techniques = { ok: true, why: [] };
   if (techniques.why.length) { techniques.ok = false; failures.push(`techniques are broken: ${techniques.why[0]}`); }
 }
 
+// Forge: upgrades consume components and coins, salvage returns components,
+// and three/four matching pieces give set bonuses.
+let forge = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, undefined, questTable.quests);
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
+  const check = (condition, why) => { if (!condition) { forge.ok = false; forge.why.push(why); } };
+  check(componentForItem(world.objects.find((object) => object.id === "ember-cloak")) === "ember-ore" && componentForItem(world.objects.find((object) => object.id === "fen-mantle")) === "wisp-glass", "the salvage component mapping is wrong");
+  check(upgradeCost({ plus: 0, set: "ember" }).count === 2 && upgradeCost({ plus: 0, set: "ember" }).coins === 20, "the first upgrade cost is wrong");
+  check(salvageYield({ value: 60, plus: 1 }) === 4, "the salvage yield is wrong");
+  check(componentsText({ "ember-ore": 3, "wisp-glass": 1 }).includes("Ember ore ×3"), "the components text is wrong");
+  run([{ kind: "join", actorId: "f", name: "forge" }]);
+  run([{ kind: "login", actorId: "f", key: "forge", token: null, authenticated: true }]);
+  state.actors.find((entry) => entry.id === "f").components = { "ember-ore": 10 };
+  const sword = state.objects.find((object) => object.id === "sword");
+  sword.holder = "f"; sword.room = null; sword.forSale = false; sword.plus = 0;
+  for (const id of ["gold", "coin"]) {
+    const coin = state.objects.find((object) => object.id === id);
+    coin.holder = "f"; coin.room = null;
+  }
+  run([{ kind: "upgrade", actorId: "f", objectId: "sword", component: "ember-ore", count: 2, coins: 20, coinIds: ["gold", "coin"] }]);
+  let actor = state.actors.find((entry) => entry.id === "f");
+  check(state.objects.find((object) => object.id === "sword").plus === 1, "the upgrade did not raise the plus");
+  check(actor.components["ember-ore"] === 8, "the upgrade did not consume components");
+  check(state.objects.find((object) => object.id === "gold").holder === null, "the upgrade did not consume coins");
+  const jerkin = state.objects.find((object) => object.id === "jerkin");
+  jerkin.holder = "f"; jerkin.room = null; jerkin.forSale = false; jerkin.worn = false;
+  run([{ kind: "salvage", actorId: "f", objectId: "jerkin", component: "ember-ore", amount: 1 }]);
+  actor = state.actors.find((entry) => entry.id === "f");
+  check(actor.components["ember-ore"] === 9 && state.objects.find((object) => object.id === "jerkin").eaten === true, "salvage did not return a component");
+  for (const id of ["ember-cloak", "ember-gauntlets", "ember-boots"]) {
+    const object = state.objects.find((entry) => entry.id === id);
+    object.holder = "f"; object.room = null; object.worn = true;
+  }
+  actor = state.actors.find((entry) => entry.id === "f");
+  check(setBonus(actor, state.objects).armor === 1 && setBonus(actor, state.objects).damage === 0, "the three-piece set bonus is wrong");
+  const brand = state.objects.find((object) => object.id === "ember-brand");
+  brand.holder = "f"; brand.room = null; actor.wielding = "ember-brand";
+  check(setBonus(actor, state.objects).damage === 1, "the four-piece set damage bonus is wrong");
+  if (forge.why.length) { forge.ok = false; failures.push(`the forge is broken: ${forge.why[0]}`); }
+}
+
 // Controls: short take/kill/score, take-all, drink and grouped inventory.
 let controls = { ok: true, why: [] };
 {
@@ -2720,6 +2764,7 @@ let persistence = { ok: true, why: [] };
   state.actors[0].guildRank = "leader";
   state.actors[0].quests = { active: [{ id: "word", progress: {} }], completed: ["guardian"] };
   state.actors[0].standing = { ember: 4 };
+  state.actors[0].components = { "ember-ore": 2 };
   run([{ kind: "take", actorId: "a", objectId: "satchel", messages: say("take") }]);
   run([{ kind: "take", actorId: "a", objectId: "cloak", messages: say("take") }]);
   run([{ kind: "put", actorId: "a", objectId: "cloak", containerId: "satchel", messages: say("put") }]);
@@ -2734,6 +2779,7 @@ let persistence = { ok: true, why: [] };
   check(state.identities.alice.level === 3 && state.identities.alice.xp === 120, "progression was not written on logout");
   check(state.identities.alice.guild === "wardens" && state.identities.alice.guildRank === "leader" && state.identities.alice.quests.completed.includes("guardian"), "guild or quest progress was lost on logout");
   check(state.identities.alice.standing?.ember === 4, "standing was lost on logout");
+  check(state.identities.alice.components?.["ember-ore"] === 2, "forge components were lost on logout");
 
   run([{ kind: "join", actorId: "b", name: "alice" }]);
   run([{ kind: "login", actorId: "b", key: "alice", token: null, authenticated: true }]);
@@ -2742,6 +2788,7 @@ let persistence = { ok: true, why: [] };
   check(returning.level === 3 && returning.xp === 120, "level or experience was not restored on login");
   check(returning.guild === "wardens" && returning.guildRank === "leader" && returning.quests.completed.includes("guardian"), "guild or quest progress was not restored on login");
   check(returning.standing?.ember === 4, "standing was not restored on login");
+  check(returning.components?.["ember-ore"] === 2, "forge components were not restored on login");
   check(state.objects.every((o) => o.holder !== "b"), "items were restored to a hand across logout");
   check(object("satchel").room === 2 && object("scroll").room === 2, "logout items did not stay in the world");
 
@@ -3495,6 +3542,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"factions".padEnd(26)}  ${(factionAllows({ ember: 6 }, "ember", 6) ? "6 contacts" : "BROKEN").padStart(5)}   == standing, shops`);
   console.log(`${"outlaws".padEnd(26)}  ${(nightBonus({ guild: "night-market", guildRank: "master" }).damage === 1 ? "Night Market" : "BROKEN").padStart(5)}   == guild, factions`);
   console.log(`${"techniques".padEnd(26)}  ${(techniques.ok ? "7 weapon moves" : "BROKEN").padStart(5)}   == cooldown, stun`);
+  console.log(`${"forge".padEnd(26)}  ${(forge.ok ? "+1, salvage" : "BROKEN").padStart(5)}   == components, sets`);
   console.log(`${"balanceBands".padEnd(26)}  ${(balanceBands.ok ? "PvE, PvP" : "BROKEN").padStart(5)}   == seeded bands`);
   console.log(`${"chatGuard".padEnd(26)}  ${(chatGuard.ok ? "8/10s" : "BROKEN").padStart(5)}   == rate limit`);
   console.log(`${"moderation".padEnd(26)}  ${(moderation.ok ? "names, report" : "BROKEN").padStart(5)}   == new-name policy`);

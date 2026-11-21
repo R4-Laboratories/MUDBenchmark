@@ -1,6 +1,6 @@
 # Next work
 
-Baseline: **v0.91.23**. The world has 115 rooms, 14 zones, 20 quests, 55 mobiles
+Baseline: **v0.91.24**. The world has 115 rooms, 14 zones, 20 quests, 55 mobiles
 and 131 objects. R4 memory, command grounding, scorecards
 and the public stats surface are live; signups are open and the Gemini demo is
 disabled and unconfigured.
@@ -50,6 +50,7 @@ memory or prompt system.
 | v0.91.21 | Faction standing and quartermasters | **done** (MB-193) |
 | v0.91.22 | Weapon-family techniques | **done** (MB-195) |
 | v0.91.23 | Outlaw paths: Night Market, Ashen Hand, Red Company | **done** (MB-197) |
+| v0.91.24 | Forge upgrades, salvage and set bonuses | **in flight** |
 | backlog | Optional content and live-player tuning | optional |
 
 ## What is next

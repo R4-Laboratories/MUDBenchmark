@@ -14,6 +14,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { FACTIONS } from "./factions.mjs";
 import { TECHNIQUES } from "./techniques.mjs";
+import { GEAR_SETS, MAX_UPGRADE } from "./forge.mjs";
 import { spellById } from "./magic.mjs";
 
 // Resolved against this module, not the process working directory: the service
@@ -230,6 +231,8 @@ export function loadWorld({ mode = "single", path = DEFAULT_PATH } = {}) {
     if (object.technique !== undefined && !TECHNIQUES[object.technique]) {
       errors.push(`object ${object.id} has unknown technique ${object.technique}`);
     }
+    if (object.set !== undefined && !GEAR_SETS[object.set]) errors.push(`object ${object.id} has unknown set ${object.set}`);
+    if (object.plus !== undefined && (!Number.isInteger(object.plus) || object.plus < 0 || object.plus > MAX_UPGRADE)) errors.push(`object ${object.id} has an invalid plus`);
     if (flags.includes("armor") && (!Number.isInteger(object.armor) || object.armor < 1)) {
       errors.push(`armor ${object.id} has no armor value`);
     }

@@ -346,6 +346,9 @@ Rehearsed 2026-11-16:
   priests/barbarians, Backstab/Rage/Drain techniques, and their quartermaster
   gear. It uses one new guild and two standing tracks, not four rank guilds
   (MB-197);
+- v0.91.24 (forge) adds component salvage, +1..+3 gear upgrades at the Cold
+  Forge, 3/4-piece set bonuses and `world.forge` spans, giving coins and zone
+  materials a real sink (MB-199);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);
