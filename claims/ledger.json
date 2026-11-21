@@ -1263,6 +1263,12 @@
       "level": "build",
       "statement": "v0.91.27 completes the Ashen Hand (hood/boots), Red Company (helm/gauntlets) and Night Market (boots/gloves) sets so all three can reach four equipped pieces; adds shield Guard (+3 armour for two rounds) usable from the offhand; adds five readable lore pieces in Ember/Fen/Salt/Moon/Garden; adds a web Character sheet (equipment slots, sets, techniques, faction ranks, components, duel record, event) and shop item stats; and opens the Training Yard east of the Guild Hall with a passive dummy, trainer, practice sword/shield and board. The world is 116 rooms/14 zones/20 quests/57 mobiles/145 objects. The Gate covers set completion, Guard, lore, sheet source, training yard and all prior checks.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-206",
+      "level": "some-true",
+      "statement": "Production v0.91.27 serves 116 rooms, 14 zones, 20 quests, 57 mobiles and 145 objects. The Ashen/Red/Night sets are complete, shield Guard is live, five retired-zone lore readables exist, the web Character sheet and shop item stats are served, and the Training Yard is east of the Guild Hall with a passive dummy, trainer and practice gear. The Fen Rising is the active event. R4 active, signups open. Main Gate 44951327957 green, publish 44952060375.",
+      "authority": "GitHub PR #39 merge b7c28ed 2026-11-21; main Gate 44951327957; publish 44952060375; release v0.91.27; wick deploy output, /world and /health; local Training Yard smoke"
     }
   ]
 }
