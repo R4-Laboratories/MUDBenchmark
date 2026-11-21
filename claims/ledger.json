@@ -1095,6 +1095,30 @@
       "level": "some-true",
       "statement": "Production v0.91.14 serves 114 rooms, 14 zones, 61 quests, 51 mobiles and 102 objects. GET /players reports 1,249 compact spans, 10 sessions, 6 unique accounts, 6 human, 2 AI and 2 AI-unknown; /stats serves the player panel. The publisher released v0.91.14 from merge commit aa4b5d2 after the merge-commit guard was added. R4 active, signups open, Gemini configured false. Main Gate 44842247272 green, publish 44843375072.",
       "authority": "GitHub PR #26 merge aa4b5d2 2026-11-21; main Gate 44842247272; publish 44843375072; release v0.91.14; wick deploy output, /players and /stats"
+    },
+    {
+      "id": "MB-178",
+      "level": "build",
+      "statement": "v0.91.15 adds player fundamentals and the economy baseline. Commands: take alias t, take all/everything (one aggregate event), drink/quaff for drink-flagged consumables, coins/money/purse totals, grouped inventory with an optional category, and k/sc remain attack/score. Combat: flee is refused and records world.flee with flee.refused; the reducer has no flee intent. Health: level 1 starts at 20 HP and each level adds 5 (level 10 = 65). Economy: the Gilded Rat sells a 10-coin ale (2 bites, 5 heal), three sellable treasures (gilded chalice 45, ivory figurine 70, moonstone 90) exist, and shops refuse quest collectibles. The world is 114 rooms/14 zones/61 quests/51 mobiles/106 objects. The Gate covers the aliases, health curve, inventory grouping, take-all and drink.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-179",
+      "level": "build",
+      "statement": "The browser AI defaults to Pollinations for a new configuration: https://text.pollinations.ai/openai, model openai-fast, no key, stream:true. requestFor handles the endpoint (which is already the chat URL) and readSseText parses OpenAI-style SSE content deltas, updates the live thought line as text arrives and returns the final text for the normal parser. The provider hint discloses that the anonymous service may log prompts and is best-effort. The Gate checks the provider metadata, request URL/body and the SSE reader; a live anonymous test returned the first delta in ~1.4s and the full three-line reply in ~1.7s.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-180",
+      "level": "build",
+      "statement": "The Wardens' Lodge is room 115 above the Guild Hall (room 24), with the warden-captain NPC and reciprocal up/down exits. The server seeds The Wardens alongside the Mages' Guild; joining needs level 3 and room 115. Ranks are scout -> ranger (level 5, 15 rooms explored) -> warden (level 8, 30 rooms explored), with no quest requirement. The reducer accepts guildAdvance for mages and wardens and records the right promoter; the server now allows the archmage promotion at level 10 with four known spells instead of refusing the top rank. Account wipe keeps both institutions. The world is 115 rooms/14 zones/61 quests/52 mobiles/106 objects. The Gate covers the lodge exits, NPC, and a Wardens rank advance.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-181",
+      "level": "build",
+      "statement": "The quest count is frozen at 61 in world/ratchet.json, with a documented target of 20 in docs/QUEST-BUDGET.md. The Gate reads the quest table and fails if the count exceeds the frozen ceiling; it prints quests 61 <= 61. No quest definitions were deleted in this release; the 20-slot composition and migration plan are recorded for a dedicated content pass.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

@@ -6,15 +6,17 @@
       "aliases": [
         "get",
         "grab",
-        "tf"
+        "tf",
+        "t"
       ],
-      "argument": "object",
+      "argument": "object or all",
       "messages": {
         "actor": "You take %o.",
         "others": "%a takes %o.",
         "missing": "There is no %s here.",
         "fixed": "The %s will not move.",
-        "forSale": "The %s is the shopkeeper's. Buy it."
+        "forSale": "The %s is the shopkeeper's. Buy it.",
+        "nothing": "There is nothing here to take."
       }
     },
     "drop": {
@@ -49,10 +51,22 @@
         "i",
         "inv"
       ],
-      "argument": "none",
+      "argument": "optional category",
       "messages": {
         "carrying": "You are carrying: %s.",
-        "empty": "You are carrying nothing."
+        "empty": "You are carrying nothing.",
+        "noCategory": "No carried items match %s."
+      }
+    },
+    "coins": {
+      "aliases": [
+        "money",
+        "purse"
+      ],
+      "argument": "none",
+      "messages": {
+        "list": "You have %s.",
+        "empty": "You have no coins."
       }
     },
     "attack": {
@@ -169,6 +183,20 @@
         "lastOthers": "%a finishes %o."
       }
     },
+    "drink": {
+      "aliases": [
+        "quaff"
+      ],
+      "argument": "object",
+      "messages": {
+        "actor": "You drink %o.",
+        "others": "%a drinks %o.",
+        "missing": "You are not carrying a %s.",
+        "notDrink": "The %s is not drinkable.",
+        "last": "You drain %o.",
+        "lastOthers": "%a drains %o."
+      }
+    },
     "light": {
       "aliases": [
         "ignite",
@@ -225,7 +253,8 @@
         "missing": "You are not carrying a %s.",
         "noShop": "There is no shop here.",
         "worthless": "The shop will not pay for %o.",
-        "coin": "The shop does not buy money."
+        "coin": "The shop does not buy money.",
+        "questItem": "The shop will not buy %o; it is still tied to a quest."
       }
     },
     "list": {
@@ -318,15 +347,10 @@
       }
     },
     "flee": {
-      "aliases": [
-        "run",
-        "fl"
-      ],
+      "aliases": [],
       "argument": "none",
       "messages": {
-        "actor": "You flee %s.",
-        "others": "%a flees %s.",
-        "noExit": "There is nowhere to flee."
+        "refused": "There is no fleeing combat. A fight ends only with a death."
       }
     },
     "score": {

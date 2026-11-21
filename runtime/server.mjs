@@ -16,7 +16,7 @@ import { readSpanTail, readSpansTail, redactSpans } from "./spans.mjs";
 import { summarizeTrends } from "./trends.mjs";
 import { summarizePlayers } from "./playerstats.mjs";
 import { step, initialState, digestState, phaseAt, upgradeState, releaseHeldObjects, checkpointIdentities, armorOf, nextFrom, TICK_MS } from "./world.mjs";
-import { equipmentText, weaponOf } from "./equipment.mjs";
+import { equipmentText, inventoryGroups, weaponOf } from "./equipment.mjs";
 import { maxManaFor, spellById, spellLine, spellPower, trainableSpells, trainingCost } from "./magic.mjs";
 import { findAction, loadActions } from "./actions.mjs";
 import { loadWorld } from "./worlddata.mjs";
@@ -106,6 +106,10 @@ if (LEVELS.errors.length > 0) {
 }
 
 const QUESTS = loadQuests();
+// Quest collectibles are not merchandise. Selling one could strand a character
+// on a line they cannot repeat, so the shop refuses them by data, not by name.
+const QUEST_OBJECTS = new Set((QUESTS.quests ?? []).flatMap((quest) =>
+  (quest.objectives ?? []).filter((objective) => objective.kind === "collect").map((objective) => objective.object)));
 if (QUESTS.errors.length > 0) {
   for (const problem of QUESTS.errors) console.error(`quests: ${problem}`);
   process.exit(1);
@@ -288,6 +292,23 @@ if (!state.guilds.mages) {
     ranks: ["apprentice", "adept", "magician", "archmage"],
     hall: 34,
     trainer: "archmage",
+    xp: 0,
+    level: 1,
+    perks: [],
+    vault: [],
+  };
+}
+if (!state.guilds.wardens) {
+  state.guilds.wardens = {
+    id: "wardens",
+    name: "The Wardens",
+    founder: "warden-captain",
+    created: state.tick,
+    members: {},
+    invites: [],
+    ranks: ["scout", "ranger", "warden"],
+    hall: 115,
+    trainer: "warden-captain",
     xp: 0,
     level: 1,
     perks: [],
@@ -574,8 +595,8 @@ const DIRECTIONS = { n: "north", s: "south", e: "east", w: "west", u: "up", d: "
 // the common actions. `g` is get/take, so `gos`/`goss` are the gossip channel.
 const ALIASES = {
   l: "look", x: "examine", ex: "examine",
-  g: "take", get: "take", grab: "take", dr: "drop", discard: "drop",
-  i: "inventory", inv: "inventory", eq: "equipment",
+  g: "take", t: "take", get: "take", grab: "take", dr: "drop", discard: "drop",
+  i: "inventory", inv: "inventory", eq: "equipment", coins: "coins", money: "coins", purse: "coins",
   sc: "score", stats: "score", q: "quests", j: "quests", journal: "quests",
   wh: "who", aw: "awake", online: "who",
   h: "help", "?": "help",
@@ -584,9 +605,9 @@ const ALIASES = {
   lb: "leaderboard", top: "leaderboard", ranks: "leaderboard",
   lv: "levels", lvl: "levels",
   gv: "give", pt: "put", op: "open", cl: "close", wr: "wear", rm: "remove",
-  ea: "eat", li: "light", ext: "extinguish", b: "buy", se: "sell", ls: "list",
+  ea: "eat", drink: "drink", quaff: "drink", li: "light", ext: "extinguish", b: "buy", se: "sell", ls: "list",
   sy: "say", te: "tell", m: "mail", ch: "channels", gl: "global", wi: "wield",
-  uw: "unwield", fl: "flee", dv: "deliver", tk: "talk", du: "duel", wa: "wait",
+  uw: "unwield", dv: "deliver", tk: "talk", du: "duel", wa: "wait",
   ad: "adopt", mp: "map", sh: "shortcuts", k: "attack", atk: "attack",
   an: "answer", clm: "claim", wld: "world", sp: "spells", tr: "train",
   ca: "cast", stu: "study", re: "recite", tu: "turn", pu: "push", ri: "ring",
@@ -1389,7 +1410,7 @@ async function handleCommand(id, line) {
     if (!actor?.key) {
       return sendTo(id, "MUDBench is a persistent world for people and agents.\r\nSign in with your Prism id, or register <name> <password> / login <name> <password>.\r\nThen type help for the commands.\r\n");
     }
-    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: get/g/tf, drop/dp/dr, inventory/i, score/sc, quests/q, who/wh, spells/sp, cast/ca, say/sy, tell/te, give/gv, put/pt, open/op, close/cl, wear/wr, remove/rm, buy/b, sell/se, list/ls, map/mp, leaderboard/lb, levels/lv, shortcuts/sh.\r\nMagic: spells (effects/mana), train <spell> at the Mages' Guild, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search. Combat: attack/k, flee/fl, battle/combat/bt (current HP), score (armour/damage), equipment/eq (slots and totals). Guild: guild join/leave/who/list/chat, guild advance (Mages), vault/deposit/withdraw in the Guild Hall. Social: ignore/unignore/ignoring, report/rep, titles/title, facts/memory, recall <word> at the shrine. Room actions: turn, push, ring where the room suggests.\r\nWorld: world or status (online, guilds, reset); levels, leaderboard/top/lb, map [zone], shortcuts, quests active|available|done|all.<id>; tutorial (first) for the first steps.\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
+    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: take/t/g/tf, take all, drop/dp/dr, inventory/i, coins, score/sc, quests/q, who/wh, spells/sp, cast/ca, say/sy, tell/te, give/gv, put/pt, open/op, close/cl, wear/wr, remove/rm, buy/b, sell/se, list/ls, drink, map/mp, leaderboard/lb, levels/lv, shortcuts/sh.\r\nMagic: spells (effects/mana), train <spell> at the Mages' Guild, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search. Combat: attack/kill/k, battle/combat/bt (current HP), score (armour/damage), equipment/eq (slots and totals). There is no fleeing a fight. Guild: guild join/leave/who/list/chat, guild advance (Mages, Wardens), vault/deposit/withdraw in the Guild Hall. Social: ignore/unignore/ignoring, report/rep, titles/title, facts/memory, recall <word> at the shrine. Room actions: turn, push, ring where the room suggests.\r\nWorld: world or status (online, guilds, reset); levels, leaderboard/top/lb, map [zone], shortcuts, quests active|available|done|all.<id>; tutorial (first) for the first steps.\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
   }
 
   // A command typed before the join tick lands is queued, not refused: the
@@ -1856,6 +1877,7 @@ async function handleCommand(id, line) {
     const object = findObject(words, (o) => o.holder === id && !o.eaten);
     if (!object) return sendTo(id, `${render(messages.missing, { words })}\r\n`);
     if ((object.flags ?? []).includes("coin")) return sendTo(id, `${messages.coin}\r\n`);
+    if (QUEST_OBJECTS.has(object.id)) return sendTo(id, `${render(messages.questItem, { object: object.name })}\r\n`);
     const payment = Math.floor((object.value ?? 0) / 2);
     if (payment < 1) return sendTo(id, `${render(messages.worthless, { object: object.name })}\r\n`);
     pending.push({ kind: "sell", actorId: id, objectId: object.id, room: actor.room, messages: {
@@ -1887,15 +1909,8 @@ async function handleCommand(id, line) {
 
   if (named === "flee") {
     const messages = VERB_TABLE.verbs.flee.messages;
-    const exits = Object.entries(ROOMS[actor.room]?.exits ?? {});
-    if (exits.length === 0) return sendTo(id, `${messages.noExit}\r\n`);
-    const [dir, to] = exits[nextFrom(state.tick + actor.room, exits.length)];
-    pending.push({ kind: "flee", actorId: id, dir, to, messages: {
-      actor: render(messages.actor, { words: dir }),
-      others: render(messages.others, { actor: actor.name, words: dir }),
-    } });
-    recordSpan("world.flee", { "actor.id": id, "room.from": actor.room, "room.to": to, "direction": dir, "world.tick": state.tick }, 0);
-    return;
+    recordSpan("world.flee", { "actor.id": id, "flee.refused": true, "world.tick": state.tick }, 0);
+    return sendTo(id, `${messages.refused}\r\n`);
   }
 
   if (verb === "battle" || verb === "combat") {
@@ -2113,6 +2128,10 @@ async function handleCommand(id, line) {
         if (actor.room !== 34) return sendTo(id, "The Mages' Guild meets above the Atrium.\r\n");
         if ((actor.level ?? 1) < 3) return sendTo(id, "The archmage accepts students of level 3 and above.\r\n");
       }
+      if (guild.id === "wardens") {
+        if (actor.room !== 115) return sendTo(id, "The Wardens meet in the lodge above the Guild Hall.\r\n");
+        if ((actor.level ?? 1) < 3) return sendTo(id, "The warden-captain takes level 3 and above.\r\n");
+      }
       pending.push({ kind: "guildJoin", actorId: id, guildId: guild.id });
       return;
     }
@@ -2123,18 +2142,32 @@ async function handleCommand(id, line) {
     }
     if (action === "advance") {
       const guild = state.guilds[actor.guild];
-      if (!guild || guild.id !== "mages") return sendTo(id, "Only the Mages' Guild advances ranks.\r\n");
-      if (actor.room !== 34) return sendTo(id, "The archmage promotes students in the guild hall.\r\n");
+      if (!guild || !["mages", "wardens"].includes(guild.id)) return sendTo(id, "Only the Mages' Guild and the Wardens advance ranks.\r\n");
       const ranks = guild.ranks ?? ["apprentice", "adept", "magician", "archmage"];
       const next = ranks[ranks.indexOf(actor.guildRank) + 1];
-      if (!next || next === "archmage") return sendTo(id, "There is no higher rank for you here.\r\n");
-      const known = (actor.spellbook ?? []).length;
-      const completed = new Set(actor.quests?.completed ?? []);
-      if (next === "adept" && ((actor.level ?? 1) < 5 || known < 2)) {
-        return sendTo(id, "Adept needs level 5 and two known spells.\r\n");
-      }
-      if (next === "magician" && ((actor.level ?? 1) < 8 || known < 4 || !completed.has("guild-ledger"))) {
-        return sendTo(id, "Magician needs level 8, four known spells and the guild ledger.\r\n");
+      if (!next) return sendTo(id, "There is no higher rank for you here.\r\n");
+      if (guild.id === "mages") {
+        if (actor.room !== 34) return sendTo(id, "The archmage promotes students in the guild hall.\r\n");
+        const known = (actor.spellbook ?? []).length;
+        const completed = new Set(actor.quests?.completed ?? []);
+        if (next === "adept" && ((actor.level ?? 1) < 5 || known < 2)) {
+          return sendTo(id, "Adept needs level 5 and two known spells.\r\n");
+        }
+        if (next === "magician" && ((actor.level ?? 1) < 8 || known < 4 || !completed.has("guild-ledger"))) {
+          return sendTo(id, "Magician needs level 8, four known spells and the guild ledger.\r\n");
+        }
+        if (next === "archmage" && ((actor.level ?? 1) < 10 || known < 4)) {
+          return sendTo(id, "Archmage needs level 10 and four known spells.\r\n");
+        }
+      } else {
+        if (actor.room !== 115) return sendTo(id, "The warden-captain promotes in the lodge above the Guild Hall.\r\n");
+        const explored = (actor.visited ?? []).length;
+        if (next === "ranger" && ((actor.level ?? 1) < 5 || explored < 15)) {
+          return sendTo(id, "Ranger needs level 5 and fifteen rooms explored.\r\n");
+        }
+        if (next === "warden" && ((actor.level ?? 1) < 8 || explored < 30)) {
+          return sendTo(id, "Warden needs level 8 and thirty rooms explored.\r\n");
+        }
       }
       pending.push({ kind: "guildAdvance", actorId: id, guildId: guild.id, rank: next });
       return;
@@ -2366,17 +2399,56 @@ async function handleCommand(id, line) {
 
   if (named === "inventory") {
     const carried = state.objects.filter((o) => o.holder === actor.id && !o.eaten);
-    const names = carried.map((o) => {
-      if (o.worn) return `${o.name} (worn)`;
-      if (!(o.flags ?? []).includes("container")) return o.name;
-      const held = state.objects.filter((c) => c.inside === o.id && !c.eaten).map((c) => c.name);
-      const state_ = o.open ? "open" : "closed";
-      return held.length && o.open ? `${o.name} (${state_}, holding ${held.join(", ")})` : `${o.name} (${state_})`;
-    });
     const messages = VERB_TABLE.verbs.inventory.messages;
-    return sendTo(id, names.length
-      ? `${render(messages.carrying, { words: names.join(", ") })}\r\n`
-      : `${messages.empty}\r\n`);
+    if (!carried.length) return sendTo(id, `${messages.empty}\r\n`);
+    const label = (object) => {
+      if (object.worn) return `${object.name} (worn)`;
+      if (!(object.flags ?? []).includes("container")) return object.name;
+      const held = state.objects.filter((child) => child.inside === object.id && !child.eaten).map((child) => child.name);
+      const state_ = object.open ? "open" : "closed";
+      return held.length && object.open ? `${object.name} (${state_}, holding ${held.join(", ")})` : `${object.name} (${state_})`;
+    };
+    const filter = words.trim().toLowerCase();
+    const groups = inventoryGroups(carried);
+    const chosen = filter
+      ? groups.filter((group) => group.id.includes(filter)
+        || group.label.toLowerCase().includes(filter)
+        || group.items.some((object) => object.name.toLowerCase().includes(filter)))
+      : groups;
+    if (!chosen.length) return sendTo(id, `${render(messages.noCategory, { words: filter })}\r\n`);
+    const total = chosen.reduce((sum, group) => sum + group.items.length, 0);
+    const details = chosen.map((group) => `${group.label} (${group.items.length}): ${group.items.map(label).join(", ")}`).join("\r\n  ");
+    return sendTo(id, `${render(messages.carrying, { words: `${total} item${total === 1 ? "" : "s"}:\r\n  ${details}` })}\r\n`);
+  }
+
+  if (named === "coins") {
+    const messages = VERB_TABLE.verbs.coins.messages;
+    const coins = state.objects.filter((o) => o.holder === actor.id && (o.flags ?? []).includes("coin") && !o.eaten);
+    if (!coins.length) return sendTo(id, `${messages.empty}\r\n`);
+    const total = coins.reduce((sum, coin) => sum + (Number.isFinite(coin.value) ? coin.value : 0), 0);
+    const kinds = new Map();
+    for (const coin of coins) {
+      const entry = kinds.get(coin.name) ?? { count: 0, value: 0 };
+      entry.count += 1;
+      entry.value += Number.isFinite(coin.value) ? coin.value : 0;
+      kinds.set(coin.name, entry);
+    }
+    const detail = [...kinds.entries()].map(([name, entry]) => `${entry.count} × ${name} (${entry.value})`).join(", ");
+    return sendTo(id, `${render(messages.list, { words: `${total} coin${total === 1 ? "" : "s"}: ${detail}` })}\r\n`);
+  }
+
+  if (named === "take" && /^(all|everything)$/i.test(words.trim())) {
+    const messages = VERB_TABLE.verbs.take.messages;
+    const items = state.objects.filter((o) => o.room === actor.room && !o.inside && !o.eaten
+      && o.holder === null && !(o.flags ?? []).includes("fixed") && !o.forSale);
+    if (!items.length) return sendTo(id, `${messages.nothing}\r\n`);
+    const names = items.map((object) => object.name).join(", ");
+    pending.push({ kind: "takeAll", actorId: id, objectIds: items.map((object) => object.id), messages: {
+      actor: `You take ${names}.\r\n`,
+      others: `${actor.name} takes ${names}.`,
+    } });
+    recordSpan("world.object", { "actor.id": id, "action.kind": "takeAll", "object.count": items.length, "room.id": actor.room, "world.tick": state.tick }, 0);
+    return;
   }
 
   if (named === "take" && /\s+from\s+/i.test(words)) {
@@ -2488,6 +2560,20 @@ async function handleCommand(id, line) {
       others: render(last ? messages.lastOthers : messages.others, { actor: actor.name, object: object.name }),
     } });
     recordSpan("world.object", { "actor.id": id, "action.kind": "eat", "object.id": object.id, "bites.left": last ? 0 : object.bites - 1, "world.tick": state.tick }, 0);
+    return;
+  }
+
+  if (named === "drink") {
+    const messages = VERB_TABLE.verbs.drink.messages;
+    const object = findObject(words, (o) => o.holder === actor.id && !o.eaten);
+    if (!object) return sendTo(id, `${render(messages.missing, { words })}\r\n`);
+    if (!(object.flags ?? []).includes("drink")) return sendTo(id, `${render(messages.notDrink, { words })}\r\n`);
+    const last = (object.bites ?? 1) <= 1;
+    pending.push({ kind: "drink", actorId: id, objectId: object.id, messages: {
+      actor: render(last ? messages.last : messages.actor, { object: object.name }),
+      others: render(last ? messages.lastOthers : messages.others, { actor: actor.name, object: object.name }),
+    } });
+    recordSpan("world.object", { "actor.id": id, "action.kind": "drink", "object.id": object.id, "bites.left": last ? 0 : object.bites - 1, "world.tick": state.tick }, 0);
     return;
   }
 

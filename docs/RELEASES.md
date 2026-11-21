@@ -306,6 +306,14 @@ Rehearsed 2026-11-16:
 - v0.91.14 (publisher guard) requires the gated SHA to be the PR's actual
   merge commit, so a later direct or pacing commit that GitHub associates with
   the merged PR cannot release (MB-176);
+- v0.91.15 (player fundamentals) adds `t`/`take all`, `drink`, `coins`, grouped
+  inventory, a 20 HP base with 5 HP per level, and removes fleeing from combat.
+  The Gilded Rat sells ale for 10 coins, three sellable treasures enter the
+  world, and shops refuse quest collectibles. Pollinations becomes the free,
+  keyless, streaming default for the browser AI, the Wardens' Lodge opens a
+  second guild with exploration ranks, the unreachable archmage promotion is
+  repaired, and the quest count is frozen at 61 toward a 20-quest target
+  (MB-178 through MB-181);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

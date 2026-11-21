@@ -185,7 +185,7 @@
     },
     "10": {
       "name": "The Gilded Rat",
-      "text": "A low-beamed inn. A hearth fills the room with smoky warmth, benches crowd the tables, and a stew pot hangs over the fire. Stairs climb to the guest rooms; the market square is east. The fire is banked low; the stew pot is covered, and the stairs creak underfoot.",
+      "text": "A low-beamed inn. A hearth fills the room with smoky warmth, benches crowd the tables, and a stew pot hangs over the fire and a cask of ale is tapped behind the counter. Stairs climb to the guest rooms; the market square is east. The fire is banked low; the stew pot is covered, and the stairs creak underfoot.",
       "safe": true,
       "exits": {
         "east": 8,
@@ -195,7 +195,8 @@
       "details": {
         "hearth": "The hearth is broad enough to stand in. A cat sleeps on the warm stones.",
         "stew": "The stew smells of root vegetables and pepper.",
-        "stairs": "The stairs are worn in the middle of each tread."
+        "stairs": "The stairs are worn in the middle of each tread.",
+        "bar": "A cask of dark ale is tapped behind the counter; a tankard is ten coins."
       },
       "ambient": [
         "The fire settles.",
@@ -441,10 +442,11 @@
     },
     "24": {
       "name": "The Guild Hall",
-      "text": "A long room with a high roof and banners of no single house. A notice board covers one wall, and a clerk keeps a table by the door. The inn is south. The clerk's ledger lies open at an empty page; the room smells of ink.",
+      "text": "A long room with a high roof and banners of no single house. A notice board covers one wall, and a clerk keeps a table by the door. The inn is south. The clerk's ledger lies open at an empty page; the room smells of ink. A narrow stair climbs to the Wardens' Lodge.",
       "safe": true,
       "exits": {
-        "south": 10
+        "south": 10,
+        "up": 115
       },
       "details": {
         "banners": "The banners are blank, waiting for names.",
@@ -2091,6 +2093,23 @@
         "A cup rings softly.",
         "The keeper listens to the spring."
       ]
+    },
+    "115": {
+      "name": "The Wardens' Lodge",
+      "text": "A low room of dark timber and hanging maps. A long table is pinned with routes through the fen, the salt caves and the moonlit reach; a rack of weathered staves stands by the door. Stairs lead down to the Guild Hall.",
+      "safe": true,
+      "exits": {
+        "down": 24
+      },
+      "details": {
+        "maps": "The maps are marked in four hands. The newest route ends at a blank space beyond the Moonwell.",
+        "staves": "The staves are plain, but each has a different notch cut near the grip.",
+        "table": "A ledger of patrols lies open. Most of the pages are empty."
+      },
+      "ambient": [
+        "A draught moves the map corners.",
+        "Someone has left a cup of cold tea on the table."
+      ]
     }
   },
   "task": {
@@ -3190,6 +3209,28 @@
         "The white bed keeps one bloom for the cups.",
         "The orchard drinks from here."
       ]
+    },
+    {
+      "id": "warden-captain",
+      "name": "the warden-captain",
+      "room": 115,
+      "home": 115,
+      "period": 180,
+      "jitter": 4,
+      "behaviour": "sentinel",
+      "zone": "town",
+      "hp": 34,
+      "damage": 0,
+      "armor": 2,
+      "aggression": 0,
+      "xp": 0,
+      "description": "The warden-captain is weathered and quiet, with a map case under one arm.",
+      "examine": "Mud to the knee, a broken compass at the belt, and a stare that keeps counting exits.",
+      "dialogue": [
+        "The Wardens do not sit in halls. We walk the edges and come back with the map.",
+        "Scout, ranger, warden. Rank is measured in ground covered, not in speeches.",
+        "The fen eats the careless. The salt caves eat the proud. The moonlit reach eats both."
+      ]
     }
   ],
   "zones": [
@@ -3217,7 +3258,8 @@
         12,
         13,
         14,
-        24
+        24,
+        115
       ]
     },
     {
@@ -3409,7 +3451,7 @@
     },
     {
       "id": "coin",
-      "name": "a silver coin",
+      "name": "a gold coin",
       "room": 5,
       "flags": [
         "takeable",
@@ -3659,7 +3701,7 @@
     },
     {
       "id": "gold",
-      "name": "a gold coin",
+      "name": "a gold mark",
       "inside": "crypt-chest",
       "flags": [
         "takeable",
@@ -4662,6 +4704,51 @@
       "value": 220,
       "examine": "A black signet ring on a silver chain; the stone holds a small eclipse.",
       "forSale": false
+    },
+    {
+      "id": "ale",
+      "name": "a tankard of ale",
+      "room": 10,
+      "flags": [
+        "takeable",
+        "drink"
+      ],
+      "value": 10,
+      "price": 10,
+      "forSale": true,
+      "heal": 5,
+      "bites": 2,
+      "examine": "A dark ale with a thin white head. The innkeeper charges ten coins and does not water it."
+    },
+    {
+      "id": "gilded-chalice",
+      "name": "a gilded chalice",
+      "room": 29,
+      "flags": [
+        "takeable"
+      ],
+      "value": 45,
+      "examine": "A heavy chalice washed with gold. The smuggler kept it for a buyer who never came."
+    },
+    {
+      "id": "ivory-figurine",
+      "name": "an ivory figurine",
+      "room": 82,
+      "flags": [
+        "takeable"
+      ],
+      "value": 70,
+      "examine": "A small figure of a brine crab, carved from yellowed ivory. It is worth more than it looks."
+    },
+    {
+      "id": "moonstone",
+      "name": "a moonstone",
+      "room": 89,
+      "flags": [
+        "takeable"
+      ],
+      "value": 90,
+      "examine": "A pale blue stone with a cloud inside it. The moonwell light makes it answer."
     }
   ],
   "climate": {

@@ -19,6 +19,12 @@ import { maxManaFor, spellById, spellPower } from "./magic.mjs";
 export { armorOf } from "./equipment.mjs";
 
 export const TICK_MS = 250;
+// A character starts with enough health to survive a real fight. AberMUD-style
+// combat is committed; 10 HP made every early mistake lethal and left no room
+// for armour and weapon progression.
+export const BASE_HP = 20;
+export const HP_PER_LEVEL = 5;
+export const maxHpForLevel = (level = 1) => BASE_HP + Math.max(0, level - 1) * HP_PER_LEVEL;
 
 // Two hours at 250 ms. The world reset is a world event, not a heartbeat:
 // objects and mobiles return home, characters keep their progress.
@@ -76,7 +82,7 @@ function awardXp(state, actor, amount, events) {
   const level = levelForXp(state.levels ?? DEFAULT_LEVELS, actor.xp);
   if (level > (actor.level ?? 1)) {
     actor.level = level;
-    actor.maxHp = 10 + (level - 1) * 2;
+    actor.maxHp = maxHpForLevel(level);
     actor.hp = actor.maxHp;
     events.push({ onlyId: actor.id, text: `You have reached level ${level}.\r\n` });
     events.push({ room: actor.room, text: `${actor.name} has reached level ${level}.`, exceptId: actor.id });
@@ -671,8 +677,8 @@ export function step({ state, rooms, intents, actions = [] }) {
           key: null,
           account: null,
           role: 0,
-          hp: 10,
-          maxHp: 10,
+          hp: BASE_HP,
+          maxHp: BASE_HP,
           level: 1,
           xp: 0,
           guild: null,
@@ -748,8 +754,8 @@ export function step({ state, rooms, intents, actions = [] }) {
       actor.guild = null;
       actor.guildRank = null;
       actor.quests = { active: [], completed: [] };
-      actor.maxHp = 10;
-      actor.hp = 10;
+      actor.maxHp = BASE_HP;
+      actor.hp = BASE_HP;
       actor.wielding = null;
       actor.mana = 5;
       actor.maxMana = 5;
@@ -981,13 +987,14 @@ export function step({ state, rooms, intents, actions = [] }) {
     if (intent.kind === "guildAdvance") {
       const actor = find(intent.actorId);
       const guild = next.guilds[intent.guildId];
-      if (!actor?.key || !guild || guild.id !== "mages" || actor.guild !== guild.id) continue;
+      if (!actor?.key || !guild || !["mages", "wardens"].includes(guild.id) || actor.guild !== guild.id) continue;
       const ranks = guild.ranks ?? ["apprentice", "adept", "magician", "archmage"];
       if (ranks.indexOf(intent.rank) !== ranks.indexOf(actor.guildRank) + 1) continue;
       actor.guildRank = intent.rank;
       guild.members[actor.key] = intent.rank;
       next.identities[actor.key] = { ...next.identities[actor.key], guildRank: intent.rank };
-      events.push({ onlyId: actor.id, text: `The archmage names you ${intent.rank}.\r\n`, guild: { action: "advance", id: guild.id, name: guild.name } });
+      const promoter = guild.id === "mages" ? "The archmage" : "The warden-captain";
+      events.push({ onlyId: actor.id, text: `${promoter} names you ${intent.rank}.\r\n`, guild: { action: "advance", id: guild.id, name: guild.name } });
       continue;
     }
 
@@ -1192,7 +1199,7 @@ export function step({ state, rooms, intents, actions = [] }) {
       actor.role = known.role ?? 0;
       actor.level = known.level ?? 1;
       actor.xp = known.xp ?? 0;
-      actor.maxHp = 10 + (actor.level - 1) * 2;
+      actor.maxHp = maxHpForLevel(actor.level);
       actor.hp = actor.maxHp;
       actor.wielding = null;
       actor.maxMana = known.maxMana ?? maxManaFor(known);
@@ -1558,16 +1565,25 @@ export function step({ state, rooms, intents, actions = [] }) {
       continue;
     }
 
-    // Flee ends every engagement the actor is part of and takes one exit.
-    if (intent.kind === "flee") {
-      if (rooms[actor.room]?.exits?.[intent.dir] !== intent.to) continue;
-      next.engagements = next.engagements.filter((e) => e.attackerId !== actor.id && e.targetId !== actor.id);
-      const from = actor.room;
-      events.push({ room: from, text: `${actor.name} flees ${intent.dir}.`, exceptId: actor.id });
-      actor.room = intent.to;
-      if (!actor.visited.includes(actor.room)) actor.visited.push(actor.room);
-      events.push({ room: intent.to, text: `${actor.name} arrives.`, exceptId: actor.id });
-      events.push({ onlyId: actor.id, text: `You flee ${intent.dir}.` });
+    if (intent.kind === "takeAll") {
+      const objects = (intent.objectIds ?? [])
+        .map((id) => next.objects.find((object) => object.id === id))
+        .filter((object) => object
+          && object.holder === null
+          && object.room === actor.room
+          && !object.inside
+          && !object.eaten
+          && !(object.flags ?? []).includes("fixed")
+          && !object.forSale);
+      if (!objects.length) continue;
+      for (const object of objects) {
+        object.holder = actor.id;
+        object.room = null;
+        object.heldRoom = actor.room;
+        object.worn = false;
+      }
+      events.push({ room: actor.room, text: intent.messages?.others ?? `${actor.name} takes everything.`, exceptId: actor.id });
+      events.push({ onlyId: actor.id, text: intent.messages?.actor ?? "You take everything.\r\n" });
       continue;
     }
 
@@ -1686,13 +1702,13 @@ export function step({ state, rooms, intents, actions = [] }) {
       continue;
     }
 
-    if (intent.kind === "eat") {
+    if (intent.kind === "eat" || intent.kind === "drink") {
       const object = next.objects.find((o) => o.id === intent.objectId);
       if (!object || object.holder !== actor.id || object.eaten) continue;
-      if (!(object.flags ?? []).includes("food")) continue;
+      if (!(object.flags ?? []).includes(intent.kind === "drink" ? "drink" : "food")) continue;
       object.bites = (object.bites ?? 1) - 1;
       const before = actor.hp;
-      if (object.heal) actor.hp = Math.min(actor.maxHp ?? 10, actor.hp + object.heal);
+      if (object.heal) actor.hp = Math.min(actor.maxHp ?? BASE_HP, actor.hp + object.heal);
       if (object.bites <= 0) {
         object.eaten = true;
         object.holder = null;
@@ -2001,7 +2017,7 @@ export function step({ state, rooms, intents, actions = [] }) {
             }
             target.wielding = null;
           }
-          target.hp = target.maxHp ?? 10;
+          target.hp = target.maxHp ?? BASE_HP;
           target.effects = [];
           target.room = next.start;
           if (!target.visited.includes(next.start)) target.visited.push(next.start);

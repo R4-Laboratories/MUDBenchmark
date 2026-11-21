@@ -613,7 +613,7 @@
               <button type="button" id="ai-find">Find</button>
             </div>
             <datalist id="ai-models"></datalist>
-            <p class="small muted" id="ai-local">Local providers need no key. Start Ollama and click Find.</p>
+            <p class="small muted" id="ai-local">Pollinations is the free default and needs no key. Ollama and Prime Router also need no key.</p>
           </div>
           <div class="field" id="ai-key-field">
             <label for="ai-key">API key <span class="muted">(this browser only)</span></label>
@@ -870,7 +870,7 @@
 <script type="module">
   import {
     PROVIDERS, DEFAULT_GOAL, buildSystemPrompt, buildUserPrompt,
-    parseBrain, buildActionMenu, validateCommand, repairCommand, requestFor, replyFrom, trimHistory, normalizeBase,
+    parseBrain, buildActionMenu, validateCommand, repairCommand, requestFor, replyFrom, readSseText, trimHistory, normalizeBase,
   } from "/ai.mjs";
   import { emptyMemory, rememberResult, memoryPrompt, loopWarning, breakLoop, shouldBreakLoop, publicMemoryText } from "/memory.mjs";
   import { signIn as prismSignIn, reset as prismReset, load as loadSession, save as saveSession, personaSignIn, personaRetire, nextPersonaEpoch, createRecoveryKit, restoreRecoveryKit, characterHandoff, characterRevoke, characterTransfer, signChallenge } from "/prism-auth.mjs";
@@ -1877,7 +1877,7 @@
   function renderSetup() {
     document.querySelector("aside").scrollTop = 0;
     const config = loadJSON(CONFIG_KEY, {}) ?? {};
-    const wanted = config.provider ?? "ollama";
+    const wanted = config.provider ?? "pollinations";
     aiProvider.value = wanted === "gemini-demo" && !DEMO.configured ? "ollama" : wanted;
     aiBase.value = config.base ?? PROVIDERS[aiProvider.value].base;
     aiModel.value = config.model ?? PROVIDERS[aiProvider.value].model;
@@ -1990,6 +1990,13 @@
 
   aiFind.addEventListener("click", async () => {
     const provider = aiProvider.value;
+    if (provider === "pollinations") {
+      fillModels(["openai-fast"]);
+      aiModel.value = "openai-fast";
+      aiHint.textContent = "Pollinations has one anonymous model: openai-fast.";
+      aiHint.className = "small muted";
+      return;
+    }
     if (provider === "prime-router") {
       aiHint.textContent = "Prime Router has no model list; use its configured model.";
       aiHint.className = "small muted";
@@ -2916,8 +2923,18 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         const detail = (await res.text()).slice(0, 240);
         throw new Error(`${res.status} ${res.statusText}${detail ? ` — ${detail}` : ""}`);
       }
-      const body = await res.json();
-      const { text, usage } = replyFrom(AI.config.provider, body);
+      let text;
+      let usage;
+      if (AI.config.provider === "pollinations" && res.body) {
+        ({ text, usage } = await readSseText(res, (partial) => {
+          AI.streamText = partial;
+          liveThought.textContent = partial.replace(/\s+/g, " ").slice(-140);
+        }));
+      } else {
+        const body = await res.json();
+        ({ text, usage } = replyFrom(AI.config.provider, body));
+      }
+      AI.streamText = "";
       if (!text) throw new Error("The model returned an empty reply.");
       const latency = Math.round(performance.now() - started);
       const parsed = parseBrain(text);

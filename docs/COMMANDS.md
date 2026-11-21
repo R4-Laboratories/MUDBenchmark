@@ -22,20 +22,22 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `buy` | `purchase`, `b` | object |
 | `channels` | `chan`, `ch` | none |
 | `close` | `shut`, `cl` | object |
+| `coins` | `money`, `purse` | none |
 | `deliver` | `handin`, `dv` | object to actor |
 | `deposit` | `dep`, `store`, `ds` | object |
+| `drink` | `quaff` | object |
 | `drop` | `discard`, `dp` | object |
 | `duel` | `challenge`, `du` | actor |
 | `eat` | `taste`, `ea` | object |
 | `extinguish` | `douse`, `snuff`, `ext` | object |
 | `facts` | `memory`, `knowledge` | none |
-| `flee` | `run`, `fl` | none |
+| `flee` | — | none |
 | `give` | `gv` | object to actor |
 | `guild` | `guilds` | subcommand |
 | `guildchat` | `gc`, `gchat` | text |
 | `ignore` | `ign`, `mute` | actor |
 | `ignoring` | `ignored`, `ignores` | none |
-| `inventory` | `i`, `inv` | none |
+| `inventory` | `i`, `inv` | optional category |
 | `leaderboard` | `top`, `lb`, `ranks` | none |
 | `levels` | `lv`, `lvl` | none |
 | `light` | `ignite`, `li` | object |
@@ -53,7 +55,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `score` | `stats`, `sc` | none |
 | `sell` | `vend`, `se` | object |
 | `shortcuts` | `sh` | none |
-| `take` | `get`, `grab`, `tf` | object |
+| `take` | `get`, `grab`, `tf`, `t` | object or all |
 | `takeFrom` | — | object from object |
 | `talk` | `greet`, `tk` | actor |
 | `tell` | `whisper`, `te` | actor text |
@@ -206,7 +208,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 21 | The Crypt Entrance | wilds | no | north 17, down 22 |
 | 22 | The Crypt Hall | wilds | no | up 21, east 23 |
 | 23 | The Ossuary | wilds | no | west 22 |
-| 24 | The Guild Hall | town | yes | south 10 |
+| 24 | The Guild Hall | town | yes | south 10, up 115 |
 | 25 | The Undercroft | undercroft | no | up 5, east 26, south 27 |
 | 26 | The Sewer Junction | undercroft | no | west 25, east 28 |
 | 27 | The Flooded Passage | undercroft | no | north 25, east 29 |
@@ -297,4 +299,5 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 112 | The Cider Spring | garden | yes | south 111, east 113 |
 | 113 | The White Bed | garden | yes | west 112, north 114 |
 | 114 | The Spring Keeper's Rest | garden | yes | south 113 |
+| 115 | The Wardens' Lodge | town | yes | down 24 |
 
