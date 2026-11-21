@@ -121,9 +121,31 @@ dangerous: 18% wins without gear. That is the intended shape, not a defect.
 The Gate now runs the sampler at 120 seeds and fails if a PvP matchup leaves
 25–75% or if the unseeded high-level bands fall outside their expected range.
 
+### Unseeded level 8 (v0.91.26)
+
+`TUNING_SCENARIO=high` starts an unseeded level-8 character at the Starless
+Hall against the star hound. The first run was stopped by the 180-second wall
+while the fight was still live:
+
+| Measure | Result |
+| --- | --- |
+| Turns | 10 |
+| Combat rounds | 18 |
+| Hits / misses | 11 / 7 |
+| Hit rate | 61.1% |
+| Average damage | 2.82 |
+| Star hound HP left | 10 / 28 |
+| Character HP left | 36 / 55 |
+| Player deaths | 0 |
+
+The character was ahead, not in danger, when the wall stopped the run. That is
+consistent with the deterministic 51% unseeded level-8 band and does not
+justify a damage or armour change. A complete kill needs a longer wall or more
+turns; the harness now defaults the high scenario to 300 seconds.
+
 ## Decision
 
-No balance value changes in v0.91.19 or v0.91.20.
+No balance value changes in v0.91.19, v0.91.20 or v0.91.26.
 
 - The 64.3% remote hit rate is within sampling noise of the `57 - armour`
   curve; 14 rounds is too small to distinguish it from 57%.

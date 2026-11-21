@@ -1245,6 +1245,12 @@
       "level": "some-true",
       "statement": "Production v0.91.25 serves 115 rooms, 14 zones, 20 quests, 55 mobiles and 131 objects. GET /world reports The Ember Tide at cycle 0 with Ember standing doubled and 20% off the Ember Forge. The Ring ladder records wins, losses and rating on identities; ladder/pvp/duels and the duel record line are live. A pacing commit landed after the PR merge, but the publisher released from the PR merge commit a8924ff as intended. R4 active, signups open. Main Gate 44939382326 green, publish 44940136659.",
       "authority": "GitHub PR #37 merge a8924ff 2026-11-21; main Gate 44939382326; publish 44940136659; release v0.91.25; wick deploy output, /world and /llms.txt"
+    },
+    {
+      "id": "MB-203",
+      "level": "build",
+      "statement": "v0.91.26 adds TUNING_SCENARIO=high to tools/tuning-session.mjs: an isolated unseeded level-8 character at the Starless Hall against the star hound, with a 300-second default wall. The first remote DeepSeek run reached 18 rounds, 11 hits, 7 misses, 61.1% hit rate, 2.82 average damage, star hound 10/28 HP and character 36/55 HP, then was stopped by the 180-second wall with no player death. The deterministic unseeded level-8 band remains 51%; no balance values changed. The Gate still covers the tuning harness source and prior contracts.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }
