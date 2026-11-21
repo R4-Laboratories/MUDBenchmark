@@ -40,17 +40,19 @@ jobs:
         run: |
           set -euo pipefail
           pulls=$(gh api "repos/$GITHUB_REPOSITORY/commits/$SHA/pulls" \
-            -H 'Accept: application/vnd.github+json' \
-            --jq '[.[] | select(.merged_at != null)]')
-          count=$(printf '%s' "$pulls" | jq 'length')
-          if [ "$count" = "0" ]; then
+            -H 'Accept: application/vnd.github+json')
+          # The associated-PR list can contain a merged PR for a later direct
+          # commit on main. Only the PR's actual merge commit may release.
+          pull=$(printf '%s' "$pulls" | jq -c --arg sha "$SHA" \
+            '[.[] | select(.merged_at != null and .base.ref == "main" and .merge_commit_sha == $sha)] | .[0] // empty')
+          if [ -z "$pull" ]; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "::notice::no merged PR is associated with $SHA; not publishing"
+            echo "::notice::no merged PR has $SHA as its merge commit; not publishing a direct or pacing push"
             exit 0
           fi
-          number=$(printf '%s' "$pulls" | jq -r '.[0].number')
-          title=$(printf '%s' "$pulls" | jq -r '.[0].title')
-          author=$(printf '%s' "$pulls" | jq -r '.[0].user.login')
+          number=$(printf '%s' "$pull" | jq -r '.number')
+          title=$(printf '%s' "$pull" | jq -r '.title')
+          author=$(printf '%s' "$pull" | jq -r '.user.login')
           echo "skip=false" >> "$GITHUB_OUTPUT"
           echo "number=$number" >> "$GITHUB_OUTPUT"
           echo "title=$title" >> "$GITHUB_OUTPUT"

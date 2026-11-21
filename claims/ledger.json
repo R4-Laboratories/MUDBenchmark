@@ -1083,6 +1083,12 @@
       "level": "build",
       "statement": "The player level distribution uses the most recent world.snapshot whose world.actors array is non-empty, not simply the newest snapshot. Snapshots taken with nobody online therefore do not collapse the average, maximum, distribution or guilded count to zero. The Gate includes a populated snapshot followed by an empty one and still reports the populated levels.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-176",
+      "level": "build",
+      "statement": "The merged-PR publisher selects only a PR whose merge_commit_sha equals the gated main SHA, with base ref main and a non-null merged_at. A direct push or pacing candidate that GitHub associates with a merged PR therefore cannot become a release. The Gate checks the workflow contains the merge_commit_sha and base.ref conditions; the live API check matched PR #25 on its merge SHA and rejected pacing commit ce32a19.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

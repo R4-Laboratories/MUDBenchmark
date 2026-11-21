@@ -3444,7 +3444,7 @@ let releaseManifest = { ok: true, why: [] };
   check(deployScript.includes("release-manifest.json") && deployScript.includes("ALLOW_UNMANIFESTED"), "deployer does not verify the release manifest");
   check(deployScript.includes("--ignore-scripts"), "deployer installs runtime scripts");
   const publishWorkflow = readFileSync(join(root, ".github/workflows/publish.yml"), "utf8");
-  check(publishWorkflow.includes("workflow_run") && publishWorkflow.includes("merged_at"), "merged-PR publisher is missing");
+  check(publishWorkflow.includes("workflow_run") && publishWorkflow.includes("merged_at") && publishWorkflow.includes("merge_commit_sha") && publishWorkflow.includes(`base.ref == "main"`), "merged-PR publisher is missing or does not require the merge commit");
   check(publishWorkflow.includes("release-manifest.py") && publishWorkflow.includes("AUTO_RELEASE"), "publisher lacks the manifest or pause switch");
   rmSync(dir, { recursive: true, force: true });
   if (releaseManifest.why.length) failures.push(`release publishing is broken: ${releaseManifest.why[0]}`);
