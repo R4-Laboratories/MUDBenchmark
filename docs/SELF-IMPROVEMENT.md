@@ -89,17 +89,19 @@ impossible to hide decline.
 
 ## Status
 
-`v0.91.12` is published and deployed. wick runs the release artifact, not a
+`v0.91.14` is published and deployed. wick runs the release artifact, not a
 build directory, so the number on the box is a tag someone can point at:
 
 ```
-mudbench-deploy --status   →   release v0.91.12
+mudbench-deploy --status   →   release v0.91.14
 ```
 
 `main` has no required status checks, so the loop's direct push lands. The Gate
 still runs on every push and pull request, and X6's release workflow requires a
 green Gate on the exact SHA, so a red commit cannot become a release even when
-it is on `main`.
+it is on `main`. The merged-PR publisher also requires the gated SHA to be the
+PR's actual `merge_commit_sha`; a direct or pacing commit that GitHub associates
+with a merged PR is skipped.
 
 S0, S1 and the S2 write path are in place. The loop uses only `GITHUB_TOKEN`:
 `loop.yml` builds the inventory, measures it, runs the gate in the same job,
