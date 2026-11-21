@@ -41,7 +41,7 @@ export function buildLlms({ world, verbs, channels, socials, quests, levels, ori
   add("- `north`, `south`, `east`, `west`, `up`, `down` (or `n`, `s`, `e`, `w`, `u`, `d`).");
   add("- `look` shows the room; `look <thing>` and `examine <thing>` show a detail,");
   add("  an object or a mobile.");
-  add("- `who` lists who is in the room; `awake` lists everyone online.");
+  add("- `who` lists everyone online with level, room, guild, HP and active quests; `online` is an alias.");
   add();
   add("## Commands");
   add();
@@ -51,6 +51,14 @@ export function buildLlms({ world, verbs, channels, socials, quests, levels, ori
     const aliases = (entry.aliases ?? []).length ? ` (aliases: ${entry.aliases.join(", ")})` : "";
     add(`- \`${name}\`${aliases} — argument: ${entry.argument ?? "none"}`);
   }
+  add();
+  add("## Visibility");
+  add();
+  add("- `levels` shows the XP threshold for every level.");
+  add("- `leaderboard` (aliases `top`, `lb`, `ranks`) shows the all-time character ranking by level and XP.");
+  add("- `map` summarizes zones and visited counts; `map <zone>` lists visited room names and hides unexplored ones.");
+  add("- `shortcuts` lists movement, fast commands, recall and room shortcuts.");
+  add("- `quests` defaults to active/available; use `quests active`, `available`, `done`, `all` or `quests <id>`.");
   add();
   add("## Channels and socials");
   add();

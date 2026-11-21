@@ -11,7 +11,7 @@ import { spellById } from "./magic.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_PATH = join(HERE, "..", "world", "data", "actions.json");
-const EFFECTS = new Set(["revealExit", "open", "close", "grantItem", "teleport", "damage", "heal", "message"]);
+const EFFECTS = new Set(["revealExit", "open", "close", "grantItem", "consume", "teleport", "damage", "heal", "message"]);
 
 export function loadActions({ path = DEFAULT_PATH, world = null } = {}) {
   const errors = [];
@@ -45,7 +45,7 @@ export function loadActions({ path = DEFAULT_PATH, world = null } = {}) {
       if (effect.kind === "revealExit" && !world?.rooms?.[action.room]?.secretExits?.[effect.dir]) {
         errors.push(`action ${action.id} reveals ${effect.dir}, which is not a secret exit in room ${action.room}`);
       }
-      if (["open", "close", "grantItem"].includes(effect.kind) && world && !world.objects?.some((object) => object.id === effect.object)) {
+      if (["open", "close", "grantItem", "consume"].includes(effect.kind) && world && !world.objects?.some((object) => object.id === effect.object)) {
         errors.push(`action ${action.id} names object ${effect.object}, which does not exist`);
       }
       if (effect.kind === "teleport" && world && !world.rooms?.[effect.room]) {

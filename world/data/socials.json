@@ -18,7 +18,8 @@
     },
     "nod": {
       "aliases": [
-        "nod"
+        "nod",
+        "agree"
       ],
       "messages": {
         "actor": "You nod.",
@@ -47,7 +48,9 @@
     "laugh": {
       "aliases": [
         "laugh",
-        "lol"
+        "lol",
+        "hehe",
+        "haha"
       ],
       "messages": {
         "actor": "You laugh.",
@@ -94,6 +97,251 @@
       "messages": {
         "actor": "You dance.",
         "others": "%a dances."
+      }
+    },
+    "smile": {
+      "aliases": [
+        "smile",
+        "smirk"
+      ],
+      "messages": {
+        "actor": "You smile.",
+        "others": "%a smiles.",
+        "self": "You smile at yourself.",
+        "selfOthers": "%a smiles at themselves."
+      }
+    },
+    "grin": {
+      "aliases": [
+        "grin"
+      ],
+      "messages": {
+        "actor": "You grin.",
+        "others": "%a grins."
+      }
+    },
+    "frown": {
+      "aliases": [
+        "frown"
+      ],
+      "messages": {
+        "actor": "You frown.",
+        "others": "%a frowns."
+      }
+    },
+    "cheer": {
+      "aliases": [
+        "cheer",
+        "woo"
+      ],
+      "messages": {
+        "actor": "You cheer.",
+        "others": "%a cheers."
+      }
+    },
+    "salute": {
+      "aliases": [
+        "salute"
+      ],
+      "messages": {
+        "actor": "You salute.",
+        "others": "%a salutes.",
+        "target": "You salute %t.",
+        "targetOthers": "%a salutes %t.",
+        "targeted": "%a salutes you."
+      }
+    },
+    "point": {
+      "aliases": [
+        "point"
+      ],
+      "messages": {
+        "actor": "You point.",
+        "others": "%a points.",
+        "target": "You point at %t.",
+        "targetOthers": "%a points at %t.",
+        "targeted": "%a points at you."
+      }
+    },
+    "ponder": {
+      "aliases": [
+        "ponder",
+        "think"
+      ],
+      "messages": {
+        "actor": "You ponder the situation.",
+        "others": "%a ponders the situation."
+      }
+    },
+    "stretch": {
+      "aliases": [
+        "stretch"
+      ],
+      "messages": {
+        "actor": "You stretch.",
+        "others": "%a stretches."
+      }
+    },
+    "shiver": {
+      "aliases": [
+        "shiver"
+      ],
+      "messages": {
+        "actor": "You shiver.",
+        "others": "%a shivers."
+      }
+    },
+    "yawn": {
+      "aliases": [
+        "yawn"
+      ],
+      "messages": {
+        "actor": "You yawn.",
+        "others": "%a yawns."
+      }
+    },
+    "wink": {
+      "aliases": [
+        "wink"
+      ],
+      "messages": {
+        "actor": "You wink.",
+        "others": "%a winks.",
+        "target": "You wink at %t.",
+        "targetOthers": "%a winks at %t.",
+        "targeted": "%a winks at you."
+      }
+    },
+    "hug": {
+      "aliases": [
+        "hug"
+      ],
+      "messages": {
+        "actor": "You open your arms.",
+        "others": "%a opens their arms.",
+        "target": "You hug %t.",
+        "targetOthers": "%a hugs %t.",
+        "targeted": "%a hugs you.",
+        "self": "You hug yourself.",
+        "selfOthers": "%a hugs themselves."
+      }
+    },
+    "highfive": {
+      "aliases": [
+        "highfive"
+      ],
+      "messages": {
+        "actor": "You raise a hand.",
+        "others": "%a raises a hand.",
+        "target": "You high-five %t.",
+        "targetOthers": "%a high-fives %t.",
+        "targeted": "%a high-fives you.",
+        "self": "You high-five yourself. The room pretends not to see.",
+        "selfOthers": "%a high-fives themselves."
+      }
+    },
+    "poke": {
+      "aliases": [
+        "poke"
+      ],
+      "messages": {
+        "actor": "You poke the air.",
+        "others": "%a pokes the air.",
+        "target": "You poke %t.",
+        "targetOthers": "%a pokes %t.",
+        "targeted": "%a pokes you.",
+        "self": "You poke yourself.",
+        "selfOthers": "%a pokes themselves."
+      }
+    },
+    "whistle": {
+      "aliases": [
+        "whistle",
+        "whistles"
+      ],
+      "messages": {
+        "actor": "You whistle a tune.",
+        "others": "%a whistles a tune."
+      }
+    },
+    "sing": {
+      "aliases": [
+        "sing"
+      ],
+      "messages": {
+        "actor": "You sing a few bars.",
+        "others": "%a sings a few bars."
+      }
+    },
+    "hum": {
+      "aliases": [
+        "hum"
+      ],
+      "messages": {
+        "actor": "You hum.",
+        "others": "%a hums."
+      }
+    },
+    "mutter": {
+      "aliases": [
+        "mutter"
+      ],
+      "messages": {
+        "actor": "You mutter under your breath.",
+        "others": "%a mutters under their breath."
+      }
+    },
+    "shout": {
+      "aliases": [
+        "shout",
+        "yell"
+      ],
+      "messages": {
+        "actor": "You shout.",
+        "others": "%a shouts."
+      }
+    },
+    "clap": {
+      "aliases": [
+        "clap"
+      ],
+      "messages": {
+        "actor": "You clap.",
+        "others": "%a claps."
+      }
+    },
+    "cry": {
+      "aliases": [
+        "cry",
+        "sob"
+      ],
+      "messages": {
+        "actor": "You cry.",
+        "others": "%a cries."
+      }
+    },
+    "apologize": {
+      "aliases": [
+        "apologize"
+      ],
+      "messages": {
+        "actor": "You apologize.",
+        "others": "%a apologizes.",
+        "target": "You apologize to %t.",
+        "targetOthers": "%a apologizes to %t.",
+        "targeted": "%a apologizes to you."
+      }
+    },
+    "congratulate": {
+      "aliases": [
+        "congratulate"
+      ],
+      "messages": {
+        "actor": "You congratulate the room.",
+        "others": "%a congratulates the room.",
+        "target": "You congratulate %t.",
+        "targetOthers": "%a congratulates %t.",
+        "targeted": "%a congratulates you."
       }
     }
   }

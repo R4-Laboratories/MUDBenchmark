@@ -1,6 +1,6 @@
 {
   "schema": "mudbenchmark/quests/1",
-  "note": "An objective is a fact about the world, not a script. The engine advances it from events; the text is the giver's.",
+  "note": "An objective is a fact about the world, not a script. The engine advances it from events; the text is the giver's. The budget is 20; retired definitions live in quests-archive.json.",
   "quests": [
     {
       "id": "word",
@@ -23,7 +23,8 @@
       "rewards": {
         "xp": 50
       },
-      "complete": "The shrine accepts the true word."
+      "complete": "The shrine accepts the true word.",
+      "requires": []
     },
     {
       "id": "guardian",
@@ -48,25 +49,6 @@
       ]
     },
     {
-      "id": "scroll",
-      "name": "A Curled Scroll",
-      "level": 1,
-      "giver": "the shrine",
-      "description": "A scroll has been left in the Corridor. Bring it into the light.",
-      "objectives": [
-        {
-          "kind": "collect",
-          "object": "scroll",
-          "count": 1,
-          "text": "Carry the curled scroll"
-        }
-      ],
-      "rewards": {
-        "xp": 15
-      },
-      "complete": "The scroll is yours."
-    },
-    {
       "id": "bread",
       "name": "Bread for the Shop",
       "level": 1,
@@ -84,86 +66,8 @@
       "rewards": {
         "xp": 10
       },
-      "complete": "The shopkeeper takes the loaf."
-    },
-    {
-      "id": "boar",
-      "name": "The Boar at the Edge",
-      "level": 1,
-      "giver": "the market woman",
-      "description": "A boar has been rooting at the forest edge. Drive it off.",
-      "objectives": [
-        {
-          "kind": "kill",
-          "npc": "boar",
-          "count": 1,
-          "text": "Defeat the wild boar"
-        }
-      ],
-      "rewards": {
-        "xp": 40
-      },
-      "complete": "The forest edge is quiet again."
-    },
-    {
-      "id": "well",
-      "name": "The Well Key",
-      "level": 1,
-      "giver": "the guild clerk",
-      "description": "A brass key is lost in the old well. Bring it back.",
-      "objectives": [
-        {
-          "kind": "collect",
-          "object": "well-key",
-          "count": 1,
-          "text": "Carry the brass key"
-        }
-      ],
-      "rewards": {
-        "xp": 25
-      },
-      "complete": "The key is safe."
-    },
-    {
-      "id": "ghoul",
-      "name": "The Crypt Ghoul",
-      "level": 3,
-      "giver": "the guild clerk",
-      "description": "Something has been feeding in the crypt. End it.",
-      "objectives": [
-        {
-          "kind": "kill",
-          "npc": "ghoul",
-          "count": 1,
-          "text": "Defeat the crypt ghoul"
-        }
-      ],
-      "rewards": {
-        "xp": 100
-      },
-      "complete": "The crypt is still."
-    },
-    {
-      "id": "smuggler",
-      "name": "The Smuggler's Cache",
-      "level": 3,
-      "giver": "the guild clerk",
-      "description": "A smuggler keeps a chest under the Cell. Find the cache and end the trade.",
-      "objectives": [
-        {
-          "kind": "kill",
-          "npc": "smuggler",
-          "count": 1,
-          "text": "Defeat the smuggler"
-        }
-      ],
-      "rewards": {
-        "xp": 80
-      },
-      "complete": "The cache is quiet.",
-      "requires": [
-        "guardian"
-      ]
+      "complete": "The shopkeeper takes the loaf.",
+      "requires": []
     },
     {
       "id": "telescope",
@@ -182,27 +86,8 @@
       "rewards": {
         "xp": 30
       },
-      "complete": "The docks have their glass."
-    },
-    {
-      "id": "errand",
-      "name": "A Message for the Spellwright",
-      "level": 1,
-      "giver": "the apprentice",
-      "description": "A folded note waits on the Lantern Stair. Take it to the spellwright in the Arcade.",
-      "objectives": [
-        {
-          "kind": "deliver",
-          "npc": "spellwright",
-          "object": "note",
-          "count": 1,
-          "text": "Deliver the note to the spellwright"
-        }
-      ],
-      "rewards": {
-        "xp": 25
-      },
-      "complete": "The spellwright reads the note and nods."
+      "complete": "The docks have their glass.",
+      "requires": []
     },
     {
       "id": "familiar",
@@ -227,7 +112,27 @@
         "xp": 40,
         "object": "candle"
       },
-      "complete": "The charm is warm in your hand."
+      "complete": "The charm is warm in your hand.",
+      "requires": []
+    },
+    {
+      "id": "scroll",
+      "name": "A Curled Scroll",
+      "level": 1,
+      "giver": "the shrine",
+      "description": "A scroll has been left in the Corridor. Bring it into the light.",
+      "objectives": [
+        {
+          "kind": "collect",
+          "object": "scroll",
+          "count": 1,
+          "text": "Carry the curled scroll"
+        }
+      ],
+      "rewards": {
+        "xp": 15
+      },
+      "complete": "The scroll is yours."
     },
     {
       "id": "roof",
@@ -277,7 +182,8 @@
         "xp": 60,
         "guildXp": 40
       },
-      "complete": "The archmage enters the scroll in the ledger."
+      "complete": "The archmage enters the scroll in the ledger.",
+      "requires": []
     },
     {
       "id": "mirror",
@@ -304,34 +210,6 @@
       "complete": "The shard is cold and your reflection is still missing.",
       "requires": [
         "roof"
-      ]
-    },
-    {
-      "id": "wardstone",
-      "name": "The Wardstone",
-      "level": 5,
-      "giver": "an owl",
-      "description": "Beyond the pool, a warden keeps a key to a door with no handle.",
-      "objectives": [
-        {
-          "kind": "kill",
-          "npc": "warden",
-          "count": 1,
-          "text": "Defeat the warden"
-        },
-        {
-          "kind": "collect",
-          "object": "ward-key",
-          "count": 1,
-          "text": "Carry the ward key"
-        }
-      ],
-      "rewards": {
-        "xp": 120
-      },
-      "complete": "The warden falls. The key is warm.",
-      "requires": [
-        "mirror"
       ]
     },
     {
@@ -395,42 +273,6 @@
       "requires": [
         "ledger"
       ]
-    },
-    {
-      "id": "guild-sigils",
-      "name": "The Sigil Trial",
-      "level": 5,
-      "giver": "the archmage",
-      "description": "The three sigils can be gathered again each cycle. The archmage uses them to test the wards.",
-      "scope": "guild",
-      "guild": "mages",
-      "rank": "apprentice",
-      "repeat": "reset",
-      "objectives": [
-        {
-          "kind": "collect",
-          "object": "sigil-1",
-          "count": 1,
-          "text": "Find the first sigil"
-        },
-        {
-          "kind": "collect",
-          "object": "sigil-2",
-          "count": 1,
-          "text": "Find the second sigil"
-        },
-        {
-          "kind": "collect",
-          "object": "sigil-3",
-          "count": 1,
-          "text": "Find the third sigil"
-        }
-      ],
-      "rewards": {
-        "xp": 120,
-        "guildXp": 50
-      },
-      "complete": "The archmage fits the sigils into the ward and hands them back for the next cycle."
     },
     {
       "id": "guild-mirror",
@@ -578,248 +420,121 @@
       ]
     },
     {
-      "id": "last",
-      "name": "The Last Lantern",
-      "level": 8,
-      "giver": "the archmage",
-      "description": "The last keeper has the last lantern. Bring it to the archmage.",
+      "id": "first-steps",
+      "name": "First Steps",
+      "level": 1,
+      "giver": "the bard",
+      "description": "A short tour for a new arrival: stand in the Atrium, then walk north into the Corridor.",
       "objectives": [
         {
           "kind": "visit",
-          "room": 59,
-          "text": "Reach the Last Lantern"
+          "room": 1,
+          "text": "Stand in the Atrium"
         },
         {
-          "kind": "collect",
-          "object": "last-lantern",
-          "count": 1,
-          "text": "Carry the last lantern"
+          "kind": "visit",
+          "room": 2,
+          "text": "Walk north into the Corridor"
         }
       ],
       "rewards": {
-        "xp": 180
+        "xp": 20
       },
-      "complete": "The archmage sets the last lantern beside the orrery.",
-      "requires": [
-        "reliquary"
-      ]
+      "complete": "The bard nods. The first step is always the same.",
+      "requires": []
     },
     {
-      "id": "guild-choir",
-      "name": "The Choir Bell",
-      "level": 8,
+      "id": "hall-word",
+      "name": "A Word in the Hall",
+      "level": 2,
+      "giver": "the bard",
+      "description": "The bard wants both versions of the same rumor. Talk to the market woman and the guild clerk.",
+      "objectives": [
+        {
+          "kind": "talk",
+          "npc": "market-woman",
+          "count": 1,
+          "text": "Talk to the market woman"
+        },
+        {
+          "kind": "talk",
+          "npc": "guild-clerk",
+          "count": 1,
+          "text": "Talk to the guild clerk"
+        }
+      ],
+      "rewards": {
+        "xp": 70
+      },
+      "complete": "The two stories do not agree. The bard writes both down.",
+      "requires": []
+    },
+    {
+      "id": "guild-dawn",
+      "name": "The Dawn Archive",
+      "level": 10,
       "giver": "the archmage",
-      "description": "A black bell hangs above the choir moth. The archmage wants it for the guild's collection.",
+      "description": "The archmage wants the dawn crown studied above the Throne of Ash. Bring it to the guild.",
       "scope": "guild",
       "guild": "mages",
-      "rank": "magician",
+      "rank": "archmage",
+      "requires": [
+        "guild-warden",
+        "reliquary"
+      ],
+      "objectives": [
+        {
+          "kind": "visit",
+          "room": 97,
+          "text": "Reach the Dawn Gate"
+        },
+        {
+          "kind": "collect",
+          "object": "dawn-crown",
+          "count": 1,
+          "text": "Carry the dawn crown"
+        }
+      ],
+      "rewards": {
+        "xp": 500,
+        "guildXp": 250,
+        "object": "archmage-signet"
+      },
+      "complete": "The archmage closes the crown and hands you the signet. The guild ledger has a new page."
+    },
+    {
+      "id": "guild-trial",
+      "name": "The Archmage's Trial",
+      "level": 10,
+      "giver": "the archmage",
+      "description": "The archmage repeats the eclipse trial each cycle. Defeat the regent, carry the sigil back to the guild hall, and the ledger opens a new page.",
+      "scope": "guild",
+      "guild": "mages",
+      "rank": "archmage",
+      "requires": [
+        "guild-dawn"
+      ],
+      "repeat": "reset",
       "objectives": [
         {
           "kind": "kill",
-          "npc": "choir-moth",
+          "npc": "eclipse-regent",
           "count": 1,
-          "text": "Defeat the choir moth"
+          "text": "Defeat the eclipse regent"
         },
         {
-          "kind": "collect",
-          "object": "choir-bell",
+          "kind": "deliver",
+          "npc": "archmage",
+          "object": "regent-sigil",
           "count": 1,
-          "text": "Carry the black bell"
-        }
-      ],
-      "rewards": {
-        "xp": 180,
-        "guildXp": 100
-      },
-      "complete": "The archmage hangs the black bell beside the ledger.",
-      "requires": [
-        "guild-mirror"
-      ]
-    },
-    {
-      "id": "guild-reliquary",
-      "name": "The Reliquary Lens",
-      "level": 9,
-      "giver": "the archmage",
-      "description": "The reliquary keeper holds a lens that sees the quiet door. The archmage wants it studied.",
-      "scope": "guild",
-      "guild": "mages",
-      "rank": "magician",
-      "objectives": [
-        {
-          "kind": "visit",
-          "room": 58,
-          "text": "Enter the Sealed Reliquary"
-        },
-        {
-          "kind": "collect",
-          "object": "reliquary-lens",
-          "count": 1,
-          "text": "Carry the reliquary lens"
-        }
-      ],
-      "rewards": {
-        "xp": 200,
-        "guildXp": 120
-      },
-      "complete": "The archmage looks through the lens and does not blink.",
-      "requires": [
-        "guild-warden"
-      ]
-    },
-    {
-      "id": "ember-door",
-      "name": "Beyond the Quiet Door",
-      "level": 8,
-      "giver": "the last keeper",
-      "description": "The quiet door remembers the last lantern. Go through, reach the first flame, and bring back a coal.",
-      "requires": [
-        "last"
-      ],
-      "objectives": [
-        {
-          "kind": "visit",
-          "room": 61,
-          "text": "Enter the Ashen Threshold"
-        },
-        {
-          "kind": "visit",
-          "room": 70,
-          "text": "Reach the First Flame"
-        },
-        {
-          "kind": "collect",
-          "object": "first-coal",
-          "count": 1,
-          "text": "Carry the first coal"
+          "text": "Deliver the regent's sigil to the archmage"
         }
       ],
       "rewards": {
         "xp": 300,
-        "object": "ember-brand"
+        "guildXp": 120
       },
-      "complete": "The last keeper turns the coal in their fingers and smiles."
-    },
-    {
-      "id": "ember-forge",
-      "name": "The Cinder Hound",
-      "level": 8,
-      "giver": "the forge master",
-      "description": "A cinder hound has been hunting the slag gardens. The forge master wants its fang.",
-      "requires": [
-        "ember-door"
-      ],
-      "objectives": [
-        {
-          "kind": "kill",
-          "npc": "cinder-hound",
-          "count": 1,
-          "text": "Defeat the cinder hound"
-        },
-        {
-          "kind": "collect",
-          "object": "cinder-fang",
-          "count": 1,
-          "text": "Carry a cinder fang"
-        }
-      ],
-      "rewards": {
-        "xp": 220
-      },
-      "complete": "The forge master sets the fang on the anvil and nods."
-    },
-    {
-      "id": "ember-key",
-      "name": "The Ash Key",
-      "level": 8,
-      "giver": "the forge master",
-      "description": "A key hangs above the ember chapel altar. The forge master says the chest in the vault will open for it.",
-      "requires": [
-        "ember-door"
-      ],
-      "objectives": [
-        {
-          "kind": "visit",
-          "room": 67,
-          "text": "Enter the Ember Chapel"
-        },
-        {
-          "kind": "collect",
-          "object": "ash-key",
-          "count": 1,
-          "text": "Carry the ash key"
-        }
-      ],
-      "rewards": {
-        "xp": 180
-      },
-      "complete": "The forge master looks at the key and says nothing."
-    },
-    {
-      "id": "ember-flame",
-      "name": "The Ember Lantern",
-      "level": 9,
-      "giver": "the last keeper",
-      "description": "Bring the last keeper an ember lantern and a coal from the first flame.",
-      "requires": [
-        "ember-door",
-        "ember-key"
-      ],
-      "objectives": [
-        {
-          "kind": "visit",
-          "room": 70,
-          "text": "Stand at the First Flame"
-        },
-        {
-          "kind": "collect",
-          "object": "ember-lantern",
-          "count": 1,
-          "text": "Carry an ember lantern"
-        },
-        {
-          "kind": "collect",
-          "object": "first-coal",
-          "count": 1,
-          "text": "Carry the first coal"
-        }
-      ],
-      "rewards": {
-        "xp": 400
-      },
-      "complete": "The last keeper hangs the ember lantern beside the last lantern. The room holds two lights now."
-    },
-    {
-      "id": "guild-ember",
-      "name": "The Ember Warden",
-      "level": 9,
-      "giver": "the archmage",
-      "description": "The guild wants the coal guarded by the ember warden at the first flame.",
-      "scope": "guild",
-      "guild": "mages",
-      "rank": "magician",
-      "requires": [
-        "guild-reliquary"
-      ],
-      "objectives": [
-        {
-          "kind": "kill",
-          "npc": "ember-warden",
-          "count": 1,
-          "text": "Defeat the ember warden"
-        },
-        {
-          "kind": "collect",
-          "object": "first-coal",
-          "count": 1,
-          "text": "Carry the first coal"
-        }
-      ],
-      "rewards": {
-        "xp": 260,
-        "guildXp": 140
-      },
-      "complete": "The archmage sets the coal in a bowl of black glass. It does not stop burning."
+      "complete": "The archmage closes the ledger and sets the page aside for the next cycle."
     }
   ]
 }

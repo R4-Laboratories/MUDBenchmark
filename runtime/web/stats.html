@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MUDBench Stats</title>
+  <style>
+    :root {
+      --bg:#080b0f; --surface:#0d1219; --surface-2:#111823; --line:#1e2a38;
+      --text:#e6edf5; --muted:#9aa8b8; --faint:#7d8b9c; --accent:#5eead4;
+      --link:#7dd3fc; --warn:#fbbf24; --danger:#fb7185;
+      --font-ui:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+      --font-mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font:13px/1.5 var(--font-ui)}
+    header{min-height:52px;display:flex;align-items:center;gap:12px;padding:0 16px;border-bottom:1px solid var(--line)}
+    .brand-mark{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;background:var(--accent);color:#04110f;font-weight:800}
+    strong.wordmark{font-size:12px;letter-spacing:.12em;text-transform:uppercase}
+    header strong.wordmark span{color:var(--accent)}
+    .spacer{flex:1}
+    header a{color:var(--link);text-decoration:none;font-size:11.5px}
+    header a:hover{text-decoration:underline}
+    main{max-width:1280px;margin:0 auto;padding:20px 16px 48px}
+    h1{font-size:20px;margin:0 0 4px}
+    .sub{color:var(--muted);font-size:12px;margin:0 0 18px}
+    section{margin:18px 0}
+    h2{font-size:13px;letter-spacing:.06em;color:var(--muted);text-transform:uppercase;margin:0 0 10px}
+    .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
+    .card{border:1px solid var(--line);border-radius:8px;background:var(--surface);padding:9px 10px;color:var(--faint);font-size:10px;letter-spacing:.06em;text-transform:uppercase}
+    .card b{display:block;color:var(--text);font-size:16px;font-weight:600;letter-spacing:0;text-transform:none;margin-top:2px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    @media(max-width:800px){.split{grid-template-columns:1fr}}
+    table{width:100%;border-collapse:collapse;font-size:12px}
+    th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+    th{color:var(--faint);font-size:10px;letter-spacing:.08em;text-transform:uppercase}
+    td.num{text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
+    .bars{display:grid;gap:4px}
+    .bar{display:grid;grid-template-columns:120px 1fr 42px;gap:8px;align-items:center;font-size:11px}
+    .bar span:first-child{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .bar .track{height:7px;background:var(--surface-2);border-radius:99px;overflow:hidden}
+    .bar .fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--link));border-radius:99px}
+    .bar .n{text-align:right;color:var(--faint);font-variant-numeric:tabular-nums}
+    .panel{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:12px}
+    .muted{color:var(--muted)} .small{font-size:11px} .warn{color:var(--warn)}
+    #updated{font-size:11px;color:var(--faint)}
+    .live-dot{width:6px;height:6px;border-radius:50%;background:var(--faint);display:inline-block;margin-right:5px}
+    .live-dot.on{background:var(--danger);box-shadow:0 0 8px var(--danger)}
+    .cached{color:var(--warn);font-size:11px;margin-top:8px}
+  </style>
+</head>
+<body>
+  <header>
+    <span class="brand-mark">M</span>
+    <strong class="wordmark">MUDBench <span>Stats</span></strong>
+    <span class="spacer"></span>
+    <a href="/">Play / Watch AI →</a>
+    <a href="/watch">Live stream →</a>
+  </header>
+  <main>
+    <h1>World telemetry</h1>
+    <p class="sub">A public view of the simulation: world size, player sessions, quest completion, AI turns, model latency, command use, leaderboard and the last stream. No account keys, private thoughts, tells or mail.</p>
+    <p id="updated">loading…</p>
+    <section>
+      <h2>World</h2>
+      <div class="cards" id="world-cards"></div>
+    </section>
+    <section>
+      <h2>Players</h2>
+      <div class="cards" id="player-cards"></div>
+      <div class="split" style="margin-top:10px">
+        <div class="panel">
+          <div class="small muted" style="margin-bottom:6px">Quest completion (per character)</div>
+          <table><thead><tr><th>Quest</th><th>Actors</th><th>Finished</th><th>Rate</th></tr></thead><tbody id="player-quests"></tbody></table>
+        </div>
+        <div class="panel">
+          <div class="small muted" style="margin-bottom:6px">Levels at the last snapshot</div>
+          <div class="bars" id="player-levels"></div>
+        </div>
+      </div>
+    </section>
+    <div class="split">
+      <section>
+        <h2>AI runs</h2>
+        <div class="cards" id="ai-cards"></div>
+        <div class="panel" style="margin-top:10px">
+          <div class="small muted" style="margin-bottom:6px">Models</div>
+          <table><thead><tr><th>Model</th><th>Turns</th><th>p50</th><th>p95</th><th>Invalid</th><th>Loops</th></tr></thead><tbody id="models"></tbody></table>
+        </div>
+      </section>
+      <section>
+        <h2>Commands</h2>
+        <div class="panel"><div class="bars" id="commands"></div></div>
+      </section>
+    </div>
+    <div class="split">
+      <section>
+        <h2>Leaderboard</h2>
+        <div class="panel">
+          <table><thead><tr><th>#</th><th>Character</th><th>Level</th><th>XP</th><th>Quests</th><th>Guild</th></tr></thead><tbody id="board"></tbody></table>
+        </div>
+      </section>
+      <section>
+        <h2>Stream</h2>
+        <div class="panel" id="stream"><span class="muted small">No stream data.</span></div>
+      </section>
+    </div>
+    <p class="small muted">Source: <code>/world</code>, <code>/players</code>, <code>/trends</code>, <code>/leaderboard</code>, <code>/stream</code>. Offline views show the last cached response if the world is unreachable.</p>
+  </main>
+<script type="module">
+  const cache = (key, value) => {
+    try {
+      if (value === undefined) {
+        const raw = localStorage.getItem(`mudbench-stats:${key}`);
+        return raw ? JSON.parse(raw) : null;
+      }
+      localStorage.setItem(`mudbench-stats:${key}`, JSON.stringify({ at: Date.now(), value }));
+    } catch {}
+    return null;
+  };
+  const get = async (path) => {
+    try {
+      const res = await fetch(path, { signal: AbortSignal.timeout(4000) });
+      if (!res.ok) throw new Error(`${res.status}`);
+      const data = await res.json();
+      cache(path, data);
+      return { data, cached: false };
+    } catch {
+      const old = cache(path);
+      return old ? { data: old.value, cached: true, at: old.at } : { data: null, cached: false };
+    }
+  };
+  const card = (label, value) => {
+    const node = document.createElement("div");
+    node.className = "card";
+    node.textContent = label;
+    const strong = document.createElement("b");
+    strong.textContent = value ?? "—";
+    node.appendChild(strong);
+    return node;
+  };
+  const fill = (id, cells) => {
+    const box = document.getElementById(id);
+    box.replaceChildren(...cells.map(([label, value]) => card(label, value)));
+  };
+  const ms = (value) => typeof value === "number" ? `${Math.round(value)} ms` : "—";
+  const hm = (value) => {
+    if (typeof value !== "number") return "—";
+    const seconds = Math.round(value / 1000);
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    return hours ? `${hours}h ${minutes}m` : `${minutes}m`;
+  };
+  const pct = (value) => typeof value === "number" ? `${(value * 100).toFixed(1)}%` : "—";
+  const num = (value) => typeof value === "number" ? String(value) : "—";
+  const render = async () => {
+    const [world, trends, playerSummary, board, stream] = await Promise.all([get("/world"), get("/trends"), get("/players"), get("/leaderboard"), get("/stream")]);
+    fill("world-cards", [
+      ["Rooms", num(world.data?.rooms)], ["Zones", num(world.data?.zones)], ["Quests", num(world.data?.quests)],
+      ["Mobiles", num(world.data?.npcs)], ["Objects", num(world.data?.objects)], ["Online", num(world.data?.online)],
+      ["Accounts", num(world.data?.accounts)], ["Characters", num(world.data?.characters)],
+      ["Phase", world.data?.phase ?? "—"], ["Weather", world.data?.weather ?? "—"],
+      ["Reset", world.data?.reset?.seconds != null ? `${Math.round(world.data.reset.seconds / 60)}m` : "—"],
+    ]);
+    const playerData = playerSummary.data ?? {};
+    const sessions = playerData.sessions ?? {};
+    const playtime = playerData.playtime ?? {};
+    fill("player-cards", [
+      ["Sessions", num(sessions.total)], ["Accounts", num(sessions.unique_accounts)],
+      ["Characters", num(sessions.unique_characters)], ["Human", num(sessions.human)],
+      ["AI", num(sessions.ai)], ["AI unknown", num(sessions.ai_unknown)],
+      ["Returning", num(sessions.returning_accounts)],
+      ["Playtime", hm(playtime.total_ms)], ["Avg connection", hm(playtime.average_ms)],
+      ["Quest rate", pct(playerData.quests?.completion_rate)], ["Hit rate", pct(playerData.combat?.hit_rate)],
+      ["Avg damage", num(playerData.combat?.average_damage)], ["PvP kills", num(playerData.combat?.pvp_kills)],
+      ["Rooms seen", num(playerData.rooms?.unique)], ["Commands / conn", num(playerData.commands?.average_per_connection)],
+    ]);
+    const questRows = document.getElementById("player-quests");
+    questRows.replaceChildren();
+    for (const entry of (playerData.quests?.by_quest ?? []).slice(0, 8)) {
+      const row = document.createElement("tr");
+      for (const value of [entry.name ?? entry.id, entry.actors, entry.completers, pct(entry.completion_rate)]) {
+        const cell = document.createElement("td");
+        cell.textContent = value ?? "—";
+        if (typeof value === "number") cell.className = "num";
+        row.appendChild(cell);
+      }
+      questRows.appendChild(row);
+    }
+    if (!questRows.children.length) {
+      const row = document.createElement("tr");
+      const cell = document.createElement("td");
+      cell.colSpan = 4; cell.className = "muted"; cell.textContent = "No quest activity in the retained spans.";
+      row.appendChild(cell); questRows.appendChild(row);
+    }
+    const levelsBox = document.getElementById("player-levels");
+    levelsBox.replaceChildren();
+    const distribution = playerData.levels?.distribution ?? {};
+    const levelMax = Math.max(1, ...Object.values(distribution));
+    for (const [label, count] of Object.entries(distribution)) {
+      const row = document.createElement("div");
+      row.className = "bar";
+      const name = document.createElement("span"); name.textContent = label;
+      const track = document.createElement("div"); track.className = "track";
+      const fillNode = document.createElement("div"); fillNode.className = "fill"; fillNode.style.width = `${Math.round((count / levelMax) * 100)}%`;
+      track.appendChild(fillNode);
+      const n = document.createElement("span"); n.className = "n"; n.textContent = String(count);
+      row.append(name, track, n); levelsBox.appendChild(row);
+    }
+    if (!levelsBox.children.length) levelsBox.textContent = "No snapshot yet.";
+    const ai = trends.data?.ai ?? {};
+    fill("ai-cards", [
+      ["Turns", num(ai.turns)], ["Parsed", pct(ai.parsed)], ["Latency p50", ms(ai.latency_ms?.p50)],
+      ["Latency p95", ms(ai.latency_ms?.p95)], ["Invalid", pct(ai.invalid_rate)], ["Loops", num(ai.loops)],
+      ["Rooms max", num(ai.rooms_seen_max)], ["Memory hits", num(ai.memory_hits)], ["R4 hits", num(ai.r4_hits)],
+      ["Tokens in", num(ai.tokens_in)], ["Tokens out", num(ai.tokens_out)],
+      ["Prompt", Object.keys(ai.prompt_versions ?? {})[0] ?? "—"],
+    ]);
+    const models = document.getElementById("models");
+    models.replaceChildren();
+    for (const [name, entry] of Object.entries(ai.by_model ?? {})) {
+      const row = document.createElement("tr");
+      for (const value of [name, entry.turns, ms(entry.p50), ms(entry.p95), entry.invalid, entry.loops]) {
+        const cell = document.createElement("td");
+        cell.textContent = value ?? "—";
+        if (typeof value === "number") cell.className = "num";
+        row.appendChild(cell);
+      }
+      models.appendChild(row);
+    }
+    if (!models.children.length) {
+      const row = document.createElement("tr");
+      const cell = document.createElement("td");
+      cell.colSpan = 6; cell.className = "muted"; cell.textContent = "No completed AI turns yet.";
+      row.appendChild(cell); models.appendChild(row);
+    }
+    const commands = document.getElementById("commands");
+    commands.replaceChildren();
+    const top = Object.entries(trends.data?.commands?.top ?? {}).slice(0, 12);
+    const max = Math.max(1, ...top.map(([, count]) => count));
+    for (const [name, count] of top) {
+      const row = document.createElement("div");
+      row.className = "bar";
+      const label = document.createElement("span"); label.textContent = name;
+      const track = document.createElement("div"); track.className = "track";
+      const fillNode = document.createElement("div"); fillNode.className = "fill"; fillNode.style.width = `${Math.round((count / max) * 100)}%`;
+      track.appendChild(fillNode);
+      const n = document.createElement("span"); n.className = "n"; n.textContent = String(count);
+      row.append(label, track, n); commands.appendChild(row);
+    }
+    if (!top.length) commands.textContent = "No accepted commands in the retained spans.";
+    const boardRows = document.getElementById("board");
+    boardRows.replaceChildren();
+    for (const [index, rowData] of (board.data?.rows ?? []).slice(0, 12).entries()) {
+      const row = document.createElement("tr");
+      for (const value of [index + 1, rowData.name, rowData.level, rowData.xp, rowData.quests, rowData.guild ?? "—"]) {
+        const cell = document.createElement("td");
+        cell.textContent = value ?? "—";
+        if (typeof value === "number") cell.className = "num";
+        row.appendChild(cell);
+      }
+      boardRows.appendChild(row);
+    }
+    if (!boardRows.children.length) {
+      const row = document.createElement("tr");
+      const cell = document.createElement("td");
+      cell.colSpan = 6; cell.className = "muted"; cell.textContent = "No characters yet.";
+      row.appendChild(cell); boardRows.appendChild(row);
+    }
+    const streamBox = document.getElementById("stream");
+    streamBox.replaceChildren();
+    const live = stream.data?.live;
+    const last = stream.data?.last;
+    const title = document.createElement("div");
+    title.className = "small";
+    title.innerHTML = `<span class="live-dot ${live ? "on" : ""}"></span>${live ? `Live: ${live.name} in ${live.room} · ${live.viewers} watching` : "No run live"}`;
+    streamBox.appendChild(title);
+    if (live?.poll) {
+      const poll = document.createElement("div");
+      poll.className = "small muted"; poll.textContent = `Poll: ${live.poll.question} — A ${live.poll.votes.a}, B ${live.poll.votes.b}`;
+      streamBox.appendChild(poll);
+    }
+    if (last) {
+      const line = document.createElement("div");
+      line.className = "small muted";
+      line.textContent = `Last run: ${last.name} in ${last.room} · peak ${last.peakViewers} · ${last.highlights?.length ?? 0} highlights`;
+      streamBox.appendChild(line);
+    }
+    const stale = [world, trends, playerSummary, board, stream].some((entry) => entry.cached);
+    document.getElementById("updated").textContent = `${stale ? "Showing cached data. " : ""}Updated ${new Date().toLocaleTimeString()}.`;
+    document.getElementById("updated").className = stale ? "cached" : "";
+  };
+  render();
+  setInterval(render, 15000);
+</script>
+</body>
+</html>

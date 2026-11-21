@@ -16,41 +16,66 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 
 | Verb | Aliases | Argument |
 | --- | --- | --- |
-| `adopt` | — | text |
-| `attack` | `kill`, `hit` | actor |
-| `buy` | `purchase` | object |
-| `channels` | `chan` | none |
-| `close` | `shut` | object |
-| `deliver` | `handin` | object to actor |
-| `drop` | `discard` | object |
-| `duel` | `challenge` | actor |
-| `eat` | `taste` | object |
-| `extinguish` | `douse`, `snuff` | object |
-| `flee` | `run` | none |
-| `give` | — | object to actor |
+| `adopt` | `ad` | text |
+| `attack` | `kill`, `hit`, `k`, `atk` | actor |
+| `battle` | `combat`, `bt` | none |
+| `buy` | `purchase`, `b` | object |
+| `channels` | `chan`, `ch` | none |
+| `close` | `shut`, `cl` | object |
+| `coins` | `money`, `purse` | none |
+| `components` | `parts`, `materials` | none |
+| `deliver` | `handin`, `dv` | object to actor |
+| `deposit` | `dep`, `store`, `ds` | object |
+| `drink` | `quaff` | object |
+| `drop` | `discard`, `dp` | object |
+| `duel` | `challenge`, `du` | actor |
+| `eat` | `taste`, `ea` | object |
+| `extinguish` | `douse`, `snuff`, `ext` | object |
+| `facts` | `memory`, `knowledge` | none |
+| `flee` | — | none |
+| `give` | `gv` | object to actor |
 | `guild` | `guilds` | subcommand |
 | `guildchat` | `gc`, `gchat` | text |
-| `inventory` | `i`, `inv` | none |
-| `light` | `ignite` | object |
-| `list` | `shop`, `stock` | none |
-| `mail` | `letter` | actor text |
-| `open` | — | object |
-| `put` | `insert` | object in object |
+| `ignore` | `ign`, `mute` | actor |
+| `ignoring` | `ignored`, `ignores` | none |
+| `inventory` | `i`, `inv` | optional category |
+| `ladder` | `pvp`, `duels` | none |
+| `leaderboard` | `top`, `lb`, `ranks` | none |
+| `levels` | `lv`, `lvl` | none |
+| `light` | `ignite`, `li` | object |
+| `list` | `shop`, `stock`, `ls` | none |
+| `mail` | `letter`, `m` | actor text |
+| `map` | `mp` | optional zone |
+| `open` | `op` | object |
+| `put` | `insert`, `pt` | object in object |
 | `quest` | — | subcommand |
-| `quests` | `journal` | none |
-| `remove` | `doff` | object |
-| `say` | — | text |
-| `score` | `stats` | none |
-| `sell` | `vend` | object |
-| `take` | `get`, `grab` | object |
+| `quests` | `journal`, `q` | none |
+| `recall` | `remember`, `mem` | word |
+| `remove` | `doff`, `rm` | object |
+| `report` | `rep` | actor text |
+| `salvage` | `melt`, `scrap` | object |
+| `say` | `sy` | text |
+| `score` | `stats`, `sc` | none |
+| `sell` | `vend`, `se` | object |
+| `shortcuts` | `sh` | none |
+| `standing` | `reputation`, `factions` | none |
+| `take` | `get`, `grab`, `tf`, `t` | object or all |
 | `takeFrom` | — | object from object |
-| `talk` | `greet` | actor |
-| `tell` | `whisper` | actor text |
-| `unwield` | `sheathe` | none |
-| `wait` | — | none |
-| `wear` | `don` | object |
-| `who` | `awake`, `online` | none |
-| `wield` | `equip` | object |
+| `talk` | `greet`, `tk` | actor |
+| `technique` | `tech` | optional technique |
+| `tell` | `whisper`, `te` | actor text |
+| `title` | `settitle` | title or none |
+| `titles` | `titlelist`, `achievements` | none |
+| `tutorial` | `first`, `firststeps` | none |
+| `unignore` | `unign`, `unmute` | actor |
+| `unwield` | `sheathe`, `uw` | none |
+| `upgrade` | `improve`, `forge` | object |
+| `vault` | `gvault`, `bank`, `gvlt` | none |
+| `wait` | `wa` | none |
+| `wear` | `don`, `wr` | object |
+| `who` | `awake`, `online`, `wh` | none |
+| `wield` | `equip`, `wi` | object |
+| `withdraw` | `wd`, `retrieve`, `wdr` | object |
 
 ## Channels
 
@@ -65,13 +90,36 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 
 | Social | Aliases |
 | --- | --- |
+| `apologize` | `apologize` |
 | `bow` | `bow` |
+| `cheer` | `cheer`, `woo` |
+| `clap` | `clap` |
+| `congratulate` | `congratulate` |
+| `cry` | `cry`, `sob` |
 | `dance` | `dance` |
-| `laugh` | `laugh`, `lol` |
-| `nod` | `nod` |
+| `frown` | `frown` |
+| `grin` | `grin` |
+| `highfive` | `highfive` |
+| `hug` | `hug` |
+| `hum` | `hum` |
+| `laugh` | `laugh`, `lol`, `hehe`, `haha` |
+| `mutter` | `mutter` |
+| `nod` | `nod`, `agree` |
+| `point` | `point` |
+| `poke` | `poke` |
+| `ponder` | `ponder`, `think` |
+| `salute` | `salute` |
+| `shiver` | `shiver` |
+| `shout` | `shout`, `yell` |
 | `shrug` | `shrug` |
 | `sigh` | `sigh` |
+| `sing` | `sing` |
+| `smile` | `smile`, `smirk` |
+| `stretch` | `stretch` |
 | `wave` | `wave` |
+| `whistle` | `whistle`, `whistles` |
+| `wink` | `wink` |
+| `yawn` | `yawn` |
 
 ## Quests
 
@@ -79,35 +127,24 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | --- | --- | --- | --- | --- |
 | `word` | The True Word | 1 | Enter the Vault; Answer the true word at the Shrine | 50 xp |
 | `guardian` | The Vault Guardian | 2 | Defeat the vault guardian | 80 xp |
-| `scroll` | A Curled Scroll | 1 | Carry the curled scroll | 15 xp |
 | `bread` | Bread for the Shop | 1 | Deliver a loaf to the shopkeeper | 10 xp |
-| `boar` | The Boar at the Edge | 1 | Defeat the wild boar | 40 xp |
-| `well` | The Well Key | 1 | Carry the brass key | 25 xp |
-| `ghoul` | The Crypt Ghoul | 3 | Defeat the crypt ghoul | 100 xp |
-| `smuggler` | The Smuggler's Cache | 3 | Defeat the smuggler | 80 xp |
 | `telescope` | The Lighthouse Lens | 2 | Carry the brass telescope | 30 xp |
-| `errand` | A Message for the Spellwright | 1 | Deliver the note to the spellwright | 25 xp |
 | `familiar` | The Apprentice's Charm | 2 | Enter the Familiar Yard; Carry the familiar charm | 40 xp |
+| `scroll` | A Curled Scroll | 1 | Carry the curled scroll | 15 xp |
 | `roof` | The High Walk | 3 | Reach the High Walk; Kill a rat | 60 xp |
 | `guild-ledger` | The Guild's Ledger | 3 | Carry the spell scroll to the archmage | 60 xp |
 | `mirror` | What the Mirror Keeps | 4 | Enter the Mirror Pool; Carry a mirror shard | 80 xp |
-| `wardstone` | The Wardstone | 5 | Defeat the warden; Carry the ward key | 120 xp |
 | `ledger` | The Drowned Ledger | 4 | Defeat the drowned clerk; Recover the drowned page | 100 xp |
 | `sigils` | Three Parts of a Sigil | 5 | Find the first sigil; Find the second sigil; Find the third sigil | 150 xp |
-| `guild-sigils` | The Sigil Trial | 5 | Find the first sigil; Find the second sigil; Find the third sigil | 120 xp |
 | `guild-mirror` | The Mirror Ledger | 6 | Enter the Mirror Pool; Carry a mirror shard | 120 xp |
 | `guild-warden` | The Warden's Debt | 7 | Defeat the warden; Carry the ward key | 200 xp |
 | `cistern` | The Cistern Key | 6 | Enter the Cistern; Carry the bone key | 90 xp |
 | `choir` | The Black Choir | 7 | Defeat the choir moth; Carry the black bell | 120 xp |
 | `reliquary` | The Sealed Reliquary | 8 | Enter the Sealed Reliquary; Carry the reliquary lens | 150 xp |
-| `last` | The Last Lantern | 8 | Reach the Last Lantern; Carry the last lantern | 180 xp |
-| `guild-choir` | The Choir Bell | 8 | Defeat the choir moth; Carry the black bell | 180 xp |
-| `guild-reliquary` | The Reliquary Lens | 9 | Enter the Sealed Reliquary; Carry the reliquary lens | 200 xp |
-| `ember-door` | Beyond the Quiet Door | 8 | Enter the Ashen Threshold; Reach the First Flame; Carry the first coal | 300 xp |
-| `ember-forge` | The Cinder Hound | 8 | Defeat the cinder hound; Carry a cinder fang | 220 xp |
-| `ember-key` | The Ash Key | 8 | Enter the Ember Chapel; Carry the ash key | 180 xp |
-| `ember-flame` | The Ember Lantern | 9 | Stand at the First Flame; Carry an ember lantern; Carry the first coal | 400 xp |
-| `guild-ember` | The Ember Warden | 9 | Defeat the ember warden; Carry the first coal | 260 xp |
+| `first-steps` | First Steps | 1 | Stand in the Atrium; Walk north into the Corridor | 20 xp |
+| `hall-word` | A Word in the Hall | 2 | Talk to the market woman; Talk to the guild clerk | 70 xp |
+| `guild-dawn` | The Dawn Archive | 10 | Reach the Dawn Gate; Carry the dawn crown | 500 xp |
+| `guild-trial` | The Archmage's Trial | 10 | Defeat the eclipse regent; Deliver the regent's sigil to the archmage | 300 xp |
 
 ## Rooms
 
@@ -118,9 +155,9 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 3 | The Storeroom | temple | yes | west 1, north 5 |
 | 4 | The Vault | temple | no | west 2 |
 | 5 | The Cell | temple | no | south 3, north 6, down 25 |
-| 6 | The Shrine | temple | yes | south 5, north 7 |
+| 6 | The Shrine | temple | yes | south 5, north 7, east 98 |
 | 7 | The Chancel | temple | yes | south 6 |
-| 8 | Market Square | town | yes | north 1, east 9, west 10, south 11, up 35 |
+| 8 | Market Square | town | yes | north 1, east 9, west 10, south 11, up 35, down 105 |
 | 9 | The Smithy | town | yes | west 8 |
 | 10 | The Gilded Rat | town | yes | east 8, up 12, north 24 |
 | 11 | The King's Road | town | no | north 8, south 15, east 16, west 17 |
@@ -130,13 +167,13 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 15 | The Forest Edge | wilds | no | north 11, east 18, south 19 |
 | 16 | The Old Well | wilds | no | west 11 |
 | 17 | The Graveyard | wilds | no | east 11, south 21 |
-| 18 | The Deep Forest | wilds | no | west 15, south 20 |
+| 18 | The Deep Forest | wilds | no | west 15, south 20, east 86 |
 | 19 | The Riverbank | wilds | no | north 15, east 20, south 30 |
-| 20 | The Abandoned Mill | wilds | no | west 19, north 18 |
+| 20 | The Abandoned Mill | wilds | no | west 19, north 18, east 71 |
 | 21 | The Crypt Entrance | wilds | no | north 17, down 22 |
 | 22 | The Crypt Hall | wilds | no | up 21, east 23 |
 | 23 | The Ossuary | wilds | no | west 22 |
-| 24 | The Guild Hall | town | yes | south 10 |
+| 24 | The Guild Hall | town | yes | south 10, up 115, east 116 |
 | 25 | The Undercroft | undercroft | no | up 5, east 26, south 27 |
 | 26 | The Sewer Junction | undercroft | no | west 25, east 28 |
 | 27 | The Flooded Passage | undercroft | no | north 25, east 29 |
@@ -144,7 +181,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 29 | The Smuggler's Cache | undercroft | no | west 27, south 28 |
 | 30 | The Harbor Quay | harbor | no | north 19, east 31 |
 | 31 | The Docks | harbor | no | west 30, north 32, down 33 |
-| 32 | The Lighthouse | harbor | no | south 31 |
+| 32 | The Lighthouse | harbor | no | south 31, down 81 |
 | 33 | The Ring | harbor | no | up 31 |
 | 34 | The Mages' Guild | arcanum | yes | down 1 |
 | 35 | The Lantern Stair | lantern | yes | down 8, north 36 |
@@ -183,4 +220,50 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 68 | The Deep Door | ember | no | west 67, south 66, north 69 |
 | 69 | The Vault of Coals | ember | no | south 68, east 70 |
 | 70 | The First Flame | ember | no | west 69 |
+| 71 | The Fen Gate | fen | no | west 20, north 72, east 73 |
+| 72 | The Reed Walk | fen | no | south 71, east 74, north 75 |
+| 73 | The Drowned Orchard | fen | no | west 71, north 74 |
+| 74 | The Peat Cut | fen | no | west 72, south 73, north 76 |
+| 75 | The Heron Pool | fen | yes | south 72, east 76 |
+| 76 | The Sunken Causeway | fen | no | west 75, south 74, north 77 |
+| 77 | The Wisp Field | fen | no | south 76, east 78 |
+| 78 | The Old Beacon | fen | no | west 77, north 79 |
+| 79 | The Fen Vault | fen | no | south 78, east 80 |
+| 80 | The Green Heart | fen | no | west 79 |
+| 81 | The Salt Stair | salt | no | up 32, east 82 |
+| 82 | The Brine Hall | salt | no | west 81, north 83, east 84 |
+| 83 | The Tide Shrine | salt | no | south 82, east 85 |
+| 84 | The Kelp Vault | salt | no | west 82, north 85 |
+| 85 | The Salt Heart | salt | no | west 83, south 84 |
+| 86 | The Moonlit Gate | moon | no | west 18, north 87, east 88 |
+| 87 | The Silver Glade | moon | no | south 86, east 89 |
+| 88 | The Owl Grove | moon | yes | west 86, north 89 |
+| 89 | The Moonwell | moon | no | west 87, south 88, east 90 |
+| 90 | The Hunter's Camp | moon | no | west 89, north 91 |
+| 91 | The Moon Throne | moon | no | south 90, up 92 |
+| 92 | The Eclipse Stair | eclipse | yes | down 91, north 93 |
+| 93 | The Starless Hall | eclipse | no | south 92, east 94, west 95 |
+| 94 | The Sundial Court | eclipse | no | west 93, north 96 |
+| 95 | The Mirror Vault | eclipse | no | east 93 |
+| 96 | The Throne of Ash | eclipse | no | south 94, up 97 |
+| 97 | The Dawn Gate | eclipse | yes | down 96 |
+| 98 | The Memory Garden | garden | yes | west 6, east 99, north 100 |
+| 99 | The Rose Walk | garden | yes | west 98 |
+| 100 | The Rememberer's Bench | garden | yes | south 98 |
+| 101 | The Remembered Bed | garden | yes | up 98, down 102 |
+| 102 | The Root Archive | garden | yes | up 101, east 103, south 104 |
+| 103 | The First Bed | garden | yes | west 102 |
+| 104 | The Root Road | garden | yes | north 102, east 105, down 106 |
+| 105 | The Root Gate | garden | yes | west 104, up 8 |
+| 106 | The Sunken Orchard | garden | yes | up 104, east 107, north 108 |
+| 107 | The Windfall | garden | yes | west 106 |
+| 108 | The Old Press | garden | yes | south 106, down 109 |
+| 109 | The Press Cellar | garden | yes | up 108, east 110, north 111 |
+| 110 | The Fermenting Vat | garden | no | west 109 |
+| 111 | The Seed Vault | garden | yes | south 109, north 112 |
+| 112 | The Cider Spring | garden | yes | south 111, east 113 |
+| 113 | The White Bed | garden | yes | west 112, north 114 |
+| 114 | The Spring Keeper's Rest | garden | yes | south 113 |
+| 115 | The Wardens' Lodge | town | yes | down 24 |
+| 116 | The Training Yard | town | no | west 24 |
 

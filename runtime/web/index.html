@@ -378,7 +378,7 @@
   .thought .meta .highlight:disabled { color: var(--warn); cursor: default; }
   .highlight-row { margin: 5px 0; padding: 6px 8px; border-left: 2px solid var(--warn); background: rgba(251,191,36,.04); font-size: 12px; }
   .pane-title { margin: 0 0 7px; color: var(--muted); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; }
-  #bench-stats, #trend-stats, #run-stats, #model-stats {
+  #bench-stats, #trend-stats, #run-stats, #model-stats, #sheet-stats {
     display: grid; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
     gap: 6px; margin-bottom: 8px;
   }
@@ -389,6 +389,8 @@
     letter-spacing: .06em; text-transform: uppercase;
   }
   .stat b { display: block; margin-top: 2px; color: var(--text); font-size: 13px; font-weight: 600; text-transform: none; letter-spacing: 0; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .sheet-line { display: flex; justify-content: space-between; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--line); font-size: 11.5px; }
+  .sheet-line span:last-child { color: var(--muted); text-align: right; overflow-wrap: anywhere; }
   .model-block h3 { margin: 9px 0 0; color: var(--muted); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; }
   .model-block pre { max-height: 240px; overflow: auto; }
   #ai-settings { margin-top: 5px; color: var(--muted); font-size: 11px; overflow-wrap: anywhere; }
@@ -470,6 +472,8 @@
     #stream-tools .spacer { display: none; }
     #stream-tools a { margin-left: auto; }
   }
+  .skip { position: absolute; left: 8px; top: -40px; z-index: 100; padding: 8px 10px; border-radius: 6px; background: var(--accent); color: #04110f; font-weight: 700; text-decoration: none; }
+  .skip:focus { top: 8px; }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
     #livebar.live .dot { animation: none; }
@@ -478,6 +482,7 @@
   </style>
 </head>
 <body>
+  <a class="skip" href="#main">Skip to game</a>
   <header>
     <div class="brand">
       <span class="brand-mark" aria-hidden="true">M</span>
@@ -494,13 +499,14 @@
       <span id="state" role="status">connecting…</span>
     </div>
     <div class="header-actions">
+      <a href="/stats" target="_blank" rel="noopener">Stats</a>
       <a href="/watch" target="_blank" rel="noopener">Watch live ↗</a>
       <button type="button" id="telemetry-open" title="Open telemetry" aria-expanded="false" aria-controls="observe">Telemetry</button>
       <button type="button" id="font-down" title="Smaller text" aria-label="Smaller text">A−</button>
       <button type="button" id="font-up" title="Larger text" aria-label="Larger text">A+</button>
     </div>
   </header>
-  <main>
+  <main id="main">
     <section id="terminal">
       <div id="livebar">
         <span class="dot"></span>
@@ -520,7 +526,7 @@
       <section id="ai-live" aria-label="AI Studio">
         <div id="ai-head">
           <div class="run-title">
-            <strong id="ai-title">scout</strong>
+            <strong id="ai-title">AI</strong>
             <div class="run-meta">
               <span id="ai-sub">ready</span>
               <button type="button" id="model-edit" aria-haspopup="dialog" aria-expanded="false" title="Change model">Change</button>
@@ -553,11 +559,22 @@
           </div>
           <div id="tabs" role="tablist" aria-label="Studio panels">
             <button type="button" class="tab active" data-tab="mind" role="tab" aria-selected="true">Mind</button>
+            <button type="button" class="tab" data-tab="sheet" role="tab" aria-selected="false">Sheet</button>
             <button type="button" class="tab" data-tab="run" role="tab" aria-selected="false">Run</button>
             <button type="button" class="tab" data-tab="model" role="tab" aria-selected="false">Model</button>
             <button type="button" class="tab" data-tab="bench" role="tab" aria-selected="false">Bench</button>
           </div>
           <div id="mind-pane" class="pane" role="tabpanel"><div id="mind"></div></div>
+          <div id="sheet-pane" class="pane" role="tabpanel" hidden>
+            <h3 class="pane-title">Character</h3>
+            <div id="sheet-stats"></div>
+            <div class="model-block"><h3>Equipment</h3><div id="sheet-equipment"></div></div>
+            <div class="model-block"><h3>Sets</h3><div id="sheet-sets"></div></div>
+            <div class="model-block"><h3>Techniques</h3><div id="sheet-techniques"></div></div>
+            <div class="model-block"><h3>Faction standing</h3><div id="sheet-standing"></div></div>
+            <div class="model-block"><h3>Forge components</h3><div id="sheet-components"></div></div>
+            <div class="model-block"><h3>Ring record</h3><div id="sheet-duel"></div></div>
+          </div>
           <div id="model-pane" class="pane" role="tabpanel" hidden>
             <div id="model-stats"></div>
             <div class="model-block"><h3>Sent to the model</h3><pre id="model-prompt"></pre></div>
@@ -598,8 +615,8 @@
           </div>
           <div class="field">
             <label for="ai-character">Character name</label>
-            <input id="ai-character" autocomplete="off" maxlength="24" placeholder="scout">
-            <p class="small muted">Created if missing. The AI signs in with its Prism id.</p>
+            <input id="ai-character" autocomplete="off" maxlength="24" placeholder="auto (random)">
+            <p class="small muted">Existing characters open automatically; a new one gets a random name.</p>
           </div>
           <div class="field">
             <label for="ai-base">Base URL</label>
@@ -612,7 +629,7 @@
               <button type="button" id="ai-find">Find</button>
             </div>
             <datalist id="ai-models"></datalist>
-            <p class="small muted" id="ai-local">Local providers need no key. Start Ollama and click Find.</p>
+            <p class="small muted" id="ai-local">Pollinations is the free default and needs no key. Ollama and Prime Router also need no key.</p>
           </div>
           <div class="field" id="ai-key-field">
             <label for="ai-key">API key <span class="muted">(this browser only)</span></label>
@@ -642,9 +659,10 @@
         <details class="small muted">
           <summary>How this works</summary>
           <p>1. Pick a brain. Ollama is free and local; OpenAI and Anthropic need a key.</p>
-          <p>2. When you are signed in, the AI is a persona of your Prism id; your device signs the owner action. If you are not signed in, it uses its own account.</p>
+          <p>2. When you are signed in, the AI is a persona of your Prism id; your device signs the owner action. Sign in with Prism first; the AI does not create a separate account.</p>
           <p>3. It sees the same room text you do, types one command per turn, and waits for the server like any player.</p>
           <p>4. Send direction in the Director chat. The AI replies there and its private reasoning appears in Mind.</p>
+          <p>5. A compact memory of rooms, tried commands and stale results is kept per character in this browser and injected every turn. A loop guard breaks repeated observation commands instead of pausing the run.</p>
           <p>The game server never sees the provider key.</p>
         </details>
         <div class="modal-actions">
@@ -658,7 +676,7 @@
         <div class="plan-list">
           <div class="plan-row"><span>Brain</span><b id="plan-brain">Ollama</b></div>
           <div class="plan-row"><span>Model</span><b id="plan-model">llama3.2</b></div>
-          <div class="plan-row"><span>Character</span><b id="plan-character">scout</b></div>
+          <div class="plan-row"><span>Character</span><b id="plan-character">auto</b></div>
           <div class="plan-row"><span>Mode</span><b id="plan-mode">Standard</b></div>
         </div>
         <ol class="plan-steps">
@@ -693,6 +711,11 @@
           </div>
           <p class="small muted" id="account-hint">New here? Register. Returning? Log in.</p>
         </details>
+        <details class="small muted">
+          <summary>First steps</summary>
+          <p>After signing in, name a character and type <code>look</code>, <code>score</code>, then <code>quests</code>. The <code>tutorial</code> command walks the first steps, including <code>quest accept first-steps</code>. <code>map</code>, <code>levels</code> and <code>leaderboard</code> show the world; <code>shortcuts</code> lists the fast forms.</p>
+          <p><a href="/watch" target="_blank" rel="noopener">Watch an AI</a> · <a href="/stats" target="_blank" rel="noopener">Public stats</a></p>
+        </details>
         <details class="small muted" id="recovery-restore-box">
           <summary>Restore from a recovery kit</summary>
           <p>Use the encrypted file and passphrase you saved. This device becomes the account's device; the old device is revoked.</p>
@@ -721,6 +744,13 @@
           <div class="row"><button type="submit">Create character</button></div>
         </form>
         <p class="small muted" id="character-hint"></p>
+        <details id="recover-old" hidden>
+          <summary>Recover old AI characters</summary>
+          <p class="small muted">If this browser still has an old standalone AI Prism account, its characters can be moved to the signed-in human account. Only characters from the old account are transferred.</p>
+          <div class="row"><button type="button" id="recover-scan">Find old AI characters</button></div>
+          <div id="recover-list"></div>
+          <p class="small muted" id="recover-status"></p>
+        </details>
         <div class="row"><button type="button" id="sign-out">Sign out</button></div>
       </section>
 
@@ -856,9 +886,11 @@
 <script type="module">
   import {
     PROVIDERS, DEFAULT_GOAL, buildSystemPrompt, buildUserPrompt,
-    parseBrain, buildActionMenu, requestFor, replyFrom, trimHistory, normalizeBase,
+    parseBrain, buildActionMenu, validateCommand, repairCommand, requestFor, replyFrom, readSseText, trimHistory, normalizeBase,
   } from "/ai.mjs";
-  import { signIn as prismSignIn, reset as prismReset, load as loadSession, save as saveSession, personaSignIn, personaRetire, nextPersonaEpoch, createRecoveryKit, restoreRecoveryKit, characterHandoff, characterRevoke, signChallenge } from "/prism-auth.mjs";
+  import { emptyMemory, rememberResult, memoryPrompt, loopWarning, breakLoop, shouldBreakLoop, publicMemoryText } from "/memory.mjs";
+  import { signIn as prismSignIn, reset as prismReset, load as loadSession, save as saveSession, personaSignIn, personaRetire, nextPersonaEpoch, createRecoveryKit, restoreRecoveryKit, characterHandoff, characterRevoke, characterTransfer, signChallenge } from "/prism-auth.mjs";
+  import { randomCharacterName, uniqueCharacterName, chooseCharacter } from "/names.mjs";
   import { createLinkOffer, parseLinkUri, requestLink, acceptLinkRequest, completeLink, linkCode, revokeDevice, resolvePrism, linkQr } from "/prism-id.mjs";
 
   const log = document.getElementById("log");
@@ -873,6 +905,10 @@
   const createCharacterForm = document.getElementById("create-character-form");
   const newCharacter = document.getElementById("new-character");
   const characterHint = document.getElementById("character-hint");
+  const recoverOld = document.getElementById("recover-old");
+  const recoverScan = document.getElementById("recover-scan");
+  const recoverList = document.getElementById("recover-list");
+  const recoverStatus = document.getElementById("recover-status");
   const charactersButton = document.getElementById("characters-button");
   const signOut = document.getElementById("sign-out");
   const recoveryPass = document.getElementById("recovery-pass");
@@ -998,8 +1034,11 @@
   let playSocket = null;
   let playEnabled = true;
   let authed = false;
+  let resumeCharacter = null;
+  let resumeOnDisconnect = true;
   let stick = true;
   let characterState = { account: "", characters: [], delegated: {} };
+  let playState = null;
 
   const AI = {
     socket: null, config: null, identity: null, name: "",
@@ -1008,10 +1047,14 @@
     turn: 0, commands: 0, latencies: [], usage: { prompt: 0, completion: 0 },
     history: [], director: [], transcript: [], thoughts: [], room: "",
     lastCommand: "", startedAt: null, recent: [], nudge: false, lastError: null,
-    character: "scout", lastRequest: null, lastReply: null, lastParsed: null, lastLatency: 0,
+    character: "", characterExplicit: false, createRetries: 0, lastRequest: null, lastReply: null, lastParsed: null, lastLatency: 0,
     persona: null, owner: null, personaAudience: null, tickFrom: null, lastTick: null,
     highlights: [], streaming: false, timeouts: 0, lastPoll: null, state: null,
     demoToken: null, demoTokenExpires: 0, demoWaiters: [],
+    memory: null, memoryKey: null, commandRoom: null, exits: [],
+    r4Waiters: [], r4DownUntil: 0,
+    lastInvalid: null, lastValidation: null, loopBroken: false, lastR4: false, r4LastLatency: 0,
+    demoRemaining: null, demoMinuteRemaining: null, demoGlobalRemaining: null, demoWarned: false,
   };
   const shortId = (id) => (id ? `${id.slice(0, 15)}…` : "—");
 
@@ -1036,6 +1079,18 @@
     log.scrollTop = log.scrollHeight;
   });
 
+  const snapToLatest = () => {
+    stick = true;
+    chatStick = true;
+    mindStick = true;
+    requestAnimationFrame(() => {
+      log.scrollTop = log.scrollHeight;
+      chat.scrollTop = chat.scrollHeight;
+      mindPane.scrollTop = mindPane.scrollHeight;
+      latest.style.display = "none";
+    });
+  };
+
   const addLine = (text, cls) => {
     const line = document.createElement("div");
     line.className = `line${cls ? ` ${cls}` : ""}`;
@@ -1049,10 +1104,16 @@
     for (const line of lines) {
       if (!line.trim()) { addLine("", "spacer"); continue; }
       let kind = cls ?? "event";
-      if (/^\[.*\]$/.test(line.trim())) kind = "room";
+      if (/^\[.*\]$/.test(line.trim())) {
+        kind = "room";
+        AI.exits = [];
+      }
       else if (/^(Here|Objects):$/i.test(line.trim())) kind = "label";
       else if (/^  /.test(line)) kind = "item";
-      else if (/^Exits:/i.test(line.trim())) kind = "exits";
+      else if (/^Exits:/i.test(line.trim())) {
+        kind = "exits";
+        AI.exits = line.replace(/^Exits:\s*/i, "").split(/[,\s]+/).map((dir) => dir.replace(/[^a-z]/gi, "")).filter(Boolean);
+      }
       else if (/^(Night|Dawn|Day|Dusk)\./.test(line.trim())) kind = "scene";
       else if (/^(Welcome|Account|Signing|You must sign|That name|No such|Usage|Goodbye|Connected|New here)/i.test(line.trim())) kind = "sys";
       else if (!cls && !/^\[/.test(line.trim())) kind = "desc";
@@ -1073,9 +1134,12 @@
   // --- play mode ----------------------------------------------------------
   function connectPlay() {
     if (!playEnabled || mode !== "play") return;
+    if (playSocket && playSocket.readyState !== WebSocket.CLOSED) return;
     const scheme = location.protocol === "https:" ? "wss:" : "ws:";
-    playSocket = new WebSocket(`${scheme}//${location.host}`);
-    playSocket.onopen = () => {
+    const socket = new WebSocket(`${scheme}//${location.host}`);
+    playSocket = socket;
+    socket.onopen = () => {
+      if (playSocket !== socket) return;
       state.textContent = "connected";
       state.className = "live";
       append("Connected. Register or log in to play. Type help for the commands.", "sys");
@@ -1083,31 +1147,34 @@
       // guest screen; the old socket's death must not cost the character.
       if (playAuth === "prism" && mode === "play" && !authed) signInPrism(false);
     };
-    playSocket.onclose = () => {
+    socket.onclose = () => {
+      if (playSocket !== socket) return;
+      if (resumeOnDisconnect && playAuth === "prism" && authed && characterState.account
+          && characterState.characters.includes(signedName.textContent)) {
+        resumeCharacter = { account: characterState.account, name: signedName.textContent };
+      }
       state.textContent = "disconnected";
       state.className = "";
       authed = false;
       signed.style.display = "none";
-      if (characterState.account) {
-        charactersPanel.hidden = false;
-        account.style.display = "none";
-      } else {
-        charactersPanel.hidden = true;
-        account.style.display = "block";
-      }
+      charactersPanel.hidden = true;
+      account.style.display = "block";
       cmd.disabled = true;
       cmd.placeholder = "Sign in to play";
       if (playEnabled && mode === "play") setTimeout(connectPlay, 1500);
     };
-    playSocket.onerror = () => { state.textContent = "error"; state.className = ""; };
-    playSocket.onmessage = async (event) => {
+    socket.onerror = () => {
+      if (playSocket === socket) { state.textContent = "error"; state.className = ""; }
+    };
+    socket.onmessage = async (event) => {
+      if (playSocket !== socket) return;
       const text = String(event.data);
       const challengeLine = text.match(/^#challenge ([\w-]+)\r?\n?$/);
       if (challengeLine) {
         try {
           const signed = await signChallenge("default", challengeLine[1], 0);
-          if (signed && playSocket?.readyState === WebSocket.OPEN) {
-            playSocket.send(`session-key ${signed.counter} ${signed.signature}\n`);
+          if (signed && playSocket === socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(`session-key ${signed.counter} ${signed.signature}\n`);
           }
         } catch (error) {
           append(`Session key: ${error.message}`, "err");
@@ -1116,14 +1183,34 @@
       }
       const charactersLine = text.match(/^#characters (.*)\r?\n?$/);
       if (charactersLine) {
-        try { renderCharacters(JSON.parse(charactersLine[1])); } catch {}
+        try {
+          const info = JSON.parse(charactersLine[1]);
+          renderCharacters(info);
+          if (resumeCharacter && playAuth === "prism") {
+            const previous = resumeCharacter;
+            resumeCharacter = null;
+            if (info.account === previous.account && info.characters?.includes(previous.name)) {
+              socket.send(`resume ${previous.name}\n`);
+            }
+          }
+        } catch {}
         return;
       }
-      if (/^#state /.test(text)) return;
+      const recoverLine = text.match(/^#recover-list (.*)\r?\n?$/);
+      if (recoverLine) {
+        try { renderRecovery(JSON.parse(recoverLine[1])); } catch {}
+        return;
+      }
+      const stateLine = text.match(/^#state (.*)\r?\n?$/);
+      if (stateLine) {
+        try { playState = JSON.parse(stateLine[1]); renderSheet(); } catch {}
+        return;
+      }
       if (/^#tick \d+\r?\n?$/.test(text)) return;
       append(text);
       if (/signed in elsewhere/i.test(text)) {
         playAuth = null;
+        resumeCharacter = null;
         prismSession = null;
         authed = false;
         signed.style.display = "none";
@@ -1142,6 +1229,7 @@
       if (/You are now|Signing in as|Account .* created|Welcome,\s/.test(text)) {
         authed = true;
         if (signedAs) {
+          resumeOnDisconnect = true;
           signedName.textContent = signedAs[1];
           if (!signedAs[1].startsWith("prism:")) nameInput.value = signedAs[1];
         } else {
@@ -1165,6 +1253,7 @@
         cmd.focus();
       }
       if (/Goodbye\./.test(text)) {
+        resumeCharacter = null;
         authed = false;
         signed.style.display = "none";
         cmd.disabled = true;
@@ -1182,6 +1271,7 @@
 
   const send = (line, echo) => {
     if (!line) return;
+    if (/^quit$/i.test(line.trim())) { resumeOnDisconnect = false; resumeCharacter = null; }
     if (echo) append("> " + echo, "me");
     if (playSocket?.readyState === WebSocket.OPEN) playSocket.send(line + "\n");
     else append("(not connected)", "err");
@@ -1235,9 +1325,68 @@
     account.style.display = "none";
     characterHint.textContent = characterState.characters.length
       ? "Pick a character, or create another. Switching takes over that character."
-      : "Choose a name; it is the name other players see.";
+      : "A random name is suggested; replace it with any name you like.";
+    if (!characterState.characters.length && !newCharacter.value.trim()) {
+      newCharacter.value = randomCharacterName();
+    }
     renderHandoff();
+    refreshRecovery();
   }
+
+  async function refreshRecovery() {
+    try {
+      const old = await loadSession("ai");
+      recoverOld.hidden = !old?.prism;
+    } catch {
+      recoverOld.hidden = true;
+    }
+  }
+
+  function renderRecovery(info) {
+    recoverList.innerHTML = "";
+    const names = Array.isArray(info?.characters) ? info.characters : [];
+    if (!names.length) {
+      recoverStatus.textContent = info?.account ? `${info.account} has no characters to recover.` : "No old AI characters found.";
+      return;
+    }
+    recoverStatus.textContent = `${info.account ?? "Old AI account"}: choose a character to move.`;
+    for (const name of names) {
+      const row = document.createElement("div");
+      row.className = "row";
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = `Recover ${name}`;
+      button.addEventListener("click", async () => {
+        try {
+          const human = prismSession ?? await loadSession("default");
+          if (!human?.prism) throw new Error("Sign in with your Prism id first.");
+          const transfer = await characterTransfer("ai", location.origin, name, human.prism);
+          if (!transfer) throw new Error("The old AI session is not available.");
+          send(`recover ${b64uJson(transfer)}`, `recover ${name}`);
+          recoverStatus.textContent = `Recovering ${name}…`;
+        } catch (error) {
+          recoverStatus.textContent = `Recover: ${error.message}`;
+          recoverStatus.className = "small err";
+        }
+      });
+      row.appendChild(button);
+      recoverList.appendChild(row);
+    }
+  }
+
+  recoverScan.addEventListener("click", async () => {
+    try {
+      const old = await loadSession("ai");
+      if (!old?.prism) throw new Error("No old AI session is stored in this browser.");
+      const session = await prismSignIn("ai", location.origin);
+      send(`recover-list ${b64uJson(session)}`, "recover-list [old AI hidden]");
+      recoverStatus.textContent = "Looking for old AI characters…";
+      recoverStatus.className = "small muted";
+    } catch (error) {
+      recoverStatus.textContent = `Recovery: ${error.message}`;
+      recoverStatus.className = "small err";
+    }
+  });
 
   function renderHandoff() {
     const own = characterState.characters ?? [];
@@ -1312,6 +1461,7 @@
   charactersButton.addEventListener("click", () => send("characters", "characters"));
   signOut.addEventListener("click", () => {
     playAuth = null;
+    resumeCharacter = null;
     prismSession = null;
     characterState = { account: "", characters: [], delegated: {} };
     charactersPanel.hidden = true;
@@ -1383,20 +1533,22 @@
 
   async function signInPrism(announce = true) {
     if (mode !== "play") return;
+    const socket = playSocket;
     if (announce) append("Loading your Prism id…", "sys");
     try {
       const session = await prismSignIn("default", location.origin);
-      prismSession = await loadSession("default");
+      const currentSession = await loadSession("default");
+      if (playSocket !== socket || socket?.readyState !== WebSocket.OPEN || (!announce && playAuth !== "prism")) {
+        if (announce) append("(not connected)", "err");
+        return;
+      }
+      prismSession = currentSession;
       renderDevices();
       if (session.storage === "memory") append("This window cannot keep the Prism id; a reload will make a new one.", "err");
       else if (!session.persisted) append("The browser did not grant persistent storage; it may evict the Prism id.", "sys");
       if (announce) append("> prism [session hidden]", "me");
-      if (playSocket?.readyState === WebSocket.OPEN) {
-        playSocket.send(`prism ${b64uJson(session)}\n`);
-        playAuth = "prism";
-      } else if (announce) {
-        append("(not connected)", "err");
-      }
+      socket.send(`prism ${b64uJson(session)}\n`);
+      playAuth = "prism";
     } catch (error) {
       append(`Prism: ${error.message}`, "err");
     }
@@ -1589,6 +1741,7 @@
         detectLocalModels();
       } else {
         document.body.classList.add("ai-running");
+        snapToLatest();
       }
     } else {
       stopAI(true);
@@ -1693,6 +1846,7 @@
       aiBase.value = provider.base;
       aiModel.value = provider.model;
     }
+    if (id === "gemini-demo" && DEMO.model) aiModel.value = DEMO.model;
     aiKeyField.hidden = ["none", "proxy"].includes(provider.keyMode ?? (provider.needsKey ? "required" : "none"));
     aiHint.textContent = provider.hint;
     aiHint.className = "small muted";
@@ -1718,7 +1872,7 @@
   function syncModelSummary() {
     const provider = PROVIDERS[aiProvider.value] ?? PROVIDERS.ollama;
     const model = aiModel.value.trim() || "no model";
-    const character = aiCharacter.value.trim() || "scout";
+    const character = aiCharacter.value.trim() || "auto";
     const summary = `${provider?.label ?? aiProvider.value} · ${model}`;
     if (watchSummary) watchSummary.textContent = summary;
     if (planBrain) planBrain.textContent = provider?.label ?? aiProvider.value;
@@ -1744,11 +1898,11 @@
   function renderSetup() {
     document.querySelector("aside").scrollTop = 0;
     const config = loadJSON(CONFIG_KEY, {}) ?? {};
-    const wanted = config.provider ?? "ollama";
+    const wanted = config.provider ?? "pollinations";
     aiProvider.value = wanted === "gemini-demo" && !DEMO.configured ? "ollama" : wanted;
     aiBase.value = config.base ?? PROVIDERS[aiProvider.value].base;
     aiModel.value = config.model ?? PROVIDERS[aiProvider.value].model;
-    aiCharacter.value = config.character ?? "scout";
+    aiCharacter.value = config.character === "scout" ? "" : (config.character ?? "");
     aiFast.checked = config.fast !== false;
     aiReasoning.value = config.reasoning ?? "auto";
     aiKey.value = "";
@@ -1781,40 +1935,31 @@
   }
 
   aiReset.addEventListener("click", async () => {
-    if (AI.owner) {
-      if (!confirm("Retire this AI persona? Its characters are tombstoned; the next start creates a new persona.")) return;
-      if (playSocket?.readyState !== WebSocket.OPEN) {
-        showHint("Connect the page before retiring the persona.", true);
-        return;
-      }
-      if (AI.running) stopAI();
-      try {
-        const retire = await personaRetire("default", location.origin, AI.persona, AI.personaAudience);
-        if (!retire) throw new Error("Sign in with your Prism id first.");
-        send(`retire-persona ${b64uJson(retire)}`, "retire-persona [owner hidden]");
-        nextPersonaEpoch();
-        AI.identity = null;
-        AI.persona = null;
-        AI.owner = null;
-        AI.personaAudience = null;
-        aiIdentity.textContent = "Persona retired. The next start creates a new persona under your Prism id.";
-        aiTitle.textContent = "AI";
-        showHint("The next AI start creates a new persona; the old one is tombstoned.", false);
-      } catch (error) {
-        showHint(`Persona: ${error.message}`, true);
-      }
+    if (!AI.owner) {
+      showHint("Sign in with your Prism id first. AI personas use your Prism account.", true);
       return;
     }
-    if (!confirm("Reset the AI's Prism id? The current AI character will be orphaned.")) return;
+    if (!confirm("Retire this AI persona? Its characters are tombstoned; the next start creates a new persona.")) return;
+    if (playSocket?.readyState !== WebSocket.OPEN) {
+      showHint("Connect the page before retiring the persona.", true);
+      return;
+    }
     if (AI.running) stopAI();
-    await prismReset("ai");
-    AI.identity = null;
-    AI.persona = null;
-    AI.owner = null;
-    AI.personaAudience = null;
-    aiIdentity.textContent = "The next start creates a new AI Prism id.";
-    aiTitle.textContent = "AI";
-    showHint("AI identity reset. The next start is a new character.", false);
+    try {
+      const retire = await personaRetire("default", location.origin, AI.persona, AI.personaAudience);
+      if (!retire) throw new Error("Sign in with your Prism id first.");
+      send(`retire-persona ${b64uJson(retire)}`, "retire-persona [owner hidden]");
+      nextPersonaEpoch();
+      AI.identity = null;
+      AI.persona = null;
+      AI.owner = null;
+      AI.personaAudience = null;
+      aiIdentity.textContent = "Persona retired. The next start creates a new persona under your Prism id.";
+      aiTitle.textContent = "AI";
+      showHint("The next AI start creates a new persona; the old one is tombstoned.", false);
+    } catch (error) {
+      showHint(`Persona: ${error.message}`, true);
+    }
   });
 
   aiForget.addEventListener("click", () => {
@@ -1866,6 +2011,13 @@
 
   aiFind.addEventListener("click", async () => {
     const provider = aiProvider.value;
+    if (provider === "pollinations") {
+      fillModels(["openai-fast"]);
+      aiModel.value = "openai-fast";
+      aiHint.textContent = "Pollinations has one anonymous model: openai-fast.";
+      aiHint.className = "small muted";
+      return;
+    }
     if (provider === "prime-router") {
       aiHint.textContent = "Prime Router has no model list; use its configured model.";
       aiHint.className = "small muted";
@@ -1898,6 +2050,47 @@
   function showHint(text, error = false) {
     aiHint.textContent = text;
     aiHint.className = `small ${error ? "err" : "muted"}`;
+  }
+
+  function ensureMemory() {
+    if (AI.memory) return AI.memory;
+    const key = `mudbench-ai-memory:${AI.persona ?? AI.identity?.envelope?.body?.prism ?? AI.character ?? "ai"}`;
+    AI.memoryKey = key;
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw) AI.memory = JSON.parse(raw);
+    } catch {}
+    if (!AI.memory || typeof AI.memory !== "object" || !AI.memory.rooms) AI.memory = emptyMemory();
+    return AI.memory;
+  }
+
+  function saveMemory() {
+    if (!AI.memoryKey || !AI.memory) return;
+    try { localStorage.setItem(AI.memoryKey, JSON.stringify(AI.memory)); } catch {}
+  }
+
+  function requestR4Context(text) {
+    return new Promise((resolve, reject) => {
+      if (AI.socket?.readyState !== WebSocket.OPEN) {
+        reject(new Error("The AI is not connected."));
+        return;
+      }
+      const waiter = {
+        resolve,
+        reject,
+        timer: setTimeout(() => {
+          AI.r4Waiters = AI.r4Waiters.filter((entry) => entry !== waiter);
+          reject(new Error("R4 context timed out."));
+        }, 2000),
+      };
+      AI.r4Waiters.push(waiter);
+      AI.socket.send(`r4-context ${String(text ?? "").replace(/\s+/g, " ").slice(0, 4000)}\n`);
+    });
+  }
+
+  function rememberR4(text) {
+    if (AI.socket?.readyState !== WebSocket.OPEN) return;
+    AI.socket.send(`r4-remember ${String(text ?? "").replace(/\s+/g, " ").slice(0, 4000)}\n`);
   }
 
   function requestDemoToken() {
@@ -1957,17 +2150,17 @@
       return;
     }
     if (!session) {
-      try {
-        session = await prismSignIn("ai", location.origin);
-      } catch (error) {
-        showHint(`Prism: ${error.message}`, true);
-        setAIStatus("error");
-        return;
-      }
+      showHint("Sign in with your Prism id first. AI personas use your Prism account.", true);
+      setAIStatus("sign in");
+      return;
     }
 
-    if (session.storage === "memory") showHint("This window cannot keep the session; a reload will create a new one.", true);
-    else if (!session.persisted) showHint("The browser did not grant persistent storage; it may evict the session.", false);
+    if (session.storage === "memory") {
+      showHint("This window cannot keep the Prism id. Open a normal window or use a recovery kit before starting the AI.", true);
+      setAIStatus("storage");
+      return;
+    }
+    if (!session.persisted) showHint("The browser did not grant persistent storage; it may evict the session.", false);
 
     AI.config = config;
     AI.identity = session;
@@ -2000,11 +2193,28 @@
     AI.lastError = null;
     AI.room = "";
     AI.lastCommand = "";
-    AI.character = aiCharacter.value.trim() || "scout";
+    AI.character = aiCharacter.value.trim();
+    AI.characterExplicit = Boolean(AI.character);
+    AI.createRetries = 0;
     AI.lastRequest = null;
     AI.demoToken = null;
     AI.demoTokenExpires = 0;
     AI.demoWaiters = [];
+    AI.memory = null;
+    AI.memoryKey = null;
+    AI.commandRoom = null;
+    AI.exits = [];
+    AI.r4Waiters = [];
+    AI.r4DownUntil = 0;
+    AI.lastInvalid = null;
+    AI.lastValidation = null;
+    AI.loopBroken = false;
+    AI.lastR4 = false;
+    AI.r4LastLatency = 0;
+    AI.demoRemaining = null;
+    AI.demoMinuteRemaining = null;
+    AI.demoGlobalRemaining = null;
+    AI.demoWarned = false;
     AI.lastReply = null;
     AI.lastParsed = null;
     AI.lastLatency = 0;
@@ -2017,8 +2227,7 @@
     log.innerHTML = "";
     chat.innerHTML = "";
     mind.innerHTML = "";
-    chatStick = true;
-    mindStick = true;
+    snapToLatest();
     aiTitle.textContent = "AI";
     aiSub.textContent = `${PROVIDERS[provider].label} · ${config.model}`;
     aiSettings.textContent = `${PROVIDERS[provider].label} · ${config.model} · ${config.base}`;
@@ -2224,6 +2433,10 @@
         ["Latency p95", ms(data.ai?.latency_ms?.p95)],
         ["Direct p50", ms(data.ai?.by_mode?.direct?.p50)],
         ["Full p50", ms(data.ai?.by_mode?.full?.p50)],
+        ["Invalid", pct(data.ai?.invalid_rate)],
+        ["Loops", count(data.ai?.loops)],
+        ["Rooms max", count(data.ai?.rooms_seen_max)],
+        ["R4 hits", count(data.ai?.r4_hits)],
         ["Tokens in", count(data.ai?.tokens_in)],
         ["Tokens out", count(data.ai?.tokens_out)],
         ["Online max", count(data.world?.online?.max)],
@@ -2345,6 +2558,10 @@
       ["Prompt tokens", AI.usage.prompt ? String(AI.usage.prompt) : "—"],
       ["Completion tokens", AI.usage.completion ? String(AI.usage.completion) : "—"],
       ["Last latency", AI.lastLatency ? `${(AI.lastLatency / 1000).toFixed(1)}s` : "—"],
+      ["Invalid", AI.lastValidation?.invalid ? "yes" : "no"],
+      ["Rooms seen", String(Object.keys(AI.memory?.rooms ?? {}).length)],
+      ["R4", AI.lastR4 ? `hit ${AI.r4LastLatency}ms` : (AI.r4DownUntil > Date.now() ? "fallback" : "local")],
+      ["Demo left", AI.demoRemaining !== null ? `${AI.demoRemaining} today · ${AI.demoMinuteRemaining ?? "—"} this minute` : "—"],
       ["Context", `${messages.length} msgs · ${contextChars} chars`],
       ["Last command", AI.lastCommand || "—"],
       ["Error", AI.lastError || "—"],
@@ -2386,15 +2603,10 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       setAIStatus("signing in");
       try {
         // A fresh session on every open: a replayed envelope would be refused
-        // by the server's replay set, and a stale one could be expired. When
-        // the AI is owned, re-sign the persona, never the AI's own id.
-        let session = null;
-        if (AI.owner) {
-          session = await personaSignIn("default", location.origin);
-          if (!session) throw new Error("Sign in with your Prism id to own the AI.");
-        } else {
-          session = await prismSignIn("ai", location.origin);
-        }
+        // by the server's replay set, and a stale one could be expired. AI
+        // characters always live under the human Prism account's persona.
+        const session = await personaSignIn("default", location.origin);
+        if (!session) throw new Error("Sign in with your Prism id to own the AI.");
         AI.identity = session;
         AI.persona = session.persona ?? session.envelope?.body?.prism ?? AI.persona;
         AI.owner = session.ownerPrism ?? AI.owner;
@@ -2470,6 +2682,20 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         }
         return;
       }
+      const r4Line = text.match(/^#r4-(context|remember) (.*)\r?\n?$/);
+      if (r4Line) {
+        if (r4Line[1] === "context") {
+          let payload = null;
+          try { payload = JSON.parse(r4Line[2]); } catch {}
+          const waiters = AI.r4Waiters.splice(0);
+          for (const waiter of waiters) {
+            clearTimeout(waiter.timer);
+            if (payload?.error) waiter.reject(new Error(payload.error));
+            else waiter.resolve(payload);
+          }
+        }
+        return;
+      }
       const demoLine = text.match(/^#demo-token (.*)\r?\n?$/);
       if (demoLine) {
         let payload = null;
@@ -2478,6 +2704,9 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         if (payload?.token) {
           AI.demoToken = payload.token;
           AI.demoTokenExpires = Number(payload.expires) || 0;
+          AI.demoRemaining = Number.isFinite(payload.remaining) ? payload.remaining : null;
+          AI.demoMinuteRemaining = Number.isFinite(payload.minuteRemaining) ? payload.minuteRemaining : null;
+          AI.demoGlobalRemaining = Number.isFinite(payload.globalRemaining) ? payload.globalRemaining : null;
           for (const waiter of waiters) { clearTimeout(waiter.timer); waiter.resolve(payload); }
         } else {
           const why = payload?.error ?? "The Gemini demo is unavailable.";
@@ -2487,7 +2716,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       }
       const stateLine = text.match(/^#state (.*)\r?\n?$/);
       if (stateLine) {
-        try { AI.state = JSON.parse(stateLine[1]); } catch {}
+        try { AI.state = JSON.parse(stateLine[1]); renderSheet(); } catch {}
         return;
       }
       const tickLine = text.match(/^#tick (\d+)\r?\n?$/);
@@ -2505,13 +2734,17 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
             const info = JSON.parse(charactersLine[1]);
             AI.lastTick = Number.isInteger(info.tick) ? info.tick : AI.lastTick;
             if (AI.tickFrom == null) AI.tickFrom = AI.lastTick;
-            const wanted = AI.character || info.characters[0] || "scout";
-            const line = info.characters.includes(wanted) ? `play ${wanted}` : `create ${wanted}`;
-            // The server's 250 ms input limit covers the sign-in too.
+            const current = Array.isArray(info.characters) ? info.characters : [];
+            const choice = chooseCharacter({
+              wanted: AI.character,
+              explicit: AI.characterExplicit,
+              characters: current,
+            });
+            AI.character = choice.name;
+            setAIStatus(`${choice.action === "play" ? "choosing" : "creating"} ${choice.name}`);
             setTimeout(() => {
-              if (ws.readyState === WebSocket.OPEN) ws.send(`${line}\n`);
+              if (ws.readyState === WebSocket.OPEN) ws.send(`${choice.action} ${choice.name}\n`);
             }, 350);
-            setAIStatus(info.characters.includes(wanted) ? `choosing ${wanted}` : `creating ${wanted}`);
           } catch {}
         }
         return;
@@ -2546,11 +2779,22 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         return;
       }
       if (/That name is taken\.|No character named/i.test(text)) {
+        AI.createRetries = (AI.createRetries ?? 0) + 1;
+        if (AI.createRetries <= 5) {
+          AI.character = uniqueCharacterName([AI.character].filter(Boolean));
+          AI.characterExplicit = false;
+          setAIStatus(`creating ${AI.character}`);
+          addChat("system", `That name is taken; trying ${AI.character}.`);
+          setTimeout(() => {
+            if (ws.readyState === WebSocket.OPEN) ws.send(`create ${AI.character}\n`);
+          }, 350);
+          return;
+        }
         AI.paused = true;
         AI.busy = false;
         updatePause();
         setAIStatus("choose another character");
-        addChat("system", "The AI's character is unavailable; set another Character name and start it.");
+        addChat("system", "The AI could not find a free character name; set one and start it.");
         return;
       }
       const signedAs = text.match(/Signing in as ([^\r\n.]+)\./i);
@@ -2617,24 +2861,71 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
 
     const started = performance.now();
     try {
-      const actions = buildActionMenu(AI.state);
+      const memory = ensureMemory();
+      let r4Text = "";
+      if (Date.now() >= AI.r4DownUntil) {
+        try {
+          const r4 = await requestR4Context(`${AI.room || ""} ${publicMemoryText(observation)}`);
+          r4Text = String(r4?.context ?? "").trim();
+          AI.lastR4 = Boolean(r4Text);
+          AI.r4LastLatency = Number(r4?.latency_ms) || 0;
+        } catch {
+          AI.r4DownUntil = Date.now() + 60_000;
+        }
+      }
+      if (AI.lastCommand && AI.commandRoom) {
+        rememberResult(memory, {
+          room: AI.commandRoom,
+          command: AI.lastCommand,
+          observation,
+          tick: AI.lastTick,
+          at: Date.now(),
+          exits: AI.state?.room?.exits ?? (AI.exits ?? []).map((dir) => ({ dir, room: null })),
+        });
+        saveMemory();
+      }
+      const stateRoom = AI.state?.room?.name === AI.room
+        ? AI.state.room
+        : { name: AI.room, safe: false, details: [], exits: (AI.exits ?? []).map((dir) => ({ dir })), objects: [], npcs: [], actions: [] };
+      const promptState = AI.state
+        ? { ...AI.state, room: { ...stateRoom, text: observation } }
+        : { room: { ...stateRoom, text: observation } };
+      const exits = stateRoom.exits ?? [];
+      const memoryText = memoryPrompt(memory, { room: AI.room || stateRoom.name, exits, query: observation });
+      const notes = [];
+      if (AI.nudge) notes.push("You repeated a command. Do something different: move, examine, take, talk, or check your inventory.");
+      const loop = loopWarning(AI.recent, memory.trail);
+      if (loop) notes.push(loop);
+      if (AI.lastInvalid) {
+        notes.push(`Your previous command "${AI.lastInvalid.command}" was rejected (${AI.lastInvalid.reason}); use ACTIONS.`);
+      }
+      AI.nudge = false;
+      AI.lastInvalid = null;
+      AI.lastValidation = null;
+      AI.loopBroken = false;
+      const actions = buildActionMenu(promptState);
       const deliberate = needsReasoning();
       const system = buildSystemPrompt({ name: AI.name || "an autonomous player", goal: DEFAULT_GOAL, fast: AI.config.fast, deliberate });
       const user = buildUserPrompt({
         turn,
         observation,
         director,
-        state: AI.state,
+        state: promptState,
         actions,
+        memory: memoryText,
+        r4: r4Text,
         fast: AI.config.fast,
-        note: AI.nudge ? "You repeated a command. Do something different: move, examine, take, talk, or check your inventory." : "",
+        note: notes.join(" "),
       });
-      AI.nudge = false;
       const messages = trimHistory([...AI.history, { role: "user", content: user }], AI.config.fast ? 2 : 8);
       if (AI.config.provider === "gemini-demo") {
         // A fresh token per turn survives a server restart and keeps the
         // proxy check bound to this authenticated game socket.
-        await requestDemoToken();
+        const grant = await requestDemoToken();
+        if (AI.demoRemaining !== null && AI.demoRemaining <= 5 && !AI.demoWarned) {
+          AI.demoWarned = true;
+          addChat("system", `Gemini demo: ${AI.demoRemaining} turns left today${AI.demoMinuteRemaining !== null ? `, ${AI.demoMinuteRemaining} this minute` : ""}.`);
+        }
       }
       const request = requestFor(AI.config.provider, { ...AI.config, name: AI.name || "ai", demoToken: AI.demoToken, deliberate }, system, messages);
       AI.lastRequest = {
@@ -2653,11 +2944,41 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         const detail = (await res.text()).slice(0, 240);
         throw new Error(`${res.status} ${res.statusText}${detail ? ` — ${detail}` : ""}`);
       }
-      const body = await res.json();
-      const { text, usage } = replyFrom(AI.config.provider, body);
+      let text;
+      let usage;
+      if (AI.config.provider === "pollinations" && res.body) {
+        ({ text, usage } = await readSseText(res, (partial) => {
+          AI.streamText = partial;
+          liveThought.textContent = partial.replace(/\s+/g, " ").slice(-140);
+        }));
+      } else {
+        const body = await res.json();
+        ({ text, usage } = replyFrom(AI.config.provider, body));
+      }
+      AI.streamText = "";
       if (!text) throw new Error("The model returned an empty reply.");
       const latency = Math.round(performance.now() - started);
       const parsed = parseBrain(text);
+      if (shouldBreakLoop(memory, { room: AI.room || AI.state?.room?.name, command: parsed.command, recent: AI.recent })) {
+        const forced = breakLoop(AI.recent, exits, memory);
+        if (forced && forced !== parsed.command) {
+          parsed.command = forced;
+          parsed.thought = `Loop broken: ${forced}.`;
+          AI.loopBroken = true;
+          addChat("system", `Loop guard: a repeated command was replaced with "${forced}".`);
+        }
+      }
+      const attempted = parsed.command;
+      const validation = validateCommand(attempted, promptState);
+      let repaired = null;
+      if (!validation.ok) {
+        repaired = repairCommand(attempted, promptState, validation.reason);
+        addChat("system", `Command guard: "${attempted}" (${validation.reason}) → "${repaired}".`);
+        parsed.command = repaired;
+        parsed.thought = parsed.thought || `Command guard: ${repaired}.`;
+      }
+      AI.lastValidation = { invalid: !validation.ok, reason: validation.reason, repaired };
+      if (!validation.ok) AI.lastInvalid = { command: attempted, reason: validation.reason, repaired };
       AI.lastLatency = latency;
       AI.lastReply = { text, usage: usage ?? null, latency_ms: latency, at: new Date().toISOString() };
       AI.lastParsed = parsed;
@@ -2676,6 +2997,13 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         fast: Boolean(AI.config.fast),
         deliberate,
         reasoning: AI.config.reasoning,
+        invalid: Boolean(AI.lastValidation?.invalid),
+        invalid_reason: AI.lastValidation?.reason ?? null,
+        repair: AI.lastValidation?.repaired ?? null,
+        loop: Boolean(AI.loopBroken),
+        memory_hit: Boolean(memoryText.includes("Known:")),
+        r4_hit: Boolean(r4Text),
+        rooms_seen: Object.keys(memory.rooms).length,
         prompt_version: AI.config.fast ? "r4-direct-2" : "full-1",
         turn,
         tick: AI.lastTick,
@@ -2687,22 +3015,16 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       AI.usage.prompt += usage?.input_tokens ?? usage?.prompt_tokens ?? 0;
       AI.usage.completion += usage?.output_tokens ?? usage?.completion_tokens ?? 0;
       AI.lastCommand = parsed.command;
-      const recent = [...AI.recent, parsed.command];
+      let recent = [...AI.recent, parsed.command];
       const stuck = recent.length >= 5 && recent.slice(-5).every((command) => command === parsed.command);
-
       if (stuck) {
-        if (parsed.thought) addThought(turn, parsed.thought);
-        else addThought(turn, `No reasoning returned; the model chose ${parsed.command}.`, true);
-        AI.transcript.push({
-          turn, observation, director, thought: parsed.thought, reply: parsed.reply,
-          command: parsed.command, tick: null, latency_ms: latency, usage: usage ?? null,
-          stuck: true, at: new Date().toISOString(),
-        });
-        AI.paused = true;
-        updatePause();
-        setAIStatus("paused");
-        addChat("system", `The AI repeated "${parsed.command}" five times. Steer it, then Resume.`);
-        return;
+        const forced = breakLoop(recent, exits, memory);
+        if (forced && forced !== parsed.command) {
+          parsed.command = forced;
+          parsed.thought = `Loop broken: ${forced}.`;
+          addChat("system", `Loop guard: repeat limit reached; trying "${forced}".`);
+          recent = [...AI.recent, parsed.command];
+        }
       }
 
       if (director.length) AI.director.splice(0, director.length);
@@ -2730,8 +3052,10 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         publishStream({ kind: "command", text: parsed.command, turn, tick: AI.lastTick });
         publishStream({ kind: "status", text: "live", tick: AI.lastTick });
       }
+      AI.commandRoom = AI.room || AI.state?.room?.name || null;
       if (AI.socket?.readyState === WebSocket.OPEN) AI.socket.send(`${parsed.command}\n`);
       else throw new Error("The AI is not connected.");
+      rememberR4(`Turn ${turn} in ${AI.room || "the world"}: ${publicMemoryText(observation)} I chose ${parsed.command}.`);
       AI.lastError = null;
       AI.timeouts = 0;
       setAIStatus("live");
@@ -2840,6 +3164,62 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
     else scheduleTurn(250);
   });
 
+  function sheetLine(parent, label, value) {
+    const row = document.createElement("div");
+    row.className = "sheet-line";
+    const left = document.createElement("span"); left.textContent = label;
+    const right = document.createElement("span"); right.textContent = value ?? "—";
+    row.append(left, right); parent.appendChild(row);
+  }
+
+  function renderSheet() {
+    const source = AI.state?.self ? AI.state : playState;
+    const self = source?.self;
+    const stats = document.getElementById("sheet-stats");
+    const gear = document.getElementById("sheet-equipment");
+    const sets = document.getElementById("sheet-sets");
+    const techniques = document.getElementById("sheet-techniques");
+    const standing = document.getElementById("sheet-standing");
+    const components = document.getElementById("sheet-components");
+    const duel = document.getElementById("sheet-duel");
+    for (const node of [stats, gear, sets, techniques, standing, components, duel]) node.replaceChildren();
+    if (!self) {
+      sheetLine(stats, "Character", "Sign in and play to see your sheet.");
+      return;
+    }
+    const card = (label, value) => {
+      const node = document.createElement("div"); node.className = "stat";
+      node.textContent = label;
+      const strong = document.createElement("b"); strong.textContent = value ?? "—";
+      node.appendChild(strong); return node;
+    };
+    stats.append(
+      card("Level", String(self.level)),
+      card("HP", `${self.hp ?? "—"}/${self.max_hp ?? "—"}`),
+      card("Mana", `${self.mana ?? "—"}/${self.max_mana ?? "—"}`),
+      card("Armour", String(self.armor ?? 0)),
+      card("Damage", String(self.damage ?? 0)),
+      card("Rating", String(self.duel?.rating ?? 1000)),
+      card("Event", source?.world?.event?.name ?? "—"),
+      card("Components", String((self.components_detail ?? []).reduce((sum, entry) => sum + entry.count, 0))),
+    );
+    for (const [slot, object] of Object.entries(self.equipment ?? {})) {
+      if (!object) { sheetLine(gear, slot, "—"); continue; }
+      const plus = object.plus ? ` +${object.plus}` : "";
+      const stat = object.damage ? `damage ${object.damage}` : object.armor ? `armour ${object.armor}` : "";
+      sheetLine(gear, slot, `${object.name}${plus}${stat ? ` (${stat})` : ""}`);
+    }
+    if (!(self.sets ?? []).length) sheetLine(sets, "Sets", "No active set bonus.");
+    for (const set of self.sets ?? []) sheetLine(sets, set.name, `${set.count} pieces — +${set.armor} armour${set.damage ? `, +${set.damage} damage` : ""}`);
+    if (!(self.techniques ?? []).length) sheetLine(techniques, "Technique", "No technique with this kit.");
+    for (const technique of self.techniques ?? []) sheetLine(techniques, technique.name, "technique " + technique.id);
+    for (const entry of self.standing_detail ?? []) sheetLine(standing, entry.name, `${entry.value} (${entry.rank})${entry.next === null ? " max" : ` → ${entry.next}`}`);
+    if (!(self.components_detail ?? []).length) sheetLine(components, "Components", "None.");
+    for (const entry of self.components_detail ?? []) sheetLine(components, entry.name, `×${entry.count}`);
+    sheetLine(duel, "Record", `${self.duel?.wins ?? 0}W / ${self.duel?.losses ?? 0}L`);
+    sheetLine(duel, "Rating", String(self.duel?.rating ?? 1000));
+  }
+
   for (const tab of document.querySelectorAll("#tabs .tab")) {
     tab.addEventListener("click", () => {
       for (const other of document.querySelectorAll("#tabs .tab")) {
@@ -2847,10 +3227,12 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         other.setAttribute("aria-selected", String(other === tab));
       }
       document.getElementById("mind-pane").hidden = tab.dataset.tab !== "mind";
+      document.getElementById("sheet-pane").hidden = tab.dataset.tab !== "sheet";
       document.getElementById("run-pane").hidden = tab.dataset.tab !== "run";
       document.getElementById("model-pane").hidden = tab.dataset.tab !== "model";
       document.getElementById("bench-pane").hidden = tab.dataset.tab !== "bench";
       if (tab.dataset.tab === "bench") refreshSpans();
+      if (tab.dataset.tab === "sheet") renderSheet();
       if (tab.dataset.tab === "mind" && mindStick) mindPane.scrollTop = mindPane.scrollHeight;
     });
   }

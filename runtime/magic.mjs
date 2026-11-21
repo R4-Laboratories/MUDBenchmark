@@ -6,8 +6,8 @@
 export const SPELLS = [
   {
     id: "spark", cost: 15, name: "Spark", level: 1, mana: 3, target: "npc", effect: "damage",
-    damage: 4, xp: 3,
-    description: "A beginner's attack. One to four damage.",
+    damage: 4, xp: 3, status: "burn",
+    description: "A beginner's attack. One to four damage and a short burn.",
     train: "The archmage traces a spark between two fingers.",
   },
   {
@@ -43,6 +43,12 @@ export const SPELL_BY_ID = new Map(SPELLS.map((spell) => [spell.id, spell]));
 
 export function spellById(id) {
   return SPELL_BY_ID.get(String(id ?? "").toLowerCase()) ?? null;
+}
+
+export function spellPower(actor, focus = 0) {
+  const level = Math.max(1, actor?.level ?? 1);
+  const gear = Math.max(0, Number(focus) || 0);
+  return Math.floor(level / 3) + Math.floor(gear / 2);
 }
 
 export function maxManaFor(actor) {

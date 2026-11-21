@@ -1,0 +1,144 @@
+name: Publish merged PR
+
+# A merged PR reaches main through the normal Gate. When that Gate is green,
+# publish a tagged release from the artifact it proved. The deploy timer on wick
+# pulls the release; this workflow has no route into the server.
+#
+# Direct pushes and the six-hour pacing loop are deliberately skipped: they are
+# not PR changes. A human can still use the manual Release workflow.
+#
+# Pause with the repository variable AUTO_RELEASE=off.
+
+on:
+  workflow_run:
+    workflows: ["Gate"]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: publish-main
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: release a merged PR
+    if: >-
+      github.event.workflow_run.conclusion == 'success'
+      && vars.AUTO_RELEASE != 'off'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Find the merged PR for this commit
+        id: find
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          pulls=$(gh api "repos/$GITHUB_REPOSITORY/commits/$SHA/pulls" \
+            -H 'Accept: application/vnd.github+json')
+          # The associated-PR list can contain a merged PR for a later direct
+          # commit on main. Only the PR's actual merge commit may release.
+          pull=$(printf '%s' "$pulls" | jq -c --arg sha "$SHA" \
+            '[.[] | select(.merged_at != null and .base.ref == "main" and .merge_commit_sha == $sha)] | .[0] // empty')
+          if [ -z "$pull" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::no merged PR has $SHA as its merge commit; not publishing a direct or pacing push"
+            exit 0
+          fi
+          number=$(printf '%s' "$pull" | jq -r '.number')
+          title=$(printf '%s' "$pull" | jq -r '.title')
+          author=$(printf '%s' "$pull" | jq -r '.user.login')
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+          echo "number=$number" >> "$GITHUB_OUTPUT"
+          echo "title=$title" >> "$GITHUB_OUTPUT"
+          echo "author=$author" >> "$GITHUB_OUTPUT"
+
+      - name: Check out the gated commit
+        if: steps.find.outputs.skip == 'false'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+
+      - name: Skip a commit that already has a release tag
+        id: tagcheck
+        if: steps.find.outputs.skip == 'false'
+        env:
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          git fetch --tags
+          if git tag --points-at "$SHA" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::$SHA already has a release tag; not publishing again"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Download the artifact the Gate proved
+        if: steps.find.outputs.skip == 'false' && steps.tagcheck.outputs.skip == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh run download "${{ github.event.workflow_run.id }}" -n mudbench-holo -D artifact
+          test -n "$(find artifact -name 'MUDBench.holo' | head -1)"
+
+      - name: Package the runtime and write the release manifest
+        id: package
+        if: steps.find.outputs.skip == 'false' && steps.tagcheck.outputs.skip == 'false'
+        env:
+          SHA: ${{ github.event.workflow_run.head_sha }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          set -euo pipefail
+          tar --exclude=node_modules -czf runtime.tar.gz runtime world/data
+          BASE=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1 || true)
+          BASE=${BASE:-v0.0.0}
+          IFS=. read -r major minor patch <<< "${BASE#v}"
+          patch=$((patch + 1))
+          TAG="v${major}.${minor}.${patch}"
+          while git rev-parse "$TAG" >/dev/null 2>&1; do
+            patch=$((patch + 1))
+            TAG="v${major}.${minor}.${patch}"
+          done
+          HOLO=$(find artifact -name 'MUDBench.holo' | head -1)
+          python3 deploy/release-manifest.py \
+            --tag "$TAG" --commit "$SHA" --gate-run "$RUN_ID" \
+            --holo "$HOLO" --runtime runtime.tar.gz --out release-manifest.json
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "holo=$HOLO" >> "$GITHUB_OUTPUT"
+          echo "::notice::publishing $TAG from $SHA (PR #${{ steps.find.outputs.number }})"
+
+      - name: Create the tag and release
+        if: steps.find.outputs.skip == 'false' && steps.tagcheck.outputs.skip == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          TAG: ${{ steps.package.outputs.tag }}
+          HOLO: ${{ steps.package.outputs.holo }}
+          PR_NUMBER: ${{ steps.find.outputs.number }}
+          PR_TITLE: ${{ steps.find.outputs.title }}
+          PR_AUTHOR: ${{ steps.find.outputs.author }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" "$SHA" -m "Merged PR #$PR_NUMBER by @$PR_AUTHOR; Gate $RUN_ID"
+          git push origin "$TAG"
+          MANIFEST=$(find artifact -name 'manifest.json' | head -1)
+          RECEIPT=$(find artifact -name 'identity-receipt.json' | head -1)
+          ADMISSION=$(find artifact -name 'admission-receipt.json' | head -1)
+          test -n "$MANIFEST"; test -n "$RECEIPT"; test -n "$ADMISSION"
+          gh release create "$TAG" "$HOLO" "$MANIFEST" "$RECEIPT" "$ADMISSION" \
+            runtime.tar.gz release-manifest.json \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "$TAG" \
+            --notes "Merged PR #$PR_NUMBER: $PR_TITLE (by @$PR_AUTHOR). Gated by Gate run $RUN_ID on $SHA. wick pulls this release; no inbound runner." \
+            --verify-tag

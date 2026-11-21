@@ -603,6 +603,684 @@
       "level": "some-true",
       "statement": "Production v0.64.0 serves the free-form direct prompt with injected room/self/quest/social context, Auto/Always/Never reasoning, and the Prism-only Gemini demo path (dormant because GEMINI_API_KEY is not configured; the provider is hidden). The production setup is 542px with Reasoning=Auto and Direct prompt on; no JS errors. Local qwen2.5:7b measured p50 5.6s (22.8s first load) because inference is hardware-bound; a mock Gemini proxy run completed five turns at 9ms. Mind-pane and chat scrolling now use their real scroll containers. A live client created one legacy test account (synther, 0 progress) after the Prism block; pins remain 0.",
       "authority": "wick production v0.64.0 2026-11-18; release 44392228200; gate 44390704913; /api/demo and headless setup check; local qwen/mock runs; /health"
+    },
+    {
+      "id": "MB-95",
+      "level": "some-true",
+      "statement": "The production Gemini demo is configured with gemini-3.1-flash-lite and a Prism-only key held in owner.env. A real headless Prism session ran nine free-form turns through the demo proxy with p50 1036ms and p95 1327ms, no timeouts or errors, correct THOUGHT/REPLY/COMMAND parsing and varied commands (look, examine, movement, list, take). The UI reports the configured model from /api/demo. The key is not in the browser, page, transcript or telemetry; free-tier data terms are disclosed.",
+      "authority": "play.r4labs.org 2026-11-18; release v0.64.0 build plus model-label fix; /api/demo; /trends; headless Chrome live run; owner.env permissions"
+    },
+    {
+      "id": "MB-96",
+      "level": "some-true",
+      "statement": "Production v0.64.1 serves the Prism-only Gemini demo with gemini-3.1-flash-lite, configured through owner.env with mode 600. /api/demo reports configured true, the UI lists gemini-demo with the key field hidden and the configured model, and Reasoning defaults to Auto. A real nine-turn session ran at p50 1.04s / p95 1.33s with no errors; a later headless check confirmed the provider list, model label and hidden key. The first deploy attempt rolled back on a transient login-assets health check; the retry deployed cleanly.",
+      "authority": "wick production v0.64.1 2026-11-18; release 44414137889; gate 44412882034; /api/demo; /trends; headless Chrome; owner.env permissions"
+    },
+    {
+      "id": "MB-97",
+      "level": "build",
+      "statement": "AI characters now carry a persistent per-character memory in browser storage: rooms seen, commands tried, stale-result counts and unexplored exits. The memory is injected as a MEMORY block every turn. A loop guard replaces a stale observation command or a movement cycle with a fresh exit, look or wait instead of pausing; it does not override speech or combat commands. The server exposes the current room with exits/objects/details at top level and the client falls back to parsed Exits text when the state line lags. A deliberately repeating mock traversed five rooms while the guard kept the run live; the gate covers stale counts, unexplored exits, cycle detection and fresh-exit selection.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-98",
+      "level": "build",
+      "statement": "The direct action menu now includes the contents of open containers as take <item> from <container>, reducing invented take/open/search commands. The server exposes contents only while the container is open. The gate still passes the AI and item suites.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-99",
+      "level": "some-true",
+      "statement": "Production v0.65.1 serves persistent per-character AI memory and open-container context. A real 37-turn Gemini run recorded p50 1067ms / p95 1603ms, zero errors, and varied commands (examine, talk, movement, take, wear, search, open, look). The memory prompt showed rooms seen, tried commands, stale counts and unexplored exits; a deliberately repeating mock traversed five rooms while the loop guard kept the run live. Memory is browser-local per character, not yet the R4 integer/GCD router or a portable server store.",
+      "authority": "wick production v0.65.1 2026-11-19; release 44427528628; gate 44426430216; /trends; headless Gemini run; repeating-mock loop test"
+    },
+    {
+      "id": "MB-100",
+      "level": "build",
+      "statement": "The R4 router spike is documented in docs/R4-SPIKE.md. The full prime-router server indexed 23,466 wiki sentences at ~1.1 GB, started in ~2 minutes, returned wiki noise on the first game query and took 9.0-14.5s once per-turn indexing/cache work entered the path. It fails the p95 <150ms gate, so it is not deployed. The useful prime/GCD idea is implemented natively in memory.mjs: words map to stable primes, notes are prime sets, retrieval scores shared primes with room/command boosts, and the selected notes are injected as Known: each turn. The gate recalls the plaque/Vault fact from a later query.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-101",
+      "level": "build",
+      "statement": "The R4 memory sidecar is deployed on wick as a patched prime-router service on loopback: /api/context routes and retrieves only the character-scoped notes, /api/remember appends to memory_notes.jsonl, and the journal is replayed at startup. The game server proxies r4-context/r4-remember over the authenticated socket and the browser injects R4 CONTEXT ahead of the local MEMORY block, with a 60-second circuit breaker to local memory if the sidecar is unavailable. Local end-to-end calls measured 3-62ms; wick retrieval measured 11.5ms. The 349MB cache loads in 13.6s warm; no model is downloaded or used.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-102",
+      "level": "some-true",
+      "statement": "Production v0.67.0 runs the R4 memory sidecar on wick and injects R4 CONTEXT into the AI prompt. A 14-turn Gemini run reached p50 917ms / p95 1205ms with zero errors, used say/talk and movement/examine/take/wear, and carried prior-room context (Market Square, The Gilded Rat) into later turns. The sidecar recorded 29 calls at p50 4ms / p95 64ms / max 239ms. Warm restart is 13.6s with no model download; the local browser memory remains the fallback.",
+      "authority": "wick production v0.67.0 2026-11-19; release 44439824019; gate 44438484443; /api/sysinfo; /trends; ai.r4 spans; headless Gemini run"
+    },
+    {
+      "id": "MB-103",
+      "level": "build",
+      "statement": "AI commands are validated before send: unknown verbs/targets, search targets, already-open containers, contained items without take-from, unknown spells and safe-room attacks are rejected and repaired from the current action menu; the original attempt is remembered for the next prompt and an ai.invalid metric is recorded. The trends scorecard now reports invalid rate, loops, rooms seen, memory hits, R4 hits and per-model p50/p95/invalid/loops. A live mock repeatedly sending \"search an oaken chest\" produced only \"search\" and then moved on under the loop guard, with no server Usage errors.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-104",
+      "level": "build",
+      "statement": "Command grounding is now recorded before telemetry: invalid attempts, repair target, loop guard, memory/R4 hits and rooms seen are sent in the same ai.turn metric as the command that actually ran. The validator also accepts nouns present in the current observation when the state line lags, and repairs a take on a for-sale object to buy instead of examine. The gate covers contained items, for-sale items, observation names, search targets, already-open containers and safe-room attacks.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-105",
+      "level": "build",
+      "statement": "The deploy readiness check now waits 10s after flipping units and probes login assets plus /health for up to 50s instead of 16s. This addresses the repeated transient \"login assets: false\" rollback where the world was still starting; the previous release deployed cleanly on an immediate retry.",
+      "gate": "deploy/mudbench-deploy.sh"
+    },
+    {
+      "id": "MB-106",
+      "level": "some-true",
+      "statement": "Production v0.68.2 serves grounded actions and scorecards alongside the R4 sidecar. The AI trend set reports 416 turns at Gemini p50 1091ms / p95 1651ms, rooms_seen_max 26, r4_hits 414, loops 36 and zero errors; the invalid field is recorded for every turn (0 on that sample). The hardened deploy script waited for login assets plus /health and v0.68.2 deployed without the transient rollback. The R4 sidecar remains active and loopback-only.",
+      "authority": "wick production v0.68.2 2026-11-19; release 44445659872; gate 44444625540; /trends; /health; R4 /api/sysinfo; deploy log"
+    },
+    {
+      "id": "MB-107",
+      "level": "build",
+      "statement": "The R4 note journal is bounded by MEMORY_MAX_NOTES (default 10,000) and MEMORY_RETENTION_DAYS (default 30), deduplicated and compacted on growth/startup; /api/sysinfo exposes notes_kept/max/retention. tools/r4-bench.mjs seeds game facts and runs 100 scoped queries, failing on any empty/failed result or p95 above 150ms. Wick run: 100/100, p50 2ms, p95 3ms, max 4ms, 0 empty, correct top facts. The Model inspector shows R4 hit/latency or fallback.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-108",
+      "level": "build",
+      "statement": "Social memory records public room speech and NPC dialogue per character, injects a Voices block, and filters private tells, mail, password/session lines before either the local memory or R4 receives text. The gate checks a public bard line is recalled and a private tell/password line never reaches the prompt.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-109",
+      "level": "build",
+      "statement": "The Hollow Fen adds ten connected rooms east of the Abandoned Mill, three mobiles, eight objects, two actions (green-key chest, green-heart shortcut) and five quests including the guild fen-wisp quest. Guild level 6 begins at 1600 XP and grants guild-quest-3, allowing three active guild quests. The world is 80 rooms / 36 quests; the gate walks the fen, opens the chest, completes The Green Heart, uses the shortcut and checks guild level 6.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-110",
+      "level": "some-true",
+      "statement": "Production v0.69.0 serves 80 rooms, 36 quests, 35 mobiles and 71 objects, including the Hollow Fen and guild level 6. Social memory records public speech and NPC dialogue with private tell/mail/password filtering; the R4 sidecar is active with 821 notes kept of a 10,000/30-day bound and six identity scopes. The deploy completed without the transient rollback. Gemini demo remains configured for Prism accounts.",
+      "authority": "wick production v0.69.0 2026-11-19; release 44453675127; gate 44452766196; /health, /world, /llms.txt; R4 /api/sysinfo; deploy log"
+    },
+    {
+      "id": "MB-111",
+      "level": "build",
+      "statement": "Stream v3 adds a last-run archive (name, room, end time, peak viewers, public highlights) served by /stream and rendered on /watch with JSON download; live highlights gain a Download clip action. Gemini demo token responses include per-account remaining/minute/global quota and the Model inspector shows demo turns left with a low-quota chat warning. Operators can set SIGNUP_MODE=closed to refuse new legacy/Prism accounts while preserving existing logins; /health reports the mode.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-112",
+      "level": "some-true",
+      "statement": "Production v0.70.0 serves the stream archive and launch controls: a real Gemini stream was started, a highlight marked, stopped, and /stream plus /watch returned the last run (name, room, peak viewers, highlight) with Download last run. /api/demo reports globalRemaining; token responses carry per-account remaining/minute; SIGNUP_MODE is open and reported by /health. A copied state corrupted in /tmp restored from world.json.1 and served 11 accounts/35 mobiles on port 8092 without touching production. The world remains 80 rooms/36 quests/35 mobiles/71 objects.",
+      "authority": "play.r4labs.org v0.70.0 2026-11-19; release 44461671964; gate 44460742321; headless stream run; /stream last; /watch last card; restore drill /tmp copy"
+    },
+    {
+      "id": "MB-113",
+      "level": "build",
+      "statement": "Visibility commands are live: who shows level, room, HP, guild/rank and active quests; quests supports active/available/done/all and quests <id> detail; levels shows every XP threshold; leaderboard/top/lb/ranks ranks all characters by level/XP/quests/guild; map summarizes zones/visited counts and map <zone> lists visited rooms while hiding unexplored ones; shortcuts lists movement, fast commands, recall and room shortcuts. The commands are in the verb table, help and /llms.txt; the AI action menu/validator accepts them; the gate covers level formatting, leaderboard order, map hiding and shortcut text.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-114",
+      "level": "build",
+      "statement": "Every command verb now has short aliases (g/tf, dp/dr, gv, pt, op, cl, wr, rm, ca, sp, lv, lb, mp, sh, k/atk and the rest), with 30 social emotes (smile through congratulate) in the socials table. score shows armour/damage, equipment shows slot totals, spells shows mana/effects/training costs, battle/combat/bt shows current opponents and HP. Wandering animal periods were shortened (rat/moth/boar/wolf/sewer-rat/cinder-hound/fen-wisp/bog-hound), and Snap-to-latest resets log/chat/Mind on AI start and mode entry. The gate covers the expanded verb table and socials.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-115",
+      "level": "build",
+      "statement": "GET /leaderboard returns the all-time character rows. GET /stats serves a public telemetry page with world counts, AI turns/latency/invalid/loops/memory/R4, per-model rows, top commands, leaderboard and live/last stream. /world now includes quests, zones and actions. The page caches the last responses for offline viewing and refreshes every 15 seconds.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-116",
+      "level": "some-true",
+      "statement": "Production v0.72.0 serves the visibility and stats layer: 115 verb keys with shortcuts, 30 socials, battle/score/spell/equipment detail, a livelier wandering-animal cadence, snap-to-latest panels, and /stats. The public stats page rendered 11 world cards, 12 AI cards, model rows, 12 command bars, 11 leaderboard rows and the stream panel with no JS errors. /leaderboard returns 11 rows. The world remains 80 rooms/36 quests/35 mobiles/71 objects; R4 and Gemini remain active. Combat formulas were already covered by the gate; this release makes their state visible rather than changing the verified arithmetic.",
+      "authority": "play.r4labs.org v0.72.0 2026-11-19; release 44469988320; gate 44468634475; /stats headless render; /leaderboard; /health"
+    },
+    {
+      "id": "MB-117",
+      "level": "build",
+      "statement": "Spell power now scales with level and equipped focus: spark/mend add the scaling power, shield adds a level/focus ward, and score/equipment/spells show armor, damage and spell power. The Salt Caves add five rooms, three mobiles, five objects, a keyed chest, a return shortcut and two quests, bringing the world to 85 rooms/38 quests/38 mobiles/76 objects/11 zones. First-run First steps and watch-page spectator prompts explain the game. The gate covers spell power, the salt walk/chest/shortcut and all world references.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-118",
+      "level": "some-true",
+      "statement": "Production v0.73.0 serves 85 rooms, 11 zones, 38 quests, 38 mobiles and 76 objects. Spell power scales with level and equipped focus (spark/mend support, shield ward), and score/equipment/spells show armor/damage/spell power. The Salt Caves add five rooms, two quests, a brine-key chest and a return shortcut. First steps and watch-page spectator prompts are live. Shortcuts cover 115 verb keys and 30 socials; /stats and /leaderboard remain. Gate 44540055374 and the real-holo/crash-recovery tests pass after restoring the quests completed line.",
+      "authority": "wick production v0.73.0 2026-11-19; release 44541604675; gate 44540055374; /health and /world; /llms; holo/crash tests"
+    },
+    {
+      "id": "MB-119",
+      "level": "build",
+      "statement": "Combat now has timed status effects: spark and the ember brand apply burn, cinder hounds apply burn, bog hounds apply bleed, fen staffs and salt wraiths apply chill. Effects tick on the violence pulse, chill reduces armor, mend cleanses bleeding/burning, score/battle and the AI prompt show effects, and death/reset clears them. Spell damage/heal/shield scale with level and equipped focus. The gate checks spell power scaling, spark burn, mend cleanse and shield scaling; world/holo tests remain green.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-120",
+      "level": "some-true",
+      "statement": "Production v0.74.0 serves combat status effects and scaled spells: spark/ember burn, bog hound bleed, fen staff/salt wraith chill, violence-pulse ticks, chill armour loss, Mend cleansing, and effect text in score/battle/AI prompts. Spell power scales with level/focus and shield scales. The world is 85 rooms/11 zones/38 quests/38 mobiles/76 objects; the Salt Caves, shortcuts/socials, /stats and onboarding remain. Gate 44551041030 green.",
+      "authority": "wick production v0.74.0 2026-11-19; release 44552816091; gate 44551041030; /health and /world; magic gate"
+    },
+    {
+      "id": "MB-121",
+      "level": "build",
+      "statement": "First Steps adds a level-1 guided tour from the bard (visit Atrium, walk north) and a tutorial/first/firststeps command that lists look/score/quests/quest accept first-steps/north/talk/map/shortcuts. Deeper chains add The Salt Ward (kill salt wraith, carry shard, reward salt ward neck armour) and The Deep Fen (visit green heart, kill fen wisp, carry wisp glass, reward fen charm). The world is 85 rooms/41 quests/78 objects/38 mobiles/11 zones. The gate accepts and completes First Steps for 20 XP and validates all references.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-122",
+      "level": "some-true",
+      "statement": "Production v0.75.0 serves 85 rooms, 11 zones, 41 quests, 38 mobiles and 78 objects. First Steps is a level-1 guided tour with tutorial/first/firststeps, The Salt Ward and The Deep Fen add reward chains, and combat has scaled spells plus burn/bleed/chill effects. The Gemini testing key was removed from owner.env and its backup deleted; /api/demo reports configured false and the provider is hidden. Gate 44561641206 green.",
+      "authority": "wick production v0.75.0 2026-11-19; release 44563219783; gate 44561641206; /health, /world and /api/demo"
+    },
+    {
+      "id": "MB-123",
+      "level": "build",
+      "statement": "The Moonlit Reach adds six rooms east of the deep forest (91 rooms/12 zones), the moon hare, silver owl and moon stag (41 mobiles), six objects (84), a moon-key chest, the crescent-moon shortcut and three linked quests (44). tools/balance.mjs samples the real attackRoll across novice, geared and spell fights without changing the world. The gate walks the forest gate to the owl grove, opens the pale chest with the moon key, takes the crescent shortcut back, validates the quest chain and all references.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-124",
+      "level": "some-true",
+      "statement": "Production v0.76.0 serves 91 rooms, 12 zones, 44 quests, 41 mobiles and 84 objects. The Moonlit Reach runs from the Deep Forest through the gate, silver glade and owl grove to the moonwell and Moon Throne, with a moon-key chest, the crescent shortcut and three linked quests. The balance sampler is in tools/balance.mjs. /stats returns 200, /leaderboard returns its schema/count/rows envelope, R4 is active, Gemini reports configured false and signups stay open. Gate 44572946449 green.",
+      "authority": "wick production v0.76.0 2026-11-19; release 44574500745; gate 44572946449; /health, /world, /stats, /leaderboard, /api/demo"
+    },
+    {
+      "id": "MB-125",
+      "level": "build",
+      "statement": "The Eclipse Court adds a six-room level-10 capstone above the Moon Throne (97 rooms/13 zones), four mobiles (45), eight objects (92), an eclipse-key chest, the dawn-gate shortcut and a three-quest chain (47 quests) requiring the moon stag. The chain pays the eclipse ward and dawn blade, and the regent was tuned to 64 hp / 6 damage. tools/balance.mjs now reads real world gear and mobiles and samples early, mid, high and capstone fights. The gate walks the full chain, key, chest, regent kill, reward payout and dawn gate.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-126",
+      "level": "some-true",
+      "statement": "Production v0.77.0 serves 97 rooms, 13 zones, 47 quests, 45 mobiles and 92 objects. The Eclipse Court runs above the Moon Throne through the starless hall, sundial court and mirror vault to the throne of ash and dawn gate, with a three-quest level-10 chain, eclipse-key chest, tuned regent and the eclipse ward/dawn blade rewards. tools/balance.mjs reads real world gear and mobiles. R4 is active, Gemini reports configured false, signups stay open. Gate 44578226461 green.",
+      "authority": "wick production v0.77.0 2026-11-19; release 44579720017; gate 44578226461; /health and /world"
+    },
+    {
+      "id": "MB-127",
+      "level": "build",
+      "statement": "The shared guild hall now has a 20-slot per-guild vault with vault/bank, deposit and withdraw commands. Vault goods are guild-held objects that survive the two-hour reset and a restart, fall in room 24 when a guild disbands or loses its last member, and are released by the account wipe. The repeatable layer adds the clerk errand, a level-3 deliver quest that pays 80 xp and 20 guild xp once per reset cycle and consumes the seal. The world is 97 rooms/13 zones/48 quests/45 mobiles/93 objects. The gate covers deposit/withdraw, reset, restart, disband, wipe and two errand cycles.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-129",
+      "level": "build",
+      "statement": "v0.79 adds the talk quest objective and the two-NPC hall-word social quest (market woman and guild clerk, 70 xp). Chat now has an eight-line/ten-second per-connection guard across say, tell, mail and channels, and account/character names reserve admin, administrator, system, moderator, wizard, staff, owner and npc. The world is 97 rooms/13 zones/49 quests/45 mobiles/93 objects. The gate covers the talk chain, rate window, reserved names and all prior content checks.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-130",
+      "level": "some-true",
+      "statement": "Production v0.79.0 serves 97 rooms, 13 zones, 49 quests, 45 mobiles and 93 objects. The Eclipse Court level-10 capstone, per-guild 20-slot vault, repeatable clerk errand, talk-objective social quest, eight-line/ten-second chat guard and reserved names are live. R4 is active, Gemini reports configured false, signups stay open. Gate 44584005119 green.",
+      "authority": "wick production v0.79.0 2026-11-19; release 44585487125; gate 44584005119; /health and /world"
+    },
+    {
+      "id": "MB-131",
+      "level": "build",
+      "statement": "v0.80 adds persistent per-character ignore lists (ignore/ign, unignore/unign, ignoring) that filter tells, mail, global channels, guild chat, socials and room speech by identity key, surviving checkpoint and login. Quest-earned titles are data-driven in world/data/titles.json (Newcomer, Moonwarden, Dawnbringer), selected with title/titles and shown in score, who and the AI prompt. docs/TUNING.md records archived production evidence: 2,305 AI turns, 99.3% parse, p50 980ms/p95 2695ms, 152 combat rounds at 50.7% hit rate; no balance change was justified. The gate covers ignore across five paths, title earning/selection/persistence and all prior content.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-132",
+      "level": "some-true",
+      "statement": "Production v0.80.0 serves 97 rooms, 13 zones, 49 quests, 45 mobiles and 93 objects. Persistent ignore lists filter tells, mail, global channels, guild chat, socials and room speech by identity key and survive login; quest-earned titles (Newcomer, Moonwarden, Dawnbringer) are selectable with title/titles and shown in score/who. docs/TUNING.md records archived production evidence (2,305 AI turns, 99.3% parse, p50 980ms/p95 2695ms, 152 combat rounds at 50.7% hit rate). R4 is active, Gemini reports configured false, signups stay open. Gate 44589717123 green.",
+      "authority": "wick production v0.80.0 2026-11-19; release 44591288348; gate 44589717123; /health and /world"
+    },
+    {
+      "id": "MB-133",
+      "level": "build",
+      "statement": "The Memory Garden adds three safe rooms east of the shrine (100 rooms/14 zones), a rememberer and garden wisp (47 mobiles), two keepsakes (95 objects) and The Garden Remembers quest (50 quests). A new facts layer teaches ledger, garden and crescent facts from NPCs, stores them on the character, mirrors them to R4, and gates an answer objective on the learned fact; recall <word> at the shrine uses the local note first and R4 context as fallback. The garden title is Gardenkeeper. The gate covers fact loading, R4 context matching, no-fact refusal, learnFact re-evaluation, reward and checkpoint persistence.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-134",
+      "level": "some-true",
+      "statement": "Production v0.81.0 serves 100 rooms, 14 zones, 50 quests, 47 mobiles and 95 objects. The Memory Garden adds three safe rooms east of the shrine, the rememberer and garden wisp, two keepsakes, and The Garden Remembers quest. NPC facts are stored per character, mirrored to R4, and recalled at the shrine; an answer objective with a fact cannot complete without learning it, and recall falls back to R4 context when the local note is missing. R4 is active, Gemini reports configured false, signups stay open. Gate 44594786579 green.",
+      "authority": "wick production v0.81.0 2026-11-19; release 44596483287; gate 44594786579; /health and /world"
+    },
+    {
+      "id": "MB-135",
+      "level": "build",
+      "statement": "v0.82 adds the crescent fact from the silver owl, The Moon in the Garden follow-up (300 xp, moon seed, Moon Gardener title) and the facts/memory command. The world is 100 rooms/14 zones/51 quests/47 mobiles/96 objects with 5 titles. tools/live-session.mjs starts an isolated real server, seeds a level-10 character, fights the eclipse regent over WebSocket and walks the Memory Garden quest; the run won 11 rounds (21 events, 47.6% hits) and found the 30,000-XP level-11 bug. The level table is now ten levels capped at 30,000 and the gate covers levelCap and gardenMoon.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-136",
+      "level": "some-true",
+      "statement": "Production v0.82.0 serves 100 rooms, 14 zones, 51 quests, 47 mobiles and 96 objects with 5 quest-earned titles. The Moon in the Garden adds the silver owl crescent fact, a level-9 follow-up, the moon seed and Moon Gardener title; facts/memory lists learned words. The level table is ten levels capped at 30,000 XP after the live run exposed level 11. docs/LIVE-RUN.md records an isolated real-server level-10 run: 11 combat rounds, 21 events, 47.6% hits, regent kill, Memory Garden completion and Gardenkeeper title. R4 is active, signups open, Gemini configured false. Gate 44605886512 green.",
+      "authority": "wick production v0.82.0 2026-11-19; release 44607714960; gate 44605886512; /health and /world; live session report"
+    },
+    {
+      "id": "MB-137",
+      "level": "build",
+      "statement": "The Remembered Bed adds a fact-gated plant rose action: it requires the garden-word fact and the memory rose, consumes the rose, reveals a secret down exit from the Memory Garden, and opens room 101. The remembered-bed quest visits the hidden room, collects the remembered bloom and earns the Bedkeeper title. The world is 101 rooms/14 zones/52 quests/47 mobiles/97 objects/6 titles/22 actions. tools/unscripted-session.mjs runs qwen2.5:7b against an isolated server; both attempts planted, the second entered the hidden room and took the bloom but did not finish the NPC step. The gate covers no-fact refusal, action resolution, rose consumption, hidden room, quest completion and title.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-138",
+      "level": "some-true",
+      "statement": "Production v0.83.0 serves 101 rooms, 14 zones, 52 quests, 47 mobiles, 97 objects and 6 titles. The Remembered Bed adds a fact-gated plant rose action that consumes the memory rose and reveals a hidden room; the remembered-bed quest and Bedkeeper title complete there. The unscripted qwen2.5:7b run planted in both attempts; the second entered the hidden room and took the bloom but did not finish the NPC step. R4 is active, signups open, Gemini configured false. Gate 44617623231 green.",
+      "authority": "wick production v0.83.0 2026-11-19; release 44618979070; gate 44617623231; /health and /world; unscripted report"
+    },
+    {
+      "id": "MB-139",
+      "level": "build",
+      "statement": "v0.84 adds a shared route ledger to runtime/web/memory.mjs: noteRoom records a recent room trail, memoryPrompt prints the route, loopWarning detects A-B-A-B and A-B-C-A-B-C cycles, and breakLoop prefers exits whose target rooms are unvisited before falling back to a fresh direction. The browser AI and CLI agent both use it; the CLI agent sends an unexplored exit instead of look on an unparseable reply. The gate covers route memory, room-cycle detection and unvisited-exit choice. The unscripted qwen2.5:7b run completed the Remembered Bed in seven turns (take rose, plant, down, take bloom, up, north, talk) with exit code 0.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-140",
+      "level": "some-true",
+      "statement": "Production v0.84.0 serves 101 rooms, 14 zones, 52 quests, 47 mobiles and 97 objects. The browser AI and CLI agent share a recent-room route, unexplored-target exit choice and route-cycle detection; the CLI agent sends an unexplored exit rather than look on an unparseable reply. The unscripted qwen2.5:7b Remembered Bed run completes in seven turns (take rose, plant, down, take bloom, up, north, talk) with exit code 0. R4 active, signups open, Gemini configured false. Gate 44623699986 green.",
+      "authority": "wick production v0.84.0 2026-11-19; release 44625071763; gate 44623699986; /health and /world; unscripted report"
+    },
+    {
+      "id": "MB-141",
+      "level": "build",
+      "statement": "v0.85 adds BFS pathTo/routeHint over the shared room graph and AGENT_WAYPOINTS sequencing in the CLI agent. The Root Archive adds two rooms below the Remembered Bed (103 rooms/14 zones), the root keeper and root fact (48 mobiles), the first seed (98 objects), the level-5 first-bed quest (53 quests) and the Rootkeeper title (7 titles). The broader unscripted qwen2.5:7b run uses three waypoints (Root Archive talk, First Bed take, Root Archive talk) and completes the quest in nine turns with exit code 0. The gate covers shortest path, next step, route hints, unknown destinations and the new rooms/quest.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-142",
+      "level": "some-true",
+      "statement": "Production v0.85.0 serves 103 rooms, 14 zones, 53 quests, 48 mobiles, 98 objects and 7 titles. BFS pathTo/routeHint over the shared room graph and AGENT_WAYPOINTS sequencing guide the CLI agent; the Root Archive adds two rooms, the root keeper, first seed, first-bed quest and Rootkeeper title. The broader unscripted qwen2.5:7b run completes three waypoints and the First Bed quest in nine turns with exit code 0. R4 active, signups open, Gemini configured false. Gate 44646684011 green.",
+      "authority": "wick production v0.85.0 2026-11-20; release 44647807638; gate 44646684011; /health and /world; unscripted report"
+    },
+    {
+      "id": "MB-143",
+      "level": "build",
+      "statement": "v0.86 adds the Root Road (rooms 104-105) connecting the Root Archive to Market Square, the level-6 Long Remembering quest (talk guild clerk, recall root at shrine, visit First Bed) and the Roadkeeper title. The CLI agent seeds its route graph from /llms.txt, supports nearest-objective choice and a movement guard that follows the BFS next step while leaving non-movement actions to the model. The world is 105 rooms/14 zones/54 quests/48 mobiles/98 objects/8 titles. The unscripted qwen2.5:7b run completes the town-spanning quest in 13 turns with exit code 0. The gate covers the root road, longRoad quest, BFS shortest path, nearest target and published-map seeding.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-144",
+      "level": "some-true",
+      "statement": "Production v0.86.0 serves 105 rooms, 14 zones, 54 quests, 48 mobiles, 98 objects and 8 titles. The Root Road connects the Root Archive to Market Square, and Long Remembering spans garden and town. The CLI agent seeds its route graph from /llms.txt, chooses nearest objectives, sequences waypoints and corrects off-route movement; the unscripted qwen2.5:7b run completes the town-spanning quest in 13 turns with exit code 0. R4 active, signups open, Gemini configured false. Gate 44669359440 green.",
+      "authority": "wick production v0.86.0 2026-11-20; release 44670381309; gate 44669359440; /health and /world; unscripted report"
+    },
+    {
+      "id": "MB-145",
+      "level": "build",
+      "statement": "v0.87 adds the Sunken Orchard (rooms 106-108) below the Root Road, the orchard keeper and orchard fact (49 mobiles), the orchard seed (99 objects), the four-objective Three Rememberings quest (55 quests) and Orchardkeeper title (9 titles). AGENT_OBJECTIVES now takes unordered Room:action entries, chooses the nearest unfinished target including the current room, and redirects wrong-room objective actions onto the route. The gate covers the new rooms/quest, current-room nearest target, BFS path and wrong-room guards. No new unscripted run was completed; local 7B testing was stopped to avoid overloading the laptop.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-146",
+      "level": "some-true",
+      "statement": "Production v0.87.0 serves 108 rooms, 14 zones, 55 quests, 49 mobiles, 99 objects and 9 titles. The Sunken Orchard adds rooms 106-108, the orchard keeper, orchard fact and seed, the four-objective Three Rememberings quest and Orchardkeeper title. AGENT_OBJECTIVES takes unordered Room:action entries, includes the current room as a target and redirects wrong-room objective actions onto the route. No local model was run for this slice; testing is deterministic gate coverage. R4 active, signups open, Gemini configured false. Gate 44674871623 green.",
+      "authority": "wick production v0.87.0 2026-11-20; release 44675845435; gate 44674871623; /health and /world"
+    },
+    {
+      "id": "MB-147",
+      "level": "build",
+      "statement": "v0.88 adds MODEL_PROVIDER=opencode to the CLI agent: each turn runs opencode run with deepseek/deepseek-flash, parses the text event and sends one command, with no local inference. The agent now waits for room state without spamming look, and the objective guards handle per-target actions. Remote DeepSeek runs completed the Root Archive in 5 turns (seed, keeper, First Bed) and all four Three Rememberings objectives in 24 turns (shrine, guild clerk, windfall seed, orchard keeper) with exit code 0. The world remains 108 rooms/14 zones/55 quests/49 mobiles/99 objects/9 titles. The gate covers all content and planner invariants; the remote runs are recorded in docs/UNSCRIPTED-RUN.md.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-148",
+      "level": "some-true",
+      "statement": "Production v0.88.0 serves 108 rooms, 14 zones, 55 quests, 49 mobiles, 99 objects and 9 titles. The CLI agent supports MODEL_PROVIDER=opencode with deepseek/deepseek-flash and no local inference; the no-room look loop is fixed. Remote DeepSeek runs completed the Root Archive in 5 turns and all four Three Rememberings objectives in 24 turns with exit code 0. R4 active, signups open, Gemini configured false. Gate 44683093412 green.",
+      "authority": "wick production v0.88.0 2026-11-20; release 44684011168; gate 44683093412; /health and /world; remote run reports"
+    },
+    {
+      "id": "MB-149",
+      "level": "build",
+      "statement": "v0.89 adds the Orchard Undercroft (rooms 109-111) below the Old Press, a vat hound (50 mobiles), the press seed (100 objects), the level-8 Press Beneath quest (56 quests) and the Presskeeper title (10 titles). AGENT_OBJECTIVES supports >Room dependencies so a delivery cannot be attempted before its item objective. A remote DeepSeek run completed Press Beneath and the clerk errand (two simultaneous quests) in 31 turns with exit code 0; no local inference. The gate covers the undercroft connections, press quest, title and the existing objective planner invariants.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-150",
+      "level": "some-true",
+      "statement": "Production v0.89.0 serves 111 rooms, 14 zones, 56 quests, 50 mobiles, 100 objects and 10 titles. The Orchard Undercroft adds rooms 109-111, a vat hound, the press seed, the Press Beneath quest and the Presskeeper title. AGENT_OBJECTIVES supports >Room dependencies. A remote DeepSeek run completed Press Beneath and the clerk errand in 31 turns with both quests complete and exit code 0; no local inference. R4 active, signups open, Gemini configured false. Gate 44694165018 green.",
+      "authority": "wick production v0.89.0 2026-11-20; release 44695181382; gate 44694165018; /health and /world; remote run report"
+    },
+    {
+      "id": "MB-151",
+      "level": "build",
+      "statement": "v0.90 adds the Cider Spring (rooms 112-114) below the Seed Vault, the spring keeper and spring fact (51 mobiles), the cider bloom (101 objects), the level-9 Cider Spring quest (57 quests) and Springkeeper title (11 titles). The CLI agent now has a strict route lock: while traveling, any non-quit command becomes the next BFS step; objective actions remain guarded. A remote DeepSeek run completed three simultaneous quests (Press Beneath, Cider Spring, First Bed) in 23 turns with all three complete and exit code 0; no local inference. The gate covers the spring rooms, quest, title and all prior planner/content invariants.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-152",
+      "level": "some-true",
+      "statement": "Production v0.90.0 serves 114 rooms, 14 zones, 57 quests, 51 mobiles, 101 objects and 11 titles. The Cider Spring adds rooms 112-114, the spring keeper and spring fact, the cider bloom, the Cider Spring quest and Springkeeper title. The CLI agent route lock keeps mid-route commands on the BFS path; a remote DeepSeek run completed Press Beneath, Cider Spring and First Bed in 23 turns with all three quests complete and exit code 0. R4 active, signups open, Gemini configured false. Gate 44741022352 green.",
+      "authority": "wick production v0.90.0 2026-11-20; release 44742243354; gate 44741022352; /health and /world; remote run report"
+    },
+    {
+      "id": "MB-153",
+      "level": "build",
+      "statement": "v0.91 makes agent objective actions observation-confirmed: take, deliver, recall, talk, plant, wear/wield and trade clear only after the server success line, while failed actions remain pending. Adds Orchard Work, a repeatable cider-bloom delivery to the orchard keeper (58 quests). The world remains 114 rooms/14 zones/51 mobiles/101 objects/11 titles. A remote DeepSeek run completed Press Beneath, Cider Spring and First Bed in 24 turns with all actions confirmed and exit code 0; no local inference. The gate covers success/failure parsing, the repeatable quest and all prior content.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-154",
+      "level": "some-true",
+      "statement": "Production v0.91.0 serves 114 rooms, 14 zones, 58 quests, 51 mobiles (48 currently alive), 101 objects and 11 titles. Agent objectives now clear only after the server success line; repeatable Orchard Work consumes a cider bloom each cycle. A remote DeepSeek run completed Press Beneath, Cider Spring and First Bed in 24 turns with every action confirmed and exit code 0; no local inference. R4 active, signups open, Gemini configured false. Gate 44754535782 green.",
+      "authority": "wick production v0.91.0 2026-11-20; release 44755887124; gate 44754535782; /health and /world; remote run report"
+    },
+    {
+      "id": "MB-155",
+      "level": "build",
+      "statement": "v0.91.1 fixes Prism/AI character loss. The AI no longer creates a standalone Prism account or uses the fixed scout default: it requires a human Prism sign-in, chooses the account first existing character unless a new name was explicitly requested, and gives a new account a random character name. Name collisions retry with a new random name. The human create form suggests a random name when the account is empty. The choices live in runtime/web/names.mjs (randomCharacterName, uniqueCharacterName, chooseCharacter) and the page serves /names.mjs. The gate covers random-name validity/uniqueness, existing-character preference, explicit-new behavior, blank-account creation, removed standalone fallback and the served module.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-156",
+      "level": "build",
+      "statement": "v0.91.2 refuses to start an AI persona when the browser reports memory-only storage, because the next reload would create another orphan Prism identity. The guard is gated by a static check and complements the v0.91.1 rule that AI personas require the human Prism account, prefer existing characters and use random names for new ones.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-157",
+      "level": "some-true",
+      "statement": "Production v0.91.2 serves the Prism/AI character fix. AI personas require a human Prism sign-in, never create a standalone AI account, prefer existing characters, and use random names for new AI/human characters with collision retry. Memory-only windows cannot start an AI persona. /names.mjs is served (200) and the deployed page contains the storage guard. The world remains 114 rooms/14 zones/58 quests/51 mobiles/101 objects/11 titles. R4 active, signups open, Gemini configured false. Gate 44760655145 and release 44764060225.",
+      "authority": "wick production v0.91.2 2026-11-20; release 44764060225; gate 44760655145; /health, /world, /names.mjs and deployed index"
+    },
+    {
+      "id": "MB-158",
+      "level": "build",
+      "statement": "v0.91.3 adds explicit recovery for old standalone AI characters. The characters panel scans the old ai Prism session and sends a signed prism/character-transfer/1 action; the server verifies the old account session and action with verifyPrismAction, refuses a persona owned by another human, and transferCharacter moves the chosen character owner and account list entry to the signed-in human Prism account. The old account remains; only the chosen character moves. The fixed scout default, random new names and memory-only AI guard remain. The gate covers transfer ownership/list changes, recovery UI strings and both Prism names/static paths.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-159",
+      "level": "some-true",
+      "statement": "Production v0.91.3 serves the old-AI recovery flow. The deployed page contains the Recover old AI characters panel and /names.mjs returns 200. The server verifies the old account signed prism/character-transfer/1 action and moves only the chosen character to the signed-in human Prism account; the gate covers the signed action and wrong-destination refusal. The world remains 114 rooms/14 zones/58 quests/51 mobiles/101 objects/11 titles. R4 active, signups open, Gemini configured false. Gate 44776703806 and release 44778482804.",
+      "authority": "wick production v0.91.3 2026-11-20; release 44778482804; gate 44776703806; /health, /names.mjs and deployed index; signed-transfer gate"
+    },
+    {
+      "id": "MB-160",
+      "level": "build",
+      "statement": "v0.91.4 adds a pull-based continuous release path: publish.yml runs only for a merged PR whose main Gate is green, reuses the Gate holo artifact, packages runtime.tar.gz, writes release-manifest.json with tag/commit/gate-run and SHA-256/size for both assets, bumps the patch tag and publishes. The wick deployer refuses a release without a manifest, verifies both hashes before extraction, and installs runtime dependencies with --ignore-scripts. Direct pushes and the pacing loop are skipped; AUTO_RELEASE=off pauses publishing. The gate covers the manifest script, deployer verification strings and publisher shape. No inbound runner or SSH path is added to wick.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-161",
+      "level": "some-true",
+      "statement": "Production v0.91.4 was published by the merged-PR chain and pulled by wick. PR #16 merged at 6ad92c3; main Gate 44787440309 was green; publish.yml 44788675560 created v0.91.4 with release-manifest.json. Wick deploy fetched the manifest, verified MUDBench.holo sha256/size and runtime.tar.gz sha256/size, replayed vectors, and deployed v0.91.4. Direct pushes and the pacing loop are skipped; AUTO_RELEASE=off pauses publication; no inbound runner or SSH path was added. Gate 44787440309 green.",
+      "authority": "GitHub PR #16 merge 6ad92c3 2026-11-20; main Gate 44787440309; publish run 44788675560; release v0.91.4; wick deploy output with manifest hashes and /health"
+    },
+    {
+      "id": "MB-162",
+      "level": "some-true",
+      "statement": "Production v0.91.5 serves browser session reconnect. PR #17 rebased the original #13 work onto v0.91.4, preserving its authorship, and merged as 156b467. Both Gate runs passed, including the headless-Chrome reconnect test (restart, Prism resume, competing tab, interrupted quit). publish.yml auto-created v0.91.5 with release-manifest.json; wick verified both hashes, replayed vectors and deployed. The original PR #13 is closed as superseded. Gate 44794521467 green; release 44795760558.",
+      "authority": "GitHub PR #17 merge 156b467 2026-11-20; main Gate 44794521467; publish 44795760558; release v0.91.5; wick deploy output; /health"
+    },
+    {
+      "id": "MB-163",
+      "level": "build",
+      "statement": "v0.91.6 adds the archmage Mages Guild line: guild-eclipse (rank archmage, requires guild-ember/guild-fen/eclipse-throne; visit the Throne of Ash and collect the regent sigil; 200 guild XP) and guild-dawn (requires guild-eclipse; visit the Dawn Gate, collect the dawn crown; 250 guild XP and the archmage signet neck armour). The world is 114 rooms/14 zones/60 quests/51 mobiles/102 objects/11 titles. The gate covers archmage advancement, prerequisite acceptance, visit/collect completion, both guild XP rewards and the signet.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-164",
+      "level": "some-true",
+      "statement": "Production v0.91.6 serves 114 rooms, 14 zones, 60 quests, 51 mobiles (50 alive at the final read), 102 objects and 11 titles. PR #18 added the rank-10 Mages Guild line: The Eclipse Ledger and The Dawn Archive, with guild XP and the archmage signet. The merged-PR chain auto-published v0.91.6; wick verified the manifest hashes, replayed vectors and deployed. R4 active, signups open, Gemini configured false. Gate 44804011007 green.",
+      "authority": "GitHub PR #18 merge 62fd187 2026-11-20; main Gate 44804011007; publish 44805284073; release v0.91.6; wick deploy output and /world"
+    },
+    {
+      "id": "MB-165",
+      "level": "build",
+      "statement": "v0.91.7 adds The Archmage's Trial, a rank-10 Mages Guild reset-cycle quest. It requires guild-dawn, kills the eclipse regent, delivers the regent sigil to the archmage (consuming it) and pays 300 XP + 120 guild XP. The world is 114 rooms/14 zones/61 quests/51 mobiles/102 objects/11 titles. The gate covers two cycles: accept, kill, deliver, complete, advance the cycle and accept again.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-166",
+      "level": "some-true",
+      "statement": "Production v0.91.7 serves 114 rooms, 14 zones, 61 quests, 51 mobiles (50 alive at the final read), 102 objects and 11 titles. PR #19 added The Archmage's Trial, a reset-cycle repeatable that kills the eclipse regent and delivers the regent sigil for 300 XP + 120 guild XP. The merged-PR chain auto-published v0.91.7; wick verified the manifest hashes, replayed vectors and deployed. R4 active, signups open, Gemini configured false. Main scheduled Gate 44812672859 green.",
+      "authority": "GitHub PR #19 merge c6bb545 2026-11-20; scheduled Gate 44812672859; publish 44814218639; release v0.91.7; wick deploy output and /world"
+    },
+    {
+      "id": "MB-167",
+      "level": "build",
+      "statement": "New accounts and characters enforce a 3-24 character name with at least one letter and a token-aware reserved-word policy (exact, numeric suffix, 'the' prefix, hyphen/underscore token, compact form and leetspeak folding); login keeps the legacy 1-24 shape and original reserved set so existing short or old reserved names still work. The report verb records a signed-in reporter, known target and trimmed reason (max 500) to a durable JSONL queue without world state or public span text, shares the 8/10s chat guard, and allows one report per identity per 30 seconds across reconnects. The gate covers the blocked and accepted name sets, the verb shape, and the report record builder.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-168",
+      "level": "some-true",
+      "statement": "Production v0.91.8 serves 114 rooms, 14 zones, 61 quests, 51 mobiles and 102 objects. It adds the 3-24 character new-name policy with token-aware reserved words and the durable report <name> <reason> queue; /llms.txt lists the report verb. The merged-PR chain auto-published v0.91.8; wick verified the manifest hashes, replayed vectors and deployed. R4 active, signups open, Gemini configured false. Main Gate 44822282035 green, publish 44823483752.",
+      "authority": "GitHub PR #20 merge 9866917 2026-11-20; main Gate 44822282035; publish 44823483752; release v0.91.8; wick deploy output, /health, /world and /llms.txt"
+    },
+    {
+      "id": "MB-169",
+      "level": "build",
+      "statement": "The random character-name vocabulary is compatible with the v0.91.8 new-name policy: the root adjective is now rooted, and the Gate checks every adjective/noun pair with a suffix against validNewName. Human and AI random names therefore remain creatable.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-170",
+      "level": "some-true",
+      "statement": "Production v0.91.9 serves 114 rooms, 14 zones, 61 quests, 51 mobiles and 102 objects. The deployed names.mjs carries the rooted adjective, and the Gate exhaustively checks every adjective/noun pair against the v0.91.8 new-name policy. The merged-PR chain auto-published v0.91.9; wick verified the manifest hashes, replayed vectors and deployed. R4 active, signups open, Gemini configured false. Main Gate 44826119999 green, publish 44827287317.",
+      "authority": "GitHub PR #21 merge c5c4bc6 2026-11-20; main Gate 44826119999; publish 44827287317; release v0.91.9; wick deploy output, /health and deployed names.mjs"
+    },
+    {
+      "id": "MB-171",
+      "level": "build",
+      "statement": "Player statistics are aggregate-only and built from the existing span log: world.session now records session.ai, actor.level, actor.guild and completed-quest count; GET /players and tools/players.mjs summarize sessions, human/AI mix, unique accounts/characters, returning accounts, playtime for completed connections, per-quest actor/completer completion, combat hits/misses/NPC kills/PvP kills/player deaths, room visits, level distribution and command counts. The Gate checks the synthetic summary and that serialized output contains no account key or character name.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-172",
+      "level": "build",
+      "statement": "The player statistics view reads a compact player-event log beside the full span log instead of the last 4 MiB of the full log. The compact log keeps only world.session, world.disconnect, world.quest, world.transition, world.combat, world.snapshot and world.input; it rotates at PLAYER_MAX_BYTES (16 MiB) and is seeded from the existing main log on first start. GET /players reads it, so sparse session records survive the tail window. The Gate checks the selected span set and the seed call.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-173",
+      "level": "build",
+      "statement": "Historical player sessions without session.ai are classified by joining the matching world.prism record (prism.id to account.key, prism.ai); world.prism is part of the compact player log. Sessions with neither signal report as ai_unknown, and /stats shows that count. The Gate covers the fallback and the compact selection.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-174",
+      "level": "some-true",
+      "statement": "Production v0.91.12 serves 114 rooms, 14 zones, 61 quests, 51 mobiles and 102 objects. GET /players reads the compact player log and reports 967 spans, 8 sessions, 6 unique accounts, 4 human, 2 AI, 2 AI-unknown and 4,315,229 ms of completed playtime; /stats serves the player panel. The response contains no account keys or character names. The merged-PR chain auto-published v0.91.12; wick verified the manifest hashes, replayed vectors and deployed. R4 active, signups open, Gemini configured false. Main Gate 44836599012 green, publish 44837623672.",
+      "authority": "GitHub PR #24 merge d96446f 2026-11-20; main Gate 44836599012; publish 44837623672; release v0.91.12; wick deploy output, /players, /stats and compact player log"
+    },
+    {
+      "id": "MB-175",
+      "level": "build",
+      "statement": "The player level distribution uses the most recent world.snapshot whose world.actors array is non-empty, not simply the newest snapshot. Snapshots taken with nobody online therefore do not collapse the average, maximum, distribution or guilded count to zero. The Gate includes a populated snapshot followed by an empty one and still reports the populated levels.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-176",
+      "level": "build",
+      "statement": "The merged-PR publisher selects only a PR whose merge_commit_sha equals the gated main SHA, with base ref main and a non-null merged_at. A direct push or pacing candidate that GitHub associates with a merged PR therefore cannot become a release. The Gate checks the workflow contains the merge_commit_sha and base.ref conditions; the live API check matched PR #25 on its merge SHA and rejected pacing commit ce32a19.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-177",
+      "level": "some-true",
+      "statement": "Production v0.91.14 serves 114 rooms, 14 zones, 61 quests, 51 mobiles and 102 objects. GET /players reports 1,249 compact spans, 10 sessions, 6 unique accounts, 6 human, 2 AI and 2 AI-unknown; /stats serves the player panel. The publisher released v0.91.14 from merge commit aa4b5d2 after the merge-commit guard was added. R4 active, signups open, Gemini configured false. Main Gate 44842247272 green, publish 44843375072.",
+      "authority": "GitHub PR #26 merge aa4b5d2 2026-11-21; main Gate 44842247272; publish 44843375072; release v0.91.14; wick deploy output, /players and /stats"
+    },
+    {
+      "id": "MB-178",
+      "level": "build",
+      "statement": "v0.91.15 adds player fundamentals and the economy baseline. Commands: take alias t, take all/everything (one aggregate event), drink/quaff for drink-flagged consumables, coins/money/purse totals, grouped inventory with an optional category, and k/sc remain attack/score. Combat: flee is refused and records world.flee with flee.refused; the reducer has no flee intent. Health: level 1 starts at 20 HP and each level adds 5 (level 10 = 65). Economy: the Gilded Rat sells a 10-coin ale (2 bites, 5 heal), three sellable treasures (gilded chalice 45, ivory figurine 70, moonstone 90) exist, and shops refuse quest collectibles. The world is 114 rooms/14 zones/61 quests/51 mobiles/106 objects. The Gate covers the aliases, health curve, inventory grouping, take-all and drink.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-179",
+      "level": "build",
+      "statement": "The browser AI defaults to Pollinations for a new configuration: https://text.pollinations.ai/openai, model openai-fast, no key, stream:true. requestFor handles the endpoint (which is already the chat URL) and readSseText parses OpenAI-style SSE content deltas, updates the live thought line as text arrives and returns the final text for the normal parser. The provider hint discloses that the anonymous service may log prompts and is best-effort. The Gate checks the provider metadata, request URL/body and the SSE reader; a live anonymous test returned the first delta in ~1.4s and the full three-line reply in ~1.7s.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-180",
+      "level": "build",
+      "statement": "The Wardens' Lodge is room 115 above the Guild Hall (room 24), with the warden-captain NPC and reciprocal up/down exits. The server seeds The Wardens alongside the Mages' Guild; joining needs level 3 and room 115. Ranks are scout -> ranger (level 5, 15 rooms explored) -> warden (level 8, 30 rooms explored), with no quest requirement. The reducer accepts guildAdvance for mages and wardens and records the right promoter; the server now allows the archmage promotion at level 10 with four known spells instead of refusing the top rank. Account wipe keeps both institutions. The world is 115 rooms/14 zones/61 quests/52 mobiles/106 objects. The Gate covers the lodge exits, NPC, and a Wardens rank advance.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-181",
+      "level": "build",
+      "statement": "The quest count is frozen at 61 in world/ratchet.json, with a documented target of 20 in docs/QUEST-BUDGET.md. The Gate reads the quest table and fails if the count exceeds the frozen ceiling; it prints quests 61 <= 61. No quest definitions were deleted in this release; the 20-slot composition and migration plan are recorded for a dedicated content pass.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-182",
+      "level": "some-true",
+      "statement": "Production v0.91.15 serves 115 rooms, 14 zones, 61 quests, 52 mobiles and 106 objects, with 15 accounts/characters and signups open. It serves the t/take-all, drink, coins and grouped-inventory controls; 20+5 HP combat with no fleeing; the Gilded Rat ale and three sellable treasures; the Wardens' Lodge and exploration ranks (including the repaired archmage path); the quest count frozen at 61 toward a 20-quest target; and the Pollinations keyless streaming provider in the deployed ai.mjs. The merged-PR chain auto-published v0.91.15; wick verified the manifest hashes, replayed vectors and deployed. R4 active. Main Gate 44848984472 green, publish 44849883462.",
+      "authority": "GitHub PR #27 merge a765cde 2026-11-21; main Gate 44848984472; publish 44849883462; release v0.91.15; wick deploy output, /health, /world, /llms.txt and deployed ai.mjs"
+    },
+    {
+      "id": "MB-183",
+      "level": "build",
+      "statement": "The live quest table is 20 and the retired 41 are in world/data/quests-archive.json. The kept spine is first-steps, hall-word, word, guardian, bread, familiar, roof, telescope, scroll, mirror, ledger, sigils, cistern, choir, reliquary, guild-ledger, guild-mirror, guild-warden, guild-dawn and guild-trial. guild-dawn now requires guild-warden and reliquary. Titles are reduced to nine, one per kept quest. migrateQuestState normalizes active/completed ids, reports retired active quests as completed when their recorded progress is met and abandoned otherwise, and the server sends a one-time login note before clearing the migration record. The Gate checks count 20, archive 41, no live/archive overlap, no kept prerequisite on a retired quest, archive references, and the completed/abandoned migration notes.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-184",
+      "level": "some-true",
+      "statement": "Production v0.91.16 serves 115 rooms, 14 zones, 20 quests, 52 mobiles and 106 objects. The live quest table is the 20-quest spine, the 41 retired definitions are archived, and /llms.txt contains scroll and bread but no ember-door, memory-garden, moon-stag or guild-eclipse rows. The startup migration found no active retired quests in the current production identities; the restart smoke test proved a saved active ember-door receives a completed note, is removed, and clears its migration record. R4 active, signups open. Main Gate 44854697131 green, publish 44855492951.",
+      "authority": "GitHub PR #28 merge 512892c 2026-11-21; main Gate 44854697131; publish 44855492951; release v0.91.16; wick deploy output, /world, /llms.txt and journal"
+    },
+    {
+      "id": "MB-185",
+      "level": "build",
+      "statement": "v0.91.17 adds four zone gear drops: ember-gauntlets (hands, armour 2) from the ember warden, fen-mantle (cloak, armour 2) from a bog hound, salt-bracers (hands, armour 2) from a salt wraith and moon-greaves (feet, armour 2) from the moon stag. Wardens rank perks are wardenBonus: scout +1 armour, ranger +1 damage, warden +1 armour and +1 damage; armorOf, the combat damage roll, score and equipment apply them. The world is 115 rooms/14 zones/20 quests/52 mobiles/110 objects. The Gate covers the four loot entries, their slots/armour, and the rank bonuses.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-186",
+      "level": "some-true",
+      "statement": "Production v0.91.17 serves 115 rooms, 14 zones, 20 quests, 52 mobiles and 110 objects. The four zone gear drops are live (ember-gauntlets, fen-mantle, salt-bracers, moon-greaves), and Wardens rank perks apply in armorOf, the combat damage roll, score and equipment. The merged-PR chain auto-published v0.91.17; wick verified the manifest hashes, replayed vectors and deployed. R4 active, signups open. Main Gate 44860803072 green, publish 44861737056.",
+      "authority": "GitHub PR #29 merge de55bcf 2026-11-21; main Gate 44860803072; publish 44861737056; release v0.91.17; wick deploy output, /world and /health"
+    },
+    {
+      "id": "MB-187",
+      "level": "build",
+      "statement": "v0.91.18 adds ten gear pieces: smithy iron cuirass (body 2, 18 coins) and buckler (offhand 1, 9 coins); warden's shield (offhand 3) from the warden, mirror shield (offhand 2) from the mirror-wraith, eclipse plate (body 3) from the sundial knight, ember-tempered boots (feet 2) from the cinder hound, fen hood (head 1) from the fen wisp, salt-crusted hauberk (body 2) from the brine crab, moonstone circlet (head 2) from the moon hare and moon disc (offhand 2) from the moon stag. The world is 115 rooms/14 zones/20 quests/52 mobiles/120 objects. Player statistics add hit_rate, kill_rate, average_damage, pvp_rounds, npc_rounds and player_death_rate; /stats shows hit rate and average damage. The Gate covers the gear slots/loot and the combat rates.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-188",
+      "level": "some-true",
+      "statement": "Production v0.91.18 serves 115 rooms, 14 zones, 20 quests, 52 mobiles and 120 objects. The body/offhand gear pass is live (smithy cuirass/buckler and eight zone drops), and /players reports 43 combat rounds, 25 hits, 18 misses, 58.1% hit rate, 2.72 average damage, 23 NPC rounds, 0 PvP rounds and 0 player deaths. /stats shows hit rate and average damage. R4 active, signups open. Main Gate 44864345621 green, publish 44865049896.",
+      "authority": "GitHub PR #30 merge 8817403 2026-11-21; main Gate 44864345621; publish 44865049896; release v0.91.18; wick deploy output, /world and /players"
+    },
+    {
+      "id": "MB-189",
+      "level": "build",
+      "statement": "v0.91.19 adds tools/tuning-session.mjs, an isolated remote-model combat harness that seeds a level-5 character and mundane kit at the Mirror Pool, runs OpenCode/DeepSeek, and reports the real spans. Two runs produced 14 combat rounds, 9 hits, 5 misses, 64.3% hit rate, 4.67 average damage, 2 wraith kills, 0 player deaths, and the mirror shield was taken and worn in the second run. The CLI agent now lists take-all, drink and coins and no flee; take-all spans carry object ids. No mob damage, armour, healing or level values changed because the sample is too small and there is no PvP or unseeded level 8-10 evidence. The Gate still covers the prior combat and gear contracts.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-190",
+      "level": "some-true",
+      "statement": "Production v0.91.19 serves 115 rooms, 14 zones, 20 quests, 52 mobiles and 120 objects. The remote tuning harness is deployed in the repo; two isolated OpenCode/DeepSeek Mirror Pool runs produced 14 combat rounds, 9 hits, 5 misses, 64.3% hit rate, 4.67 average damage, 2 kills, 0 player deaths, and the second run took and wore the mirror-shield drop. No balance values changed because the sample is too small and has no PvP or unseeded level 8-10 evidence. Live /players reports 43 rounds, 58.1% hit rate, 2.72 average damage, 0 PvP rounds and 0 player deaths. R4 active, signups open. Main Gate 44869153944 green, publish 44869841494.",
+      "authority": "GitHub PR #31 merge b558faa 2026-11-21; main Gate 44869153944; publish 44869841494; release v0.91.19; wick deploy output, /world and /players; docs/TUNING.md"
+    },
+    {
+      "id": "MB-191",
+      "level": "build",
+      "statement": "v0.91.20 extends tools/balance.mjs with three PvP matchups (level 5 sword+jerkin mirror 46%, level 5 spark vs sword+jerkin 41%, level 10 dawn blade+plate vs ember brand+plate 47%) and two unseeded high-level fights (level 8 vs star hound 51%, level 10 vs regent 18%). The simulator models both sides as players for PvP (weapon damage, gear armour, HP curve). The Gate runs the sampler at 120 seeds and fails if a PvP matchup leaves 25-75% or if the unseeded bands miss their expected difficulty. No balance values changed.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-192",
+      "level": "some-true",
+      "statement": "Production v0.91.20 serves 115 rooms, 14 zones, 20 quests, 52 mobiles and 120 objects. The deterministic sampler now includes PvP (46%, 41%, 47% across three matchups) and unseeded high-level bands (51% level 8 vs star hound, 18% level 10 vs regent); the Gate checks them. No mob damage, armour, healing or level values changed. Live /players remains 43 rounds, 58.1% hit rate, 2.72 average damage, 0 PvP rounds and 0 player deaths. R4 active, signups open. Main Gate 44871499964 green, publish 44872286419.",
+      "authority": "GitHub PR #32 merge b3fa3c1 2026-11-21; main Gate 44871499964; publish 44872286419; release v0.91.20; wick deploy output, /world and /players; tools/balance.mjs"
+    },
+    {
+      "id": "MB-193",
+      "level": "build",
+      "statement": "v0.91.21 adds four faction standing tracks: Ember (cinder hound/ember warden), Fen (bog hound/fen wisp), Salt (brine crab/salt wraith) and Moon (moon hare/moon stag). Kills award 1-2 standing, persisted on the character through logout/reset/restart. The `standing`/`reputation`/`factions` command shows ranks and next thresholds. Four quartermaster shops at the zone contacts list standing-locked stock; `buy` refuses below the threshold. Five gated pieces: ember cloak (Ember 3), ember-forged blade (Ember 6), fen-warden's cloak (Fen 6), salt-warden's shield (Salt 6) and moon-blessed circlet (Moon 6). `world.standing` spans record faction/value. The world is 115 rooms/14 zones/20 quests/52 mobiles/124 objects. The Gate covers rank thresholds, award, persistence, data, and shop locks.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-194",
+      "level": "some-true",
+      "statement": "Production v0.91.21 serves 115 rooms, 14 zones, 20 quests, 52 mobiles and 124 objects with seven shops. The four faction standing tracks (Ember, Fen, Salt, Moon) are live; zone kills award persistent standing, `standing` is in /llms.txt, four quartermaster shops gate five gear pieces, and `world.standing` records gains. The isolated socket smoke test showed Ember 3 (spark), locked blade stock and a refused buy. R4 active, signups open. Main Gate 44919889832 green, publish 44920599868.",
+      "authority": "GitHub PR #33 merge f9a2e0a 2026-11-21; main Gate 44919889832; publish 44920599868; release v0.91.21; wick deploy output, /world, /llms.txt and local quartermaster smoke"
+    },
+    {
+      "id": "MB-195",
+      "level": "build",
+      "statement": "v0.91.22 adds weapon-family techniques: power-strike (sword, ember brand, ember-forged blade; +4 next blow, 24-tick cooldown), cleave (greatsword, dawn blade; +2, 36), bash (club, forge hammer; stun one combat round, 36) and chill-strike (fen staff; chill on next blow, 24). `technique`/`tech` lists the current weapon move and sets it up; the reducer checks weapon identity, engagement and cooldown, stores nextAttackBonus/nextAttackStatus/stunnedUntil, and consumes the setup on the next combat round. `world.technique` records the command. No new quests or guilds. The Gate covers weapon data, definitions, cooldown, power-strike bonus and bash stun.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-196",
+      "level": "some-true",
+      "statement": "Production v0.91.22 serves 115 rooms, 14 zones, 20 quests, 52 mobiles and 124 objects. The four weapon-family techniques (Power Strike, Cleave, Bash, Chill Strike) are live; /llms.txt lists technique and standing. The merge-commit Gate did not trigger automatically, so Gate 44924725609 was dispatched on main for the same merge SHA; the publisher then released v0.91.22 from PR #34. R4 active, signups open. Publish 44925468409.",
+      "authority": "GitHub PR #34 merge 8c9e9c6 2026-11-21; dispatch Gate 44924725609; publish 44925468409; release v0.91.22; wick deploy output, /world and /llms.txt"
+    },
+    {
+      "id": "MB-197",
+      "level": "build",
+      "statement": "v0.91.23 adds the outlaw layer. The Night Market is a third rank guild in the Smuggler's Cache (room 29): runner joins at level 3, cutpurse at level 5 (+1 armour), shadow at level 8 (+1 damage), master at level 10 (both). Its quartermaster sells thief's dagger (damage 3, Backstab, runner), night cloak (armour 2, cutpurse) and assassin's blade (damage 5, Backstab, shadow). The Ashen Hand (ashen priest, room 58) and Red Company (red captain, room 71) are standing factions; choir moth/mirror-wraith award Ashen, star hound/sundial knight/eclipse regent award Red. Their quartermasters sell ashen robe/unholy mace (Drain) and red axe (Rage)/red boots. Backstab +6, Rage +5, Drain heals half damage, each 36-tick cooldown. No new quests; the world is 115 rooms/14 zones/20 quests/55 mobiles/131 objects. The Gate covers guild seed/advance, rank perks, faction data, shop locks and the three techniques.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-198",
+      "level": "some-true",
+      "statement": "Production v0.91.23 serves 115 rooms, 14 zones, 20 quests, 55 mobiles and 131 objects with ten shops. The Night Market is the third rank guild (runner/cutpurse/shadow/master) with rank-gated dagger/cloak/blade stock; the Ashen Hand and Red Company are standing factions with quartermaster gear; Backstab, Rage and Drain are live. The isolated socket test showed Night Market rank locks, promotion to cutpurse and the unlocked night cloak. R4 active, signups open. Main Gate 44930998988 green, publish 44931943581.",
+      "authority": "GitHub PR #35 merge 29c5b67 2026-11-21; main Gate 44930998988; publish 44931943581; release v0.91.23; wick deploy output, /world and /llms.txt; local Night Market smoke"
+    },
+    {
+      "id": "MB-199",
+      "level": "build",
+      "statement": "v0.91.24 adds the Cold Forge loop. `salvage <item>` destroys held gear and returns max(1, floor(value/20)) + plus components of its set; components are persistent counts on the character. `upgrade <item>` costs 2/20, 4/40, 6/60 components/coins for +1/+2/+3 and raises weapon damage or armour. `components` lists the counts. Set tags on gear give +1 armour at three equipped pieces and +1 damage at four. `world.forge` spans record upgrade/salvage. The world remains 115 rooms/14 zones/20 quests/55 mobiles/131 objects. The Gate covers cost scaling, salvage yield, component persistence, set counting and reducer consumption.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-200",
+      "level": "some-true",
+      "statement": "Production v0.91.24 serves 115 rooms, 14 zones, 20 quests, 55 mobiles and 131 objects with ten shops. The Cold Forge loop is live: `components` lists persistent set components, `salvage` breaks held gear into max(1, floor(value/20)) + plus components, and `upgrade` raises weapons/armour to +1/+2/+3 for 2/4/6 components and 20/40/60 coins. Three matching set pieces add +1 armour and four add +1 damage. `world.forge` spans record the actions. The isolated socket test showed 10 components, +1 sword, salvage back to 9, and weapon damage 4. R4 active, signups open. Main Gate 44936520754 green, publish 44937196484.",
+      "authority": "GitHub PR #36 merge ec91317 2026-11-21; main Gate 44936520754; publish 44937196484; release v0.91.24; wick deploy output, /world and /llms.txt; local forge smoke"
+    },
+    {
+      "id": "MB-201",
+      "level": "build",
+      "statement": "v0.91.25 adds a world event derived from the reset cycle: Ember/Fen/Salt/Moon rotate, the active faction's kills award double standing and its quartermaster stock takes 20% off, and world/GET /world show the event. It also adds the Ring duel ladder: a Ring win gives +1 win/+16 rating, a loss +1 loss/-16 (floor 0), both identities update immediately, and `ladder`/`pvp`/`duels` lists the board. `duel` with no target shows the character record. The world remains 115 rooms/14 zones/20 quests/55 mobiles/131 objects. The Gate covers rotation, discount, a full duel with identity records and ladder text.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-202",
+      "level": "some-true",
+      "statement": "Production v0.91.25 serves 115 rooms, 14 zones, 20 quests, 55 mobiles and 131 objects. GET /world reports The Ember Tide at cycle 0 with Ember standing doubled and 20% off the Ember Forge. The Ring ladder records wins, losses and rating on identities; ladder/pvp/duels and the duel record line are live. A pacing commit landed after the PR merge, but the publisher released from the PR merge commit a8924ff as intended. R4 active, signups open. Main Gate 44939382326 green, publish 44940136659.",
+      "authority": "GitHub PR #37 merge a8924ff 2026-11-21; main Gate 44939382326; publish 44940136659; release v0.91.25; wick deploy output, /world and /llms.txt"
+    },
+    {
+      "id": "MB-203",
+      "level": "build",
+      "statement": "v0.91.26 adds TUNING_SCENARIO=high to tools/tuning-session.mjs: an isolated unseeded level-8 character at the Starless Hall against the star hound, with a 300-second default wall. The first remote DeepSeek run reached 18 rounds, 11 hits, 7 misses, 61.1% hit rate, 2.82 average damage, star hound 10/28 HP and character 36/55 HP, then was stopped by the 180-second wall with no player death. The deterministic unseeded level-8 band remains 51%; no balance values changed. The Gate still covers the tuning harness source and prior contracts.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-204",
+      "level": "some-true",
+      "statement": "Production v0.91.26 serves 115 rooms, 14 zones, 20 quests, 55 mobiles and 131 objects; The Ember Tide is active. The remote tuning harness now supports an unseeded level-8 Starless Hall scenario with a 300-second default wall; the first run reached 18 rounds, 61.1% hit rate, 2.82 average damage, star hound 10/28 HP and character 36/55 HP before the wall stopped it, with no player death. No balance values changed. R4 active, signups open. Main Gate 44947473169 green, publish 44948454911.",
+      "authority": "GitHub PR #38 merge 9256128 2026-11-21; main Gate 44947473169; publish 44948454911; release v0.91.26; wick deploy output, /world and /health"
+    },
+    {
+      "id": "MB-205",
+      "level": "build",
+      "statement": "v0.91.27 completes the Ashen Hand (hood/boots), Red Company (helm/gauntlets) and Night Market (boots/gloves) sets so all three can reach four equipped pieces; adds shield Guard (+3 armour for two rounds) usable from the offhand; adds five readable lore pieces in Ember/Fen/Salt/Moon/Garden; adds a web Character sheet (equipment slots, sets, techniques, faction ranks, components, duel record, event) and shop item stats; and opens the Training Yard east of the Guild Hall with a passive dummy, trainer, practice sword/shield and board. The world is 116 rooms/14 zones/20 quests/57 mobiles/145 objects. The Gate covers set completion, Guard, lore, sheet source, training yard and all prior checks.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-206",
+      "level": "some-true",
+      "statement": "Production v0.91.27 serves 116 rooms, 14 zones, 20 quests, 57 mobiles and 145 objects. The Ashen/Red/Night sets are complete, shield Guard is live, five retired-zone lore readables exist, the web Character sheet and shop item stats are served, and the Training Yard is east of the Guild Hall with a passive dummy, trainer and practice gear. The Fen Rising is the active event. R4 active, signups open. Main Gate 44951327957 green, publish 44952060375.",
+      "authority": "GitHub PR #39 merge b7c28ed 2026-11-21; main Gate 44951327957; publish 44952060375; release v0.91.27; wick deploy output, /world and /health; local Training Yard smoke"
+    },
+    {
+      "id": "MB-207",
+      "level": "build",
+      "statement": "v0.91.28 adds an owner-token /reports JSON endpoint returning the last N durable report records; unauthenticated requests return 401 and the token is read from x-owner-token or a Bearer header, never the URL. The review path is documented. The web shell adds a Skip to game link, explicit :focus-visible and prefers-reduced-motion rules, and a labelled log/announcer contract. The Gate checks the route/auth source and the accessibility source contract. Production data and game balance are unchanged.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-208",
+      "level": "some-true",
+      "statement": "Production v0.91.28 serves 116 rooms, 14 zones, 20 quests, 57 mobiles and 145 objects; The Fen Rising is active. GET /reports returns 401 without the owner token and is owner-readable with it; the review path and accessibility contract are documented. The web shell has the skip link, focus/reduced-motion rules and labelled log. R4 active, signups open. Main Gate 44953270553 green, publish 44954148839.",
+      "authority": "GitHub PR #40 merge cf4845d 2026-11-21; main Gate 44953270553; publish 44954148839; release v0.91.28; wick deploy output, /reports 401, /world and /health"
     }
   ]
 }

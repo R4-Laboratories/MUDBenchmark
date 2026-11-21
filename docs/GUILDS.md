@@ -36,6 +36,9 @@ or the first member, and the promotion is a span.
 | `guild invite <member>` | leader or officer | notifies a player; joining is open |
 | `guild rank <member> <rank>` | leader | sets officer/member, or transfers leadership |
 | `guild disband` | leader | removes the guild and clears every member |
+| `vault` / `bank` | any member in the Guild Hall | lists the guild's stored goods and capacity |
+| `deposit <item>` / `dep` | any member in the Guild Hall | stores a held item in the guild vault |
+| `withdraw <item>` / `wd` | any member in the Guild Hall | retrieves an item from the guild vault |
 
 Names are 2–32 letters, digits, spaces, `-` or `'`; the id is a lower-case slug.
 Duplicate names and ids are refused.
@@ -54,8 +57,60 @@ span: `actor.id`, `guild.id`, `guild.action`, `guild.name`. Create/join/leave/
 rank/invite come from reducer events; chat is recorded at command time because
 it has recipients rather than state.
 
-## What is not here yet
+## The vault
 
-Instanced guild halls, a guild bank/till, invite-only guilds and guild quests.
-The roster, ranks and chat are the stable core; the hall arrives with the world
-phase, when a room can belong to a guild rather than to everyone.
+The shared guild hall is room 24, south of the Gilded Rat, with the guild
+clerk, notice board and a vault of 20 top-level goods. The vault is per guild:
+two guilds in the same hall cannot see each other's stores. `vault` lists the
+contents, `deposit <item>` stores a held item, and `withdraw <item>` returns it.
+
+The two-hour reset leaves vault goods in the vault; a restart does too. When a
+guild disbands or loses its last member, its goods fall in the hall rather than
+vanishing. The account wipe releases vault goods the same way.
+
+## The institutions
+
+Three guilds are world institutions rather than player-founded companies:
+
+| Guild | Where | Join | Ranks |
+| --- | --- | --- | --- |
+| The Mages' Guild | The Arcanum, above the Atrium | level 3, at room 34 | apprentice, adept, magician, archmage |
+| The Wardens | The Wardens' Lodge, above the Guild Hall | level 3, at room 115 | scout, ranger, warden |
+| The Night Market | The Smuggler's Cache, room 29 | level 3, at room 29 | runner, cutpurse, shadow, master |
+
+The Mages' ranks are earned through spells, level and the guild quest ledger.
+The Wardens' ranks are earned by ground covered: ranger needs level 5 and
+fifteen rooms explored; warden needs level 8 and thirty. No quest is required,
+so the exploration path does not add to the quest budget. Both guilds share the
+Guild Hall and its per-guild vault; their rosters and vaults are separate.
+
+`guild advance` promotes in the guild's own hall. A player-founded guild still
+uses the generic leader/officer/member ranks and does not advance this way.
+
+### Wardens rank perks
+
+| Rank | Perk |
+| --- | --- |
+| scout | +1 armour |
+| ranger | +1 weapon damage |
+| warden | +1 armour and +1 weapon damage |
+
+The perks are passive while the character is in the Wardens and are part of
+`armorOf`, the combat damage roll and `score`/`equipment`. They do not stack with
+a second guild because a character has one guild.
+
+The Night Market uses the same rank shape: runner joins, cutpurse adds +1
+armour, shadow +1 weapon damage, master both. `docs/OUTLAW-PATHS.md` covers the
+thief/assassin gear and the Ashen Hand / Red Company factions.
+
+The four zone factions in `docs/FACTIONS.md` are separate from guilds: a
+character can hold all four standings, while guild membership is one at a
+time.
+
+## What is live, and what is not
+
+Guild quests, guild XP, ranks, the level-6 three-active-quest perk and the
+per-guild vault are live. The clerk's errand is repeatable once per reset cycle.
+
+Not here yet: instanced halls and invite-only guilds. A guild hall is shared
+ground; the vault is the stateful part that belongs to the guild.

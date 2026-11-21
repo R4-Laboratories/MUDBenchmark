@@ -114,7 +114,8 @@
       "safe": true,
       "exits": {
         "south": 5,
-        "north": 7
+        "north": 7,
+        "east": 98
       },
       "details": {
         "altar": "The altar is worn smooth. A single word is cut into its edge.",
@@ -152,7 +153,8 @@
         "east": 9,
         "west": 10,
         "south": 11,
-        "up": 35
+        "up": 35,
+        "down": 105
       },
       "details": {
         "fountain": "The fountain is a bearded face with water spilling from its mouth. Coins lie in the basin.",
@@ -183,7 +185,7 @@
     },
     "10": {
       "name": "The Gilded Rat",
-      "text": "A low-beamed inn. A hearth fills the room with smoky warmth, benches crowd the tables, and a stew pot hangs over the fire. Stairs climb to the guest rooms; the market square is east. The fire is banked low; the stew pot is covered, and the stairs creak underfoot.",
+      "text": "A low-beamed inn. A hearth fills the room with smoky warmth, benches crowd the tables, and a stew pot hangs over the fire and a cask of ale is tapped behind the counter. Stairs climb to the guest rooms; the market square is east. The fire is banked low; the stew pot is covered, and the stairs creak underfoot.",
       "safe": true,
       "exits": {
         "east": 8,
@@ -193,7 +195,8 @@
       "details": {
         "hearth": "The hearth is broad enough to stand in. A cat sleeps on the warm stones.",
         "stew": "The stew smells of root vegetables and pepper.",
-        "stairs": "The stairs are worn in the middle of each tread."
+        "stairs": "The stairs are worn in the middle of each tread.",
+        "bar": "A cask of dark ale is tapped behind the counter; a tankard is ten coins."
       },
       "ambient": [
         "The fire settles.",
@@ -333,7 +336,8 @@
       "safe": false,
       "exits": {
         "west": 15,
-        "south": 20
+        "south": 20,
+        "east": 86
       },
       "details": {
         "moss": "The moss is thick and soft underfoot.",
@@ -370,7 +374,8 @@
       "safe": false,
       "exits": {
         "west": 19,
-        "north": 18
+        "north": 18,
+        "east": 71
       },
       "details": {
         "wheel": "The wheel turns without grinding anything.",
@@ -437,10 +442,12 @@
     },
     "24": {
       "name": "The Guild Hall",
-      "text": "A long room with a high roof and banners of no single house. A notice board covers one wall, and a clerk keeps a table by the door. The inn is south. The clerk's ledger lies open at an empty page; the room smells of ink.",
+      "text": "A long room with a high roof and banners of no single house. A notice board covers one wall, and a clerk keeps a table by the door. The inn is south. The clerk's ledger lies open at an empty page; the room smells of ink. A narrow stair climbs to the Wardens' Lodge.",
       "safe": true,
       "exits": {
-        "south": 10
+        "south": 10,
+        "up": 115,
+        "east": 116
       },
       "details": {
         "banners": "The banners are blank, waiting for names.",
@@ -584,15 +591,17 @@
     },
     "32": {
       "name": "The Lighthouse",
-      "text": "A white tower stands at the end of the point. The lamp room is dark, and the keeper's cottage leans against the rock. The docks are south, and the sea is below. The tower door is open; the great lamp is cold.",
+      "text": "A white tower stands at the end of the point. The lamp room is dark, and the keeper's cottage leans against the rock. The docks are south, and the sea is below. The tower door is open; the great lamp is cold. A salt stair descends beneath the lighthouse.",
       "safe": false,
       "exits": {
-        "south": 31
+        "south": 31,
+        "down": 81
       },
       "details": {
         "tower": "The tower door is open. The stair spirals up into dark.",
         "lamp": "The great lamp is cold; its brass is green with salt.",
-        "sea": "The sea is black and moving beyond the rocks."
+        "sea": "The sea is black and moving beyond the rocks.",
+        "stair": "A stair of wet stone descends into the rock."
       },
       "ambient": [
         "The wind pulls at the tower.",
@@ -1285,6 +1294,840 @@
         "The flame leans.",
         "The chamber is very still."
       ]
+    },
+    "71": {
+      "name": "The Fen Gate",
+      "text": "A low gate of woven willow stands where the mill path ends. Reeds crowd a narrow causeway; the abandoned mill is west, a reed walk climbs north, and a drowned orchard lies east. The air is wet and green.",
+      "safe": false,
+      "exits": {
+        "west": 20,
+        "north": 72,
+        "east": 73
+      },
+      "details": {
+        "gate": "The willow gate is tied with green cord.",
+        "reeds": "The reeds are taller than a person and never still.",
+        "causeway": "The causeway is made of bundled branches."
+      },
+      "ambient": [
+        "Water ticks under the causeway.",
+        "A heron calls somewhere north."
+      ]
+    },
+    "72": {
+      "name": "The Reed Walk",
+      "text": "A raised walk of split logs crosses the fen. Reeds close in on both sides and the water below is black. The gate is south; the heron pool waits north, and a peat cut opens east.",
+      "safe": false,
+      "exits": {
+        "south": 71,
+        "east": 74,
+        "north": 75
+      },
+      "details": {
+        "walk": "The logs are slick but sound.",
+        "reeds": "Something small moves between the stems.",
+        "water": "The water reflects a sky that is not quite the right colour."
+      },
+      "ambient": [
+        "The reeds whisper.",
+        "A frog stops mid-croak."
+      ]
+    },
+    "73": {
+      "name": "The Drowned Orchard",
+      "text": "Apple trees stand in standing water, their branches bare. A bog hound has made a nest of roots and mud. The fen gate is west; the peat cut is north.",
+      "safe": false,
+      "exits": {
+        "west": 71,
+        "north": 74
+      },
+      "details": {
+        "trees": "The trees are alive but bear no leaves.",
+        "nest": "The nest is woven from reeds and old bone.",
+        "water": "The water is warm.",
+        "bog hound": "A lean shape moves between the trunks."
+      },
+      "ambient": [
+        "An apple drops into the water.",
+        "The hound breathes somewhere close."
+      ]
+    },
+    "74": {
+      "name": "The Peat Cut",
+      "text": "A black cut through the peat, straight as a road. The walls are wet and smell of iron. The reed walk is west, the orchard south, and the causeway north.",
+      "safe": false,
+      "exits": {
+        "west": 72,
+        "south": 73,
+        "north": 76
+      },
+      "details": {
+        "peat": "The peat is layered like old paper.",
+        "walls": "Water seeps from the cut walls.",
+        "air": "The air is colder here."
+      },
+      "ambient": [
+        "Water drips into the cut.",
+        "The peat shifts underfoot."
+      ]
+    },
+    "75": {
+      "name": "The Heron Pool",
+      "text": "A round pool of still water with a heron standing at its edge. The bird does not move. The reed walk is south, and a sunken causeway runs east.",
+      "safe": true,
+      "exits": {
+        "south": 72,
+        "east": 76
+      },
+      "details": {
+        "heron": "The heron is grey and very patient.",
+        "pool": "The pool holds no reflection of the sky.",
+        "reeds": "A ring of reeds circles the water."
+      },
+      "ambient": [
+        "The heron tilts its head.",
+        "The pool is perfectly still."
+      ]
+    },
+    "76": {
+      "name": "The Sunken Causeway",
+      "text": "A stone causeway sinks into the fen, its blocks tilted and green. The heron pool is west, the peat cut south, and a field of lights waits north.",
+      "safe": false,
+      "exits": {
+        "west": 75,
+        "south": 74,
+        "north": 77
+      },
+      "details": {
+        "stones": "The stones are carved with worn knots.",
+        "water": "The water covers the causeway to the ankle.",
+        "lights": "Small lights drift over the reeds ahead."
+      },
+      "ambient": [
+        "The water is warm around your feet.",
+        "A light blinks out."
+      ]
+    },
+    "77": {
+      "name": "The Wisp Field",
+      "text": "A field of reeds and floating lights. The lights drift without wind, and one comes close enough to see. The causeway is south, and the old beacon rises east.",
+      "safe": false,
+      "exits": {
+        "south": 76,
+        "east": 78
+      },
+      "details": {
+        "lights": "Each light is a small, cold flame.",
+        "reeds": "The reeds are bent in a circle.",
+        "wisp": "A fen wisp watches from the stems."
+      },
+      "ambient": [
+        "A light circles your hand.",
+        "The reeds lean away from the lights."
+      ]
+    },
+    "78": {
+      "name": "The Old Beacon",
+      "text": "A stone beacon tower, cracked and leaning. A green key hangs from a hook inside the door. The wisp field is west, and the fen vault waits north.",
+      "safe": false,
+      "exits": {
+        "west": 77,
+        "north": 79
+      },
+      "details": {
+        "beacon": "The beacon's firebox is cold and full of rainwater.",
+        "key": "A green iron key hangs on a hook.",
+        "door": "The door is warped but open."
+      },
+      "ambient": [
+        "The tower creaks.",
+        "Rainwater drips inside the beacon."
+      ]
+    },
+    "79": {
+      "name": "The Fen Vault",
+      "text": "A low vault of green stone, half-sunk in the fen. An iron chest waits against the far wall. The old beacon is south, and the green heart waits east.",
+      "safe": false,
+      "exits": {
+        "south": 78,
+        "east": 80
+      },
+      "details": {
+        "chest": "The chest is bound with a green iron band.",
+        "walls": "The walls are cold and wet.",
+        "floor": "The floor is a single slab of green stone."
+      },
+      "ambient": [
+        "The chest ticks as it cools.",
+        "Water seeps under the door."
+      ]
+    },
+    "80": {
+      "name": "The Green Heart",
+      "text": "A round chamber around a living root, green and warm. The root pulses slowly, and the air smells of rain. The fen vault is west, and the root fills the room.",
+      "safe": false,
+      "exits": {
+        "west": 79
+      },
+      "details": {
+        "root": "The root is warm and moves with a slow heartbeat.",
+        "floor": "The floor is soft with moss.",
+        "air": "The air is full of tiny flying seeds."
+      },
+      "ambient": [
+        "The root pulses.",
+        "A seed drifts past your face."
+      ]
+    },
+    "81": {
+      "name": "The Salt Stair",
+      "text": "A stair of wet stone descends through the cliff. Salt crusts the walls and the air tastes of iron. The lighthouse is up; a brine hall opens east.",
+      "safe": false,
+      "exits": {
+        "up": 32,
+        "east": 82
+      },
+      "details": {
+        "stair": "The steps are worn smooth by water.",
+        "salt": "White salt crusts every ledge.",
+        "air": "The air is cold and mineral."
+      },
+      "ambient": [
+        "Water runs down the stair.",
+        "The salt glitters in the dark."
+      ]
+    },
+    "82": {
+      "name": "The Brine Hall",
+      "text": "A wide hall of wet black rock. Shallow brine covers the floor, and a crab the size of a dog picks through it. The stair is west; a tide shrine waits north, and a kelp vault opens east.",
+      "safe": false,
+      "exits": {
+        "west": 81,
+        "north": 83,
+        "east": 84
+      },
+      "details": {
+        "floor": "The brine is ankle deep and warm.",
+        "crab": "The crab's shell is crusted with salt.",
+        "walls": "The walls are furred with kelp."
+      },
+      "ambient": [
+        "Brine slaps the rock.",
+        "Something clicks under the water."
+      ]
+    },
+    "83": {
+      "name": "The Tide Shrine",
+      "text": "A shrine of green stone half-drowned in brine. A hermit sits on the altar, and a brine key hangs from a chain. The hall is south; the salt heart waits east.",
+      "safe": false,
+      "exits": {
+        "south": 82,
+        "east": 85
+      },
+      "details": {
+        "altar": "The altar is carved with a wave.",
+        "hermit": "The hermit is wrapped in oilskin.",
+        "key": "A key of green salt hangs from a chain."
+      },
+      "ambient": [
+        "The brine rises and falls.",
+        "The hermit hums."
+      ]
+    },
+    "84": {
+      "name": "The Kelp Vault",
+      "text": "A vault of kelp and black rock. A chest of salt-crusted iron waits against the wall. The hall is west, and the salt heart is north.",
+      "safe": false,
+      "exits": {
+        "west": 82,
+        "north": 85
+      },
+      "details": {
+        "chest": "The chest is bound with a band of salt.",
+        "kelp": "The kelp moves without water.",
+        "floor": "The floor is a single wet slab."
+      },
+      "ambient": [
+        "Kelp drips in the dark.",
+        "The chest ticks."
+      ]
+    },
+    "85": {
+      "name": "The Salt Heart",
+      "text": "A round cave around a pillar of white salt. The pillar glows faintly and the air is dry. The shrine is west, and the kelp vault is south.",
+      "safe": false,
+      "exits": {
+        "west": 83,
+        "south": 84
+      },
+      "details": {
+        "pillar": "The salt pillar is warm and faintly luminous.",
+        "floor": "The floor is dry and cracked.",
+        "air": "The air is still and sharp."
+      },
+      "ambient": [
+        "The pillar pulses.",
+        "Salt dust hangs in the air."
+      ]
+    },
+    "86": {
+      "name": "The Moonlit Gate",
+      "text": "A gate of white stone opens where the deep forest thins. The trees lean away from it, and the air is cool and bright. The forest is west; a silver glade lies north, and an owl grove waits east.",
+      "safe": false,
+      "exits": {
+        "west": 18,
+        "north": 87,
+        "east": 88
+      },
+      "details": {
+        "gate": "The gate is carved with a crescent.",
+        "trees": "The trees are pale and leafless.",
+        "air": "The air smells of cold water."
+      },
+      "ambient": [
+        "A pale light moves in the trees.",
+        "An owl calls."
+      ]
+    },
+    "87": {
+      "name": "The Silver Glade",
+      "text": "A glade of silver grass under a sky of deep blue. A moon hare sits at the edge, ears high. The gate is south; the moonwell lies east.",
+      "safe": false,
+      "exits": {
+        "south": 86,
+        "east": 89
+      },
+      "details": {
+        "grass": "The grass is silver at the tip and green at the root.",
+        "hare": "The hare is white with eyes like glass.",
+        "sky": "The stars are out in daylight."
+      },
+      "ambient": [
+        "The grass shivers.",
+        "The hare watches you."
+      ]
+    },
+    "88": {
+      "name": "The Owl Grove",
+      "text": "A grove of white-barked trees. A silver owl sits on a low branch, and a key of pale bone hangs beneath it. The gate is west; the moonwell is north.",
+      "safe": true,
+      "exits": {
+        "west": 86,
+        "north": 89
+      },
+      "details": {
+        "owl": "The owl is silver and very still.",
+        "key": "A moon key hangs from a cord.",
+        "trees": "The bark is cold and smooth."
+      },
+      "ambient": [
+        "The owl blinks.",
+        "A feather turns on the branch."
+      ]
+    },
+    "89": {
+      "name": "The Moonwell",
+      "text": "A round well of white stone under an open sky. The water is perfectly still, and a chest of pale wood sits beside it. The glade is west; the owl grove is south, and a hunter's camp waits east.",
+      "safe": false,
+      "exits": {
+        "west": 87,
+        "south": 88,
+        "east": 90
+      },
+      "details": {
+        "well": "The water reflects a moon that is not in the sky.",
+        "chest": "The chest is bound with a cord of silver.",
+        "sky": "The sky is very dark for day."
+      },
+      "ambient": [
+        "The well is silent.",
+        "The chest ticks."
+      ]
+    },
+    "90": {
+      "name": "The Hunter's Camp",
+      "text": "A camp of grey tents around a cold fire. A trail climbs north toward a pale throne. The moonwell is west.",
+      "safe": false,
+      "exits": {
+        "west": 89,
+        "north": 91
+      },
+      "details": {
+        "tents": "The tents are empty and neatly tied.",
+        "fire": "The fire is cold ash.",
+        "trail": "The trail is marked with white stones."
+      },
+      "ambient": [
+        "Canvas moves in the wind.",
+        "A bird calls from the throne."
+      ]
+    },
+    "91": {
+      "name": "The Moon Throne",
+      "text": "A throne of pale stone under a crescent moon that hangs in the branches. A moon stag stands before it, antlers bright. The camp is south, and a stair of black glass climbs behind the throne.",
+      "safe": false,
+      "exits": {
+        "south": 90,
+        "up": 92
+      },
+      "details": {
+        "throne": "The throne is empty and cold.",
+        "moon": "The crescent is a hole in the sky.",
+        "stag": "The stag's antlers shine like glass."
+      },
+      "ambient": [
+        "The moon does not move.",
+        "The stag lowers its head."
+      ]
+    },
+    "92": {
+      "name": "The Eclipse Stair",
+      "text": "A stair of black glass climbs out of the moon's shadow into warm, still air. A herald in a cloak of white ash waits at the top. The throne is below; a starless hall opens north.",
+      "safe": true,
+      "exits": {
+        "down": 91,
+        "north": 93
+      },
+      "details": {
+        "stair": "The glass is warm and does not reflect you.",
+        "herald": "The herald's cloak is white ash that never falls.",
+        "moon": "The crescent hangs below the stair, small and cold."
+      },
+      "ambient": [
+        "The stair hums underfoot.",
+        "The herald turns a page that is not there."
+      ]
+    },
+    "93": {
+      "name": "The Starless Hall",
+      "text": "A hall without windows. The ceiling is a field of fixed stars, and a star hound circles beneath them. The stair is south; the sundial court lies east, and the mirror vault west.",
+      "safe": false,
+      "exits": {
+        "south": 92,
+        "east": 94,
+        "west": 95
+      },
+      "details": {
+        "stars": "The stars do not move.",
+        "hound": "The hound's eyes are two points of white.",
+        "floor": "The floor is black and smooth as water."
+      },
+      "ambient": [
+        "A star goes out and returns.",
+        "The hound's claws click on the black floor."
+      ]
+    },
+    "94": {
+      "name": "The Sundial Court",
+      "text": "A court of white sand around a sundial whose shadow points nowhere. A knight in eclipse armour stands beside it, a pale key at his feet. The hall is west; the throne lies north.",
+      "safe": false,
+      "exits": {
+        "west": 93,
+        "north": 96
+      },
+      "details": {
+        "sundial": "The dial has no numbers, only a hand that never moves.",
+        "knight": "The knight's armour is the colour of a closed eye.",
+        "key": "A key of pale iron lies in the sand."
+      },
+      "ambient": [
+        "The sand shifts without wind.",
+        "The knight does not breathe."
+      ]
+    },
+    "95": {
+      "name": "The Mirror Vault",
+      "text": "A vault lined with mirrors that show the room empty. A chest of black wood sits on a stone plinth. The hall is east.",
+      "safe": false,
+      "exits": {
+        "east": 93
+      },
+      "details": {
+        "mirrors": "In every mirror the vault is empty, and you are not in it.",
+        "chest": "The chest is bound with a band of eclipse iron.",
+        "plinth": "The plinth is worn smooth by hands that are not there."
+      },
+      "ambient": [
+        "A mirror fogs and clears.",
+        "Something moves behind the glass."
+      ]
+    },
+    "96": {
+      "name": "The Throne of Ash",
+      "text": "A throne of grey ash under a ceiling of smoke. The eclipse regent sits with a sigil in its hand, and a stair of dawnlight rises behind the throne. The court is south.",
+      "safe": false,
+      "exits": {
+        "south": 94,
+        "up": 97
+      },
+      "details": {
+        "throne": "The ash holds the shape of a seat.",
+        "regent": "The regent wears a crown of burnt glass.",
+        "stair": "The stair is made of light that falls upward."
+      },
+      "ambient": [
+        "Ash drifts from the ceiling.",
+        "The regent's crown ticks as it cools."
+      ]
+    },
+    "97": {
+      "name": "The Dawn Gate",
+      "text": "A gate of white light at the top of the stair. Beyond it the Moonlit Gate is visible, small and far below. The throne is down.",
+      "safe": true,
+      "exits": {
+        "down": 96
+      },
+      "details": {
+        "gate": "The gate is a standing dawn.",
+        "light": "The light is warm and does not hurt your eyes.",
+        "view": "The Moonlit Gate waits at the bottom of the sky."
+      },
+      "ambient": [
+        "The gate brightens and dims.",
+        "A bird calls from the world below."
+      ]
+    },
+    "98": {
+      "name": "The Memory Garden",
+      "text": "A walled garden of white roses behind the shrine. A stone bench waits under a bare tree, and a path of glass roses runs east. The shrine is west.",
+      "safe": true,
+      "exits": {
+        "west": 6,
+        "east": 99,
+        "north": 100
+      },
+      "details": {
+        "roses": "The roses are white with a dark heart.",
+        "bench": "The bench is worn smooth by waiting.",
+        "path": "The glass roses catch a light that is not there."
+      },
+      "ambient": [
+        "A rose opens without sound.",
+        "The garden is very still."
+      ],
+      "secretExits": {
+        "down": 101
+      }
+    },
+    "99": {
+      "name": "The Rose Walk",
+      "text": "A path of glass roses between low hedges. A single white rose grows at the end, and a pale wisp drifts above it. The garden is west.",
+      "safe": true,
+      "exits": {
+        "west": 98
+      },
+      "details": {
+        "roses": "Each glass rose holds a different reflection.",
+        "wisp": "The wisp is a small, patient light.",
+        "white-rose": "The white rose is real, and very cold."
+      },
+      "ambient": [
+        "The wisp circles once.",
+        "Glass petals click together."
+      ]
+    },
+    "100": {
+      "name": "The Rememberer's Bench",
+      "text": "A stone bench under a bare tree at the garden's north end. An old rememberer sits with a closed book, and the garden waits around them. The garden is south.",
+      "safe": true,
+      "exits": {
+        "south": 98
+      },
+      "details": {
+        "bench": "The bench has room for two.",
+        "book": "The book is closed and warm.",
+        "tree": "The tree has no leaves, but its roots are green."
+      },
+      "ambient": [
+        "The rememberer turns a page that is not there.",
+        "The tree creaks once."
+      ]
+    },
+    "101": {
+      "name": "The Remembered Bed",
+      "text": "A low room of roots and white soil beneath the garden. A single bloom grows from a bed of remembered things, and a stair of roots climbs back to the garden.",
+      "safe": true,
+      "exits": {
+        "up": 98,
+        "down": 102
+      },
+      "details": {
+        "roots": "The roots are pale and warm.",
+        "bloom": "The bloom is white with a dark heart.",
+        "soil": "The soil holds small, unbroken reflections."
+      },
+      "ambient": [
+        "A root shifts.",
+        "The bloom turns toward you."
+      ]
+    },
+    "102": {
+      "name": "The Root Archive",
+      "text": "A long room under the remembered bed, walled with roots and tablets of pressed earth. A root keeper sits at a low desk, and a passage runs east. The bed is above.",
+      "safe": true,
+      "exits": {
+        "up": 101,
+        "east": 103,
+        "south": 104
+      },
+      "details": {
+        "roots": "The roots are pale and warm.",
+        "tablets": "Each tablet holds a name and a season.",
+        "desk": "The desk is grown, not built."
+      },
+      "ambient": [
+        "A root turns like a page.",
+        "The keeper writes without ink."
+      ]
+    },
+    "103": {
+      "name": "The First Bed",
+      "text": "A small chamber around a bed of black soil. A single seed rests in the soil, and the root archive is west.",
+      "safe": true,
+      "exits": {
+        "west": 102
+      },
+      "details": {
+        "soil": "The soil is black and warm.",
+        "seed": "The seed is white with a green seam.",
+        "bed": "The bed is the oldest thing in the garden."
+      },
+      "ambient": [
+        "The soil breathes.",
+        "The seed turns toward the light."
+      ]
+    },
+    "104": {
+      "name": "The Root Road",
+      "text": "A low road of packed roots beneath the garden, wide enough for two. The Root Archive is north, and a gate of pale wood waits east.",
+      "safe": true,
+      "exits": {
+        "north": 102,
+        "east": 105,
+        "down": 106
+      },
+      "details": {
+        "roots": "The roots are woven into a road.",
+        "road": "The road is warm and slightly springy.",
+        "gate": "The gate is pale wood bound with root."
+      },
+      "ambient": [
+        "The road creaks underfoot.",
+        "A root taps against the gate."
+      ]
+    },
+    "105": {
+      "name": "The Root Gate",
+      "text": "A round gate of pale wood at the end of the root road. A stair of roots climbs to Market Square above. The road is west.",
+      "safe": true,
+      "exits": {
+        "west": 104,
+        "up": 8
+      },
+      "details": {
+        "gate": "The gate opens at a touch.",
+        "stair": "The stair is made of roots and daylight.",
+        "market": "Boots pass over the grate above."
+      },
+      "ambient": [
+        "The gate breathes.",
+        "A market voice leaks through the roots."
+      ]
+    },
+    "106": {
+      "name": "The Sunken Orchard",
+      "text": "A cavern orchard of pale trees rooted in black soil. The root road is above, a windfall lies east, and an old press waits north.",
+      "safe": true,
+      "exits": {
+        "up": 104,
+        "east": 107,
+        "north": 108
+      },
+      "details": {
+        "trees": "The trees are pale and heavy with grey fruit.",
+        "soil": "The soil is black and warm.",
+        "road": "The root road climbs behind you."
+      },
+      "ambient": [
+        "A grey fruit falls without sound.",
+        "The trees lean toward the press."
+      ]
+    },
+    "107": {
+      "name": "The Windfall",
+      "text": "A shallow hollow under the orchard trees, carpeted with fallen grey fruit. A single seed of pale wood rests on the soil. The orchard is west.",
+      "safe": true,
+      "exits": {
+        "west": 106
+      },
+      "details": {
+        "fruit": "The fruit is grey and cold.",
+        "seed": "The seed is pale wood with a green seam.",
+        "soil": "The soil is soft and deep."
+      },
+      "ambient": [
+        "Something turns under the leaves.",
+        "The seed is warm."
+      ]
+    },
+    "108": {
+      "name": "The Old Press",
+      "text": "A stone press grown over with roots at the orchard's north end. The orchard keeper stands beside it, and the orchard is south.",
+      "safe": true,
+      "exits": {
+        "south": 106,
+        "down": 109
+      },
+      "details": {
+        "press": "The press is cold and dry.",
+        "keeper": "The keeper's hands are stained black.",
+        "roots": "The roots hold the press together."
+      },
+      "ambient": [
+        "The press creaks once.",
+        "The keeper listens to the trees."
+      ]
+    },
+    "109": {
+      "name": "The Press Cellar",
+      "text": "A low cellar beneath the old press, walled with roots and damp stone. The press is above, a vat room waits east, and a seed vault lies north.",
+      "safe": true,
+      "exits": {
+        "up": 108,
+        "east": 110,
+        "north": 111
+      },
+      "details": {
+        "roots": "The roots come through the ceiling.",
+        "stone": "The stone is cold and wet.",
+        "press": "The press creaks above."
+      },
+      "ambient": [
+        "A drop falls.",
+        "The vat room hums."
+      ]
+    },
+    "110": {
+      "name": "The Fermenting Vat",
+      "text": "A round room around a vat of black cider. A vat hound circles the rim, and the cellar is west.",
+      "safe": false,
+      "exits": {
+        "west": 109
+      },
+      "details": {
+        "vat": "The vat is full of slow black cider.",
+        "hound": "The hound's coat is wet and dark.",
+        "rim": "The rim is worn smooth."
+      },
+      "ambient": [
+        "The vat bubbles.",
+        "The hound's claws click."
+      ]
+    },
+    "111": {
+      "name": "The Seed Vault",
+      "text": "A dry vault of seed drawers under the cellar. A press seed rests on a stone shelf, and the cellar is south.",
+      "safe": true,
+      "exits": {
+        "south": 109,
+        "north": 112
+      },
+      "details": {
+        "drawers": "Every drawer is labeled with a season.",
+        "seed": "The press seed is dark and heavy.",
+        "shelf": "The shelf is warm."
+      },
+      "ambient": [
+        "A drawer clicks open.",
+        "The seed smells of cider."
+      ]
+    },
+    "112": {
+      "name": "The Cider Spring",
+      "text": "A spring of clear cider rises in a stone bowl under the seed vault. The water runs east through a channel, and the vault is south.",
+      "safe": true,
+      "exits": {
+        "south": 111,
+        "east": 113
+      },
+      "details": {
+        "spring": "The spring is cold and sweet.",
+        "bowl": "The bowl is carved with apple leaves.",
+        "channel": "The channel runs toward the white bed."
+      },
+      "ambient": [
+        "The spring ticks.",
+        "The cider smells of autumn."
+      ]
+    },
+    "113": {
+      "name": "The White Bed",
+      "text": "A shallow bed of white gravel under the spring channel. A single pale bloom grows at the water's edge, and the spring is west.",
+      "safe": true,
+      "exits": {
+        "west": 112,
+        "north": 114
+      },
+      "details": {
+        "gravel": "The gravel is white and warm.",
+        "bloom": "The bloom is pale and open.",
+        "water": "The water is very clear."
+      },
+      "ambient": [
+        "The bloom turns.",
+        "Water moves under the gravel."
+      ]
+    },
+    "114": {
+      "name": "The Spring Keeper's Rest",
+      "text": "A dry alcove above the white bed, with a low seat and a shelf of empty cups. The spring keeper waits here. The bed is south.",
+      "safe": true,
+      "exits": {
+        "south": 113
+      },
+      "details": {
+        "seat": "The seat is worn smooth.",
+        "cups": "Every cup is empty.",
+        "shelf": "The shelf smells of cider."
+      },
+      "ambient": [
+        "A cup rings softly.",
+        "The keeper listens to the spring."
+      ]
+    },
+    "115": {
+      "name": "The Wardens' Lodge",
+      "text": "A low room of dark timber and hanging maps. A long table is pinned with routes through the fen, the salt caves and the moonlit reach; a rack of weathered staves stands by the door. Stairs lead down to the Guild Hall.",
+      "safe": true,
+      "exits": {
+        "down": 24
+      },
+      "details": {
+        "maps": "The maps are marked in four hands. The newest route ends at a blank space beyond the Moonwell.",
+        "staves": "The staves are plain, but each has a different notch cut near the grip.",
+        "table": "A ledger of patrols lies open. Most of the pages are empty."
+      },
+      "ambient": [
+        "A draught moves the map corners.",
+        "Someone has left a cup of cold tea on the table."
+      ]
+    },
+    "116": {
+      "name": "The Training Yard",
+      "text": "A flagged yard behind the Guild Hall. A straw dummy stands against the wall, a rack of practice gear waits under a lean-to, and the trainer watches from a stool. The Guild Hall is west.",
+      "safe": false,
+      "exits": {
+        "west": 24
+      },
+      "details": {
+        "dummy": "The dummy is patched and re-stuffed. It has taken ten thousand blows and never once complained.",
+        "rack": "Practice swords and shields, blunt and light. Take what you need; the yard expects it back eventually.",
+        "trainer": "The trainer has a wooden leg and a patient expression. Ask about technique, stance or the Ring."
+      },
+      "ambient": [
+        "Straw dust drifts from the dummy.",
+        "The trainer taps a stick against the flagstones."
+      ]
     }
   },
   "task": {
@@ -1311,7 +2154,7 @@
       "name": "a rat",
       "room": 2,
       "home": 2,
-      "period": 40,
+      "period": 32,
       "jitter": 6,
       "behaviour": "wander",
       "hp": 3,
@@ -1327,7 +2170,7 @@
       "name": "a moth",
       "room": 5,
       "home": 5,
-      "period": 60,
+      "period": 48,
       "jitter": 10,
       "behaviour": "wander",
       "hp": 2,
@@ -1516,7 +2359,7 @@
       "name": "a wild boar",
       "room": 15,
       "home": 15,
-      "period": 40,
+      "period": 32,
       "jitter": 5,
       "behaviour": "wander",
       "hp": 12,
@@ -1536,7 +2379,7 @@
       "name": "a grey wolf",
       "room": 18,
       "home": 18,
-      "period": 45,
+      "period": 36,
       "jitter": 4,
       "behaviour": "wander",
       "hp": 16,
@@ -1573,7 +2416,7 @@
       "name": "a sewer rat",
       "room": 26,
       "home": 26,
-      "period": 30,
+      "period": 24,
       "jitter": 6,
       "behaviour": "wander",
       "zone": "undercroft",
@@ -1784,14 +2627,17 @@
       "aggression": 60,
       "xp": 35,
       "loot": [
-        "mirror-shard"
+        "mirror-shard",
+        "mirror-shield"
       ],
       "description": "A tall shape in the pool, made of reflected light and old anger.",
       "examine": "It has your face, and it is not your face.",
       "dialogue": [
         "You should not have looked.",
         "The pool keeps what it is given."
-      ]
+      ],
+      "faction": "ashen",
+      "standing": 1
     },
     {
       "id": "warden",
@@ -1808,7 +2654,8 @@
       "aggression": 70,
       "xp": 70,
       "loot": [
-        "ward-key"
+        "ward-key",
+        "warden-shield"
       ],
       "description": "A hulking shape of wet stone and iron, with a key at its belt.",
       "examine": "The warden was made to keep a door. It has forgotten which.",
@@ -1884,7 +2731,9 @@
       "dialogue": [
         "The choir does not sing.",
         "The lantern is the last one."
-      ]
+      ],
+      "faction": "ashen",
+      "standing": 2
     },
     {
       "id": "reliquary-keeper",
@@ -1959,7 +2808,7 @@
       "name": "a cinder hound",
       "room": 65,
       "home": 65,
-      "period": 30,
+      "period": 24,
       "jitter": 5,
       "behaviour": "wander",
       "zone": "ember",
@@ -1969,10 +2818,14 @@
       "aggression": 65,
       "xp": 26,
       "loot": [
-        "cinder-fang"
+        "cinder-fang",
+        "ember-boots"
       ],
       "description": "A lean hound the colour of cooling slag.",
-      "examine": "Its hide is cracked like a dried riverbed, and heat shows through the cracks."
+      "examine": "Its hide is cracked like a dried riverbed, and heat shows through the cracks.",
+      "status": "burn",
+      "faction": "ember",
+      "standing": 1
     },
     {
       "id": "ember-warden",
@@ -1989,10 +2842,559 @@
       "aggression": 100,
       "xp": 140,
       "loot": [
-        "ember-ore"
+        "ember-ore",
+        "ember-gauntlets"
       ],
       "description": "A tall figure of black iron stands at the edge of the flame.",
-      "examine": "The warden is jointed like a furnace door, and its eyes are coals."
+      "examine": "The warden is jointed like a furnace door, and its eyes are coals.",
+      "faction": "ember",
+      "standing": 2
+    },
+    {
+      "id": "fen-wisp",
+      "name": "a fen wisp",
+      "room": 77,
+      "home": 77,
+      "period": 24,
+      "jitter": 5,
+      "behaviour": "wander",
+      "zone": "fen",
+      "hp": 18,
+      "damage": 3,
+      "armor": 0,
+      "aggression": 40,
+      "xp": 30,
+      "loot": [
+        "wisp-glass",
+        "fen-hood"
+      ],
+      "description": "A cold light drifts above the reeds.",
+      "examine": "The wisp is a small flame with no fuel and no heat.",
+      "faction": "fen",
+      "standing": 1
+    },
+    {
+      "id": "bog-hound",
+      "name": "a bog hound",
+      "room": 73,
+      "home": 73,
+      "period": 24,
+      "jitter": 4,
+      "behaviour": "wander",
+      "zone": "fen",
+      "hp": 16,
+      "damage": 4,
+      "armor": 1,
+      "aggression": 55,
+      "xp": 26,
+      "loot": [
+        "bog-fang",
+        "fen-mantle"
+      ],
+      "description": "A lean hound the colour of wet peat.",
+      "examine": "Its fur is matted with mud and its eyes are yellow.",
+      "status": "bleed",
+      "faction": "fen",
+      "standing": 1
+    },
+    {
+      "id": "heron-keeper",
+      "name": "the heron keeper",
+      "room": 80,
+      "home": 80,
+      "period": 240,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "zone": "fen",
+      "hp": 40,
+      "damage": 0,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 0,
+      "description": "A tall figure in a cloak of grey feathers stands beside the root.",
+      "examine": "The keeper's hands are stained green.",
+      "dialogue": [
+        "The fen remembers every footstep.",
+        "The green key opens the vault.",
+        "The heart is older than the mill."
+      ]
+    },
+    {
+      "id": "brine-crab",
+      "name": "a brine crab",
+      "room": 82,
+      "home": 82,
+      "period": 26,
+      "jitter": 4,
+      "behaviour": "wander",
+      "zone": "salt",
+      "hp": 16,
+      "damage": 3,
+      "armor": 2,
+      "aggression": 45,
+      "xp": 24,
+      "loot": [
+        "salt-pearl",
+        "salt-hauberk"
+      ],
+      "description": "A crab the size of a dog, shell crusted with salt.",
+      "examine": "Its claws are stained green.",
+      "faction": "salt",
+      "standing": 1
+    },
+    {
+      "id": "tide-hermit",
+      "name": "the tide hermit",
+      "room": 83,
+      "home": 83,
+      "period": 240,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "zone": "salt",
+      "hp": 30,
+      "damage": 0,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 0,
+      "description": "A figure in oilskin sits on the drowned altar.",
+      "examine": "The hermit's hands are webbed with old scars.",
+      "dialogue": [
+        "The tide keeps what it takes.",
+        "The brine key opens the vault.",
+        "The salt heart is older than the lighthouse."
+      ]
+    },
+    {
+      "id": "salt-wraith",
+      "name": "a salt wraith",
+      "room": 85,
+      "home": 85,
+      "period": 120,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "zone": "salt",
+      "hp": 24,
+      "damage": 5,
+      "armor": 1,
+      "aggression": 70,
+      "xp": 45,
+      "loot": [
+        "salt-shard",
+        "salt-bracers"
+      ],
+      "description": "A tall shape of white salt and cold air.",
+      "examine": "The wraith has no face, only a seam of black.",
+      "status": "chill",
+      "faction": "salt",
+      "standing": 2
+    },
+    {
+      "id": "moon-hare",
+      "name": "a moon hare",
+      "room": 87,
+      "home": 87,
+      "period": 28,
+      "jitter": 4,
+      "behaviour": "wander",
+      "zone": "moon",
+      "hp": 10,
+      "damage": 1,
+      "armor": 0,
+      "aggression": 20,
+      "xp": 12,
+      "loot": [
+        "moonpetal",
+        "moon-circlet"
+      ],
+      "description": "A white hare with eyes like glass.",
+      "examine": "Its fur is silver at the tips.",
+      "faction": "moon",
+      "standing": 1
+    },
+    {
+      "id": "silver-owl",
+      "name": "the silver owl",
+      "room": 88,
+      "home": 88,
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "zone": "moon",
+      "hp": 20,
+      "damage": 0,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 0,
+      "description": "A silver owl sits on a low branch.",
+      "examine": "The owl's eyes are two small moons.",
+      "dialogue": [
+        "The moonwell keeps what is reflected.",
+        "The bone key opens the chest.",
+        "The stag guards the throne."
+      ]
+    },
+    {
+      "id": "moon-stag",
+      "name": "the moon stag",
+      "room": 91,
+      "home": 91,
+      "period": 120,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "zone": "moon",
+      "hp": 35,
+      "damage": 5,
+      "armor": 2,
+      "aggression": 80,
+      "xp": 90,
+      "loot": [
+        "moon-antler",
+        "moon-greaves",
+        "moon-disc"
+      ],
+      "status": "chill",
+      "description": "A tall stag with antlers of clear glass.",
+      "examine": "Its antlers hold a light that is not there.",
+      "faction": "moon",
+      "standing": 2
+    },
+    {
+      "id": "eclipse-herald",
+      "name": "the eclipse herald",
+      "room": 92,
+      "home": 92,
+      "period": 200,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "zone": "eclipse",
+      "hp": 30,
+      "damage": 0,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 0,
+      "description": "A herald in a cloak of white ash waits at the top of the stair.",
+      "examine": "The herald's face is hidden, but the cloak is very old.",
+      "dialogue": [
+        "The stair opens only after the stag falls.",
+        "The knight keeps the key. The regent keeps the sigil.",
+        "The dawn gate is the way back. It was always the way back."
+      ]
+    },
+    {
+      "id": "star-hound",
+      "name": "a star hound",
+      "room": 93,
+      "home": 93,
+      "period": 30,
+      "jitter": 2,
+      "behaviour": "sentinel",
+      "zone": "eclipse",
+      "hp": 28,
+      "damage": 5,
+      "armor": 1,
+      "aggression": 75,
+      "xp": 110,
+      "status": "bleed",
+      "description": "A lean hound with a coat of fixed stars.",
+      "examine": "Its eyes are two points of white, and its teeth are very long.",
+      "faction": "red",
+      "standing": 1
+    },
+    {
+      "id": "sundial-knight",
+      "name": "the sundial knight",
+      "room": 94,
+      "home": 94,
+      "period": 90,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "zone": "eclipse",
+      "hp": 42,
+      "damage": 6,
+      "armor": 3,
+      "aggression": 90,
+      "xp": 200,
+      "status": "chill",
+      "description": "A knight in armour the colour of a closed eye.",
+      "examine": "The knight's visor is a slit of darkness. It does not move until you do.",
+      "loot": [
+        "eclipse-plate"
+      ],
+      "faction": "red",
+      "standing": 2
+    },
+    {
+      "id": "eclipse-regent",
+      "name": "the eclipse regent",
+      "room": 96,
+      "home": 96,
+      "period": 120,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "zone": "eclipse",
+      "hp": 64,
+      "damage": 6,
+      "armor": 4,
+      "aggression": 100,
+      "xp": 500,
+      "status": "burn",
+      "loot": [
+        "regent-sigil"
+      ],
+      "description": "A tall figure in a crown of burnt glass sits on the throne of ash.",
+      "examine": "The regent's hand is closed around a sigil. The crown ticks as it cools.",
+      "faction": "red",
+      "standing": 3
+    },
+    {
+      "id": "rememberer",
+      "name": "the rememberer",
+      "room": 100,
+      "home": 100,
+      "period": 240,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "zone": "garden",
+      "hp": 30,
+      "damage": 0,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 0,
+      "description": "An old figure sits on the bench with a closed book.",
+      "examine": "The rememberer's hands are stained with ink and soil.",
+      "dialogue": [
+        "The garden keeps what the shrine forgets.",
+        "Bring me a word you learned and I will plant it.",
+        "A word is only remembered when someone else can hear it."
+      ]
+    },
+    {
+      "id": "garden-wisp",
+      "name": "a garden wisp",
+      "room": 99,
+      "home": 99,
+      "period": 180,
+      "jitter": 10,
+      "behaviour": "sentinel",
+      "zone": "garden",
+      "hp": 8,
+      "damage": 0,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 0,
+      "description": "A small light drifts above the white rose.",
+      "examine": "The wisp is warm and does not speak."
+    },
+    {
+      "id": "root-keeper",
+      "name": "the root keeper",
+      "room": 102,
+      "home": 102,
+      "period": 240,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "zone": "garden",
+      "hp": 30,
+      "damage": 0,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 0,
+      "description": "A small figure sits at a desk grown from roots.",
+      "examine": "The keeper's hands are stained with black soil.",
+      "dialogue": [
+        "Every bed remembers who planted it.",
+        "The first seed is not for eating.",
+        "The archive keeps the names the garden cannot."
+      ]
+    },
+    {
+      "id": "orchard-keeper",
+      "name": "the orchard keeper",
+      "room": 108,
+      "home": 108,
+      "period": 240,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "zone": "garden",
+      "hp": 30,
+      "damage": 0,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 0,
+      "description": "A small figure stands beside the old press.",
+      "examine": "The keeper's hands are stained with black soil.",
+      "dialogue": [
+        "The orchard remembers the word ORCHARD.",
+        "The windfall keeps one seed for the press.",
+        "The town remembers what the roots carry."
+      ]
+    },
+    {
+      "id": "vat-hound",
+      "name": "a vat hound",
+      "room": 110,
+      "home": 110,
+      "period": 40,
+      "jitter": 4,
+      "behaviour": "sentinel",
+      "zone": "garden",
+      "hp": 18,
+      "damage": 2,
+      "armor": 1,
+      "aggression": 60,
+      "xp": 120,
+      "description": "A wet black hound circles the vat.",
+      "examine": "Its coat smells of cider and iron."
+    },
+    {
+      "id": "spring-keeper",
+      "name": "the spring keeper",
+      "room": 114,
+      "home": 114,
+      "period": 240,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "zone": "garden",
+      "hp": 30,
+      "damage": 0,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 0,
+      "description": "A quiet figure sits above the white bed.",
+      "examine": "The keeper's hands are clean and cold.",
+      "dialogue": [
+        "The spring remembers the word SPRING.",
+        "The white bed keeps one bloom for the cups.",
+        "The orchard drinks from here."
+      ]
+    },
+    {
+      "id": "warden-captain",
+      "name": "the warden-captain",
+      "room": 115,
+      "home": 115,
+      "period": 180,
+      "jitter": 4,
+      "behaviour": "sentinel",
+      "zone": "town",
+      "hp": 34,
+      "damage": 0,
+      "armor": 2,
+      "aggression": 0,
+      "xp": 0,
+      "description": "The warden-captain is weathered and quiet, with a map case under one arm.",
+      "examine": "Mud to the knee, a broken compass at the belt, and a stare that keeps counting exits.",
+      "dialogue": [
+        "The Wardens do not sit in halls. We walk the edges and come back with the map.",
+        "Scout, ranger, warden. Rank is measured in ground covered, not in speeches.",
+        "The fen eats the careless. The salt caves eat the proud. The moonlit reach eats both."
+      ]
+    },
+    {
+      "id": "night-broker",
+      "name": "the night broker",
+      "room": 29,
+      "home": 29,
+      "period": 180,
+      "jitter": 4,
+      "behaviour": "sentinel",
+      "zone": "undercroft",
+      "hp": 26,
+      "damage": 0,
+      "armor": 1,
+      "aggression": 0,
+      "xp": 0,
+      "description": "The night broker keeps to the shadows behind the smuggler's table.",
+      "examine": "A narrow figure in a dark coat, with a ledger no honest merchant would keep.",
+      "dialogue": [
+        "The Night Market takes what the daylight will not.",
+        "A runner carries. A cutpurse keeps. A shadow decides. A master owns the dark.",
+        "Bring me a blade and I will tell you whose hand it was made for."
+      ]
+    },
+    {
+      "id": "ashen-priest",
+      "name": "the ashen priest",
+      "room": 58,
+      "home": 58,
+      "period": 180,
+      "jitter": 4,
+      "behaviour": "sentinel",
+      "zone": "undervault",
+      "hp": 30,
+      "damage": 0,
+      "armor": 1,
+      "aggression": 0,
+      "xp": 0,
+      "description": "A grey figure stands beside the reliquary, face hidden under a hood of ash-cloth.",
+      "examine": "The priest's sleeves are stained with soot and old wax. A cracked symbol hangs at the throat.",
+      "dialogue": [
+        "The Hand does not promise light. It promises an answer.",
+        "The choir sings because it has forgotten how to stop.",
+        "Drain the false flame. Keep what it took."
+      ]
+    },
+    {
+      "id": "red-captain",
+      "name": "the red captain",
+      "room": 71,
+      "home": 71,
+      "period": 180,
+      "jitter": 4,
+      "behaviour": "sentinel",
+      "zone": "fen",
+      "hp": 36,
+      "damage": 0,
+      "armor": 2,
+      "aggression": 0,
+      "xp": 0,
+      "description": "A broad figure in red-stained leathers waits at the fen gate, axe across her knees.",
+      "examine": "Scarred knuckles, a chipped axe, and a grin that expects a fight.",
+      "dialogue": [
+        "The Red Company takes the field, not the hall.",
+        "Rage is a tool. Use it before it uses you.",
+        "The eclipse court is full of things worth killing. Bring me proof."
+      ]
+    },
+    {
+      "id": "training-master",
+      "name": "the training master",
+      "room": 116,
+      "home": 116,
+      "period": 180,
+      "jitter": 4,
+      "behaviour": "sentinel",
+      "zone": "town",
+      "hp": 30,
+      "damage": 0,
+      "armor": 1,
+      "aggression": 0,
+      "xp": 0,
+      "description": "The training master sits on a stool with a stick across worn knees.",
+      "examine": "A weathered fighter with a wooden leg and a very direct stare.",
+      "dialogue": [
+        "Take a practice blade, wield it, and attack the dummy. It will not hit back.",
+        "A weapon technique is a stance, not a spell. technique lists what your kit can do.",
+        "When the dummy is easy, try the Ring beneath the Docks. That one hits back."
+      ]
+    },
+    {
+      "id": "training-dummy",
+      "name": "a training dummy",
+      "room": 116,
+      "home": 116,
+      "period": 600,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "zone": "town",
+      "hp": 999,
+      "damage": 0,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 0,
+      "description": "A straw dummy on a wooden post, patched and re-patched.",
+      "examine": "Straw, sacking and a great deal of practice.",
+      "dialogue": []
     }
   ],
   "zones": [
@@ -2020,7 +3422,9 @@
         12,
         13,
         14,
-        24
+        24,
+        115,
+        116
       ]
     },
     {
@@ -2119,6 +3523,80 @@
         69,
         70
       ]
+    },
+    {
+      "id": "fen",
+      "name": "The Hollow Fen",
+      "rooms": [
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80
+      ]
+    },
+    {
+      "id": "salt",
+      "name": "The Salt Caves",
+      "rooms": [
+        81,
+        82,
+        83,
+        84,
+        85
+      ]
+    },
+    {
+      "id": "moon",
+      "name": "The Moonlit Reach",
+      "rooms": [
+        86,
+        87,
+        88,
+        89,
+        90,
+        91
+      ]
+    },
+    {
+      "id": "eclipse",
+      "name": "The Eclipse Court",
+      "rooms": [
+        92,
+        93,
+        94,
+        95,
+        96,
+        97
+      ]
+    },
+    {
+      "id": "garden",
+      "name": "The Memory Garden",
+      "rooms": [
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        111,
+        112,
+        113,
+        114
+      ]
     }
   ],
   "objects": [
@@ -2138,7 +3616,7 @@
     },
     {
       "id": "coin",
-      "name": "a silver coin",
+      "name": "a gold coin",
       "room": 5,
       "flags": [
         "takeable",
@@ -2258,7 +3736,8 @@
       "value": 8,
       "examine": "The blade is plain, but well kept. The smith will not part with it cheaply.",
       "forSale": true,
-      "slot": "mainhand"
+      "slot": "mainhand",
+      "technique": "power-strike"
     },
     {
       "id": "club",
@@ -2271,7 +3750,8 @@
       "damage": 2,
       "value": 3,
       "examine": "A stout length of oak with a knotted head.",
-      "slot": "mainhand"
+      "slot": "mainhand",
+      "technique": "bash"
     },
     {
       "id": "jerkin",
@@ -2388,7 +3868,7 @@
     },
     {
       "id": "gold",
-      "name": "a gold coin",
+      "name": "a gold mark",
       "inside": "crypt-chest",
       "flags": [
         "takeable",
@@ -2529,7 +4009,8 @@
       "slot": "offhand",
       "armor": 2,
       "price": 15,
-      "value": 7
+      "value": 7,
+      "technique": "guard"
     },
     {
       "room": 9,
@@ -2546,7 +4027,8 @@
       "damage": 5,
       "price": 30,
       "value": 15,
-      "armor": 0
+      "armor": 0,
+      "technique": "cleave"
     },
     {
       "id": "note",
@@ -2861,7 +4343,8 @@
       "forSale": true,
       "price": 40,
       "value": 20,
-      "examine": "A heavy hammer with a square head. The haft is wrapped in wire."
+      "examine": "A heavy hammer with a square head. The haft is wrapped in wire.",
+      "technique": "bash"
     },
     {
       "id": "ember-cloak",
@@ -2877,7 +4360,10 @@
       "forSale": true,
       "price": 55,
       "value": 27,
-      "examine": "A cloak of dark wool with a red lining. It holds warmth like a banked fire."
+      "examine": "A cloak of dark wool with a red lining. It holds warmth like a banked fire.",
+      "faction": "ember",
+      "minStanding": 3,
+      "set": "ember"
     },
     {
       "id": "first-coal",
@@ -2902,7 +4388,1177 @@
       "damage": 6,
       "value": 35,
       "examine": "A blade of black iron with a red edge. It hums when the flame moves.",
+      "forSale": false,
+      "status": "burn",
+      "technique": "power-strike",
+      "set": "ember"
+    },
+    {
+      "id": "wisp-glass",
+      "name": "a piece of wisp glass",
+      "room": 77,
+      "flags": [
+        "takeable"
+      ],
+      "value": 12,
+      "examine": "A shard of cold green glass. It is light enough to float.",
       "forSale": false
+    },
+    {
+      "id": "bog-fang",
+      "name": "a bog fang",
+      "room": 73,
+      "flags": [
+        "takeable"
+      ],
+      "value": 8,
+      "examine": "A yellow fang, wet with peat.",
+      "forSale": false
+    },
+    {
+      "id": "fen-lantern",
+      "name": "a fen lantern",
+      "room": 72,
+      "flags": [
+        "takeable",
+        "light"
+      ],
+      "value": 15,
+      "examine": "A lantern of green glass. A pale flame burns inside.",
+      "forSale": false
+    },
+    {
+      "id": "green-key",
+      "name": "a green key",
+      "room": 78,
+      "flags": [
+        "takeable"
+      ],
+      "value": 18,
+      "examine": "An iron key with a bow of green glass.",
+      "forSale": false
+    },
+    {
+      "id": "fen-chest",
+      "name": "an iron chest",
+      "room": 79,
+      "flags": [
+        "fixed",
+        "container"
+      ],
+      "capacity": 2,
+      "open": false,
+      "value": 0,
+      "examine": "A chest of green iron, bound with a single band.",
+      "forSale": false
+    },
+    {
+      "id": "green-seed",
+      "name": "a green seed",
+      "inside": "fen-chest",
+      "flags": [
+        "takeable"
+      ],
+      "value": 20,
+      "examine": "A seed the size of a fist. It is warm and faintly moving.",
+      "forSale": false
+    },
+    {
+      "id": "fen-cloak",
+      "name": "a fen cloak",
+      "room": 71,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "cloak",
+      "armor": 2,
+      "value": 24,
+      "examine": "A cloak of grey-green wool that sheds water.",
+      "forSale": false,
+      "set": "fen"
+    },
+    {
+      "id": "fen-staff",
+      "name": "a fen staff",
+      "room": 71,
+      "flags": [
+        "takeable",
+        "weapon"
+      ],
+      "slot": "mainhand",
+      "damage": 5,
+      "value": 30,
+      "examine": "A staff of black willow with a green glass cap.",
+      "forSale": false,
+      "status": "chill",
+      "technique": "chill-strike",
+      "set": "fen"
+    },
+    {
+      "id": "salt-pearl",
+      "name": "a salt pearl",
+      "room": 82,
+      "flags": [
+        "takeable"
+      ],
+      "value": 14,
+      "examine": "A pearl of white salt, cold to the touch.",
+      "forSale": false
+    },
+    {
+      "id": "brine-key",
+      "name": "a brine key",
+      "room": 83,
+      "flags": [
+        "takeable"
+      ],
+      "value": 16,
+      "examine": "A green salt key, hard as iron.",
+      "forSale": false
+    },
+    {
+      "id": "salt-chest",
+      "name": "a salt-crusted chest",
+      "room": 84,
+      "flags": [
+        "fixed",
+        "container"
+      ],
+      "capacity": 2,
+      "open": false,
+      "value": 0,
+      "examine": "A chest bound with a band of salt.",
+      "forSale": false
+    },
+    {
+      "id": "tide-charm",
+      "name": "a tide charm",
+      "inside": "salt-chest",
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "neck",
+      "armor": 1,
+      "value": 22,
+      "examine": "A green glass charm on a cord of kelp.",
+      "forSale": false,
+      "set": "salt"
+    },
+    {
+      "id": "salt-shard",
+      "name": "a salt shard",
+      "room": 85,
+      "flags": [
+        "takeable"
+      ],
+      "value": 18,
+      "examine": "A shard of white salt that does not melt.",
+      "forSale": false
+    },
+    {
+      "id": "salt-ward",
+      "name": "a salt ward",
+      "room": 81,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "neck",
+      "armor": 2,
+      "value": 28,
+      "examine": "A disc of white salt on a chain of black iron.",
+      "forSale": false,
+      "set": "salt"
+    },
+    {
+      "id": "fen-charm",
+      "name": "a fen charm",
+      "room": 71,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "neck",
+      "armor": 1,
+      "value": 22,
+      "examine": "A knot of green reeds around a shard of wisp glass.",
+      "forSale": false,
+      "set": "fen"
+    },
+    {
+      "id": "moonpetal",
+      "name": "a moonpetal",
+      "room": 87,
+      "flags": [
+        "takeable"
+      ],
+      "value": 10,
+      "examine": "A silver petal that is cold to the touch.",
+      "forSale": false
+    },
+    {
+      "id": "moon-key",
+      "name": "a moon key",
+      "room": 88,
+      "flags": [
+        "takeable"
+      ],
+      "value": 16,
+      "examine": "A pale key carved from a single bone, cold as moonlight.",
+      "forSale": false
+    },
+    {
+      "id": "moon-chest",
+      "name": "a pale chest",
+      "room": 89,
+      "flags": [
+        "fixed",
+        "container"
+      ],
+      "capacity": 2,
+      "open": false,
+      "value": 0,
+      "examine": "A chest of pale wood bound with silver cord.",
+      "forSale": false
+    },
+    {
+      "id": "moon-charm",
+      "name": "a moon charm",
+      "inside": "moon-chest",
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "neck",
+      "armor": 1,
+      "value": 24,
+      "examine": "A crescent of white stone on a silver cord.",
+      "forSale": false,
+      "set": "moon"
+    },
+    {
+      "id": "moonwater",
+      "name": "a flask of moonwater",
+      "room": 89,
+      "flags": [
+        "takeable",
+        "food"
+      ],
+      "bites": 1,
+      "heal": 3,
+      "value": 12,
+      "examine": "A flask of water that reflects a moon.",
+      "forSale": false
+    },
+    {
+      "id": "moon-antler",
+      "name": "a moon antler",
+      "room": 91,
+      "flags": [
+        "takeable"
+      ],
+      "value": 22,
+      "examine": "A shard of clear antler, cold and bright.",
+      "forSale": false
+    },
+    {
+      "id": "eclipse-token",
+      "name": "an eclipse token",
+      "room": 92,
+      "flags": [
+        "takeable"
+      ],
+      "value": 30,
+      "examine": "A disc of black glass with a white crescent cut through it.",
+      "forSale": false
+    },
+    {
+      "id": "eclipse-key",
+      "name": "an eclipse key",
+      "room": 94,
+      "flags": [
+        "takeable"
+      ],
+      "value": 40,
+      "examine": "A key of pale iron, cold as a closed eye.",
+      "forSale": false
+    },
+    {
+      "id": "eclipse-chest",
+      "name": "a chest of black wood",
+      "room": 95,
+      "flags": [
+        "fixed",
+        "container"
+      ],
+      "capacity": 2,
+      "open": false,
+      "value": 0,
+      "examine": "A chest of black wood bound with a band of eclipse iron.",
+      "forSale": false
+    },
+    {
+      "id": "dawn-crown",
+      "name": "the dawn crown",
+      "inside": "eclipse-chest",
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "head",
+      "armor": 3,
+      "value": 120,
+      "examine": "A circlet of white glass that holds a small, steady dawn.",
+      "forSale": false,
+      "set": "eclipse"
+    },
+    {
+      "id": "starwater",
+      "name": "a flask of starwater",
+      "room": 95,
+      "flags": [
+        "takeable",
+        "food"
+      ],
+      "bites": 1,
+      "heal": 6,
+      "value": 24,
+      "examine": "A flask of water with a fixed star at the bottom.",
+      "forSale": false
+    },
+    {
+      "id": "regent-sigil",
+      "name": "the regent's sigil",
+      "room": 96,
+      "flags": [
+        "takeable"
+      ],
+      "value": 80,
+      "examine": "A disc of burnt glass stamped with a closed eye.",
+      "forSale": false
+    },
+    {
+      "id": "eclipse-ward",
+      "name": "an eclipse ward",
+      "room": 92,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "neck",
+      "armor": 3,
+      "value": 90,
+      "examine": "A disc of black glass on a chain of pale iron.",
+      "forSale": false,
+      "set": "eclipse"
+    },
+    {
+      "id": "dawn-blade",
+      "name": "the dawn blade",
+      "room": 97,
+      "flags": [
+        "takeable",
+        "weapon"
+      ],
+      "damage": 8,
+      "status": "burn",
+      "value": 160,
+      "examine": "A long blade of white glass with a line of dawn down its edge.",
+      "forSale": false,
+      "technique": "cleave",
+      "set": "eclipse"
+    },
+    {
+      "id": "clerk-seal",
+      "name": "a clerk's seal",
+      "room": 28,
+      "flags": [
+        "takeable"
+      ],
+      "value": 8,
+      "examine": "A stub of red wax stamped with the guild ledger.",
+      "forSale": false
+    },
+    {
+      "id": "memory-rose",
+      "name": "a memory rose",
+      "room": 99,
+      "flags": [
+        "takeable"
+      ],
+      "value": 40,
+      "examine": "A white rose with a dark heart; it stays cold in the hand.",
+      "forSale": false
+    },
+    {
+      "id": "glass-bead",
+      "name": "a glass bead",
+      "room": 98,
+      "flags": [
+        "takeable"
+      ],
+      "value": 12,
+      "examine": "A bead of clear glass with a tiny garden caught inside.",
+      "forSale": false
+    },
+    {
+      "id": "moon-seed",
+      "name": "a moon seed",
+      "room": 99,
+      "flags": [
+        "takeable"
+      ],
+      "value": 50,
+      "examine": "A seed of white glass with a tiny crescent inside.",
+      "forSale": false
+    },
+    {
+      "id": "remembered-bloom",
+      "name": "a remembered bloom",
+      "room": 101,
+      "flags": [
+        "takeable"
+      ],
+      "value": 80,
+      "examine": "A white bloom with a dark heart; it is warm and faintly moving.",
+      "forSale": false
+    },
+    {
+      "id": "first-seed",
+      "name": "the first seed",
+      "room": 103,
+      "flags": [
+        "takeable"
+      ],
+      "value": 90,
+      "examine": "A white seed with a green seam; it is warm and very light.",
+      "forSale": false
+    },
+    {
+      "id": "orchard-seed",
+      "name": "an orchard seed",
+      "room": 107,
+      "flags": [
+        "takeable"
+      ],
+      "value": 110,
+      "examine": "A seed of pale wood with a green seam; it is warm and heavy.",
+      "forSale": false
+    },
+    {
+      "id": "press-seed",
+      "name": "a press seed",
+      "room": 111,
+      "flags": [
+        "takeable"
+      ],
+      "value": 140,
+      "examine": "A dark, heavy seed that smells of cider.",
+      "forSale": false
+    },
+    {
+      "id": "cider-bloom",
+      "name": "a cider bloom",
+      "room": 113,
+      "flags": [
+        "takeable"
+      ],
+      "value": 160,
+      "examine": "A pale bloom that smells of cider and cold stone.",
+      "forSale": false
+    },
+    {
+      "id": "archmage-signet",
+      "name": "the archmage's signet",
+      "room": 34,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "neck",
+      "armor": 3,
+      "value": 220,
+      "examine": "A black signet ring on a silver chain; the stone holds a small eclipse.",
+      "forSale": false
+    },
+    {
+      "id": "ale",
+      "name": "a tankard of ale",
+      "room": 10,
+      "flags": [
+        "takeable",
+        "drink"
+      ],
+      "value": 10,
+      "price": 10,
+      "forSale": true,
+      "heal": 5,
+      "bites": 2,
+      "examine": "A dark ale with a thin white head. The innkeeper charges ten coins and does not water it."
+    },
+    {
+      "id": "gilded-chalice",
+      "name": "a gilded chalice",
+      "room": 29,
+      "flags": [
+        "takeable"
+      ],
+      "value": 45,
+      "examine": "A heavy chalice washed with gold. The smuggler kept it for a buyer who never came."
+    },
+    {
+      "id": "ivory-figurine",
+      "name": "an ivory figurine",
+      "room": 82,
+      "flags": [
+        "takeable"
+      ],
+      "value": 70,
+      "examine": "A small figure of a brine crab, carved from yellowed ivory. It is worth more than it looks."
+    },
+    {
+      "id": "moonstone",
+      "name": "a moonstone",
+      "room": 89,
+      "flags": [
+        "takeable"
+      ],
+      "value": 90,
+      "examine": "A pale blue stone with a cloud inside it. The moonwell light makes it answer."
+    },
+    {
+      "id": "ember-gauntlets",
+      "name": "ember-forged gauntlets",
+      "room": 70,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "hands",
+      "armor": 2,
+      "value": 55,
+      "examine": "Black iron gauntlets with a red seam at the knuckles. They hold the heat of the First Flame.",
+      "set": "ember"
+    },
+    {
+      "id": "fen-mantle",
+      "name": "a fen mantle",
+      "room": 80,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "cloak",
+      "armor": 2,
+      "value": 60,
+      "examine": "A mantle of woven reed and grey wool. It smells of rain and deep water.",
+      "set": "fen"
+    },
+    {
+      "id": "salt-bracers",
+      "name": "salt-crusted bracers",
+      "room": 85,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "hands",
+      "armor": 2,
+      "value": 65,
+      "examine": "Bracers of pale leather crusted with salt. They are heavier than they look.",
+      "set": "salt"
+    },
+    {
+      "id": "moon-greaves",
+      "name": "moonlit greaves",
+      "room": 91,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "feet",
+      "armor": 2,
+      "value": 70,
+      "examine": "Greaves of white metal that hold a faint moonlight after the sun goes.",
+      "set": "moon"
+    },
+    {
+      "id": "iron-cuirass",
+      "name": "an iron cuirass",
+      "room": 9,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "body",
+      "armor": 2,
+      "price": 18,
+      "value": 9,
+      "forSale": true,
+      "examine": "A plain iron cuirass, dented at the shoulder and sound at the ribs."
+    },
+    {
+      "id": "buckler",
+      "name": "a small buckler",
+      "room": 9,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "offhand",
+      "armor": 1,
+      "price": 9,
+      "value": 4,
+      "forSale": true,
+      "examine": "A light round buckler, easy to carry and quick to turn.",
+      "technique": "guard"
+    },
+    {
+      "id": "warden-shield",
+      "name": "the warden's shield",
+      "room": 43,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "offhand",
+      "armor": 3,
+      "value": 80,
+      "examine": "A heavy shield of black iron bearing the ward-mark of the Undervault.",
+      "technique": "guard"
+    },
+    {
+      "id": "mirror-shield",
+      "name": "a mirror shield",
+      "room": 41,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "offhand",
+      "armor": 2,
+      "value": 55,
+      "examine": "A shield of polished silver glass. The reflection is always a half-step late.",
+      "technique": "guard"
+    },
+    {
+      "id": "eclipse-plate",
+      "name": "eclipse plate",
+      "room": 94,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "body",
+      "armor": 3,
+      "value": 140,
+      "examine": "Black plate with a thin white seam. It is cold even under the eclipse.",
+      "set": "eclipse"
+    },
+    {
+      "id": "ember-boots",
+      "name": "ember-tempered boots",
+      "room": 65,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "feet",
+      "armor": 2,
+      "value": 50,
+      "examine": "Boots of red-brown leather, hardened in the Ember Deep.",
+      "set": "ember"
+    },
+    {
+      "id": "fen-hood",
+      "name": "a fen hood",
+      "room": 77,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "head",
+      "armor": 1,
+      "value": 35,
+      "examine": "A hood of oiled reed-fibre. Rain beads and runs off it.",
+      "set": "fen"
+    },
+    {
+      "id": "salt-hauberk",
+      "name": "a salt-crusted hauberk",
+      "room": 82,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "body",
+      "armor": 2,
+      "value": 60,
+      "examine": "A hauberk of pale rings, crusted white where the brine dried.",
+      "set": "salt"
+    },
+    {
+      "id": "moon-circlet",
+      "name": "a moonstone circlet",
+      "room": 87,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "head",
+      "armor": 2,
+      "value": 65,
+      "examine": "A thin circlet set with a cloudy moonstone. It catches light that is not there.",
+      "set": "moon"
+    },
+    {
+      "id": "moon-disc",
+      "name": "a moon disc",
+      "room": 89,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "offhand",
+      "armor": 2,
+      "value": 70,
+      "examine": "A disc of pale stone on a silver grip, balanced like a shield.",
+      "set": "moon"
+    },
+    {
+      "id": "ember-forge-blade",
+      "name": "an ember-forged blade",
+      "room": 63,
+      "flags": [
+        "takeable",
+        "weapon"
+      ],
+      "slot": "mainhand",
+      "damage": 7,
+      "value": 90,
+      "price": 80,
+      "forSale": true,
+      "faction": "ember",
+      "minStanding": 6,
+      "examine": "A blade of black iron with a red seam. The forge master will not sell it to a stranger.",
+      "technique": "power-strike",
+      "set": "ember"
+    },
+    {
+      "id": "fen-warden-cloak",
+      "name": "a fen-warden's cloak",
+      "room": 80,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "cloak",
+      "armor": 3,
+      "value": 85,
+      "price": 75,
+      "forSale": true,
+      "faction": "fen",
+      "minStanding": 6,
+      "examine": "A heavy cloak of reed, wool and green glass. It carries the fen's quiet."
+    },
+    {
+      "id": "salt-warden-shield",
+      "name": "a salt-warden's shield",
+      "room": 83,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "offhand",
+      "armor": 3,
+      "value": 90,
+      "price": 80,
+      "forSale": true,
+      "faction": "salt",
+      "minStanding": 6,
+      "examine": "A shield of pale salt-iron, crusted white at the rim.",
+      "set": "salt",
+      "technique": "guard"
+    },
+    {
+      "id": "moon-blessed-circlet",
+      "name": "a moon-blessed circlet",
+      "room": 88,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "head",
+      "armor": 3,
+      "value": 95,
+      "price": 85,
+      "forSale": true,
+      "faction": "moon",
+      "minStanding": 6,
+      "examine": "A silver circlet set with a clear moonstone. It is warm under moonlight.",
+      "set": "moon"
+    },
+    {
+      "id": "night-cloak",
+      "name": "a night cloak",
+      "room": 29,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "cloak",
+      "armor": 2,
+      "value": 20,
+      "price": 40,
+      "forSale": true,
+      "guild": "night-market",
+      "minRank": "cutpurse",
+      "examine": "A cloak of matte black cloth with a dozen hidden pockets.",
+      "set": "night"
+    },
+    {
+      "id": "thief-dagger",
+      "name": "a thief's dagger",
+      "room": 29,
+      "flags": [
+        "takeable",
+        "weapon"
+      ],
+      "slot": "mainhand",
+      "damage": 3,
+      "value": 18,
+      "price": 35,
+      "forSale": true,
+      "guild": "night-market",
+      "minRank": "runner",
+      "technique": "backstab",
+      "examine": "A narrow blade with a dull finish and a quick balance.",
+      "set": "night"
+    },
+    {
+      "id": "assassin-blade",
+      "name": "an assassin's blade",
+      "room": 29,
+      "flags": [
+        "takeable",
+        "weapon"
+      ],
+      "slot": "mainhand",
+      "damage": 5,
+      "value": 45,
+      "price": 80,
+      "forSale": true,
+      "guild": "night-market",
+      "minRank": "shadow",
+      "technique": "backstab",
+      "examine": "A black blade with a single silver line down the spine.",
+      "set": "night"
+    },
+    {
+      "id": "ashen-robe",
+      "name": "an ashen robe",
+      "room": 58,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "body",
+      "armor": 2,
+      "value": 30,
+      "price": 60,
+      "forSale": true,
+      "faction": "ashen",
+      "minStanding": 3,
+      "examine": "Grey cloth woven with a thread that drinks the light.",
+      "set": "ashen"
+    },
+    {
+      "id": "unholy-mace",
+      "name": "an unholy mace",
+      "room": 58,
+      "flags": [
+        "takeable",
+        "weapon"
+      ],
+      "slot": "mainhand",
+      "damage": 4,
+      "value": 38,
+      "price": 75,
+      "forSale": true,
+      "faction": "ashen",
+      "minStanding": 6,
+      "technique": "drain",
+      "examine": "A black mace with a cracked symbol on the head. It is warm to the touch.",
+      "set": "ashen"
+    },
+    {
+      "id": "red-axe",
+      "name": "a red company axe",
+      "room": 71,
+      "flags": [
+        "takeable",
+        "weapon"
+      ],
+      "slot": "mainhand",
+      "damage": 6,
+      "value": 32,
+      "price": 65,
+      "forSale": true,
+      "faction": "red",
+      "minStanding": 3,
+      "technique": "rage",
+      "examine": "A heavy axe with a red-painted haft and a chipped edge.",
+      "set": "red"
+    },
+    {
+      "id": "red-boots",
+      "name": "red company boots",
+      "room": 71,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "feet",
+      "armor": 2,
+      "value": 28,
+      "price": 55,
+      "forSale": true,
+      "faction": "red",
+      "minStanding": 6,
+      "examine": "Scuffed leather boots with iron toe-caps.",
+      "set": "red"
+    },
+    {
+      "id": "ashen-hood",
+      "name": "an ashen hood",
+      "room": 58,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "head",
+      "armor": 1,
+      "value": 25,
+      "price": 50,
+      "forSale": true,
+      "faction": "ashen",
+      "minStanding": 3,
+      "set": "ashen",
+      "examine": "A deep hood of ash-grey cloth. It muffles sound at the edges."
+    },
+    {
+      "id": "ashen-boots",
+      "name": "ashen boots",
+      "room": 58,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "feet",
+      "armor": 1,
+      "value": 22,
+      "price": 45,
+      "forSale": true,
+      "faction": "ashen",
+      "minStanding": 3,
+      "set": "ashen",
+      "examine": "Soft boots stained with old candle wax."
+    },
+    {
+      "id": "red-helm",
+      "name": "a red company helm",
+      "room": 71,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "head",
+      "armor": 2,
+      "value": 30,
+      "price": 60,
+      "forSale": true,
+      "faction": "red",
+      "minStanding": 3,
+      "set": "red",
+      "examine": "A dented iron helm with a red cloth tail."
+    },
+    {
+      "id": "red-gauntlets",
+      "name": "red company gauntlets",
+      "room": 71,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "hands",
+      "armor": 1,
+      "value": 25,
+      "price": 50,
+      "forSale": true,
+      "faction": "red",
+      "minStanding": 3,
+      "set": "red",
+      "examine": "Scarred leather gauntlets with iron plates across the knuckles."
+    },
+    {
+      "id": "night-boots",
+      "name": "night market boots",
+      "room": 29,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "feet",
+      "armor": 1,
+      "value": 22,
+      "price": 45,
+      "forSale": true,
+      "guild": "night-market",
+      "minRank": "cutpurse",
+      "set": "night",
+      "examine": "Soft-soled boots that leave almost no mark."
+    },
+    {
+      "id": "night-gloves",
+      "name": "night market gloves",
+      "room": 29,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "hands",
+      "armor": 1,
+      "value": 20,
+      "price": 40,
+      "forSale": true,
+      "guild": "night-market",
+      "minRank": "cutpurse",
+      "set": "night",
+      "examine": "Thin black gloves with grippy palms."
+    },
+    {
+      "id": "ember-ledger",
+      "name": "a charred ledger",
+      "room": 63,
+      "flags": [
+        "fixed",
+        "readable"
+      ],
+      "examine": "A ledger burned along one edge. The surviving pages record the Ember Door, the Ash Key and the Ember Lantern: three trials the forge no longer sets. The last line reads, 'The flame remembers what the door forgets.'"
+    },
+    {
+      "id": "fen-map",
+      "name": "a drowned map",
+      "room": 71,
+      "flags": [
+        "fixed",
+        "readable"
+      ],
+      "examine": "A map of the Hollow Fen, half dissolved. It marks the Wisp Glass, the Old Beacon and the Green Heart. A note in the margin: 'The fen gives a path to those who do not ask it twice.'"
+    },
+    {
+      "id": "salt-tablet",
+      "name": "a salt-stained tablet",
+      "room": 81,
+      "flags": [
+        "fixed",
+        "readable"
+      ],
+      "examine": "A tablet of pressed salt. It tells of the Brine Crab, the Salt Heart and the ward that failed. The last line is worn smooth."
+    },
+    {
+      "id": "moon-calendar",
+      "name": "a moon calendar",
+      "room": 89,
+      "flags": [
+        "fixed",
+        "readable"
+      ],
+      "examine": "A calendar of the Moonlit Reach. The Hare, the Well and the Stag are circled in silver ink. A fourth circle is blank."
+    },
+    {
+      "id": "garden-journal",
+      "name": "a garden journal",
+      "room": 98,
+      "flags": [
+        "fixed",
+        "readable"
+      ],
+      "examine": "A journal of the Memory Garden. It lists the Remembered Bed, the Root Archive and the Cider Spring, and ends: 'The garden keeps the words we are not ready to say.'"
+    },
+    {
+      "id": "practice-sword",
+      "name": "a practice sword",
+      "room": 116,
+      "flags": [
+        "takeable",
+        "weapon"
+      ],
+      "slot": "mainhand",
+      "damage": 1,
+      "value": 1,
+      "examine": "A blunt wooden practice sword. It is heavy enough to teach a lesson and light enough not to break a rib."
+    },
+    {
+      "id": "practice-shield",
+      "name": "a practice shield",
+      "room": 116,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "offhand",
+      "armor": 1,
+      "value": 1,
+      "examine": "A scuffed round shield with a padded rim.",
+      "technique": "guard"
+    },
+    {
+      "id": "training-board",
+      "name": "a training board",
+      "room": 116,
+      "flags": [
+        "fixed",
+        "readable"
+      ],
+      "examine": "The board lists: take all; wield <weapon>; wear <armour>; attack <target>; technique; score; equipment. At the bottom: 'The dummy is patient. The Ring is not.'"
     }
   ],
   "climate": {
@@ -2975,6 +5631,42 @@
       "room": 63,
       "keeper": "forge-master",
       "name": "The Ember Forge"
+    },
+    {
+      "id": "fen-quartermaster",
+      "room": 80,
+      "keeper": "heron-keeper",
+      "name": "The Fen Wardens"
+    },
+    {
+      "id": "salt-quartermaster",
+      "room": 83,
+      "keeper": "tide-hermit",
+      "name": "The Salt Wardens"
+    },
+    {
+      "id": "moon-quartermaster",
+      "room": 88,
+      "keeper": "silver-owl",
+      "name": "The Moon Wardens"
+    },
+    {
+      "id": "night-market",
+      "room": 29,
+      "keeper": "night-broker",
+      "name": "The Night Market"
+    },
+    {
+      "id": "ashen-quartermaster",
+      "room": 58,
+      "keeper": "ashen-priest",
+      "name": "The Ashen Hand"
+    },
+    {
+      "id": "red-quartermaster",
+      "room": 71,
+      "keeper": "red-captain",
+      "name": "The Red Company"
     }
   ]
 }

@@ -12,6 +12,9 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { FACTIONS } from "./factions.mjs";
+import { TECHNIQUES } from "./techniques.mjs";
+import { GEAR_SETS, MAX_UPGRADE } from "./forge.mjs";
 import { spellById } from "./magic.mjs";
 
 // Resolved against this module, not the process working directory: the service
@@ -192,6 +195,8 @@ export function loadWorld({ mode = "single", path = DEFAULT_PATH } = {}) {
     if (npc.damage !== undefined && (!Number.isInteger(npc.damage) || npc.damage < 0)) errors.push(`npc ${npc.id} has an invalid damage`);
     if (npc.armor !== undefined && (!Number.isInteger(npc.armor) || npc.armor < 0)) errors.push(`npc ${npc.id} has an invalid armor`);
     if (npc.aggression !== undefined && (!Number.isInteger(npc.aggression) || npc.aggression < 0 || npc.aggression > 100)) errors.push(`npc ${npc.id} has an aggression outside 0..100`);
+    if (npc.faction !== undefined && !FACTIONS[npc.faction]) errors.push(`npc ${npc.id} has unknown faction ${npc.faction}`);
+    if (npc.standing !== undefined && (!Number.isInteger(npc.standing) || npc.standing < 1)) errors.push(`npc ${npc.id} has an invalid standing award`);
     npcs.push({ ...npc, behaviour, maxHp: npc.hp });
   }
 
@@ -201,7 +206,7 @@ export function loadWorld({ mode = "single", path = DEFAULT_PATH } = {}) {
   // silently does nothing.
   const objects = [];
   const seenObject = new Set();
-  const FLAGS = new Set(["takeable", "fixed", "container", "wearable", "food", "light", "readable", "coin", "weapon", "armor"]);
+  const FLAGS = new Set(["takeable", "fixed", "container", "wearable", "food", "drink", "light", "readable", "coin", "weapon", "armor"]);
   for (const object of raw.objects ?? []) {
     if (seenObject.has(object.id)) errors.push(`object id "${object.id}" is used twice`);
     seenObject.add(object.id);
@@ -223,12 +228,17 @@ export function loadWorld({ mode = "single", path = DEFAULT_PATH } = {}) {
     if (flags.includes("weapon") && (!Number.isInteger(object.damage) || object.damage < 1)) {
       errors.push(`weapon ${object.id} has no damage`);
     }
+    if (object.technique !== undefined && !TECHNIQUES[object.technique]) {
+      errors.push(`object ${object.id} has unknown technique ${object.technique}`);
+    }
+    if (object.set !== undefined && !GEAR_SETS[object.set]) errors.push(`object ${object.id} has unknown set ${object.set}`);
+    if (object.plus !== undefined && (!Number.isInteger(object.plus) || object.plus < 0 || object.plus > MAX_UPGRADE)) errors.push(`object ${object.id} has an invalid plus`);
     if (flags.includes("armor") && (!Number.isInteger(object.armor) || object.armor < 1)) {
       errors.push(`armor ${object.id} has no armor value`);
     }
-    if (flags.includes("food")) {
-      if (!Number.isInteger(object.bites) || object.bites < 1) errors.push(`food ${object.id} has no bites`);
-      if (object.heal !== undefined && (!Number.isInteger(object.heal) || object.heal < 0)) errors.push(`food ${object.id} has an invalid heal`);
+    if (flags.includes("food") || flags.includes("drink")) {
+      if (!Number.isInteger(object.bites) || object.bites < 1) errors.push(`consumable ${object.id} has no bites`);
+      if (object.heal !== undefined && (!Number.isInteger(object.heal) || object.heal < 0)) errors.push(`consumable ${object.id} has an invalid heal`);
     }
     if (flags.includes("coin") && (!Number.isInteger(object.value) || object.value < 1)) {
       errors.push(`coin ${object.id} has no integer value`);

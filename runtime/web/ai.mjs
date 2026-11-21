@@ -7,6 +7,14 @@
 // localStorage and goes only to the provider's own endpoint.
 
 export const PROVIDERS = {
+  pollinations: {
+    label: "Pollinations (free, no key)",
+    base: "https://text.pollinations.ai/openai",
+    model: "openai-fast",
+    needsKey: false,
+    keyMode: "none",
+    hint: "Anonymous public endpoint. No key and streaming, but best-effort: prompts may be logged by the service and rate limits change. Use Ollama or your own provider for privacy or reliability.",
+  },
   ollama: {
     label: "Ollama (local)",
     base: "http://localhost:11434/v1",
@@ -42,7 +50,7 @@ export const PROVIDERS = {
   "gemini-demo": {
     label: "Gemini demo (Prism only)",
     base: "/api/gemini/v1",
-    model: "gemini-2.5-flash",
+    model: "gemini-3.1-flash-lite",
     needsKey: false,
     keyMode: "proxy",
     hint: "Operator-funded Gemini demo. Sign in with a Prism id; the server holds the key, enforces a small daily/minute quota and forces thinking off. Free-tier data may be used by Google to improve products.",
@@ -81,23 +89,30 @@ export function normalizeBase(input) {
 export const COMMANDS = `look, look <thing>, examine <thing>, who, say <text>, global <text>,
 tell <name> <text>, mail <name> <text>, channels, answer <word>, claim <word>,
 claim unknown, north, south, east, west, up, down (n/s/e/w/u/d), attack <name>,
-flee, wield <weapon>, unwield, inventory, take <thing>, drop <thing>, put <thing> in <thing>,
-open <thing>, close <thing>, wear <thing>, remove <thing>, eat <thing>, light <thing>,
-buy <thing>, sell <thing>, list, wait, wave, nod, bow, laugh, sigh, shrug, dance, score,
-equipment, quests, quest accept <id>, quest abandon <id>, deliver <thing> to <name>,
+wield <weapon>, unwield, technique <name>, inventory [category], coins, standing, components, upgrade <item>, salvage <item>, take <thing>, take all, drop <thing>, put <thing> in <thing>,
+open <thing>, close <thing>, wear <thing>, remove <thing>, eat <thing>, drink <thing>, light <thing>,
+buy <thing>, sell <thing>, list, wait, wave, nod, bow, laugh, sigh, shrug, dance,
+smile, grin, frown, cheer, salute, point, ponder, stretch, shiver, yawn, wink, hug, highfive, poke,
+whistle, sing, hum, mutter, shout, clap, cry, apologize, congratulate, battle (combat/bt), score,
+equipment, quests [active|available|done|all|<id>], quest accept <id>, quest abandon <id>, deliver <thing> to <name>,
+levels, leaderboard (top/lb), ladder (pvp/duels), map [zone], shortcuts, tutorial (first),
 guild create <name>, guild join <name>, guild leave, guild who, guild list, guild chat <text>,
-guild rank <member> <rank>, guild disband, talk <name>, spells, train <spell>, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search, turn, push, ring, world, help, go <direction>`;
+guild rank <member> <rank>, guild disband, vault, deposit <item>, withdraw <item>, ignore/unignore <name>, ignoring, titles, title <id|none>, facts, recall <word>, talk <name>, spells, train <spell>, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search, turn, push, ring, world, help, go <direction>`;
 
-const FAST_COMMANDS = "look, examine <thing>, inventory, score, equipment, quests, say <text>, tell <name> <text>, global <text>, talk <name>, who, north/south/east/west/up/down, take/drop/wear/wield, attack <name>, flee, cast <spell>, buy/sell/list, open/close, quest accept <id>, deliver <thing> to <name>, guild create/join/leave/who/chat, wait, search, world, help, wave/nod/bow/laugh";
+const FAST_COMMANDS = "look, examine <thing>, inventory, standing, score, equipment, quests, say <text>, tell <name> <text>, global <text>, talk <name>, who, north/south/east/west/up/down, take/drop/wear/wield, take all, attack <name>, cast <spell>, buy/sell/list, open/close, quest accept <id>, deliver <thing> to <name>, guild create/join/leave/who/chat, vault/deposit/withdraw, ignore/unignore, titles/title, facts, recall, wait, search, world, help, wave/nod/bow/laugh";
 
 const VERBS = new Set([
-  "look", "l", "examine", "x", "ex", "who", "wh", "awake", "aw", "answer", "claim", "say", "tell", "mail", "go",
+  "look", "l", "examine", "x", "ex", "who", "wh", "awake", "aw", "answer", "claim", "say", "tell", "mail", "go", "coins", "money", "purse", "standing", "reputation", "factions", "components", "parts", "materials", "upgrade", "improve", "forge", "salvage", "melt", "scrap", "technique", "tech",
   "global", "gossip", "gos", "goss", "trade", "channels", "north", "south", "east", "west", "up", "down",
-  "n", "s", "e", "w", "u", "d", "attack", "kill", "flee", "wield", "unwield", "inventory",
-  "i", "inv", "equipment", "eq", "take", "get", "g", "grab", "drop", "dr", "put", "open", "close",
+  "n", "s", "e", "w", "u", "d", "attack", "kill", "wield", "unwield", "inventory",
+  "i", "inv", "equipment", "eq", "take", "get", "g", "t", "grab", "drink", "quaff", "drop", "dr", "put", "open", "close",
   "wear", "remove", "eat", "light", "extinguish", "buy", "sell", "list", "wait", "wave", "nod", "bow",
   "laugh", "sigh", "shrug", "dance", "score", "sc", "stats", "quests", "q", "j", "quest", "guild", "gc",
   "gchat", "deliver", "talk", "spells", "train", "cast", "study", "recite", "search", "sr", "turn", "push", "ring", "world", "status", "help", "h", "?",
+  "vault", "gvault", "bank", "gvlt", "deposit", "dep", "store", "ds", "withdraw", "wd", "retrieve", "wdr",
+  "ignore", "ign", "mute", "unignore", "unign", "unmute", "ignoring", "ignored", "ignores", "titles", "title", "facts", "recall", "remember", "mem",
+  "levels", "leaderboard", "top", "lb", "ranks", "ladder", "pvp", "duels", "map", "shortcuts", "tutorial", "first", "firststeps",
+  "smile", "grin", "frown", "cheer", "salute", "point", "ponder", "stretch", "shiver", "yawn", "wink", "hug", "highfive", "poke", "whistle", "sing", "hum", "mutter", "shout", "clap", "cry", "apologize", "congratulate", "battle", "combat", "bt",
 ]);
 
 export const DEFAULT_GOAL =
@@ -116,7 +131,7 @@ Rules:
 - ACTIONS is a shortlist of what is in this room. You may use any legal command from the COMMANDS line, including speech.
 - To talk to players, use say <text>, tell <name> <text>, or global <text>. To talk to an NPC, use talk <name>.
 - Never invent a command. Never output quit. Keep the three labels.
-- Use only what ROOM, STATE, QUESTS and DIRECTOR show.
+- Use only what ROOM, STATE, R4 CONTEXT, MEMORY, QUESTS and DIRECTOR show.
 - Follow the director unless it is impossible.
 - If you are unsure, look, examine, inventory, or score.
 
@@ -161,6 +176,7 @@ export function buildActionMenu(state = null) {
       menu.add(`examine ${object.name}`);
       if (object.takeable) menu.add(`take ${object.name}`);
       if (object.container) menu.add(object.open ? `close ${object.name}` : `open ${object.name}`);
+      for (const item of object.contents ?? []) menu.add(`take ${item} from ${object.name}`);
       if (object.forSale && object.price != null) menu.add(`buy ${object.name}`);
     }
     for (const npc of room.npcs ?? []) {
@@ -169,13 +185,161 @@ export function buildActionMenu(state = null) {
     }
     for (const action of room.actions ?? []) menu.add(`${action.verb} ${action.target}`);
   }
-  for (const line of ["say <text>", "tell <name> <text>", "global <text>", "talk <name>", "wave", "nod", "bow", "laugh", "who"]) {
+  for (const line of ["say <text>", "tell <name> <text>", "global <text>", "talk <name>", "wave", "nod", "bow", "laugh", "smile", "grin", "cheer", "salute", "ponder", "whistle", "sing", "hug", "highfive", "who", "battle", "equipment", "spells", "leaderboard", "levels", "map", "shortcuts", "quests"]) {
     menu.add(line);
   }
+  for (const spell of state?.self?.spells ?? []) menu.add(`cast ${spell}`);
   return [...menu].slice(0, 32);
 }
 
-export function buildUserPrompt({ turn = 1, observation = "", director = [], state = null, note = "", fast = false, actions: injected = null } = {}) {
+const DIRECTION_ALIASES = {
+  n: "north", s: "south", e: "east", w: "west", u: "up", d: "down",
+};
+const FREE_VERBS = new Set([
+  "look", "l", "who", "wh", "awake", "aw", "say", "tell", "mail", "global",
+  "gossip", "gos", "goss", "trade", "channels", "inventory", "i", "inv",
+  "equipment", "eq", "score", "sc", "stats", "quests", "q", "j", "spells",
+  "world", "status", "help", "h", "?", "wait", "wave", "nod", "bow", "laugh",
+  "sigh", "shrug", "dance", "search", "sr", "answer", "claim", "coins", "money", "purse",
+  "guild", "gc", "gchat", "quest", "deliver", "train", "list", "buy", "sell",
+  "vault", "gvault", "bank", "gvlt",
+  "ignoring", "ignored", "ignores", "titles",
+  "recall", "remember", "mem",
+  "facts", "memory", "knowledge",
+  "levels", "leaderboard", "top", "lb", "ranks", "map", "shortcuts", "tutorial", "first", "firststeps",
+  "smile", "grin", "frown", "cheer", "salute", "point", "ponder", "stretch", "shiver", "yawn", "wink", "hug", "highfive", "poke", "whistle", "sing", "hum", "mutter", "shout", "clap", "cry", "apologize", "congratulate", "battle", "combat", "bt",
+]);
+const TARGET_VERBS = new Set([
+  "examine", "x", "ex", "take", "get", "g", "t", "grab", "drink", "quaff", "drop", "dr", "discard",
+  "wear", "don", "remove", "wield", "unwield", "eat", "light", "extinguish",
+  "open", "close", "shut", "talk", "attack", "kill", "hit", "buy", "sell",
+  "cast", "study", "recite", "deposit", "dep", "store", "ds", "withdraw", "wd", "retrieve", "wdr",
+  "ignore", "ign", "mute", "unignore", "unign", "unmute", "title", "recall", "remember", "mem",
+]);
+
+const wordsOf = (value) => String(value ?? "").toLowerCase().split(/[^a-z0-9]+/).filter((word) => word.length > 1);
+
+const stateVocabulary = (state = null) => {
+  const known = new Set(["here", "room", "self", "me", "inventory", "all", "the", "a", "an"]);
+  const add = (value) => { for (const word of wordsOf(value)) known.add(word); };
+  const room = state?.room;
+  if (room) {
+    add(room.name);
+    add(room.text);
+    for (const detail of room.details ?? []) add(detail);
+    for (const exit of room.exits ?? []) add(typeof exit === "string" ? exit : exit?.dir);
+    for (const object of room.objects ?? []) {
+      add(object.name);
+      for (const item of object.contents ?? []) add(item);
+    }
+    for (const npc of room.npcs ?? []) add(npc.name);
+    for (const action of room.actions ?? []) { add(action.verb); add(action.target); }
+  }
+  for (const item of state?.self?.inventory_names ?? []) add(item);
+  for (const item of state?.self?.worn ?? []) add(item);
+  add(state?.self?.wielding);
+  for (const spell of state?.self?.spells ?? []) add(spell);
+  return known;
+};
+
+/** Conservative pre-send validation: only reject clear misses. */
+export function validateCommand(command, state = null) {
+  const raw = String(command ?? "").trim();
+  if (!raw) return { ok: false, reason: "empty command" };
+  const parts = raw.split(/\s+/);
+  let verb = parts[0].toLowerCase();
+  let rest = parts.slice(1);
+  if (DIRECTION_ALIASES[verb]) verb = DIRECTION_ALIASES[verb];
+  if (verb === "go") {
+    if (!rest.length) return { ok: false, reason: "go needs a direction" };
+    verb = String(rest[0]).toLowerCase().replace(/[^a-z]/g, "");
+    rest = rest.slice(1);
+    if (DIRECTION_ALIASES[verb]) verb = DIRECTION_ALIASES[verb];
+  }
+  if (["north", "south", "east", "west", "up", "down"].includes(verb)) {
+    const exits = new Set((state?.room?.exits ?? []).map((exit) => (typeof exit === "string" ? exit : exit?.dir)).filter(Boolean));
+    if (exits.size && !exits.has(verb)) return { ok: false, reason: `no ${verb} exit here` };
+    return { ok: true };
+  }
+  if (FREE_VERBS.has(verb)) {
+    if (verb === "search" && rest.length) return { ok: false, reason: "search takes no target" };
+    return { ok: true };
+  }
+  if (!TARGET_VERBS.has(verb)) return { ok: false, reason: `unknown command ${verb}` };
+  if (!rest.length) return { ok: false, reason: `${verb} needs a target` };
+  const target = rest.join(" ");
+  if (["take", "get", "g", "t", "grab"].includes(verb) && /^(all|everything)$/i.test(target.trim())) return { ok: true };
+  if (verb === "attack" && state?.room?.safe) return { ok: false, reason: "this is a safe room" };
+  if (["take", "get", "g", "t", "grab"].includes(verb)) {
+    const forSale = (state?.room?.objects ?? []).find((object) => {
+      const targetWords = new Set(wordsOf(target));
+      const objectWords = wordsOf(object.name);
+      return object.forSale && objectWords.length && objectWords.every((word) => targetWords.has(word));
+    });
+    if (forSale) return { ok: false, reason: `${forSale.name} is for sale; use buy` };
+  }
+  if (["take", "get", "g", "t", "grab"].includes(verb) && !/\bfrom\b/i.test(target)) {
+    const targetWords = new Set(wordsOf(target));
+    const content = (state?.room?.objects ?? [])
+      .flatMap((object) => (object.contents ?? []).map((item) => ({ item, container: object.name })))
+      .find((entry) => {
+        const itemWords = wordsOf(entry.item);
+        return itemWords.length > 0 && itemWords.every((word) => targetWords.has(word));
+      });
+    if (content) return { ok: false, reason: `${content.item} is inside ${content.container}` };
+  }
+  if (verb === "cast") {
+    const spell = String(rest[0] ?? "").toLowerCase();
+    if (state?.self?.spells?.length && !state.self.spells.map((value) => String(value).toLowerCase()).includes(spell)) {
+      return { ok: false, reason: `unknown spell ${spell}` };
+    }
+  }
+  if (verb === "open" || verb === "close") {
+    const object = (state?.room?.objects ?? []).find((entry) => String(entry.name).toLowerCase().includes(target.toLowerCase()));
+    if (verb === "open" && object?.open) return { ok: false, reason: "already open" };
+    if (verb === "close" && object && object.open === false) return { ok: false, reason: "already closed" };
+  }
+  const known = stateVocabulary(state);
+  const tokens = wordsOf(target).filter((word) => word.length > 2);
+  if (tokens.length && !tokens.some((word) => known.has(word))) {
+    return { ok: false, reason: `cannot see ${target}` };
+  }
+  return { ok: true };
+}
+
+/** Prefer a legal menu action over sending a command the server will reject. */
+export function repairCommand(command, state = null, reason = "") {
+  const raw = String(command ?? "").trim();
+  const parts = raw.split(/\s+/);
+  let verb = parts[0].toLowerCase();
+  let rest = parts.slice(1);
+  if (DIRECTION_ALIASES[verb]) verb = DIRECTION_ALIASES[verb];
+  const menu = buildActionMenu(state);
+  if (verb === "search" && rest.length) return "search";
+  if (verb === "open") {
+    const target = rest.join(" ");
+    const closed = menu.find((action) => action.startsWith("close ") && action.includes(target.toLowerCase()));
+    if (closed) return closed;
+  }
+  if (verb === "take" || verb === "get" || verb === "g") {
+    const target = rest.join(" ").toLowerCase();
+    const forSale = (state?.room?.objects ?? []).find((object) => object.forSale && target.includes(String(object.name).toLowerCase().replace(/^an? /, "")));
+    if (forSale) {
+      const buy = menu.find((action) => action.startsWith("buy ") && action.toLowerCase().includes(String(forSale.name).toLowerCase()));
+      if (buy) return buy;
+    }
+    const from = menu.find((action) => action.startsWith("take ") && action.includes(" from ") && action.includes(target));
+    if (from) return from;
+  }
+  if (verb === "attack" && state?.room?.safe) return "look";
+  if (verb === "cast" && /unknown spell/.test(reason)) return "spells";
+  const tokens = wordsOf(rest.join(" ")).filter((word) => word.length > 2);
+  const match = menu.find((action) => tokens.some((token) => action.toLowerCase().includes(token)));
+  if (match) return match;
+  return "look";
+}
+
+export function buildUserPrompt({ turn = 1, observation = "", director = [], state = null, note = "", fast = false, actions: injected = null, memory = "", r4 = "" } = {}) {
   const steering = director.length
     ? director.map((line) => `- ${line}`).join("\n")
     : "none";
@@ -188,18 +352,22 @@ export function buildUserPrompt({ turn = 1, observation = "", director = [], sta
     ? `WORLD: ${state.world.online} online · ${state.world.phase} · ${state.world.weather ?? "clear"} · reset in ${Math.max(0, Math.round((state.world.reset_seconds ?? 0) / 60))}m`
     : "";
   const self = state?.self
-    ? `YOU: level ${state.self.level} · ${state.self.xp}/${state.self.next_xp ?? "?"} xp · ${state.self.hp ?? "?"}/${state.self.max_hp ?? "?"} hp · ${state.self.mana ?? "?"}/${state.self.max_mana ?? "?"} mana · ${state.self.quests?.active ?? 0} active / ${state.self.quests?.completed ?? 0} done quests · ${state.self.inventory ?? 0} items${state.self.spells?.length ? ` · spells ${state.self.spells.join(", ")}` : ""}${state.self.guild ? ` · ${state.self.guild}${state.self.guild_rank ? ` (${state.self.guild_rank})` : ""}` : ""}${state.self.wielding ? ` · wielding ${state.self.wielding}` : ""}`
+    ? `YOU: level ${state.self.level} · ${state.self.xp}/${state.self.next_xp ?? "?"} xp · ${state.self.hp ?? "?"}/${state.self.max_hp ?? "?"} hp · ${state.self.mana ?? "?"}/${state.self.max_mana ?? "?"} mana · ${state.self.quests?.active ?? 0} active / ${state.self.quests?.completed ?? 0} done quests · ${state.self.inventory ?? 0} items${state.self.spells?.length ? ` · spells ${state.self.spells.join(", ")}` : ""}${state.self.guild ? ` · ${state.self.guild}${state.self.guild_rank ? ` (${state.self.guild_rank})` : ""}${Number.isFinite(state.self.guild_vault) ? ` · vault ${state.self.guild_vault}` : ""}` : ""}${state.self.title ? ` · title ${state.self.title}` : ""}${(state.self.ignoring ?? 0) ? ` · ignoring ${state.self.ignoring}` : ""}${(state.self.memory_facts ?? 0) ? ` · facts ${state.self.memory_facts}` : ""}${state.self.wielding ? ` · wielding ${state.self.wielding}` : ""}${Number.isFinite(state.self.spell_power) ? ` · spell power ${state.self.spell_power}` : ""}${(state.self.effects ?? []).length ? ` · effects ${(state.self.effects ?? []).map((effect) => `${effect.name} ${effect.rounds}`).join(", ")}` : ""}`
     : "";
   const sheet = [world, self].filter(Boolean).join("\n");
   const menu = actions.join(", ");
   const questBlock = quests ? `QUESTS:\n${quests}` : "";
+  const memoryBlock = memory ? `MEMORY:\n${memory}\n` : "";
+  const r4Block = r4 ? `R4 CONTEXT:\n${r4}\n` : "";
   if (fast) {
     return `TURN ${turn}
 ROOM:
 ${observation.trim() || "(no new text)"}
 ${sheet ? `\nSTATE:\n${sheet}\n` : ""}
 ACTIONS: ${menu}
-${questBlock ? `\n${questBlock}\n` : ""}
+${r4Block ? `\n${r4Block}` : ""}
+${memoryBlock ? `\n${memoryBlock}` : ""}
+${questBlock ? `${questBlock}\n` : ""}
 DIRECTOR:
 ${steering}
 ${note ? `\nNOTE: ${note}\n` : ""}
@@ -210,6 +378,8 @@ ROOM:
 ${observation.trim() || "(no new text)"}
 ${sheet ? `\nSTATE:\n${sheet}\n` : ""}
 ${menu ? `ACTIONS: ${menu}\n` : ""}
+${r4Block ? `${r4Block}\n` : ""}
+${memoryBlock ? `${memoryBlock}\n` : ""}
 ${questBlock ? `${questBlock}\n` : ""}
 DIRECTOR:
 ${steering}
@@ -274,7 +444,24 @@ const reasoningEffortFor = (model) => {
 };
 
 export function requestFor(provider, config, system, messages) {
-  const base = normalizeBase(config.base);
+  const fallbackBase = provider === "pollinations" ? PROVIDERS.pollinations.base : "";
+  const base = normalizeBase(config.base || fallbackBase);
+  if (provider === "pollinations") {
+    // The public endpoint is already the OpenAI-compatible chat URL, not a
+    // /v1 base. It streams SSE without a key.
+    const root = base.replace(/\/+$/, "");
+    return {
+      url: /\/openai$/i.test(root) ? root : `${root}/openai`,
+      headers: { "content-type": "application/json" },
+      body: {
+        model: config.model ?? "openai-fast",
+        messages: [{ role: "system", content: system }, ...messages],
+        temperature: config.temperature ?? 0,
+        max_tokens: config.maxTokens ?? 300,
+        stream: true,
+      },
+    };
+  }
   if (provider === "ollama") {
     // Ollama's native chat endpoint is the only one that can switch thinking
     // off explicitly. The OpenAI-compatible path silently spends reasoning
@@ -360,6 +547,46 @@ export function requestFor(provider, config, system, messages) {
       ...(reasoning ? { reasoning_effort: reasoning } : {}),
     },
   };
+}
+
+/** Read an OpenAI-style SSE response and return the accumulated content. */
+export async function readSseText(response, onText = () => {}) {
+  if (!response?.body) return { text: "", usage: null };
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let text = "";
+  let usage = null;
+  const consume = (line) => {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith("data:")) return;
+    const data = trimmed.slice(5).trim();
+    if (!data || data === "[DONE]") return;
+    try {
+      const body = JSON.parse(data);
+      const delta = body.choices?.[0]?.delta;
+      if (typeof delta?.content === "string") {
+        text += delta.content;
+        onText(text);
+      }
+      if (body.usage) usage = body.usage;
+    } catch {
+      // a partial or non-JSON event is not a content delta
+    }
+  };
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    let index;
+    while ((index = buffer.indexOf("\n")) >= 0) {
+      consume(buffer.slice(0, index));
+      buffer = buffer.slice(index + 1);
+    }
+  }
+  buffer += decoder.decode();
+  if (buffer) consume(buffer);
+  return { text: text.trim(), usage };
 }
 
 export function replyFrom(provider, body) {

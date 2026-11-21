@@ -24,9 +24,9 @@ Phase G model, which persisted inventory and position.
 | inventory | dropped in the room the character stood in | empty |
 | worn things | dropped, no longer worn | empty |
 
-The dropped objects remain exactly where they fell, lootable, until the
-two-hour reset. A player who logs out in the Vault leaves their sword in the
-Vault; another player can take it; the reset returns it to its home.
+After a clean logout, dropped objects remain where they fell, lootable, until
+the two-hour reset. A player who logs out in the Vault leaves their sword in
+the Vault; another player can take it; the reset returns it to its home.
 
 ## The two-hour reset
 
@@ -44,16 +44,25 @@ An object held at reset returns home too. The reset is the world's, not the
 character's: level, XP, guild, quests and mail survive it.
 
 No other path respawns an item. A logout or death drops held objects where the
-character stood; a restart keeps them there. `heldRoom` records where a carried
-object was last known, so a crash drops it in that room rather than at home.
-Only the reset returns an object to its starting point.
+character stood; a clean restart keeps them there. After a crash, `heldRoom`
+records where a carried object was at the last checkpoint, which may be an
+older location. World changes since that checkpoint can be lost.
 
 ## Checkpoints
 
 `saveState` calls `checkpointIdentities`: every online actor's progression is
-written into their identity. Room, visited set and hands are not written. A
-hard restart therefore restores accounts and progress, drops every actor, and
-lets the next login begin at the start.
+written into their identity. The server checkpoints changes to online character
+progression and identity operations before sending their tick's results; it
+stops if that checkpoint fails. This writes and rotates the full world state
+synchronously and may add latency. Room, visited set and hands are not restored
+to the character; the next login begins at the start.
+
+Other world changes remain subject to periodic checkpoints and can roll back
+after a crash. Process-kill recovery does not establish power-loss durability,
+recovery from corrupt backups, or a guarantee for every world action. Run
+`node --test runtime/crash-recovery.test.mjs` for a process-kill regression
+with stub admission. Set both `MUD_HOLO` and `MUD_PRISM_CODE` to run it with
+a matching hologram and `prism-code@0.5.0` instead.
 
 ## Accounts and the login gate
 

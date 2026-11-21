@@ -24,24 +24,33 @@ import { describe as renderRoom, examine } from "../runtime/view.mjs";
 import { loadVerbs } from "../runtime/verbs.mjs";
 import { loadChannels } from "../runtime/channels.mjs";
 import { loadSocials } from "../runtime/socials.mjs";
-import { hashPassword, verifyPassword, validName, validPassword, accountCapReached } from "../runtime/accounts.mjs";
+import { hashPassword, verifyPassword, validName, validNewName, validPassword, accountCapReached } from "../runtime/accounts.mjs";
+import { CHAT_LIMIT, CHAT_WINDOW_MS, REPORT_INTERVAL_MS, REPORT_REASON_MAX, chatAllowed, reportAllowed, reportRecord } from "../runtime/moderation.mjs";
+import { ADJECTIVES, NOUNS, randomCharacterName, uniqueCharacterName, chooseCharacter } from "../runtime/web/names.mjs";
+import { loadTitles, earnedTitles } from "../runtime/titles.mjs";
+import { TECHNIQUES, techniqueForWeapon, techniqueReady } from "../runtime/techniques.mjs";
+import { COMPONENTS, componentForItem, componentsText, salvageYield, upgradeCost } from "../runtime/forge.mjs";
+import { loadFacts, contextHasWord } from "../runtime/facts.mjs";
 import { allowCommand, DEFAULT_INTERVAL_MS } from "../runtime/allowance.mjs";
-import { loadLevels } from "../runtime/levels.mjs";
-import { loadQuests, validateQuestReferences } from "../runtime/quests.mjs";
-import { guildId, validGuildName } from "../runtime/guilds.mjs";
+import { loadLevels, levelForXp } from "../runtime/levels.mjs";
+import { loadQuestArchive, loadQuests, migrateQuestState, validateQuestReferences } from "../runtime/quests.mjs";
+import { GUILD_HALL, GUILD_VAULT_CAPACITY, guildId, guildVaultHolder, validGuildName, guildLevelFor, perksFor, wardenBonus, nightBonus, guildBonus, progressionAtLeast } from "../runtime/guilds.mjs";
+import { FACTIONS, factionAllows, factionRank, standingsText } from "../runtime/factions.mjs";
 import { DEFAULT_TURNS, trimMessages } from "../runtime/memory.mjs";
 import { buildLlms } from "../runtime/llms.mjs";
 import { assemble } from "../runtime/router.mjs";
-import { AREA_PERIOD, armorOf, attackRoll, checkpointIdentities, initialState, nextFrom, phaseAt, releaseHeldObjects, step, upgradeState } from "../runtime/world.mjs";
+import { AREA_PERIOD, BASE_HP, HP_PER_LEVEL, armorOf, attackRoll, checkpointIdentities, initialState, maxHpForLevel, nextFrom, phaseAt, releaseHeldObjects, step, upgradeState } from "../runtime/world.mjs";
 import { join } from "node:path";
 import { buildCandidates } from "./candidate.mjs";
-import { PROVIDERS, buildSystemPrompt, buildUserPrompt, normalizeBase, parseBrain, requestFor, replyFrom, trimHistory } from "../runtime/web/ai.mjs";
-import { verifyPrismSession, verifyPersonaOwner, verifySessionKey, sessionWithinWindow } from "../runtime/prism-auth.mjs";
+import { PROVIDERS, buildSystemPrompt, buildUserPrompt, normalizeBase, parseBrain, readSseText, requestFor, replyFrom, trimHistory, validateCommand, repairCommand } from "../runtime/web/ai.mjs";
+import { emptyMemory, noteRoom, rememberResult, memoryPrompt, loopWarning, breakLoop, shouldBreakLoop, pathTo, nextStep, routeHint, nearestTarget, seedMap, observedCommandSuccess } from "../runtime/web/memory.mjs";
+import { verifyPrismSession, verifyPersonaOwner, verifyPrismAction, verifySessionKey, sessionWithinWindow } from "../runtime/prism-auth.mjs";
 import { decodeIdentityRequest, identityAdmits } from "../runtime/identity.mjs";
 import { loadStateFile, saveStateFile } from "../runtime/state.mjs";
 import { acceptLinkRequest, completeLink, createDevice, createLinkOffer, createPrism, createRecovery, linkCode, recoverPrism, requestLink, revokeDevice, signAction, verifyAction } from "../runtime/web/prism-id.mjs";
 import { openKit, sealKit } from "../runtime/web/recovery-kit.mjs";
 import { readSpanTail, redactSpans, summarizeSpans } from "../runtime/spans.mjs";
+import { PLAYER_SPAN_NAMES, selectPlayerLines } from "../runtime/telemetry.mjs";
 import { admissionAdmits, decodeAdmissionRequest } from "./admission.mjs";
 import { measureCandidates } from "./measure.mjs";
 import { normalizePrismId, ownerAllowed, rebindPlan, tokenHash } from "../runtime/rebind.mjs";
@@ -49,14 +58,18 @@ import { deleteLegacy } from "./delete-legacy.mjs";
 import { normalizeStreamEvent, publicStreamText } from "../runtime/stream.mjs";
 import { normalizeAiTurn, aiTurnAttributes } from "../runtime/metrics.mjs";
 import { summarizeTrends } from "../runtime/trends.mjs";
+import { playerLines, summarizePlayers } from "../runtime/playerstats.mjs";
+import { currentEvent, eventPrice } from "../runtime/events.mjs";
+import { duelLadderRows, duelLadderText } from "../runtime/visibility.mjs";
 import { worldStatus, worldStatusText } from "../runtime/worldstatus.mjs";
 import { redactCommand, sanitizeIntent, sanitizeState, scrubSecrets, scrubSpan } from "../runtime/telemetry-policy.mjs";
 import { planRetention } from "../runtime/retention.mjs";
-import { equipmentOf, equipmentText } from "../runtime/equipment.mjs";
-import { maxManaFor } from "../runtime/magic.mjs";
+import { equipmentOf, equipmentText, inventoryGroups, setBonus } from "../runtime/equipment.mjs";
+import { maxManaFor, spellPower } from "../runtime/magic.mjs";
 import { trainingCost } from "../runtime/magic.mjs";
 import { findAction, loadActions } from "../runtime/actions.mjs";
 import { auditAccounts } from "../runtime/account-audit.mjs";
+import { levelsText, leaderboardText, mapText, shortcutsText } from "../runtime/visibility.mjs";
 import { deleteBarePrismAccount, deletePrismIdentity } from "../runtime/account-delete.mjs";
 import { wipePlayers } from "../runtime/account-wipe.mjs";
 
@@ -153,7 +166,8 @@ if (!web.includes("body.ai-mode.ai-running main") || !web.includes("--dock: 520p
 let webAI = { ok: true, why: [] };
 {
   const check = (condition, why) => { if (!condition) { webAI.ok = false; webAI.why.push(why); } };
-  check(!PROVIDERS.ollama?.needsKey && !PROVIDERS.custom?.needsKey && !PROVIDERS["prime-router"]?.needsKey, "a local provider requires a key");
+  check(!PROVIDERS.pollinations?.needsKey && !PROVIDERS.ollama?.needsKey && !PROVIDERS.custom?.needsKey && !PROVIDERS["prime-router"]?.needsKey, "a no-key provider requires a key");
+  check(PROVIDERS.pollinations?.keyMode === "none" && PROVIDERS.pollinations?.model === "openai-fast", "the free streaming provider is not configured");
   check(PROVIDERS.custom?.keyMode === "optional" && PROVIDERS.openai?.keyMode === "required", "the provider key modes are wrong");
   check(PROVIDERS["gemini-demo"]?.keyMode === "proxy" && !PROVIDERS["gemini-demo"]?.needsKey, "the Gemini demo provider is not server-keyed");
   check(normalizeBase("https://api.openai.com/v1/chat/completions") === "https://api.openai.com/v1", "a full chat URL was not normalized to its base");
@@ -162,6 +176,15 @@ let webAI = { ok: true, why: [] };
   const normalized = requestFor("openai", { base: "https://api.openai.com/v1/chat/completions", model: "m", key: "k" }, "sys", [{ role: "user", content: "hi" }]);
   check(normalized.url === "https://api.openai.com/v1/chat/completions", "the request appended a second chat path");
   const customNoKey = requestFor("custom", { base: "http://localhost:8080/v1", model: "m", key: "" }, "sys", [{ role: "user", content: "hi" }]);
+  const free = requestFor("pollinations", { base: "https://text.pollinations.ai/openai", model: "openai-fast", fast: true }, "sys", [{ role: "user", content: "hi" }]);
+  check(free.url === "https://text.pollinations.ai/openai" && free.body.stream === true && free.body.model === "openai-fast", "the Pollinations request is wrong");
+  const streamed = await readSseText(new Response([
+    'data: {"choices":[{"delta":{"content":"THOUGHT: look"}}]}',
+    'data: {"choices":[{"delta":{"content":" around\\nCOMMAND: look"}}]}',
+    'data: [DONE]',
+    '',
+  ].join("\n\n")), () => {});
+  check(streamed.text.includes("COMMAND: look") && streamed.text.includes("THOUGHT: look"), "the SSE reader lost content");
   check(!customNoKey.headers.authorization, "a keyless custom endpoint sent an authorization header");
   const good = parseBrain("THOUGHT: The Vault is north.\nREPLY: On my way.\nCOMMAND: north");
   check(good.command === "north", "the parser lost a labelled command");
@@ -206,6 +229,8 @@ let webAI = { ok: true, why: [] };
   check(deliberate.body.reasoning_effort === undefined, "standard mode changed the provider reasoning setting");
   const fastSystem = buildSystemPrompt({ name: "scout", fast: true });
   check(fastSystem.includes("ACTIONS is a shortlist") && fastSystem.includes("say <text>") && fastSystem.includes("THOUGHT"), "the fast system prompt lost the free-form/social contract");
+  const r4User = buildUserPrompt({ turn: 1, observation: "[The Atrium]", r4: "vault: the true word is amber" });
+  check(r4User.includes("R4 CONTEXT:") && r4User.includes("true word is amber"), "the R4 context block was not injected");
   const fastUser = buildUserPrompt({
     turn: 1,
     observation: "[The Atrium]",
@@ -218,6 +243,29 @@ let webAI = { ok: true, why: [] };
     },
   });
   check(fastUser.includes("ACTIONS:") && fastUser.includes("north") && fastUser.includes("examine plaque") && fastUser.includes("take a grey cloak") && fastUser.includes("say <text>"), "the fast prompt did not inject the legal/social actions");
+  const guardState = {
+    room: {
+      name: "The Atrium", safe: true, details: ["plaque"],
+      exits: [{ dir: "north" }, { dir: "east" }],
+      objects: [
+        { name: "an oaken chest", open: true, container: true, contents: ["a copper coin"] },
+        { name: "a grey cloak", takeable: true },
+        { name: "a short sword", takeable: true, forSale: true, price: 30 },
+      ],
+      npcs: [{ name: "a bard", aggression: 0 }], actions: [],
+    },
+    self: { inventory_names: ["a grey cloak"], spells: ["spark"] },
+  };
+  check(validateCommand("look", guardState).ok, "a basic command was rejected");
+  check(validateCommand("go north", guardState).ok, "go north was rejected");
+  check(validateCommand("say hello", guardState).ok, "speech was rejected");
+  check(!validateCommand("search an oaken chest", guardState).ok && repairCommand("search an oaken chest", guardState) === "search", "search target was not repaired");
+  check(!validateCommand("take copper coin", guardState).ok && repairCommand("take copper coin", guardState).includes("from"), "a contained item was not repaired to take-from");
+  check(!validateCommand("open an oaken chest", guardState).ok && repairCommand("open an oaken chest", guardState).startsWith("close"), "an already-open container was not repaired");
+  check(!validateCommand("attack a bard", guardState).ok && repairCommand("attack a bard", guardState) === "look", "safe-room combat was not repaired");
+  check(!validateCommand("take short sword", guardState).ok && repairCommand("take short sword", guardState).startsWith("buy"), "a for-sale take was not repaired to buy");
+  const observed = { room: { name: "The Storeroom", text: "The shelves hold a short sword and a leather jerkin. Exits: west.", exits: [{ dir: "west" }], objects: [], npcs: [], details: [] } };
+  check(validateCommand("take short sword", observed).ok, "observation names were not available to the validator");
   const reasoned = replyFrom("custom", { choices: [{ message: { content: "", reasoning_content: "COMMAND: look" } }] });
   check(reasoned.text === "", "reasoning content was treated as the answer");
   const native = replyFrom("ollama", { message: { content: "THOUGHT: x\nCOMMAND: look" } });
@@ -231,6 +279,116 @@ let webAI = { ok: true, why: [] };
   const trimmed = trimHistory(history, 2);
   check(trimmed.length === 4 && trimmed[0].role === "user", "history trimming cut a pair in half");
   if (!webAI.ok) failures.push(`the browser AI is broken: ${webAI.why[0]}`);
+}
+
+// Persistent AI memory: room commands, stale repeats, unexplored exits, and
+// a loop guard that chooses a different action.
+let aiMemory = { ok: true, why: [] };
+{
+  const check = (condition, why) => { if (!condition) { aiMemory.ok = false; aiMemory.why.push(why); } };
+  const memory = emptyMemory();
+  rememberResult(memory, { room: "The Atrium", command: "examine plaque", observation: "The plaque reads: the Vault keeps the word.", tick: 1 });
+  rememberResult(memory, { room: "The Atrium", command: "examine plaque", observation: "The plaque reads: the Vault keeps the word.", tick: 2 });
+  rememberResult(memory, { room: "The Atrium", command: "examine plaque", observation: "The plaque reads: the Vault keeps the word.", tick: 3 });
+  rememberResult(memory, { room: "The Storeroom", command: "look", observation: "Shelves of empty crates.", tick: 4 });
+  const prompt = memoryPrompt(memory, {
+    room: "The Atrium",
+    exits: [{ dir: "north", room: "The Corridor" }, { dir: "south", room: "Market Square" }],
+  });
+  check(prompt.includes("seen 2 times") || prompt.includes("seen 1 time"), "the memory lost the room visit");
+  check(prompt.includes("stale 2"), "the memory did not mark the repeated result stale");
+  check(prompt.includes("The Storeroom"), "the memory lost a visited room");
+  const recall = memoryPrompt(memory, { room: "The Atrium", query: "What did the plaque say about the Vault?" });
+  check(recall.includes("Known:") && recall.includes("Vault keeps the word"), "the prime concept index did not recall the plaque fact");
+  const social = emptyMemory();
+  rememberResult(social, { room: "The Atrium", command: "say", observation: "a bard says: The Vault keeps the word.\nA stranger tells you: the password is secret.\nPassword changed.", tick: 2 });
+  const socialPrompt = memoryPrompt(social, { room: "The Atrium" });
+  check(socialPrompt.includes("Voices:") && socialPrompt.includes("a bard") && socialPrompt.includes("Vault keeps the word"), "the social memory lost public speech");
+  check(!/tells you|password is secret|Password changed/i.test(socialPrompt), "the social memory leaked a private line");
+  check(prompt.includes("Unexplored exits"), "the memory lost the unexplored exits");
+  check(prompt.includes("Route:"), "the memory lost the recent route");
+  check(loopWarning(["north", "south", "north", "south"]).includes("LOOP"), "the memory did not detect a movement cycle");
+  check(loopWarning(["look", "look", "look"]).includes("LOOP"), "the memory did not detect a repeated command");
+  check(loopWarning([], ["The Atrium", "The Corridor", "The Atrium", "The Corridor"]).includes("ROUTE LOOP"), "the memory did not detect a room cycle");
+  check(breakLoop(["north", "south", "north", "south"], [{ dir: "north" }, { dir: "south" }, { dir: "east" }]) === "east", "the loop guard did not choose a fresh exit");
+  const route = emptyMemory();
+  noteRoom(route, "The Atrium");
+  noteRoom(route, "The Corridor");
+  check(breakLoop(["north", "south", "north", "south"], [
+    { dir: "north", room: "The Atrium" },
+    { dir: "south", room: "The Corridor" },
+    { dir: "east", room: "The Vault" },
+  ], route) === "east", "the loop guard did not prefer an unvisited room");
+  check(shouldBreakLoop(route, { room: "The Atrium", command: "north", recent: ["north", "south", "north", "south"] }), "the route loop did not trigger the loop guard");
+  check(shouldBreakLoop(memory, { room: "The Atrium", command: "examine plaque", recent: [] }), "the stale memory did not trigger the loop guard");
+  const graph = emptyMemory();
+  noteRoom(graph, "The Atrium", [{ dir: "north", room: "The Corridor" }, { dir: "east", room: "The Storeroom" }]);
+  noteRoom(graph, "The Corridor", [{ dir: "south", room: "The Atrium" }, { dir: "east", room: "The Vault" }]);
+  noteRoom(graph, "The Vault", [{ dir: "west", room: "The Corridor" }]);
+  const path = pathTo(graph, "The Atrium", "The Vault");
+  check(path.length === 2 && path[0] === "north" && path[1] === "east", "the room graph did not find the shortest path");
+  check(nextStep(graph, "The Atrium", "The Vault") === "north", "the next-step planner chose the wrong exit");
+  check(routeHint(graph, "The Atrium", "The Vault").includes("north"), "the route hint did not name the next exit");
+  check(routeHint(graph, "The Atrium", "The Moon").includes("No known route"), "the route hint invented an unknown path");
+  const nearest = nearestTarget(graph, "The Atrium", ["The Moon", "The Vault"]);
+  check(nearest?.target === "The Vault" && nearest.path.length === 2, "the nearest-objective planner chose the wrong target");
+  const here = nearestTarget(graph, "The Vault", ["The Vault", "The Moon"]);
+  check(here?.target === "The Vault" && here.path.length === 0, "the nearest-objective planner skipped the current room");
+  const seeded = emptyMemory();
+  seedMap(seeded, [
+    { name: "Market Square", exits: [{ dir: "west", room: "The Gilded Rat" }, { dir: "north", room: "The Atrium" }] },
+    { name: "The Gilded Rat", exits: [{ dir: "east", room: "Market Square" }, { dir: "north", room: "The Guild Hall" }] },
+    { name: "The Guild Hall", exits: [{ dir: "south", room: "The Gilded Rat" }] },
+  ]);
+  check(pathTo(seeded, "Market Square", "The Guild Hall").join(",") === "west,north", "the published map did not seed a route");
+  check(observedCommandSuccess("take press seed", "You take a press seed."), "the take success check missed a take");
+  check(!observedCommandSuccess("deliver seal", "Nobody here answers to that."), "the delivery check accepted a failure");
+  check(observedCommandSuccess("recall orchard", "You recall: the orchard keeps ORCHARD."), "the recall success check missed a recall");
+  check(!observedCommandSuccess("take press seed", "There is no press seed here."), "the take check accepted a miss");
+  if (aiMemory.why.length) { aiMemory.ok = false; failures.push(`the AI memory is broken: ${aiMemory.why[0]}`); }
+}
+
+// New AI/human characters get a random valid name and the AI never falls back
+// to a separate standalone Prism account.
+let characterNames = { ok: true, why: [] };
+{
+  const check = (condition, why) => { if (!condition) { characterNames.ok = false; characterNames.why.push(why); } };
+  let seed = 12345;
+  const random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
+  const seen = new Set();
+  for (let i = 0; i < 40; i += 1) {
+    const name = uniqueCharacterName([...seen], random);
+    check(/^[a-z]+-[a-z]+-[0-9]{2,4}$/.test(name), `random name ${name} is not a valid character name`);
+    check(name.length <= 24, `random name ${name} is too long`);
+    check(!seen.has(name), `random name ${name} was repeated`);
+    seen.add(name);
+  }
+  check(/^[a-z]+-[a-z]+-[0-9]{2,4}$/.test(randomCharacterName(random)), "randomCharacterName returned an invalid name");
+  for (const adjective of ADJECTIVES) {
+    for (const noun of NOUNS) {
+      const generated = `${adjective}-${noun}-42`;
+      check(validNewName(generated), `generated name ${generated} is refused by the new-name policy`);
+    }
+  }
+  check(web.includes("/names.mjs"), "the page does not load the name generator");
+  check((web.match(/prismSignIn\("ai"/g) ?? []).length === 1, "the old AI account path is not limited to recovery");
+  check(web.includes("No old AI session is stored in this browser"), "the old AI recovery path is missing");
+  check(web.includes("Recover old AI characters"), "the recovery panel is missing");
+  check(serverSource.includes("recover-list") && serverSource.includes("transferCharacter"), "the server transfer path is missing");
+  check(web.includes("AI personas use your Prism account"), "the AI does not require the human Prism login");
+  check(web.includes("randomCharacterName()"), "the human create form does not suggest a random name");
+  check(web.includes("chooseCharacter"), "the AI does not use the shared character choice");
+  check(serverSource.includes("/names.mjs"), "the server does not serve the name generator");
+  check(web.includes("Open a normal window or use a recovery kit before starting the AI"), "a memory-only window can still start an orphan AI persona");
+  const existing = chooseCharacter({ wanted: "scout", explicit: false, characters: ["alder-fox-42"], random });
+  check(existing.action === "play" && existing.name === "alder-fox-42", "the AI did not prefer an existing character");
+  const explicitNew = chooseCharacter({ wanted: "scout", explicit: true, characters: ["alder-fox-42"], random });
+  check(explicitNew.action === "create" && explicitNew.name === "scout", "an explicit new character was not created");
+  const blankNew = chooseCharacter({ explicit: false, characters: [], random });
+  check(blankNew.action === "create" && /^[a-z]+-[a-z]+-[0-9]{2,4}$/.test(blankNew.name), "a blank new account did not get a random name");
+  const present = chooseCharacter({ wanted: "alder-fox-42", explicit: true, characters: ["alder-fox-42"], random });
+  check(present.action === "play", "an existing explicit character was not played");
+  if (characterNames.why.length) failures.push(`character names are broken: ${characterNames.why[0]}`);
 }
 
 // The world is a map, not a pile of rooms: every room has a real description,
@@ -276,6 +434,8 @@ if (verbTable.errors.length > 0) failures.push(`verbs are invalid: ${verbTable.e
 const channelTable = loadChannels();
 const socialTable = loadSocials();
 const questTable = loadQuests();
+measured.quests = questTable.quests.length;
+if (measured.quests > ratchet.mustNotGrow.quests) failures.push(`quests are ${measured.quests}, above the frozen ceiling of ${ratchet.mustNotGrow.quests}; the target is 20`);
 
 // The agent contract is generated from the same tables as the game: every verb,
 // room, channel and social must appear.
@@ -328,9 +488,31 @@ let accounts = { ok: true, why: [] };
   const { salt, hash } = hashPassword("correct horse");
   if (!verifyPassword("correct horse", salt, hash)) { accounts.ok = false; accounts.why.push("a correct password was refused"); }
   if (verifyPassword("wrong horse", salt, hash)) { accounts.ok = false; accounts.why.push("a wrong password was accepted"); }
-  if (!validName("alice-1") || validName("a b") || !validPassword("sixsix") || validPassword("short")) {
+  if (!validName("alice-1") || validName("a b") || validName("admin") || validName("Moderator") || !validPassword("sixsix") || validPassword("short")) {
     accounts.ok = false;
     accounts.why.push("name or password validation is wrong");
+  }
+  // New names add a minimum length and a token-aware impersonation policy.
+  // The shape check stays permissive so a legacy short name can still log in.
+  if (!validName("ab") || validNewName("ab")) {
+    accounts.ok = false;
+    accounts.why.push("the new-name minimum length is wrong");
+  }
+  if (!validName("root") || validNewName("root")) {
+    accounts.ok = false;
+    accounts.why.push("the legacy-login and new-name reserved sets are not distinct");
+  }
+  for (const name of ["admin2", "the-admin", "4dm1n", "4dm1n1", "w1zard", "w1zard2", "mod_team", "gm", "sysadmin", "support", "root", "themod", "the4dm1n2", "game-master", "123", "___"]) {
+    if (validNewName(name)) {
+      accounts.ok = false;
+      accounts.why.push(`the reserved-name policy admitted ${name}`);
+    }
+  }
+  for (const name of ["alice-1", "badminton", "wizardry", "modest", "supportive", "a-b"]) {
+    if (!validNewName(name)) {
+      accounts.ok = false;
+      accounts.why.push(`the reserved-name policy refused ${name}`);
+    }
   }
   if (accountCapReached(499, 500) || !accountCapReached(500, 500) || accountCapReached(1, 0)) {
     accounts.ok = false;
@@ -397,6 +579,16 @@ let prismLogin = { ok: true, why: [] };
   if (state.identities["legacy-test"]?.kind !== "character" || state.identities["legacy-test"]?.owner !== "legacy-test") {
     prismLogin.why.push("a legacy character is not owned by its account");
   }
+  // Recovery moves an old AI account's character to the human account.
+  const oldKey = `sha256:${"e".repeat(64)}`;
+  const humanKey = `sha256:${"f".repeat(64)}`;
+  run([{ kind: "join", actorId: "rec", name: "rec" }]);
+  run([{ kind: "createCharacter", accountKey: oldKey, name: "oldscout", actorId: "rec" }]);
+  run([{ kind: "transferCharacter", actorId: "rec", fromKey: oldKey, toKey: humanKey, characterKey: "oldscout" }]);
+  if (state.identities.oldscout?.owner !== humanKey) prismLogin.why.push("the old AI character did not move to the human account");
+  if ((state.accounts[humanKey]?.characters ?? []).includes("oldscout") !== true) prismLogin.why.push("the human account did not receive the recovered character");
+  if ((state.accounts[oldKey]?.characters ?? []).includes("oldscout")) prismLogin.why.push("the old account kept the recovered character");
+
   const upgraded = upgradeState({ identities: { "old-name": { name: "old-name" } } }, initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, world.levels, questTable.quests));
   if (upgraded.accounts["old-name"]?.kind !== "legacy") prismLogin.why.push("upgradeState did not create an account");
   if (upgraded.identities["old-name"]?.kind !== "character") prismLogin.why.push("upgradeState did not create a character");
@@ -703,6 +895,25 @@ let persona = { ok: true, why: [] };
   if (persona.why.length) { persona.ok = false; failures.push(`personas are broken: ${persona.why[0]}`); }
 }
 
+// Old AI transfers are signed by the old account and verified before a move.
+let prismTransfer = { ok: true, why: [] };
+{
+  const check = (condition, why) => { if (!condition) { prismTransfer.ok = false; prismTransfer.why.push(why); } };
+  const origin = "https://play.r4labs.org";
+  const now = Date.now();
+  const oldAi = await createPrism({});
+  const human = await createPrism({});
+  const action = await signAction(oldAi, "prism/character-transfer/1", { character: "oldscout", to: human.prism, audience: origin }, { audience: origin, now });
+  const records = [...oldAi.log.values()];
+  const good = await verifyPrismAction(action, { origin, records, action: "prism/character-transfer/1", expected: { to: human.prism }, now });
+  check(good.ok && good.prism === oldAi.prism && good.payload?.character === "oldscout", "a signed old-account transfer was not accepted");
+  const wrongUser = await createPrism({});
+  const wrongAction = await signAction(oldAi, "prism/character-transfer/1", { character: "oldscout", to: wrongUser.prism, audience: origin }, { audience: origin, now: now + 1 });
+  const wrong = await verifyPrismAction(wrongAction, { origin, records, action: "prism/character-transfer/1", expected: { to: human.prism }, now: now + 1 });
+  check(!wrong.ok, "a transfer to another account was accepted");
+  if (prismTransfer.why.length) failures.push(`prism transfer is broken: ${prismTransfer.why[0]}`);
+}
+
 // X7: an account owns more than one character; the character is the game name.
 let characters = { ok: true, why: [] };
 {
@@ -832,7 +1043,7 @@ let claim = { ok: true, why: [] };
   state.identities[legacyKey] = {
     ...state.identities[legacyKey],
     level: 5, xp: 500, guild: "g1", guildRank: "officer",
-    quests: { active: [{ id: "word", progress: {} }], completed: ["scroll"] },
+    quests: { active: [{ id: "word", progress: {} }], completed: ["guardian"] },
   };
   state.guilds.g1 = { id: "g1", name: "The Keepers", founder: legacyKey, created: 0, members: { [legacyKey]: "officer" }, invites: [legacyKey] };
   state.mail.push({ id: "m1", from: legacyKey, fromKey: legacyKey, toKey: legacyKey, text: "old letter", tick: 0, read: false });
@@ -852,7 +1063,7 @@ let claim = { ok: true, why: [] };
   check(claimed?.owner === prismKey && claimed?.name === legacyKey, "the claimed character did not move to the Prism account");
   check(claimed?.level === 5 && claimed?.xp === 500, "the claim lost the old progression");
   check(claimed?.guild === "g1" && claimed?.guildRank === "officer", "the claim lost the old guild");
-  check(claimed?.quests?.completed?.includes("scroll") && claimed?.quests?.active?.some((entry) => entry.id === "word"), "the claim lost the old quests");
+  check(claimed?.quests?.completed?.includes("guardian") && claimed?.quests?.active?.some((entry) => entry.id === "word"), "the claim lost the old quests");
   check(legacyAccount?.retired === true && legacyAccount?.mergedInto === prismKey, "the old account was not tombstoned");
   check(legacyAccount?.passwordHash === null && legacyAccount?.tokenHash === null, "the old credentials were not cleared");
   check(state.mail[0]?.toKey === legacyKey && state.mail[0]?.fromKey === legacyKey, "the old mail keys moved");
@@ -1068,9 +1279,10 @@ let accountWipe = { ok: true, why: [] };
     duels: [{ challengerKey: "a" }],
     engagements: [{ attackerId: 1 }],
     guilds: {
-      mages: { members: { alice: "member" }, invites: ["bob"] },
-      players: { members: { bob: "leader" }, invites: [] },
+      mages: { members: { alice: "member" }, invites: ["bob"], vault: ["shield"] },
+      players: { members: { bob: "leader" }, invites: [], vault: ["sword"] },
     },
+    objects: [{ id: "sword", holder: "guild:players" }, { id: "shield", holder: "guild:mages" }],
     rooms: { 1: { name: "The Atrium" } },
     npcs: [{ id: "rat" }],
   };
@@ -1083,6 +1295,7 @@ let accountWipe = { ok: true, why: [] };
   check(result.after.actors === 0 && state.mail.length === 0 && state.duels.length === 0 && state.engagements.length === 0, "the wipe left player references");
   check(state.guilds.mages && Object.keys(state.guilds.mages.members).length === 0 && state.guilds.mages.invites.length === 0, "the mages roster was not cleared");
   check(!state.guilds.players, "a player guild survived the wipe");
+  check(state.objects.every((object) => object.holder === null && object.room === GUILD_HALL), "the wipe did not release vault goods into the hall");
   check(state.rooms[1]?.name === "The Atrium" && state.npcs[0]?.id === "rat", "the wipe removed world content");
   if (accountWipe.why.length) { accountWipe.ok = false; failures.push(`the account wipe is broken: ${accountWipe.why[0]}`); }
 }
@@ -1113,14 +1326,24 @@ let stream = { ok: true, why: [] };
   check(/#stream-state/.test(serverText), "the server does not confirm stream state");
   check(/action === "poll"/.test(serverText) && /action === "chat"/.test(serverText), "the streamer has no poll or chat controls");
   check(/pathname === "\/stream"/.test(serverText) && /mudbenchmark\/stream\/1/.test(serverText), "the public stream status endpoint is missing");
+  check(/pathname === "\/stats"/.test(serverText) && /pathname === "\/leaderboard"/.test(serverText) && existsSync(join(root, "runtime/web/stats.html")), "the public stats page or leaderboard endpoint is missing");
+  const statsPage = readFileSync(join(root, "runtime/web/stats.html"), "utf8");
+  check(/pathname === "\/players"/.test(serverText) && /id="player-cards"/.test(statsPage) && /fetch\(\/players\)|get\("\/players"\)/.test(statsPage), "the public player statistics view is missing");
+  check(/pathname === "\/reports"/.test(serverText) && /OWNER_TOKEN/.test(serverText) && /ownerAllowed/.test(serverText), "the owner reports endpoint is missing");
   check(/pathname === "\/api\/demo"/.test(serverText) && /pathname === "\/api\/gemini\/v1\/chat\/completions"/.test(serverText), "the Gemini demo routes are missing");
+  check(/r4-context/.test(serverText) && /R4_URL/.test(serverText), "the R4 memory proxy is missing");
+  check(/lastLive/.test(serverText) && /publicLast/.test(serverText), "the stream archive is missing");
+  check(/SIGNUP_MODE/.test(serverText) && /SIGNUPS_OPEN/.test(serverText), "the operator signup mode is missing");
+  check(/minuteRemaining/.test(serverText) && /demoRemaining/.test(web), "the demo quota alert fields are missing");
   check(/GEMINI_API_KEY/.test(serverText) && /x-demo-token/.test(serverText) && /GEMINI_DAILY_TURNS/.test(serverText), "the Gemini proxy lost its key, token or quota");
   check(/inventory_names/.test(serverText) && /active_quests/.test(serverText) && /details: Object.keys\(room.details/.test(serverText), "the self state lost the injected room context");
   check(/isVote/.test(serverText) && /vote a or vote b/.test(serverText), "spectators cannot vote");
-  check(/\^\(stream\|metric\|session-key\|rebind\|demo-token\)/.test(serverText), "control verbs still consume the player rate limit");
+  check(/\^\(stream\|metric\|session-key\|rebind\|demo-token\|r4-context\|r4-remember\)/.test(serverText), "control verbs still consume the player rate limit");
   const page = readFileSync(join(root, "runtime/web/index.html"), "utf8");
+  check(/class="skip"/.test(page) && /prefers-reduced-motion/.test(page) && /:focus-visible/.test(page) && /role="log"/.test(page) && /aria-live="polite"/.test(page), "the accessibility shell contract is missing");
   check(/id="ai-stream"/.test(page) && /#stream-chat/.test(page), "the AI panel has no Go live path");
   check(/gemini-demo/.test(page) && /requestDemoToken/.test(page) && /#demo-token/.test(page), "the UI has no Gemini demo path");
+  check(/r4-context/.test(page) && /r4-remember/.test(page) && /requestR4Context/.test(page), "the UI has no R4 context path");
   const watch = readFileSync(join(root, "runtime/web/watch.html"), "utf8");
   check(/WebSocket\(`\$\{scheme\}\/\/\$\{location\.host\}\/live`\)/.test(watch), "the watch page does not connect to /live");
   check(/function renderPoll/.test(watch) && /highlight-card/.test(watch), "the watch page has no poll or highlight");
@@ -1164,9 +1387,12 @@ let telemetry = { ok: true, why: [] };
     prompt_tokens: 100, completion_tokens: 20, thinking_tokens: 15,
     parse_ok: true, command: "look", thought_chars: 40, turn: 2, tick: 9,
     fast: true, deliberate: true, reasoning: "auto", prompt_version: "r4-direct-2",
+    invalid: true, invalid_reason: "already open", repair: "close chest", loop: true,
+    memory_hit: true, r4_hit: true, rooms_seen: 5,
   });
   check(metric?.latency_ms === 1234 && metric?.command === "look", "a valid AI turn metric was refused");
   check(metric?.fast === true && metric?.deliberate === true && metric?.reasoning === "auto" && metric?.prompt_version === "r4-direct-2", "the AI turn metric lost its mode");
+  check(metric?.invalid === true && metric?.loop === true && metric?.memory_hit === true && metric?.r4_hit === true && metric?.rooms_seen === 5, "the AI turn metric lost the scorecard fields");
   check(normalizeAiTurn({ kind: "other", provider: "x" }) === null, "an unknown metric kind was accepted");
   check(normalizeAiTurn({ kind: "ai.turn", provider: "x", error: "x".repeat(500) })?.error.length === 200, "an error string was not bounded");
   const attrs = aiTurnAttributes(metric);
@@ -1176,7 +1402,7 @@ let telemetry = { ok: true, why: [] };
     { name: "world.client", at: "2026-11-17T00:00:00Z", "client.transport": "websocket" },
     { name: "world.disconnect", at: "2026-11-17T00:01:00Z", duration_ms: 60000, "client.transport": "websocket" },
     { name: "world.session", at: "2026-11-17T00:00:30Z", "session.kind": "login" },
-    { name: "ai.turn", at: "2026-11-17T00:00:40Z", "ai.latency_ms": 1000, "ai.parse_ok": true, "ai.command": "look", "ai.prompt_tokens": 10, "ai.completion_tokens": 2, "ai.provider": "openai", "ai.fast": true, "ai.prompt_version": "r4-direct-1" },
+    { name: "ai.turn", at: "2026-11-17T00:00:40Z", "ai.latency_ms": 1000, "ai.parse_ok": true, "ai.command": "look", "ai.prompt_tokens": 10, "ai.completion_tokens": 2, "ai.provider": "openai", "ai.model": "test", "ai.fast": true, "ai.prompt_version": "r4-direct-1", "ai.invalid": true, "ai.loop": true, "ai.memory_hit": true, "ai.r4_hit": true, "ai.rooms_seen": 5 },
     { name: "ai.turn", at: "2026-11-17T00:00:45Z", "ai.latency_ms": 3000, "ai.parse_ok": false, "ai.error": "timeout", "ai.timeout": true, "ai.provider": "openai" },
     { name: "world.input", at: "2026-11-17T00:00:41Z", text: "look" },
     { name: "world.input", at: "2026-11-17T00:00:42Z", text: "north" },
@@ -1186,6 +1412,7 @@ let telemetry = { ok: true, why: [] };
   const trends = summarizeTrends(spans);
   check(trends.ai.turns === 2 && trends.ai.parsed === 0.5, "the AI trend counts are wrong");
   check(trends.ai.by_mode.direct.turns === 1 && trends.ai.by_mode.full.turns === 1 && trends.ai.prompt_versions["r4-direct-1"] === 1, "the AI mode trends are wrong");
+  check(trends.ai.invalid === 1 && trends.ai.loops === 1 && trends.ai.rooms_seen_max === 5 && trends.ai.by_model.test?.turns === 1, "the AI scorecard trends are wrong");
   check(trends.ai.latency_ms.p50 === 1000 && trends.ai.latency_ms.max === 3000, "the AI latency percentiles are wrong");
   check(trends.commands.accepted === 2 && trends.commands.refused === 1, "the command trend counts are wrong");
   check(trends.world.online.latest === 1 && trends.world.levels.max === 4, "the world trend counts are wrong");
@@ -1202,6 +1429,17 @@ let telemetry = { ok: true, why: [] };
   check(retention.keep.some((file) => file.path.endsWith("spans.new")), "retention dropped a recent archive");
   check(retention.remove.some((file) => file.path.endsWith("spans.huge")), "retention did not enforce the byte cap");
 
+  const compact = selectPlayerLines([
+    JSON.stringify({ name: "world.tick", "world.tick": 1 }),
+    JSON.stringify({ name: "world.session", "actor.id": "a", "session.ai": false }),
+    JSON.stringify({ name: "world.prism", "prism.id": "acct-a", "prism.ai": true }),
+    JSON.stringify({ name: "world.quest", "actor.id": "a", "quest.action": "accept" }),
+    JSON.stringify({ name: "ai.turn", "ai.provider": "x" }),
+  ].join("\n"));
+  check(PLAYER_SPAN_NAMES.has("world.session") && PLAYER_SPAN_NAMES.has("world.prism") && PLAYER_SPAN_NAMES.has("world.quest") && !PLAYER_SPAN_NAMES.has("world.tick"), "the compact player span set is wrong");
+  check(compact.includes("world.session") && compact.includes("world.prism") && compact.includes("world.quest") && !compact.includes("world.tick") && !compact.includes("ai.turn"), "the compact player log kept the wrong spans");
+  check(/ensurePlayerLog\(\)/.test(serverSource), "the server does not seed the compact player log");
+
   const statusWorld = loadWorld({ mode: "single" });
   let statusState = initialState(statusWorld.rooms, statusWorld.npcs, statusWorld.objects, statusWorld.start, statusWorld.climate, channelTable.channels, statusWorld.levels, questTable.quests);
   statusState.actors.push({ id: "t1", key: "alice", account: "alice", name: "alice", room: statusWorld.start, level: 4, xp: 350, hp: 12, maxHp: 16, guild: null, guildRank: null, quests: { active: [], completed: [] }, wielding: "lamp6" });
@@ -1214,6 +1452,236 @@ let telemetry = { ok: true, why: [] };
   check(worldStatusText(status).includes("alice") && worldStatusText(status).includes("level 4"), "the human world status is missing the actor");
 
   if (telemetry.why.length) { telemetry.ok = false; failures.push(`the telemetry foundation is broken: ${telemetry.why[0]}`); }
+}
+
+// Player statistics are aggregate-only: sessions, playtime, quest completion,
+// combat and rooms are described without account keys or character names.
+let playerStats = { ok: true, why: [] };
+{
+  const check = (condition, why) => { if (!condition) { playerStats.ok = false; playerStats.why.push(why); } };
+  const spans = [
+    { name: "world.session", at: "2026-11-20T00:00:00Z", "actor.id": "h1", "actor.name": "alice", "account.key": "acct-h", "session.kind": "register", "session.prism": false, "session.ai": false },
+    { name: "world.session", at: "2026-11-20T00:01:00Z", "actor.id": "a1", "actor.name": "ember-fox-42", "account.key": "acct-ai", "session.kind": "login", "session.prism": true },
+    { name: "world.prism", at: "2026-11-20T00:01:00Z", "actor.id": "a1", "prism.id": "acct-ai", "prism.ai": true },
+    { name: "world.session", at: "2026-11-20T00:02:00Z", "actor.id": "h2", "actor.name": "alice", "account.key": "acct-h", "session.kind": "login", "session.prism": false, "session.ai": false },
+    { name: "world.disconnect", "actor.id": "h1", duration_ms: 60000 },
+    { name: "world.disconnect", "actor.id": "a1", duration_ms: 120000 },
+    { name: "world.quest", "actor.id": "h1", "quest.id": "q1", "quest.name": "The First Step", "quest.action": "accept" },
+    { name: "world.quest", "actor.id": "h1", "quest.id": "q1", "quest.name": "The First Step", "quest.action": "complete" },
+    { name: "world.quest", "actor.id": "a1", "quest.id": "q1", "quest.name": "The First Step", "quest.action": "accept" },
+    { name: "world.transition", "actor.id": "h1", "room.to": 2, "action.kind": "move" },
+    { name: "world.transition", "actor.id": "a1", "room.to": 2, "action.kind": "move" },
+    { name: "world.transition", "actor.id": "h1", "room.to": 3, "action.kind": "move" },
+    { name: "world.combat", "actor.id": "h1", "target.id": "npc", outcome: "killed", damage: 3 },
+    { name: "world.combat", "actor.id": "h1", "target.id": "a1", outcome: "killed", damage: 2 },
+    { name: "world.combat", "actor.id": "a1", "target.id": "h1", outcome: "miss", damage: 0 },
+    { name: "world.snapshot", at: "2026-11-20T00:03:00Z", "world.actors": JSON.stringify([{ level: 3, guild: "mages" }, { level: 8, guild: null }]) },
+    { name: "world.snapshot", at: "2026-11-20T00:04:00Z", "world.actors": "[]" },
+    { name: "world.input", "actor.id": "h1", text: "look" },
+    { name: "world.input", "actor.id": "a1", text: "north" },
+    { name: "world.input", "actor.id": "h2", text: "slow", refused: "too-fast" },
+  ];
+  const stats = summarizePlayers(spans);
+  check(stats.sessions.total === 3 && stats.sessions.logins === 2 && stats.sessions.registrations === 1, "the session counts are wrong");
+  check(stats.sessions.prism === 1 && stats.sessions.legacy === 2 && stats.sessions.human === 2 && stats.sessions.ai === 1, "the session mix is wrong");
+  check(stats.sessions.unique_accounts === 2 && stats.sessions.unique_characters === 2 && stats.sessions.returning_accounts === 1, "the unique-player counts are wrong");
+  check(stats.playtime.connections === 3 && stats.playtime.completed === 2 && stats.playtime.open === 1, "the connection counts are wrong");
+  check(stats.playtime.total_ms === 180000 && stats.playtime.average_ms === 90000 && stats.playtime.median_ms === 60000, "the playtime aggregates are wrong");
+  check(stats.quests.accepted === 2 && stats.quests.completed === 1 && stats.quests.completion_rate === 0.5, "the quest counts are wrong");
+  check(stats.quests.by_quest[0]?.actors === 2 && stats.quests.by_quest[0]?.completers === 1 && stats.quests.by_quest[0]?.completion_rate === 0.5, "the per-quest completion is wrong");
+  check(stats.combat.rounds === 3 && stats.combat.kills === 2 && stats.combat.npc_kills === 1 && stats.combat.pvp_kills === 1 && stats.combat.player_deaths === 1, "the combat counts are wrong");
+  check(stats.combat.hit_rate === 2 / 3 && stats.combat.average_damage === 2.5 && stats.combat.pvp_rounds === 2 && stats.combat.npc_rounds === 1, "the combat rates are wrong");
+  check(stats.rooms.visits === 3 && stats.rooms.unique === 2 && stats.rooms.average_per_account === 1.5, "the room counts are wrong");
+  check(stats.commands.accepted === 2 && stats.commands.refused === 1 && stats.commands.average_per_connection === 1, "the command counts are wrong");
+  check(stats.levels.actors === 2 && stats.levels.average === 5.5 && stats.levels.max === 8 && stats.levels.distribution["1-4"] === 1 && stats.levels.distribution["8-10"] === 1 && stats.levels.guilded === 1, "the level distribution is wrong");
+  const serialized = JSON.stringify(stats);
+  check(!serialized.includes("acct-h") && !serialized.includes("acct-ai") && !serialized.includes("alice") && !serialized.includes("ember-fox-42"), "the player statistics leaked an account key or character name");
+  check(playerLines(stats).some((line) => line.includes("sessions 3")) && playerLines(stats).some((line) => line.includes("quests accepted 2")), "the player summary lines are wrong");
+  if (playerStats.why.length) { playerStats.ok = false; failures.push(`player statistics are broken: ${playerStats.why[0]}`); }
+}
+
+// Combat balance bands, including PvP and unseeded high-level play.
+let balanceBands = { ok: true, why: [] };
+{
+  const check = (condition, why) => { if (!condition) { balanceBands.ok = false; balanceBands.why.push(why); } };
+  const run = spawnSync(process.execPath, ["tools/balance.mjs", "--json", "--seeds=120"], { cwd: root, encoding: "utf8" });
+  check(run.status === 0, `balance sampler failed: ${(run.stderr || "").trim().split("\n")[0]}`);
+  let rows = [];
+  try { rows = JSON.parse(run.stdout).rows ?? []; } catch { check(false, "balance sampler did not return JSON"); }
+  const band = (name) => rows.filter((row) => row.band === name);
+  check(band("early").length === 2 && band("mid").length === 2 && band("high").length === 3 && band("capstone").length === 3, "a PvE balance band is missing");
+  check(band("unseeded").length === 2 && band("pvp").length === 3, "the unseeded or PvP balance band is missing");
+  const pvp = band("pvp");
+  check(pvp.every((row) => row.win >= 0.25 && row.win <= 0.75), `a PvP matchup is outside 25-75%: ${pvp.map((row) => `${row.name} ${Math.round(row.win * 100)}%`).join(", ")}`);
+  const unseeded = band("unseeded");
+  const regent = unseeded.find((row) => row.name.includes("regent"));
+  const star = unseeded.find((row) => row.name.includes("star hound"));
+  check(regent && regent.win < 0.5 && star && star.win > 0.2, "an unseeded high-level band is outside its expected difficulty");
+  if (balanceBands.why.length) { balanceBands.ok = false; failures.push(`the combat balance bands are broken: ${balanceBands.why[0]}`); }
+}
+
+// Weapon techniques are properties of the weapon, not a class.
+let techniques = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, undefined, questTable.quests);
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
+  const check = (condition, why) => { if (!condition) { techniques.ok = false; techniques.why.push(why); } };
+  for (const id of ["sword", "greatsword", "club", "forge-hammer", "ember-brand", "fen-staff", "dawn-blade", "ember-forge-blade"]) {
+    check(Boolean(techniqueForWeapon(world.objects.find((object) => object.id === id))), `weapon ${id} has no technique`);
+  }
+  check(TECHNIQUES["power-strike"]?.bonus === 4 && TECHNIQUES.bash?.rounds === 12 && TECHNIQUES.guard?.armor === 3, "the technique definitions are wrong");
+  run([{ kind: "join", actorId: "t", name: "tech" }]);
+  run([{ kind: "login", actorId: "t", key: "tech", token: null, authenticated: true }]);
+  let actor = state.actors.find((entry) => entry.id === "t");
+  actor.room = 22;
+  const sword = state.objects.find((object) => object.id === "sword");
+  sword.holder = "t"; sword.room = null; sword.worn = false;
+  actor.wielding = "sword";
+  state.npcs.push({ id: "dummy", name: "a training dummy", room: 22, home: 22, hp: 100, maxHp: 100, damage: 0, armor: 0, aggression: 0, xp: 0, dead: false });
+  run([{ kind: "attack", actorId: "t", targetId: "dummy" }]);
+  run([{ kind: "technique", actorId: "t", techniqueId: "power-strike", targetId: "dummy" }]);
+  check(state.actors.find((entry) => entry.id === "t").nextAttackBonus === 4, "power strike did not set the next-attack bonus");
+  check(techniqueReady(state.actors.find((entry) => entry.id === "t"), "power-strike", 0) === false, "power strike was ready before its cooldown");
+  const club = state.objects.find((object) => object.id === "club");
+  club.holder = "t"; club.room = null;
+  state.actors.find((entry) => entry.id === "t").wielding = "club";
+  run([{ kind: "technique", actorId: "t", techniqueId: "bash", targetId: "dummy" }]);
+  check(state.npcs.find((npc) => npc.id === "dummy").stunnedUntil > state.tick, "bash did not stun the target");
+  const shield = state.objects.find((object) => object.id === "shield");
+  shield.holder = "t"; shield.room = null; shield.worn = true;
+  run([{ kind: "technique", actorId: "t", techniqueId: "guard", targetId: "dummy" }]);
+  actor = state.actors.find((entry) => entry.id === "t");
+  check(actor.guardArmor === 3 && actor.guardUntil > state.tick, "guard did not raise the shield bonus");
+  check(/named === "technique"/.test(serverSource) && /world.technique/.test(serverSource), "the technique command or span is missing");
+  if (techniques.why.length) { techniques.ok = false; failures.push(`techniques are broken: ${techniques.why[0]}`); }
+}
+
+// The world event rotates every reset; the Ring ladder is persistent.
+let worldEvent = { ok: true, why: [] };
+{
+  const check = (condition, why) => { if (!condition) { worldEvent.ok = false; worldEvent.why.push(why); } };
+  check(currentEvent(0).id === "ember" && currentEvent(1).id === "fen" && currentEvent(4).id === "ember", "the event rotation is wrong");
+  check(eventPrice({ forSale: true, price: 80, faction: "ember" }, 0) === 64, "the event discount is wrong");
+  check(eventPrice({ forSale: true, price: 80, faction: "fen" }, 0) === 80, "the event discounted the wrong faction");
+  const world = loadWorld({ mode: "single" });
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, undefined, questTable.quests);
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
+  state.identities.alice = { name: "alice", kind: "character", owner: "alice", level: 5, quests: { active: [], completed: [] } };
+  state.identities.bob = { name: "bob", kind: "character", owner: "bob", level: 5, quests: { active: [], completed: [] } };
+  state.actors.push({ id: "a", key: "alice", account: "alice", name: "alice", room: 33, visited: [33], level: 5, xp: 1500, maxHp: 40, hp: 40, maxMana: 17, mana: 17, spellbook: [], guild: null, guildRank: null, wielding: null, quests: { active: [], completed: [] }, ignored: [], memory: { facts: {} } });
+  state.actors.push({ id: "b", key: "bob", account: "bob", name: "bob", room: 33, visited: [33], level: 5, xp: 1500, maxHp: 40, hp: 1, maxMana: 17, mana: 17, spellbook: [], guild: null, guildRank: null, wielding: null, quests: { active: [], completed: [] }, ignored: [], memory: { facts: {} } });
+  run([{ kind: "duelChallenge", actorId: "a", targetId: "b" }]);
+  run([{ kind: "duelAccept", actorId: "b" }]);
+  run([{ kind: "attack", actorId: "a", targetId: "b" }]);
+  for (let i = 0; i < 40; i += 1) run([]);
+  const alice = state.identities.alice;
+  const bob = state.identities.bob;
+  check(alice.duelWins === 1 && alice.duelRating === 1016, "the duel winner was not recorded");
+  check(bob.duelLosses === 1 && bob.duelRating === 984, "the duel loser was not recorded");
+  check(duelLadderRows(state.identities).length === 2 && duelLadderText(state.identities).includes("alice"), "the duel ladder is wrong");
+  const status = worldStatus(state, world.rooms);
+  check(status.event?.id === "ember" && worldStatusText(status).includes("Event: The Ember Tide"), "the world status lost the event");
+  if (worldEvent.why.length) { worldEvent.ok = false; failures.push(`the world event or ladder is broken: ${worldEvent.why[0]}`); }
+}
+
+// Forge: upgrades consume components and coins, salvage returns components,
+// and three/four matching pieces give set bonuses.
+let forge = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, undefined, questTable.quests);
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
+  const check = (condition, why) => { if (!condition) { forge.ok = false; forge.why.push(why); } };
+  check(componentForItem(world.objects.find((object) => object.id === "ember-cloak")) === "ember-ore" && componentForItem(world.objects.find((object) => object.id === "fen-mantle")) === "wisp-glass", "the salvage component mapping is wrong");
+  check(upgradeCost({ plus: 0, set: "ember" }).count === 2 && upgradeCost({ plus: 0, set: "ember" }).coins === 20, "the first upgrade cost is wrong");
+  check(salvageYield({ value: 60, plus: 1 }) === 4, "the salvage yield is wrong");
+  check(componentsText({ "ember-ore": 3, "wisp-glass": 1 }).includes("Ember ore ×3"), "the components text is wrong");
+  run([{ kind: "join", actorId: "f", name: "forge" }]);
+  run([{ kind: "login", actorId: "f", key: "forge", token: null, authenticated: true }]);
+  state.actors.find((entry) => entry.id === "f").components = { "ember-ore": 10 };
+  const sword = state.objects.find((object) => object.id === "sword");
+  sword.holder = "f"; sword.room = null; sword.forSale = false; sword.plus = 0;
+  for (const id of ["gold", "coin"]) {
+    const coin = state.objects.find((object) => object.id === id);
+    coin.holder = "f"; coin.room = null;
+  }
+  run([{ kind: "upgrade", actorId: "f", objectId: "sword", component: "ember-ore", count: 2, coins: 20, coinIds: ["gold", "coin"] }]);
+  let actor = state.actors.find((entry) => entry.id === "f");
+  check(state.objects.find((object) => object.id === "sword").plus === 1, "the upgrade did not raise the plus");
+  check(actor.components["ember-ore"] === 8, "the upgrade did not consume components");
+  check(state.objects.find((object) => object.id === "gold").holder === null, "the upgrade did not consume coins");
+  const jerkin = state.objects.find((object) => object.id === "jerkin");
+  jerkin.holder = "f"; jerkin.room = null; jerkin.forSale = false; jerkin.worn = false;
+  run([{ kind: "salvage", actorId: "f", objectId: "jerkin", component: "ember-ore", amount: 1 }]);
+  actor = state.actors.find((entry) => entry.id === "f");
+  check(actor.components["ember-ore"] === 9 && state.objects.find((object) => object.id === "jerkin").eaten === true, "salvage did not return a component");
+  for (const id of ["ember-cloak", "ember-gauntlets", "ember-boots"]) {
+    const object = state.objects.find((entry) => entry.id === id);
+    object.holder = "f"; object.room = null; object.worn = true;
+  }
+  actor = state.actors.find((entry) => entry.id === "f");
+  check(setBonus(actor, state.objects).armor === 1 && setBonus(actor, state.objects).damage === 0, "the three-piece set bonus is wrong");
+  const brand = state.objects.find((object) => object.id === "ember-brand");
+  brand.holder = "f"; brand.room = null; actor.wielding = "ember-brand";
+  check(setBonus(actor, state.objects).damage === 1, "the four-piece set damage bonus is wrong");
+  if (forge.why.length) { forge.ok = false; failures.push(`the forge is broken: ${forge.why[0]}`); }
+}
+
+// Controls: short take/kill/score, take-all, drink and grouped inventory.
+let controls = { ok: true, why: [] };
+{
+  const check = (condition, why) => { if (!condition) { controls.ok = false; controls.why.push(why); } };
+  check(verbTable.byAlias.get("t") === "take", "t is not take");
+  check(verbTable.byAlias.get("k") === "attack", "k is not attack");
+  check(verbTable.byAlias.get("sc") === "score", "sc is not score");
+  check(verbTable.byAlias.get("coins") === "coins" && verbTable.byAlias.get("money") === "coins", "coins/money are not registered");
+  check(verbTable.byAlias.get("standing") === "standing" && verbTable.byAlias.get("reputation") === "standing" && verbTable.byAlias.get("factions") === "standing", "standing/reputation are not registered");
+  check(factionRank("ember", 0).name === "outsider" && factionRank("ember", 3).name === "spark" && factionRank("ember", 6).name === "forgefriend" && factionRank("ember", 10).name === "ember-sworn", "the faction ranks are wrong");
+  check(factionAllows({ ember: 5 }, "ember", 3) && !factionAllows({ ember: 2 }, "ember", 3), "the faction standing gate is wrong");
+  check(standingsText({ ember: 4 }).includes("The Ember Forge: 4") && standingsText({}).includes("The Moon Wardens: 0"), "the standing text is wrong");
+  check(verbTable.byAlias.get("drink") === "drink" && verbTable.byAlias.get("quaff") === "drink", "drink/quaff are not registered");
+  check(BASE_HP === 20 && HP_PER_LEVEL === 5 && maxHpForLevel(1) === 20 && maxHpForLevel(10) === 65, "the health curve is wrong");
+  check(wardenBonus({ guild: "wardens", guildRank: "scout" }).armor === 1 && wardenBonus({ guild: "wardens", guildRank: "ranger" }).damage === 1 && wardenBonus({ guild: "wardens", guildRank: "warden" }).armor === 1 && wardenBonus({ guild: "wardens", guildRank: "warden" }).damage === 1, "the Wardens rank perks are wrong");
+  check(wardenBonus({ guild: "mages", guildRank: "archmage" }).armor === 0 && wardenBonus({ guild: "wardens", guildRank: "member" }).damage === 0, "a non-Wardens actor received a Wardens perk");
+  check(nightBonus({ guild: "night-market", guildRank: "cutpurse" }).armor === 1 && nightBonus({ guild: "night-market", guildRank: "shadow" }).damage === 1 && nightBonus({ guild: "night-market", guildRank: "master" }).armor === 1 && nightBonus({ guild: "night-market", guildRank: "master" }).damage === 1, "the Night Market rank perks are wrong");
+  check(!progressionAtLeast("runner", "cutpurse", ["runner", "cutpurse", "shadow", "master"]) && progressionAtLeast("shadow", "cutpurse", ["runner", "cutpurse", "shadow", "master"]), "the ascending guild rank gate is wrong");
+  check(guildBonus({ guild: "night-market", guildRank: "shadow" }).damage === 1 && guildBonus({ guild: "wardens", guildRank: "ranger" }).damage === 1 && guildBonus({ guild: "mages", guildRank: "archmage" }).damage === 0, "the guild bonus selector is wrong");
+  check(TECHNIQUES.backstab?.bonus === 6 && TECHNIQUES.rage?.bonus === 5 && TECHNIQUES.drain?.effect === "drain", "the outlaw techniques are missing");
+  check(/object.guild && object.minRank/.test(serverSource) && /The Night Market meets/.test(serverSource), "the Night Market join or shop lock is missing");
+  const agentSource = readFileSync(join(root, "runtime/agent.mjs"), "utf8");
+  const tuningSource = readFileSync(join(root, "tools/tuning-session.mjs"), "utf8");
+  check(!/flee/.test(agentSource) && /take all/.test(agentSource) && /drink/.test(agentSource), "the CLI agent still exposes flee or lacks the new commands");
+  check(/summarizePlayers/.test(tuningSource) && /mirror-wraith/.test(tuningSource) && /taskOk/.test(tuningSource), "the remote tuning harness is missing");
+  check(armorOf({ id: "w", guild: "wardens", guildRank: "scout" }, []) === 1, "the Wardens scout armour perk is not in armorOf");
+  check(equipmentText({ id: "w", guild: "wardens", guildRank: "ranger" }, []).includes("+1 rank"), "the Wardens ranger damage perk is not in equipment");
+  const groups = inventoryGroups([
+    { flags: ["weapon"] }, { flags: ["armor", "wearable"] }, { flags: ["container"] },
+    { flags: ["light"] }, { flags: ["food"] }, { flags: ["drink"] }, { flags: ["readable"] },
+    { flags: ["coin"] }, { flags: [] },
+  ]);
+  check(groups.map((group) => group.id).join(",") === "weapons,armour,containers,light,food,scrolls,coins,other", "inventory grouping is wrong");
+
+  const world = loadWorld({ mode: "single" });
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, undefined, questTable.quests);
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
+  run([{ kind: "join", actorId: "co", name: "cora" }]);
+  run([{ kind: "login", actorId: "co", key: "cora", token: null, authenticated: true }]);
+  state.actors.find((entry) => entry.id === "co").room = 5;
+  const roomItemIds = state.objects.filter((object) => object.room === 5 && !object.inside && !object.forSale && !(object.flags ?? []).includes("fixed")).map((object) => object.id);
+  check(roomItemIds.length >= 2, "the take-all room does not have two takeable objects");
+  run([{ kind: "takeAll", actorId: "co", objectIds: roomItemIds, messages: { actor: "TA", others: "TO" } }]);
+  check(roomItemIds.every((id) => {
+    const object = state.objects.find((entry) => entry.id === id);
+    return object?.holder === "co" && object?.room === null;
+  }), "take all did not take every object");
+  state.objects.push({ id: "test-ale", name: "test ale", flags: ["drink"], heal: 5, bites: 2, holder: "co", room: null, eaten: false });
+  state.actors.find((entry) => entry.id === "co").hp = 5;
+  run([{ kind: "drink", actorId: "co", objectId: "test-ale", messages: { actor: "D1", others: "D2" } }]);
+  check(state.actors.find((entry) => entry.id === "co").hp === 10 && state.objects.find((object) => object.id === "test-ale").bites === 1, "drink did not heal or consume a sip");
+  run([{ kind: "drink", actorId: "co", objectId: "test-ale", messages: { actor: "D3", others: "D4" } }]);
+  check(state.actors.find((entry) => entry.id === "co").hp === 15 && state.objects.find((object) => object.id === "test-ale").eaten && state.objects.find((object) => object.id === "test-ale").holder === null, "the last drink did not heal and empty the vessel");
+  if (controls.why.length) { controls.ok = false; failures.push(`controls are broken: ${controls.why[0]}`); }
 }
 
 // The short forms players type, and the equipment view they expose.
@@ -1277,15 +1745,21 @@ let magic = { ok: true, why: [] };
   let actor = state.actors.find((entry) => entry.id === "m");
   let rat = state.npcs.find((npc) => npc.id === "rat-magic");
   check(rat && rat.hp < 10, "spark did not damage the target");
+  check(rat?.effects?.some((effect) => effect.id === "burn"), "spark did not apply a burn");
   check(actor?.mana === 17, "spark did not spend three mana");
   actor.hp = 5;
   run([{ kind: "cast", actorId: "m", spellId: "mend" }]);
   actor = state.actors.find((entry) => entry.id === "m");
   check(actor.hp > 5, "mend did not heal");
+  actor.effects = [{ id: "burn", name: "burning", damage: 1, rounds: 2 }];
+  run([{ kind: "cast", actorId: "m", spellId: "mend" }]);
+  actor = state.actors.find((entry) => entry.id === "m");
+  check(!(actor.effects ?? []).some((effect) => effect.id === "burn"), "mend did not cleanse the burn");
   run([{ kind: "cast", actorId: "m", spellId: "shield" }]);
   actor = state.actors.find((entry) => entry.id === "m");
-  check((actor.armorBonus ?? 0) === 2 && actor.buffUntil > state.tick, "shield did not add a timed armour bonus");
-  check(armorOf(actor, state.objects) >= 2, "the shield bonus is not in armourOf");
+  check((actor.armorBonus ?? 0) >= 3 && actor.buffUntil > state.tick, "shield did not add a level-scaled timed armour bonus");
+  check(armorOf(actor, state.objects) >= 3, "the shield bonus is not in armourOf");
+  check(spellPower({ level: 1 }, 0) === 0 && spellPower({ level: 6 }, 0) === 2 && spellPower({ level: 6 }, 4) === 4, "spell power does not scale with level/focus");
   actor.room = 9;
   actor.mana = 20;
   run([{ kind: "cast", actorId: "m", spellId: "recall" }]);
@@ -1327,14 +1801,47 @@ let lantern = { ok: true, why: [] };
   const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
   const check = (condition, why) => { if (!condition) { lantern.ok = false; lantern.why.push(why); } };
   check(world.rooms[35]?.exits?.down === 8 && world.rooms[8]?.exits?.up === 35, "the Lantern Stair is not connected to Market Square");
+  check(world.rooms[115]?.exits?.down === 24 && world.rooms[24]?.exits?.up === 115, "the Wardens' Lodge is not connected to the Guild Hall");
+  check(world.rooms[116]?.exits?.west === 24 && world.rooms[24]?.exits?.east === 116, "the Training Yard is not connected to the Guild Hall");
+  check(world.npcs.some((npc) => npc.id === "training-master" && npc.room === 116) && world.npcs.some((npc) => npc.id === "training-dummy" && npc.room === 116), "the Training Yard trainer or dummy is missing");
+  check(["practice-sword", "practice-shield", "training-board"].every((id) => world.objects.some((object) => object.id === id && object.room === 116)), "the Training Yard practice gear is missing");
+  check(world.npcs.some((npc) => npc.id === "warden-captain" && npc.room === 115), "the warden-captain is missing from the lodge");
+  for (const faction of ["fen", "salt", "moon"]) {
+    check((world.shops ?? []).some((shop) => shop.id === `${faction}-quartermaster`), `the ${faction} quartermaster shop is missing`);
+  }
+  for (const [id, faction] of [["ember-forge-blade", "ember"], ["fen-warden-cloak", "fen"], ["salt-warden-shield", "salt"], ["moon-blessed-circlet", "moon"]]) {
+    const object = world.objects.find((entry) => entry.id === id);
+    check(object?.faction === faction && object?.minStanding === 6 && object?.forSale === true, `the ${faction} quartermaster item is missing`);
+  }
+  for (const [id, faction] of [["ashen-robe", "ashen"], ["unholy-mace", "ashen"], ["red-axe", "red"], ["red-boots", "red"]]) {
+    const object = world.objects.find((entry) => entry.id === id);
+    check(object?.faction === faction && object?.forSale === true, `the ${faction} outlaw item is missing`);
+  }
+  for (const [id, rank] of [["night-cloak", "cutpurse"], ["thief-dagger", "runner"], ["assassin-blade", "shadow"]]) {
+    const object = world.objects.find((entry) => entry.id === id);
+    check(object?.guild === "night-market" && object?.minRank === rank && object?.forSale === true, `the Night Market item ${id} is missing`);
+  }
+  check(world.npcs.some((npc) => npc.id === "night-broker" && npc.room === 29) && world.npcs.some((npc) => npc.id === "ashen-priest" && npc.room === 58) && world.npcs.some((npc) => npc.id === "red-captain" && npc.room === 71), "an outlaw contact is missing");
+  for (const [setId, minimum] of [["ashen", 4], ["red", 4], ["night", 5]]) {
+    check(world.objects.filter((object) => object.set === setId).length >= minimum, `the ${setId} set is incomplete`);
+  }
+  for (const id of ["ember-ledger", "fen-map", "salt-tablet", "moon-calendar", "garden-journal"]) {
+    const object = world.objects.find((entry) => entry.id === id);
+    check(object?.flags?.includes("readable") && typeof object?.examine === "string" && object.examine.length > 80, `the ${id} lore readable is missing`);
+  }
+  for (const id of ["night-market", "ashen-quartermaster", "red-quartermaster"]) {
+    check((world.shops ?? []).some((shop) => shop.id === id), `the ${id} shop is missing`);
+  }
+  for (const [npcId, objectId, slot] of [["ember-warden", "ember-gauntlets", "hands"], ["bog-hound", "fen-mantle", "cloak"], ["salt-wraith", "salt-bracers", "hands"], ["moon-stag", "moon-greaves", "feet"]]) {
+    const loot = world.npcs.find((npc) => npc.id === npcId)?.loot ?? [];
+    const object = world.objects.find((entry) => entry.id === objectId);
+    check(loot.includes(objectId) && object?.slot === slot && object?.armor === 2, `the ${npcId} gear drop is missing`);
+  }
+  check(/The Wardens meet in the lodge/.test(serverSource) && /next === "archmage"/.test(serverSource), "the guild join or archmage path is missing");
   check(world.rooms[37]?.exits?.west === 36 && world.rooms[36]?.exits?.east === 37, "the Spellwright's Shop is not connected");
   check(world.rooms[40]?.exits?.west === 39 && world.rooms[39]?.exits?.east === 40, "the High Walk is not connected");
   state.actors.push({ id: "l", key: "lina", account: "lina", name: "lina", room: 37, visited: [1, 35, 36, 37], level: 5, xp: 400, maxHp: 18, hp: 18, maxMana: 17, mana: 17, spellbook: [], guild: null, guildRank: null, wielding: null, quests: { active: [], completed: [] } });
-  state.objects.find((o) => o.id === "note").holder = "l";
-  run([{ kind: "questAccept", actorId: "l", questId: "errand" }]);
-  run([{ kind: "deliver", actorId: "l", objectId: "note", npcId: "spellwright", messages: { actor: "delivered", others: "delivered" } }]);
   let actor = state.actors.find((entry) => entry.id === "l");
-  check(actor?.quests?.completed?.includes("errand"), "the spellwright errand did not complete");
   actor.room = 38;
   state.objects.find((o) => o.id === "charm").holder = "l";
   run([{ kind: "questAccept", actorId: "l", questId: "familiar" }]);
@@ -1366,25 +1873,58 @@ let lantern = { ok: true, why: [] };
   check(actor.quests.active.filter((entry) => ["guild-mirror", "guild-warden"].includes(entry.id)).length === 2, "guild-quest-2 did not allow a second active guild quest");
   state.guilds.mages.perks = [];
   actor.quests.active = [];
-  state.guilds.mages.xp = 60;
-  for (const id of ["sigil-1", "sigil-2", "sigil-3"]) state.objects.find((o) => o.id === id).holder = "l";
-  run([{ kind: "questAccept", actorId: "l", questId: "guild-sigils" }]);
+  actor.room = 41;
+  state.objects.find((o) => o.id === "mirror-shard").holder = "l";
+  run([{ kind: "questAccept", actorId: "l", questId: "guild-mirror" }]);
   actor = state.actors.find((entry) => entry.id === "l");
-  check(actor?.quests?.completed?.includes("guild-sigils"), "the repeatable guild sigil quest did not complete");
-  check(state.guilds.mages.level === 2 && state.guilds.mages.perks?.includes("hall-chest"), "guild level/perk did not rise");
+  check(actor.quests.completed.includes("guild-mirror"), "the guild mirror quest did not complete");
+  check(state.guilds.mages.xp === 100 && state.guilds.mages.level === 2 && state.guilds.mages.perks?.includes("hall-chest"), "guild xp did not raise the level/perk");
   actor.guildRank = "adept";
   actor.spellbook = ["spark", "mend", "light", "shield"];
   run([{ kind: "guildAdvance", actorId: "l", guildId: "mages", rank: "magician" }]);
   actor = state.actors.find((entry) => entry.id === "l");
   check(actor?.guildRank === "magician" && state.guilds.mages.members.lina === "magician", "magician advancement did not take");
-  run([{ kind: "questAccept", actorId: "l", questId: "guild-sigils" }]);
+  actor.level = 10;
+  actor.xp = 30000;
+  actor.quests.completed.push("guild-warden", "reliquary");
+  run([{ kind: "guildAdvance", actorId: "l", guildId: "mages", rank: "archmage" }]);
   actor = state.actors.find((entry) => entry.id === "l");
-  check(actor?.quests?.completed?.includes("guild-sigils"), "the repeatable quest was lost in the same cycle");
-  state.cycle = 1;
-  run([{ kind: "questAccept", actorId: "l", questId: "guild-sigils" }]);
+  check(actor?.guildRank === "archmage" && state.guilds.mages.members.lina === "archmage", "archmage advancement did not take");
+  state.guilds.mages.level = 6;
+  state.guilds.mages.perks = ["guild-quest-3"];
   actor = state.actors.find((entry) => entry.id === "l");
-  check(actor?.quests?.completed?.includes("guild-sigils"), "the reset-cycle quest did not complete again");
+  actor.room = 96;
+  run([{ kind: "questAccept", actorId: "l", questId: "guild-dawn" }]);
+  check(state.actors.find((entry) => entry.id === "l").quests.active.some((entry) => entry.id === "guild-dawn"), "the archmage dawn quest was not accepted");
+  actor = state.actors.find((entry) => entry.id === "l");
+  const crown = state.objects.find((object) => object.id === "dawn-crown");
+  crown.holder = "l";
+  crown.inside = null;
+  crown.room = null;
+  actor.room = 97;
+  run([{ kind: "move", actorId: "l", dir: "down", to: 96 }]);
+  run([{ kind: "move", actorId: "l", dir: "up", to: 97 }]);
+  actor = state.actors.find((entry) => entry.id === "l");
+  check(actor.quests.completed.includes("guild-dawn"), "the archmage dawn quest did not complete");
+  check(state.objects.find((object) => object.id === "archmage-signet")?.holder === "l", "the archmage signet reward was not paid");
+  run([{ kind: "questAccept", actorId: "l", questId: "guild-trial" }]);
+  actor = state.actors.find((entry) => entry.id === "l");
+  check(actor.quests.active.some((entry) => entry.id === "guild-trial"), "the archmage trial was not accepted");
+  actor.room = 96;
+  state.npcs.find((npc) => npc.id === "eclipse-regent").hp = 1;
+  run([{ kind: "attack", actorId: "l", targetId: "eclipse-regent" }]);
+  for (let i = 0; i < 40; i += 1) run([]);
+  run([{ kind: "take", actorId: "l", objectId: "regent-sigil", messages: { actor: "taken", others: "takes" } }]);
+  actor = state.actors.find((entry) => entry.id === "l");
+  actor.room = 34;
+  run([{ kind: "deliver", actorId: "l", objectId: "regent-sigil", npcId: "archmage", messages: { actor: "delivered", others: "delivers", target: "receives" } }]);
+  actor = state.actors.find((entry) => entry.id === "l");
+  check(actor.quests.completed.includes("guild-trial"), "the archmage trial did not complete");
+  state.cycle = (state.cycle ?? 0) + 1;
+  run([{ kind: "questAccept", actorId: "l", questId: "guild-trial" }]);
+  check(state.actors.find((entry) => entry.id === "l").quests.active.some((entry) => entry.id === "guild-trial"), "the archmage trial did not return next cycle");
   check(state.objects.find((o) => o.id === "spell-scroll").holder === "l", "the spell scroll was not held for the guild quest");
+  actor = state.actors.find((entry) => entry.id === "l");
   actor.room = 40;
   run([{ kind: "move", actorId: "l", dir: "down", to: 41 }]);
   check(actor.room === 40, "the secret exit was usable before it was found");
@@ -1394,6 +1934,25 @@ let lantern = { ok: true, why: [] };
   run([{ kind: "move", actorId: "l", dir: "down", to: 41 }]);
   actor = state.actors.find((entry) => entry.id === "l");
   check(actor.room === 41, "the secret exit did not lead to the Mirror Pool");
+
+  state.guilds.wardens = { id: "wardens", name: "The Wardens", founder: "warden-captain", created: 0, members: { lina: "scout" }, invites: [], ranks: ["scout", "ranger", "warden"], xp: 0, level: 1 };
+  actor = state.actors.find((entry) => entry.id === "l");
+  actor.guild = "wardens";
+  actor.guildRank = "scout";
+  actor.level = 5;
+  actor.visited = Array.from({ length: 20 }, (_, index) => index + 1);
+  run([{ kind: "guildAdvance", actorId: "l", guildId: "wardens", rank: "ranger" }]);
+  actor = state.actors.find((entry) => entry.id === "l");
+  check(actor?.guildRank === "ranger" && state.guilds.wardens.members.lina === "ranger", "the Wardens did not advance a ranger");
+
+  state.guilds["night-market"] = { id: "night-market", name: "The Night Market", founder: "night-broker", created: 0, members: { lina: "runner" }, invites: [], ranks: ["runner", "cutpurse", "shadow", "master"], xp: 0, level: 1 };
+  actor = state.actors.find((entry) => entry.id === "l");
+  actor.guild = "night-market";
+  actor.guildRank = "runner";
+  actor.level = 10;
+  run([{ kind: "guildAdvance", actorId: "l", guildId: "night-market", rank: "cutpurse" }]);
+  actor = state.actors.find((entry) => entry.id === "l");
+  check(actor?.guildRank === "cutpurse" && state.guilds["night-market"].members.lina === "cutpurse", "the Night Market did not advance a cutpurse");
   if (lantern.why.length) { lantern.ok = false; failures.push(`the Lantern Quarter is broken: ${lantern.why[0]}`); }
 }
 
@@ -1480,15 +2039,22 @@ let ember = { ok: true, why: [] };
   run([{ kind: "move", actorId: "e", dir: "east", to: 61 }]);
   actor = state.actors.find((entry) => entry.id === "e");
   check(actor.room === 61, "the quiet door did not open into the Ashen Threshold");
-  run([{ kind: "questAccept", actorId: "e", questId: "ember-door" }]);
   state.objects.find((o) => o.id === "first-coal").holder = "e";
   for (const [dir, to] of [["east", 63], ["north", 64], ["north", 66], ["north", 68], ["north", 69], ["east", 70]]) {
     run([{ kind: "move", actorId: "e", dir, to }]);
   }
   actor = state.actors.find((entry) => entry.id === "e");
   check(actor.room === 70, "the Ember Deep walk did not reach the First Flame");
-  check(actor.quests.completed.includes("ember-door"), "Beyond the Quiet Door did not complete");
-  check(state.objects.find((o) => o.id === "ember-brand")?.holder === "e", "the ember brand reward did not reach the actor");
+  state.cycle = 1; // Fen event, so the Ember award stays at its base value.
+  const emberWarden = state.npcs.find((npc) => npc.id === "ember-warden");
+  emberWarden.hp = 1;
+  emberWarden.damage = 0;
+  run([{ kind: "attack", actorId: "e", targetId: "ember-warden" }]);
+  for (let i = 0; i < 40; i += 1) run([]);
+  check(state.objects.find((object) => object.id === "ember-gauntlets")?.room === 70, "the ember gauntlets did not drop in the First Flame");
+  actor = state.actors.find((entry) => entry.id === "e");
+  check(actor.standing?.ember === 2, "the ember warden kill did not award Ember standing");
+  actor = state.actors.find((entry) => entry.id === "e");
   actor.room = 69;
   state.objects.find((o) => o.id === "ash-key").holder = "e";
   run([{ kind: "action", actorId: "e", actionId: "unlock-ember-chest", messages: { actor: "unlocked", others: "unlocks" } }]);
@@ -1499,6 +2065,200 @@ let ember = { ok: true, why: [] };
   actor = state.actors.find((entry) => entry.id === "e");
   check(actor.room === 61, "the first flame shortcut did not return to the threshold");
   if (ember.why.length) { ember.ok = false; failures.push(`the Ember Deep is broken: ${ember.why[0]}`); }
+}
+
+// The level table must cap at ten. The old eleven-entry table made 30,000 XP
+// level 11 while every quest and document called level 10 the cap.
+let levelCap = { ok: true, why: [] };
+{
+  const table = loadLevels();
+  const check = (condition, why) => { if (!condition) { levelCap.ok = false; levelCap.why.push(why); } };
+  check(table.errors.length === 0, `level validation failed: ${table.errors[0] ?? ""}`);
+  check(table.levels.length === 10, `the table has ${table.levels.length} levels, not 10`);
+  check(levelForXp(table.levels, 0) === 1, "0 xp is not level 1");
+  check(levelForXp(table.levels, 15000) === 9, "15,000 xp is not level 9");
+  check(levelForXp(table.levels, 29999) === 9, "29,999 xp passed level 9");
+  check(levelForXp(table.levels, 30000) === 10, "30,000 xp is not the level-10 cap");
+  if (levelCap.why.length) failures.push(`the level cap is broken: ${levelCap.why[0]}`);
+}
+
+// Visibility commands: levels, leaderboard, map and shortcuts.
+let visibility = { ok: true, why: [] };
+{
+  const check = (condition, why) => { if (!condition) { visibility.ok = false; visibility.why.push(why); } };
+  const levels = levelsText({ levels: [0, 100, 300] }, 2);
+  check(levels.includes("Levels (3)") && levels.includes("→ 2") && levels.includes("100–299"), "the level view is wrong");
+  const board = leaderboardText({
+    a: { name: "ana", level: 3, xp: 400, quests: { completed: ["x"] }, guild: "mages", guildRank: "adept" },
+    b: { name: "bob", level: 5, xp: 100, quests: { completed: [] } },
+  }, 2);
+  check(board.includes("bob") && board.indexOf("bob") < board.indexOf("ana") && board.includes("adept"), "the leaderboard order is wrong");
+  const map = mapText({
+    1: { name: "The Atrium", zone: "temple" },
+    2: { name: "The Corridor", zone: "temple" },
+  }, [{ id: "temple", name: "The Temple", rooms: [1, 2] }], [1, 2], 1, "temple");
+  check(map.includes("The Atrium") && map.includes("The Corridor") && map.includes("→"), "the zone map is wrong");
+  const hidden = mapText({ 1: { name: "A", zone: "z" }, 2: { name: "B", zone: "z" } }, [{ id: "z", name: "Z", rooms: [1, 2] }], [1], 1, "z");
+  check(hidden.includes("unexplored") && !hidden.includes("B (") && hidden.includes("1/2"), "the map exposed an unvisited room");
+  check(shortcutsText().includes("recall") && shortcutsText().includes("leaderboard"), "the shortcut view is incomplete");
+  if (visibility.why.length) { visibility.ok = false; failures.push(`visibility is broken: ${visibility.why[0]}`); }
+}
+
+// First Steps: the guided level-1 tour and its tutorial command.
+let firstSteps = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, world.levels, questTable.quests);
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
+  const check = (condition, why) => { if (!condition) { firstSteps.ok = false; firstSteps.why.push(why); } };
+  const quest = questTable.quests.find((entry) => entry.id === "first-steps");
+  check(Boolean(quest) && quest.level === 1, "the First Steps quest is missing");
+  state.actors.push({ id: "n", key: "new", account: "new", name: "new", room: 1, visited: [1], level: 1, xp: 0, maxHp: 10, hp: 10, maxMana: 5, mana: 5, spellbook: [], guild: null, guildRank: null, wielding: null, quests: { active: [], completed: [] } });
+  run([{ kind: "questAccept", actorId: "n", questId: "first-steps" }]);
+  run([{ kind: "move", actorId: "n", dir: "north", to: 2 }]);
+  const actor = state.actors.find((entry) => entry.id === "n");
+  check(actor.quests.completed.includes("first-steps"), "the First Steps tour did not complete");
+  check(actor.xp >= 20, "the First Steps quest did not pay XP");
+  if (firstSteps.why.length) { firstSteps.ok = false; failures.push(`first steps are broken: ${firstSteps.why[0]}`); }
+}
+
+// The Hollow Fen: a second outdoor region, the green key/chest and the
+// green-heart shortcut.
+let fen = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, world.levels, questTable.quests);
+  const table = loadActions({ world });
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents, actions: table.actions }); state = result.state; return result.events; };
+  const check = (condition, why) => { if (!condition) { fen.ok = false; fen.why.push(why); } };
+  check(table.errors.length === 0, `fen action validation failed: ${table.errors[0] ?? ""}`);
+  check(world.rooms[20]?.exits?.east === 71 && world.rooms[71]?.exits?.west === 20, "the Hollow Fen is not connected to the mill");
+  check(world.rooms[80]?.exits?.west === 79 && world.rooms[79]?.exits?.east === 80, "the Green Heart is not connected");
+  state.actors.push({ id: "f", key: "fen", account: "fen", name: "fen", room: 71, visited: [71], level: 8, xp: 4000, maxHp: 22, hp: 22, maxMana: 21, mana: 21, spellbook: [], guild: "mages", guildRank: "magician", wielding: null, quests: { active: [], completed: ["fen-beacon"] }, found: [] });
+  for (const [dir, to] of [["east", 73], ["north", 74], ["north", 76], ["north", 77], ["east", 78], ["north", 79]]) {
+    run([{ kind: "move", actorId: "f", dir, to }]);
+  }
+  let actor = state.actors.find((entry) => entry.id === "f");
+  check(actor.room === 79, "the fen walk did not reach the vault");
+  state.objects.find((o) => o.id === "green-key").holder = "f";
+  run([{ kind: "action", actorId: "f", actionId: "unlock-fen-chest", messages: { actor: "unlocked", others: "unlocks" } }]);
+  check(state.objects.find((o) => o.id === "fen-chest")?.open === true, "the green key did not open the fen chest");
+  run([{ kind: "move", actorId: "f", dir: "east", to: 80 }]);
+  state.objects.find((o) => o.id === "green-seed").holder = "f";
+  run([{ kind: "action", actorId: "f", actionId: "enter-green-heart", messages: { actor: "entered", others: "enters" } }]);
+  actor = state.actors.find((entry) => entry.id === "f");
+  check(actor.room === 71, "the green-heart shortcut did not return to the fen gate");
+  if (fen.why.length) { fen.ok = false; failures.push(`the Hollow Fen is broken: ${fen.why[0]}`); }
+}
+
+// The Salt Caves: a second new zone with a keyed chest and a shortcut.
+let salt = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, world.levels, questTable.quests);
+  const table = loadActions({ world });
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents, actions: table.actions }); state = result.state; return result.events; };
+  const check = (condition, why) => { if (!condition) { salt.ok = false; salt.why.push(why); } };
+  check(table.errors.length === 0, `salt action validation failed: ${table.errors[0] ?? ""}`);
+  check(world.rooms[32]?.exits?.down === 81 && world.rooms[81]?.exits?.up === 32, "the Salt Caves are not connected to the lighthouse");
+  check(world.rooms[85]?.exits?.west === 83 && world.rooms[85]?.exits?.south === 84, "the Salt Heart exits are wrong");
+  state.actors.push({ id: "s", key: "salt", account: "salt", name: "salt", room: 81, visited: [81], level: 7, xp: 3000, maxHp: 22, hp: 22, maxMana: 20, mana: 20, spellbook: [], guild: null, guildRank: null, wielding: null, quests: { active: [], completed: [] }, found: [] });
+  for (const [dir, to] of [["east", 82], ["east", 84]]) run([{ kind: "move", actorId: "s", dir, to }]);
+  let actor = state.actors.find((entry) => entry.id === "s");
+  check(actor.room === 84, "the salt walk did not reach the vault");
+  state.objects.find((o) => o.id === "brine-key").holder = "s";
+  run([{ kind: "action", actorId: "s", actionId: "unlock-salt-chest", messages: { actor: "unlocked", others: "unlocks" } }]);
+  check(state.objects.find((o) => o.id === "salt-chest")?.open === true, "the brine key did not open the salt chest");
+  run([{ kind: "move", actorId: "s", dir: "north", to: 85 }]);
+  run([{ kind: "action", actorId: "s", actionId: "enter-salt-heart", messages: { actor: "entered", others: "enters" } }]);
+  actor = state.actors.find((entry) => entry.id === "s");
+  check(actor.room === 81, "the salt-heart shortcut did not return to the stair");
+  if (salt.why.length) { salt.ok = false; failures.push(`the Salt Caves are broken: ${salt.why[0]}`); }
+}
+
+// The Moonlit Reach: six rooms beyond the deep forest, a moon-keyed chest,
+// the moonwell and the crescent shortcut.
+let moon = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, world.levels, questTable.quests);
+  const table = loadActions({ world });
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents, actions: table.actions }); state = result.state; return result.events; };
+  const check = (condition, why) => { if (!condition) { moon.ok = false; moon.why.push(why); } };
+  check(table.errors.length === 0, `moon action validation failed: ${table.errors[0] ?? ""}`);
+  check(world.rooms[18]?.exits?.east === 86 && world.rooms[86]?.exits?.west === 18, "the Moonlit Reach is not connected to the deep forest");
+  check(world.zones.some((zone) => zone.id === "moon" && zone.rooms.includes(91)), "the Moonlit Reach zone is missing");
+  check(world.objects.find((o) => o.id === "moon-key")?.room === 88, "the moon key is not in the owl grove");
+  check(findAction(table.actions, { verb: "open", target: "chest", room: 89 })?.id === "open-moon-chest", "open chest does not resolve in the Moonwell");
+  check(findAction(table.actions, { verb: "enter", target: "moon", room: 91 })?.id === "enter-moon", "enter moon does not resolve at the Moon Throne");
+  state.actors.push({ id: "mo", key: "moon", account: "moon", name: "moon", room: 86, visited: [86], level: 9, xp: 5000, maxHp: 24, hp: 24, maxMana: 22, mana: 22, spellbook: [], guild: null, guildRank: null, wielding: null, quests: { active: [], completed: [] }, found: [] });
+  for (const [dir, to] of [["north", 87], ["east", 89], ["south", 88]]) run([{ kind: "move", actorId: "mo", dir, to }]);
+  let actor = state.actors.find((entry) => entry.id === "mo");
+  check(actor.room === 88, "the moon walk did not reach the owl grove");
+  state.objects.find((o) => o.id === "moon-key").holder = "mo";
+  run([{ kind: "move", actorId: "mo", dir: "north", to: 89 }]);
+  run([{ kind: "action", actorId: "mo", actionId: "open-moon-chest", messages: { actor: "opened", others: "opens" } }]);
+  check(state.objects.find((o) => o.id === "moon-chest")?.open === true, "the moon key did not open the pale chest");
+  run([{ kind: "move", actorId: "mo", dir: "east", to: 90 }]);
+  run([{ kind: "move", actorId: "mo", dir: "north", to: 91 }]);
+  run([{ kind: "action", actorId: "mo", actionId: "enter-moon", messages: { actor: "entered", others: "enters" } }]);
+  actor = state.actors.find((entry) => entry.id === "mo");
+  check(actor.room === 86, "the crescent shortcut did not return to the gate");
+  if (moon.why.length) { moon.ok = false; failures.push(`the Moonlit Reach is broken: ${moon.why[0]}`); }
+}
+
+// The Eclipse Court: the level-10 capstone above the Moon Throne. The walk
+// covers the full quest chain, the keyed vault, the regent kill and the dawn
+// gate back to the Moonlit Reach.
+let eclipse = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, world.levels, questTable.quests);
+  const table = loadActions({ world });
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents, actions: table.actions }); state = result.state; return result.events; };
+  const check = (condition, why) => { if (!condition) { eclipse.ok = false; eclipse.why.push(why); } };
+  const actorNow = () => state.actors.find((entry) => entry.id === "ec");
+  check(table.errors.length === 0, `eclipse action validation failed: ${table.errors[0] ?? ""}`);
+  check(world.rooms[91]?.exits?.up === 92 && world.rooms[92]?.exits?.down === 91, "the Eclipse Court is not connected to the Moon Throne");
+  check(world.rooms[97]?.exits?.down === 96, "the Dawn Gate does not return to the throne");
+  check(world.zones.some((zone) => zone.id === "eclipse" && zone.rooms.includes(97)), "the Eclipse Court zone is missing");
+  check(findAction(table.actions, { verb: "open", target: "chest", room: 95 })?.id === "open-eclipse-chest", "open chest does not resolve in the Mirror Vault");
+  check(findAction(table.actions, { verb: "enter", target: "gate", room: 97 })?.id === "enter-dawn-gate", "enter gate does not resolve at the Dawn Gate");
+
+  state.actors.push({ id: "ec", key: "eclipse", account: "eclipse", name: "eclipse", room: 91, visited: [91], level: 10, xp: 30000, maxHp: 28, hp: 28, maxMana: 27, mana: 27, spellbook: ["spark", "mend", "shield"], guild: "mages", guildRank: "magician", wielding: null, quests: { active: [], completed: [] }, found: [] });
+  for (const [dir, to] of [["up", 92], ["north", 93]]) run([{ kind: "move", actorId: "ec", dir, to }]);
+  let actor = actorNow();
+  check(actor.room === 93, "the Eclipse walk did not reach the Starless Hall");
+  state.npcs.find((npc) => npc.id === "star-hound").hp = 1;
+  run([{ kind: "attack", actorId: "ec", targetId: "star-hound" }]);
+  for (let i = 0; i < 40; i += 1) run([]);
+  run([{ kind: "move", actorId: "ec", dir: "east", to: 94 }]);
+  run([{ kind: "take", actorId: "ec", objectId: "eclipse-key", messages: { actor: "taken", others: "takes" } }]);
+  actor = actorNow();
+  check(state.objects.find((object) => object.id === "eclipse-key")?.holder === "ec", "the eclipse key was not taken");
+
+  run([{ kind: "move", actorId: "ec", dir: "west", to: 93 }]);
+  run([{ kind: "move", actorId: "ec", dir: "west", to: 95 }]);
+  run([{ kind: "action", actorId: "ec", actionId: "open-eclipse-chest", messages: { actor: "opened", others: "opens" } }]);
+  check(state.objects.find((object) => object.id === "eclipse-chest")?.open === true, "the eclipse key did not open the black chest");
+  run([{ kind: "takeFrom", actorId: "ec", objectId: "dawn-crown", containerId: "eclipse-chest", messages: { actor: "taken", others: "takes" } }]);
+  check(state.objects.find((object) => object.id === "dawn-crown")?.holder === "ec", "the dawn crown was not taken");
+
+  run([{ kind: "move", actorId: "ec", dir: "east", to: 93 }]);
+  run([{ kind: "move", actorId: "ec", dir: "east", to: 94 }]);
+  run([{ kind: "move", actorId: "ec", dir: "north", to: 96 }]);
+  state.npcs.find((npc) => npc.id === "eclipse-regent").hp = 1;
+  run([{ kind: "attack", actorId: "ec", targetId: "eclipse-regent" }]);
+  for (let i = 0; i < 40; i += 1) run([]);
+  run([{ kind: "take", actorId: "ec", objectId: "regent-sigil", messages: { actor: "taken", others: "takes" } }]);
+  actor = actorNow();
+  check(state.objects.find((object) => object.id === "regent-sigil")?.holder === "ec", "the regent sigil was not taken");
+
+  run([{ kind: "move", actorId: "ec", dir: "up", to: 97 }]);
+  run([{ kind: "action", actorId: "ec", actionId: "enter-dawn-gate", messages: { actor: "entered", others: "enters" } }]);
+  actor = actorNow();
+  check(actor.room === 86, "the dawn gate did not return to the Moonlit Gate");
+  if (eclipse.why.length) { eclipse.ok = false; failures.push(`the Eclipse Court is broken: ${eclipse.why[0]}`); }
 }
 
 // The state file is atomic, backed up, and fail-loud.
@@ -1589,6 +2349,47 @@ let allowance = { ok: true, why: [] };
   if (allowCommand(1000, 1249)) { allowance.ok = false; allowance.why.push("a command 249 ms later was accepted"); }
   if (!allowCommand(1000, 1250)) { allowance.ok = false; allowance.why.push("a command 250 ms later was refused"); }
   if (!allowance.ok) failures.push(`the input allowance is broken: ${allowance.why[0]}`);
+}
+
+// Chat has its own rolling window, separate from the 250 ms input allowance.
+let chatGuard = { ok: true, why: [] };
+{
+  const check = (condition, why) => { if (!condition) { chatGuard.ok = false; chatGuard.why.push(why); } };
+  let recent = [];
+  for (let i = 0; i < CHAT_LIMIT; i += 1) {
+    const verdict = chatAllowed(recent, 1000 + i);
+    check(verdict.allowed, `line ${i + 1} was refused inside the window`);
+    recent = verdict.recent;
+  }
+  const refused = chatAllowed(recent, 2000);
+  check(!refused.allowed, "a ninth line was allowed inside the window");
+  check(chatAllowed(refused.recent, 1000 + CHAT_WINDOW_MS + 1).allowed, "the window never reopened");
+  if (chatGuard.why.length) failures.push(`the chat guard is broken: ${chatGuard.why[0]}`);
+}
+
+// A player report is a durable operator record, never world state. The verb is
+// present, an empty reason is refused, and the stored text is bounded.
+let moderation = { ok: true, why: [] };
+{
+  const check = (condition, why) => { if (!condition) { moderation.ok = false; moderation.why.push(why); } };
+  const base = {
+    at: "2026-11-20T00:00:00.000Z",
+    tick: 42,
+    reporter: "alice",
+    reporterName: "alice",
+    target: "bob",
+    targetName: "bob",
+  };
+  check(verbTable.verbs.report?.argument === "actor text", "the report verb is missing or has the wrong argument");
+  check(reportRecord({ ...base, reason: "   " }) === null, "an empty report reason was accepted");
+  check(reportRecord({ ...base, target: "", reason: "spam" }) === null, "a report with no target was accepted");
+  const record = reportRecord({ ...base, reason: "  repeated spam  " });
+  check(record?.reason === "repeated spam", "the report reason was not trimmed");
+  check(reportRecord({ ...base, reason: "x".repeat(REPORT_REASON_MAX + 50) }).reason.length === REPORT_REASON_MAX, "the report reason was not capped");
+  check(reportAllowed(undefined, 1000), "a first report was refused");
+  check(!reportAllowed(1000, 1000 + REPORT_INTERVAL_MS - 1), "a second report was allowed inside the interval");
+  check(reportAllowed(1000, 1000 + REPORT_INTERVAL_MS), "the report interval never reopened");
+  if (moderation.why.length) { moderation.ok = false; failures.push(`moderation is broken: ${moderation.why[0]}`); }
 }
 
 // A safe room refuses combat; an unsafe one begins it. The two-hour reset is
@@ -2009,7 +2810,9 @@ let persistence = { ok: true, why: [] };
   state.guilds.wardens = { id: "wardens", name: "Wardens", founder: "alice", created: 0, members: { alice: "leader" }, invites: [] };
   state.actors[0].guild = "wardens";
   state.actors[0].guildRank = "leader";
-  state.actors[0].quests = { active: [{ id: "word", progress: {} }], completed: ["scroll"] };
+  state.actors[0].quests = { active: [{ id: "word", progress: {} }], completed: ["guardian"] };
+  state.actors[0].standing = { ember: 4 };
+  state.actors[0].components = { "ember-ore": 2 };
   run([{ kind: "take", actorId: "a", objectId: "satchel", messages: say("take") }]);
   run([{ kind: "take", actorId: "a", objectId: "cloak", messages: say("take") }]);
   run([{ kind: "put", actorId: "a", objectId: "cloak", containerId: "satchel", messages: say("put") }]);
@@ -2022,14 +2825,18 @@ let persistence = { ok: true, why: [] };
   check(object("cloak").inside === "satchel", "a bag lost what was inside it on logout");
   check(state.identities.alice.inventory === undefined, "the identity recorded an inventory it should not keep");
   check(state.identities.alice.level === 3 && state.identities.alice.xp === 120, "progression was not written on logout");
-  check(state.identities.alice.guild === "wardens" && state.identities.alice.guildRank === "leader" && state.identities.alice.quests.completed.includes("scroll"), "guild or quest progress was lost on logout");
+  check(state.identities.alice.guild === "wardens" && state.identities.alice.guildRank === "leader" && state.identities.alice.quests.completed.includes("guardian"), "guild or quest progress was lost on logout");
+  check(state.identities.alice.standing?.ember === 4, "standing was lost on logout");
+  check(state.identities.alice.components?.["ember-ore"] === 2, "forge components were lost on logout");
 
   run([{ kind: "join", actorId: "b", name: "alice" }]);
   run([{ kind: "login", actorId: "b", key: "alice", token: null, authenticated: true }]);
   const returning = state.actors.find((actor) => actor.id === "b");
   check(returning.room === 1, "the returning character did not wake at the start");
   check(returning.level === 3 && returning.xp === 120, "level or experience was not restored on login");
-  check(returning.guild === "wardens" && returning.guildRank === "leader" && returning.quests.completed.includes("scroll"), "guild or quest progress was not restored on login");
+  check(returning.guild === "wardens" && returning.guildRank === "leader" && returning.quests.completed.includes("guardian"), "guild or quest progress was not restored on login");
+  check(returning.standing?.ember === 4, "standing was not restored on login");
+  check(returning.components?.["ember-ore"] === 2, "forge components were not restored on login");
   check(state.objects.every((o) => o.holder !== "b"), "items were restored to a hand across logout");
   check(object("satchel").room === 2 && object("scroll").room === 2, "logout items did not stay in the world");
 
@@ -2111,7 +2918,7 @@ let combat2 = { ok: true, why: [] };
   run([{ kind: "attack", actorId: "a", targetId: "guard" }]);
   check(state.engagements.length === 2, "a PvE attack did not engage both sides");
   run([{ kind: "flee", actorId: "a", dir: "east", to: 4, messages: { actor: "FA", others: "FO" } }]);
-  check(state.engagements.length === 0 && state.actors[0].room === 4, "flee did not end the fight and move");
+  check(state.engagements.length === 2 && state.actors[0].room === 2, "flee still escaped combat");
 
   state.actors[0].room = 2;
   state.actors[0].xp = 95;
@@ -2121,7 +2928,7 @@ let combat2 = { ok: true, why: [] };
   run([{ kind: "attack", actorId: "a", targetId: "guard" }]);
   for (let i = 0; i < 120; i += 1) run([]);
   check(state.actors[0].level === 2 && state.actors[0].xp >= 107, `a kill did not grant experience and a level (level ${state.actors[0].level}, xp ${state.actors[0].xp})`);
-  check(state.actors[0].maxHp === 12, "a level did not raise maximum hit points");
+  check(state.actors[0].maxHp === maxHpForLevel(2), `a level did not raise maximum hit points to ${maxHpForLevel(2)}`);
   const tusk = state.objects.find((object) => object.id === "boar-tusk");
   check(tusk.room === 2 && tusk.holder === null, "mob loot did not fall in the death room");
 
@@ -2175,12 +2982,34 @@ let quests = { ok: true, why: [] };
     quests.ok = false;
     quests.why.push(problem);
   }
+  const archive = loadQuestArchive();
+  const check = (condition, why) => { if (!condition) { quests.ok = false; quests.why.push(why); } };
+  check(questTable.quests.length === 20, `the live quest count is ${questTable.quests.length}, not 20`);
+  check(archive.quests.length === 41 && archive.errors.length === 0, "the retired quest archive is not 41 valid definitions");
+  const liveIds = new Set(questTable.quests.map((quest) => quest.id));
+  const archiveIds = new Set(archive.quests.map((quest) => quest.id));
+  check([...liveIds].every((id) => !archiveIds.has(id)), "a quest is both live and archived");
+  check(questTable.quests.every((quest) => (quest.requires ?? []).every((id) => liveIds.has(id))), "a kept quest requires a retired quest");
+  for (const problem of validateQuestReferences(archive.quests, { rooms: world.rooms, npcs: world.npcs, objects: world.objects })) {
+    quests.ok = false;
+    quests.why.push(`archive: ${problem}`);
+  }
+  const migrated = migrateQuestState({
+    active: [
+      { id: "ember-door", progress: { visits: [61, 70], collected: { "first-coal": 1 } } },
+      { id: "fen-heart", progress: {} },
+      { id: "guardian", progress: {} },
+    ],
+    completed: ["scroll", "word"],
+  }, questTable.quests, archive.quests);
+  check(migrated.quests.active.length === 1 && migrated.quests.active[0].id === "guardian", "migration dropped a live active quest");
+  check(migrated.quests.completed.length === 2 && migrated.quests.completed.includes("word") && migrated.quests.completed.includes("scroll"), "migration kept a retired completion");
+  check(migrated.notes.length === 2 && migrated.notes.find((note) => note.id === "ember-door")?.status === "completed" && migrated.notes.find((note) => note.id === "fen-heart")?.status === "abandoned", "migration notes are wrong");
   const npcs = world.npcs.filter((npc) => npc.id !== "vault-guardian");
   let state = initialState(world.rooms, npcs, world.objects, world.start, world.climate, channelTable.channels, undefined, questTable.quests);
   const say = (text) => ({ actor: text, others: text });
   const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
   const object = (id) => state.objects.find((o) => o.id === id);
-  const check = (condition, why) => { if (!condition) { quests.ok = false; quests.why.push(why); } };
   const questState = () => state.actors[0].quests;
 
   run([{ kind: "join", actorId: "a", name: "alice" }]);
@@ -2191,15 +3020,17 @@ let quests = { ok: true, why: [] };
   check(!questState().active.some((entry) => entry.id === "guardian"), "a quest whose prerequisite was unearned was accepted");
   state.actors[0].level = 1;
 
-  run([{ kind: "questAccept", actorId: "a", questId: "scroll" }]);
-  check(questState().active.some((entry) => entry.id === "scroll"), "a quest was not accepted");
-  run([{ kind: "move", actorId: "a", dir: "north", to: 2 }]);
-  run([{ kind: "take", actorId: "a", objectId: "scroll", messages: say("take") }]);
-  check(questState().completed.includes("scroll"), "a collect quest did not complete when the item was held");
+  state.actors[0].level = 2;
+  run([{ kind: "questAccept", actorId: "a", questId: "telescope" }]);
+  check(questState().active.some((entry) => entry.id === "telescope"), "a quest was not accepted");
+  state.actors[0].room = 32;
+  run([{ kind: "take", actorId: "a", objectId: "telescope", messages: say("take") }]);
+  check(questState().completed.includes("telescope"), "a collect quest did not complete when the item was held");
   check(questState().active.length === 0, "a completed quest stayed active");
-  check(state.actors[0].xp >= 15, "a quest did not pay experience");
-  run([{ kind: "questAccept", actorId: "a", questId: "scroll" }]);
+  check(state.actors[0].xp >= 30, "a quest did not pay experience");
+  run([{ kind: "questAccept", actorId: "a", questId: "telescope" }]);
   check(questState().active.length === 0, "a completed quest could be accepted again");
+  state.actors[0].room = 2;
 
   run([{ kind: "questAccept", actorId: "a", questId: "word" }]);
   check(questState().active.some((entry) => entry.id === "word"), "the word quest was not accepted");
@@ -2234,6 +3065,132 @@ let quests = { ok: true, why: [] };
   if (!quests.ok) failures.push(`quests are broken: ${quests.why[0]}`);
 }
 
+// Repeatable work is covered by the guild trial in the Lantern block.
+
+// Social quests: talking to a named mobile advances a talk objective.
+let social = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, undefined, questTable.quests);
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
+  const check = (condition, why) => { if (!condition) { social.ok = false; social.why.push(why); } };
+  state.actors.push({ id: "s", key: "social", account: "social", name: "social", room: 8, visited: [8], level: 2, xp: 100, maxHp: 12, hp: 12, maxMana: 7, mana: 7, spellbook: [], guild: null, guildRank: null, wielding: null, quests: { active: [], completed: [] }, found: [] });
+  run([{ kind: "questAccept", actorId: "s", questId: "hall-word" }]);
+  let actor = state.actors.find((entry) => entry.id === "s");
+  check(actor.quests.active.some((entry) => entry.id === "hall-word"), "the social quest was not accepted");
+  run([{ kind: "talk", actorId: "s", npcId: "market-woman" }]);
+  actor = state.actors.find((entry) => entry.id === "s");
+  actor.room = 24;
+  run([{ kind: "talk", actorId: "s", npcId: "guild-clerk" }]);
+  actor = state.actors.find((entry) => entry.id === "s");
+  check(actor.quests.completed.includes("hall-word"), "the social quest did not complete");
+  check(actor.xp >= 170, "the social quest did not pay its xp");
+  if (social.why.length) { social.ok = false; failures.push(`the social quest is broken: ${social.why[0]}`); }
+}
+
+// Ignore lists are persistent, and they cover every addressed channel: tells,
+// mail, global chat, guild chat, socials and the room's account of a say.
+let ignore = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, undefined, questTable.quests);
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
+  const check = (condition, why) => { if (!condition) { ignore.ok = false; ignore.why.push(why); } };
+  const lines = (events) => events.filter((event) => event.onlyId !== undefined);
+  run([{ kind: "join", actorId: "a", name: "alice" }, { kind: "join", actorId: "b", name: "bob" }]);
+  run([{ kind: "login", actorId: "a", key: "alice", authenticated: true }, { kind: "login", actorId: "b", key: "bob", authenticated: true }]);
+  run([{ kind: "ignore", actorId: "b", targetKey: "alice", messages: { added: "IG" } }]);
+  check(state.actors.find((entry) => entry.id === "b")?.ignored?.includes("alice"), "the ignore was not stored on the actor");
+  check(state.identities.bob?.ignored?.includes("alice"), "the ignore was not stored on the identity");
+  const told = lines(run([{ kind: "tell", actorId: "a", targetId: "b", messages: { actor: "TA", target: "TB" } }]));
+  check(told.length === 1 && told[0].text.includes("not listening"), "an ignored tell reached its target");
+  const channel = lines(run([{ kind: "channel", actorId: "a", channelId: "global", messages: { actor: "CA", others: "CO" } }]));
+  check(channel.length === 1 && channel[0].onlyId === "a", "an ignored global line reached the listener");
+  const social = lines(run([{ kind: "social", actorId: "a", targetId: null, messages: { actor: "UA", others: "UO", target: "UT", targeted: "UYOU", targetOthers: "UTO", self: "US", selfOthers: "USO" } }]));
+  check(social.length === 1 && social[0].onlyId === "a", "an ignored social reached the listener");
+  const mailed = lines(run([{ kind: "mail", actorId: "a", toKey: "bob", text: "hidden", messages: { actor: "MA", target: "MB" } }]));
+  check(mailed.length === 1 && mailed[0].text.includes("not accepting"), "an ignored letter was accepted or delivered");
+  check((state.mail ?? []).length === 0, "an ignored letter was stored");
+  const sayEvents = run([{ kind: "say", actorId: "a", text: "hello", messages: { actor: "SA", others: "SO" } }]);
+  check(sayEvents.some((event) => event.fromKey === "alice"), "a say did not carry the speaker key for delivery filtering");
+  run([{ kind: "unignore", actorId: "b", targetKey: "alice", messages: { removed: "UG" } }]);
+  check(!(state.actors.find((entry) => entry.id === "b")?.ignored ?? []).includes("alice"), "the unignore did not clear the list");
+  const again = lines(run([{ kind: "tell", actorId: "a", targetId: "b", messages: { actor: "TA2", target: "TB2" } }]));
+  check(again.length === 2, "a tell was still blocked after unignore");
+  checkpointIdentities(state);
+  check(state.identities.bob?.ignored?.length === 0, "the ignore list did not survive a checkpoint");
+  if (ignore.why.length) { ignore.ok = false; failures.push(`the ignore list is broken: ${ignore.why[0]}`); }
+}
+
+// Titles are earned facts: one completed quest unlocks one title, and the
+// chosen title is part of the character.
+let titles = { ok: true, why: [] };
+{
+  const table = loadTitles();
+  const check = (condition, why) => { if (!condition) { titles.ok = false; titles.why.push(why); } };
+  check(table.errors.length === 0, `title validation failed: ${table.errors[0] ?? ""}`);
+  for (const title of table.titles) {
+    if (!questTable.quests.some((quest) => quest.id === title.quest)) {
+      titles.ok = false;
+      titles.why.push(`${title.id} names unknown quest ${title.quest}`);
+    }
+  }
+  const world = loadWorld({ mode: "single" });
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, undefined, questTable.quests);
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
+  state.actors.push({ id: "t", key: "titled", account: "titled", name: "titled", room: 1, visited: [1], level: 10, xp: 30000, maxHp: 28, hp: 28, maxMana: 27, mana: 27, spellbook: [], guild: null, guildRank: null, wielding: null, quests: { active: [], completed: ["first-steps", "guild-dawn"] }, ignored: [], title: null });
+  const earned = earnedTitles(table.titles, state.actors[0].quests.completed);
+  check(earned.length === 2, "the earned titles do not follow completed quests");
+  check(table.titles.some((title) => title.id === "dawnbringer" && title.quest === "guild-dawn"), "the dawn title is missing");
+  run([{ kind: "setTitle", actorId: "t", title: "Dawnbringer" }]);
+  let actor = state.actors.find((entry) => entry.id === "t");
+  check(actor.title === "Dawnbringer", "the title was not worn");
+  checkpointIdentities(state);
+  check(state.identities.titled?.title === "Dawnbringer", "the title did not survive a checkpoint");
+  run([{ kind: "setTitle", actorId: "t", title: null }]);
+  actor = state.actors.find((entry) => entry.id === "t");
+  check(actor.title === null, "the title was not cleared");
+  if (titles.why.length) { titles.ok = false; failures.push(`titles are broken: ${titles.why[0]}`); }
+}
+
+// The Memory Garden is exploration now: facts, a fact-gated action and the
+// rooms survive, while the retired Garden quests do not.
+let memoryGarden = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  const table = loadActions({ world });
+  const facts = loadFacts();
+  const check = (condition, why) => { if (!condition) { memoryGarden.ok = false; memoryGarden.why.push(why); } };
+  check(table.errors.length === 0, `action validation failed: ${table.errors[0] ?? ""}`);
+  check(facts.errors.length === 0, `fact validation failed: ${facts.errors[0] ?? ""}`);
+  check(facts.byWord.has("garden") && facts.byWord.has("ledger") && facts.byWord.has("crescent"), "a garden fact is missing");
+  check(!questTable.quests.some((quest) => quest.id === "memory-garden"), "the retired memory quest is still loaded");
+  check(world.rooms[98]?.exits?.east === 99 && world.rooms[98]?.exits?.north === 100 && world.rooms[100]?.exits?.south === 98, "the Memory Garden is not connected");
+  check(world.rooms[8]?.exits?.down === 105 && world.rooms[105]?.exits?.up === 8, "the root road is not connected to Market Square");
+  check(world.rooms[104]?.exits?.down === 106 && world.rooms[106]?.exits?.up === 104, "the orchard is not connected to the root road");
+  check(world.rooms[109]?.exits?.north === 111 && world.rooms[112]?.exits?.east === 113 && world.rooms[113]?.exits?.north === 114, "the orchard undercroft or cider spring exits are wrong");
+  check(findAction(table.actions, { verb: "plant", target: "rose", room: 98 })?.id === "plant-memory", "plant rose does not resolve");
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, undefined, questTable.quests);
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents, actions: table.actions }); state = result.state; return result.events; };
+  state.actors.push({ id: "mq", key: "memory", account: "memory", name: "memory", room: 98, visited: [98], level: 4, xp: 400, maxHp: 18, hp: 18, maxMana: 11, mana: 11, spellbook: [], guild: null, guildRank: null, wielding: null, quests: { active: [], completed: [] }, ignored: [], memory: { facts: {} }, found: [] });
+  state.objects.find((object) => object.id === "memory-rose").holder = "mq";
+  run([{ kind: "action", actorId: "mq", actionId: "plant-memory", messages: { actor: "planted", others: "plants" } }]);
+  let actor = state.actors.find((entry) => entry.id === "mq");
+  check(!(actor.found ?? []).includes("98:down"), "the fact-gated action opened without the fact");
+  run([{ kind: "learnFact", actorId: "mq", fact: facts.byWord.get("garden") }]);
+  actor = state.actors.find((entry) => entry.id === "mq");
+  check(actor.memory?.facts?.["garden-word"]?.word === "garden", "the garden fact was not learned");
+  run([{ kind: "action", actorId: "mq", actionId: "plant-memory", messages: { actor: "planted", others: "plants" } }]);
+  actor = state.actors.find((entry) => entry.id === "mq");
+  check(actor.found.includes("98:down"), "the fact-gated action did not reveal the stair");
+  check(state.objects.find((object) => object.id === "memory-rose")?.eaten === true, "the planted rose was not consumed");
+  run([{ kind: "move", actorId: "mq", dir: "down", to: 101 }]);
+  actor = state.actors.find((entry) => entry.id === "mq");
+  check(actor.room === 101, "the hidden Remembered Bed was not reachable");
+  check(!loadTitles().titles.some((title) => title.quest === "remembered-bed"), "a retired Garden title is still loaded");
+  if (memoryGarden.why.length) { memoryGarden.ok = false; failures.push(`the Memory Garden is broken: ${memoryGarden.why[0]}`); }
+}
+
 // Guilds: one name, a roster, ranks, a chat that reaches only members, and a
 // membership that survives a restart.
 let guilds = { ok: true, why: [] };
@@ -2242,6 +3199,7 @@ let guilds = { ok: true, why: [] };
   let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, undefined, questTable.quests);
   const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
   const check = (condition, why) => { if (!condition) { guilds.ok = false; guilds.why.push(why); } };
+  check(guildLevelFor(1600) === 6 && perksFor(6).includes("guild-quest-3"), "guild level 6 or its third-quest perk is missing");
   const actor = (id) => state.actors.find((a) => a.id === id);
   const lines = (events) => events.filter((event) => event.onlyId !== undefined);
 
@@ -2296,6 +3254,56 @@ let guilds = { ok: true, why: [] };
   check(state.identities.carol.guild === null, "disbanding did not clear an offline member's identity");
 
   if (!guilds.ok) failures.push(`guilds are broken: ${guilds.why[0]}`);
+}
+
+// The guild vault is per guild, survives a reset and a restart, and releases
+// its goods into the shared hall when the guild disbands.
+let guildVault = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels, undefined, questTable.quests);
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
+  const check = (condition, why) => { if (!condition) { guildVault.ok = false; guildVault.why.push(why); } };
+  run([{ kind: "join", actorId: "v", name: "vera" }, { kind: "login", actorId: "v", key: "vera", authenticated: true }]);
+  run([{ kind: "guildCreate", actorId: "v", name: "Vaulters", guildId: "vaulters" }]);
+  const actor = state.actors.find((entry) => entry.id === "v");
+  actor.room = GUILD_HALL;
+  actor.visited = [...new Set([...actor.visited, GUILD_HALL])];
+  const sword = state.objects.find((object) => object.id === "sword");
+  sword.holder = "v";
+  sword.room = null;
+  sword.heldRoom = GUILD_HALL;
+  run([{ kind: "guildDeposit", actorId: "v", objectId: "sword" }]);
+  check(state.guilds.vaulters.vault.includes("sword"), "the sword was not recorded in the vault");
+  check(state.objects.find((object) => object.id === "sword")?.holder === guildVaultHolder("vaulters"), "the sword did not move into guild storage");
+  check(state.guilds.vaulters.vault.length <= GUILD_VAULT_CAPACITY, "the vault exceeded its capacity");
+  run([{ kind: "guildWithdraw", actorId: "v", objectId: "sword" }]);
+  check(state.objects.find((object) => object.id === "sword")?.holder === "v" && !state.guilds.vaulters.vault.includes("sword"), "the sword was not withdrawn");
+  run([{ kind: "guildDeposit", actorId: "v", objectId: "sword" }]);
+  const satchel = state.objects.find((object) => object.id === "satchel");
+  satchel.holder = "v";
+  satchel.room = null;
+  satchel.heldRoom = GUILD_HALL;
+  const bread = state.objects.find((object) => object.id === "bread");
+  bread.holder = null;
+  bread.room = null;
+  bread.inside = "satchel";
+  run([{ kind: "guildDeposit", actorId: "v", objectId: "satchel" }]);
+  state.pulses.area = { period: AREA_PERIOD, remaining: 1 };
+  run([]);
+  check(state.objects.find((object) => object.id === "sword")?.holder === guildVaultHolder("vaulters"), "the area reset pulled the vault sword onto the floor");
+  check(state.objects.find((object) => object.id === "satchel")?.holder === guildVaultHolder("vaulters"), "the area reset pulled the vault satchel onto the floor");
+  check(state.objects.find((object) => object.id === "bread")?.inside === "satchel", "the area reset spilled a vault container's contents");
+  const restarted = JSON.parse(JSON.stringify(state));
+  const savedActors = state.actors;
+  restarted.actors = [];
+  releaseHeldObjects(restarted, savedActors);
+  check(restarted.objects.find((object) => object.id === "sword")?.holder === guildVaultHolder("vaulters"), "a restart emptied the guild vault");
+  run([{ kind: "guildDisband", actorId: "v" }]);
+  check(!state.guilds.vaulters, "the guild was not disbanded");
+  check(state.objects.find((object) => object.id === "sword")?.holder === null && state.objects.find((object) => object.id === "sword")?.room === GUILD_HALL, "disbanding did not release the vault goods");
+  check(state.objects.find((object) => object.id === "satchel")?.room === GUILD_HALL && state.objects.find((object) => object.id === "bread")?.inside === "satchel", "disbanding did not release the container with its contents");
+  if (guildVault.why.length) { guildVault.ok = false; failures.push(`the guild vault is broken: ${guildVault.why[0]}`); }
 }
 
 // Duels are consensual in the Ring, and death there takes no goods.
@@ -2475,6 +3483,37 @@ let loop = { ok: true, why: [], count: 0, admitted: 0, winner: null };
   }
 }
 
+// A release is a tagged, hash-manifested artifact; the pull deployer verifies it.
+let releaseManifest = { ok: true, why: [] };
+{
+  const check = (condition, why) => { if (!condition) { releaseManifest.ok = false; releaseManifest.why.push(why); } };
+  const dir = mkdtempSync(join(tmpdir(), "mudbench-release-"));
+  const holo = join(dir, "MUDBench.holo");
+  const runtime = join(dir, "runtime.tar.gz");
+  const out = join(dir, "release-manifest.json");
+  writeFileSync(holo, "holo");
+  writeFileSync(runtime, "runtime");
+  const run = spawnSync("python3", [
+    join(root, "deploy/release-manifest.py"),
+    "--tag", "v9.9.9", "--commit", "abc", "--gate-run", "123",
+    "--holo", holo, "--runtime", runtime, "--out", out,
+  ], { cwd: root, encoding: "utf8" });
+  check(run.status === 0, `release manifest exited ${run.status}: ${(run.stderr ?? "").slice(0, 160)}`);
+  let manifest = null;
+  try { manifest = JSON.parse(readFileSync(out, "utf8")); } catch {}
+  check(manifest?.schema === "mudbenchmark/release/1" && manifest?.tag === "v9.9.9", "release manifest shape/tag is wrong");
+  check(manifest?.assets?.["MUDBench.holo"]?.sha256 === createHash("sha256").update("holo").digest("hex"), "release manifest holo hash is wrong");
+  check(manifest?.assets?.["runtime.tar.gz"]?.size === 7, "release manifest runtime size is wrong");
+  const deployScript = readFileSync(join(root, "deploy/mudbench-deploy.sh"), "utf8");
+  check(deployScript.includes("release-manifest.json") && deployScript.includes("ALLOW_UNMANIFESTED"), "deployer does not verify the release manifest");
+  check(deployScript.includes("--ignore-scripts"), "deployer installs runtime scripts");
+  const publishWorkflow = readFileSync(join(root, ".github/workflows/publish.yml"), "utf8");
+  check(publishWorkflow.includes("workflow_run") && publishWorkflow.includes("merged_at") && publishWorkflow.includes("merge_commit_sha") && publishWorkflow.includes(`base.ref == "main"`), "merged-PR publisher is missing or does not require the merge commit");
+  check(publishWorkflow.includes("release-manifest.py") && publishWorkflow.includes("AUTO_RELEASE"), "publisher lacks the manifest or pause switch");
+  rmSync(dir, { recursive: true, force: true });
+  if (releaseManifest.why.length) failures.push(`release publishing is broken: ${releaseManifest.why[0]}`);
+}
+
 if (process.argv.includes("--json")) {
   process.stdout.write(`${JSON.stringify({ measured, ratchet, loop, failures }, null, 2)}\n`);
 } else {
@@ -2510,10 +3549,22 @@ if (process.argv.includes("--json")) {
   console.log(`${"magic".padEnd(26)}  ${(magic.ok ? "6 spells+scrolls" : "BROKEN").padStart(5)}   == mana, cast, study`);
   console.log(`${"lantern".padEnd(26)}  ${(lantern.ok ? "60 rooms" : "BROKEN").padStart(5)}   == errand, charm, secret`);
   console.log(`${"actions".padEnd(26)}  ${(actions.ok ? "11 verbs" : "BROKEN").padStart(5)}   == reveal, open, last`);
-  console.log(`${"ember".padEnd(26)}  ${(ember.ok ? "10 rooms" : "BROKEN").padStart(5)}   == door, quest, shortcut`);
+  console.log(`${"ember".padEnd(26)}  ${(ember.ok ? "10 rooms" : "BROKEN").padStart(5)}   == door, chest, shortcut`);
+  console.log(`${"aiMemory".padEnd(26)}  ${(aiMemory.ok ? "rooms, stale" : "BROKEN").padStart(5)}   == exits, loop guard`);
+  console.log(`${"characterNames".padEnd(26)}  ${(characterNames.ok ? "random, scoped" : "BROKEN").padStart(5)}   == AI, human`);
+  console.log(`${"releaseManifest".padEnd(26)}  ${(releaseManifest.ok ? "hash, tag" : "BROKEN").padStart(5)}   == pull deploy`);
+  console.log(`${"guildLine".padEnd(26)}  ${(lantern.ok ? "2 quests" : "BROKEN").padStart(5)}   == archmage`);
+  console.log(`${"archmageTrial".padEnd(26)}  ${(lantern.ok ? "2 cycles" : "BROKEN").padStart(5)}   == repeat`);
+  console.log(`${"fen".padEnd(26)}  ${(fen.ok ? "10 rooms" : "BROKEN").padStart(5)}   == key, chest, shortcut`);
+  console.log(`${"visibility".padEnd(26)}  ${(visibility.ok ? "levels, map" : "BROKEN").padStart(5)}   == board, shortcuts`);
+  console.log(`${"salt".padEnd(26)}  ${(salt.ok ? "5 rooms" : "BROKEN").padStart(5)}   == key, chest, shortcut`);
+  console.log(`${"moon".padEnd(26)}  ${(moon.ok ? "6 rooms" : "BROKEN").padStart(5)}   == key, chest, shortcut`);
+  console.log(`${"eclipse".padEnd(26)}  ${(eclipse.ok ? "6 rooms" : "BROKEN").padStart(5)}   == chest, regent, gate`);
+  console.log(`${"firstSteps".padEnd(26)}  ${(firstSteps.ok ? "20 xp" : "BROKEN").padStart(5)}   == tour, quest`);
   console.log(`${"pinned".padEnd(26)}  ${(identityPin.ok ? "revoked" : "BROKEN").padStart(5)}   == old log refused`);
   console.log(`${"takeover".padEnd(26)}  ${(takeover.ok ? "1 actor" : "BROKEN").padStart(5)}   == leave then login`);
   console.log(`${"characters".padEnd(26)}  ${(characters.ok ? "2 chars" : "BROKEN").padStart(5)}   == create, switch`);
+  console.log(`${"prismTransfer".padEnd(26)}  ${(prismTransfer.ok ? "signed" : "BROKEN").padStart(5)}   == old AI, human`);
   console.log(`${"persona".padEnd(26)}  ${(persona.ok ? "owner" : "BROKEN").padStart(5)}   == human, tombstone`);
   console.log(`${"recovery".padEnd(26)}  ${(recovery.ok ? "kit" : "BROKEN").padStart(5)}   == new device, old refused`);
   console.log(`${"handoff".padEnd(26)}  ${(handoff.ok ? "delegated" : "BROKEN").padStart(5)}   == owner kept`);
@@ -2532,6 +3583,23 @@ if (process.argv.includes("--json")) {
   console.log(`${"safe".padEnd(26)}  ${(safe.ok ? "2 rooms" : "BROKEN").padStart(5)}   == no combat`);
   console.log(`${"duels".padEnd(26)}  ${(duels.ok ? "Ring rules" : "BROKEN").padStart(5)}   == consent and no loot`);
   console.log(`${"guilds".padEnd(26)}  ${(guilds.ok ? "create, rank, chat" : "BROKEN").padStart(5)}   == roster and chat`);
+  console.log(`${"levelCap".padEnd(26)}  ${(levelCap.ok ? "10 @ 30k" : "BROKEN").padStart(5)}   == level table`);
+  console.log(`${"guildVault".padEnd(26)}  ${(guildVault.ok ? "20 slots" : "BROKEN").padStart(5)}   == deposit, reset, disband`);
+  console.log(`${"social".padEnd(26)}  ${(social.ok ? "70 xp" : "BROKEN").padStart(5)}   == talk, quest`);
+  console.log(`${"controls".padEnd(26)}  ${(controls.ok ? "t, all, drink" : "BROKEN").padStart(5)}   == short commands`);
+  console.log(`${"factions".padEnd(26)}  ${(factionAllows({ ember: 6 }, "ember", 6) ? "6 contacts" : "BROKEN").padStart(5)}   == standing, shops`);
+  console.log(`${"outlaws".padEnd(26)}  ${(nightBonus({ guild: "night-market", guildRank: "master" }).damage === 1 ? "Night Market" : "BROKEN").padStart(5)}   == guild, factions`);
+  console.log(`${"techniques".padEnd(26)}  ${(techniques.ok ? "7 weapon moves" : "BROKEN").padStart(5)}   == cooldown, stun`);
+  console.log(`${"lore".padEnd(26)}  ${(loadWorld({ mode: "single" }).objects.some((object) => object.id === "ember-ledger") ? "5 books" : "BROKEN").padStart(5)}   == retired zones`);
+  console.log(`${"forge".padEnd(26)}  ${(forge.ok ? "+1, salvage" : "BROKEN").padStart(5)}   == components, sets`);
+  console.log(`${"worldEvent".padEnd(26)}  ${(worldEvent.ok ? "Ember Tide" : "BROKEN").padStart(5)}   == rotation, ladder`);
+  console.log(`${"balanceBands".padEnd(26)}  ${(balanceBands.ok ? "PvE, PvP" : "BROKEN").padStart(5)}   == seeded bands`);
+  console.log(`${"chatGuard".padEnd(26)}  ${(chatGuard.ok ? "8/10s" : "BROKEN").padStart(5)}   == rate limit`);
+  console.log(`${"moderation".padEnd(26)}  ${(moderation.ok ? "names, report" : "BROKEN").padStart(5)}   == new-name policy`);
+  console.log(`${"playerStats".padEnd(26)}  ${(playerStats.ok ? "sessions, quests" : "BROKEN").padStart(5)}   == aggregate only`);
+  console.log(`${"ignore".padEnd(26)}  ${(ignore.ok ? "5 paths" : "BROKEN").padStart(5)}   == tell, mail, chat`);
+  console.log(`${"titles".padEnd(26)}  ${(titles.ok ? "2 earned" : "BROKEN").padStart(5)}   == select, persist`);
+  console.log(`${"memoryGarden".padEnd(26)}  ${(memoryGarden.ok ? "rooms, rose" : "BROKEN").padStart(5)}   == fact, action`);
   console.log(`${"quests".padEnd(26)}  ${(quests.ok ? "accept, advance, pay" : "BROKEN").padStart(5)}   == facts, once`);
   console.log(`${"aggression".padEnd(26)}  ${(aggression.ok ? "1 duel" : "BROKEN").padStart(5)}   == mobs start fights`);
   console.log(`${"combat2".padEnd(26)}  ${(combat2.ok ? "weapons, armour, xp" : "BROKEN").padStart(5)}   == fight and grow`);

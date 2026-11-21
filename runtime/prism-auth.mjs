@@ -104,6 +104,49 @@ export async function verifyPersonaOwner(owner, { origin, persona, action = "pri
   return { ok: true, owner: body.prism, device: verdict.device, action };
 }
 
+/** Verify an arbitrary action signed by a Prism account over its public log. */
+export async function verifyPrismAction(envelope, { origin, records = [], pinned = null, now = Date.now(), action, expected = {} } = {}) {
+  const body = envelope?.body;
+  if (body?.action !== action) return { ok: false, reason: `not a ${action} action` };
+  if (typeof body.prism !== "string" || !/^sha256:[0-9a-f]{64}$/.test(body.prism)) {
+    return { ok: false, reason: "the action names no Prism id" };
+  }
+  if (body?.payload?.audience !== origin) return { ok: false, reason: "the action names another origin" };
+  for (const [key, value] of Object.entries(expected)) {
+    if (body?.payload?.[key] !== value) return { ok: false, reason: `the action names another ${key}` };
+  }
+  if (!Array.isArray(records) || records.length > MAX_RECORDS) {
+    return { ok: false, reason: "the Prism log is too large" };
+  }
+  let log;
+  try {
+    log = await logFromRecords(records);
+  } catch {
+    return { ok: false, reason: "the Prism log does not parse" };
+  }
+  const held = Array.isArray(pinned) ? pinned : pinned?.records;
+  if (Array.isArray(held) && held.length) {
+    try {
+      const known = await logFromRecords(held);
+      for (const id of known.keys()) {
+        if (!log.has(id)) return { ok: false, reason: "the presented log omits a record the server has already seen" };
+      }
+      log = await admitRecords(body.prism, known, log);
+    } catch (error) {
+      return { ok: false, reason: `the pinned Prism log does not merge: ${error.message}` };
+    }
+  }
+  pruneReplay(now);
+  let verdict;
+  try {
+    verdict = await verifyAction(body.prism, log, envelope, { audience: origin, now, window: WINDOW_MS, seen });
+  } catch (error) {
+    return { ok: false, reason: `the Prism log does not resolve: ${error.message}` };
+  }
+  if (!verdict.allowed) return { ok: false, reason: verdict.reason };
+  return { ok: true, prism: body.prism, device: verdict.device, payload: body.payload };
+}
+
 export async function verifyPrismSession(session, { origin, now = Date.now(), pinned = null, revokedBefore = null, blocked = [] } = {}) {
   const { app, envelope, records } = session ?? {};
   // The same eight inputs the proved Identity kernel decides on. The early

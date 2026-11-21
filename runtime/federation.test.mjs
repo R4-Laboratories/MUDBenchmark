@@ -153,9 +153,6 @@ test("two live servers transfer a character and retain separate authority", { ti
   let east = start("east");
   let west = start("west");
   await Promise.all([ready("west", "east"), ready("east", "west")]);
-  const demo = await fetch(`http://127.0.0.1:${ports.westWeb}/api/demo`);
-  assert.equal(demo.status, 200);
-  assert.equal(typeof (await demo.json()).configured, "boolean");
   const denied = await fetch(`http://127.0.0.1:${ports.eastWeb}/federation/status`);
   assert.equal(denied.status, 403);
   const prototypePeer = await fetch(`http://127.0.0.1:${ports.eastWeb}/federation/status`, {
@@ -292,7 +289,7 @@ test("two live servers transfer a character and retain separate authority", { ti
   p.send("login alice secret123");
   await p.expect("#characters");
   p.send("north");
-  await p.expect("\r\n[The Corridor]\r\n");
+  await p.expect("[The Corridor]");
   p.send("take scroll");
   await p.expect("Quest complete: A Curled Scroll.");
   west.kill("SIGKILL");

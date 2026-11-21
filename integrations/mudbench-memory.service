@@ -1,0 +1,14 @@
+[Unit]
+Description=MUDBench R4 memory service
+After=network.target
+[Service]
+Type=simple
+WorkingDirectory=/home/callard/prime-router
+Environment=USE_OLLAMA=0
+Environment=OLLAMA_MODEL=qwen2.5:7b
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/home/callard/prime-router/.venv/bin/python server.py
+Restart=on-failure
+RestartSec=5
+[Install]
+WantedBy=default.target

@@ -177,6 +177,52 @@ The harness stores a small recall file at
 `HARNESS_MEMORY=/tmp/mudbench-memory-<name>.json`: rooms seen, the word found,
 answers given. That is session memory, not the model's context.
 
+## Remote models without a local GPU
+
+The CLI agent can send each decision through the OpenCode CLI instead of a
+local model:
+
+```sh
+MODEL_PROVIDER=opencode MODEL_NAME=deepseek/deepseek-flash \
+HARNESS_NAME=my-agent HARNESS_PASSWORD=... \
+WS_URL=wss://play.r4labs.org node agent.mjs
+```
+
+This runs `opencode run --model ... --format json` per turn, parses the text
+event, and sends the command. The game server never sees a provider key, and no
+local inference is needed. Each call carries the OpenCode system prompt, so it
+is a paid/free remote-provider path, not a local/offline one.
+
+## Route memory and the loop guard
+
+The browser AI and the CLI agent share `runtime/web/memory.mjs`. It records a
+short **route** of recent rooms as well as the commands tried in each room.
+The prompt gets `Route: ...` and the exits whose target rooms have not been
+seen. `loopWarning` detects both repeated commands and small room cycles
+(`A → B → A → B`, `A → B → C → A → B → C`), and `breakLoop` prefers an exit
+whose target is unvisited before it falls back to a direction not in the last
+six commands. The CLI agent also uses the route on an unparseable reply:
+instead of sending `look`, it takes an unexplored exit.
+
+`pathTo` runs a breadth-first search over the known room graph and `routeHint`
+prints the next step toward a destination. The CLI agent seeds that graph from
+the public `/llms.txt` room table, so it can plan across rooms it has never
+visited. `AGENT_DESTINATION` sets one target. `AGENT_OBJECTIVES` takes an
+unordered list of `Room:action` entries and always chooses the nearest
+unfinished target; when the room is reached, the action guard sends that
+action. Append `>Room` to hold an objective until another objective is done,
+for example `The Guild Hall:deliver seal>The Rat Warren`. `AGENT_WAYPOINTS="The Root Archive:talk|The First Bed:take"` is the
+ordered variant. A movement command that contradicts the known next step is
+replaced by that step, and an objective action attempted in the wrong room is
+redirected onto the route. While a destination is known and no objective is
+current, the route lock turns any non-quit command into the next BFS step, so
+the model cannot spend turns looking around mid-route. Objective actions are
+not cleared when sent: the next observation must confirm the take, delivery,
+recall, talk or plant with the server's own success line. A failed action stays
+on the objective list and can be retried. Non-movement actions at the right target remain the
+model's choice. The CLI agent prints the hint as a `NAVIGATE:` block before
+asking the model.
+
 ## Memory, the rolling window, and prime-router
 
 The model conversation is a bounded window: `MEMORY_TURNS` (default 12) keeps
@@ -255,8 +301,12 @@ Prism id: your device signs a `prism/persona-owner/1` action, the server
 verifies it against your pinned log, and the persona account stores `owner` and
 `ai: true`. The AI panel names the character; you can play another character at
 the same time. **Reset identity** retires the persona and tombstones its
-characters; the next start creates a new persona. Without a human sign-in the
-AI uses its own account. A device revoked elsewhere is refused once a surviving
+characters; the next start creates a new persona. The AI requires a human Prism
+sign-in and no longer creates a standalone AI account. A new persona opens its
+existing characters first; otherwise it creates a random name. If this browser
+still has an old standalone AI session, the characters panel can recover its
+characters with an explicit old-account-signed transfer. A device
+revoked elsewhere is refused once a surviving
 device has logged in with the newer public log; the server pins that log in
 `identities.json`.
 

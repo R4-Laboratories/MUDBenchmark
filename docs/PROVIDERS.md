@@ -1,6 +1,6 @@
 # Model providers
 
-The AI panel talks to five protocols through one browser-side registry. The
+The AI panel talks to seven presets through one browser-side registry. The
 game server never sees a user's provider key. The Gemini demo is the exception:
 its operator key stays on the server and the browser receives only a
 short-lived demo token.
@@ -9,6 +9,7 @@ short-lived demo token.
 
 | Preset | Protocol | Key |
 | --- | --- | --- |
+| Pollinations (free) | OpenAI-compatible SSE, no key | none |
 | Ollama (local) | OpenAI-compatible `/v1` | none |
 | OpenAI | OpenAI chat completions | required |
 | Anthropic (Claude) | Anthropic messages | required |
@@ -19,6 +20,12 @@ short-lived demo token.
 The custom preset is the path for OpenRouter, Groq, Together, LiteLLM, a
 company gateway, LM Studio, vLLM, or any other OpenAI-compatible endpoint. The
 key field is shown; leave it empty if the endpoint does not need one.
+
+**Pollinations** is the free default for a new browser: no key, no account, and
+the reply streams into the live thought line as it arrives. It is an anonymous
+public service, not a private one: prompts may be logged, rate limits change,
+and there is no SLA. The provider hint says so before a run. Choose Ollama or a
+provider with your own key when privacy or reliability matters.
 
 An Anthropic-compatible gateway uses the **Anthropic (Claude)** preset with its
 base URL and key; the client sends `x-api-key` and the direct-browser header.
@@ -65,6 +72,15 @@ the compact `COMMANDS` line, including speech to players. It returns
 `THOUGHT`, `REPLY` and `COMMAND`; the parser accepts a missing `REPLY` and
 falls back to a known verb.
 
+A compact per-character memory is injected every turn. It records rooms seen,
+commands tried in the current room, whether the result changed (`stale`), and
+which exits lead to unseen rooms. It persists in browser storage across runs,
+so a reload does not reset the character's map. After a stale command repeats
+or a movement cycle appears, a loop guard replaces the command with a fresh
+exit, `look`, or `wait` instead of pausing the run. This is the structured
+memory layer; the R4 router's integer/GCD concept retrieval can replace or
+augment it without changing the game interface.
+
 **Reasoning** is a separate setting:
 
 | Setting | Behaviour |
@@ -94,10 +110,16 @@ the thought.
 
 ## Hosted/free defaults
 
-There is no silent free default. The operator may enable the **Gemini demo**
-by setting `GEMINI_API_KEY` (and optionally `GEMINI_MODEL`,
-`GEMINI_BASE`, `GEMINI_DAILY_TURNS`, `GEMINI_MINUTE_TURNS`,
-`GEMINI_GLOBAL_DAILY`) on the server. When configured:
+**Pollinations** is the free, keyless default. The browser sends the prompt to
+`https://text.pollinations.ai/openai` with `stream: true`; `readSseText` shows
+the accumulating reply in the live thought line and returns the final text for
+the normal parser. The default model is `openai-fast` (GPT-OSS 20B). It is
+disclosed in the provider hint, not silent. It is best-effort: community
+capacity, caching and rate limits are outside this project's control.
+
+The operator may also enable the **Gemini demo** by setting `GEMINI_API_KEY`
+(and optionally `GEMINI_MODEL`, `GEMINI_BASE`, `GEMINI_DAILY_TURNS`,
+`GEMINI_MINUTE_TURNS`, `GEMINI_GLOBAL_DAILY`) on the server. When configured:
 
 1. The browser shows **Gemini demo (Prism only)**. It never sees the key.
 2. An authenticated game socket asks for a short-lived demo token.
@@ -107,11 +129,20 @@ by setting `GEMINI_API_KEY` (and optionally `GEMINI_MODEL`,
 
 Google's free tier is real but variable: limits are per project (RPM, TPM,
 RPD), reset at midnight Pacific, and free-tier data may be used to improve
-products. The UI discloses that before the run. The demo is deliberately
-opt-in; a local model remains the no-cost path.
+products. **Free tier does not mean keyless**: Google requires an API key to
+attribute quota and stop abuse, and there is no public Gemini endpoint that
+accepts anonymous requests. The operator key is the missing input; the code
+path is already built and dormant until `GEMINI_API_KEY` is set.
 
-Other options are unchanged: user-supplied keys, a local Ollama/LM Studio
-model, or a custom OpenAI-compatible endpoint.
+The Gemini demo is still the server-keyed, quota-limited path for a Prism
+session. Pollinations is the keyless path and needs no login. A local model
+remains the private, no-account option. Other options are unchanged:
+user-supplied keys, a local Ollama/LM Studio model, or a custom
+OpenAI-compatible endpoint.
+
+The UI discloses the Pollinations privacy caveat in the provider hint and the
+Gemini demo limits before a run. A key is never required just to watch an AI
+play.
 
 ## Errors
 
@@ -119,7 +150,8 @@ A failed test or turn names the layer that failed:
 
 - `401/403` — the key was refused for this host;
 - `404` — no chat endpoint at the normalized URL;
-- `429` — rate limit; retry later or switch provider;
+- `429` — rate limit; retry later or switch provider (Pollinations is anonymous and shared);
+- `402` on Pollinations — the anonymous tier is saturated; wait or switch provider;
 - `TypeError: Failed to fetch` — usually CORS, a wrong URL, an offline host, or
   a local-network permission, not necessarily a bad key;
 - timeout — the model did not answer inside the deadline; direct mode falls

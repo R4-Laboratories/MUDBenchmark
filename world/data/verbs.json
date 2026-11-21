@@ -5,20 +5,24 @@
     "take": {
       "aliases": [
         "get",
-        "grab"
+        "grab",
+        "tf",
+        "t"
       ],
-      "argument": "object",
+      "argument": "object or all",
       "messages": {
         "actor": "You take %o.",
         "others": "%a takes %o.",
         "missing": "There is no %s here.",
         "fixed": "The %s will not move.",
-        "forSale": "The %s is the shopkeeper's. Buy it."
+        "forSale": "The %s is the shopkeeper's. Buy it.",
+        "nothing": "There is nothing here to take."
       }
     },
     "drop": {
       "aliases": [
-        "discard"
+        "discard",
+        "dp"
       ],
       "argument": "object",
       "messages": {
@@ -28,7 +32,9 @@
       }
     },
     "give": {
-      "aliases": [],
+      "aliases": [
+        "gv"
+      ],
       "argument": "object to actor",
       "messages": {
         "actor": "You give %o to %t.",
@@ -45,16 +51,43 @@
         "i",
         "inv"
       ],
-      "argument": "none",
+      "argument": "optional category",
       "messages": {
         "carrying": "You are carrying: %s.",
-        "empty": "You are carrying nothing."
+        "empty": "You are carrying nothing.",
+        "noCategory": "No carried items match %s."
+      }
+    },
+    "coins": {
+      "aliases": [
+        "money",
+        "purse"
+      ],
+      "argument": "none",
+      "messages": {
+        "list": "You have %s.",
+        "empty": "You have no coins."
+      }
+    },
+    "technique": {
+      "aliases": [
+        "tech"
+      ],
+      "argument": "optional technique",
+      "messages": {
+        "none": "You are not wielding a weapon with a technique.",
+        "ready": "Technique: %s. Use technique %s.",
+        "cooldown": "%s is not ready (%s seconds).",
+        "noFight": "You are not in a fight.",
+        "unknown": "No technique called %s."
       }
     },
     "attack": {
       "aliases": [
         "kill",
-        "hit"
+        "hit",
+        "k",
+        "atk"
       ],
       "argument": "actor",
       "messages": {
@@ -67,7 +100,8 @@
     },
     "put": {
       "aliases": [
-        "insert"
+        "insert",
+        "pt"
       ],
       "argument": "object in object",
       "messages": {
@@ -94,7 +128,9 @@
       }
     },
     "open": {
-      "aliases": [],
+      "aliases": [
+        "op"
+      ],
       "argument": "object",
       "messages": {
         "actor": "You open %o.",
@@ -106,7 +142,8 @@
     },
     "close": {
       "aliases": [
-        "shut"
+        "shut",
+        "cl"
       ],
       "argument": "object",
       "messages": {
@@ -119,7 +156,8 @@
     },
     "wear": {
       "aliases": [
-        "don"
+        "don",
+        "wr"
       ],
       "argument": "object",
       "messages": {
@@ -132,7 +170,8 @@
     },
     "remove": {
       "aliases": [
-        "doff"
+        "doff",
+        "rm"
       ],
       "argument": "object",
       "messages": {
@@ -144,7 +183,8 @@
     },
     "eat": {
       "aliases": [
-        "taste"
+        "taste",
+        "ea"
       ],
       "argument": "object",
       "messages": {
@@ -156,9 +196,24 @@
         "lastOthers": "%a finishes %o."
       }
     },
+    "drink": {
+      "aliases": [
+        "quaff"
+      ],
+      "argument": "object",
+      "messages": {
+        "actor": "You drink %o.",
+        "others": "%a drinks %o.",
+        "missing": "You are not carrying a %s.",
+        "notDrink": "The %s is not drinkable.",
+        "last": "You drain %o.",
+        "lastOthers": "%a drains %o."
+      }
+    },
     "light": {
       "aliases": [
-        "ignite"
+        "ignite",
+        "li"
       ],
       "argument": "object",
       "messages": {
@@ -172,7 +227,8 @@
     "extinguish": {
       "aliases": [
         "douse",
-        "snuff"
+        "snuff",
+        "ext"
       ],
       "argument": "object",
       "messages": {
@@ -185,7 +241,8 @@
     },
     "buy": {
       "aliases": [
-        "purchase"
+        "purchase",
+        "b"
       ],
       "argument": "object",
       "messages": {
@@ -199,7 +256,8 @@
     },
     "sell": {
       "aliases": [
-        "vend"
+        "vend",
+        "se"
       ],
       "argument": "object",
       "messages": {
@@ -208,13 +266,15 @@
         "missing": "You are not carrying a %s.",
         "noShop": "There is no shop here.",
         "worthless": "The shop will not pay for %o.",
-        "coin": "The shop does not buy money."
+        "coin": "The shop does not buy money.",
+        "questItem": "The shop will not buy %o; it is still tied to a quest."
       }
     },
     "list": {
       "aliases": [
         "shop",
-        "stock"
+        "stock",
+        "ls"
       ],
       "argument": "none",
       "messages": {
@@ -225,7 +285,9 @@
       }
     },
     "say": {
-      "aliases": [],
+      "aliases": [
+        "sy"
+      ],
       "argument": "text",
       "messages": {
         "actor": "You say: %s",
@@ -235,7 +297,8 @@
     },
     "tell": {
       "aliases": [
-        "whisper"
+        "whisper",
+        "te"
       ],
       "argument": "actor text",
       "messages": {
@@ -248,7 +311,8 @@
     },
     "mail": {
       "aliases": [
-        "letter"
+        "letter",
+        "m"
       ],
       "argument": "actor text",
       "messages": {
@@ -261,7 +325,8 @@
     },
     "channels": {
       "aliases": [
-        "chan"
+        "chan",
+        "ch"
       ],
       "argument": "none",
       "messages": {
@@ -271,7 +336,8 @@
     },
     "wield": {
       "aliases": [
-        "equip"
+        "equip",
+        "wi"
       ],
       "argument": "object",
       "messages": {
@@ -283,7 +349,8 @@
     },
     "unwield": {
       "aliases": [
-        "sheathe"
+        "sheathe",
+        "uw"
       ],
       "argument": "none",
       "messages": {
@@ -293,19 +360,69 @@
       }
     },
     "flee": {
+      "aliases": [],
+      "argument": "none",
+      "messages": {
+        "refused": "There is no fleeing combat. A fight ends only with a death."
+      }
+    },
+    "upgrade": {
       "aliases": [
-        "run"
+        "improve",
+        "forge"
+      ],
+      "argument": "object",
+      "messages": {
+        "noForge": "The forge master works at the Cold Forge.",
+        "missing": "You are not carrying a %s.",
+        "notGear": "The forge only works on weapons and armour.",
+        "quest": "The forge will not touch %o; it is tied to a quest.",
+        "max": "%o is already at its highest upgrade.",
+        "components": "You need more forge components.",
+        "poor": "You cannot afford the %o coin upgrade.",
+        "done": "You upgrade %o to +%s."
+      }
+    },
+    "salvage": {
+      "aliases": [
+        "melt",
+        "scrap"
+      ],
+      "argument": "object",
+      "messages": {
+        "noForge": "The forge master works at the Cold Forge.",
+        "missing": "You are not carrying a %s.",
+        "notGear": "The forge only breaks down weapons and armour.",
+        "worn": "Remove or unwield %o first.",
+        "quest": "The forge will not break down %o; it is tied to a quest.",
+        "coin": "The forge does not melt money.",
+        "done": "You salvage %o into %s."
+      }
+    },
+    "components": {
+      "aliases": [
+        "parts",
+        "materials"
       ],
       "argument": "none",
       "messages": {
-        "actor": "You flee %s.",
-        "others": "%a flees %s.",
-        "noExit": "There is nowhere to flee."
+        "list": "%s"
+      }
+    },
+    "standing": {
+      "aliases": [
+        "reputation",
+        "factions"
+      ],
+      "argument": "none",
+      "messages": {
+        "list": "%s"
       }
     },
     "score": {
       "aliases": [
-        "stats"
+        "stats",
+        "sc"
       ],
       "argument": "none",
       "messages": {
@@ -314,7 +431,8 @@
     },
     "quests": {
       "aliases": [
-        "journal"
+        "journal",
+        "q"
       ],
       "argument": "none",
       "messages": {
@@ -338,7 +456,8 @@
     },
     "deliver": {
       "aliases": [
-        "handin"
+        "handin",
+        "dv"
       ],
       "argument": "object to actor",
       "messages": {
@@ -355,7 +474,7 @@
       ],
       "argument": "subcommand",
       "messages": {
-        "usage": "guild create <name>, guild join <name>, guild leave, guild who, guild list, guild chat <text>, guild rank <member> <rank>, guild disband.",
+        "usage": "guild create <name>, guild join <name>, guild leave, guild who, guild list, guild chat <text>, guild rank <member> <rank>, guild disband; vault, deposit <item>, withdraw <item>.",
         "noGuild": "You are not in a guild. guild list, or guild create <name>.",
         "inGuild": "You are already in a guild. guild leave first.",
         "notFound": "No guild named %s.",
@@ -387,7 +506,8 @@
     },
     "talk": {
       "aliases": [
-        "greet"
+        "greet",
+        "tk"
       ],
       "argument": "actor",
       "messages": {
@@ -398,7 +518,8 @@
     },
     "duel": {
       "aliases": [
-        "challenge"
+        "challenge",
+        "du"
       ],
       "argument": "actor",
       "messages": {
@@ -417,7 +538,8 @@
     "who": {
       "aliases": [
         "awake",
-        "online"
+        "online",
+        "wh"
       ],
       "argument": "none",
       "messages": {
@@ -426,14 +548,18 @@
       }
     },
     "wait": {
-      "aliases": [],
+      "aliases": [
+        "wa"
+      ],
       "argument": "none",
       "messages": {
         "actor": "You wait."
       }
     },
     "adopt": {
-      "aliases": [],
+      "aliases": [
+        "ad"
+      ],
       "argument": "text",
       "messages": {
         "usage": "Usage: adopt <old-name> <password-or-token>.",
@@ -447,6 +573,211 @@
         "bad": "The password or token does not match.",
         "guild": "Leave your current guild before claiming an old name in another guild.",
         "claiming": "Claiming %s."
+      }
+    },
+    "levels": {
+      "aliases": [
+        "lv",
+        "lvl"
+      ],
+      "argument": "none",
+      "messages": {
+        "list": "The level table is shown above."
+      }
+    },
+    "ladder": {
+      "aliases": [
+        "pvp",
+        "duels"
+      ],
+      "argument": "none",
+      "messages": {
+        "list": "%s"
+      }
+    },
+    "leaderboard": {
+      "aliases": [
+        "top",
+        "lb",
+        "ranks"
+      ],
+      "argument": "none",
+      "messages": {
+        "list": "The all-time character leaderboard is shown above."
+      }
+    },
+    "map": {
+      "aliases": [
+        "mp"
+      ],
+      "argument": "optional zone",
+      "messages": {
+        "list": "The map is shown above.",
+        "none": "No zone named %s."
+      }
+    },
+    "shortcuts": {
+      "aliases": [
+        "sh"
+      ],
+      "argument": "none",
+      "messages": {
+        "list": "The shortcuts are shown above."
+      }
+    },
+    "battle": {
+      "aliases": [
+        "combat",
+        "bt"
+      ],
+      "argument": "none",
+      "messages": {
+        "list": "The current fight is shown above."
+      }
+    },
+    "tutorial": {
+      "aliases": [
+        "first",
+        "firststeps"
+      ],
+      "argument": "none",
+      "messages": {
+        "list": "The first steps are shown above."
+      }
+    },
+    "vault": {
+      "aliases": [
+        "gvault",
+        "bank",
+        "gvlt"
+      ],
+      "argument": "none",
+      "messages": {
+        "noGuild": "You are not in a guild.",
+        "wrongRoom": "The guild vault is in the Guild Hall, south of the Gilded Rat.",
+        "empty": "The guild vault is empty.",
+        "list": "The guild vault holds %s."
+      }
+    },
+    "deposit": {
+      "aliases": [
+        "dep",
+        "store",
+        "ds"
+      ],
+      "argument": "object",
+      "messages": {
+        "noGuild": "You are not in a guild.",
+        "wrongRoom": "The guild vault is in the Guild Hall, south of the Gilded Rat.",
+        "missing": "You are not carrying a %s.",
+        "full": "The guild vault is full (%s items)."
+      }
+    },
+    "withdraw": {
+      "aliases": [
+        "wd",
+        "retrieve",
+        "wdr"
+      ],
+      "argument": "object",
+      "messages": {
+        "noGuild": "You are not in a guild.",
+        "wrongRoom": "The guild vault is in the Guild Hall, south of the Gilded Rat.",
+        "missing": "The vault has no %s."
+      }
+    },
+    "ignore": {
+      "aliases": [
+        "ign",
+        "mute"
+      ],
+      "argument": "actor",
+      "messages": {
+        "usage": "Ignore whom? ignore <name>.",
+        "missing": "No one named %s has been here.",
+        "self": "You cannot ignore yourself.",
+        "already": "You are already ignoring %s.",
+        "added": "You ignore %s. Their tells, mail and public lines no longer reach you."
+      }
+    },
+    "unignore": {
+      "aliases": [
+        "unign",
+        "unmute"
+      ],
+      "argument": "actor",
+      "messages": {
+        "usage": "Unignore whom? unignore <name>.",
+        "missing": "No one named %s has been here.",
+        "notIgnoring": "You are not ignoring %s.",
+        "removed": "You are no longer ignoring %s."
+      }
+    },
+    "ignoring": {
+      "aliases": [
+        "ignored",
+        "ignores"
+      ],
+      "argument": "none",
+      "messages": {
+        "empty": "You are not ignoring anyone.",
+        "list": "Ignoring: %s."
+      }
+    },
+    "report": {
+      "aliases": [
+        "rep"
+      ],
+      "argument": "actor text",
+      "messages": {
+        "usage": "Report whom, and why? report <name> <reason>.",
+        "missing": "No one named %s has been here.",
+        "self": "You cannot report yourself.",
+        "empty": "Add a reason so the operator can review it.",
+        "recorded": "Your report about %s has been recorded for the operator."
+      }
+    },
+    "titles": {
+      "aliases": [
+        "titlelist",
+        "achievements"
+      ],
+      "argument": "none",
+      "messages": {
+        "none": "Titles are earned by completing quests."
+      }
+    },
+    "title": {
+      "aliases": [
+        "settitle"
+      ],
+      "argument": "title or none",
+      "messages": {
+        "usage": "title <id|name>, or title none.",
+        "missing": "You have not earned a title called %s."
+      }
+    },
+    "recall": {
+      "aliases": [
+        "remember",
+        "mem"
+      ],
+      "argument": "word",
+      "messages": {
+        "usage": "Recall what word? recall <word>.",
+        "missing": "You have not learned that word.",
+        "shrine": "The shrine is where a learned word is spoken.",
+        "recalled": "You recall: %s"
+      }
+    },
+    "facts": {
+      "aliases": [
+        "memory",
+        "knowledge"
+      ],
+      "argument": "none",
+      "messages": {
+        "empty": "You have not learned any facts yet."
       }
     }
   }

@@ -168,6 +168,201 @@ Rehearsed 2026-11-16:
   prompt, keeps free-form commands, adds Auto/Always/Never reasoning and fixes
   Mind/chat scrolling; the Prism-only Gemini demo and its quota proxy are
   available when the operator configures a key (MB-92/93);
+- v0.64.1 (Gemini live) configures the demo with gemini-3.1-flash-lite,
+  corrects the model label and records a real nine-turn Prism-only run at
+  p50 1.04s / p95 1.33s (MB-95);
+- v0.65.0 (agent memory) adds persistent per-character room/command/stale
+  memory, injects it every turn and replaces observation loops with a fresh
+  action instead of pausing (MB-97);
+- v0.65.1 (container context) adds open-container contents to the injected
+  action menu, so the model uses take <item> from <container> instead of
+  inventing commands (MB-98);
+- v0.66.0 (R4-lite memory) records the full prime-router spike and adds a
+  native prime/GCD concept index over the character's own notes, injected as
+  Known: facts (MB-100);
+- v0.67.0 (R4 sidecar) deploys the patched prime-router as a loopback memory
+  service with scoped retrieval, a note journal and an authenticated game
+  proxy; the browser injects R4 CONTEXT and falls back to local memory if the
+  sidecar is down (MB-101);
+- v0.68.0 (grounded actions) validates commands against the current room and
+  repairs invalid targets before they reach the server; adds invalid/loop/
+  coverage/memory/R4 scorecards by model (MB-103);
+- v0.68.1 (grounding order) records validation before telemetry, accepts
+  observation nouns when state lags, and repairs for-sale takes to buy
+  (MB-104);
+- v0.68.2 (deploy readiness) waits for login assets **and** /health for up to
+  50s before rolling back, fixing the transient asset-check rollback (MB-105);
+- v0.68.3 (R4 hardening) bounds and compacts the note journal, adds the
+  100-query scoped benchmark (p95 3ms on wick), and shows R4 hit/latency or
+  fallback in the Model inspector (MB-107);
+- v0.69.0 (social fen) adds public-speech social memory with private-line
+  filtering, the ten-room Hollow Fen, five quests, the green-key chest and
+  green-heart shortcut, and guild level 6 with guild-quest-3 (MB-108/109);
+- v0.70.0 (stream/launch) adds last-run archives and clip downloads, demo
+  remaining-quota alerts and an operator SIGNUP_MODE switch (MB-111);
+- v0.71.0 (visibility) adds richer who/quests, levels, all-time leaderboard,
+  zone map/shortcuts, and exposes them to the AI action menu and /llms.txt
+  (MB-113);
+- v0.72.0 (shortcuts/stats) adds a shortcut for every verb, 30 socials,
+  battle/score/spell/equipment visibility, livelier animal cadence, snap-to-
+  latest panels and the public /stats dashboard with an all-time leaderboard
+  endpoint (MB-114/115);
+- v0.73.0 (depth) scales spells with level/focus, adds the five-room Salt
+  Caves and two quests (85 rooms / 38 quests), and adds first-run and
+  spectator onboarding prompts (MB-117);
+- v0.74.0 (status) adds burn/bleed/chill effects from spells, weapons and
+  enemy tactics, timed ticks, chill armour loss, Mend cleansing and effect
+  display in score/battle/prompts (MB-119);
+- v0.75.0 (first steps) adds the beginner tour and tutorial command, plus
+  The Salt Ward and The Deep Fen reward chains; 41 quests (MB-121);
+- v0.76.0 (moonlit reach) adds six rooms east of the deep forest, the moon
+  hare, silver owl and moon stag, a moon-key chest, the crescent shortcut and
+  three linked quests; the balance sampler joins the tools (MB-123);
+- v0.77.0 (eclipse court) adds the six-room level-10 capstone above the Moon
+  Throne, an eclipse-key chest, the dawn-gate shortcut and a three-quest chain;
+  the balance sampler now reads the real world and its top-band fights (MB-125);
+- v0.78.0 (guild vault) adds a 20-slot per-guild vault in the shared hall,
+  deposit/withdraw commands, reset/restart/disband handling and the repeatable
+  clerk's errand; 48 quests (MB-127);
+- v0.79.0 (social/safety) adds the `talk` quest objective and the two-NPC
+  hall-word quest, an eight-line/ten-second chat guard, and reserved names;
+  49 quests (MB-129);
+- v0.80.0 (safety/titles) adds persistent ignore lists across tells, mail,
+  channels, guild chat, socials and room speech, quest-earned titles with a
+  `title` selector, and a telemetry tuning report; 49 quests (MB-131);
+- v0.81.0 (memory garden) adds NPC-learned facts, a local fact store mirrored
+  to R4 with context fallback, the `recall` command, the three-room Memory
+  Garden and The Garden Remembers quest; 100 rooms / 50 quests (MB-133);
+- v0.82.0 (live garden) adds the crescent fact, The Moon in the Garden
+  follow-up, the `facts` command, a reproducible live-server session and the
+  level-10 cap fix; 51 quests (MB-135);
+- v0.83.0 (remembered bed) adds a fact-gated `plant rose` action that consumes
+  the memory rose and opens a hidden room, the Remembered Bed quest, Bedkeeper
+  title and an unscripted qwen2.5:7b run; 101 rooms / 52 quests (MB-137);
+- v0.84.0 (route memory) adds a shared room trail, unexplored-target exits and
+  room-cycle detection to both agents; the unscripted qwen2.5:7b run completes
+  the Remembered Bed in seven turns (MB-139);
+- v0.85.0 (root archive) adds two rooms below the Remembered Bed, the first-bed
+  quest, the first seed, BFS route hints and waypoint sequencing; the broader
+  unscripted run completes in nine turns (MB-141);
+- v0.86.0 (root road) adds a two-room shortcut from the Root Archive to Market
+  Square, the town-spanning Long Remembering quest, map-seeded BFS routes,
+  nearest-objective choice and a movement guard; the 13-turn unscripted run
+  completes (MB-143);
+- v0.87.0 (sunken orchard) adds three rooms below the Root Road, the orchard
+  keeper, the windfall seed, the four-objective Three Rememberings quest and
+  per-target `AGENT_OBJECTIVES` with wrong-room redirects; 108 rooms / 55
+  quests (MB-145);
+- v0.88.0 (remote agent) adds an OpenCode/DeepSeek provider path with no local
+  inference, fixes the no-room loop, and validates both the 5-turn Root Archive
+  and 24-turn four-objective Three Rememberings runs (MB-147);
+- v0.89.0 (undercroft) adds three rooms below the Old Press, the press seed, the
+  Press Beneath quest, objective dependencies and a two-quest remote DeepSeek
+  run; 111 rooms / 56 quests (MB-149);
+- v0.90.0 (cider spring) adds three rooms below the Seed Vault, the spring
+  keeper, the cider bloom, the Cider Spring quest, a strict route lock and a
+  23-turn three-quest remote DeepSeek run; 114 rooms / 57 quests (MB-151);
+- v0.91.0 (verified actions) makes objective completion wait for the server's
+  success line and adds repeatable Orchard Work; a 24-turn three-quest remote
+  run completes with every action confirmed (MB-153);
+- v0.91.1 (login/name fix) removes the standalone AI Prism fallback, opens
+  existing AI characters instead of creating another, and generates random
+  names for new AI/human characters with collision retry (MB-155);
+- v0.91.2 (storage guard) refuses to start an AI persona in a memory-only/private
+  window, where the next reload would create another orphan identity (MB-155);
+- v0.91.3 (AI recovery) adds the explicit old-AI-session transfer: a signed
+  `prism/character-transfer/1` action moves a selected orphaned character to the
+  signed-in human Prism account, with session verification and ownership checks
+  (MB-158);
+- v0.91.4 (auto deploy) publishes a tagged release automatically when a merged
+  PR has a green Gate on main, writes a hash-bound release manifest, and makes
+  the pull deployer verify both assets before extraction (MB-160);
+- v0.91.5 (reconnect) restores a Prism browser session after a region restart,
+  resumes the active character only when no other session controls it, and adds
+  a headless-Chrome reconnect test to the Gate (MB-162);
+- v0.91.6 (archmage line) adds The Eclipse Ledger and The Dawn Archive, two
+  rank-10 Mage quests using the Eclipse Court and the archmage's signet reward;
+  60 quests / 102 objects (MB-163);
+- v0.91.7 (archmage trial) adds the reset-cycle Archmage's Trial, consuming the
+  regent's sigil for repeatable high-rank guild XP; 61 quests (MB-165);
+- v0.91.8 (moderation) adds a 3-24 character new-name policy with token-aware
+  reserved words, leetspeak folding and a legacy-safe login path, plus a
+  durable `report <name> <reason>` queue that shares the chat guard (MB-167);
+- v0.91.9 (generated names) replaces the `root` adjective with `rooted` so
+  every random character name passes the v0.91.8 token policy, and the Gate
+  checks every adjective/noun pair (MB-169);
+- v0.91.10 (player stats) adds `GET /players`, `tools/players.mjs` and a
+  `/stats` panel for sessions, human/AI mix, playtime, per-quest completion,
+  combat outcomes, rooms and level distribution, aggregate-only (MB-171);
+- v0.91.11 (player log) keeps a compact player-event log beside the full span
+  log, seeds it from the existing log on first start and serves `/players` from
+  it, so sparse session records survive the tail window (MB-172);
+- v0.91.12 (player history) reads historical AI/human sessions through the
+  matching `world.prism` record, includes `world.prism` in the compact log and
+  shows the unknown-AI count on `/stats` (MB-173);
+- v0.91.13 (level view) uses the most recent snapshot that actually holds
+  players for the level distribution, so `/players` and `/stats` do not
+  collapse to zero between sessions (MB-175);
+- v0.91.14 (publisher guard) requires the gated SHA to be the PR's actual
+  merge commit, so a later direct or pacing commit that GitHub associates with
+  the merged PR cannot release (MB-176);
+- v0.91.15 (player fundamentals) adds `t`/`take all`, `drink`, `coins`, grouped
+  inventory, a 20 HP base with 5 HP per level, and removes fleeing from combat.
+  The Gilded Rat sells ale for 10 coins, three sellable treasures enter the
+  world, and shops refuse quest collectibles. Pollinations becomes the free,
+  keyless, streaming default for the browser AI, the Wardens' Lodge opens a
+  second guild with exploration ranks, the unreachable archmage promotion is
+  repaired, and the quest count is frozen at 61 toward a 20-quest target
+  (MB-178 through MB-181);
+- v0.91.16 (20-quest spine) cuts the live table from 61 to 20, archives the 41
+  retired definitions, remaps prerequisites and titles, and migrates active
+  characters with a one-time completion/abandon note. Ember Deep, Hollow Fen,
+  Salt Caves, Moonlit Reach and the Memory Garden keep their rooms, gear, keys
+  and actions as exploration content (MB-183);
+- v0.91.17 (zone gear) adds four armour drops to the Ember, Fen, Salt and Moon
+  mobiles and gives the Wardens passive rank perks: scout +1 armour, ranger +1
+  damage, warden both (MB-185);
+- v0.91.18 (gear depth) fills body and offhand with smithy stock and eight more
+  zone drops, and adds hit rate, kill rate, average damage, PvP/NPC rounds and
+  player death rate to `/players` and `/stats` (MB-187);
+- v0.91.19 (tuning evidence) adds the remote tuning harness, records two
+  DeepSeek Mirror Pool fights (14 rounds, 64.3% hit, 4.67 average damage, no
+  deaths), records take-all object ids, and updates the CLI agent to the
+  no-flee/take-all/drink command set. No balance values changed (MB-189);
+- v0.91.20 (PvP bands) extends the deterministic sampler with three PvP
+  matchups and two unseeded high-level fights, and makes the bands a Gate
+  check. PvP sits at 41–47%, unseeded level 8 is 51%, unseeded level 10 is 18%;
+  no balance values changed (MB-191);
+- v0.91.21 (faction standing) adds Ember/Fen/Salt/Moon standing from zone
+  kills, the `standing` command, four quartermaster shops and five
+  standing-gated gear pieces. It replaces retired quest checklists with a
+  repeatable kill → standing → gear loop and adds `world.standing` spans
+  (MB-193);
+- v0.91.22 (weapon techniques) adds Power Strike, Cleave, Bash and Chill
+  Strike as weapon-family moves with tick cooldowns, setup effects and
+  `world.technique` spans, giving non-Mages tactical combat choices (MB-195);
+- v0.91.23 (outlaw paths) adds the Night Market rank guild for
+  thieves/assassins, the Ashen Hand and Red Company factions for dark
+  priests/barbarians, Backstab/Rage/Drain techniques, and their quartermaster
+  gear. It uses one new guild and two standing tracks, not four rank guilds
+  (MB-197);
+- v0.91.24 (forge) adds component salvage, +1..+3 gear upgrades at the Cold
+  Forge, 3/4-piece set bonuses and `world.forge` spans, giving coins and zone
+  materials a real sink (MB-199);
+- v0.91.25 (events and PvP) adds the Ember/Fen/Salt/Moon world event rotation
+  (double standing, 20% quartermaster discount) and the persistent Ring duel
+  ladder with wins, losses, rating and `ladder`/`pvp`/`duels` (MB-201);
+- v0.91.26 (high-level evidence) adds the unseeded level-8 Starless Hall
+  scenario to the remote tuning harness. The first run reached 18 rounds with
+  the star hound at 10/28 HP and the character at 36/55, no death; no balance
+  values changed (MB-203);
+- v0.91.27 (sets, sheet and training) completes the Ashen/Red/Night sets, adds
+  shield Guard and five readable lore pieces, a web Character sheet with shop
+  item stats, and the Training Yard east of the Guild Hall; 116 rooms / 57
+  mobiles / 145 objects (MB-205);
+- v0.91.28 (operator and access) adds the owner-token `/reports` JSON view,
+  a documented review path, a Skip to game link and explicit
+  focus/reduced-motion checks (MB-207);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

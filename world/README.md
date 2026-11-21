@@ -117,3 +117,17 @@ prism-code run MUDBench.holo --policy policy.dev.json
 
 That is an honest declaration — "this is P0 and we accept it here" — rather than
 `--allow-unverified`, which says the same thing less clearly.
+
+To test the world against a built (or matching released) hologram locally:
+
+```sh
+npm ci --prefix runtime
+MUD_HOLO=/path/to/MUDBench.holo MUD_PRISM_CODE="$(command -v prism-code)" \
+  node --test runtime/real-holo.test.mjs
+```
+
+Use `prism-code@0.5.0`. The test starts an isolated guest and region, registers
+a player, moves, completes a quest, and checks progress after a graceful
+restart. It also checks denied credentials, repeated quests, invalid movement,
+and recovery after the guest stops. It does not test abrupt crashes or
+distributed regions.

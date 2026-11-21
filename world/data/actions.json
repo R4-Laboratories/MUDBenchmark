@@ -257,6 +257,206 @@
         "actor": "You step into the first flame. Heat folds around you and the chamber is gone.",
         "others": "%a steps into the first flame and vanishes."
       }
+    },
+    {
+      "id": "unlock-fen-chest",
+      "verb": "unlock",
+      "target": "chest",
+      "room": 79,
+      "requires": {
+        "item": "green-key"
+      },
+      "effects": [
+        {
+          "kind": "open",
+          "object": "fen-chest"
+        },
+        {
+          "kind": "message",
+          "text": "The green iron band loosens and the chest opens."
+        }
+      ],
+      "messages": {
+        "actor": "You fit the green key to the chest. The band loosens.",
+        "others": "%a unlocks the green iron chest."
+      }
+    },
+    {
+      "id": "enter-green-heart",
+      "verb": "enter",
+      "target": "heart",
+      "room": 80,
+      "effects": [
+        {
+          "kind": "teleport",
+          "room": 71
+        },
+        {
+          "kind": "message",
+          "text": "The root folds around you and sets you down at the fen gate."
+        }
+      ],
+      "messages": {
+        "actor": "You step into the green heart. The root folds around you and the chamber is gone.",
+        "others": "%a steps into the green heart and vanishes."
+      }
+    },
+    {
+      "id": "unlock-salt-chest",
+      "verb": "unlock",
+      "target": "chest",
+      "room": 84,
+      "requires": {
+        "item": "brine-key"
+      },
+      "effects": [
+        {
+          "kind": "open",
+          "object": "salt-chest"
+        },
+        {
+          "kind": "message",
+          "text": "The salt band cracks and the chest opens."
+        }
+      ],
+      "messages": {
+        "actor": "You fit the brine key to the chest. The salt band cracks.",
+        "others": "%a unlocks the salt-crusted chest."
+      }
+    },
+    {
+      "id": "enter-salt-heart",
+      "verb": "enter",
+      "target": "heart",
+      "room": 85,
+      "effects": [
+        {
+          "kind": "teleport",
+          "room": 81
+        },
+        {
+          "kind": "message",
+          "text": "The salt pillar folds around you and sets you down at the stair."
+        }
+      ],
+      "messages": {
+        "actor": "You step into the salt heart. The cave folds and the stair is beneath you.",
+        "others": "%a steps into the salt heart and vanishes."
+      }
+    },
+    {
+      "id": "open-moon-chest",
+      "verb": "open",
+      "target": "chest",
+      "room": 89,
+      "requires": {
+        "item": "moon-key"
+      },
+      "effects": [
+        {
+          "kind": "open",
+          "object": "moon-chest"
+        },
+        {
+          "kind": "message",
+          "text": "The silver cord loosens and the pale chest opens."
+        }
+      ],
+      "messages": {
+        "actor": "You fit the moon key to the pale chest. The cord loosens.",
+        "others": "%a opens the pale chest."
+      }
+    },
+    {
+      "id": "enter-moon",
+      "verb": "enter",
+      "target": "moon",
+      "room": 91,
+      "effects": [
+        {
+          "kind": "teleport",
+          "room": 86
+        },
+        {
+          "kind": "message",
+          "text": "The crescent moon folds around you and sets you down at the gate."
+        }
+      ],
+      "messages": {
+        "actor": "You step into the crescent moon. The glade folds and the gate is beneath you.",
+        "others": "%a steps into the moon and vanishes."
+      }
+    },
+    {
+      "id": "open-eclipse-chest",
+      "verb": "open",
+      "target": "chest",
+      "room": 95,
+      "requires": {
+        "item": "eclipse-key"
+      },
+      "effects": [
+        {
+          "kind": "open",
+          "object": "eclipse-chest"
+        },
+        {
+          "kind": "message",
+          "text": "The eclipse iron loosens and the black chest opens on a folded dawn."
+        }
+      ],
+      "messages": {
+        "actor": "You fit the eclipse key to the black chest. The band loosens.",
+        "others": "%a opens the black chest."
+      }
+    },
+    {
+      "id": "enter-dawn-gate",
+      "verb": "enter",
+      "target": "gate",
+      "room": 97,
+      "effects": [
+        {
+          "kind": "teleport",
+          "room": 86
+        },
+        {
+          "kind": "message",
+          "text": "The dawn folds around you and sets you down at the Moonlit Gate."
+        }
+      ],
+      "messages": {
+        "actor": "You step into the dawn gate. The sky folds and the Moonlit Gate is beneath you.",
+        "others": "%a steps into the dawn and vanishes."
+      }
+    },
+    {
+      "id": "plant-memory",
+      "verb": "plant",
+      "target": "rose",
+      "room": 98,
+      "requires": {
+        "fact": "garden-word",
+        "item": "memory-rose"
+      },
+      "effects": [
+        {
+          "kind": "revealExit",
+          "dir": "down"
+        },
+        {
+          "kind": "consume",
+          "object": "memory-rose"
+        },
+        {
+          "kind": "message",
+          "text": "The roots part and a stair opens beneath the bed."
+        }
+      ],
+      "messages": {
+        "actor": "You press the memory rose into the bed. The roots part and a stair opens downward.",
+        "others": "%a plants a rose; the garden floor opens."
+      }
     }
   ]
 }

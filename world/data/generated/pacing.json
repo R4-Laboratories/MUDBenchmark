@@ -1,9 +1,17 @@
 {
   "schema": "mudbenchmark/pacing/1",
-  "candidate": "c-0f5ec925e602",
-  "report": "9f0e474b0b9d81fcc3a17e24360853e2e45e995683c029aa3c7a01f8a4883069",
-  "worldHash": "d7dcaae9974d8c71353ab000d7ce58d1c1909c00ed32dd3bb4193e1bb8c9e8b1",
+  "candidate": "c-2386f72f2192",
+  "report": "5ba471a9a27cf8afcda9277f4611cfff4d47a9af389a1757ce5004ebfa63559f",
+  "worldHash": "5d9580c57b42ef89596b3ceda880aeae403b0008d0c9cb1dcdb8c2dfc7891872",
   "changes": [
+    {
+      "group": "hostile-damage",
+      "collection": "npcs",
+      "target": "boar",
+      "field": "damage",
+      "from": 2,
+      "to": 3
+    },
     {
       "group": "hostile-hp",
       "collection": "npcs",
@@ -17,16 +25,16 @@
       "collection": "npcs",
       "target": "moth",
       "field": "period",
-      "from": 60,
-      "to": 75
+      "from": 48,
+      "to": 60
     },
     {
       "group": "temple-period",
       "collection": "npcs",
       "target": "rat",
       "field": "period",
-      "from": 40,
-      "to": 50
+      "from": 32,
+      "to": 40
     }
   ],
   "admission": {
@@ -36,9 +44,9 @@
     "benefit": true,
     "bounds": true,
     "checks": true,
-    "candidate": "c-0f5ec925e602",
-    "report": "9f0e474b0b9d81fcc3a17e24360853e2e45e995683c029aa3c7a01f8a4883069",
-    "worldHash": "d7dcaae9974d8c71353ab000d7ce58d1c1909c00ed32dd3bb4193e1bb8c9e8b1",
+    "candidate": "c-2386f72f2192",
+    "report": "5ba471a9a27cf8afcda9277f4611cfff4d47a9af389a1757ce5004ebfa63559f",
+    "worldHash": "5d9580c57b42ef89596b3ceda880aeae403b0008d0c9cb1dcdb8c2dfc7891872",
     "kernel": "sha256:cc0cd971f1090692e7fad9ad7b23a3a35dada64168de74110b321d3e31c30258"
   }
 }

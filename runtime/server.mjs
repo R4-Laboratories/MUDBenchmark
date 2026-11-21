@@ -11,12 +11,16 @@ import { homedir } from "node:os";
 import { join as joinPath } from "node:path";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { WebSocketServer } from "ws";
-import { recordSpan, digest, TELEMETRY_LOG } from "./telemetry.mjs";
+import { recordSpan, digest, TELEMETRY_LOG, PLAYER_LOG_FILE, ensurePlayerLog } from "./telemetry.mjs";
 import { readSpanTail, readSpansTail, redactSpans } from "./spans.mjs";
 import { summarizeTrends } from "./trends.mjs";
+import { summarizePlayers } from "./playerstats.mjs";
 import { step, initialState, digestState, phaseAt, upgradeState, releaseHeldObjects, checkpointIdentities, armorOf, nextFrom, TICK_MS } from "./world.mjs";
-import { equipmentText } from "./equipment.mjs";
-import { maxManaFor, spellById, spellLine, trainableSpells, trainingCost } from "./magic.mjs";
+import { equipmentOf, equipmentText, inventoryGroups, setBonus, weaponDamageOf, weaponOf, wornBySlot } from "./equipment.mjs";
+import { techniqueForWeapon } from "./techniques.mjs";
+import { COMPONENTS, componentsText, componentForItem, salvageYield, upgradeCost } from "./forge.mjs";
+import { eventPrice, eventText } from "./events.mjs";
+import { maxManaFor, spellById, spellLine, spellPower, trainableSpells, trainingCost } from "./magic.mjs";
 import { findAction, loadActions } from "./actions.mjs";
 import { loadWorld } from "./worlddata.mjs";
 import { describe as renderRoom, examine } from "./view.mjs";
@@ -24,17 +28,22 @@ import { loadVerbs, render, resolve } from "./verbs.mjs";
 import { loadChannels, resolveChannel } from "./channels.mjs";
 import { loadSocials, resolveSocial } from "./socials.mjs";
 import { loadLevels, nextLevelXp } from "./levels.mjs";
-import { availableQuests, loadQuests, normalizeQuestState, questById, questLines, validateQuestReferences } from "./quests.mjs";
-import { RANKS, guildId, rankAtLeast, validGuildName } from "./guilds.mjs";
+import { availableQuests, loadQuestArchive, loadQuests, migrateQuestState, normalizeQuestState, questById, questLines, validateQuestReferences } from "./quests.mjs";
+import { GUILD_HALL, GUILD_VAULT_CAPACITY, RANKS, guildId, guildVaultHolder, rankAtLeast, progressionAtLeast, validGuildName, guildBonus } from "./guilds.mjs";
+import { FACTIONS, factionAllows, factionRank, standingsText } from "./factions.mjs";
 import { buildLlms } from "./llms.mjs";
-import { hashPassword, verifyPassword, validName, validPassword, accountCapReached } from "./accounts.mjs";
+import { loadTitles, earnedTitles, titleLookup } from "./titles.mjs";
+import { loadFacts, factForNpc, contextHasWord } from "./facts.mjs";
+import { hashPassword, verifyPassword, validName, validNewName, validPassword, accountCapReached } from "./accounts.mjs";
 import { allowCommand as allowInput, DEFAULT_INTERVAL_MS } from "./allowance.mjs";
-import { verifyPrismSession, verifyPersonaOwner, verifySessionKey, prismDisplay } from "./prism-auth.mjs";
+import { chatAllowed, reportAllowed, reportRecord } from "./moderation.mjs";
+import { verifyPrismSession, verifyPersonaOwner, verifyPrismAction, verifySessionKey, prismDisplay } from "./prism-auth.mjs";
 import { CREDENTIAL, identityAdmits } from "./identity.mjs";
 import { normalizePrismId, ownerAllowed, rebindPlan } from "./rebind.mjs";
 import { normalizeStreamEvent, publicStreamText } from "./stream.mjs";
 import { normalizeAiTurn, aiTurnAttributes } from "./metrics.mjs";
 import { worldStatus, worldStatusText } from "./worldstatus.mjs";
+import { levelsText, leaderboardText, leaderboardRows, duelLadderText, mapText, shortcutsText } from "./visibility.mjs";
 import { redactCommand, sanitizeIntent, sanitizeState } from "./telemetry-policy.mjs";
 import { loadStateFile, saveStateFile } from "./state.mjs";
 import { authenticatedPeer, federationConfig, readFederationBody, requestPeer, signClaim, verifyClaim } from "./federation.mjs";
@@ -47,6 +56,7 @@ const WEB_PORT = Number(process.env.WEB_PORT ?? 8090);
 const STATE_FILE = process.env.STATE_FILE ?? joinPath(homedir(), ".mudbench", "state", "world.json");
 const IDENTITY_FILE = process.env.IDENTITY_FILE ?? joinPath(homedir(), ".mudbench", "state", "identities.json");
 const TRACE_FILE = process.env.TRACE_FILE ?? "/tmp/mudbench-trace.jsonl";
+const REPORT_FILE = process.env.REPORT_FILE ?? joinPath(homedir(), ".mudbench", "state", "reports.jsonl");
 const PRISM_ORIGINS = (process.env.PRISM_ORIGINS ?? "").split(",").map((value) => value.trim()).filter(Boolean);
 const PRISM_LOGIN_MAX = 262144;
 const PRISM_RECORDS_MAX = 64;
@@ -67,6 +77,9 @@ if (loaded.errors.length > 0) {
   for (const problem of loaded.errors) console.error(`world: ${problem}`);
   process.exit(1);
 }
+const playerSeed = ensurePlayerLog();
+if (playerSeed.created) console.log(`player stats: seeded ${playerSeed.kept} spans`);
+
 const ACTION_TABLE = loadActions({ world: loaded });
 if (ACTION_TABLE.errors.length > 0) {
   for (const problem of ACTION_TABLE.errors) console.error(`actions: ${problem}`);
@@ -100,6 +113,11 @@ if (LEVELS.errors.length > 0) {
 }
 
 const QUESTS = loadQuests();
+const QUEST_ARCHIVE = loadQuestArchive();
+// Quest collectibles are not merchandise. Selling one could strand a character
+// on a line they cannot repeat, so the shop refuses them by data, not by name.
+const QUEST_OBJECTS = new Set((QUESTS.quests ?? []).flatMap((quest) =>
+  (quest.objectives ?? []).filter((objective) => objective.kind === "collect").map((objective) => objective.object)));
 if (QUESTS.errors.length > 0) {
   for (const problem of QUESTS.errors) console.error(`quests: ${problem}`);
   process.exit(1);
@@ -107,6 +125,44 @@ if (QUESTS.errors.length > 0) {
 if (process.env.SKIP_QUEST_VALIDATION !== "1") {
   for (const problem of validateQuestReferences(QUESTS.quests, { rooms: ROOMS, npcs: loaded.npcs, objects: loaded.objects })) {
     console.error(`quests: ${problem}`);
+    process.exit(1);
+  }
+}
+
+const TITLES = loadTitles();
+if (TITLES.errors.length > 0) {
+  for (const problem of TITLES.errors) console.error(`titles: ${problem}`);
+  process.exit(1);
+}
+for (const title of TITLES.titles) {
+  if (!QUESTS.quests.some((quest) => quest.id === title.quest)) {
+    console.error(`titles: ${title.id} names unknown quest ${title.quest}`);
+    process.exit(1);
+  }
+}
+
+const FACTS = loadFacts();
+if (FACTS.errors.length > 0) {
+  for (const problem of FACTS.errors) console.error(`facts: ${problem}`);
+  process.exit(1);
+}
+for (const fact of FACTS.facts) {
+  if (!loaded.npcs.some((npc) => npc.id === fact.npc)) {
+    console.error(`facts: ${fact.id} names unknown npc ${fact.npc}`);
+    process.exit(1);
+  }
+}
+for (const quest of QUESTS.quests) {
+  for (const objective of quest.objectives) {
+    if (objective.kind === "answer" && objective.fact && !FACTS.byId.has(objective.fact)) {
+      console.error(`quests: ${quest.id} names unknown fact ${objective.fact}`);
+      process.exit(1);
+    }
+  }
+}
+for (const action of ACTION_TABLE.actions) {
+  if (action.requires?.fact && !FACTS.byId.has(action.requires.fact)) {
+    console.error(`actions: ${action.id} requires unknown fact ${action.requires.fact}`);
     process.exit(1);
   }
 }
@@ -122,6 +178,7 @@ const SHRINE = loaded.task.shrine;
 const transports = new Map(); // id -> { send, close, welcomed }
 const spectators = new Set(); // public /watch sockets
 let live = null; // { actorId, name, account, room, tick, startedAt, status, events }
+let lastLive = null; // last completed stream: name, room, endedAt, peakViewers, highlights
 let nextViewer = 1;
 const pending = [];
 const accountSessions = new Map(); // id -> { key, kind: "prism" | "legacy" }
@@ -166,10 +223,17 @@ let nextId = 1;
 // Guards that must exist before this is reachable by anyone but us.
 const MAX_CLIENTS = Number(process.env.MAX_CLIENTS ?? 40);
 const MAX_ACCOUNTS = Number(process.env.MAX_ACCOUNTS ?? 500);
+// "open" accepts new legacy/Prism accounts; "closed" keeps existing logins but
+// refuses new accounts. Set SIGNUP_MODE=closed for a curated launch.
+const SIGNUP_MODE = String(process.env.SIGNUP_MODE ?? "open").toLowerCase();
+const SIGNUPS_OPEN = SIGNUP_MODE !== "closed";
 // Operator-funded Gemini demo. The key never leaves the server. The browser
 // receives a short-lived demo token over its authenticated game socket; the
 // proxy checks that token and a per-Prism quota before forwarding.
 const GEMINI_KEY = process.env.GEMINI_API_KEY ?? process.env.GEMINI_KEY ?? "";
+// Optional R4 memory sidecar. The game proxies it over the authenticated
+// socket; the browser never talks to the Python service directly.
+const R4_URL = process.env.R4_URL ?? "http://127.0.0.1:8000";
 const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
 const GEMINI_BASE = process.env.GEMINI_BASE ?? "https://generativelanguage.googleapis.com/v1beta/openai";
 const GEMINI_DAILY_TURNS = Math.max(1, Number(process.env.GEMINI_DAILY_TURNS ?? 100));
@@ -182,6 +246,8 @@ const MAX_SPECTATORS = Number(process.env.MAX_SPECTATORS ?? 200);
 const RATE_WINDOW_MS = 5000;
 const RATE_MAX = 12;
 const buckets = new Map();
+const chatWindows = new Map();
+const reportTimes = new Map();
 
 function allowCommand(id) {
   const now = Date.now();
@@ -231,6 +297,18 @@ for (const character of Object.values(state.identities ?? {})) {
   if (FEDERATION || character.unrecognizedSkills?.length) applySkillPolicy(character);
 }
 if (!state.guilds) state.guilds = {};
+// The 20-quest budget retired the rest. Normalize every saved character and
+// leave a one-time note for any active quest that is no longer live.
+let questMigrationCount = 0;
+for (const identity of Object.values(state.identities ?? {})) {
+  const migrated = migrateQuestState(identity.quests, QUESTS.quests, QUEST_ARCHIVE.quests);
+  identity.quests = migrated.quests;
+  if (migrated.notes.length) {
+    identity.questMigration = migrated.notes;
+    questMigrationCount += migrated.notes.length;
+  }
+}
+if (questMigrationCount) console.log(`quests: migrated ${questMigrationCount} retired active quest${questMigrationCount === 1 ? "" : "s"}`);
 if (!state.guilds.mages) {
   state.guilds.mages = {
     id: "mages",
@@ -245,6 +323,41 @@ if (!state.guilds.mages) {
     xp: 0,
     level: 1,
     perks: [],
+    vault: [],
+  };
+}
+if (!state.guilds.wardens) {
+  state.guilds.wardens = {
+    id: "wardens",
+    name: "The Wardens",
+    founder: "warden-captain",
+    created: state.tick,
+    members: {},
+    invites: [],
+    ranks: ["scout", "ranger", "warden"],
+    hall: 115,
+    trainer: "warden-captain",
+    xp: 0,
+    level: 1,
+    perks: [],
+    vault: [],
+  };
+}
+if (!state.guilds["night-market"]) {
+  state.guilds["night-market"] = {
+    id: "night-market",
+    name: "The Night Market",
+    founder: "night-broker",
+    created: state.tick,
+    members: {},
+    invites: [],
+    ranks: ["runner", "cutpurse", "shadow", "master"],
+    hall: 29,
+    trainer: "night-broker",
+    xp: 0,
+    level: 1,
+    perks: [],
+    vault: [],
   };
 }
 let lastSave = (() => { try { return statSync(STATE_FILE).mtimeMs; } catch { return 0; } })();
@@ -254,8 +367,10 @@ function saveState() {
     checkpointIdentities(state);
     saveStateFile(STATE_FILE, state);
     lastSave = Date.now();
+    return true;
   } catch (error) {
     console.error(`state not saved: ${error.message}`);
+    return false;
   }
 }
 
@@ -455,6 +570,13 @@ function sendTo(id, text) {
   if (t) t.send(text);
 }
 
+function questMigrationNotice(character) {
+  const notes = character?.questMigration;
+  if (!Array.isArray(notes) || notes.length === 0) return null;
+  const words = notes.map((note) => `${note.name} (${note.status})`).join(", ");
+  return `The world retired ${notes.length} quest${notes.length === 1 ? "" : "s"} you were carrying: ${words}.`;
+}
+
 // The owner console answers in one machine-readable line. The operator tool
 // parses it; a human sees the same JSON. Secrets never appear in it: a token
 // rebind carries only a hash, and a Prism rebind carries the public id.
@@ -466,6 +588,7 @@ function sendRebind(id, payload) {
 
 function publicLive() {
   if (!live) return null;
+  live.peakViewers = Math.max(live.peakViewers ?? 0, spectators.size);
   return {
     status: live.status,
     name: live.name,
@@ -473,6 +596,7 @@ function publicLive() {
     tick: live.tick,
     startedAt: live.startedAt,
     viewers: spectators.size,
+    peakViewers: live.peakViewers ?? spectators.size,
     chat: live.chat !== false,
     poll: live.poll ? publicPoll(live.poll) : null,
     events: live.events.slice(-80),
@@ -484,6 +608,18 @@ function publicPoll(poll) {
     question: poll.question,
     options: { a: poll.options.a, b: poll.options.b },
     votes: { a: poll.votes.a, b: poll.votes.b },
+  };
+}
+
+function publicLast() {
+  if (!lastLive) return null;
+  return {
+    name: lastLive.name,
+    room: lastLive.room,
+    startedAt: lastLive.startedAt,
+    endedAt: lastLive.endedAt,
+    peakViewers: lastLive.peakViewers ?? 0,
+    highlights: lastLive.highlights.slice(-8),
   };
 }
 
@@ -522,8 +658,16 @@ function startLive(id) {
 function stopLive(id = null) {
   if (!live) return false;
   if (id != null && live.actorId !== id) return false;
+  lastLive = {
+    name: live.name,
+    room: live.room,
+    startedAt: live.startedAt,
+    endedAt: new Date().toISOString(),
+    peakViewers: live.peakViewers ?? spectators.size,
+    highlights: live.events.filter((event) => event.kind === "highlight").slice(-20),
+  };
   live = null;
-  broadcastStream({ type: "off" });
+  broadcastStream({ type: "off", last: publicLast() });
   return true;
 }
 
@@ -553,11 +697,12 @@ function publishLive(id, event) {
   return true;
 }
 
-function broadcast(room, text, exceptId) {
+function broadcast(room, text, exceptId, fromKey = null) {
   for (const a of actorsIn(room)) {
     // A guest has not signed in and is not playing. Do not let NPCs, weather or
     // other players scroll the login screen before authentication.
     if (!a.key || a.id === exceptId) continue;
+    if (fromKey && (a.ignored ?? []).includes(fromKey)) continue;
     sendTo(a.id, text);
   }
 }
@@ -652,13 +797,27 @@ const DIRECTIONS = { n: "north", s: "south", e: "east", w: "west", u: "up", d: "
 // the common actions. `g` is get/take, so `gos`/`goss` are the gossip channel.
 const ALIASES = {
   l: "look", x: "examine", ex: "examine",
-  g: "take", get: "take", grab: "take", dr: "drop", discard: "drop",
-  i: "inventory", inv: "inventory", eq: "equipment",
+  g: "take", t: "take", get: "take", grab: "take", dr: "drop", discard: "drop",
+  i: "inventory", inv: "inventory", eq: "equipment", coins: "coins", money: "coins", purse: "coins",
   sc: "score", stats: "score", q: "quests", j: "quests", journal: "quests",
   wh: "who", aw: "awake", online: "who",
   h: "help", "?": "help",
   gos: "gossip", goss: "gossip", gc: "guildchat", gchat: "guildchat",
   status: "world", time: "world", sr: "search",
+  lb: "leaderboard", top: "leaderboard", ranks: "leaderboard", ladder: "ladder", pvp: "ladder", duels: "ladder",
+  standing: "standing", reputation: "standing", factions: "standing",
+  upgrade: "upgrade", improve: "upgrade", forge: "upgrade", salvage: "salvage", melt: "salvage", scrap: "salvage", components: "components", parts: "components", materials: "components",
+  lv: "levels", lvl: "levels",
+  gv: "give", pt: "put", op: "open", cl: "close", wr: "wear", rm: "remove",
+  ea: "eat", drink: "drink", quaff: "drink", li: "light", ext: "extinguish", b: "buy", se: "sell", ls: "list",
+  sy: "say", te: "tell", m: "mail", ch: "channels", gl: "global", wi: "wield",
+  uw: "unwield", tech: "technique", dv: "deliver", tk: "talk", du: "duel", wa: "wait",
+  ad: "adopt", mp: "map", sh: "shortcuts", k: "attack", atk: "attack",
+  an: "answer", clm: "claim", wld: "world", sp: "spells", tr: "train",
+  ca: "cast", stu: "study", re: "recite", tu: "turn", pu: "push", ri: "ring",
+  chars: "characters", pl: "play", cr: "create", pw: "password", qq: "quit",
+  tf: "take", dp: "drop", combat: "battle", bt: "battle",
+  first: "tutorial", firststeps: "tutorial",
 };
 
 // One compact, hidden line per accepted command. It carries only what the
@@ -683,6 +842,9 @@ function selfState(actor) {
         open: object.open === true,
         forSale: object.forSale === true,
         price: object.price ?? null,
+        contents: object.open === true
+          ? state.objects.filter((item) => item.inside === object.id && !item.eaten).map((item) => item.name)
+          : [],
       }))
     : [];
   const npcsHere = actor?.key
@@ -695,6 +857,7 @@ function selfState(actor) {
     ? ACTION_TABLE.actions.filter((action) => action.room === actor.room)
         .filter((action) => !action.requires?.spell || (actor.spellbook ?? []).includes(action.requires.spell))
         .filter((action) => !action.requires?.item || state.objects.some((object) => object.id === action.requires.item && object.holder === actor.id && !object.eaten))
+        .filter((action) => !action.requires?.fact || Boolean(actor.memory?.facts?.[action.requires.fact]))
         .map((action) => ({ verb: action.verb, target: action.target }))
     : [];
   const activeQuests = actor?.key
@@ -716,11 +879,30 @@ function selfState(actor) {
     discovered: [...(actor.found ?? [])],
     guild: actor.guild ?? null,
     guild_rank: actor.guildRank ?? null,
+    standing: { ...(actor.standing ?? {}) },
+    standing_detail: Object.values(FACTIONS).map((faction) => {
+      const rank = factionRank(faction.id, actor.standing?.[faction.id] ?? 0);
+      return { id: faction.id, name: faction.name, value: rank.value, rank: rank.name, next: rank.next };
+    }),
+    components: { ...(actor.components ?? {}) },
+    components_detail: Object.entries(actor.components ?? {}).filter(([, count]) => count > 0).map(([id, count]) => ({ id, name: COMPONENTS[id] ?? id, count })),
+    duel: { wins: actor.duelWins ?? 0, losses: actor.duelLosses ?? 0, rating: actor.duelRating ?? 1000 },
+    techniques: [techniqueForWeapon(weaponOf(actor, state.objects)), techniqueForWeapon(wornBySlot(actor, state.objects).offhand)].filter(Boolean).map((technique) => ({ id: technique.id, name: technique.name })),
+    equipment: Object.fromEntries(Object.entries(equipmentOf(actor, state.objects)).map(([slot, object]) => [slot, object ? { name: object.name, plus: object.plus ?? 0, armor: object.armor ?? 0, damage: object.damage ?? 0 } : null])),
+    sets: setBonus(actor, state.objects).sets,
+    title: actor.title ?? null,
+    ignoring: (actor.ignored ?? []).length,
+    memory_facts: Object.keys(actor.memory?.facts ?? {}).length,
+    guild_vault: (state.guilds[actor.guild]?.vault ?? []).length,
     quests: {
       active: actor.quests?.active?.length ?? 0,
       completed: actor.quests?.completed?.length ?? 0,
     },
     inventory: state.objects.filter((object) => object.holder === actor.id && !object.worn).length,
+    armor: armorOf(actor, state.objects),
+    damage: weaponDamageOf(weaponOf(actor, state.objects)) + guildBonus(actor).damage + setBonus(actor, state.objects).damage,
+    spell_power: spellPower(actor, weaponDamageOf(weaponOf(actor, state.objects))),
+    effects: (actor.effects ?? []).map((effect) => ({ id: effect.id, name: effect.name, rounds: effect.rounds })),
     inventory_names: state.objects.filter((object) => object.holder === actor.id && !object.worn && !object.eaten).map((object) => object.name),
     wielding: state.objects.find((object) => object.id === actor.wielding)?.name ?? null,
     worn: state.objects.filter((object) => object.holder === actor.id && object.worn).map((object) => object.name),
@@ -745,11 +927,44 @@ function selfState(actor) {
       phase: status.phase,
       weather: status.weather,
       reset_seconds: status.reset.seconds,
+      event: status.event,
       leaders: status.top,
     },
     self,
+    room: self?.room ?? null,
   };
 }
+
+async function r4Call(path, payload, timeout = 2000) {
+  if (!R4_URL) throw new Error("the R4 memory service is not configured");
+  const started = Date.now();
+  try {
+    const res = await fetch(`${R4_URL.replace(/\/+$/, "")}${path}`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(timeout),
+    });
+    const data = await res.json();
+    recordSpan("ai.r4", {
+      "ai.r4.path": path,
+      "ai.r4.status": res.status,
+      "ai.r4.latency_ms": Date.now() - started,
+    }, Date.now() - started);
+    if (!res.ok) throw new Error(data?.error ?? `R4 returned ${res.status}`);
+    return data;
+  } catch (error) {
+    recordSpan("ai.r4", {
+      "ai.r4.path": path,
+      "ai.r4.status": 0,
+      "ai.r4.latency_ms": Date.now() - started,
+      "ai.r4.error": String(error.message).slice(0, 120),
+    }, Date.now() - started);
+    throw error;
+  }
+}
+
+const r4Identity = (actor) => `prism:${actor.key}:${actor.name}`;
 
 async function handleCommand(id, line) {
   const raw = line.trim();
@@ -784,6 +999,7 @@ async function handleCommand(id, line) {
     const ok = await verifySessionKey(session.challenge.key, session.challenge.nonce, counter, signature);
     if (!ok) return sendTo(id, "The session signature is invalid.\r\n");
     session.challenge.last = counter;
+    if (!session.challenge.confirmed) session.resumeAvailable = true;
     session.challenge.confirmed = true;
     return sendCharacters(id, session);
   }
@@ -864,7 +1080,29 @@ async function handleCommand(id, line) {
     const token = randomBytes(24).toString("base64url");
     const expires = Date.now() + 30 * 60 * 1000;
     demoAccess.set(token, { prism: actor.key, expires });
-    return sendTo(id, `#demo-token ${JSON.stringify({ token, expires, ...demoStatus() })}\r\n`);
+    const usage = demoQuota(actor.key);
+    return sendTo(id, `#demo-token ${JSON.stringify({
+      token,
+      expires,
+      remaining: Math.max(0, GEMINI_DAILY_TURNS - usage.turns),
+      minuteRemaining: Math.max(0, GEMINI_MINUTE_TURNS - usage.minuteTurns),
+      ...demoStatus(),
+    })}\r\n`);
+  }
+
+  if (verb === "r4-context" || verb === "r4-remember") {
+    if (!actor?.key) return sendTo(id, `#${verb} ${JSON.stringify({ error: "Sign in with a Prism account first." })}\r\n`);
+    const text = restRaw.join(" ").trim();
+    if (!text) return sendTo(id, `#${verb} ${JSON.stringify({ error: "No text supplied." })}\r\n`);
+    const identity = r4Identity(actor);
+    try {
+      const data = verb === "r4-context"
+        ? await r4Call("/api/context", { identity, text, limit: 6 }, 2500)
+        : await r4Call("/api/remember", { identity, text }, 2500);
+      return sendTo(id, `#${verb} ${JSON.stringify(data)}\r\n`);
+    } catch (error) {
+      return sendTo(id, `#${verb} ${JSON.stringify({ error: String(error.message).slice(0, 160) })}\r\n`);
+    }
   }
 
   if (verb === "stream") {
@@ -948,7 +1186,11 @@ async function handleCommand(id, line) {
   // transport. A model and a human type on the same clock.
   const transport = transports.get(id);
   const now = Date.now();
-  if (transport && !allowInput(transport.lastCommandAt, now, COMMAND_INTERVAL_MS)) {
+  const resumeSession = accountSessions.get(id);
+  const resumeHandshake = verb === "resume" && resumeSession?.kind === "prism"
+    && sessionConfirmed(resumeSession) && resumeSession.resumeAvailable;
+  if (resumeHandshake) resumeSession.resumeAvailable = false;
+  if (!resumeHandshake && transport && !allowInput(transport.lastCommandAt, now, COMMAND_INTERVAL_MS)) {
     recordSpan("world.input", {
       "actor.id": id,
       "command": verb,
@@ -958,7 +1200,7 @@ async function handleCommand(id, line) {
     }, 0);
     return sendTo(id, "You must wait a moment.\r\n");
   }
-  if (transport) transport.lastCommandAt = now;
+  if (transport && !resumeHandshake) transport.lastCommandAt = now;
   // The accepted command and its tick. The same tick goes to the client in a
   // hidden line, so the transcript's turn and the span agree exactly.
   const redacted = redactCommand(raw);
@@ -1019,6 +1261,9 @@ async function handleCommand(id, line) {
     const pinned = prismId ? identityStore.prisms[prismId] ?? null : null;
     const verdict = await verifyPrismSession(parsed, { origin, pinned, revokedBefore: identityStore.revokedBefore ?? null, blocked: identityStore.blocked ?? [] });
     if (!verdict.ok) return sendTo(id, `Prism sign-in refused: ${verdict.reason}.\r\n`);
+    if (!state.accounts?.[verdict.prism] && !SIGNUPS_OPEN) {
+      return sendTo(id, "New accounts are closed right now. The operator can open them.\r\n");
+    }
     if (!state.accounts?.[verdict.prism] && accountCapReached(Object.keys(state.accounts ?? {}).length, MAX_ACCOUNTS)) {
       return sendTo(id, "The world has reached its account cap; no new Prism account can be created right now.\r\n");
     }
@@ -1096,6 +1341,68 @@ async function handleCommand(id, line) {
     if (!session) return sendTo(id, "Sign in with your Prism id first.\r\n");
     if (!sessionConfirmed(session)) return sendTo(id, "Confirm your session first.\r\n");
     return sendCharacters(id, session);
+  }
+
+  if (verb === "recover-list") {
+    const human = accountSessions.get(id);
+    if (!human || human.kind !== "prism") return sendTo(id, "Sign in with your Prism id first.\r\n");
+    if (!sessionConfirmed(human)) return sendTo(id, "Confirm your session first.\r\n");
+    if (human.owner) return sendTo(id, "Sign in as the human account, not the AI persona.\r\n");
+    const token = restRaw[0];
+    if (!token || token.length > PRISM_LOGIN_MAX) return sendTo(id, "Usage: recover-list <old AI session>.\r\n");
+    let session;
+    try { session = JSON.parse(Buffer.from(token, "base64url").toString("utf8")); } catch {
+      return sendTo(id, "The old AI session is malformed.\r\n");
+    }
+    const prismId = session?.envelope?.body?.prism;
+    const pinned = prismId ? identityStore.prisms[prismId] ?? null : null;
+    const verdict = await verifyPrismSession(session, { origin: transports.get(id)?.origin ?? null, pinned, revokedBefore: identityStore.revokedBefore ?? null, blocked: identityStore.blocked ?? [] });
+    if (!verdict.ok) return sendTo(id, `Old AI session refused: ${verdict.reason}.\r\n`);
+    if (!pinned || pinned.root !== verdict.root) {
+      identityStore.prisms[verdict.prism] = { records: verdict.records, root: verdict.root, updated: new Date().toISOString() };
+      saveIdentityStore();
+    }
+    const old = state.accounts?.[verdict.prism];
+    const characters = old && !old.retired ? [...(old.characters ?? [])] : [];
+    sendTo(id, `#recover-list ${JSON.stringify({ account: prismDisplay(verdict.prism), characters })}\r\n`);
+    return sendTo(id, characters.length
+      ? `Old AI account ${prismDisplay(verdict.prism)} has ${characters.length} character${characters.length === 1 ? "" : "s"}.\r\n`
+      : `Old AI account ${prismDisplay(verdict.prism)} has no characters.\r\n`);
+  }
+
+  if (verb === "recover") {
+    const human = accountSessions.get(id);
+    if (!human || human.kind !== "prism") return sendTo(id, "Sign in with your Prism id first.\r\n");
+    if (!sessionConfirmed(human)) return sendTo(id, "Confirm your session first.\r\n");
+    if (human.owner) return sendTo(id, "Sign in as the human account, not the AI persona.\r\n");
+    const token = restRaw[0];
+    if (!token || token.length > PRISM_LOGIN_MAX) return sendTo(id, "Usage: recover <transfer action>.\r\n");
+    let transfer;
+    try { transfer = JSON.parse(Buffer.from(token, "base64url").toString("utf8")); } catch {
+      return sendTo(id, "The transfer action is malformed.\r\n");
+    }
+    const body = transfer?.envelope?.body;
+    const fromKey = body?.prism;
+    if (!body || !fromKey || body.action !== "prism/character-transfer/1") return sendTo(id, "That is not a character transfer.\r\n");
+    const pinned = identityStore.prisms[fromKey] ?? null;
+    const verdict = await verifyPrismAction(transfer.envelope, {
+      origin: transports.get(id)?.origin ?? null,
+      records: transfer.records ?? [],
+      pinned,
+      action: "prism/character-transfer/1",
+      expected: { to: human.key },
+    });
+    if (!verdict.ok) return sendTo(id, `Transfer refused: ${verdict.reason}.\r\n`);
+    if (fromKey === human.key) return sendTo(id, "That account is already yours.\r\n");
+    const old = state.accounts?.[fromKey];
+    if (!old || old.retired) return sendTo(id, "The old account is not available.\r\n");
+    if (old.owner && old.owner !== human.key) return sendTo(id, "That old account belongs to another Prism id.\r\n");
+    const characterKey = body.payload?.character;
+    const character = state.identities?.[characterKey];
+    if (!character || character.owner !== fromKey || character.retired) return sendTo(id, "That character is not on the old account.\r\n");
+    pending.push({ kind: "transferCharacter", actorId: id, fromKey, toKey: human.key, characterKey });
+    setTimeout(() => sendCharacters(id, human), 350);
+    return sendTo(id, `Recovering ${characterKey} to ${prismDisplay(human.key)}.\r\n`);
   }
 
   if (verb === "handoff" || verb === "revoke-handoff") {
@@ -1177,12 +1484,12 @@ async function handleCommand(id, line) {
     return sendTo(id, "Persona retired.\r\n");
   }
 
-  if (verb === "play") {
+  if (verb === "play" || verb === "resume") {
     const session = accountSessions.get(id);
     if (!session) return sendTo(id, "Sign in with your Prism id first.\r\n");
     if (!sessionConfirmed(session)) return sendTo(id, "Confirm your session first.\r\n");
     const name = rest[0];
-    if (!name) return sendTo(id, "Usage: play <character>.\r\n");
+    if (!name) return sendTo(id, `Usage: ${verb} <character>.\r\n`);
     if (actor?.key === name) return sendTo(id, `You are already playing ${name}.\r\n`);
     const account = state.accounts?.[session.key];
     if (account?.federation && account.federation.status !== "active") {
@@ -1194,7 +1501,18 @@ async function handleCommand(id, line) {
     if (!account || account.retired || !character || (!owns && !delegated) || (owns && !account.characters?.includes(name))) {
       return sendTo(id, `No character named ${name} on this account.\r\n`);
     }
-    takeover(name, id);
+    const migration = questMigrationNotice(character);
+    if (migration) {
+      sendTo(id, `${migration}\r\n`);
+      pending.push({ kind: "clearQuestMigration", key: name });
+    }
+    if (pending.some((intent) => intent.kind === "login" && intent.key === name && intent.actorId !== id)) {
+      return sendTo(id, `${name} is signing in elsewhere. Choose the character to try again.\r\n`);
+    }
+    if (verb === "resume" && state.actors.some((candidate) => candidate.id !== id && candidate.key === name)) {
+      return sendTo(id, `${name} is already active elsewhere. Choose the character to take it over.\r\n`);
+    }
+    if (verb === "play") takeover(name, id);
     if (actor?.key) {
       pending.push({ kind: "leave", actorId: id });
       pending.push({ kind: "join", actorId: id, name });
@@ -1209,7 +1527,7 @@ async function handleCommand(id, line) {
     if (!sessionConfirmed(session)) return sendTo(id, "Confirm your session first.\r\n");
     if (state.accounts[session.key]?.retired) return sendTo(id, "This persona is retired.\r\n");
     const name = rest[0];
-    if (!validName(name)) return sendTo(id, "Names are 1-24 letters, digits, - or _.\r\n");
+    if (!validNewName(name)) return sendTo(id, "New names are 3-24 letters, digits, - or _, and cannot claim an operator role.\r\n");
     if (state.identities[name] || state.accounts[name]) return sendTo(id, "That name is taken.\r\n");
     if (state.accounts[session.key]?.characters?.includes(name)) return sendTo(id, "That character is already on this account.\r\n");
     pending.push({ kind: "createCharacter", accountKey: session.key, name, actorId: id });
@@ -1226,7 +1544,8 @@ async function handleCommand(id, line) {
     if (actor?.key) return sendTo(id, `You are already signed in as ${actor.name}. quit to change.\r\n`);
     const key = rest[0];
     const password = restRaw.slice(1).join(" ");
-    if (!validName(key)) return sendTo(id, "Names are 1-24 letters, digits, - or _.\r\n");
+    if (!SIGNUPS_OPEN) return sendTo(id, "New accounts are closed right now. The operator can open them.\r\n");
+    if (!validNewName(key)) return sendTo(id, "New names are 3-24 letters, digits, - or _, and cannot claim an operator role.\r\n");
     if (!validPassword(password)) return sendTo(id, "Passwords are at least 6 characters.\r\n");
     if (accountCapReached(Object.keys(state.accounts ?? {}).length, MAX_ACCOUNTS)) {
       return sendTo(id, "The world has reached its account cap; no new account can be created right now.\r\n");
@@ -1283,6 +1602,11 @@ async function handleCommand(id, line) {
     if (account.federation?.status === "away") {
       return sendTo(id, `Your character is in ${account.federation.to}. Log in there.\r\n`);
     }
+    const migration = questMigrationNotice(character);
+    if (migration) {
+      sendTo(id, `${migration}\r\n`);
+      pending.push({ kind: "clearQuestMigration", key: characterKey });
+    }
     accountSessions.set(id, { key, kind: "legacy" });
     takeover(characterKey, id);
     pending.push({ kind: "login", actorId: id, key: characterKey, account: key, authenticated: true, respawn: false });
@@ -1308,8 +1632,32 @@ async function handleCommand(id, line) {
     return sendTo(id, "Changing your password.\r\n");
   }
 
+  if (verb === "levels") {
+    return sendTo(id, `${levelsText(LEVELS, actor.level ?? 1)}\r\n`);
+  }
+
+  if (verb === "leaderboard") {
+    return sendTo(id, `${leaderboardText(state.identities ?? {}, 10)}\r\n`);
+  }
+
+  if (verb === "ladder") {
+    return sendTo(id, `${duelLadderText(state.identities ?? {}, 10)}\r\n`);
+  }
+
+  if (verb === "map") {
+    return sendTo(id, `${mapText(ROOMS, loaded.zones, actor.visited ?? [], actor.room, restRaw.join(" "))}\r\n`);
+  }
+
+  if (verb === "shortcuts") {
+    return sendTo(id, `${shortcutsText()}\r\n`);
+  }
+
   if (verb === "world") {
     return sendTo(id, `${worldStatusText(worldStatus(state, ROOMS))}\r\n`);
+  }
+
+  if (verb === "tutorial") {
+    return sendTo(id, `First steps:\r\n  1. look — read the room and its exits.\r\n  2. score — your level, HP, gear and quests.\r\n  3. quests — available quests; accept First Steps with: quest accept first-steps.\r\n  4. north — walk to the Corridor and complete the tour.\r\n  5. talk bard — meet the first NPC.\r\n  6. map, levels, leaderboard — see the world and the standings.\r\n  7. shortcuts — every fast command.\r\nWatch an AI from the setup panel, or read /stats for the public telemetry.\r\nTraining yard: east of the Guild Hall — take the practice gear, attack the dummy, then try technique.\r\n`);
   }
 
   if (verb === "help" || verb === "commands") {
@@ -1319,7 +1667,7 @@ async function handleCommand(id, line) {
     if (!actor?.key) {
       return sendTo(id, "MUDBench is a persistent world for people and agents.\r\nSign in with your Prism id, or register <name> <password> / login <name> <password>.\r\nThen type help for the commands.\r\n");
     }
-    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: get/g, drop/dr, inventory/i, score/sc, quests/q, who/wh, gossip/gos, guildchat/gc.\r\nMagic: spells, train <spell> at the Mages' Guild, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search. Guild: guild join/leave/who/list/chat, guild advance (Mages). Room actions: turn, push, ring where the room suggests.\r\nWorld: world or status (online, levels, guilds, reset).\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
+    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: take/t/g/tf, take all, drop/dp/dr, inventory/i, coins, standing/reputation, components, score/sc, quests/q, who/wh, spells/sp, cast/ca, say/sy, tell/te, give/gv, put/pt, open/op, close/cl, wear/wr, remove/rm, buy/b, sell/se, list/ls, drink, map/mp, leaderboard/lb, ladder/pvp, levels/lv, shortcuts/sh.\r\nMagic: spells (effects/mana), train <spell> at the Mages' Guild, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search. Combat: attack/kill/k, technique/tech (weapon move), battle/combat/bt (current HP), score (armour/damage), equipment/eq (slots and totals). Forge: upgrade/improve, salvage/melt, components at the Cold Forge. There is no fleeing a fight. Guild: guild join/leave/who/list/chat, guild advance (Mages, Wardens, Night Market), vault/deposit/withdraw in the Guild Hall. Social: ignore/unignore/ignoring, report/rep, titles/title, facts/memory, recall <word> at the shrine. Room actions: turn, push, ring where the room suggests.\r\nWorld: world or status (online, guilds, reset); levels, leaderboard/top/lb, map [zone], shortcuts, quests active|available|done|all.<id>; tutorial (first) for the first steps.\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
   }
 
   // A command typed before the join tick lands is queued, not refused: the
@@ -1359,10 +1707,19 @@ async function handleCommand(id, line) {
   }
 
   if (verb === "who" || verb === "awake" || verb === "online") {
-    const online = state.actors.filter((candidate) => candidate.key);
+    const online = state.actors
+      .filter((candidate) => candidate.key)
+      .sort((a, b) => (b.level ?? 1) - (a.level ?? 1) || (b.xp ?? 0) - (a.xp ?? 0) || a.name.localeCompare(b.name));
     if (online.length === 0) return sendTo(id, "No one is online.\r\n");
-    const lines = online.map((candidate) => `${candidate.name}${candidate.level > 1 ? ` (level ${candidate.level})` : ""}${candidate.id === id ? " (you)" : ""}`);
-    return sendTo(id, `Online (${online.length}):\r\n  ${lines.join("\r\n  ")}\r\n`);
+    const lines = online.map((candidate) => {
+      const room = ROOMS[candidate.room]?.name ?? String(candidate.room);
+      const guild = candidate.guild ? ` · ${candidate.guild}${candidate.guildRank ? ` (${candidate.guildRank})` : ""}` : "";
+      const hp = candidate.maxHp ? ` · ${candidate.hp}/${candidate.maxHp} hp` : "";
+      const quests = candidate.quests?.active?.length ?? 0;
+      const title = candidate.title ? ` [${candidate.title}]` : "";
+      return `${candidate.name}${title} — level ${candidate.level ?? 1}, ${room}${hp}${guild} · ${quests} active quests${candidate.id === id ? " · you" : ""}`;
+    });
+    return sendTo(id, `Online (${online.length}):\r\n  ${lines.join("\r\n  ")}\r\nUse leaderboard for all characters.\r\n`);
   }
 
   if (verb === "equipment") {
@@ -1401,6 +1758,14 @@ async function handleCommand(id, line) {
 
   const named = resolve(VERB_TABLE, verb);
   const words = rest.join(" ");
+  // The input allowance stops machine-gun commands; this stops a person or
+  // agent flooding every room channel. It is per connection, not per name.
+  const CHAT_VERBS = new Set(["say", "tell", "mail", "global", "guildchat", "report"]);
+  if (CHAT_VERBS.has(named)) {
+    const verdict = chatAllowed(chatWindows.get(id) ?? [], Date.now());
+    if (!verdict.allowed) return sendTo(id, "You are speaking too quickly. Wait a moment.\r\n");
+    chatWindows.set(id, verdict.recent);
+  }
   // An exact name wins over a prefix: "b" should not reach bob when barbara is
   // also awake, and the other way round.
   const findActor = (needle, where = () => true) => {
@@ -1426,6 +1791,9 @@ async function handleCommand(id, line) {
     if (roomAction.requires?.item && !state.objects.some((object) => object.id === roomAction.requires.item && object.holder === id && !object.eaten)) {
       return sendTo(id, `You need ${roomAction.requires.item} to do that.\r\n`);
     }
+    if (roomAction.requires?.fact && !actor.memory?.facts?.[roomAction.requires.fact]) {
+      return sendTo(id, "You have not learned the word for that.\r\n");
+    }
     pending.push({ kind: "action", actorId: id, actionId: roomAction.id, messages: roomAction.messages });
     recordSpan("world.action", {
       "actor.id": id,
@@ -1442,9 +1810,11 @@ async function handleCommand(id, line) {
     const trainable = trainableSpells(actor).filter((spell) => !FEDERATION || FEDERATION.allowedSkills.has(spell.id));
     const parts = [
       `Mana ${actor.mana ?? maxManaFor(actor)}/${actor.maxMana ?? maxManaFor(actor)}.`,
-      `Known: ${known.length ? known.map((spell) => `${spell.name} (${spell.mana})`).join(", ") : "none"}.`,
+      `Spell power ${spellPower(actor, weaponDamageOf(weaponOf(actor, state.objects)))}.`,
+      `Known: ${known.length ? known.map((spell) => spellLine(spell)).join("; ") : "none"}.`,
     ];
-    if (trainable.length) parts.push(`Trainable: ${trainable.map((spell) => `${spell.name} (${spell.level})`).join(", ")}.`);
+    if (trainable.length) parts.push(`Trainable: ${trainable.map((spell) => `${spell.name} (${spell.mana} mana, level ${spell.level}, ${spell.cost ?? 0} coins)`).join("; ")}.`);
+    parts.push("Use cast <spell> [on <target>] or study/recite a scroll.");
     return sendTo(id, `${parts.join(" ")}\r\n`);
   }
 
@@ -1665,6 +2035,7 @@ async function handleCommand(id, line) {
     const target = findActor(targetName);
     if (target && target.id === id) return sendTo(id, `${messages.self}\r\n`);
     if (!target) return sendTo(id, `${render(messages.missing, { words: targetName })}\r\n`);
+    if ((target.ignored ?? []).includes(actor.key)) return sendTo(id, "They are not listening.\r\n");
     pending.push({ kind: "tell", actorId: id, targetId: target.id, messages: {
       actor: render(messages.actor, { target: target.name, words: said }),
       target: render(messages.target, { actor: actor.name, words: said }),
@@ -1688,6 +2059,7 @@ async function handleCommand(id, line) {
     if (!known) return sendTo(id, `${render(messages.missing, { words: targetName })}\r\n`);
     const [toKey] = known;
     if (toKey === actor.key) return sendTo(id, `${messages.self}\r\n`);
+    if ((known[1].ignored ?? []).includes(actor.key)) return sendTo(id, "They are not accepting letters.\r\n");
     const online = state.actors.some((candidate) => candidate.key === toKey && candidate.id !== id);
     pending.push({ kind: "mail", actorId: id, toKey, text: said, messages: {
       actor: render(messages.actor, { target: known[1].name }),
@@ -1707,6 +2079,36 @@ async function handleCommand(id, line) {
     const messages = VERB_TABLE.verbs.channels.messages;
     const open = CHANNELS.channels.filter((entry) => (actor.role ?? 0) >= entry.minRole).map((entry) => entry.name);
     return sendTo(id, `${open.length ? render(messages.list, { words: open.join(", ") }) : messages.none}\r\n`);
+  }
+
+  if (named === "technique") {
+    const messages = VERB_TABLE.verbs.technique.messages;
+    const weapon = weaponOf(actor, state.objects);
+    const offhand = wornBySlot(actor, state.objects).offhand;
+    const options = [techniqueForWeapon(weapon), techniqueForWeapon(offhand)].filter(Boolean);
+    if (!options.length) return sendTo(id, `${messages.none}\r\n`);
+    if (!rest.length) {
+      const lines = options.map((entry) => {
+        const remaining = Math.max(0, (actor.techniqueCooldowns?.[entry.id] ?? -1) - state.tick);
+        return `${entry.name} (${entry.id})${remaining ? ` — ready in ${Math.ceil(remaining * 0.25)}s` : " — ready"}`;
+      });
+      return sendTo(id, `Techniques: ${lines.join("; ")}. Use technique <id>.\r\n`);
+    }
+    const wanted = rest.join(" ").toLowerCase();
+    const technique = options.find((entry) => wanted === entry.id || wanted === entry.name.toLowerCase());
+    if (!technique) {
+      return sendTo(id, `${render(messages.unknown, { words: rest.join(" ") })}\r\n`);
+    }
+    const remaining = Math.max(0, (actor.techniqueCooldowns?.[technique.id] ?? -1) - state.tick);
+    if (remaining > 0) {
+      return sendTo(id, `${technique.name} is not ready (${Math.ceil(remaining * 0.25)}s).\r\n`);
+    }
+    const engagement = (state.engagements ?? []).find((entry) => entry.attackerId === id || entry.targetId === id);
+    if (!engagement) return sendTo(id, `${messages.noFight}\r\n`);
+    const targetId = engagement.attackerId === id ? engagement.targetId : engagement.attackerId;
+    pending.push({ kind: "technique", actorId: id, techniqueId: technique.id, targetId });
+    recordSpan("world.technique", { "actor.id": id, "technique.id": technique.id, "target.id": targetId, "world.tick": state.tick }, 0);
+    return;
   }
 
   if (named === "attack") {
@@ -1729,7 +2131,21 @@ async function handleCommand(id, line) {
     const messages = VERB_TABLE.verbs.list.messages;
     if (!shopHere) return sendTo(id, `${messages.noShop}\r\n`);
     const stock = state.objects.filter((o) => o.room === actor.room && o.forSale && !o.eaten);
-    const lines = stock.map((o) => `${o.name} (${o.price})`);
+    const lines = stock.map((o) => {
+      const factionLock = o.faction && o.minStanding && !factionAllows(actor.standing, o.faction, o.minStanding);
+      const guildRanks = o.guild ? (state.guilds[o.guild]?.ranks ?? RANKS) : RANKS;
+      const guildLock = o.guild && o.minRank && !(actor.guild === o.guild && progressionAtLeast(actor.guildRank, o.minRank, guildRanks));
+      const lock = factionLock
+        ? ` [requires ${FACTIONS[o.faction]?.name ?? o.faction} standing ${o.minStanding}]`
+        : guildLock
+          ? ` [requires ${state.guilds[o.guild]?.name ?? o.guild} rank ${o.minRank}]`
+          : "";
+      const price = eventPrice(o, state.cycle ?? 0);
+      const event = price !== o.price ? " [event]" : "";
+      const plus = o.plus ? `+${o.plus}` : "";
+      const stat = o.damage ? `damage ${o.damage + (o.plus ?? 0)}` : o.armor ? `armour ${o.armor + (o.plus ?? 0)}` : o.slot ?? "";
+      return `${o.name}${plus} (${price}${stat ? `, ${stat}` : ""})${event}${lock}`;
+    });
     sendTo(id, `${stock.length ? render(messages.stock, { words: lines.join(", ") }) : messages.empty}\r\n`);
     return sendTo(id, `${messages.buys}\r\n`);
   }
@@ -1739,6 +2155,16 @@ async function handleCommand(id, line) {
     if (!shopHere) return sendTo(id, `${messages.noShop}\r\n`);
     const object = findObject(words, (o) => o.room === actor.room && o.forSale && !o.eaten);
     if (!object) return sendTo(id, `${render(messages.missing, { words })}\r\n`);
+    if (object.faction && object.minStanding && !factionAllows(actor.standing, object.faction, object.minStanding)) {
+      return sendTo(id, `${object.name} requires ${FACTIONS[object.faction]?.name ?? object.faction} standing ${object.minStanding}.\r\n`);
+    }
+    if (object.guild && object.minRank) {
+      const ranks = state.guilds[object.guild]?.ranks ?? RANKS;
+      if (actor.guild !== object.guild || !progressionAtLeast(actor.guildRank, object.minRank, ranks)) {
+        return sendTo(id, `${object.name} requires ${state.guilds[object.guild]?.name ?? object.guild} rank ${object.minRank}.\r\n`);
+      }
+    }
+    const price = eventPrice(object, state.cycle ?? 0);
     const coins = state.objects
       .filter((o) => o.holder === id && (o.flags ?? []).includes("coin") && !o.eaten)
       .sort((a, b) => b.value - a.value);
@@ -1747,15 +2173,15 @@ async function handleCommand(id, line) {
     for (const coin of coins) {
       chosen.push(coin);
       paid += coin.value;
-      if (paid >= object.price) break;
+      if (paid >= price) break;
     }
     const paidWords = `${paid} coin${paid === 1 ? "" : "s"}`;
-    if (paid < object.price) return sendTo(id, `${render(messages.poor, { object: object.name, words: paidWords })}\r\n`);
+    if (paid < price) return sendTo(id, `${render(messages.poor, { object: object.name, words: paidWords })}\r\n`);
     pending.push({ kind: "buy", actorId: id, objectId: object.id, room: actor.room, coinIds: chosen.map((c) => c.id), messages: {
       actor: render(messages.actor, { object: object.name, words: paidWords }),
       others: render(messages.others, { actor: actor.name, object: object.name }),
     } });
-    recordSpan("world.trade", { "actor.id": id, "action.kind": "buy", "object.id": object.id, "price": object.price, "paid": paid, "room.id": actor.room, "world.tick": state.tick }, 0);
+    recordSpan("world.trade", { "actor.id": id, "action.kind": "buy", "object.id": object.id, "price": price, "paid": paid, "room.id": actor.room, "world.tick": state.tick }, 0);
     return;
   }
 
@@ -1765,6 +2191,7 @@ async function handleCommand(id, line) {
     const object = findObject(words, (o) => o.holder === id && !o.eaten);
     if (!object) return sendTo(id, `${render(messages.missing, { words })}\r\n`);
     if ((object.flags ?? []).includes("coin")) return sendTo(id, `${messages.coin}\r\n`);
+    if (QUEST_OBJECTS.has(object.id)) return sendTo(id, `${render(messages.questItem, { object: object.name })}\r\n`);
     const payment = Math.floor((object.value ?? 0) / 2);
     if (payment < 1) return sendTo(id, `${render(messages.worthless, { object: object.name })}\r\n`);
     pending.push({ kind: "sell", actorId: id, objectId: object.id, room: actor.room, messages: {
@@ -1796,15 +2223,26 @@ async function handleCommand(id, line) {
 
   if (named === "flee") {
     const messages = VERB_TABLE.verbs.flee.messages;
-    const exits = Object.entries(ROOMS[actor.room]?.exits ?? {});
-    if (exits.length === 0) return sendTo(id, `${messages.noExit}\r\n`);
-    const [dir, to] = exits[nextFrom(state.tick + actor.room, exits.length)];
-    pending.push({ kind: "flee", actorId: id, dir, to, messages: {
-      actor: render(messages.actor, { words: dir }),
-      others: render(messages.others, { actor: actor.name, words: dir }),
-    } });
-    recordSpan("world.flee", { "actor.id": id, "room.from": actor.room, "room.to": to, "direction": dir, "world.tick": state.tick }, 0);
-    return;
+    recordSpan("world.flee", { "actor.id": id, "flee.refused": true, "world.tick": state.tick }, 0);
+    return sendTo(id, `${messages.refused}\r\n`);
+  }
+
+  if (verb === "battle" || verb === "combat") {
+    const fights = [];
+    for (const engagement of state.engagements ?? []) {
+      if (engagement.attackerId !== id && engagement.targetId !== id) continue;
+      const otherId = engagement.attackerId === id ? engagement.targetId : engagement.attackerId;
+      const other = state.actors.find((candidate) => candidate.id === otherId)
+        ?? state.npcs.find((candidate) => candidate.id === otherId);
+      if (!other || other.dead) continue;
+      const hp = other.hp ?? null;
+      const max = other.maxHp ?? null;
+      fights.push(`${other.name} — ${hp ?? "?"}/${max ?? "?"} hp${other.room === actor.room ? "" : " (elsewhere)"}`);
+    }
+    const weapon = weaponOf(actor, state.objects);
+    const effects = (actor.effects ?? []).length ? ` · ${(actor.effects ?? []).map((effect) => `${effect.name} ${effect.rounds}`).join(", ")}` : "";
+    if (!fights.length) return sendTo(id, `You are not in a fight. ${weapon ? `Damage ${weaponDamageOf(weapon)}; ` : ""}armour ${armorOf(actor, state.objects)}${effects}.\r\n`);
+    return sendTo(id, `Battle (${actor.hp}/${actor.maxHp} hp${effects}):\r\n  ${[...new Set(fights)].join("\r\n  ")}\r\n`);
   }
 
   if (named === "score") {
@@ -1813,24 +2251,99 @@ async function handleCommand(id, line) {
     const armor = armorOf(actor, state.objects);
     const nextXp = nextLevelXp(state.levels, actor.level);
     const stateQ = normalizeQuestState(actor.quests, QUESTS.quests);
-    const line = `Level ${actor.level} (${actor.xp}${nextXp === null ? "" : `/${nextXp}`} xp), ${actor.hp}/${actor.maxHp} hp, mana ${actor.mana ?? maxManaFor(actor)}/${actor.maxMana ?? maxManaFor(actor)}, armour ${armor}, ${weapon ? `wielding ${weapon.name}` : "unarmed"}${actor.guild ? `, guild ${actor.guild}` : ""}, ${stateQ.active.length} active/${stateQ.completed.length} done quests.`;
+    const effects = (actor.effects ?? []).length ? ` Effects: ${(actor.effects ?? []).map((effect) => `${effect.name} ${effect.rounds}`).join(", ")}.` : "";
+    const title = actor.title ? ` Title ${actor.title}.` : "";
+    const line = `Level ${actor.level} (${actor.xp}${nextXp === null ? "" : `/${nextXp}`} xp), ${actor.hp}/${actor.maxHp} hp, mana ${actor.mana ?? maxManaFor(actor)}/${actor.maxMana ?? maxManaFor(actor)}, armour ${armor}, damage ${weaponDamageOf(weapon) + guildBonus(actor).damage + setBonus(actor, state.objects).damage}, spell power ${spellPower(actor, weaponDamageOf(weapon))}, ${weapon ? `wielding ${weapon.name}` : "unarmed"}${actor.guild ? `, guild ${actor.guild}` : ""}, ${stateQ.active.length} active/${stateQ.completed.length} done quests.${title}${effects}`;
     return sendTo(id, `${render(messages.line, { words: line })}\r\n`);
+  }
+
+  if (named === "standing") {
+    return sendTo(id, `${standingsText(actor.standing)}\r\n`);
+  }
+
+  if (named === "components") {
+    return sendTo(id, `${componentsText(actor.components)}\r\n`);
+  }
+
+  if (named === "upgrade" || named === "salvage") {
+    const messages = VERB_TABLE.verbs[named].messages;
+    const smith = state.npcs.find((npc) => npc.id === "forge-master" && npc.room === 63 && !npc.dead);
+    if (actor.room !== 63 || !smith) return sendTo(id, `${messages.noForge}\r\n`);
+    const object = findObject(words, (o) => o.holder === id && !o.eaten);
+    if (!object) return sendTo(id, `${render(messages.missing, { words })}\r\n`);
+    const forgeable = (object.flags ?? []).includes("weapon")
+      || (object.flags ?? []).includes("wearable")
+      || (object.flags ?? []).includes("armor");
+    if (!forgeable) return sendTo(id, `${messages.notGear}\r\n`);
+    if (QUEST_OBJECTS.has(object.id)) return sendTo(id, `${render(messages.quest, { object: object.name })}\r\n`);
+    if ((object.flags ?? []).includes("coin")) return sendTo(id, `${messages.coin}\r\n`);
+    if (named === "salvage") {
+      if (object.worn || actor.wielding === object.id) return sendTo(id, `${render(messages.worn, { object: object.name })}\r\n`);
+      const amount = salvageYield(object);
+      const component = componentForItem(object);
+      pending.push({ kind: "salvage", actorId: id, objectId: object.id, component, amount });
+      recordSpan("world.forge", { "actor.id": id, "forge.action": "salvage", "object.id": object.id, "component.id": component, "component.count": amount, "world.tick": state.tick }, 0);
+      return;
+    }
+    const cost = upgradeCost(object);
+    if ((object.plus ?? 0) >= 3) return sendTo(id, `${render(messages.max, { object: object.name })}\r\n`);
+    const held = actor.components?.[cost.component] ?? 0;
+    if (held < cost.count) return sendTo(id, `You need ${cost.count} ${COMPONENTS[cost.component] ?? cost.component}.\r\n`);
+    const coins = state.objects
+      .filter((o) => o.holder === id && (o.flags ?? []).includes("coin") && !o.eaten)
+      .sort((a, b) => b.value - a.value);
+    const chosen = [];
+    let paid = 0;
+    for (const coin of coins) {
+      chosen.push(coin);
+      paid += coin.value;
+      if (paid >= cost.coins) break;
+    }
+    if (paid < cost.coins) return sendTo(id, `${render(messages.poor, { object: object.name })}\r\n`);
+    pending.push({ kind: "upgrade", actorId: id, objectId: object.id, component: cost.component, count: cost.count, coins: cost.coins, coinIds: chosen.map((coin) => coin.id) });
+    recordSpan("world.forge", { "actor.id": id, "forge.action": "upgrade", "object.id": object.id, "component.id": cost.component, "component.count": cost.count, "coins": cost.coins, "world.tick": state.tick }, 0);
+    return;
   }
 
   if (named === "quests" || (named === "quest" && rest.length === 0)) {
     const messages = VERB_TABLE.verbs.quests.messages;
     const stateQ = normalizeQuestState(actor.quests, QUESTS.quests);
+    const view = (rest[0] ?? "default").toLowerCase();
+    const detail = questById(QUESTS.quests, view);
     const active = stateQ.active.map((entry) => {
       const quest = questById(QUESTS.quests, entry.id);
-      return quest ? `${quest.name} (${quest.id}): ${questLines(quest, entry.progress, actor, state.objects).join("; ")}` : entry.id;
-    });
-    const completed = stateQ.completed.map((id) => questById(QUESTS.quests, id)?.name ?? id);
-    const available = availableQuests(QUESTS.quests, actor, state.cycle ?? 0).map((quest) => `${quest.name} (${quest.id}, level ${quest.level})`);
-    const parts = [];
-    if (active.length) parts.push(`active: ${active.join(", ")}`);
-    if (completed.length) parts.push(`completed: ${completed.join(", ")}`);
-    if (available.length) parts.push(`available: ${available.join(", ")}`);
-    return sendTo(id, `${parts.length ? render(messages.list, { words: parts.join("; ") }) : messages.none}\r\n`);
+      return quest ? { quest, lines: questLines(quest, entry.progress, actor, state.objects) } : null;
+    }).filter(Boolean);
+    const completed = stateQ.completed.map((id) => questById(QUESTS.quests, id)).filter(Boolean);
+    const available = availableQuests(QUESTS.quests, actor, state.cycle ?? 0);
+    if (detail) {
+      const reward = detail.rewards?.xp ? `${detail.rewards.xp} xp` : "none";
+      const req = detail.requires?.length ? `; requires ${detail.requires.join(", ")}` : "";
+      return sendTo(id, `${detail.name} (${detail.id}) · level ${detail.level} · ${detail.giver ?? "unknown giver"}${req}\r\n${detail.description ?? ""}\r\nObjectives: ${detail.objectives.map((o) => o.text ?? o.kind).join("; ")}\r\nReward: ${reward}${detail.rewards?.object ? ` + ${detail.rewards.object}` : ""}\r\n`);
+    }
+    if (view === "active" || view === "all" || view === "default") {
+      const lines = active.length
+        ? active.map(({ quest, lines: objectives }) => `${quest.name} (${quest.id}): ${objectives.join("; ")}`)
+        : ["none"];
+      if (view !== "default") return sendTo(id, `Active quests:\r\n  ${lines.join("\r\n  ")}\r\n`);
+      if (active.length) sendTo(id, `Active quests:\r\n  ${lines.join("\r\n  ")}\r\n`);
+    }
+    if (view === "available" || view === "all" || view === "default") {
+      const lines = available.map((quest) => `${quest.name} (${quest.id}) · level ${quest.level} · ${quest.giver ?? "unknown"}`);
+      if (view === "available") return sendTo(id, `Available quests:\r\n${lines.length ? `  ${lines.join("\r\n  ")}` : "  none"}\r\n`);
+      if (available.length) sendTo(id, `Available quests:\r\n  ${lines.join("\r\n  ")}\r\n`);
+    }
+    if (view === "done" || view === "all") {
+      if (!completed.length) return sendTo(id, "Completed quests: none.\r\n");
+      return sendTo(id, `Completed quests (${completed.length}):\r\n  ${completed.map((quest) => `${quest.name} (${quest.id})`).join("\r\n  ")}\r\n`);
+    }
+    if (view !== "active" && view !== "available" && view !== "default") {
+      return sendTo(id, `Usage: quests [active|available|done|all|<id>]. Completed ${completed.length}/${QUESTS.quests.length}.\r\n`);
+    }
+    if (view === "default" && completed.length) {
+      sendTo(id, `completed: ${completed.map((quest) => quest.name).join(", ")}\r\n`);
+    }
+    return sendTo(id, `Quests: ${active.length} active · ${available.length} available · ${completed.length}/${QUESTS.quests.length} done. Use quests all or quests <id>.\r\n`);
   }
 
   if (named === "quest") {
@@ -1854,7 +2367,7 @@ async function handleCommand(id, line) {
       if (quest.scope === "guild") {
         const guild = state.guilds[actor.guild];
         const activeGuild = stateQ.active.filter((entry) => questById(QUESTS.quests, entry.id)?.scope === "guild").length;
-        const limit = guild?.perks?.includes("guild-quest-2") ? 2 : 1;
+        const limit = guild?.perks?.includes("guild-quest-3") ? 3 : guild?.perks?.includes("guild-quest-2") ? 2 : 1;
         if (activeGuild >= limit) return sendTo(id, `You can hold ${limit} active guild quest${limit === 1 ? "" : "s"} at this rank.\r\n`);
       }
       const missing = (quest.requires ?? []).find((required) => !stateQ.completed.includes(required));
@@ -1896,6 +2409,49 @@ async function handleCommand(id, line) {
   const guildRoster = (guild) => Object.entries(guild.members ?? {}).map(([key, rank]) =>
     `${key} (${rank}${state.actors.some((a) => a.key === key) ? ", awake" : ""})`);
 
+  const guildVaultItems = (guild) => (guild?.vault ?? [])
+    .map((objectId) => state.objects.find((object) => object.id === objectId && object.holder === guildVaultHolder(guild.id)))
+    .filter((object) => object && !object.eaten);
+
+  if (named === "vault") {
+    const messages = VERB_TABLE.verbs.vault.messages;
+    const guild = state.guilds[actor.guild];
+    if (!guild) return sendTo(id, `${messages.noGuild}\r\n`);
+    if (actor.room !== GUILD_HALL) return sendTo(id, `${messages.wrongRoom}\r\n`);
+    const items = guildVaultItems(guild);
+    if (!items.length) return sendTo(id, `${messages.empty}\r\n`);
+    const names = items.map((object) => {
+      const inside = state.objects.filter((entry) => entry.inside === object.id && !entry.eaten).length;
+      return `${object.name}${inside ? ` (${inside} inside)` : ""}`;
+    });
+    return sendTo(id, `${render(messages.list, { words: `${items.length}/${GUILD_VAULT_CAPACITY}: ${names.join(", ")}` })}\r\n`);
+  }
+
+  if (named === "deposit") {
+    const messages = VERB_TABLE.verbs.deposit.messages;
+    const guild = state.guilds[actor.guild];
+    if (!guild) return sendTo(id, `${messages.noGuild}\r\n`);
+    if (actor.room !== GUILD_HALL) return sendTo(id, `${messages.wrongRoom}\r\n`);
+    const object = findObject(words, (entry) => entry.holder === id && !entry.eaten);
+    if (!object) return sendTo(id, `${render(messages.missing, { words })}\r\n`);
+    const vault = guild.vault ?? [];
+    if (vault.length >= GUILD_VAULT_CAPACITY) return sendTo(id, `${render(messages.full, { words: String(vault.length) })}\r\n`);
+    pending.push({ kind: "guildDeposit", actorId: id, objectId: object.id });
+    return;
+  }
+
+  if (named === "withdraw") {
+    const messages = VERB_TABLE.verbs.withdraw.messages;
+    const guild = state.guilds[actor.guild];
+    if (!guild) return sendTo(id, `${messages.noGuild}\r\n`);
+    if (actor.room !== GUILD_HALL) return sendTo(id, `${messages.wrongRoom}\r\n`);
+    const wanted = words.toLowerCase();
+    const object = guildVaultItems(guild).find((entry) => entry.name.toLowerCase().includes(wanted));
+    if (!object) return sendTo(id, `${render(messages.missing, { words })}\r\n`);
+    pending.push({ kind: "guildWithdraw", actorId: id, objectId: object.id });
+    return;
+  }
+
   if (named === "guild") {
     const messages = VERB_TABLE.verbs.guild.messages;
     const action = rest[0];
@@ -1934,6 +2490,14 @@ async function handleCommand(id, line) {
         if (actor.room !== 34) return sendTo(id, "The Mages' Guild meets above the Atrium.\r\n");
         if ((actor.level ?? 1) < 3) return sendTo(id, "The archmage accepts students of level 3 and above.\r\n");
       }
+      if (guild.id === "wardens") {
+        if (actor.room !== 115) return sendTo(id, "The Wardens meet in the lodge above the Guild Hall.\r\n");
+        if ((actor.level ?? 1) < 3) return sendTo(id, "The warden-captain takes level 3 and above.\r\n");
+      }
+      if (guild.id === "night-market") {
+        if (actor.room !== 29) return sendTo(id, "The Night Market meets in the Smuggler's Cache.\r\n");
+        if ((actor.level ?? 1) < 3) return sendTo(id, "The night broker takes level 3 and above.\r\n");
+      }
       pending.push({ kind: "guildJoin", actorId: id, guildId: guild.id });
       return;
     }
@@ -1944,18 +2508,37 @@ async function handleCommand(id, line) {
     }
     if (action === "advance") {
       const guild = state.guilds[actor.guild];
-      if (!guild || guild.id !== "mages") return sendTo(id, "Only the Mages' Guild advances ranks.\r\n");
-      if (actor.room !== 34) return sendTo(id, "The archmage promotes students in the guild hall.\r\n");
+      if (!guild || !["mages", "wardens", "night-market"].includes(guild.id)) return sendTo(id, "Only the Mages' Guild, the Wardens and the Night Market advance ranks.\r\n");
       const ranks = guild.ranks ?? ["apprentice", "adept", "magician", "archmage"];
       const next = ranks[ranks.indexOf(actor.guildRank) + 1];
-      if (!next || next === "archmage") return sendTo(id, "There is no higher rank for you here.\r\n");
-      const known = (actor.spellbook ?? []).length;
-      const completed = new Set(actor.quests?.completed ?? []);
-      if (next === "adept" && ((actor.level ?? 1) < 5 || known < 2)) {
-        return sendTo(id, "Adept needs level 5 and two known spells.\r\n");
-      }
-      if (next === "magician" && ((actor.level ?? 1) < 8 || known < 4 || !completed.has("guild-ledger"))) {
-        return sendTo(id, "Magician needs level 8, four known spells and the guild ledger.\r\n");
+      if (!next) return sendTo(id, "There is no higher rank for you here.\r\n");
+      if (guild.id === "mages") {
+        if (actor.room !== 34) return sendTo(id, "The archmage promotes students in the guild hall.\r\n");
+        const known = (actor.spellbook ?? []).length;
+        const completed = new Set(actor.quests?.completed ?? []);
+        if (next === "adept" && ((actor.level ?? 1) < 5 || known < 2)) {
+          return sendTo(id, "Adept needs level 5 and two known spells.\r\n");
+        }
+        if (next === "magician" && ((actor.level ?? 1) < 8 || known < 4 || !completed.has("guild-ledger"))) {
+          return sendTo(id, "Magician needs level 8, four known spells and the guild ledger.\r\n");
+        }
+        if (next === "archmage" && ((actor.level ?? 1) < 10 || known < 4)) {
+          return sendTo(id, "Archmage needs level 10 and four known spells.\r\n");
+        }
+      } else if (guild.id === "wardens") {
+        if (actor.room !== 115) return sendTo(id, "The warden-captain promotes in the lodge above the Guild Hall.\r\n");
+        const explored = (actor.visited ?? []).length;
+        if (next === "ranger" && ((actor.level ?? 1) < 5 || explored < 15)) {
+          return sendTo(id, "Ranger needs level 5 and fifteen rooms explored.\r\n");
+        }
+        if (next === "warden" && ((actor.level ?? 1) < 8 || explored < 30)) {
+          return sendTo(id, "Warden needs level 8 and thirty rooms explored.\r\n");
+        }
+      } else {
+        if (actor.room !== 29) return sendTo(id, "The night broker promotes in the Smuggler's Cache.\r\n");
+        if (next === "cutpurse" && (actor.level ?? 1) < 5) return sendTo(id, "Cutpurse needs level 5.\r\n");
+        if (next === "shadow" && (actor.level ?? 1) < 8) return sendTo(id, "Shadow needs level 8.\r\n");
+        if (next === "master" && (actor.level ?? 1) < 10) return sendTo(id, "Master needs level 10.\r\n");
       }
       pending.push({ kind: "guildAdvance", actorId: id, guildId: guild.id, rank: next });
       return;
@@ -2023,12 +2606,135 @@ async function handleCommand(id, line) {
     return;
   }
 
+  if (named === "ignore" || named === "unignore") {
+    const messages = VERB_TABLE.verbs[named].messages;
+    const name = restRaw.join(" ").trim();
+    if (!name) return sendTo(id, `${messages.usage}\r\n`);
+    const entry = findIdentity(name);
+    if (!entry) return sendTo(id, `${render(messages.missing, { words: name })}\r\n`);
+    const [key, identity] = entry;
+    if (key === actor.key) return sendTo(id, `${named === "ignore" ? messages.self : "You cannot do that."}\r\n`);
+    const ignored = new Set(actor.ignored ?? []);
+    if (named === "ignore") {
+      if (ignored.has(key)) return sendTo(id, `${render(messages.already, { words: identity.name })}\r\n`);
+      pending.push({ kind: "ignore", actorId: id, targetKey: key, messages: { added: `${render(messages.added, { words: identity.name })}\r\n` } });
+      return;
+    }
+    if (!ignored.has(key)) return sendTo(id, `${render(messages.notIgnoring, { words: identity.name })}\r\n`);
+    pending.push({ kind: "unignore", actorId: id, targetKey: key, messages: { removed: `${render(messages.removed, { words: identity.name })}\r\n` } });
+    return;
+  }
+
+  if (named === "ignoring") {
+    const messages = VERB_TABLE.verbs.ignoring.messages;
+    const names = (actor.ignored ?? []).map((key) => state.identities[key]?.name ?? key);
+    if (!names.length) return sendTo(id, `${messages.empty}\r\n`);
+    return sendTo(id, `${render(messages.list, { words: names.join(", ") })}\r\n`);
+  }
+
+  if (named === "report") {
+    const messages = VERB_TABLE.verbs.report.messages;
+    if (!actor?.key) return sendTo(id, "Sign in to report someone.\r\n");
+    const name = rest[0];
+    if (!name) return sendTo(id, `${messages.usage}\r\n`);
+    const entry = findIdentity(name);
+    if (!entry) return sendTo(id, `${render(messages.missing, { words: name })}\r\n`);
+    const [key, identity] = entry;
+    if (key === actor.key) return sendTo(id, `${messages.self}\r\n`);
+    if (!reportAllowed(reportTimes.get(actor.key))) {
+      return sendTo(id, "You have already sent a report recently. Wait a moment.\r\n");
+    }
+    const record = reportRecord({
+      at: new Date().toISOString(),
+      tick: state.tick,
+      reporter: actor.key,
+      reporterName: actor.name,
+      target: key,
+      targetName: identity.name,
+      reason: restRaw.slice(1).join(" "),
+    });
+    if (!record) return sendTo(id, `${messages.empty}\r\n`);
+    try {
+      appendFileSync(REPORT_FILE, `${JSON.stringify(record)}\n`);
+    } catch {
+      return sendTo(id, "The report could not be recorded; try again later.\r\n");
+    }
+    reportTimes.set(actor.key, Date.now());
+    recordSpan("world.report", {
+      "actor.id": id,
+      "target.id": key,
+      "world.tick": state.tick,
+      "text.length": record.reason.length,
+    }, 0);
+    return sendTo(id, `${render(messages.recorded, { words: identity.name })}\r\n`);
+  }
+
+  if (named === "titles") {
+    const earned = earnedTitles(TITLES.titles, actor.quests?.completed ?? []);
+    if (!earned.length) return sendTo(id, "You have no titles yet. Quests earn them.\r\n");
+    const lines = earned.map((title) => `${title.name === actor.title ? "*" : " "} ${title.name} (${title.id}) — ${title.quest}`);
+    return sendTo(id, `Titles (* = worn; title <id|none>):\r\n  ${lines.join("\r\n  ")}\r\n`);
+  }
+
+  if (named === "title") {
+    const earned = earnedTitles(TITLES.titles, actor.quests?.completed ?? []);
+    const wanted = restRaw.join(" ").trim();
+    if (!wanted) {
+      const lines = earned.map((title) => `${title.name === actor.title ? "*" : " "} ${title.name} (${title.id})`);
+      return sendTo(id, earned.length ? `Titles (* = worn):\r\n  ${lines.join("\r\n  ")}\r\n` : "You have no titles yet.\r\n");
+    }
+    if (/^(none|clear|off)$/i.test(wanted)) {
+      pending.push({ kind: "setTitle", actorId: id, title: null });
+      return;
+    }
+    const title = titleLookup(earned, wanted);
+    if (!title) return sendTo(id, `You have not earned a title called ${wanted}.\r\n`);
+    pending.push({ kind: "setTitle", actorId: id, title: title.name });
+    return;
+  }
+
+  if (named === "facts") {
+    const messages = VERB_TABLE.verbs.facts.messages;
+    const facts = Object.values(actor.memory?.facts ?? {});
+    if (!facts.length) return sendTo(id, `${messages.empty}\r\n`);
+    return sendTo(id, `Learned facts:\r\n  ${facts.map((fact) => `${fact.word.toUpperCase()} — ${fact.text} (from ${fact.source})`).join("\r\n  ")}\r\n`);
+  }
+
+  if (named === "recall") {
+    const messages = VERB_TABLE.verbs.recall.messages;
+    const wanted = words.toLowerCase().trim();
+    if (!wanted) return sendTo(id, `${messages.usage}\r\n`);
+    let fact = Object.values(actor.memory?.facts ?? {}).find((entry) => entry.word === wanted || entry.id === wanted);
+    if (!fact && actor.key) {
+      const tableFact = FACTS.byWord.get(wanted);
+      if (tableFact) {
+        try {
+          const data = await r4Call("/api/context", { identity: r4Identity(actor), text: wanted, limit: 6 }, 1500);
+          if (contextHasWord(data, wanted)) {
+            pending.push({ kind: "learnFact", actorId: id, fact: tableFact });
+            fact = tableFact;
+          }
+        } catch {}
+      }
+    }
+    if (!fact) return sendTo(id, `${messages.missing}\r\n`);
+    if (actor.room !== SHRINE) return sendTo(id, `${messages.shrine}\r\n`);
+    pending.push({ kind: "questAnswer", actorId: id, word: fact.word });
+    return sendTo(id, `${render(messages.recalled, { words: fact.text })}\r\n`);
+  }
+
   if (named === "talk") {
     const messages = VERB_TABLE.verbs.talk.messages;
     const npc = npcsIn(actor.room).find((candidate) => candidate.name.toLowerCase().includes(words.toLowerCase()));
     if (!npc) return sendTo(id, `${render(messages.missing, { words })}\r\n`);
-    const lines = Array.isArray(npc.dialogue) && npc.dialogue.length ? npc.dialogue : [npc.description ?? npc.examine ?? `${npc.name} has nothing to say.`];
+    const fact = factForNpc(FACTS, npc.id);
+    const lines = fact ? [fact.text] : (Array.isArray(npc.dialogue) && npc.dialogue.length ? npc.dialogue : [npc.description ?? npc.examine ?? `${npc.name} has nothing to say.`]);
     const line = lines[nextFrom(state.tick + npc.id.length, lines.length)];
+    if (fact && !(actor.memory?.facts?.[fact.id]) && actor.key) {
+      pending.push({ kind: "learnFact", actorId: id, fact });
+      r4Call("/api/remember", { identity: r4Identity(actor), text: fact.text }, 1500).catch(() => {});
+    }
+    pending.push({ kind: "talk", actorId: id, npcId: npc.id });
     recordSpan("world.talk", { "actor.id": id, "npc.id": npc.id, "room.id": actor.room, "text": line.slice(0, 500), "world.tick": state.tick }, 0);
     return sendTo(id, `${render(messages.actor, { words: `${npc.name} says: ${line}` })}\r\n`);
   }
@@ -2049,7 +2755,7 @@ async function handleCommand(id, line) {
       const pending = state.duels.find((duel) => duel.state === "pending" && duel.targetId === id);
       if (active) return sendTo(id, "The duel is live. Fight, or leave the Ring.\r\n");
       if (pending) return sendTo(id, "A challenge waits. duel accept, or duel decline.\r\n");
-      return sendTo(id, `${messages.noDuel}\r\n`);
+      return sendTo(id, `Your duel record: ${actor.duelWins ?? 0}W/${actor.duelLosses ?? 0}L, rating ${actor.duelRating ?? 1000}.\r\n${messages.noDuel}\r\n`);
     }
     if (!inRing) return sendTo(id, `${messages.notArena}\r\n`);
     const target = findActor(action, (candidate) => candidate.room === actor.room && candidate.id !== id);
@@ -2064,17 +2770,56 @@ async function handleCommand(id, line) {
 
   if (named === "inventory") {
     const carried = state.objects.filter((o) => o.holder === actor.id && !o.eaten);
-    const names = carried.map((o) => {
-      if (o.worn) return `${o.name} (worn)`;
-      if (!(o.flags ?? []).includes("container")) return o.name;
-      const held = state.objects.filter((c) => c.inside === o.id && !c.eaten).map((c) => c.name);
-      const state_ = o.open ? "open" : "closed";
-      return held.length && o.open ? `${o.name} (${state_}, holding ${held.join(", ")})` : `${o.name} (${state_})`;
-    });
     const messages = VERB_TABLE.verbs.inventory.messages;
-    return sendTo(id, names.length
-      ? `${render(messages.carrying, { words: names.join(", ") })}\r\n`
-      : `${messages.empty}\r\n`);
+    if (!carried.length) return sendTo(id, `${messages.empty}\r\n`);
+    const label = (object) => {
+      if (object.worn) return `${object.name} (worn)`;
+      if (!(object.flags ?? []).includes("container")) return object.name;
+      const held = state.objects.filter((child) => child.inside === object.id && !child.eaten).map((child) => child.name);
+      const state_ = object.open ? "open" : "closed";
+      return held.length && object.open ? `${object.name} (${state_}, holding ${held.join(", ")})` : `${object.name} (${state_})`;
+    };
+    const filter = words.trim().toLowerCase();
+    const groups = inventoryGroups(carried);
+    const chosen = filter
+      ? groups.filter((group) => group.id.includes(filter)
+        || group.label.toLowerCase().includes(filter)
+        || group.items.some((object) => object.name.toLowerCase().includes(filter)))
+      : groups;
+    if (!chosen.length) return sendTo(id, `${render(messages.noCategory, { words: filter })}\r\n`);
+    const total = chosen.reduce((sum, group) => sum + group.items.length, 0);
+    const details = chosen.map((group) => `${group.label} (${group.items.length}): ${group.items.map(label).join(", ")}`).join("\r\n  ");
+    return sendTo(id, `${render(messages.carrying, { words: `${total} item${total === 1 ? "" : "s"}:\r\n  ${details}` })}\r\n`);
+  }
+
+  if (named === "coins") {
+    const messages = VERB_TABLE.verbs.coins.messages;
+    const coins = state.objects.filter((o) => o.holder === actor.id && (o.flags ?? []).includes("coin") && !o.eaten);
+    if (!coins.length) return sendTo(id, `${messages.empty}\r\n`);
+    const total = coins.reduce((sum, coin) => sum + (Number.isFinite(coin.value) ? coin.value : 0), 0);
+    const kinds = new Map();
+    for (const coin of coins) {
+      const entry = kinds.get(coin.name) ?? { count: 0, value: 0 };
+      entry.count += 1;
+      entry.value += Number.isFinite(coin.value) ? coin.value : 0;
+      kinds.set(coin.name, entry);
+    }
+    const detail = [...kinds.entries()].map(([name, entry]) => `${entry.count} × ${name} (${entry.value})`).join(", ");
+    return sendTo(id, `${render(messages.list, { words: `${total} coin${total === 1 ? "" : "s"}: ${detail}` })}\r\n`);
+  }
+
+  if (named === "take" && /^(all|everything)$/i.test(words.trim())) {
+    const messages = VERB_TABLE.verbs.take.messages;
+    const items = state.objects.filter((o) => o.room === actor.room && !o.inside && !o.eaten
+      && o.holder === null && !(o.flags ?? []).includes("fixed") && !o.forSale);
+    if (!items.length) return sendTo(id, `${messages.nothing}\r\n`);
+    const names = items.map((object) => object.name).join(", ");
+    pending.push({ kind: "takeAll", actorId: id, objectIds: items.map((object) => object.id), messages: {
+      actor: `You take ${names}.\r\n`,
+      others: `${actor.name} takes ${names}.`,
+    } });
+    recordSpan("world.object", { "actor.id": id, "action.kind": "takeAll", "object.count": items.length, "object.ids": items.map((object) => object.id).join(","), "room.id": actor.room, "world.tick": state.tick }, 0);
+    return;
   }
 
   if (named === "take" && /\s+from\s+/i.test(words)) {
@@ -2186,6 +2931,20 @@ async function handleCommand(id, line) {
       others: render(last ? messages.lastOthers : messages.others, { actor: actor.name, object: object.name }),
     } });
     recordSpan("world.object", { "actor.id": id, "action.kind": "eat", "object.id": object.id, "bites.left": last ? 0 : object.bites - 1, "world.tick": state.tick }, 0);
+    return;
+  }
+
+  if (named === "drink") {
+    const messages = VERB_TABLE.verbs.drink.messages;
+    const object = findObject(words, (o) => o.holder === actor.id && !o.eaten);
+    if (!object) return sendTo(id, `${render(messages.missing, { words })}\r\n`);
+    if (!(object.flags ?? []).includes("drink")) return sendTo(id, `${render(messages.notDrink, { words })}\r\n`);
+    const last = (object.bites ?? 1) <= 1;
+    pending.push({ kind: "drink", actorId: id, objectId: object.id, messages: {
+      actor: render(last ? messages.last : messages.actor, { object: object.name }),
+      others: render(last ? messages.lastOthers : messages.others, { actor: actor.name, object: object.name }),
+    } });
+    recordSpan("world.object", { "actor.id": id, "action.kind": "drink", "object.id": object.id, "bites.left": last ? 0 : object.bites - 1, "world.tick": state.tick }, 0);
     return;
   }
 
@@ -2319,7 +3078,7 @@ async function handle(id, line) {
   // The login handshake, the owner console and the stream telemetry are not
   // game commands. They have their own checks and must not consume the player's
   // global line budget: a busy AI publishes several stream events per turn.
-  if (!/^(stream|metric|session-key|rebind|demo-token)\b/i.test(raw) && !allowCommand(id)) {
+  if (!/^(stream|metric|session-key|rebind|demo-token|r4-context|r4-remember)\b/i.test(raw) && !allowCommand(id)) {
     return sendTo(id, "Slow down.\r\n");
   }
   return handleCommand(id, line);
@@ -2328,23 +3087,21 @@ async function handle(id, line) {
 // --- the clock -----------------------------------------------------------
 
 function progressionSnapshot(actor) {
-  const { role, level, xp, guild, guildRank, quests, spellbook, maxMana, questCycles } = actor;
-  return JSON.stringify({ role, level, xp, guild, guildRank, quests, spellbook, maxMana, questCycles });
+  const { role, level, xp, guild, guildRank, quests, spellbook, maxMana, questCycles, ignored, title, memory, components, duelWins, duelLosses, duelRating } = actor;
+  return JSON.stringify({ role, level, xp, guild, guildRank, quests, spellbook, maxMana, questCycles, ignored, title, memory, components, duelWins, duelLosses, duelRating });
 }
 
 function onTick() {
   const intents = pending.splice(0);
-  // A login or registration must hit the disk before the next checkpoint; a
-  // kill -9 must not erase an account created seconds ago.
-  const identityChanged = intents.some((intent) => ["login", "register", "password", "claim", "claimLegacy", "rebindLegacy", "createCharacter", "ownAccount", "retireAccount", "handoffCharacter", "revokeHandoff", "train", "guildAdvance"].includes(intent.kind));
-  const previousProgress = FEDERATION && new Map(state.actors.filter((actor) => actor.key)
+  const identityChanged = intents.some((intent) => ["login", "register", "password", "claim", "claimLegacy", "rebindLegacy", "createCharacter", "ownAccount", "retireAccount", "handoffCharacter", "revokeHandoff", "train", "guildAdvance", "ignore", "unignore", "setTitle", "learnFact", "clearQuestMigration"].includes(intent.kind));
+  const previousProgress = new Map(state.actors.filter((actor) => actor.key)
     .map((actor) => [actor.id, progressionSnapshot(actor)]));
   const result = step({ state, rooms: ROOMS, intents, actions: ACTION_TABLE.actions });
   state = result.state;
+  const progressChanged = state.actors.some((actor) => actor.key && previousProgress.has(actor.id)
+    && previousProgress.get(actor.id) !== progressionSnapshot(actor))
+    || intents.some((intent) => intent.kind === "leave" && previousProgress.has(intent.actorId));
   if (FEDERATION) {
-    const progressChanged = state.actors.some((actor) => actor.key && previousProgress.has(actor.id)
-      && previousProgress.get(actor.id) !== progressionSnapshot(actor))
-      || intents.some((intent) => intent.kind === "leave" && previousProgress.has(intent.actorId));
     if (result.checkpoint || identityChanged || progressChanged) {
       try {
         federationSave();
@@ -2353,16 +3110,25 @@ function onTick() {
         process.exit(1);
       }
     }
+  } else if ((result.checkpoint || identityChanged || progressChanged) && !saveState()) {
+    console.error("state checkpoint failed; stopping before acknowledging changes");
+    process.exit(1);
   }
   for (const intent of intents) {
     if (intent.kind !== "login" && intent.kind !== "register") continue;
     const actor = actorById(intent.actorId);
+    const accountKey = actor?.account ?? intent.account ?? null;
+    const account = accountKey ? state.accounts?.[accountKey] : null;
     recordSpan("world.session", {
       "actor.id": intent.actorId,
       "actor.name": actor?.name ?? intent.key ?? null,
-      "account.key": actor?.account ?? intent.account ?? null,
+      "account.key": accountKey,
       "session.kind": intent.kind,
       "session.prism": Boolean(intent.prism),
+      "session.ai": account?.ai === true,
+      "actor.level": actor?.level ?? null,
+      "actor.guild": actor?.guild ?? null,
+      "actor.quests.completed": actor?.quests?.completed?.length ?? null,
       "world.tick": state.tick,
     }, 0);
   }
@@ -2404,12 +3170,21 @@ function onTick() {
         "world.tick": state.tick,
       }, 0);
     }
+    if (event.standing) {
+      recordSpan("world.standing", {
+        "actor.id": event.onlyId ?? null,
+        "faction.id": event.standing.faction,
+        "faction.value": event.standing.value,
+        "world.tick": state.tick,
+      }, 0);
+    }
     if (event.guild) {
       recordSpan("world.guild", {
         "actor.id": event.onlyId ?? null,
         "guild.id": event.guild.id,
         "guild.action": event.guild.action,
         "guild.name": event.guild.name ?? null,
+        "object.id": event.guild.object ?? null,
         "world.tick": state.tick,
       }, 0);
     }
@@ -2449,7 +3224,7 @@ function onTick() {
     const asLine = (text) => (typeof text === "string" ? (text.endsWith("\r\n") ? text : `${text}\r\n`) : "");
     if (typeof event.text === "string") {
       if (event.onlyId !== undefined) sendTo(event.onlyId, asLine(event.text));
-      else broadcast(event.room, asLine(event.text), event.exceptId);
+      else broadcast(event.room, asLine(event.text), event.exceptId, event.fromKey ?? null);
     }
   }
 
@@ -2492,7 +3267,6 @@ function onTick() {
   }
 
   if (!FEDERATION && (result.checkpoint || identityChanged)) saveState();
-
   // The trace written into the span stream, not a second file: from these a run
   // can be reconstructed with nothing but the record.
   const safeIntents = intents.map(sanitizeIntent);
@@ -2562,6 +3336,7 @@ const server = net.createServer((socket) => {
     }
     transports.delete(id);
     buckets.delete(id);
+    chatWindows.delete(id);
     accountSessions.delete(id);
     stopLive(id);
     pending.push({ kind: "leave", actorId: id });
@@ -2606,6 +3381,7 @@ function demoStatus() {
     model: GEMINI_MODEL,
     dailyLimit: GEMINI_DAILY_TURNS,
     minuteLimit: GEMINI_MINUTE_TURNS,
+    globalRemaining: Math.max(0, GEMINI_GLOBAL_DAILY - (demoGlobal.day === demoDay() ? demoGlobal.turns : 0)),
     note: "Operator-funded Gemini demo for Prism accounts. Free-tier data may be used by Google to improve products.",
   };
 }
@@ -2681,6 +3457,15 @@ async function handleGeminiDemo(req, res) {
 const web = http.createServer(async (req, res) => {
   // Query strings are for cache-busting and links; routing uses the path only.
   const pathname = new URL(req.url, "http://localhost").pathname;
+  if (pathname === "/api/demo" && req.method === "GET") {
+    res.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
+    res.end(JSON.stringify(demoStatus()));
+    return;
+  }
+  if (pathname === "/api/gemini/v1/chat/completions" && req.method === "POST") {
+    await handleGeminiDemo(req, res);
+    return;
+  }
   if (pathname === "/federation/status" || pathname === "/federation/transfer") {
     const from = authenticatedPeer(FEDERATION, req.headers);
     if (!from) {
@@ -2710,15 +3495,6 @@ const web = http.createServer(async (req, res) => {
     res.end(JSON.stringify({ error: "method not allowed" }));
     return;
   }
-  if (pathname === "/api/demo" && req.method === "GET") {
-    res.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
-    res.end(JSON.stringify(demoStatus()));
-    return;
-  }
-  if (pathname === "/api/gemini/v1/chat/completions" && req.method === "POST") {
-    await handleGeminiDemo(req, res);
-    return;
-  }
   if (pathname === "/" || pathname === "/index.html") {
     try {
       const html = readFileSync(new URL("./web/index.html", import.meta.url));
@@ -2741,9 +3517,37 @@ const web = http.createServer(async (req, res) => {
     }
     return;
   }
+  if (pathname === "/stats" || pathname === "/stats.html") {
+    try {
+      const html = readFileSync(new URL("./web/stats.html", import.meta.url));
+      res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" });
+      res.end(html);
+    } catch {
+      res.writeHead(500, { "content-type": "text/plain" });
+      res.end("stats page missing");
+    }
+    return;
+  }
+  if (pathname === "/leaderboard") {
+    const rows = leaderboardRows(state.identities ?? {});
+    res.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
+    res.end(JSON.stringify({ schema: "mudbenchmark/leaderboard/1", count: rows.length, rows: rows.slice(0, 50) }));
+    return;
+  }
   if (pathname === "/agent.mjs") {
     try {
       const source = readFileSync(new URL("./agent.mjs", import.meta.url));
+      res.writeHead(200, { "content-type": "text/javascript; charset=utf-8", "cache-control": "no-store" });
+      res.end(source);
+    } catch {
+      res.writeHead(404, { "content-type": "text/plain" });
+      res.end("not found");
+    }
+    return;
+  }
+  if (pathname === "/memory.mjs") {
+    try {
+      const source = readFileSync(new URL("./web/memory.mjs", import.meta.url));
       res.writeHead(200, { "content-type": "text/javascript; charset=utf-8", "cache-control": "no-store" });
       res.end(source);
     } catch {
@@ -2763,7 +3567,7 @@ const web = http.createServer(async (req, res) => {
     }
     return;
   }
-  if (pathname === "/prism-id.mjs" || pathname === "/prism-auth.mjs" || pathname === "/recovery-kit.mjs") {
+  if (pathname === "/prism-id.mjs" || pathname === "/prism-auth.mjs" || pathname === "/recovery-kit.mjs" || pathname === "/names.mjs") {
     try {
       const name = pathname.slice(1);
       const source = readFileSync(new URL(`./web/${name}`, import.meta.url));
@@ -2790,8 +3594,44 @@ const web = http.createServer(async (req, res) => {
     return;
   }
   if (pathname === "/world") {
+    const status = worldStatus(state, ROOMS);
+    status.quests = QUESTS.quests.length;
+    status.zones = loaded.zones.length;
+    status.actions = ACTION_TABLE.actions.length;
     res.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
-    res.end(JSON.stringify(worldStatus(state, ROOMS)));
+    res.end(JSON.stringify(status));
+    return;
+  }
+
+  if (pathname === "/players") {
+    // Aggregate player sessions and outcomes. Account keys and character names
+    // stay in the span log; this public view returns counts and rates only.
+    const summary = summarizePlayers(readSpansTail(PLAYER_LOG_FILE, { maxBytes: 16 * 1024 * 1024 }));
+    res.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
+    res.end(JSON.stringify({ ...summary, file: PLAYER_LOG_FILE }));
+    return;
+  }
+
+  if (pathname === "/reports") {
+    // The durable report queue is operator-only. The public server never
+    // exposes reasons, reporter names or target names without the owner token.
+    const header = req.headers["x-owner-token"];
+    const bearer = String(req.headers.authorization ?? "").replace(/^Bearer\s+/i, "");
+    const token = typeof header === "string" ? header : bearer;
+    if (!OWNER_TOKEN || !ownerAllowed(token, OWNER_TOKEN)) {
+      res.writeHead(401, { "content-type": "application/json", "cache-control": "no-store" });
+      res.end(JSON.stringify({ error: "owner token required" }));
+      return;
+    }
+    let reports = [];
+    try {
+      reports = readFileSync(REPORT_FILE, "utf8").trim().split("\n").filter(Boolean).map((line) => {
+        try { return JSON.parse(line); } catch { return null; }
+      }).filter(Boolean);
+    } catch {}
+    const limit = Math.min(200, Math.max(1, Number(new URL(req.url, "http://localhost").searchParams.get("limit")) || 50));
+    res.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
+    res.end(JSON.stringify({ schema: "mudbenchmark/reports/1", count: reports.length, reports: reports.slice(-limit) }));
     return;
   }
 
@@ -2812,6 +3652,7 @@ const web = http.createServer(async (req, res) => {
         chat: current.chat,
         poll: current.poll,
       } : null,
+      last: publicLast(),
       viewers: spectators.size,
       tick: state.tick,
       rooms: Object.keys(ROOMS).length,
@@ -2849,6 +3690,7 @@ const web = http.createServer(async (req, res) => {
       identities: Object.keys(state.accounts ?? {}).length,
       pinned: Object.keys(identityStore.prisms).length,
       connections: wss.clients.size,
+      signups: SIGNUP_MODE,
       identity: { file: IDENTITY_FILE },
       state: {
         file: STATE_FILE,
@@ -2971,6 +3813,7 @@ wss.on("connection", (ws, req) => {
     }
     transports.delete(id);
     buckets.delete(id);
+    chatWindows.delete(id);
     accountSessions.delete(id);
     stopLive(id);
     pending.push({ kind: "leave", actorId: id });
@@ -3015,5 +3858,5 @@ web.listen(WEB_PORT, "127.0.0.1", () => {
 });
 
 for (const signal of ["SIGINT", "SIGTERM"]) {
-  process.on(signal, () => { saveState(); process.exit(0); });
+  process.on(signal, () => { process.exit(saveState() ? 0 : 1); });
 }

@@ -95,6 +95,11 @@
     .highlight-card .meta { color: var(--muted); font-size: 11px; display: flex; justify-content: space-between; gap: 8px; }
     .highlight-card .body { margin-top: 4px; white-space: pre-wrap; }
     .highlight-card button { margin-top: 6px; padding: 4px 8px; font-size: 11px; background: transparent; color: var(--warn); border: 1px solid var(--line); }
+    .last-card { margin: 18px auto 0; max-width: 720px; padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+    .last-card h2 { margin: 0 0 4px; color: var(--accent); font-size: 16px; }
+    .last-card .last-meta { color: var(--muted); font-size: 12px; margin-bottom: 8px; }
+    .last-card ul { margin: 0 0 10px; padding-left: 18px; color: var(--text); font-size: 12px; line-height: 1.5; }
+    .last-card button { background: transparent; color: var(--accent); border: 1px solid var(--line); padding: 5px 9px; font-size: 11px; }
     #chat-form { display: flex; gap: 8px; padding: 10px; border-top: 1px solid var(--line); }
     #chat-input {
       flex: 1;
@@ -151,6 +156,7 @@
     <span id="tick" class="muted small"></span>
     <span class="spacer"></span>
     <span id="viewers" class="muted small">0 watching</span>
+    <a href="/stats" class="small">Stats</a>
     <a href="/" class="small">Play / start a run →</a>
   </header>
   <main>
@@ -200,8 +206,52 @@
       feed.replaceChildren();
       const box = document.createElement("div");
       box.id = "offline";
-      box.innerHTML = "<h1>No AI is live right now</h1><p>Open the game, start <strong>Watch AI</strong>, then press <strong>Go live</strong> in the run panel.</p><p class=\"small\">The stream is opt-in. The AI's private thoughts, tells and mail are never published.</p><p><a href=\"/\">Open MUDBench →</a></p>";
+      box.innerHTML = "<h1>No AI is live right now</h1><p>Open the game, start <strong>Watch AI</strong>, then press <strong>Go live</strong> in the run panel.</p><p class=\"small\">The stream is opt-in. The AI's private thoughts, tells and mail are never published.</p><p class=\"small\">You will see its room, commands, public highlights, audience polls and chat. The AI's private reasoning stays in Mind on the game page.</p><p><a href=\"/\">Open MUDBench →</a> · <a href=\"/stats\">Public stats →</a></p>";
       feed.appendChild(box);
+    }
+
+    function renderLast(last) {
+      if (!last || !feed.querySelector("#offline")) return;
+      const box = document.createElement("div");
+      box.className = "last-card";
+      const title = document.createElement("h2");
+      title.textContent = `Last run: ${last.name ?? "AI"}`;
+      const meta = document.createElement("div");
+      meta.className = "last-meta";
+      const ended = last.endedAt ? new Date(last.endedAt).toLocaleString() : "ended";
+      meta.textContent = `${last.room ?? "unknown room"} · ${ended} · peak ${last.peakViewers ?? 0} watching · ${last.highlights?.length ?? 0} highlights`;
+      box.append(title, meta);
+      if (last.highlights?.length) {
+        const list = document.createElement("ul");
+        for (const item of last.highlights.slice(0, 4)) {
+          const entry = document.createElement("li");
+          entry.textContent = `turn ${item.turn ?? "—"}: ${String(item.text ?? "").slice(0, 180)}`;
+          list.appendChild(entry);
+        }
+        box.appendChild(list);
+      }
+      const download = document.createElement("button");
+      download.type = "button";
+      download.textContent = "Download last run";
+      download.addEventListener("click", () => {
+        const blob = new Blob([JSON.stringify({ kind: "mudbenchmark/last-run/1", ...last }, null, 2)], { type: "application/json" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `mudbench-last-run-${Date.now()}.json`;
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+      });
+      box.appendChild(download);
+      feed.appendChild(box);
+    }
+
+    async function loadLast() {
+      try {
+        const res = await fetch("/stream", { signal: AbortSignal.timeout(3000) });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.last) renderLast(data.last);
+      } catch {}
     }
 
     function line(text, cls = "desc") {
@@ -304,7 +354,19 @@
           try { await navigator.clipboard.writeText(clip); copy.textContent = "Copied"; }
           catch { copy.textContent = "Copy failed"; }
         });
-        card.append(meta, body, copy);
+        const download = document.createElement("button");
+        download.type = "button";
+        download.textContent = "Download clip";
+        download.addEventListener("click", () => {
+          const clip = JSON.stringify({ kind: "mudbenchmark/clip/1", live: live?.name ?? null, ...event }, null, 2);
+          const blob = new Blob([clip], { type: "application/json" });
+          const link = document.createElement("a");
+          link.href = URL.createObjectURL(blob);
+          link.download = `mudbench-clip-${event.turn ?? Date.now()}.json`;
+          link.click();
+          setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+        });
+        card.append(meta, body, copy, download);
         feed.appendChild(card);
       } else {
         for (const part of String(event.text).split("\n")) {
@@ -329,6 +391,7 @@
         } else {
           setLive(null);
           showOffline();
+          loadLast();
         }
         viewers.textContent = `${payload.viewers ?? 0} watching`;
         return;
@@ -342,6 +405,8 @@
       if (payload.type === "off") {
         setLive(null);
         showOffline();
+        if (payload.last) renderLast(payload.last);
+        else loadLast();
         line("The run ended.", "status");
         return;
       }

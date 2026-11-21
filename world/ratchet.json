@@ -4,7 +4,8 @@
   "note": "Shrink-only. ruleDebt is rules the runtime implements itself; it is zero (see docs/RULE-DEBT.md). unusedRules is verified app-facet rules no command reaches: none. Every game kind the facet can decide is asked by a command: wait (0), move (1), transfer (2), speak (4), clearance (6), identity (7). Kind 8 is the publisher admission, asked by tools/publish.mjs and replayed against the model by the gate.",
   "mustNotGrow": {
     "ruleDebt": 0,
-    "unusedRules": 0
+    "unusedRules": 0,
+    "quests": 20
   },
   "mustNotFall": {
     "modelModules": 9,

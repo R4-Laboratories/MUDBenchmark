@@ -55,33 +55,57 @@ a server, so "update" means the artifact reaching wick, and wick is behind NAT �
 CI cannot reach it. So the flow is **pull**, not push.
 
 ```
-tag v0.1.0 ─▶ gate builds, proves, replays vectors ─▶ GitHub release
-                                                          │
-                     wick: mudbench-deploy.timer (10 min) ─┘
-                          fetch ─▶ replay vectors ─▶ flip unit ─▶ restart
-                                                        └─ health fails? roll back
+merged PR ─▶ Gate on main ─▶ publish.yml (merged PR only) ─▶ tagged GitHub release
+                                                               │
+                          wick: mudbench-deploy.timer (10 min) ─┘
+                          manifest verify ─▶ replay vectors ─▶ flip unit ─▶ restart
+                                                               └─ health fails? roll back
 ```
 
-**Tagged releases only.** An engine tick on `main` should not restart a world
-people are standing in.
+`publish.yml` runs when a **merged PR** has a green Gate on the merge commit.
+It reuses that Gate's holo artifact, packages the runtime, writes a
+`release-manifest.json`, increments the patch tag and publishes. Direct pushes
+and the six-hour pacing loop are skipped; a maintainer can still use the manual
+**Release** workflow for those.
+
+Pause automatic publishing with the repository variable `AUTO_RELEASE=off`.
+No GitHub runner, SSH key or inbound port is added to wick.
 
 ### The deployer
 
 `mudbench-deploy` runs on wick and does, in order:
 
 1. fetch the newest release (or a named tag)
-2. download `MUDBench.holo` into `~/.mudbench/artifacts/<tag>/`
-3. **replay every acceptance vector** — a release that does not replay never goes live
-4. rewrite `WorkingDirectory` in the holo unit to the new artifact
-5. restart the holo and the world
-6. check `is-active` and `/health`; on failure, restore the previous directory and restart
-7. keep the last three artifacts, so there is always a rollback target
+2. download `release-manifest.json`, `MUDBench.holo` and `runtime.tar.gz`
+3. verify the manifest tag, asset SHA-256 and sizes — a mismatched asset never reaches extraction
+4. **replay every acceptance vector** — a release that does not replay never goes live
+5. rewrite `WorkingDirectory` in the holo unit to the new artifact
+6. restart the holo and the world
+7. check `is-active` and `/health`; on failure, restore the previous directory and restart
+8. keep the last three artifacts, so there is always a rollback target
+
+Releases published before the manifest existed can be deployed only with
+`MUDBENCH_ALLOW_UNMANIFESTED=1` for a deliberate rollback. Normal deploys
+refuse them.
 
 ```sh
 mudbench-deploy --status      # what is deployed
 mudbench-deploy               # deploy latest
 mudbench-deploy v0.1.0        # deploy a tag
 ```
+
+### Install or update the deployer
+
+The deployer is installed on wick, not fetched by the world service:
+
+```sh
+scp deploy/mudbench-deploy.sh wick:~/.local/bin/mudbench-deploy
+ssh wick 'chmod 700 ~/.local/bin/mudbench-deploy'
+ssh wick '~/.local/bin/mudbench-deploy --status'
+```
+
+Update it once when the verification rules change. The timer keeps running the
+installed copy.
 
 ### A private repository needs a token
 
