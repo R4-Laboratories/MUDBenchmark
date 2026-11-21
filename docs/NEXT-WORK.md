@@ -50,7 +50,7 @@ memory or prompt system.
 | v0.91.21 | Faction standing and quartermasters | **done** (MB-193) |
 | v0.91.22 | Weapon-family techniques | **done** (MB-195) |
 | v0.91.23 | Outlaw paths: Night Market, Ashen Hand, Red Company | **done** (MB-197) |
-| v0.91.24 | Forge upgrades, salvage and set bonuses | **in flight** |
+| v0.91.24 | Forge upgrades, salvage and set bonuses | **done** (MB-199) |
 | backlog | Optional content and live-player tuning | optional |
 
 ## What is next
