@@ -1143,6 +1143,12 @@
       "level": "build",
       "statement": "v0.91.17 adds four zone gear drops: ember-gauntlets (hands, armour 2) from the ember warden, fen-mantle (cloak, armour 2) from a bog hound, salt-bracers (hands, armour 2) from a salt wraith and moon-greaves (feet, armour 2) from the moon stag. Wardens rank perks are wardenBonus: scout +1 armour, ranger +1 damage, warden +1 armour and +1 damage; armorOf, the combat damage roll, score and equipment apply them. The world is 115 rooms/14 zones/20 quests/52 mobiles/110 objects. The Gate covers the four loot entries, their slots/armour, and the rank bonuses.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-186",
+      "level": "some-true",
+      "statement": "Production v0.91.17 serves 115 rooms, 14 zones, 20 quests, 52 mobiles and 110 objects. The four zone gear drops are live (ember-gauntlets, fen-mantle, salt-bracers, moon-greaves), and Wardens rank perks apply in armorOf, the combat damage roll, score and equipment. The merged-PR chain auto-published v0.91.17; wick verified the manifest hashes, replayed vectors and deployed. R4 active, signups open. Main Gate 44860803072 green, publish 44861737056.",
+      "authority": "GitHub PR #29 merge de55bcf 2026-11-21; main Gate 44860803072; publish 44861737056; release v0.91.17; wick deploy output, /world and /health"
     }
   ]
 }
