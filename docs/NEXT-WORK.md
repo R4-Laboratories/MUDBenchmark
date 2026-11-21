@@ -47,7 +47,7 @@ memory or prompt system.
 | v0.91.18 | Body/offhand gear depth and combat rates | **done** (MB-187) |
 | v0.91.19 | Remote tuning harness and no-change decision | **done** (MB-189) |
 | v0.91.20 | PvP and unseeded balance bands | **done** (MB-191) |
-| v0.91.21 | Faction standing and quartermasters | **in flight** |
+| v0.91.21 | Faction standing and quartermasters | **done** (MB-193) |
 | backlog | Optional content and live-player tuning | optional |
 
 ## What is next
