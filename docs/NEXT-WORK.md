@@ -44,7 +44,7 @@ memory or prompt system.
 | v0.91.15 | Short commands, combat/economy, Wardens guild and free streaming default | **done** (MB-178–181) |
 | v0.91.16 | 20-quest spine, archive and migration | **done** (MB-183) |
 | v0.91.17 | Zone gear drops and Wardens rank perks | **done** (MB-185) |
-| v0.91.18 | Body/offhand gear depth and combat rates | **in flight** |
+| v0.91.18 | Body/offhand gear depth and combat rates | **done** (MB-187) |
 | backlog | Optional content and live-player tuning | optional |
 
 ## What is next

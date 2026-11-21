@@ -1155,6 +1155,12 @@
       "level": "build",
       "statement": "v0.91.18 adds ten gear pieces: smithy iron cuirass (body 2, 18 coins) and buckler (offhand 1, 9 coins); warden's shield (offhand 3) from the warden, mirror shield (offhand 2) from the mirror-wraith, eclipse plate (body 3) from the sundial knight, ember-tempered boots (feet 2) from the cinder hound, fen hood (head 1) from the fen wisp, salt-crusted hauberk (body 2) from the brine crab, moonstone circlet (head 2) from the moon hare and moon disc (offhand 2) from the moon stag. The world is 115 rooms/14 zones/20 quests/52 mobiles/120 objects. Player statistics add hit_rate, kill_rate, average_damage, pvp_rounds, npc_rounds and player_death_rate; /stats shows hit rate and average damage. The Gate covers the gear slots/loot and the combat rates.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-188",
+      "level": "some-true",
+      "statement": "Production v0.91.18 serves 115 rooms, 14 zones, 20 quests, 52 mobiles and 120 objects. The body/offhand gear pass is live (smithy cuirass/buckler and eight zone drops), and /players reports 43 combat rounds, 25 hits, 18 misses, 58.1% hit rate, 2.72 average damage, 23 NPC rounds, 0 PvP rounds and 0 player deaths. /stats shows hit rate and average damage. R4 active, signups open. Main Gate 44864345621 green, publish 44865049896.",
+      "authority": "GitHub PR #30 merge 8817403 2026-11-21; main Gate 44864345621; publish 44865049896; release v0.91.18; wick deploy output, /world and /players"
     }
   ]
 }
