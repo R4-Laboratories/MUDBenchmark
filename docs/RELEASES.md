@@ -352,6 +352,10 @@ Rehearsed 2026-11-16:
 - v0.91.25 (events and PvP) adds the Ember/Fen/Salt/Moon world event rotation
   (double standing, 20% quartermaster discount) and the persistent Ring duel
   ladder with wins, losses, rating and `ladder`/`pvp`/`duels` (MB-201);
+- v0.91.26 (high-level evidence) adds the unseeded level-8 Starless Hall
+  scenario to the remote tuning harness. The first run reached 18 rounds with
+  the star hound at 10/28 HP and the character at 36/55, no death; no balance
+  values changed (MB-203);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);
