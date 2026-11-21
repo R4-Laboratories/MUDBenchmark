@@ -57,11 +57,11 @@ import { normalizePrismId, ownerAllowed, rebindPlan, tokenHash } from "../runtim
 import { deleteLegacy } from "./delete-legacy.mjs";
 import { normalizeStreamEvent, publicStreamText } from "../runtime/stream.mjs";
 import { normalizeAiTurn, aiTurnAttributes } from "../runtime/metrics.mjs";
-import { summarizeTrends } from "../runtime/trends.mjs";
+import { summarizeSeries, summarizeTrends } from "../runtime/trends.mjs";
 import { playerLines, summarizePlayers } from "../runtime/playerstats.mjs";
 import { currentEvent, eventPrice } from "../runtime/events.mjs";
 import { duelLadderRows, duelLadderText } from "../runtime/visibility.mjs";
-import { worldStatus, worldStatusText } from "../runtime/worldstatus.mjs";
+import { worldOverview, worldStatus, worldStatusText } from "../runtime/worldstatus.mjs";
 import { redactCommand, sanitizeIntent, sanitizeState, scrubSecrets, scrubSpan } from "../runtime/telemetry-policy.mjs";
 import { planRetention } from "../runtime/retention.mjs";
 import { equipmentOf, equipmentText, inventoryGroups, setBonus } from "../runtime/equipment.mjs";
@@ -1407,6 +1407,8 @@ let telemetry = { ok: true, why: [] };
     { name: "world.input", at: "2026-11-17T00:00:41Z", text: "look" },
     { name: "world.input", at: "2026-11-17T00:00:42Z", text: "north" },
     { name: "world.input", at: "2026-11-17T00:00:43Z", text: "slow", refused: "too-fast" },
+    { name: "world.quest", at: "2026-11-17T00:00:50Z", "quest.action": "complete", "quest.id": "q1" },
+    { name: "world.combat", at: "2026-11-17T00:00:55Z", "actor.id": "h1", outcome: "hit" },
     { name: "world.snapshot", at: "2026-11-17T00:01:00Z", "world.online": 1, "world.reset_seconds": 3600, "world.accounts": 2, "world.characters": 2, "world.actors": JSON.stringify([{ name: "alice", level: 4 }]) },
   ];
   const trends = summarizeTrends(spans);
@@ -1417,6 +1419,10 @@ let telemetry = { ok: true, why: [] };
   check(trends.commands.accepted === 2 && trends.commands.refused === 1, "the command trend counts are wrong");
   check(trends.world.online.latest === 1 && trends.world.levels.max === 4, "the world trend counts are wrong");
   check(trends.clients.connections === 1 && trends.clients.sessions === 1, "the client trend counts are wrong");
+  const series = summarizeSeries(spans, { minutes: 5, bucketSeconds: 60, now: Date.parse("2026-11-17T00:02:00Z") });
+  check(series.schema === "mudbenchmark/series/1" && series.window.bucket_seconds === 60 && series.series.length === 5, "the series window shape is wrong");
+  check(series.totals.commands === 2 && series.totals.refused === 1 && series.totals.aiTurns === 2 && series.totals.quests === 1 && series.totals.combats === 1 && series.totals.online === 1, "the series totals are wrong");
+  check(series.series.some((bucket) => bucket.commands > 0) && series.series.some((bucket) => bucket.aiTurns > 0), "the series buckets are empty");
   const now = 1_000_000_000_000;
   const retention = planRetention([
     { path: "/t/spans.jsonl", size: 10, mtimeMs: now - 80 * 86400000 },
@@ -1450,6 +1456,17 @@ let telemetry = { ok: true, why: [] };
   check(status.actors[0]?.worn?.includes("a grey cloak") && status.actors[0]?.inventory === 1, "the world status equipment count is wrong");
   check(status.reset.seconds > 0 && status.rooms > 0, "the world status reset or rooms are wrong");
   check(worldStatusText(status).includes("alice") && worldStatusText(status).includes("level 4"), "the human world status is missing the actor");
+  const publicStatus = worldStatus(statusState, statusWorld.rooms, { detail: false });
+  check(publicStatus.online === 1 && !("actors" in publicStatus) && !("top" in publicStatus), "the public world status still leaks actors");
+  statusState.engagements = [{ attackerId: "t1", targetId: statusState.npcs[0].id }];
+  const overview = worldOverview(statusState, statusWorld.rooms);
+  check(overview.schema === "mudbenchmark/overview/1" && overview.actors.length === 1 && overview.fights.length === 1, "the in-client overview is wrong");
+  check(overview.fights[0]?.attacker === "alice" && overview.fights[0]?.target === statusState.npcs[0].name, "the overview fight names are wrong");
+  const pageSource = readFileSync(join(root, "runtime/web/index.html"), "utf8");
+  const statsSource = readFileSync(join(root, "runtime/web/stats.html"), "utf8");
+  check(/id="hud"/.test(pageSource) && /mudbench-command-history/.test(pageSource) && /id="world-panel"/.test(pageSource) && /#overview \(\.\*\)/.test(pageSource), "the terminal HUD or world panel is missing");
+  check(/id="pulse-activity"/.test(statsSource) && /\/series\?minutes=/.test(statsSource), "the public world pulse chart is missing");
+  check(/pathname === "\/series"/.test(serverSource) && /summarizeSeries\(/.test(serverSource) && /verb === "overview"/.test(serverSource) && /worldStatus\(state, ROOMS, \{ detail: false \}\)/.test(serverSource), "the overview or series route is missing");
 
   if (telemetry.why.length) { telemetry.ok = false; failures.push(`the telemetry foundation is broken: ${telemetry.why[0]}`); }
 }

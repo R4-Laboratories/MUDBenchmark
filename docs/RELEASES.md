@@ -363,6 +363,11 @@ Rehearsed 2026-11-16:
 - v0.91.28 (operator and access) adds the owner-token `/reports` JSON view,
   a documented review path, a Skip to game link and explicit
   focus/reduced-motion checks (MB-207);
+- v0.91.29 (terminal UX and world pulse) adds command history, Tab completion
+  and Ctrl+L; a compact Play HUD with HP/mana/XP, room/event, quest, exits and
+  quick actions; an authenticated in-client World overview of players and
+  fights while the public `/world` response stays aggregate; and public
+  `/series` world-pulse charts (MB-209);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

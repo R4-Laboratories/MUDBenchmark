@@ -625,6 +625,16 @@
         "list": "The shortcuts are shown above."
       }
     },
+    "overview": {
+      "aliases": [
+        "ov"
+      ],
+      "argument": "none",
+      "messages": {
+        "list": "The world overview is shown in the client.",
+        "signedOut": "Sign in to view the world overview."
+      }
+    },
     "battle": {
       "aliases": [
         "combat",

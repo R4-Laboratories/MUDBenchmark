@@ -16,7 +16,7 @@ function equipment(state, actor) {
   return { worn, wielded: wielded?.name ?? null };
 }
 
-export function worldStatus(state, rooms) {
+export function worldStatus(state, rooms, { detail = true } = {}) {
   const actors = state.actors
     .filter((actor) => actor.key)
     .map((actor) => {
@@ -38,6 +38,9 @@ export function worldStatus(state, rooms) {
           completed: actor.quests?.completed?.length ?? 0,
         },
         inventory: state.objects.filter((object) => object.holder === actor.id && !object.worn).length,
+        coins: state.objects
+          .filter((object) => object.holder === actor.id && (object.flags ?? []).includes("coin") && !object.eaten)
+          .reduce((sum, object) => sum + (Number.isFinite(object.value) ? object.value : 0), 0),
         ...gear,
       };
     })
@@ -56,7 +59,7 @@ export function worldStatus(state, rooms) {
     .sort((a, b) => b.members - a.members || a.name.localeCompare(b.name));
 
   const event = currentEvent(state.cycle ?? 0);
-  return {
+  const status = {
     schema: "mudbenchmark/world/1",
     tick: state.tick,
     phase: phaseAt(state.tick, state.climate),
@@ -74,9 +77,46 @@ export function worldStatus(state, rooms) {
       remaining: area.remaining,
       seconds: Math.max(0, Math.round((area.remaining * TICK_MS) / 1000)),
     },
-    actors,
     guilds,
-    top: actors.slice(0, 5).map((actor) => ({ name: actor.name, level: actor.level, xp: actor.xp })),
+  };
+  // Actor positions and vitals are a live god view. The public HTTP shape is
+  // aggregate only; the authenticated in-client `overview` command carries the
+  // detailed list over the player's own socket.
+  if (detail) {
+    status.actors = actors;
+    status.top = actors.slice(0, 5).map((actor) => ({ name: actor.name, level: actor.level, xp: actor.xp }));
+  }
+  return status;
+}
+
+export function worldOverview(state, rooms) {
+  const status = worldStatus(state, rooms);
+  const everyone = new Map([...state.actors, ...state.npcs].map((entry) => [entry.id, entry]));
+  const fights = [];
+  const seen = new Set();
+  for (const engagement of state.engagements ?? []) {
+    const attacker = everyone.get(engagement.attackerId);
+    const target = everyone.get(engagement.targetId);
+    if (!attacker || !target) continue;
+    const key = [attacker.id, target.id].sort().join(":");
+    if (seen.has(key)) continue;
+    seen.add(key);
+    fights.push({
+      attacker: attacker.name,
+      target: target.name,
+      room: rooms[attacker.room]?.name ?? String(attacker.room),
+      attackerHp: attacker.hp ?? null,
+      attackerMaxHp: attacker.maxHp ?? null,
+      targetHp: target.hp ?? null,
+      targetMaxHp: target.maxHp ?? null,
+    });
+  }
+  return {
+    schema: "mudbenchmark/overview/1",
+    tick: state.tick,
+    online: status.online,
+    actors: status.actors,
+    fights,
   };
 }
 

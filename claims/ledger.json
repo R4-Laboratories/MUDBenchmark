@@ -1281,6 +1281,12 @@
       "level": "some-true",
       "statement": "Production v0.91.28 serves 116 rooms, 14 zones, 20 quests, 57 mobiles and 145 objects; The Fen Rising is active. GET /reports returns 401 without the owner token and is owner-readable with it; the review path and accessibility contract are documented. The web shell has the skip link, focus/reduced-motion rules and labelled log. R4 active, signups open. Main Gate 44953270553 green, publish 44954148839.",
       "authority": "GitHub PR #40 merge cf4845d 2026-11-21; main Gate 44953270553; publish 44954148839; release v0.91.28; wick deploy output, /reports 401, /world and /health"
+    },
+    {
+      "id": "MB-209",
+      "level": "build",
+      "statement": "v0.91.29 adds terminal-grade input (persisted Up/Down command history, Tab completion from verbs and the current room, Ctrl+L clear), a compact Play HUD (HP/mana/XP bars, level, title, armour, damage, coins, room/zone/phase/weather/event, active quest, clickable exits and quick actions), and an authenticated in-client World overview of every online player and active fight over the player's own socket. The public GET /world response is now aggregate-only and no longer includes actor names, rooms, vitals, gear or top list. GET /series returns public minute-bucketed command, refusal, session, quest, combat and AI-turn counts plus p50 latency for the /stats world-pulse charts. The Gate covers the sanitized public status, overview fight shape, series buckets, HUD/world-panel source and chart source.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

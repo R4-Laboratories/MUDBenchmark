@@ -120,6 +120,76 @@
   #live-name { color: var(--text); font-weight: 600; }
   #live-thought { max-width: 46ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
   @keyframes pulse { 50% { opacity: .35; } }
+  #hud {
+    flex: 0 0 auto; display: flex; flex-direction: column; gap: 7px;
+    padding: 9px 14px 8px; border-bottom: 1px solid var(--line);
+    background: linear-gradient(180deg, rgba(17,24,35,.92), rgba(13,18,25,.96));
+  }
+  body.ai-mode #hud { display: none !important; }
+  #hud-top, #hud-bottom { display: flex; align-items: center; gap: 10px; min-width: 0; flex-wrap: wrap; }
+  .hud-id { display: flex; align-items: baseline; gap: 7px; min-width: 110px; }
+  #hud-name { font-size: 13px; }
+  #hud-level { color: var(--accent); font: 600 10px/1 var(--font-mono); padding: 2px 5px; border: 1px solid rgba(94,234,212,.3); border-radius: 4px; }
+  #hud-title { color: var(--faint); font-size: 10.5px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #hud-bars { display: flex; gap: 10px; flex: 1; min-width: 260px; }
+  .hud-bar { display: grid; grid-template-columns: 22px minmax(46px, 1fr) auto; align-items: center; gap: 5px; min-width: 0; font: 10px/1 var(--font-mono); color: var(--muted); }
+  .hud-bar .hud-track { height: 6px; border-radius: 999px; background: #1b2633; overflow: hidden; }
+  .hud-bar .hud-fill { display: block; height: 100%; width: 0; border-radius: inherit; transition: width .25s ease; }
+  .hud-bar.hp .hud-fill { background: var(--danger); }
+  .hud-bar.mana .hud-fill { background: var(--link); }
+  .hud-bar.xp .hud-fill { background: var(--accent); }
+  .hud-bar b { color: var(--text); font-weight: 500; white-space: nowrap; }
+  #hud-stats { display: flex; gap: 7px; color: var(--muted); font: 10px/1 var(--font-mono); white-space: nowrap; }
+  #hud-stats span { padding: 3px 5px; border: 1px solid var(--line); border-radius: 4px; }
+  #hud-place { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 11px; }
+  #hud-room { color: var(--accent); font-weight: 600; }
+  #hud-zone { color: var(--faint); }
+  #hud-event { padding: 2px 6px; border: 1px solid rgba(251,191,36,.25); border-radius: 999px; color: var(--warn); }
+  .hud-quest { display: flex; gap: 6px; align-items: baseline; min-width: 0; font-size: 11px; color: var(--muted); }
+  .hud-quest b { color: var(--text); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hud-label { color: var(--faint); font-size: 9px; letter-spacing: .1em; text-transform: uppercase; }
+  #hud-actions { display: flex; gap: 3px; margin-left: auto; flex-wrap: wrap; }
+  #hud-actions button { height: 22px; padding: 0 6px; font-size: 10px; background: transparent; color: var(--muted); }
+  #hud-actions button:hover { color: var(--text); }
+  #hud-exits { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+  #hud-exits:empty { display: none; }
+  #hud-exits button { height: 22px; padding: 0 7px; font-size: 10px; background: rgba(94,234,212,.06); color: var(--accent); border-color: rgba(94,234,212,.25); }
+  #hud-exits button:hover { background: rgba(94,234,212,.12); }
+  #world-scrim { display: none; position: fixed; inset: 0; z-index: 85; background: rgba(2,4,7,.68); backdrop-filter: blur(2px); }
+  body.world-focus #world-scrim { display: block; }
+  #world-panel {
+    display: none; position: fixed; z-index: 90; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: min(920px, calc(100vw - 32px)); max-height: calc(100dvh - 48px); overflow: auto;
+    padding: 18px; border: 1px solid var(--line-2); border-radius: 14px;
+    background: var(--surface); box-shadow: var(--shadow-overlay);
+  }
+  body.world-focus #world-panel { display: block; }
+  #world-head { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  #world-head h2 { margin: 0; font-size: 16px; }
+  #world-head .muted { flex: 1; font-size: 11px; }
+  #world-head button { height: 28px; }
+  #world-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); gap: 6px; margin-bottom: 14px; }
+  #world-fights:empty::before { content: "No fights right now."; display: block; color: var(--faint); font-size: 12px; padding: 8px 0; }
+  .world-fight { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 12px; }
+  .world-fight:last-child { border-bottom: 0; }
+  .world-fight .pair { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-width: 0; }
+  .world-fight .who { color: var(--text); font-weight: 500; }
+  .world-fight .vs { color: var(--danger); font: 10px/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; }
+  .world-fight .where { color: var(--faint); font-size: 11px; text-align: right; }
+  .world-table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+  .world-table th, .world-table td { text-align: left; padding: 6px 7px; border-bottom: 1px solid var(--line); }
+  .world-table th { color: var(--faint); font-size: 9px; letter-spacing: .08em; text-transform: uppercase; }
+  .world-table td.num { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+  .world-table td.room { color: var(--accent); }
+  @media (max-width: 767px) {
+    #hud { padding: 7px 10px; }
+    #hud-bars { min-width: 100%; order: 3; }
+    #hud-stats { display: none; }
+    #hud-actions { margin-left: 0; }
+    .hud-quest { max-width: 100%; }
+    #world-panel { width: calc(100vw - 16px); padding: 12px; }
+    .world-table th:nth-child(5), .world-table td:nth-child(5) { display: none; }
+  }
   #log {
     flex: 1; min-height: 0; overflow-y: auto; padding: 18px 24px 28px;
     white-space: pre-wrap; overflow-wrap: anywhere;
@@ -516,6 +586,32 @@
         <span class="spacer"></span>
         <span id="live-status" class="muted">setting up</span>
       </div>
+      <div id="hud" hidden aria-label="Character status">
+        <div id="hud-top">
+          <div class="hud-id"><strong id="hud-name">—</strong><span id="hud-level">L1</span><span id="hud-title"></span></div>
+          <div id="hud-bars">
+            <div class="hud-bar hp"><span>HP</span><div class="hud-track"><i id="hud-hp-fill" class="hud-fill"></i></div><b id="hud-hp">—</b></div>
+            <div class="hud-bar mana"><span>MP</span><div class="hud-track"><i id="hud-mana-fill" class="hud-fill"></i></div><b id="hud-mana">—</b></div>
+            <div class="hud-bar xp"><span>XP</span><div class="hud-track"><i id="hud-xp-fill" class="hud-fill"></i></div><b id="hud-xp">—</b></div>
+          </div>
+          <div id="hud-stats"><span id="hud-armor">ARM 0</span><span id="hud-damage">DMG 0</span><span id="hud-coins">0c</span></div>
+        </div>
+        <div id="hud-bottom">
+          <div id="hud-place"><span id="hud-room">—</span><span id="hud-zone"></span><span id="hud-event"></span></div>
+          <div class="hud-quest"><span class="hud-label">Quest</span><b id="hud-quest">—</b></div>
+          <div id="hud-actions">
+            <button type="button" data-quick="look">Look</button>
+            <button type="button" data-quick="score">Score</button>
+            <button type="button" data-quick="inventory">Inventory</button>
+            <button type="button" data-quick="quests">Quests</button>
+            <button type="button" data-quick="map">Map</button>
+            <button type="button" id="world-open">World</button>
+            <button type="button" data-quick="who">Who</button>
+            <button type="button" data-quick="help">Help</button>
+          </div>
+        </div>
+        <div id="hud-exits" aria-label="Exits"></div>
+      </div>
       <div id="log" role="log" aria-label="Game log" aria-live="off" tabindex="0"></div>
       <button type="button" id="latest">↓ Latest</button>
       <form id="entry">
@@ -882,6 +978,20 @@
     </aside>
   </main>
   <div id="model-scrim"></div>
+  <div id="world-scrim"></div>
+  <section id="world-panel" role="dialog" aria-modal="true" aria-labelledby="world-title" aria-hidden="true">
+    <div id="world-head">
+      <h2 id="world-title">World overview</h2>
+      <span class="muted" id="world-updated">live · signed-in view</span>
+      <button type="button" id="world-refresh">Refresh</button>
+      <button type="button" id="world-close" aria-label="Close world overview">×</button>
+    </div>
+    <div id="world-stats"></div>
+    <h3 class="pane-title">Fights</h3>
+    <div id="world-fights"></div>
+    <h3 class="pane-title" style="margin-top:14px">Players</h3>
+    <div id="world-players"></div>
+  </section>
   <div id="announcer" class="sr-only" role="status" aria-live="polite"></div>
 <script type="module">
   import {
@@ -998,6 +1108,33 @@
   const observeExpand = document.getElementById("observe-expand");
   const observeClose = document.getElementById("observe-close");
   const announcer = document.getElementById("announcer");
+  const hud = document.getElementById("hud");
+  const hudName = document.getElementById("hud-name");
+  const hudLevel = document.getElementById("hud-level");
+  const hudTitle = document.getElementById("hud-title");
+  const hudHp = document.getElementById("hud-hp");
+  const hudHpFill = document.getElementById("hud-hp-fill");
+  const hudMana = document.getElementById("hud-mana");
+  const hudManaFill = document.getElementById("hud-mana-fill");
+  const hudXp = document.getElementById("hud-xp");
+  const hudXpFill = document.getElementById("hud-xp-fill");
+  const hudArmor = document.getElementById("hud-armor");
+  const hudDamage = document.getElementById("hud-damage");
+  const hudCoins = document.getElementById("hud-coins");
+  const hudRoom = document.getElementById("hud-room");
+  const hudZone = document.getElementById("hud-zone");
+  const hudEvent = document.getElementById("hud-event");
+  const hudQuest = document.getElementById("hud-quest");
+  const hudExits = document.getElementById("hud-exits");
+  const worldPanel = document.getElementById("world-panel");
+  const worldScrim = document.getElementById("world-scrim");
+  const worldStats = document.getElementById("world-stats");
+  const worldFights = document.getElementById("world-fights");
+  const worldPlayers = document.getElementById("world-players");
+  const worldUpdated = document.getElementById("world-updated");
+  const worldRefresh = document.getElementById("world-refresh");
+  const worldClose = document.getElementById("world-close");
+  const worldOpen = document.getElementById("world-open");
 
   const CONFIG_KEY = "mudbench-ai-config";
   const KEY_KEY = "mudbench-ai-key";
@@ -1125,6 +1262,175 @@
     });
   };
 
+  const HISTORY_KEY = "mudbench-command-history";
+  let commandHistory = (() => {
+    try {
+      const value = JSON.parse(localStorage.getItem(HISTORY_KEY));
+      return Array.isArray(value) ? value.filter((entry) => typeof entry === "string").slice(-200) : [];
+    } catch { return []; }
+  })();
+  let historyIndex = commandHistory.length;
+  let historyDraft = "";
+  const rememberCommand = (line) => {
+    const text = String(line ?? "").trim();
+    if (!text) return;
+    if (commandHistory[commandHistory.length - 1] !== text) commandHistory.push(text);
+    if (commandHistory.length > 200) commandHistory.splice(0, commandHistory.length - 200);
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(commandHistory)); } catch {}
+    historyIndex = commandHistory.length;
+    historyDraft = "";
+  };
+
+  const hudPct = (value, max) => {
+    const current = Number(value);
+    const total = Number(max);
+    if (!Number.isFinite(current) || !Number.isFinite(total) || total <= 0) return 0;
+    return Math.max(0, Math.min(100, (current / total) * 100));
+  };
+  const hudStat = (label, value) => {
+    const node = document.createElement("div");
+    node.className = "stat";
+    node.textContent = label;
+    const strong = document.createElement("b");
+    strong.textContent = value ?? "—";
+    node.appendChild(strong);
+    return node;
+  };
+
+  function renderHud() {
+    const self = playState?.self;
+    if (!self || !authed) { hud.hidden = true; return; }
+    hud.hidden = false;
+    hudName.textContent = self.name ?? "—";
+    hudLevel.textContent = `L${self.level ?? 1}`;
+    hudTitle.textContent = self.title ?? (self.guild ? `${self.guild}${self.guild_rank ? ` · ${self.guild_rank}` : ""}` : "");
+    hudHp.textContent = `${self.hp ?? "—"}/${self.max_hp ?? "—"}`;
+    hudHpFill.style.width = `${hudPct(self.hp, self.max_hp)}%`;
+    hudMana.textContent = `${self.mana ?? "—"}/${self.max_mana ?? "—"}`;
+    hudManaFill.style.width = `${hudPct(self.mana, self.max_mana)}%`;
+    hudXp.textContent = `${self.xp ?? 0}/${self.next_xp ?? "—"}`;
+    hudXpFill.style.width = `${hudPct(self.xp, self.next_xp)}%`;
+    hudArmor.textContent = `ARM ${self.armor ?? 0}`;
+    hudDamage.textContent = `DMG ${self.damage ?? 0}`;
+    hudCoins.textContent = `${self.coins ?? 0}c`;
+    const room = playState?.room;
+    hudRoom.textContent = room?.name ?? "—";
+    hudZone.textContent = [room?.zone, playState?.world?.phase, playState?.world?.weather].filter(Boolean).join(" · ");
+    hudEvent.textContent = playState?.world?.event?.name ?? "";
+    hudEvent.hidden = !playState?.world?.event?.name;
+    const quest = self.active_quests?.[0];
+    hudQuest.textContent = quest
+      ? `${quest.name}${quest.objectives?.[0] ? ` — ${quest.objectives[0]}` : ""}`
+      : "No active quest";
+    hudExits.replaceChildren();
+    for (const exit of room?.exits ?? []) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = exit.dir;
+      button.title = exit.room ? `Go to ${exit.room}` : `Go ${exit.dir}`;
+      button.addEventListener("click", () => {
+        rememberCommand(exit.dir);
+        send(exit.dir, exit.dir);
+        cmd.focus();
+      });
+      hudExits.appendChild(button);
+    }
+  }
+
+  function renderOverview(data) {
+    if (!data || data.schema !== "mudbenchmark/overview/1") return;
+    const rooms = new Set((data.actors ?? []).map((actor) => actor.room));
+    worldUpdated.textContent = `${data.online ?? 0} online · ${data.fights?.length ?? 0} fights · ${rooms.size} rooms · tick ${data.tick}`;
+    worldStats.replaceChildren(
+      hudStat("Online", String(data.online ?? 0)),
+      hudStat("Fights", String(data.fights?.length ?? 0)),
+      hudStat("Rooms", String(rooms.size)),
+      hudStat("Players", String(data.actors?.length ?? 0)),
+    );
+    worldFights.replaceChildren();
+    for (const fight of data.fights ?? []) {
+      const row = document.createElement("div");
+      row.className = "world-fight";
+      const pair = document.createElement("div");
+      pair.className = "pair";
+      const a = document.createElement("span");
+      a.className = "who";
+      a.textContent = fight.attacker;
+      const hpA = document.createElement("span");
+      hpA.className = "muted";
+      hpA.textContent = fight.attackerMaxHp ? `${fight.attackerHp ?? "?"}/${fight.attackerMaxHp}` : "";
+      const vs = document.createElement("span");
+      vs.className = "vs";
+      vs.textContent = "vs";
+      const b = document.createElement("span");
+      b.className = "who";
+      b.textContent = fight.target;
+      const hpB = document.createElement("span");
+      hpB.className = "muted";
+      hpB.textContent = fight.targetMaxHp ? `${fight.targetHp ?? "?"}/${fight.targetMaxHp}` : "";
+      pair.append(a, hpA, vs, b, hpB);
+      const where = document.createElement("span");
+      where.className = "where";
+      where.textContent = fight.room;
+      row.append(pair, where);
+      worldFights.appendChild(row);
+    }
+    const table = document.createElement("table");
+    table.className = "world-table";
+    const head = document.createElement("thead");
+    const headRow = document.createElement("tr");
+    for (const label of ["Name", "Lvl", "HP", "Room", "Guild", "Quests"]) {
+      const th = document.createElement("th");
+      th.textContent = label;
+      headRow.appendChild(th);
+    }
+    head.appendChild(headRow);
+    const body = document.createElement("tbody");
+    for (const actor of data.actors ?? []) {
+      const row = document.createElement("tr");
+      const cells = [
+        [actor.name, ""],
+        [String(actor.level ?? 1), "num"],
+        [actor.maxHp ? `${actor.hp ?? "?"}/${actor.maxHp}` : "—", "num"],
+        [actor.room, "room"],
+        [actor.guild ? `${actor.guild}${actor.guildRank ? ` · ${actor.guildRank}` : ""}` : "—", ""],
+        [`${actor.quests?.completed ?? 0}/${(actor.quests?.completed ?? 0) + (actor.quests?.active ?? 0)}`, "num"],
+      ];
+      for (const [value, className] of cells) {
+        const td = document.createElement("td");
+        td.textContent = value;
+        if (className) td.className = className;
+        row.appendChild(td);
+      }
+      body.appendChild(row);
+    }
+    table.append(head, body);
+    worldPlayers.replaceChildren(table);
+  }
+
+  let worldTimer = null;
+  function openWorld() {
+    if (!authed) {
+      append("Sign in to view the world overview.", "err");
+      return;
+    }
+    document.body.classList.add("world-focus");
+    worldPanel.setAttribute("aria-hidden", "false");
+    send("overview");
+    clearInterval(worldTimer);
+    worldTimer = setInterval(() => {
+      if (playSocket?.readyState === WebSocket.OPEN) send("overview");
+    }, 4000);
+    worldClose.focus();
+  }
+  function closeWorld() {
+    document.body.classList.remove("world-focus");
+    worldPanel.setAttribute("aria-hidden", "true");
+    clearInterval(worldTimer);
+    worldTimer = null;
+    cmd.focus();
+  }
+
   const rememberName = () => {
     try { localStorage.setItem("mudbench-name", nameInput.value.trim()); } catch {}
   };
@@ -1156,6 +1462,9 @@
       state.textContent = "disconnected";
       state.className = "";
       authed = false;
+      playState = null;
+      hud.hidden = true;
+      closeWorld();
       signed.style.display = "none";
       charactersPanel.hidden = true;
       account.style.display = "block";
@@ -1201,9 +1510,14 @@
         try { renderRecovery(JSON.parse(recoverLine[1])); } catch {}
         return;
       }
+      const overviewLine = text.match(/^#overview (.*)\r?\n?$/);
+      if (overviewLine) {
+        try { renderOverview(JSON.parse(overviewLine[1])); } catch {}
+        return;
+      }
       const stateLine = text.match(/^#state (.*)\r?\n?$/);
       if (stateLine) {
-        try { playState = JSON.parse(stateLine[1]); renderSheet(); } catch {}
+        try { playState = JSON.parse(stateLine[1]); renderSheet(); renderHud(); } catch {}
         return;
       }
       if (/^#tick \d+\r?\n?$/.test(text)) return;
@@ -1249,8 +1563,9 @@
         signed.style.display = "block";
         passwordInput.value = "";
         cmd.disabled = false;
-        cmd.placeholder = "look · say <text> · global <text> · n/s/e/w · help";
+        cmd.placeholder = "look · say <text> · ↑ history · Tab complete · Ctrl+L clear";
         cmd.focus();
+        renderHud();
       }
       if (/Goodbye\./.test(text)) {
         resumeCharacter = null;
@@ -1468,6 +1783,9 @@
     signed.style.display = "none";
     account.style.display = "block";
     authed = false;
+    playState = null;
+    hud.hidden = true;
+    closeWorld();
     cmd.disabled = true;
     cmd.placeholder = "Sign in to play";
     try { playSocket?.close(); } catch {}
@@ -1714,9 +2032,88 @@
     event.preventDefault();
     const line = cmd.value.trim();
     if (!line) return;
+    rememberCommand(line);
     send(line, line);
     cmd.value = "";
   });
+
+  // Terminal-grade input: command history, Tab completion and a clean clear.
+  const BASE_COMPLETIONS = [
+    "look", "l", "examine", "score", "sc", "inventory", "i", "quests", "q", "map", "mp",
+    "world", "overview", "ov", "who", "wh", "help", "take", "t", "drop", "dp", "wear", "wr",
+    "wield", "remove", "rm", "attack", "k", "technique", "tech", "cast", "ca", "say", "sy",
+    "tell", "te", "global", "guildchat", "buy", "b", "sell", "se", "list", "ls", "equipment",
+    "eq", "standing", "components", "coins", "tutorial", "shortcuts", "sh", "north", "south",
+    "east", "west", "up", "down", "n", "s", "e", "w", "u", "d",
+  ];
+  const COMPLETION_STOP = new Set(["a", "an", "the", "of", "and", "with", "some"]);
+  const targetWords = () => {
+    const words = new Set();
+    const entries = [
+      ...(playState?.room?.objects ?? []),
+      ...(playState?.room?.npcs ?? []),
+      ...(playState?.self?.inventory_names ?? []),
+    ];
+    for (const entry of entries) {
+      const name = String(entry?.name ?? entry ?? "").toLowerCase();
+      for (const word of name.split(/[^a-z0-9-]+/)) {
+        if (word.length > 2 && !COMPLETION_STOP.has(word)) words.add(word);
+      }
+    }
+    return [...words].sort();
+  };
+  cmd.addEventListener("keydown", (event) => {
+    if (event.key === "ArrowUp") {
+      if (!commandHistory.length) return;
+      event.preventDefault();
+      if (historyIndex === commandHistory.length) historyDraft = cmd.value;
+      historyIndex = Math.max(0, historyIndex - 1);
+      cmd.value = commandHistory[historyIndex] ?? "";
+      requestAnimationFrame(() => cmd.setSelectionRange(cmd.value.length, cmd.value.length));
+      return;
+    }
+    if (event.key === "ArrowDown") {
+      if (!commandHistory.length || historyIndex === commandHistory.length) return;
+      event.preventDefault();
+      historyIndex = Math.min(commandHistory.length, historyIndex + 1);
+      cmd.value = historyIndex === commandHistory.length ? historyDraft : commandHistory[historyIndex];
+      requestAnimationFrame(() => cmd.setSelectionRange(cmd.value.length, cmd.value.length));
+      return;
+    }
+    if (event.key === "Tab") {
+      event.preventDefault();
+      const value = cmd.value;
+      const start = value.lastIndexOf(" ") + 1;
+      const prefix = value.slice(start).toLowerCase();
+      const firstWord = !value.slice(0, start).trim();
+      const pool = firstWord ? BASE_COMPLETIONS : targetWords();
+      const matches = [...new Set(pool.filter((word) => word.startsWith(prefix)))];
+      if (!matches.length) return;
+      cmd.value = value.slice(0, start) + matches[0] + (firstWord ? " " : "");
+      const end = cmd.value.length;
+      requestAnimationFrame(() => cmd.setSelectionRange(end, end));
+      return;
+    }
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "l") {
+      event.preventDefault();
+      log.replaceChildren();
+      append("Log cleared. ↑ history still works.", "sys");
+      cmd.focus();
+    }
+  });
+
+  for (const button of document.querySelectorAll("#hud-actions [data-quick]")) {
+    button.addEventListener("click", () => {
+      const line = button.dataset.quick;
+      rememberCommand(line);
+      send(line, line);
+      cmd.focus();
+    });
+  }
+  worldOpen.addEventListener("click", openWorld);
+  worldRefresh.addEventListener("click", () => { if (authed) send("overview"); });
+  worldClose.addEventListener("click", closeWorld);
+  worldScrim.addEventListener("click", closeWorld);
 
   // --- mode ---------------------------------------------------------------
   function setMode(next) {
@@ -1724,6 +2121,11 @@
     mode = next;
     document.body.classList.toggle("ai-mode", mode === "ai");
     document.body.classList.remove("model-focus", "telemetry-focus");
+    if (document.body.classList.contains("world-focus")) {
+      document.body.classList.remove("world-focus");
+      clearInterval(worldTimer);
+      worldTimer = null;
+    }
     telemetryOpen.setAttribute("aria-expanded", "false");
     modePlay.classList.toggle("active", mode === "play");
     modeAI.classList.toggle("active", mode === "ai");
@@ -1815,7 +2217,8 @@
 
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") return;
-    if (document.body.classList.contains("model-focus")) closeModel();
+    if (document.body.classList.contains("world-focus")) closeWorld();
+    else if (document.body.classList.contains("model-focus")) closeModel();
     else if (document.body.classList.contains("telemetry-focus")) setTelemetry(false);
   });
 

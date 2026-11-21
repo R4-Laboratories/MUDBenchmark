@@ -1,5 +1,12 @@
 # Watching a run
 
+The Play surface is a terminal with a compact HUD: HP/mana/XP bars, level,
+title, armour, damage, coins, room/zone/weather/event, active quest, exits and
+quick actions. `↑`/`↓` recall commands (persisted per browser), `Tab` completes
+the current word from the verb list and the room, and `Ctrl+L` clears the log.
+The **World** action opens the authenticated in-client overview of every online
+player and active fight; the public `/world` endpoint remains aggregate-only.
+
 The interface has three workspaces. **Play** is a 52px header over a large game
 stage and a 344px context rail (player, Watch-an-AI, commands). **Watch AI
 setup** hides the stage and gives the model form a centered 620+360px launch
