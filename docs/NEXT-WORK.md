@@ -45,7 +45,7 @@ memory or prompt system.
 | v0.91.16 | 20-quest spine, archive and migration | **done** (MB-183) |
 | v0.91.17 | Zone gear drops and Wardens rank perks | **done** (MB-185) |
 | v0.91.18 | Body/offhand gear depth and combat rates | **done** (MB-187) |
-| v0.91.19 | Remote tuning harness and no-change decision | **in flight** |
+| v0.91.19 | Remote tuning harness and no-change decision | **done** (MB-189) |
 | backlog | Optional content and live-player tuning | optional |
 
 ## What is next
