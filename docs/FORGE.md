@@ -50,6 +50,9 @@ Gear pieces carry a `set` tag. While equipped (worn or wielded):
 - **3 pieces** of the same set: +1 armour;
 - **4 pieces** of the same set: +1 weapon damage as well.
 
+The Ashen Hand, Red Company and Night Market sets now have enough pieces
+(hood/boots, helm/gauntlets, boots/gloves) to reach four equipped pieces.
+
 `equipment` prints the active sets and totals. The bonuses stack across distinct
 sets but not across duplicate pieces in one slot.
 

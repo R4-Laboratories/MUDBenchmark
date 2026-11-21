@@ -1528,10 +1528,10 @@ let techniques = { ok: true, why: [] };
   for (const id of ["sword", "greatsword", "club", "forge-hammer", "ember-brand", "fen-staff", "dawn-blade", "ember-forge-blade"]) {
     check(Boolean(techniqueForWeapon(world.objects.find((object) => object.id === id))), `weapon ${id} has no technique`);
   }
-  check(TECHNIQUES["power-strike"]?.bonus === 4 && TECHNIQUES.bash?.rounds === 12, "the technique definitions are wrong");
+  check(TECHNIQUES["power-strike"]?.bonus === 4 && TECHNIQUES.bash?.rounds === 12 && TECHNIQUES.guard?.armor === 3, "the technique definitions are wrong");
   run([{ kind: "join", actorId: "t", name: "tech" }]);
   run([{ kind: "login", actorId: "t", key: "tech", token: null, authenticated: true }]);
-  const actor = state.actors.find((entry) => entry.id === "t");
+  let actor = state.actors.find((entry) => entry.id === "t");
   actor.room = 22;
   const sword = state.objects.find((object) => object.id === "sword");
   sword.holder = "t"; sword.room = null; sword.worn = false;
@@ -1546,6 +1546,11 @@ let techniques = { ok: true, why: [] };
   state.actors.find((entry) => entry.id === "t").wielding = "club";
   run([{ kind: "technique", actorId: "t", techniqueId: "bash", targetId: "dummy" }]);
   check(state.npcs.find((npc) => npc.id === "dummy").stunnedUntil > state.tick, "bash did not stun the target");
+  const shield = state.objects.find((object) => object.id === "shield");
+  shield.holder = "t"; shield.room = null; shield.worn = true;
+  run([{ kind: "technique", actorId: "t", techniqueId: "guard", targetId: "dummy" }]);
+  actor = state.actors.find((entry) => entry.id === "t");
+  check(actor.guardArmor === 3 && actor.guardUntil > state.tick, "guard did not raise the shield bonus");
   check(/named === "technique"/.test(serverSource) && /world.technique/.test(serverSource), "the technique command or span is missing");
   if (techniques.why.length) { techniques.ok = false; failures.push(`techniques are broken: ${techniques.why[0]}`); }
 }
@@ -1795,6 +1800,9 @@ let lantern = { ok: true, why: [] };
   const check = (condition, why) => { if (!condition) { lantern.ok = false; lantern.why.push(why); } };
   check(world.rooms[35]?.exits?.down === 8 && world.rooms[8]?.exits?.up === 35, "the Lantern Stair is not connected to Market Square");
   check(world.rooms[115]?.exits?.down === 24 && world.rooms[24]?.exits?.up === 115, "the Wardens' Lodge is not connected to the Guild Hall");
+  check(world.rooms[116]?.exits?.west === 24 && world.rooms[24]?.exits?.east === 116, "the Training Yard is not connected to the Guild Hall");
+  check(world.npcs.some((npc) => npc.id === "training-master" && npc.room === 116) && world.npcs.some((npc) => npc.id === "training-dummy" && npc.room === 116), "the Training Yard trainer or dummy is missing");
+  check(["practice-sword", "practice-shield", "training-board"].every((id) => world.objects.some((object) => object.id === id && object.room === 116)), "the Training Yard practice gear is missing");
   check(world.npcs.some((npc) => npc.id === "warden-captain" && npc.room === 115), "the warden-captain is missing from the lodge");
   for (const faction of ["fen", "salt", "moon"]) {
     check((world.shops ?? []).some((shop) => shop.id === `${faction}-quartermaster`), `the ${faction} quartermaster shop is missing`);
@@ -1812,6 +1820,13 @@ let lantern = { ok: true, why: [] };
     check(object?.guild === "night-market" && object?.minRank === rank && object?.forSale === true, `the Night Market item ${id} is missing`);
   }
   check(world.npcs.some((npc) => npc.id === "night-broker" && npc.room === 29) && world.npcs.some((npc) => npc.id === "ashen-priest" && npc.room === 58) && world.npcs.some((npc) => npc.id === "red-captain" && npc.room === 71), "an outlaw contact is missing");
+  for (const [setId, minimum] of [["ashen", 4], ["red", 4], ["night", 5]]) {
+    check(world.objects.filter((object) => object.set === setId).length >= minimum, `the ${setId} set is incomplete`);
+  }
+  for (const id of ["ember-ledger", "fen-map", "salt-tablet", "moon-calendar", "garden-journal"]) {
+    const object = world.objects.find((entry) => entry.id === id);
+    check(object?.flags?.includes("readable") && typeof object?.examine === "string" && object.examine.length > 80, `the ${id} lore readable is missing`);
+  }
   for (const id of ["night-market", "ashen-quartermaster", "red-quartermaster"]) {
     check((world.shops ?? []).some((shop) => shop.id === id), `the ${id} shop is missing`);
   }
@@ -3573,6 +3588,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"factions".padEnd(26)}  ${(factionAllows({ ember: 6 }, "ember", 6) ? "6 contacts" : "BROKEN").padStart(5)}   == standing, shops`);
   console.log(`${"outlaws".padEnd(26)}  ${(nightBonus({ guild: "night-market", guildRank: "master" }).damage === 1 ? "Night Market" : "BROKEN").padStart(5)}   == guild, factions`);
   console.log(`${"techniques".padEnd(26)}  ${(techniques.ok ? "7 weapon moves" : "BROKEN").padStart(5)}   == cooldown, stun`);
+  console.log(`${"lore".padEnd(26)}  ${(loadWorld({ mode: "single" }).objects.some((object) => object.id === "ember-ledger") ? "5 books" : "BROKEN").padStart(5)}   == retired zones`);
   console.log(`${"forge".padEnd(26)}  ${(forge.ok ? "+1, salvage" : "BROKEN").padStart(5)}   == components, sets`);
   console.log(`${"worldEvent".padEnd(26)}  ${(worldEvent.ok ? "Ember Tide" : "BROKEN").padStart(5)}   == rotation, ladder`);
   console.log(`${"balanceBands".padEnd(26)}  ${(balanceBands.ok ? "PvE, PvP" : "BROKEN").padStart(5)}   == seeded bands`);

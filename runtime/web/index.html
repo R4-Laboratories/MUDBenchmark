@@ -378,7 +378,7 @@
   .thought .meta .highlight:disabled { color: var(--warn); cursor: default; }
   .highlight-row { margin: 5px 0; padding: 6px 8px; border-left: 2px solid var(--warn); background: rgba(251,191,36,.04); font-size: 12px; }
   .pane-title { margin: 0 0 7px; color: var(--muted); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; }
-  #bench-stats, #trend-stats, #run-stats, #model-stats {
+  #bench-stats, #trend-stats, #run-stats, #model-stats, #sheet-stats {
     display: grid; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
     gap: 6px; margin-bottom: 8px;
   }
@@ -389,6 +389,8 @@
     letter-spacing: .06em; text-transform: uppercase;
   }
   .stat b { display: block; margin-top: 2px; color: var(--text); font-size: 13px; font-weight: 600; text-transform: none; letter-spacing: 0; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .sheet-line { display: flex; justify-content: space-between; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--line); font-size: 11.5px; }
+  .sheet-line span:last-child { color: var(--muted); text-align: right; overflow-wrap: anywhere; }
   .model-block h3 { margin: 9px 0 0; color: var(--muted); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; }
   .model-block pre { max-height: 240px; overflow: auto; }
   #ai-settings { margin-top: 5px; color: var(--muted); font-size: 11px; overflow-wrap: anywhere; }
@@ -554,11 +556,22 @@
           </div>
           <div id="tabs" role="tablist" aria-label="Studio panels">
             <button type="button" class="tab active" data-tab="mind" role="tab" aria-selected="true">Mind</button>
+            <button type="button" class="tab" data-tab="sheet" role="tab" aria-selected="false">Sheet</button>
             <button type="button" class="tab" data-tab="run" role="tab" aria-selected="false">Run</button>
             <button type="button" class="tab" data-tab="model" role="tab" aria-selected="false">Model</button>
             <button type="button" class="tab" data-tab="bench" role="tab" aria-selected="false">Bench</button>
           </div>
           <div id="mind-pane" class="pane" role="tabpanel"><div id="mind"></div></div>
+          <div id="sheet-pane" class="pane" role="tabpanel" hidden>
+            <h3 class="pane-title">Character</h3>
+            <div id="sheet-stats"></div>
+            <div class="model-block"><h3>Equipment</h3><div id="sheet-equipment"></div></div>
+            <div class="model-block"><h3>Sets</h3><div id="sheet-sets"></div></div>
+            <div class="model-block"><h3>Techniques</h3><div id="sheet-techniques"></div></div>
+            <div class="model-block"><h3>Faction standing</h3><div id="sheet-standing"></div></div>
+            <div class="model-block"><h3>Forge components</h3><div id="sheet-components"></div></div>
+            <div class="model-block"><h3>Ring record</h3><div id="sheet-duel"></div></div>
+          </div>
           <div id="model-pane" class="pane" role="tabpanel" hidden>
             <div id="model-stats"></div>
             <div class="model-block"><h3>Sent to the model</h3><pre id="model-prompt"></pre></div>
@@ -1022,6 +1035,7 @@
   let resumeOnDisconnect = true;
   let stick = true;
   let characterState = { account: "", characters: [], delegated: {} };
+  let playState = null;
 
   const AI = {
     socket: null, config: null, identity: null, name: "",
@@ -1184,7 +1198,11 @@
         try { renderRecovery(JSON.parse(recoverLine[1])); } catch {}
         return;
       }
-      if (/^#state /.test(text)) return;
+      const stateLine = text.match(/^#state (.*)\r?\n?$/);
+      if (stateLine) {
+        try { playState = JSON.parse(stateLine[1]); renderSheet(); } catch {}
+        return;
+      }
       if (/^#tick \d+\r?\n?$/.test(text)) return;
       append(text);
       if (/signed in elsewhere/i.test(text)) {
@@ -2695,7 +2713,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       }
       const stateLine = text.match(/^#state (.*)\r?\n?$/);
       if (stateLine) {
-        try { AI.state = JSON.parse(stateLine[1]); } catch {}
+        try { AI.state = JSON.parse(stateLine[1]); renderSheet(); } catch {}
         return;
       }
       const tickLine = text.match(/^#tick (\d+)\r?\n?$/);
@@ -3143,6 +3161,62 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
     else scheduleTurn(250);
   });
 
+  function sheetLine(parent, label, value) {
+    const row = document.createElement("div");
+    row.className = "sheet-line";
+    const left = document.createElement("span"); left.textContent = label;
+    const right = document.createElement("span"); right.textContent = value ?? "—";
+    row.append(left, right); parent.appendChild(row);
+  }
+
+  function renderSheet() {
+    const source = AI.state?.self ? AI.state : playState;
+    const self = source?.self;
+    const stats = document.getElementById("sheet-stats");
+    const gear = document.getElementById("sheet-equipment");
+    const sets = document.getElementById("sheet-sets");
+    const techniques = document.getElementById("sheet-techniques");
+    const standing = document.getElementById("sheet-standing");
+    const components = document.getElementById("sheet-components");
+    const duel = document.getElementById("sheet-duel");
+    for (const node of [stats, gear, sets, techniques, standing, components, duel]) node.replaceChildren();
+    if (!self) {
+      sheetLine(stats, "Character", "Sign in and play to see your sheet.");
+      return;
+    }
+    const card = (label, value) => {
+      const node = document.createElement("div"); node.className = "stat";
+      node.textContent = label;
+      const strong = document.createElement("b"); strong.textContent = value ?? "—";
+      node.appendChild(strong); return node;
+    };
+    stats.append(
+      card("Level", String(self.level)),
+      card("HP", `${self.hp ?? "—"}/${self.max_hp ?? "—"}`),
+      card("Mana", `${self.mana ?? "—"}/${self.max_mana ?? "—"}`),
+      card("Armour", String(self.armor ?? 0)),
+      card("Damage", String(self.damage ?? 0)),
+      card("Rating", String(self.duel?.rating ?? 1000)),
+      card("Event", source?.world?.event?.name ?? "—"),
+      card("Components", String((self.components_detail ?? []).reduce((sum, entry) => sum + entry.count, 0))),
+    );
+    for (const [slot, object] of Object.entries(self.equipment ?? {})) {
+      if (!object) { sheetLine(gear, slot, "—"); continue; }
+      const plus = object.plus ? ` +${object.plus}` : "";
+      const stat = object.damage ? `damage ${object.damage}` : object.armor ? `armour ${object.armor}` : "";
+      sheetLine(gear, slot, `${object.name}${plus}${stat ? ` (${stat})` : ""}`);
+    }
+    if (!(self.sets ?? []).length) sheetLine(sets, "Sets", "No active set bonus.");
+    for (const set of self.sets ?? []) sheetLine(sets, set.name, `${set.count} pieces — +${set.armor} armour${set.damage ? `, +${set.damage} damage` : ""}`);
+    if (!(self.techniques ?? []).length) sheetLine(techniques, "Technique", "No technique with this kit.");
+    for (const technique of self.techniques ?? []) sheetLine(techniques, technique.name, "technique " + technique.id);
+    for (const entry of self.standing_detail ?? []) sheetLine(standing, entry.name, `${entry.value} (${entry.rank})${entry.next === null ? " max" : ` → ${entry.next}`}`);
+    if (!(self.components_detail ?? []).length) sheetLine(components, "Components", "None.");
+    for (const entry of self.components_detail ?? []) sheetLine(components, entry.name, `×${entry.count}`);
+    sheetLine(duel, "Record", `${self.duel?.wins ?? 0}W / ${self.duel?.losses ?? 0}L`);
+    sheetLine(duel, "Rating", String(self.duel?.rating ?? 1000));
+  }
+
   for (const tab of document.querySelectorAll("#tabs .tab")) {
     tab.addEventListener("click", () => {
       for (const other of document.querySelectorAll("#tabs .tab")) {
@@ -3150,10 +3224,12 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         other.setAttribute("aria-selected", String(other === tab));
       }
       document.getElementById("mind-pane").hidden = tab.dataset.tab !== "mind";
+      document.getElementById("sheet-pane").hidden = tab.dataset.tab !== "sheet";
       document.getElementById("run-pane").hidden = tab.dataset.tab !== "run";
       document.getElementById("model-pane").hidden = tab.dataset.tab !== "model";
       document.getElementById("bench-pane").hidden = tab.dataset.tab !== "bench";
       if (tab.dataset.tab === "bench") refreshSpans();
+      if (tab.dataset.tab === "sheet") renderSheet();
       if (tab.dataset.tab === "mind" && mindStick) mindPane.scrollTop = mindPane.scrollHeight;
     });
   }

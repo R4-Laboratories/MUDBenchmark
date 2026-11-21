@@ -22,6 +22,8 @@ The night broker promotes in the cache. The guild quartermaster sells:
 | --- | --- | --- | --- |
 | a thief's dagger | mainhand, damage 3, Backstab | runner | 35 |
 | a night cloak | cloak, armour 2 | cutpurse | 40 |
+| night market boots | feet, armour 1 | cutpurse | 45 |
+| night market gloves | hands, armour 1 | cutpurse | 40 |
 | an assassin's blade | mainhand, damage 5, Backstab | shadow | 80 |
 
 ## The Ashen Hand
@@ -33,8 +35,9 @@ considers false:
 - choir moth +2
 - mirror-wraith +1
 
-Its quartermaster sells an ashen robe (body, armour 2, standing 3) and an
-unholy mace (mainhand, damage 4, Drain, standing 6).
+Its quartermaster sells an ashen robe (body, armour 2, standing 3), an ashen
+hood (head, armour 1), ashen boots (feet, armour 1), and an unholy mace
+(mainhand, damage 4, Drain, standing 6).
 
 ## The Red Company
 
@@ -46,7 +49,8 @@ captain. Standing comes from the Eclipse Court:
 - eclipse regent +3
 
 Its quartermaster sells a red company axe (mainhand, damage 6, Rage, standing
-3) and red company boots (feet, armour 2, standing 6).
+3), a red company helm (head, armour 2), red company gauntlets (hands, armour
+1), and red company boots (feet, armour 2, standing 6).
 
 ## The three path techniques
 

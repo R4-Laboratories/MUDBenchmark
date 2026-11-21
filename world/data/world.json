@@ -446,7 +446,8 @@
       "safe": true,
       "exits": {
         "south": 10,
-        "up": 115
+        "up": 115,
+        "east": 116
       },
       "details": {
         "banners": "The banners are blank, waiting for names.",
@@ -2110,6 +2111,23 @@
         "A draught moves the map corners.",
         "Someone has left a cup of cold tea on the table."
       ]
+    },
+    "116": {
+      "name": "The Training Yard",
+      "text": "A flagged yard behind the Guild Hall. A straw dummy stands against the wall, a rack of practice gear waits under a lean-to, and the trainer watches from a stool. The Guild Hall is west.",
+      "safe": false,
+      "exits": {
+        "west": 24
+      },
+      "details": {
+        "dummy": "The dummy is patched and re-stuffed. It has taken ten thousand blows and never once complained.",
+        "rack": "Practice swords and shields, blunt and light. Take what you need; the yard expects it back eventually.",
+        "trainer": "The trainer has a wooden leg and a patient expression. Ask about technique, stance or the Ring."
+      },
+      "ambient": [
+        "Straw dust drifts from the dummy.",
+        "The trainer taps a stick against the flagstones."
+      ]
     }
   },
   "task": {
@@ -3337,6 +3355,46 @@
         "Rage is a tool. Use it before it uses you.",
         "The eclipse court is full of things worth killing. Bring me proof."
       ]
+    },
+    {
+      "id": "training-master",
+      "name": "the training master",
+      "room": 116,
+      "home": 116,
+      "period": 180,
+      "jitter": 4,
+      "behaviour": "sentinel",
+      "zone": "town",
+      "hp": 30,
+      "damage": 0,
+      "armor": 1,
+      "aggression": 0,
+      "xp": 0,
+      "description": "The training master sits on a stool with a stick across worn knees.",
+      "examine": "A weathered fighter with a wooden leg and a very direct stare.",
+      "dialogue": [
+        "Take a practice blade, wield it, and attack the dummy. It will not hit back.",
+        "A weapon technique is a stance, not a spell. technique lists what your kit can do.",
+        "When the dummy is easy, try the Ring beneath the Docks. That one hits back."
+      ]
+    },
+    {
+      "id": "training-dummy",
+      "name": "a training dummy",
+      "room": 116,
+      "home": 116,
+      "period": 600,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "zone": "town",
+      "hp": 999,
+      "damage": 0,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 0,
+      "description": "A straw dummy on a wooden post, patched and re-patched.",
+      "examine": "Straw, sacking and a great deal of practice.",
+      "dialogue": []
     }
   ],
   "zones": [
@@ -3365,7 +3423,8 @@
         13,
         14,
         24,
-        115
+        115,
+        116
       ]
     },
     {
@@ -3950,7 +4009,8 @@
       "slot": "offhand",
       "armor": 2,
       "price": 15,
-      "value": 7
+      "value": 7,
+      "technique": "guard"
     },
     {
       "room": 9,
@@ -4966,7 +5026,8 @@
       "price": 9,
       "value": 4,
       "forSale": true,
-      "examine": "A light round buckler, easy to carry and quick to turn."
+      "examine": "A light round buckler, easy to carry and quick to turn.",
+      "technique": "guard"
     },
     {
       "id": "warden-shield",
@@ -4980,7 +5041,8 @@
       "slot": "offhand",
       "armor": 3,
       "value": 80,
-      "examine": "A heavy shield of black iron bearing the ward-mark of the Undervault."
+      "examine": "A heavy shield of black iron bearing the ward-mark of the Undervault.",
+      "technique": "guard"
     },
     {
       "id": "mirror-shield",
@@ -4994,7 +5056,8 @@
       "slot": "offhand",
       "armor": 2,
       "value": 55,
-      "examine": "A shield of polished silver glass. The reflection is always a half-step late."
+      "examine": "A shield of polished silver glass. The reflection is always a half-step late.",
+      "technique": "guard"
     },
     {
       "id": "eclipse-plate",
@@ -5140,7 +5203,8 @@
       "faction": "salt",
       "minStanding": 6,
       "examine": "A shield of pale salt-iron, crusted white at the rim.",
-      "set": "salt"
+      "set": "salt",
+      "technique": "guard"
     },
     {
       "id": "moon-blessed-circlet",
@@ -5293,6 +5357,208 @@
       "minStanding": 6,
       "examine": "Scuffed leather boots with iron toe-caps.",
       "set": "red"
+    },
+    {
+      "id": "ashen-hood",
+      "name": "an ashen hood",
+      "room": 58,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "head",
+      "armor": 1,
+      "value": 25,
+      "price": 50,
+      "forSale": true,
+      "faction": "ashen",
+      "minStanding": 3,
+      "set": "ashen",
+      "examine": "A deep hood of ash-grey cloth. It muffles sound at the edges."
+    },
+    {
+      "id": "ashen-boots",
+      "name": "ashen boots",
+      "room": 58,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "feet",
+      "armor": 1,
+      "value": 22,
+      "price": 45,
+      "forSale": true,
+      "faction": "ashen",
+      "minStanding": 3,
+      "set": "ashen",
+      "examine": "Soft boots stained with old candle wax."
+    },
+    {
+      "id": "red-helm",
+      "name": "a red company helm",
+      "room": 71,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "head",
+      "armor": 2,
+      "value": 30,
+      "price": 60,
+      "forSale": true,
+      "faction": "red",
+      "minStanding": 3,
+      "set": "red",
+      "examine": "A dented iron helm with a red cloth tail."
+    },
+    {
+      "id": "red-gauntlets",
+      "name": "red company gauntlets",
+      "room": 71,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "hands",
+      "armor": 1,
+      "value": 25,
+      "price": 50,
+      "forSale": true,
+      "faction": "red",
+      "minStanding": 3,
+      "set": "red",
+      "examine": "Scarred leather gauntlets with iron plates across the knuckles."
+    },
+    {
+      "id": "night-boots",
+      "name": "night market boots",
+      "room": 29,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "feet",
+      "armor": 1,
+      "value": 22,
+      "price": 45,
+      "forSale": true,
+      "guild": "night-market",
+      "minRank": "cutpurse",
+      "set": "night",
+      "examine": "Soft-soled boots that leave almost no mark."
+    },
+    {
+      "id": "night-gloves",
+      "name": "night market gloves",
+      "room": 29,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "hands",
+      "armor": 1,
+      "value": 20,
+      "price": 40,
+      "forSale": true,
+      "guild": "night-market",
+      "minRank": "cutpurse",
+      "set": "night",
+      "examine": "Thin black gloves with grippy palms."
+    },
+    {
+      "id": "ember-ledger",
+      "name": "a charred ledger",
+      "room": 63,
+      "flags": [
+        "fixed",
+        "readable"
+      ],
+      "examine": "A ledger burned along one edge. The surviving pages record the Ember Door, the Ash Key and the Ember Lantern: three trials the forge no longer sets. The last line reads, 'The flame remembers what the door forgets.'"
+    },
+    {
+      "id": "fen-map",
+      "name": "a drowned map",
+      "room": 71,
+      "flags": [
+        "fixed",
+        "readable"
+      ],
+      "examine": "A map of the Hollow Fen, half dissolved. It marks the Wisp Glass, the Old Beacon and the Green Heart. A note in the margin: 'The fen gives a path to those who do not ask it twice.'"
+    },
+    {
+      "id": "salt-tablet",
+      "name": "a salt-stained tablet",
+      "room": 81,
+      "flags": [
+        "fixed",
+        "readable"
+      ],
+      "examine": "A tablet of pressed salt. It tells of the Brine Crab, the Salt Heart and the ward that failed. The last line is worn smooth."
+    },
+    {
+      "id": "moon-calendar",
+      "name": "a moon calendar",
+      "room": 89,
+      "flags": [
+        "fixed",
+        "readable"
+      ],
+      "examine": "A calendar of the Moonlit Reach. The Hare, the Well and the Stag are circled in silver ink. A fourth circle is blank."
+    },
+    {
+      "id": "garden-journal",
+      "name": "a garden journal",
+      "room": 98,
+      "flags": [
+        "fixed",
+        "readable"
+      ],
+      "examine": "A journal of the Memory Garden. It lists the Remembered Bed, the Root Archive and the Cider Spring, and ends: 'The garden keeps the words we are not ready to say.'"
+    },
+    {
+      "id": "practice-sword",
+      "name": "a practice sword",
+      "room": 116,
+      "flags": [
+        "takeable",
+        "weapon"
+      ],
+      "slot": "mainhand",
+      "damage": 1,
+      "value": 1,
+      "examine": "A blunt wooden practice sword. It is heavy enough to teach a lesson and light enough not to break a rib."
+    },
+    {
+      "id": "practice-shield",
+      "name": "a practice shield",
+      "room": 116,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "offhand",
+      "armor": 1,
+      "value": 1,
+      "examine": "A scuffed round shield with a padded rim.",
+      "technique": "guard"
+    },
+    {
+      "id": "training-board",
+      "name": "a training board",
+      "room": 116,
+      "flags": [
+        "fixed",
+        "readable"
+      ],
+      "examine": "The board lists: take all; wield <weapon>; wear <armour>; attack <target>; technique; score; equipment. At the bottom: 'The dummy is patient. The Ring is not.'"
     }
   ],
   "climate": {
