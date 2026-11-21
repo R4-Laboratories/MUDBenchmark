@@ -104,9 +104,26 @@ The first run took 2 damage; the second took none. The model used `take all`,
 Live `/players` at the same point: 43 rounds, 25 hits, 18 misses, 58.1% hit
 rate, 2.72 average damage, 0 player deaths, 0 PvP rounds.
 
+## Deterministic PvP and unseeded bands (v0.91.20)
+
+The sampler now includes player-versus-player and unseeded high-level fights:
+
+| Scenario | Win | Rounds |
+| --- | --- | --- |
+| level 5 sword+jerkin mirror | 46% | 9.6 |
+| level 5 spark / sword+jerkin | 41% | 10.2 |
+| level 10 dawn blade+plate / ember brand+plate | 47% | 9.8 |
+| level 8 unarmored / star hound | 51% | 15.7 |
+| level 10 unarmored / regent | 18% | 24.9 |
+
+The PvP mirror matchups sit near even, and the unseeded regent is deliberately
+dangerous: 18% wins without gear. That is the intended shape, not a defect.
+The Gate now runs the sampler at 120 seeds and fails if a PvP matchup leaves
+25–75% or if the unseeded high-level bands fall outside their expected range.
+
 ## Decision
 
-No balance value changes in v0.91.19.
+No balance value changes in v0.91.19 or v0.91.20.
 
 - The 64.3% remote hit rate is within sampling noise of the `57 - armour`
   curve; 14 rounds is too small to distinguish it from 57%.

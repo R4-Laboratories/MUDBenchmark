@@ -1,6 +1,6 @@
 # Next work
 
-Baseline: **v0.91.19**. The world has 115 rooms, 14 zones, 20 quests, 52 mobiles
+Baseline: **v0.91.20**. The world has 115 rooms, 14 zones, 20 quests, 52 mobiles
 and 120 objects. R4 memory, command grounding, scorecards
 and the public stats surface are live; signups are open and the Gemini demo is
 disabled and unconfigured.
@@ -46,14 +46,17 @@ memory or prompt system.
 | v0.91.17 | Zone gear drops and Wardens rank perks | **done** (MB-185) |
 | v0.91.18 | Body/offhand gear depth and combat rates | **done** (MB-187) |
 | v0.91.19 | Remote tuning harness and no-change decision | **done** (MB-189) |
+| v0.91.20 | PvP and unseeded balance bands | **in flight** |
 | backlog | Optional content and live-player tuning | optional |
 
 ## What is next
 
 1. **Live-run tuning.** The sampler is deterministic, not live evidence. Two
    remote DeepSeek Mirror Pool sessions produced 14 rounds, a 64.3% hit rate,
-   4.67 average damage and no deaths. That is too small to justify a balance
-   change; the next pass needs unseeded level 8-10 and PvP samples.
+   4.67 average damage and no deaths. The sampler now adds PvP (41–47% across
+   three matchups) and unseeded high-level bands (51% at level 8, 18% at level
+   10). No balance change is justified yet; the next pass needs a real human or
+   unscripted PvP sample.
 2. **Guild depth.** The Mages' Guild and the exploration-ranked Wardens are
    live, with the shared hall vault and the archmage path repaired. Wardens
    gear and a second guildhall are the next guild content.

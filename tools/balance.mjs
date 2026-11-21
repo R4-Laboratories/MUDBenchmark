@@ -54,6 +54,11 @@ const scenarios = [
   { band: "capstone", name: "level 9 ember brand / eclipse regent", level: 9, gear: ["ember-brand", "helmet", "jerkin", "boots", "gloves", "ember-cloak", "salt-ward", "shield"], enemy: "eclipse-regent" },
   { band: "capstone", name: "level 10 ember brand + spells / regent", level: 10, gear: ["ember-brand", "helmet", "jerkin", "boots", "gloves", "ember-cloak", "salt-ward", "shield"], spells: ["spark", "mend", "shield"], guild: "mages", enemy: "eclipse-regent" },
   { band: "capstone", name: "level 10 dawn blade+plate / regent", level: 10, gear: ["dawn-blade", "dawn-crown", "jerkin", "boots", "gloves", "ember-cloak", "eclipse-ward", "shield"], enemy: "eclipse-regent" },
+  { band: "unseeded", name: "level 8 unarmored / star hound", level: 8, gear: [], enemy: "star-hound" },
+  { band: "unseeded", name: "level 10 unarmored / regent", level: 10, gear: [], enemy: "eclipse-regent" },
+  { band: "pvp", name: "level 5 sword+jerkin mirror", level: 5, gear: ["sword", "jerkin"], enemyPlayer: true, enemyLevel: 5, enemyGear: ["sword", "jerkin"] },
+  { band: "pvp", name: "level 5 spark / sword+jerkin", level: 5, gear: [], spells: ["spark"], guild: "mages", enemyPlayer: true, enemyLevel: 5, enemyGear: ["sword", "jerkin"] },
+  { band: "pvp", name: "level 10 dawn blade+plate / ember brand+plate", level: 10, gear: ["dawn-blade", "dawn-crown", "eclipse-plate", "ember-cloak", "shield"], enemyPlayer: true, enemyLevel: 10, enemyGear: ["ember-brand", "helmet", "eclipse-plate", "ember-cloak", "shield"] },
 ];
 
 const STATUS_ROUNDS = { burn: 2, bleed: 3, chill: 2 };
@@ -65,8 +70,9 @@ const addEffect = (list, id) => {
 };
 
 const simulate = (scenario, seed) => {
-  const enemyDefinition = npcById.get(scenario.enemy);
+  const enemyDefinition = typeof scenario.enemy === "string" ? npcById.get(scenario.enemy) : (scenario.enemy ?? {});
   const gear = gearStats(scenario.gear);
+  const enemyGear = gearStats(scenario.enemyGear ?? []);
   const maxHp = maxHpForLevel(scenario.level);
   const player = {
     hp: maxHp,
@@ -80,12 +86,13 @@ const simulate = (scenario, seed) => {
     shield: 0,
     effects: [],
   };
+  const enemyMaxHp = scenario.enemyPlayer ? maxHpForLevel(scenario.enemyLevel ?? scenario.level) : (enemyDefinition.maxHp ?? enemyDefinition.hp);
   const enemy = {
-    hp: enemyDefinition.maxHp ?? enemyDefinition.hp,
-    maxHp: enemyDefinition.maxHp ?? enemyDefinition.hp,
-    damage: enemyDefinition.damage ?? 0,
-    armor: enemyDefinition.armor ?? 0,
-    status: enemyDefinition.status ?? null,
+    hp: enemyMaxHp,
+    maxHp: enemyMaxHp,
+    damage: scenario.enemyPlayer ? enemyGear.damage : (enemyDefinition.damage ?? 0),
+    armor: scenario.enemyPlayer ? enemyGear.armor : (enemyDefinition.armor ?? 0),
+    status: scenario.enemyPlayer ? enemyGear.status : (enemyDefinition.status ?? null),
     effects: [],
   };
   const focus = gear.damage;
@@ -124,7 +131,7 @@ const simulate = (scenario, seed) => {
 
     if (enemy.hp <= 0) break;
 
-    const enemySwing = attackRoll({ tick: tick + 5000, attackerId: `e${seed}`, npcDamage: enemy.damage, targetArmor: Math.max(0, player.armor + player.shield - player.effects.filter((effect) => effect.id === "chill").length) });
+    const enemySwing = attackRoll({ tick: tick + 5000, attackerId: `e${seed}`, npcDamage: scenario.enemyPlayer ? null : enemy.damage, weaponDamage: scenario.enemyPlayer ? enemy.damage : 0, targetArmor: Math.max(0, player.armor + player.shield - player.effects.filter((effect) => effect.id === "chill").length) });
     if (enemySwing.hit) {
       player.hp -= enemySwing.damage;
       if (enemy.status) addEffect(player.effects, enemy.status);
@@ -177,7 +184,7 @@ if (asJson) {
     console.log(`${row.name.padEnd(44)} ${`${(row.win * 100).toFixed(0)}%`.padStart(4)}  ${row.rounds.toFixed(1).padStart(6)}  ${row.hp.toFixed(0).padStart(4)}`);
   }
   console.log("");
-  for (const band of ["early", "mid", "high", "capstone"]) {
+  for (const band of ["early", "mid", "high", "capstone", "unseeded", "pvp"]) {
     const bandRows = rows.filter((row) => row.band === band);
     if (!bandRows.length) continue;
     const low = Math.min(...bandRows.map((row) => row.win));

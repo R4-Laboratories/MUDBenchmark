@@ -329,6 +329,10 @@ Rehearsed 2026-11-16:
   DeepSeek Mirror Pool fights (14 rounds, 64.3% hit, 4.67 average damage, no
   deaths), records take-all object ids, and updates the CLI agent to the
   no-flee/take-all/drink command set. No balance values changed (MB-189);
+- v0.91.20 (PvP bands) extends the deterministic sampler with three PvP
+  matchups and two unseeded high-level fights, and makes the bands a Gate
+  check. PvP sits at 41–47%, unseeded level 8 is 51%, unseeded level 10 is 18%;
+  no balance values changed (MB-191);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);
