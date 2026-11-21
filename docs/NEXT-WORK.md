@@ -52,7 +52,7 @@ memory or prompt system.
 | v0.91.23 | Outlaw paths: Night Market, Ashen Hand, Red Company | **done** (MB-197) |
 | v0.91.24 | Forge upgrades, salvage and set bonuses | **done** (MB-199) |
 | v0.91.25 | Rotating world event and Ring duel ladder | **done** (MB-201) |
-| v0.91.26 | Unseeded high-level tuning scenario | **in flight** |
+| v0.91.26 | Unseeded high-level tuning scenario | **done** (MB-203) |
 | backlog | Optional content and live-player tuning | optional |
 
 ## What is next
