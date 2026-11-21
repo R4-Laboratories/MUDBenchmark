@@ -85,8 +85,46 @@ dependency guard. The three-quest Press Beneath / Cider Spring / First Bed run
 then completed in 23 turns with the route lock enabled; after objective
 verification was added it completed in 24 turns with every action confirmed.
 
-## What would change the conclusion
+## Remote DeepSeek Mirror Pool (v0.91.19)
 
-A fresh human or unscripted-agent session in the level 8-10 band, especially
-one that starts without seeded gear and records the combat spans. The isolated
-run is real server evidence, but its character and kit were seeded.
+`tools/tuning-session.mjs` now runs a short remote-model session against an
+isolated server. The character starts at the Mirror Pool with a mundane kit on
+the floor; the model must take all, wield, wear, fight the mirror-wraith, take
+the drop and wear the mirror shield. It uses OpenCode/DeepSeek, no local model.
+
+| Run | Turns | Rounds | Hits | Misses | Hit rate | Avg damage | Kill | Shield taken/worn | Deaths |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | 16 | 9 | 4 | 5 | 44.4% | 5.0 | yes | yes / yes (pre-placed) | 0 |
+| 2 | 12 | 5 | 5 | 0 | 100% | 4.4 | yes | yes / yes (drop) | 0 |
+| **Both** | | **14** | **9** | **5** | **64.3%** | **4.67** | **2** | | **0** |
+
+The first run took 2 damage; the second took none. The model used `take all`,
+`wield`, `wear`, `attack` and `score`, and never tried to flee.
+
+Live `/players` at the same point: 43 rounds, 25 hits, 18 misses, 58.1% hit
+rate, 2.72 average damage, 0 player deaths, 0 PvP rounds.
+
+## Decision
+
+No balance value changes in v0.91.19.
+
+- The 64.3% remote hit rate is within sampling noise of the `57 - armour`
+  curve; 14 rounds is too small to distinguish it from 57%.
+- Average damage 4.67 matches a short sword's `1..4 + 3` range (expected 5.5).
+- The fights ended in kills with no player deaths; the wraith is an early
+  Undervault mobile, not a capstone.
+- There is still no PvP sample and no unseeded level 8-10 sample.
+
+The deterministic bands remain the reference:
+
+```
+early     67–77% win
+mid       84–100%
+high      86–97%
+capstone  62–100%
+```
+
+What would change the conclusion: an unseeded level 8-10 session, a PvP sample,
+or repeated player deaths against the same mobile. The next tuning pass should
+collect those before touching damage, armour, food/ale healing or the level
+curve.

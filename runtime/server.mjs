@@ -2477,7 +2477,7 @@ async function handleCommand(id, line) {
       actor: `You take ${names}.\r\n`,
       others: `${actor.name} takes ${names}.`,
     } });
-    recordSpan("world.object", { "actor.id": id, "action.kind": "takeAll", "object.count": items.length, "room.id": actor.room, "world.tick": state.tick }, 0);
+    recordSpan("world.object", { "actor.id": id, "action.kind": "takeAll", "object.count": items.length, "object.ids": items.map((object) => object.id).join(","), "room.id": actor.room, "world.tick": state.tick }, 0);
     return;
   }
 
