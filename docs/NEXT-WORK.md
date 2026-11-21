@@ -48,7 +48,7 @@ memory or prompt system.
 | v0.91.19 | Remote tuning harness and no-change decision | **done** (MB-189) |
 | v0.91.20 | PvP and unseeded balance bands | **done** (MB-191) |
 | v0.91.21 | Faction standing and quartermasters | **done** (MB-193) |
-| v0.91.22 | Weapon-family techniques | **in flight** |
+| v0.91.22 | Weapon-family techniques | **done** (MB-195) |
 | backlog | Optional content and live-player tuning | optional |
 
 ## What is next

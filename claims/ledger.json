@@ -1203,6 +1203,12 @@
       "level": "build",
       "statement": "v0.91.22 adds weapon-family techniques: power-strike (sword, ember brand, ember-forged blade; +4 next blow, 24-tick cooldown), cleave (greatsword, dawn blade; +2, 36), bash (club, forge hammer; stun one combat round, 36) and chill-strike (fen staff; chill on next blow, 24). `technique`/`tech` lists the current weapon move and sets it up; the reducer checks weapon identity, engagement and cooldown, stores nextAttackBonus/nextAttackStatus/stunnedUntil, and consumes the setup on the next combat round. `world.technique` records the command. No new quests or guilds. The Gate covers weapon data, definitions, cooldown, power-strike bonus and bash stun.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-196",
+      "level": "some-true",
+      "statement": "Production v0.91.22 serves 115 rooms, 14 zones, 20 quests, 52 mobiles and 124 objects. The four weapon-family techniques (Power Strike, Cleave, Bash, Chill Strike) are live; /llms.txt lists technique and standing. The merge-commit Gate did not trigger automatically, so Gate 44924725609 was dispatched on main for the same merge SHA; the publisher then released v0.91.22 from PR #34. R4 active, signups open. Publish 44925468409.",
+      "authority": "GitHub PR #34 merge 8c9e9c6 2026-11-21; dispatch Gate 44924725609; publish 44925468409; release v0.91.22; wick deploy output, /world and /llms.txt"
     }
   ]
 }
