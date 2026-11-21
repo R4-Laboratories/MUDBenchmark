@@ -47,6 +47,16 @@
     .live-dot{width:6px;height:6px;border-radius:50%;background:var(--faint);display:inline-block;margin-right:5px}
     .live-dot.on{background:var(--danger);box-shadow:0 0 8px var(--danger)}
     .cached{color:var(--warn);font-size:11px;margin-top:8px}
+    .pulse-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+    .pulse-head h2{margin:0}
+    .pulse-range{display:flex;gap:3px;margin-left:auto}
+    .pulse-range button{height:24px;padding:0 8px;border:1px solid var(--line);border-radius:6px;background:transparent;color:var(--muted);font:11px/1 var(--font-ui);cursor:pointer}
+    .pulse-range button.active{color:var(--accent);border-color:rgba(94,234,212,.35);background:rgba(94,234,212,.06)}
+    .pulse-panel{display:grid;gap:8px}
+    .pulse-chart{width:100%;height:180px;display:block;background:#0a0f15;border:1px solid var(--line);border-radius:8px}
+    .pulse-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--muted)}
+    .pulse-legend i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px;vertical-align:middle}
+    .pulse-meta{display:flex;justify-content:space-between;gap:10px;color:var(--faint);font-size:11px}
   </style>
 </head>
 <body>
@@ -60,6 +70,20 @@
   <main>
     <h1>World telemetry</h1>
     <p class="sub">A public view of the simulation: world size, player sessions, quest completion, AI turns, model latency, command use, leaderboard and the last stream. No account keys, private thoughts, tells or mail.</p>
+    <section class="pulse-panel">
+      <div class="pulse-head">
+        <h2>World pulse</h2>
+        <div class="pulse-range" id="pulse-range" role="group" aria-label="Chart window">
+          <button type="button" data-minutes="60" class="active">1h</button>
+          <button type="button" data-minutes="360">6h</button>
+          <button type="button" data-minutes="1440">24h</button>
+        </div>
+      </div>
+      <svg id="pulse-activity" class="pulse-chart" viewBox="0 0 800 180" role="img" aria-label="Accepted and refused commands over time"></svg>
+      <svg id="pulse-events" class="pulse-chart" viewBox="0 0 800 180" role="img" aria-label="Combat rounds, quest completions and AI turns over time"></svg>
+      <div class="pulse-legend" id="pulse-legend"></div>
+      <div class="pulse-meta"><span id="pulse-updated">loading…</span><a href="/series?minutes=60" target="_blank" rel="noopener">Raw series JSON ↗</a></div>
+    </section>
     <p id="updated">loading…</p>
     <section>
       <h2>World</h2>
@@ -153,6 +177,94 @@
   };
   const pct = (value) => typeof value === "number" ? `${(value * 100).toFixed(1)}%` : "—";
   const num = (value) => typeof value === "number" ? String(value) : "—";
+  let pulseMinutes = 60;
+  const svgEl = (name, attrs = {}) => {
+    const node = document.createElementNS("http://www.w3.org/2000/svg", name);
+    for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, String(value));
+    return node;
+  };
+  const drawPulse = (id, series, lines) => {
+    const svg = document.getElementById(id);
+    if (!svg) return;
+    svg.replaceChildren();
+    const W = 800, H = 180, L = 34, R = 10, T = 14, B = 24;
+    const n = series.length;
+    const max = Math.max(1, ...series.flatMap((bucket) => lines.map((line) => Number(bucket[line.key]) || 0)));
+    const x = (index) => L + (n <= 1 ? 0 : (index / (n - 1)) * (W - L - R));
+    const y = (value) => H - B - ((Number(value) || 0) / max) * (H - T - B);
+    const ticks = max <= 4 ? Array.from({ length: max + 1 }, (_, index) => index) : [0, max / 2, max];
+    for (const value of ticks) {
+      const gy = y(value);
+      svg.appendChild(svgEl("line", { x1: L, x2: W - R, y1: gy, y2: gy, stroke: "#1e2a38", "stroke-width": 1 }));
+      const label = svgEl("text", { x: 4, y: gy + 3, fill: "#7d8b9c", "font-size": 9, "font-family": "ui-monospace, monospace" });
+      label.textContent = String(Math.round(value));
+      svg.appendChild(label);
+    }
+    const indexes = [0, Math.floor((n - 1) / 2), n - 1].filter((index, position, all) => index >= 0 && all.indexOf(index) === position);
+    for (const index of indexes) {
+      const label = svgEl("text", { x: x(index), y: H - 6, fill: "#7d8b9c", "font-size": 9, "text-anchor": index === 0 ? "start" : index === n - 1 ? "end" : "middle" });
+      label.textContent = series[index]?.at ? new Date(series[index].at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
+      svg.appendChild(label);
+    }
+    if (!n || !series.some((bucket) => lines.some((line) => (Number(bucket[line.key]) || 0) > 0))) {
+      const empty = svgEl("text", { x: W / 2, y: H / 2, fill: "#7d8b9c", "font-size": 11, "text-anchor": "middle" });
+      empty.textContent = "No activity in this window.";
+      svg.appendChild(empty);
+      return;
+    }
+    for (const line of lines) {
+      const points = series.map((bucket, index) => `${x(index)},${y(bucket[line.key])}`).join(" ");
+      svg.appendChild(svgEl("polyline", { points, fill: "none", stroke: line.color, "stroke-width": 1.8, "stroke-linejoin": "round", "stroke-linecap": "round" }));
+    }
+  };
+  const renderPulse = (data, cached) => {
+    const series = data?.series ?? [];
+    drawPulse("pulse-activity", series, [
+      { key: "commands", color: "#5eead4" },
+      { key: "refused", color: "#fbbf24" },
+    ]);
+    drawPulse("pulse-events", series, [
+      { key: "combats", color: "#fb7185" },
+      { key: "quests", color: "#86efac" },
+      { key: "aiTurns", color: "#c4b5fd" },
+    ]);
+    const legend = document.getElementById("pulse-legend");
+    legend.replaceChildren();
+    const totals = data?.totals ?? {};
+    for (const [label, color, value] of [
+      ["commands", "#5eead4", totals.commands],
+      ["refused", "#fbbf24", totals.refused],
+      ["combat rounds", "#fb7185", totals.combats],
+      ["quests", "#86efac", totals.quests],
+      ["AI turns", "#c4b5fd", totals.aiTurns],
+    ]) {
+      const item = document.createElement("span");
+      const swatch = document.createElement("i");
+      swatch.style.background = color;
+      item.append(swatch, document.createTextNode(`${label} ${value ?? 0}`));
+      legend.appendChild(item);
+    }
+    const meta = document.getElementById("pulse-updated");
+    if (!data) {
+      meta.textContent = "No series data.";
+      return;
+    }
+    const bucket = data.window?.bucket_seconds ?? 60;
+    meta.textContent = `${cached ? "cached · " : ""}${data.window?.minutes ?? pulseMinutes}m window · ${bucket < 60 ? `${bucket}s` : `${Math.round(bucket / 60)}m`} buckets · updated ${new Date().toLocaleTimeString()}`;
+  };
+  const pulse = async () => {
+    const bucket = pulseMinutes >= 360 ? 300 : 60;
+    const { data, cached } = await get(`/series?minutes=${pulseMinutes}&bucket=${bucket}`);
+    renderPulse(data, cached);
+  };
+  for (const button of document.querySelectorAll("#pulse-range button")) {
+    button.addEventListener("click", () => {
+      pulseMinutes = Number(button.dataset.minutes) || 60;
+      for (const other of document.querySelectorAll("#pulse-range button")) other.classList.toggle("active", other === button);
+      void pulse();
+    });
+  }
+
   const render = async () => {
     const [world, trends, playerSummary, board, stream] = await Promise.all([get("/world"), get("/trends"), get("/players"), get("/leaderboard"), get("/stream")]);
     fill("world-cards", [
@@ -289,6 +401,7 @@
     const stale = [world, trends, playerSummary, board, stream].some((entry) => entry.cached);
     document.getElementById("updated").textContent = `${stale ? "Showing cached data. " : ""}Updated ${new Date().toLocaleTimeString()}.`;
     document.getElementById("updated").className = stale ? "cached" : "";
+    await pulse();
   };
   render();
   setInterval(render, 15000);

@@ -48,13 +48,34 @@ command ticks, not command text, actors, rooms or private messages.
 
 - the `world` command — online players, level/XP, room, guild, wielded gear,
   reset countdown, phase, weather;
-- `GET /world` — the same status as JSON;
-- the `world.snapshot` span — the same status every checkpoint.
+- `GET /world` — aggregate counts, phase, weather, event and reset only; the
+  actor list is deliberately absent from this public response;
+- the authenticated in-client `overview` / `ov` command — the detailed actor
+  and active-fight list, sent only over the signed-in player's socket;
+- the `world.snapshot` span — the detailed status every checkpoint.
 
-It includes per-actor level, XP, HP, room, guild, quest counts, inventory count,
-worn equipment and wielded item; guild membership counts; totals for accounts,
-characters, rooms, mobiles and objects; and the two-hour reset countdown. It
-does not include passwords, tokens, mail text or private tells.
+The detailed actor record includes level, XP, HP, room, guild, quest counts,
+inventory count, coins, worn equipment and wielded item; guild membership
+counts; totals for accounts, characters, rooms, mobiles and objects; and the
+two-hour reset countdown. It does not include passwords, tokens, mail text or
+private tells.
+
+`overview` reads are recorded as `world.overview`, not `world.input`, so opening
+the World panel does not inflate the command series.
+
+The browser Play surface renders a compact HUD from the same `#state` line:
+HP/mana/XP bars, level, title, armour, damage, coins, room, zone, phase,
+weather, event, active quest, exits and quick actions. Command history, Tab
+completion and Ctrl+L are browser-local; history is stored under
+`mudbench-command-history` and never sent to the server.
+
+## World pulse
+
+`GET /series?minutes=60&bucket=60` returns a rolling, public, aggregate time
+series for the charts on `/stats`: accepted and refused commands, sessions,
+quest completions, combat rounds, AI turns/errors, p50 latency and the last
+online snapshot in each bucket. `minutes` is 5–1440 and `bucket` is 10–3600
+seconds. It contains no actor names, rooms, chat, tells or mail.
 
 ## Trends
 

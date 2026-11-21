@@ -28,6 +28,73 @@ const countBy = (values) => {
 
 const verb = (command) => String(command ?? "").trim().split(/\s+/)[0].toLowerCase() || null;
 
+export function summarizeSeries(spans, { minutes = 60, bucketSeconds = 60, now = Date.now() } = {}) {
+  const all = Array.isArray(spans) ? spans : [];
+  const width = Math.min(1440, Math.max(5, Number(minutes) || 60));
+  const step = Math.min(3600, Math.max(10, Number(bucketSeconds) || 60));
+  const bucketMs = step * 1000;
+  const count = Math.max(1, Math.ceil((width * 60) / step));
+  const end = Math.floor(now / bucketMs) * bucketMs;
+  const start = end - (count - 1) * bucketMs;
+  const buckets = Array.from({ length: count }, (_, index) => ({
+    at: new Date(start + index * bucketMs).toISOString(),
+    commands: 0, refused: 0, sessions: 0, quests: 0, combats: 0,
+    aiTurns: 0, aiErrors: 0, snapshots: 0, online: null, latencies: [],
+  }));
+  for (const span of all) {
+    const at = Date.parse(span.at);
+    if (!Number.isFinite(at) || at < start || at > end + bucketMs - 1) continue;
+    const index = Math.floor((at - start) / bucketMs);
+    if (index < 0 || index >= count) continue;
+    const bucket = buckets[index];
+    if (span.name === "world.input") {
+      if (span.refused) bucket.refused += 1;
+      else bucket.commands += 1;
+    } else if (span.name === "world.session") {
+      bucket.sessions += 1;
+    } else if (span.name === "world.quest") {
+      if (span["quest.action"] === "complete") bucket.quests += 1;
+    } else if (span.name === "world.combat") {
+      bucket.combats += 1;
+    } else if (span.name === "ai.turn") {
+      bucket.aiTurns += 1;
+      if (span["ai.error"]) bucket.aiErrors += 1;
+      const latency = number(span["ai.latency_ms"] ?? span["telemetry.latency_ms"]);
+      if (latency !== null) bucket.latencies.push(latency);
+    } else if (span.name === "world.snapshot") {
+      bucket.snapshots += 1;
+      const online = number(span["world.online"]);
+      if (online !== null) bucket.online = online;
+    }
+  }
+  const series = buckets.map(({ latencies, ...bucket }) => ({
+    ...bucket,
+    latency_p50: percentile(latencies, 50),
+  }));
+  const totals = series.reduce((sum, bucket) => {
+    sum.commands += bucket.commands;
+    sum.refused += bucket.refused;
+    sum.sessions += bucket.sessions;
+    sum.quests += bucket.quests;
+    sum.combats += bucket.combats;
+    sum.aiTurns += bucket.aiTurns;
+    sum.aiErrors += bucket.aiErrors;
+    return sum;
+  }, { commands: 0, refused: 0, sessions: 0, quests: 0, combats: 0, aiTurns: 0, aiErrors: 0 });
+  const online = [...series].reverse().find((bucket) => bucket.online !== null)?.online ?? null;
+  return {
+    schema: "mudbenchmark/series/1",
+    window: {
+      from: new Date(start).toISOString(),
+      to: new Date(end + bucketMs - 1).toISOString(),
+      minutes: width,
+      bucket_seconds: step,
+    },
+    series,
+    totals: { ...totals, online },
+  };
+}
+
 export function summarizeTrends(spans) {
   const all = Array.isArray(spans) ? spans : [];
   const counts = countBy(all.map((span) => span.name));

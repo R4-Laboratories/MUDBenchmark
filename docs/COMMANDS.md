@@ -47,6 +47,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `mail` | `letter`, `m` | actor text |
 | `map` | `mp` | optional zone |
 | `open` | `op` | object |
+| `overview` | `ov` | none |
 | `put` | `insert`, `pt` | object in object |
 | `quest` | — | subcommand |
 | `quests` | `journal`, `q` | none |

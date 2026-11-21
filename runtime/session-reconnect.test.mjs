@@ -188,10 +188,10 @@ test("browser reconnects after a region restart without losing the player sessio
   assert.equal(await evaluate('document.querySelector("#cmd").disabled'), true);
   assert.equal(await otherEvaluate('document.querySelector("#cmd").disabled'), false);
   await otherSend("Page.close");
-  await until(async () => !(await (await fetch(`http://127.0.0.1:${webPort}/world`)).json()).actors.some((actor) => actor.name === "bob"), "second tab disconnect");
-  await wait(300);
-  await evaluate('document.querySelector("#character-list button").click()');
-  await expect('!document.querySelector("#cmd").disabled && document.querySelector("#signed-name").textContent === "bob"', "manual character takeover");
+  await until(async () => {
+    await evaluate('document.querySelector("#character-list button").click()');
+    return await evaluate('!document.querySelector("#cmd").disabled && document.querySelector("#signed-name").textContent === "bob"');
+  }, "manual character takeover");
   await wait(300);
   await evaluate('document.querySelector("#quit").click(); window.testSocket.close()');
   await expect('document.querySelector("#state").textContent !== "connected"', "disconnect during quit");

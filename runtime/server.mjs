@@ -13,7 +13,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { WebSocketServer } from "ws";
 import { recordSpan, digest, TELEMETRY_LOG, PLAYER_LOG_FILE, ensurePlayerLog } from "./telemetry.mjs";
 import { readSpanTail, readSpansTail, redactSpans } from "./spans.mjs";
-import { summarizeTrends } from "./trends.mjs";
+import { summarizeSeries, summarizeTrends } from "./trends.mjs";
 import { summarizePlayers } from "./playerstats.mjs";
 import { step, initialState, digestState, phaseAt, upgradeState, releaseHeldObjects, checkpointIdentities, armorOf, nextFrom, TICK_MS } from "./world.mjs";
 import { equipmentOf, equipmentText, inventoryGroups, setBonus, weaponDamageOf, weaponOf, wornBySlot } from "./equipment.mjs";
@@ -42,7 +42,7 @@ import { CREDENTIAL, identityAdmits } from "./identity.mjs";
 import { normalizePrismId, ownerAllowed, rebindPlan } from "./rebind.mjs";
 import { normalizeStreamEvent, publicStreamText } from "./stream.mjs";
 import { normalizeAiTurn, aiTurnAttributes } from "./metrics.mjs";
-import { worldStatus, worldStatusText } from "./worldstatus.mjs";
+import { worldOverview, worldStatus, worldStatusText } from "./worldstatus.mjs";
 import { levelsText, leaderboardText, leaderboardRows, duelLadderText, mapText, shortcutsText } from "./visibility.mjs";
 import { redactCommand, sanitizeIntent, sanitizeState } from "./telemetry-policy.mjs";
 import { loadStateFile, saveStateFile } from "./state.mjs";
@@ -730,6 +730,9 @@ function selfState(actor) {
     equipment: Object.fromEntries(Object.entries(equipmentOf(actor, state.objects)).map(([slot, object]) => [slot, object ? { name: object.name, plus: object.plus ?? 0, armor: object.armor ?? 0, damage: object.damage ?? 0 } : null])),
     sets: setBonus(actor, state.objects).sets,
     title: actor.title ?? null,
+    coins: state.objects
+      .filter((object) => object.holder === actor.id && (object.flags ?? []).includes("coin") && !object.eaten)
+      .reduce((sum, object) => sum + (Number.isFinite(object.value) ? object.value : 0), 0),
     ignoring: (actor.ignored ?? []).length,
     memory_facts: Object.keys(actor.memory?.facts ?? {}).length,
     guild_vault: (state.guilds[actor.guild]?.vault ?? []).length,
@@ -1040,14 +1043,19 @@ async function handleCommand(id, line) {
   // The accepted command and its tick. The same tick goes to the client in a
   // hidden line, so the transcript's turn and the span agree exactly.
   const redacted = redactCommand(raw);
-  recordSpan("world.input", {
-    "actor.id": id,
-    "command.verb": redacted.verb,
-    "text": redacted.text,
-    "text.length": redacted.length,
-    "text.policy": redacted.policy,
-    "world.tick": state.tick,
-  }, 0);
+  // The world overview is a passive UI read, not a gameplay command. Keep it
+  // out of the command series so the benchmark stays about play.
+  const passiveRead = verb === "overview" || verb === "ov";
+  if (!passiveRead) {
+    recordSpan("world.input", {
+      "actor.id": id,
+      "command.verb": redacted.verb,
+      "text": redacted.text,
+      "text.length": redacted.length,
+      "text.policy": redacted.policy,
+      "world.tick": state.tick,
+    }, 0);
+  }
   sendTo(id, `#tick ${state.tick}\r\n`);
   sendTo(id, `#state ${JSON.stringify(selfState(actor))}\r\n`);
 
@@ -1468,6 +1476,12 @@ async function handleCommand(id, line) {
     return sendTo(id, `${worldStatusText(worldStatus(state, ROOMS))}\r\n`);
   }
 
+  if (verb === "overview" || verb === "ov") {
+    if (!actor?.key) return sendTo(id, "Sign in to view the world overview.\r\n");
+    recordSpan("world.overview", { "actor.id": id, "world.tick": state.tick }, 0);
+    return sendTo(id, `#overview ${JSON.stringify(worldOverview(state, ROOMS))}\n`);
+  }
+
   if (verb === "tutorial") {
     return sendTo(id, `First steps:\r\n  1. look — read the room and its exits.\r\n  2. score — your level, HP, gear and quests.\r\n  3. quests — available quests; accept First Steps with: quest accept first-steps.\r\n  4. north — walk to the Corridor and complete the tour.\r\n  5. talk bard — meet the first NPC.\r\n  6. map, levels, leaderboard — see the world and the standings.\r\n  7. shortcuts — every fast command.\r\nWatch an AI from the setup panel, or read /stats for the public telemetry.\r\nTraining yard: east of the Guild Hall — take the practice gear, attack the dummy, then try technique.\r\n`);
   }
@@ -1479,7 +1493,7 @@ async function handleCommand(id, line) {
     if (!actor?.key) {
       return sendTo(id, "MUDBench is a persistent world for people and agents.\r\nSign in with your Prism id, or register <name> <password> / login <name> <password>.\r\nThen type help for the commands.\r\n");
     }
-    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: take/t/g/tf, take all, drop/dp/dr, inventory/i, coins, standing/reputation, components, score/sc, quests/q, who/wh, spells/sp, cast/ca, say/sy, tell/te, give/gv, put/pt, open/op, close/cl, wear/wr, remove/rm, buy/b, sell/se, list/ls, drink, map/mp, leaderboard/lb, ladder/pvp, levels/lv, shortcuts/sh.\r\nMagic: spells (effects/mana), train <spell> at the Mages' Guild, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search. Combat: attack/kill/k, technique/tech (weapon move), battle/combat/bt (current HP), score (armour/damage), equipment/eq (slots and totals). Forge: upgrade/improve, salvage/melt, components at the Cold Forge. There is no fleeing a fight. Guild: guild join/leave/who/list/chat, guild advance (Mages, Wardens, Night Market), vault/deposit/withdraw in the Guild Hall. Social: ignore/unignore/ignoring, report/rep, titles/title, facts/memory, recall <word> at the shrine. Room actions: turn, push, ring where the room suggests.\r\nWorld: world or status (online, guilds, reset); levels, leaderboard/top/lb, map [zone], shortcuts, quests active|available|done|all.<id>; tutorial (first) for the first steps.\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
+    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: take/t/g/tf, take all, drop/dp/dr, inventory/i, coins, standing/reputation, components, score/sc, quests/q, who/wh, spells/sp, cast/ca, say/sy, tell/te, give/gv, put/pt, open/op, close/cl, wear/wr, remove/rm, buy/b, sell/se, list/ls, drink, map/mp, leaderboard/lb, ladder/pvp, levels/lv, shortcuts/sh.\r\nMagic: spells (effects/mana), train <spell> at the Mages' Guild, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search. Combat: attack/kill/k, technique/tech (weapon move), battle/combat/bt (current HP), score (armour/damage), equipment/eq (slots and totals). Forge: upgrade/improve, salvage/melt, components at the Cold Forge. There is no fleeing a fight. Guild: guild join/leave/who/list/chat, guild advance (Mages, Wardens, Night Market), vault/deposit/withdraw in the Guild Hall. Social: ignore/unignore/ignoring, report/rep, titles/title, facts/memory, recall <word> at the shrine. Room actions: turn, push, ring where the room suggests.\r\nWorld: world or status (online, guilds, reset); overview/ov (the live player and fight panel); levels, leaderboard/top/lb, map [zone], shortcuts, quests active|available|done|all.<id>; tutorial (first) for the first steps.\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
   }
 
   // A command typed before the join tick lands is queued, not refused: the
@@ -3052,7 +3066,12 @@ function onTick() {
   for (const intent of intents) {
     if (intent.kind !== "login" && intent.kind !== "register") continue;
     const actor = actorById(intent.actorId);
-    if (actor) sendTo(actor.id, describe(actor.room, actor.id));
+    if (actor) {
+      sendTo(actor.id, describe(actor.room, actor.id));
+      sendTo(actor.id, `#state ${JSON.stringify(selfState(actor))}\r\n`);
+      const disabled = state.identities[actor.key]?.unrecognizedSkills ?? [];
+      if (disabled.length) sendTo(actor.id, `Skills not recognized here: ${disabled.join(", ")}.\r\n`);
+    }
   }
 
   // Anything typed before the actor existed is played now, in order.
@@ -3360,7 +3379,7 @@ const web = http.createServer(async (req, res) => {
     return;
   }
   if (pathname === "/world") {
-    const status = worldStatus(state, ROOMS);
+    const status = worldStatus(state, ROOMS, { detail: false });
     status.quests = QUESTS.quests.length;
     status.zones = loaded.zones.length;
     status.actions = ACTION_TABLE.actions.length;
@@ -3423,6 +3442,16 @@ const web = http.createServer(async (req, res) => {
       tick: state.tick,
       rooms: Object.keys(ROOMS).length,
     }));
+    return;
+  }
+
+  if (pathname === "/series") {
+    const params = new URL(req.url, "http://localhost").searchParams;
+    const minutes = Math.min(1440, Math.max(5, Number(params.get("minutes")) || 60));
+    const bucket = Math.min(3600, Math.max(10, Number(params.get("bucket")) || 60));
+    const series = summarizeSeries(readSpansTail(TELEMETRY_LOG), { minutes, bucketSeconds: bucket });
+    res.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
+    res.end(JSON.stringify({ ...series, file: TELEMETRY_LOG }));
     return;
   }
 
