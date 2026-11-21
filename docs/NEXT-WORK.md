@@ -42,7 +42,7 @@ memory or prompt system.
 | v0.91.13 | Level distribution from the last populated snapshot | **done** (MB-175) |
 | v0.91.14 | Publisher requires the PR merge commit | **done** (MB-176) |
 | v0.91.15 | Short commands, combat/economy, Wardens guild and free streaming default | **done** (MB-178–181) |
-| v0.91.16 | 20-quest spine, archive and migration | **in flight** |
+| v0.91.16 | 20-quest spine, archive and migration | **done** (MB-183) |
 | backlog | Optional content and live-player tuning | optional |
 
 ## What is next
