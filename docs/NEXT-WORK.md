@@ -40,7 +40,7 @@ memory or prompt system.
 | v0.91.11 | Compact player log for the player view | **done** (MB-172) |
 | v0.91.12 | Historical AI/human session inference | **done** (MB-173) |
 | v0.91.13 | Level distribution from the last populated snapshot | **done** (MB-175) |
-| v0.91.14 | Publisher requires the PR merge commit | **in flight** |
+| v0.91.14 | Publisher requires the PR merge commit | **done** (MB-176) |
 | backlog | Optional content and live-player tuning | optional |
 
 ## What is next
