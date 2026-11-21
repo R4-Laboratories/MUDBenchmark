@@ -71,6 +71,17 @@ The operator reads the queue on wick:
 ssh wick 'tail -n 20 ~/.mudbench/state/reports.jsonl'
 ```
 
+Or through the owner-only JSON view:
+
+```sh
+curl -H "x-owner-token: $MUDBENCH_OWNER_TOKEN" \
+  "https://play.r4labs.org/reports?limit=20"
+```
+
+The endpoint returns `401` without the owner token and never appears in the
+public `/stats`, `/players` or `/spans` views. The token is sent in the
+`x-owner-token` header, not in the URL, so it does not land in access logs.
+
 Reports are evidence, not an automatic ban. The operator reviews the reason
 and the target's identity, then uses ignore guidance, a Prism-id block in
 `~/.mudbench/state/identities.json` (`blocked`), or a persona retirement where
