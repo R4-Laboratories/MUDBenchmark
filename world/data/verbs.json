@@ -69,6 +69,19 @@
         "empty": "You have no coins."
       }
     },
+    "technique": {
+      "aliases": [
+        "tech"
+      ],
+      "argument": "optional technique",
+      "messages": {
+        "none": "You are not wielding a weapon with a technique.",
+        "ready": "Technique: %s. Use technique %s.",
+        "cooldown": "%s is not ready (%s seconds).",
+        "noFight": "You are not in a fight.",
+        "unknown": "No technique called %s."
+      }
+    },
     "attack": {
       "aliases": [
         "kill",

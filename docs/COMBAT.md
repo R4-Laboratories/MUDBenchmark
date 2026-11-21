@@ -22,6 +22,14 @@ attacker's id seed every roll, so a replay fights the same fight.
    fell in, wakes at the start at full health, and keeps level, XP, guild and
    quests. The killer gains experience.
 
+## Weapon techniques
+
+Each weapon family has one active move: Power Strike (sword), Cleave
+(greatsword), Bash (club/hammer) and Chill Strike (fen staff). `technique`
+shows the current move; `technique <name>` sets up the next combat round. The
+setup is spent on the next blow, hit or miss, and has a tick cooldown. See
+`docs/TECHNIQUES.md`.
+
 ## Aggression
 
 A mobile with `aggression` above 0 may begin a fight when its own clock comes

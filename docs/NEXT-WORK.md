@@ -1,6 +1,6 @@
 # Next work
 
-Baseline: **v0.91.21**. The world has 115 rooms, 14 zones, 20 quests, 52 mobiles
+Baseline: **v0.91.22**. The world has 115 rooms, 14 zones, 20 quests, 52 mobiles
 and 124 objects. R4 memory, command grounding, scorecards
 and the public stats surface are live; signups are open and the Gemini demo is
 disabled and unconfigured.
@@ -48,6 +48,7 @@ memory or prompt system.
 | v0.91.19 | Remote tuning harness and no-change decision | **done** (MB-189) |
 | v0.91.20 | PvP and unseeded balance bands | **done** (MB-191) |
 | v0.91.21 | Faction standing and quartermasters | **done** (MB-193) |
+| v0.91.22 | Weapon-family techniques | **in flight** |
 | backlog | Optional content and live-player tuning | optional |
 
 ## What is next
@@ -58,9 +59,11 @@ memory or prompt system.
    three matchups) and unseeded high-level bands (51% at level 8, 18% at level
    10). No balance change is justified yet; the next pass needs a real human or
    unscripted PvP sample.
-2. **Guild depth.** The Mages' Guild and the exploration-ranked Wardens are
-   live, with the shared hall vault and the archmage path repaired. Wardens
-   gear and a second guildhall are the next guild content.
+2. **Outlaw paths and guild depth.** Thieves, assassins, dark priests and
+   barbarians are archetypes, not four more rank guilds. The next slice should
+   add them as outlaw paths/factions with quartermasters and techniques; a
+   single new rank guild, such as the Night Market for thieves and assassins,
+   is enough for the social layer.
 3. **Quest budget.** The live table is now 20; 41 retired definitions are in
    `world/data/quests-archive.json`, and active characters are migrated with a
    completion/abandon note. `docs/QUEST-BUDGET.md` records the spine.

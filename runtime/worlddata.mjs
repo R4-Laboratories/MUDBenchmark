@@ -13,6 +13,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { FACTIONS } from "./factions.mjs";
+import { TECHNIQUES } from "./techniques.mjs";
 import { spellById } from "./magic.mjs";
 
 // Resolved against this module, not the process working directory: the service
@@ -225,6 +226,9 @@ export function loadWorld({ mode = "single", path = DEFAULT_PATH } = {}) {
     }
     if (flags.includes("weapon") && (!Number.isInteger(object.damage) || object.damage < 1)) {
       errors.push(`weapon ${object.id} has no damage`);
+    }
+    if (object.technique !== undefined && !TECHNIQUES[object.technique]) {
+      errors.push(`object ${object.id} has unknown technique ${object.technique}`);
     }
     if (flags.includes("armor") && (!Number.isInteger(object.armor) || object.armor < 1)) {
       errors.push(`armor ${object.id} has no armor value`);
