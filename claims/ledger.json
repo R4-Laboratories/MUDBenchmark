@@ -1161,6 +1161,12 @@
       "level": "some-true",
       "statement": "Production v0.91.18 serves 115 rooms, 14 zones, 20 quests, 52 mobiles and 120 objects. The body/offhand gear pass is live (smithy cuirass/buckler and eight zone drops), and /players reports 43 combat rounds, 25 hits, 18 misses, 58.1% hit rate, 2.72 average damage, 23 NPC rounds, 0 PvP rounds and 0 player deaths. /stats shows hit rate and average damage. R4 active, signups open. Main Gate 44864345621 green, publish 44865049896.",
       "authority": "GitHub PR #30 merge 8817403 2026-11-21; main Gate 44864345621; publish 44865049896; release v0.91.18; wick deploy output, /world and /players"
+    },
+    {
+      "id": "MB-189",
+      "level": "build",
+      "statement": "v0.91.19 adds tools/tuning-session.mjs, an isolated remote-model combat harness that seeds a level-5 character and mundane kit at the Mirror Pool, runs OpenCode/DeepSeek, and reports the real spans. Two runs produced 14 combat rounds, 9 hits, 5 misses, 64.3% hit rate, 4.67 average damage, 2 wraith kills, 0 player deaths, and the mirror shield was taken and worn in the second run. The CLI agent now lists take-all, drink and coins and no flee; take-all spans carry object ids. No mob damage, armour, healing or level values changed because the sample is too small and there is no PvP or unseeded level 8-10 evidence. The Gate still covers the prior combat and gear contracts.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

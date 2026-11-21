@@ -1505,6 +1505,10 @@ let controls = { ok: true, why: [] };
   check(BASE_HP === 20 && HP_PER_LEVEL === 5 && maxHpForLevel(1) === 20 && maxHpForLevel(10) === 65, "the health curve is wrong");
   check(wardenBonus({ guild: "wardens", guildRank: "scout" }).armor === 1 && wardenBonus({ guild: "wardens", guildRank: "ranger" }).damage === 1 && wardenBonus({ guild: "wardens", guildRank: "warden" }).armor === 1 && wardenBonus({ guild: "wardens", guildRank: "warden" }).damage === 1, "the Wardens rank perks are wrong");
   check(wardenBonus({ guild: "mages", guildRank: "archmage" }).armor === 0 && wardenBonus({ guild: "wardens", guildRank: "member" }).damage === 0, "a non-Wardens actor received a Wardens perk");
+  const agentSource = readFileSync(join(root, "runtime/agent.mjs"), "utf8");
+  const tuningSource = readFileSync(join(root, "tools/tuning-session.mjs"), "utf8");
+  check(!/flee/.test(agentSource) && /take all/.test(agentSource) && /drink/.test(agentSource), "the CLI agent still exposes flee or lacks the new commands");
+  check(/summarizePlayers/.test(tuningSource) && /mirror-wraith/.test(tuningSource) && /taskOk/.test(tuningSource), "the remote tuning harness is missing");
   check(armorOf({ id: "w", guild: "wardens", guildRank: "scout" }, []) === 1, "the Wardens scout armour perk is not in armorOf");
   check(equipmentText({ id: "w", guild: "wardens", guildRank: "ranger" }, []).includes("+1 rank"), "the Wardens ranger damage perk is not in equipment");
   const groups = inventoryGroups([

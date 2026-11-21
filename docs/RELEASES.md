@@ -325,6 +325,10 @@ Rehearsed 2026-11-16:
 - v0.91.18 (gear depth) fills body and offhand with smithy stock and eight more
   zone drops, and adds hit rate, kill rate, average damage, PvP/NPC rounds and
   player death rate to `/players` and `/stats` (MB-187);
+- v0.91.19 (tuning evidence) adds the remote tuning harness, records two
+  DeepSeek Mirror Pool fights (14 rounds, 64.3% hit, 4.67 average damage, no
+  deaths), records take-all object ids, and updates the CLI agent to the
+  no-flee/take-all/drink command set. No balance values changed (MB-189);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);
