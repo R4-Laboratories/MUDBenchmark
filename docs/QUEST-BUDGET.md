@@ -21,7 +21,7 @@ zones keep their rooms, mobiles, gear, keys, secret exits and actions.
 | 6 | The Apprentice's Charm (`familiar`) | 2 | world |
 | 7 | The High Walk (`roof`) | 3 | world |
 | 8 | The Lighthouse Lens (`telescope`) | 2 | world |
-| 9 | A Message for the Spellwright (`errand`) | 1 | world |
+| 9 | A Curled Scroll (`scroll`) | 1 | world |
 | 10 | What the Mirror Keeps (`mirror`) | 4 | world |
 | 11 | The Drowned Ledger (`ledger`) | 4 | world |
 | 12 | Three Parts of a Sigil (`sigils`) | 5 | world |
@@ -38,7 +38,7 @@ The kept chain is:
 
 ```
 first-steps, hall-word, word, guardian, bread, familiar, roof,
-telescope, errand, mirror, ledger, sigils, cistern, choir, reliquary,
+telescope, scroll, mirror, ledger, sigils, cistern, choir, reliquary,
 guild-ledger, guild-mirror, guild-warden, guild-dawn, guild-trial
 ```
 

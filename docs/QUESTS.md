@@ -59,7 +59,7 @@ boot; a quest that names a room that does not exist stops the world.
 | The Apprentice's Charm (`familiar`) | 2 | world | visit the apprentice, carry the charm |
 | The High Walk (`roof`) | 3 | world | requires the charm; visit the High Walk, kill a rat |
 | The Lighthouse Lens (`telescope`) | 2 | world | carry the brass telescope |
-| A Message for the Spellwright (`errand`) | 1 | world | deliver the note |
+| A Curled Scroll (`scroll`) | 1 | world | carry the scroll out of the Corridor |
 | What the Mirror Keeps (`mirror`) | 4 | world | requires the High Walk; visit the pool, carry a shard |
 | The Drowned Ledger (`ledger`) | 4 | world | requires the mirror; kill the clerk, carry the page |
 | Three Parts of a Sigil (`sigils`) | 5 | world | requires the ledger; carry all three sigils |

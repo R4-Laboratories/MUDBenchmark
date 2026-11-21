@@ -1129,7 +1129,7 @@
     {
       "id": "MB-183",
       "level": "build",
-      "statement": "The live quest table is 20 and the retired 41 are in world/data/quests-archive.json. The kept spine is first-steps, hall-word, word, guardian, bread, familiar, roof, telescope, errand, mirror, ledger, sigils, cistern, choir, reliquary, guild-ledger, guild-mirror, guild-warden, guild-dawn and guild-trial. guild-dawn now requires guild-warden and reliquary. Titles are reduced to nine, one per kept quest. migrateQuestState normalizes active/completed ids, reports retired active quests as completed when their recorded progress is met and abandoned otherwise, and the server sends a one-time login note before clearing the migration record. The Gate checks count 20, archive 41, no live/archive overlap, no kept prerequisite on a retired quest, archive references, and the completed/abandoned migration notes.",
+      "statement": "The live quest table is 20 and the retired 41 are in world/data/quests-archive.json. The kept spine is first-steps, hall-word, word, guardian, bread, familiar, roof, telescope, scroll, mirror, ledger, sigils, cistern, choir, reliquary, guild-ledger, guild-mirror, guild-warden, guild-dawn and guild-trial. guild-dawn now requires guild-warden and reliquary. Titles are reduced to nine, one per kept quest. migrateQuestState normalizes active/completed ids, reports retired active quests as completed when their recorded progress is met and abandoned otherwise, and the server sends a one-time login note before clearing the migration record. The Gate checks count 20, archive 41, no live/archive overlap, no kept prerequisite on a retired quest, archive references, and the completed/abandoned migration notes.",
       "gate": "tools/gate.mjs"
     }
   ]

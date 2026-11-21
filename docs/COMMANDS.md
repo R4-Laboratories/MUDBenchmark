@@ -123,8 +123,8 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `guardian` | The Vault Guardian | 2 | Defeat the vault guardian | 80 xp |
 | `bread` | Bread for the Shop | 1 | Deliver a loaf to the shopkeeper | 10 xp |
 | `telescope` | The Lighthouse Lens | 2 | Carry the brass telescope | 30 xp |
-| `errand` | A Message for the Spellwright | 1 | Deliver the note to the spellwright | 25 xp |
 | `familiar` | The Apprentice's Charm | 2 | Enter the Familiar Yard; Carry the familiar charm | 40 xp |
+| `scroll` | A Curled Scroll | 1 | Carry the curled scroll | 15 xp |
 | `roof` | The High Walk | 3 | Reach the High Walk; Kill a rat | 60 xp |
 | `guild-ledger` | The Guild's Ledger | 3 | Carry the spell scroll to the archmage | 60 xp |
 | `mirror` | What the Mirror Keeps | 4 | Enter the Mirror Pool; Carry a mirror shard | 80 xp |
