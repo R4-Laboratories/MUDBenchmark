@@ -1517,8 +1517,9 @@ export function step({ state, rooms, intents, actions = [] }) {
       const technique = TECHNIQUES[intent.techniqueId];
       if (!technique || !techniqueReady(actor, technique.id, next.tick)) continue;
       const weapon = weaponOf(actor, next.objects);
-      const known = techniqueForWeapon(weapon);
-      if (!known || known.id !== technique.id) continue;
+      const offhand = next.objects.find((object) => object.holder === actor.id && object.worn && slotOf(object) === "offhand");
+      const known = [techniqueForWeapon(weapon), techniqueForWeapon(offhand)].filter(Boolean);
+      if (!known.some((entry) => entry.id === technique.id)) continue;
       const target = next.npcs.find((n) => n.id === intent.targetId)
         ?? next.actors.find((a) => a.id === intent.targetId);
       if (!target || target.dead || target.room !== actor.room) continue;
@@ -1528,6 +1529,10 @@ export function step({ state, rooms, intents, actions = [] }) {
       if (technique.effect === "damage") actor.nextAttackBonus = technique.bonus;
       else if (technique.effect === "status") actor.nextAttackStatus = technique.status;
       else if (technique.effect === "drain") actor.nextAttackDrain = true;
+      else if (technique.effect === "guard") {
+        actor.guardUntil = next.tick + technique.rounds;
+        actor.guardArmor = technique.armor;
+      }
       else if (technique.effect === "stun") target.stunnedUntil = next.tick + technique.rounds;
       actor.techniqueCooldowns = { ...(actor.techniqueCooldowns ?? {}), [technique.id]: next.tick + technique.cooldown };
       events.push({ onlyId: actor.id, text: `You ready ${technique.name}.\r\n` });

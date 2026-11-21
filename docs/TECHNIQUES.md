@@ -1,6 +1,6 @@
 # Weapon techniques
 
-A technique belongs to a weapon, not to a class. Pick up a different weapon and
+A technique belongs to a weapon or shield, not to a class. Pick up a different weapon and
 the available move changes. That gives non-Mages a combat decision without
 adding another guild or a spellbook.
 
@@ -15,6 +15,7 @@ adding another guild or a spellbook.
 | thief's dagger, assassin's blade | Backstab | the next blow gains +6 damage | 36 ticks (9 s) |
 | red company axe | Rage | the next blow gains +5 damage | 36 ticks (9 s) |
 | unholy mace | Drain | the next blow heals half the damage dealt | 36 ticks (9 s) |
+| shield, buckler, mirror shield, warden's shield, salt-warden's shield | Guard | +3 armour for two combat rounds | 36 ticks (9 s) |
 
 A technique sets up the next combat round; it does not deal damage itself. If
 the next blow misses, the setup is spent. The cooldown is per character and is
@@ -28,7 +29,8 @@ technique power-strike
 tech bash
 ```
 
-You must be wielding the weapon and already engaged in a fight. The target is
+You must be wielding the weapon (or wearing the shield) and already engaged in a
+fight. The target is
 the opponent in the current engagement. A weapon with no technique refuses with
 `You are not wielding a weapon with a technique.`
 

@@ -42,6 +42,15 @@ export const TECHNIQUES = {
     effect: "damage",
     bonus: 5,
   },
+  guard: {
+    id: "guard",
+    name: "Guard",
+    description: "Raise the shield: +3 armour for two rounds.",
+    cooldown: 36,
+    effect: "guard",
+    armor: 3,
+    rounds: 12,
+  },
   drain: {
     id: "drain",
     name: "Drain",

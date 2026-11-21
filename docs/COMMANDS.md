@@ -173,7 +173,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 21 | The Crypt Entrance | wilds | no | north 17, down 22 |
 | 22 | The Crypt Hall | wilds | no | up 21, east 23 |
 | 23 | The Ossuary | wilds | no | west 22 |
-| 24 | The Guild Hall | town | yes | south 10, up 115 |
+| 24 | The Guild Hall | town | yes | south 10, up 115, east 116 |
 | 25 | The Undercroft | undercroft | no | up 5, east 26, south 27 |
 | 26 | The Sewer Junction | undercroft | no | west 25, east 28 |
 | 27 | The Flooded Passage | undercroft | no | north 25, east 29 |
@@ -265,4 +265,5 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 113 | The White Bed | garden | yes | west 112, north 114 |
 | 114 | The Spring Keeper's Rest | garden | yes | south 113 |
 | 115 | The Wardens' Lodge | town | yes | down 24 |
+| 116 | The Training Yard | town | no | west 24 |
 

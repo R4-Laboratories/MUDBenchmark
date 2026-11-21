@@ -16,7 +16,7 @@ import { readSpanTail, readSpansTail, redactSpans } from "./spans.mjs";
 import { summarizeTrends } from "./trends.mjs";
 import { summarizePlayers } from "./playerstats.mjs";
 import { step, initialState, digestState, phaseAt, upgradeState, releaseHeldObjects, checkpointIdentities, armorOf, nextFrom, TICK_MS } from "./world.mjs";
-import { equipmentText, inventoryGroups, setBonus, weaponDamageOf, weaponOf } from "./equipment.mjs";
+import { equipmentOf, equipmentText, inventoryGroups, setBonus, weaponDamageOf, weaponOf, wornBySlot } from "./equipment.mjs";
 import { techniqueForWeapon } from "./techniques.mjs";
 import { COMPONENTS, componentsText, componentForItem, salvageYield, upgradeCost } from "./forge.mjs";
 import { eventPrice, eventText } from "./events.mjs";
@@ -30,7 +30,7 @@ import { loadSocials, resolveSocial } from "./socials.mjs";
 import { loadLevels, nextLevelXp } from "./levels.mjs";
 import { availableQuests, loadQuestArchive, loadQuests, migrateQuestState, normalizeQuestState, questById, questLines, validateQuestReferences } from "./quests.mjs";
 import { GUILD_HALL, GUILD_VAULT_CAPACITY, RANKS, guildId, guildVaultHolder, rankAtLeast, progressionAtLeast, validGuildName, guildBonus } from "./guilds.mjs";
-import { FACTIONS, factionAllows, standingsText } from "./factions.mjs";
+import { FACTIONS, factionAllows, factionRank, standingsText } from "./factions.mjs";
 import { buildLlms } from "./llms.mjs";
 import { loadTitles, earnedTitles, titleLookup } from "./titles.mjs";
 import { loadFacts, factForNpc, contextHasWord } from "./facts.mjs";
@@ -719,7 +719,16 @@ function selfState(actor) {
     guild: actor.guild ?? null,
     guild_rank: actor.guildRank ?? null,
     standing: { ...(actor.standing ?? {}) },
+    standing_detail: Object.values(FACTIONS).map((faction) => {
+      const rank = factionRank(faction.id, actor.standing?.[faction.id] ?? 0);
+      return { id: faction.id, name: faction.name, value: rank.value, rank: rank.name, next: rank.next };
+    }),
     components: { ...(actor.components ?? {}) },
+    components_detail: Object.entries(actor.components ?? {}).filter(([, count]) => count > 0).map(([id, count]) => ({ id, name: COMPONENTS[id] ?? id, count })),
+    duel: { wins: actor.duelWins ?? 0, losses: actor.duelLosses ?? 0, rating: actor.duelRating ?? 1000 },
+    techniques: [techniqueForWeapon(weaponOf(actor, state.objects)), techniqueForWeapon(wornBySlot(actor, state.objects).offhand)].filter(Boolean).map((technique) => ({ id: technique.id, name: technique.name })),
+    equipment: Object.fromEntries(Object.entries(equipmentOf(actor, state.objects)).map(([slot, object]) => [slot, object ? { name: object.name, plus: object.plus ?? 0, armor: object.armor ?? 0, damage: object.damage ?? 0 } : null])),
+    sets: setBonus(actor, state.objects).sets,
     title: actor.title ?? null,
     ignoring: (actor.ignored ?? []).length,
     memory_facts: Object.keys(actor.memory?.facts ?? {}).length,
@@ -730,7 +739,7 @@ function selfState(actor) {
     },
     inventory: state.objects.filter((object) => object.holder === actor.id && !object.worn).length,
     armor: armorOf(actor, state.objects),
-    damage: weaponDamageOf(weaponOf(actor, state.objects)),
+    damage: weaponDamageOf(weaponOf(actor, state.objects)) + guildBonus(actor).damage + setBonus(actor, state.objects).damage,
     spell_power: spellPower(actor, weaponDamageOf(weaponOf(actor, state.objects))),
     effects: (actor.effects ?? []).map((effect) => ({ id: effect.id, name: effect.name, rounds: effect.rounds })),
     inventory_names: state.objects.filter((object) => object.holder === actor.id && !object.worn && !object.eaten).map((object) => object.name),
@@ -757,6 +766,7 @@ function selfState(actor) {
       phase: status.phase,
       weather: status.weather,
       reset_seconds: status.reset.seconds,
+      event: status.event,
       leaders: status.top,
     },
     self,
@@ -1459,7 +1469,7 @@ async function handleCommand(id, line) {
   }
 
   if (verb === "tutorial") {
-    return sendTo(id, `First steps:\r\n  1. look — read the room and its exits.\r\n  2. score — your level, HP, gear and quests.\r\n  3. quests — available quests; accept First Steps with: quest accept first-steps.\r\n  4. north — walk to the Corridor and complete the tour.\r\n  5. talk bard — meet the first NPC.\r\n  6. map, levels, leaderboard — see the world and the standings.\r\n  7. shortcuts — every fast command.\r\nWatch an AI from the setup panel, or read /stats for the public telemetry.\r\n`);
+    return sendTo(id, `First steps:\r\n  1. look — read the room and its exits.\r\n  2. score — your level, HP, gear and quests.\r\n  3. quests — available quests; accept First Steps with: quest accept first-steps.\r\n  4. north — walk to the Corridor and complete the tour.\r\n  5. talk bard — meet the first NPC.\r\n  6. map, levels, leaderboard — see the world and the standings.\r\n  7. shortcuts — every fast command.\r\nWatch an AI from the setup panel, or read /stats for the public telemetry.\r\nTraining yard: east of the Guild Hall — take the practice gear, attack the dummy, then try technique.\r\n`);
   }
 
   if (verb === "help" || verb === "commands") {
@@ -1883,14 +1893,19 @@ async function handleCommand(id, line) {
   if (named === "technique") {
     const messages = VERB_TABLE.verbs.technique.messages;
     const weapon = weaponOf(actor, state.objects);
-    const technique = techniqueForWeapon(weapon);
-    if (!technique) return sendTo(id, `${messages.none}\r\n`);
+    const offhand = wornBySlot(actor, state.objects).offhand;
+    const options = [techniqueForWeapon(weapon), techniqueForWeapon(offhand)].filter(Boolean);
+    if (!options.length) return sendTo(id, `${messages.none}\r\n`);
     if (!rest.length) {
-      const remaining = Math.max(0, (actor.techniqueCooldowns?.[technique.id] ?? -1) - state.tick);
-      return sendTo(id, `Technique: ${technique.name}. Use technique ${technique.id}.\r\n${remaining ? `${technique.name} ready in ${Math.ceil(remaining * 0.25)}s.\r\n` : ""}`);
+      const lines = options.map((entry) => {
+        const remaining = Math.max(0, (actor.techniqueCooldowns?.[entry.id] ?? -1) - state.tick);
+        return `${entry.name} (${entry.id})${remaining ? ` — ready in ${Math.ceil(remaining * 0.25)}s` : " — ready"}`;
+      });
+      return sendTo(id, `Techniques: ${lines.join("; ")}. Use technique <id>.\r\n`);
     }
     const wanted = rest.join(" ").toLowerCase();
-    if (wanted !== technique.id && wanted !== technique.name.toLowerCase()) {
+    const technique = options.find((entry) => wanted === entry.id || wanted === entry.name.toLowerCase());
+    if (!technique) {
       return sendTo(id, `${render(messages.unknown, { words: rest.join(" ") })}\r\n`);
     }
     const remaining = Math.max(0, (actor.techniqueCooldowns?.[technique.id] ?? -1) - state.tick);
@@ -1936,7 +1951,9 @@ async function handleCommand(id, line) {
           : "";
       const price = eventPrice(o, state.cycle ?? 0);
       const event = price !== o.price ? " [event]" : "";
-      return `${o.name} (${price})${event}${lock}`;
+      const plus = o.plus ? `+${o.plus}` : "";
+      const stat = o.damage ? `damage ${o.damage + (o.plus ?? 0)}` : o.armor ? `armour ${o.armor + (o.plus ?? 0)}` : o.slot ?? "";
+      return `${o.name}${plus} (${price}${stat ? `, ${stat}` : ""})${event}${lock}`;
     });
     sendTo(id, `${stock.length ? render(messages.stock, { words: lines.join(", ") }) : messages.empty}\r\n`);
     return sendTo(id, `${messages.buys}\r\n`);

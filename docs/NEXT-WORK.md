@@ -1,7 +1,7 @@
 # Next work
 
-Baseline: **v0.91.26**. The world has 115 rooms, 14 zones, 20 quests, 55 mobiles
-and 131 objects. R4 memory, command grounding, scorecards
+Baseline: **v0.91.27**. The world has 116 rooms, 14 zones, 20 quests, 57 mobiles
+and 145 objects. R4 memory, command grounding, scorecards
 and the public stats surface are live; signups are open and the Gemini demo is
 disabled and unconfigured.
 
@@ -53,6 +53,7 @@ memory or prompt system.
 | v0.91.24 | Forge upgrades, salvage and set bonuses | **done** (MB-199) |
 | v0.91.25 | Rotating world event and Ring duel ladder | **done** (MB-201) |
 | v0.91.26 | Unseeded high-level tuning scenario | **done** (MB-203) |
+| v0.91.27 | Set completion, character sheet, Guard and Training Yard | **in flight** |
 | backlog | Optional content and live-player tuning | optional |
 
 ## What is next

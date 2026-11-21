@@ -103,12 +103,18 @@ the zone's mobiles.
 | a fen-warden's cloak | cloak | armour 3 | Fen 6 | 75 |
 | a salt-warden's shield | offhand | armour 3 | Salt 6 | 80 |
 | a moon-blessed circlet | head | armour 3 | Moon 6 | 85 |
+| an ashen hood | head | armour 1 | Ashen 3 | 50 |
+| ashen boots | feet | armour 1 | Ashen 3 | 45 |
+| a red company helm | head | armour 2 | Red 3 | 60 |
+| red company gauntlets | hands | armour 1 | Red 3 | 50 |
+| night market boots | feet | armour 1 | Night Market cutpurse | 45 |
+| night market gloves | hands | armour 1 | Night Market cutpurse | 40 |
 | an ashen robe | body | armour 2 | Ashen 3 | 60 |
 | an unholy mace | mainhand | damage 4, Drain | Ashen 6 | 75 |
 | a red company axe | mainhand | damage 6, Rage | Red 3 | 65 |
 | red company boots | feet | armour 2 | Red 6 | 55 |
 
-The world now has 131 objects.
+The world now has 145 objects.
 
 The second gear pass fills the thinner slots:
 
