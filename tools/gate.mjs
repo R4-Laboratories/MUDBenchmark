@@ -32,7 +32,7 @@ import { loadFacts, contextHasWord } from "../runtime/facts.mjs";
 import { allowCommand, DEFAULT_INTERVAL_MS } from "../runtime/allowance.mjs";
 import { loadLevels, levelForXp } from "../runtime/levels.mjs";
 import { loadQuestArchive, loadQuests, migrateQuestState, validateQuestReferences } from "../runtime/quests.mjs";
-import { GUILD_HALL, GUILD_VAULT_CAPACITY, guildId, guildVaultHolder, validGuildName, guildLevelFor, perksFor } from "../runtime/guilds.mjs";
+import { GUILD_HALL, GUILD_VAULT_CAPACITY, guildId, guildVaultHolder, validGuildName, guildLevelFor, perksFor, wardenBonus } from "../runtime/guilds.mjs";
 import { DEFAULT_TURNS, trimMessages } from "../runtime/memory.mjs";
 import { buildLlms } from "../runtime/llms.mjs";
 import { assemble } from "../runtime/router.mjs";
@@ -1502,6 +1502,10 @@ let controls = { ok: true, why: [] };
   check(verbTable.byAlias.get("coins") === "coins" && verbTable.byAlias.get("money") === "coins", "coins/money are not registered");
   check(verbTable.byAlias.get("drink") === "drink" && verbTable.byAlias.get("quaff") === "drink", "drink/quaff are not registered");
   check(BASE_HP === 20 && HP_PER_LEVEL === 5 && maxHpForLevel(1) === 20 && maxHpForLevel(10) === 65, "the health curve is wrong");
+  check(wardenBonus({ guild: "wardens", guildRank: "scout" }).armor === 1 && wardenBonus({ guild: "wardens", guildRank: "ranger" }).damage === 1 && wardenBonus({ guild: "wardens", guildRank: "warden" }).armor === 1 && wardenBonus({ guild: "wardens", guildRank: "warden" }).damage === 1, "the Wardens rank perks are wrong");
+  check(wardenBonus({ guild: "mages", guildRank: "archmage" }).armor === 0 && wardenBonus({ guild: "wardens", guildRank: "member" }).damage === 0, "a non-Wardens actor received a Wardens perk");
+  check(armorOf({ id: "w", guild: "wardens", guildRank: "scout" }, []) === 1, "the Wardens scout armour perk is not in armorOf");
+  check(equipmentText({ id: "w", guild: "wardens", guildRank: "ranger" }, []).includes("+1 rank"), "the Wardens ranger damage perk is not in equipment");
   const groups = inventoryGroups([
     { flags: ["weapon"] }, { flags: ["armor", "wearable"] }, { flags: ["container"] },
     { flags: ["light"] }, { flags: ["food"] }, { flags: ["drink"] }, { flags: ["readable"] },
@@ -1650,6 +1654,11 @@ let lantern = { ok: true, why: [] };
   check(world.rooms[35]?.exits?.down === 8 && world.rooms[8]?.exits?.up === 35, "the Lantern Stair is not connected to Market Square");
   check(world.rooms[115]?.exits?.down === 24 && world.rooms[24]?.exits?.up === 115, "the Wardens' Lodge is not connected to the Guild Hall");
   check(world.npcs.some((npc) => npc.id === "warden-captain" && npc.room === 115), "the warden-captain is missing from the lodge");
+  for (const [npcId, objectId, slot] of [["ember-warden", "ember-gauntlets", "hands"], ["bog-hound", "fen-mantle", "cloak"], ["salt-wraith", "salt-bracers", "hands"], ["moon-stag", "moon-greaves", "feet"]]) {
+    const loot = world.npcs.find((npc) => npc.id === npcId)?.loot ?? [];
+    const object = world.objects.find((entry) => entry.id === objectId);
+    check(loot.includes(objectId) && object?.slot === slot && object?.armor === 2, `the ${npcId} gear drop is missing`);
+  }
   check(/The Wardens meet in the lodge/.test(serverSource) && /next === "archmage"/.test(serverSource), "the guild join or archmage path is missing");
   check(world.rooms[37]?.exits?.west === 36 && world.rooms[36]?.exits?.east === 37, "the Spellwright's Shop is not connected");
   check(world.rooms[40]?.exits?.west === 39 && world.rooms[39]?.exits?.east === 40, "the High Walk is not connected");
@@ -1849,6 +1858,13 @@ let ember = { ok: true, why: [] };
   }
   actor = state.actors.find((entry) => entry.id === "e");
   check(actor.room === 70, "the Ember Deep walk did not reach the First Flame");
+  const emberWarden = state.npcs.find((npc) => npc.id === "ember-warden");
+  emberWarden.hp = 1;
+  emberWarden.damage = 0;
+  run([{ kind: "attack", actorId: "e", targetId: "ember-warden" }]);
+  for (let i = 0; i < 40; i += 1) run([]);
+  check(state.objects.find((object) => object.id === "ember-gauntlets")?.room === 70, "the ember gauntlets did not drop in the First Flame");
+  actor = state.actors.find((entry) => entry.id === "e");
   actor.room = 69;
   state.objects.find((o) => o.id === "ash-key").holder = "e";
   run([{ kind: "action", actorId: "e", actionId: "unlock-ember-chest", messages: { actor: "unlocked", others: "unlocks" } }]);

@@ -1,6 +1,8 @@
 // Equipment slots. Gear is an object: it is worn or held, not a separate
 // persisted loadout. A slot is a view of the objects on the character.
 
+import { wardenBonus } from "./guilds.mjs";
+
 export const SLOTS = ["head", "body", "hands", "feet", "cloak", "neck", "mainhand", "offhand"];
 
 const INVENTORY_GROUPS = [
@@ -54,7 +56,7 @@ export function armorOf(actor, objects) {
   const worn = objects
     .filter((object) => object.holder === actor.id && object.worn && !object.eaten)
     .reduce((total, object) => total + (Number.isFinite(object.armor) ? object.armor : 0), 0);
-  return worn + Math.max(0, Number(actor.armorBonus ?? 0));
+  return worn + Math.max(0, Number(actor.armorBonus ?? 0)) + wardenBonus(actor).armor;
 }
 
 export function weaponOf(actor, objects) {
@@ -73,7 +75,8 @@ export function equipmentOf(actor, objects) {
 export function equipmentText(actor, objects) {
   const slots = equipmentOf(actor, objects);
   const weapon = weaponOf(actor, objects);
-  const lines = [`Armour ${armorOf(actor, objects)} · weapon damage ${weapon?.damage ?? 0}.`];
+  const bonus = wardenBonus(actor);
+  const lines = [`Armour ${armorOf(actor, objects)} · weapon damage ${(weapon?.damage ?? 0) + bonus.damage}${bonus.damage ? ` (+${bonus.damage} rank)` : ""}.`];
   for (const slot of SLOTS) {
     const object = slots[slot];
     lines.push(`${slot.padEnd(8)} ${object ? object.name : "—"}${object?.armor ? ` (armour ${object.armor})` : ""}${object?.damage ? ` (damage ${object.damage})` : ""}`);

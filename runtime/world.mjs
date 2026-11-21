@@ -12,7 +12,7 @@ import { createHash } from "node:crypto";
 import { advance, due as pulseDue, makePulse } from "./generated/Pulses.mjs";
 import { levelForXp, nextLevelXp } from "./levels.mjs";
 import { applyQuestEvent, emptyProgress, normalizeQuestState, questById, questMet } from "./quests.mjs";
-import { GUILD_HALL, GUILD_VAULT_CAPACITY, RANKS, guildId, guildLevelFor, guildVaultHolder, isGuildVaultHolder, rankAtLeast, removeMember, successor, validGuildName, perksFor } from "./guilds.mjs";
+import { GUILD_HALL, GUILD_VAULT_CAPACITY, RANKS, guildId, guildLevelFor, guildVaultHolder, isGuildVaultHolder, rankAtLeast, removeMember, successor, validGuildName, perksFor, wardenBonus } from "./guilds.mjs";
 import { armorOf, slotOf, weaponOf } from "./equipment.mjs";
 import { maxManaFor, spellById, spellPower } from "./magic.mjs";
 
@@ -1958,7 +1958,8 @@ export function step({ state, rooms, intents, actions = [] }) {
       // A snapshot can contain the reciprocal of a fight that has just ended.
       if (!attacker || !target || attacker.dead || target.dead || target.hp <= 0) continue;
       const weapon = next.actors.includes(attacker) ? weaponOf(attacker, next.objects) : null;
-      const weaponDamage = weapon?.damage ?? 0;
+      const rank = next.actors.includes(attacker) ? wardenBonus(attacker) : { armor: 0, damage: 0 };
+      const weaponDamage = (weapon?.damage ?? 0) + rank.damage;
       const npcDamage = next.npcs.includes(attacker) ? (attacker.damage ?? 0) : null;
       const targetArmor = (next.actors.includes(target) ? armorOf(target, next.objects) : (target.armor ?? 0)) - statusArmorPenalty(target);
       const roll = attackRoll({ tick: next.tick, attackerId: attacker.id, weaponDamage, npcDamage, targetArmor });

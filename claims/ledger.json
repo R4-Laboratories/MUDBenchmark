@@ -1137,6 +1137,12 @@
       "level": "some-true",
       "statement": "Production v0.91.16 serves 115 rooms, 14 zones, 20 quests, 52 mobiles and 106 objects. The live quest table is the 20-quest spine, the 41 retired definitions are archived, and /llms.txt contains scroll and bread but no ember-door, memory-garden, moon-stag or guild-eclipse rows. The startup migration found no active retired quests in the current production identities; the restart smoke test proved a saved active ember-door receives a completed note, is removed, and clears its migration record. R4 active, signups open. Main Gate 44854697131 green, publish 44855492951.",
       "authority": "GitHub PR #28 merge 512892c 2026-11-21; main Gate 44854697131; publish 44855492951; release v0.91.16; wick deploy output, /world, /llms.txt and journal"
+    },
+    {
+      "id": "MB-185",
+      "level": "build",
+      "statement": "v0.91.17 adds four zone gear drops: ember-gauntlets (hands, armour 2) from the ember warden, fen-mantle (cloak, armour 2) from a bog hound, salt-bracers (hands, armour 2) from a salt wraith and moon-greaves (feet, armour 2) from the moon stag. Wardens rank perks are wardenBonus: scout +1 armour, ranger +1 damage, warden +1 armour and +1 damage; armorOf, the combat damage roll, score and equipment apply them. The world is 115 rooms/14 zones/20 quests/52 mobiles/110 objects. The Gate covers the four loot entries, their slots/armour, and the rank bonuses.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

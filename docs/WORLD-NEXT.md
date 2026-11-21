@@ -4,7 +4,7 @@ This was the queued AberMUD-style content and systems track. The v0.47/v0.48 sli
 have landed: eight equipment slots, six spells and the Mages' Guild, eleven
 Lantern Quarter/Undervault rooms, five personal quests, a guild ledger quest,
 a searchable secret stair, three data-driven room actions and mage rank advancement. The world is now 115 rooms,
-20 quests and 106 objects. The foundation from v0.46 remains:
+20 quests and 110 objects. The foundation from v0.46 remains:
 short command forms, `equipment`, `world`/`status`, the hidden `#state` line,
 and the AI prompt/router state layer.
 
@@ -37,6 +37,7 @@ and the AI prompt/router state layer.
 | M25 | **done** — Player fundamentals: take-all, drink, coins, grouped inventory, 20+5 HP curve, no fleeing, ale at the Gilded Rat and three sellable treasures; 106 objects | shorthand, take-all, drink, coin totals, quest-item sale guard, health curve |
 | M26 | **done** — The Wardens' Lodge: a second guild above the Guild Hall, scout/ranger/warden ranks earned by rooms explored and level, no new quest; 115 rooms / 52 mobiles | reciprocal exits, recruiter, join gate, exploration ranks, both rosters |
 | M27 | **done** — The 20-quest spine: 41 definitions archived, prerequisites remapped, titles consolidated, and active characters migrated with a one-time note; Ember/Fen/Salt/Moon/Garden become exploration zones | count, archive, live prerequisites, migration notes, every prior check |
+| M28 | **done** — Zone gear: ember gauntlets, fen mantle, salt bracers and moon greaves drop from the retired-zone mobiles; Wardens ranks add scout armour, ranger damage, warden both; 110 objects | loot data, equipment slots, rank bonuses, score/equipment, every prior check |
 
 ## Rules that keep the model green
 

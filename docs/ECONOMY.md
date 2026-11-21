@@ -65,6 +65,22 @@ The world now carries sellable treasure that is not tied to a quest:
 They are ordinary takeable objects. Their value is what a shop pays half of;
 their purpose is to make exploration pay without adding another quest.
 
+## Zone gear
+
+The retired-quest zones now pay out through mobiles rather than checklists:
+
+| Mobile | Zone | Drop |
+| --- | --- | --- |
+| the ember warden | Ember Deep | ember-forged gauntlets (hands, armour 2) |
+| a bog hound | Hollow Fen | a fen mantle (cloak, armour 2) |
+| a salt wraith | Salt Caves | salt-crusted bracers (hands, armour 2) |
+| the moon stag | Moonlit Reach | moonlit greaves (feet, armour 2) |
+
+Each also drops its existing trophy. The gear is ordinary takeable loot, can
+be worn or sold at half value, and the two-hour reset returns it to its home
+room. A player who takes the room copy first simply finds no duplicate on the
+mobile.
+
 ## What is not here
 
 No bank, no player-to-player trade window beyond `give`, no weight or
