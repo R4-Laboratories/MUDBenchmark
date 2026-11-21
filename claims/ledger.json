@@ -1221,6 +1221,12 @@
       "level": "some-true",
       "statement": "Production v0.91.23 serves 115 rooms, 14 zones, 20 quests, 55 mobiles and 131 objects with ten shops. The Night Market is the third rank guild (runner/cutpurse/shadow/master) with rank-gated dagger/cloak/blade stock; the Ashen Hand and Red Company are standing factions with quartermaster gear; Backstab, Rage and Drain are live. The isolated socket test showed Night Market rank locks, promotion to cutpurse and the unlocked night cloak. R4 active, signups open. Main Gate 44930998988 green, publish 44931943581.",
       "authority": "GitHub PR #35 merge 29c5b67 2026-11-21; main Gate 44930998988; publish 44931943581; release v0.91.23; wick deploy output, /world and /llms.txt; local Night Market smoke"
+    },
+    {
+      "id": "MB-199",
+      "level": "build",
+      "statement": "v0.91.24 adds the Cold Forge loop. `salvage <item>` destroys held gear and returns max(1, floor(value/20)) + plus components of its set; components are persistent counts on the character. `upgrade <item>` costs 2/20, 4/40, 6/60 components/coins for +1/+2/+3 and raises weapon damage or armour. `components` lists the counts. Set tags on gear give +1 armour at three equipped pieces and +1 damage at four. `world.forge` spans record upgrade/salvage. The world remains 115 rooms/14 zones/20 quests/55 mobiles/131 objects. The Gate covers cost scaling, salvage yield, component persistence, set counting and reducer consumption.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

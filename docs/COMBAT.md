@@ -22,6 +22,13 @@ attacker's id seed every roll, so a replay fights the same fight.
    fell in, wakes at the start at full health, and keeps level, XP, guild and
    quests. The killer gains experience.
 
+## Forged gear
+
+Weapons and armour can be upgraded to +3 at the Cold Forge; each plus adds one
+damage or one armour. Three equipped pieces of a gear set add +1 armour, and a
+fourth adds +1 damage. `equipment` shows both. The full recipes are in
+`docs/FORGE.md`.
+
 ## Weapon techniques
 
 Each weapon family has one active move: Power Strike (sword), Cleave

@@ -23,6 +23,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `channels` | `chan`, `ch` | none |
 | `close` | `shut`, `cl` | object |
 | `coins` | `money`, `purse` | none |
+| `components` | `parts`, `materials` | none |
 | `deliver` | `handin`, `dv` | object to actor |
 | `deposit` | `dep`, `store`, `ds` | object |
 | `drink` | `quaff` | object |
@@ -51,6 +52,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `recall` | `remember`, `mem` | word |
 | `remove` | `doff`, `rm` | object |
 | `report` | `rep` | actor text |
+| `salvage` | `melt`, `scrap` | object |
 | `say` | `sy` | text |
 | `score` | `stats`, `sc` | none |
 | `sell` | `vend`, `se` | object |
@@ -66,6 +68,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `tutorial` | `first`, `firststeps` | none |
 | `unignore` | `unign`, `unmute` | actor |
 | `unwield` | `sheathe`, `uw` | none |
+| `upgrade` | `improve`, `forge` | object |
 | `vault` | `gvault`, `bank`, `gvlt` | none |
 | `wait` | `wa` | none |
 | `wear` | `don`, `wr` | object |

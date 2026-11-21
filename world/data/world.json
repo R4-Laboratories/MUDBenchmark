@@ -4302,7 +4302,8 @@
       "value": 27,
       "examine": "A cloak of dark wool with a red lining. It holds warmth like a banked fire.",
       "faction": "ember",
-      "minStanding": 3
+      "minStanding": 3,
+      "set": "ember"
     },
     {
       "id": "first-coal",
@@ -4329,7 +4330,8 @@
       "examine": "A blade of black iron with a red edge. It hums when the flame moves.",
       "forSale": false,
       "status": "burn",
-      "technique": "power-strike"
+      "technique": "power-strike",
+      "set": "ember"
     },
     {
       "id": "wisp-glass",
@@ -4414,7 +4416,8 @@
       "armor": 2,
       "value": 24,
       "examine": "A cloak of grey-green wool that sheds water.",
-      "forSale": false
+      "forSale": false,
+      "set": "fen"
     },
     {
       "id": "fen-staff",
@@ -4430,7 +4433,8 @@
       "examine": "A staff of black willow with a green glass cap.",
       "forSale": false,
       "status": "chill",
-      "technique": "chill-strike"
+      "technique": "chill-strike",
+      "set": "fen"
     },
     {
       "id": "salt-pearl",
@@ -4481,7 +4485,8 @@
       "armor": 1,
       "value": 22,
       "examine": "A green glass charm on a cord of kelp.",
-      "forSale": false
+      "forSale": false,
+      "set": "salt"
     },
     {
       "id": "salt-shard",
@@ -4507,7 +4512,8 @@
       "armor": 2,
       "value": 28,
       "examine": "A disc of white salt on a chain of black iron.",
-      "forSale": false
+      "forSale": false,
+      "set": "salt"
     },
     {
       "id": "fen-charm",
@@ -4522,7 +4528,8 @@
       "armor": 1,
       "value": 22,
       "examine": "A knot of green reeds around a shard of wisp glass.",
-      "forSale": false
+      "forSale": false,
+      "set": "fen"
     },
     {
       "id": "moonpetal",
@@ -4573,7 +4580,8 @@
       "armor": 1,
       "value": 24,
       "examine": "A crescent of white stone on a silver cord.",
-      "forSale": false
+      "forSale": false,
+      "set": "moon"
     },
     {
       "id": "moonwater",
@@ -4649,7 +4657,8 @@
       "armor": 3,
       "value": 120,
       "examine": "A circlet of white glass that holds a small, steady dawn.",
-      "forSale": false
+      "forSale": false,
+      "set": "eclipse"
     },
     {
       "id": "starwater",
@@ -4689,7 +4698,8 @@
       "armor": 3,
       "value": 90,
       "examine": "A disc of black glass on a chain of pale iron.",
-      "forSale": false
+      "forSale": false,
+      "set": "eclipse"
     },
     {
       "id": "dawn-blade",
@@ -4704,7 +4714,8 @@
       "value": 160,
       "examine": "A long blade of white glass with a line of dawn down its edge.",
       "forSale": false,
-      "technique": "cleave"
+      "technique": "cleave",
+      "set": "eclipse"
     },
     {
       "id": "clerk-seal",
@@ -4877,7 +4888,8 @@
       "slot": "hands",
       "armor": 2,
       "value": 55,
-      "examine": "Black iron gauntlets with a red seam at the knuckles. They hold the heat of the First Flame."
+      "examine": "Black iron gauntlets with a red seam at the knuckles. They hold the heat of the First Flame.",
+      "set": "ember"
     },
     {
       "id": "fen-mantle",
@@ -4891,7 +4903,8 @@
       "slot": "cloak",
       "armor": 2,
       "value": 60,
-      "examine": "A mantle of woven reed and grey wool. It smells of rain and deep water."
+      "examine": "A mantle of woven reed and grey wool. It smells of rain and deep water.",
+      "set": "fen"
     },
     {
       "id": "salt-bracers",
@@ -4905,7 +4918,8 @@
       "slot": "hands",
       "armor": 2,
       "value": 65,
-      "examine": "Bracers of pale leather crusted with salt. They are heavier than they look."
+      "examine": "Bracers of pale leather crusted with salt. They are heavier than they look.",
+      "set": "salt"
     },
     {
       "id": "moon-greaves",
@@ -4919,7 +4933,8 @@
       "slot": "feet",
       "armor": 2,
       "value": 70,
-      "examine": "Greaves of white metal that hold a faint moonlight after the sun goes."
+      "examine": "Greaves of white metal that hold a faint moonlight after the sun goes.",
+      "set": "moon"
     },
     {
       "id": "iron-cuirass",
@@ -4993,7 +5008,8 @@
       "slot": "body",
       "armor": 3,
       "value": 140,
-      "examine": "Black plate with a thin white seam. It is cold even under the eclipse."
+      "examine": "Black plate with a thin white seam. It is cold even under the eclipse.",
+      "set": "eclipse"
     },
     {
       "id": "ember-boots",
@@ -5007,7 +5023,8 @@
       "slot": "feet",
       "armor": 2,
       "value": 50,
-      "examine": "Boots of red-brown leather, hardened in the Ember Deep."
+      "examine": "Boots of red-brown leather, hardened in the Ember Deep.",
+      "set": "ember"
     },
     {
       "id": "fen-hood",
@@ -5021,7 +5038,8 @@
       "slot": "head",
       "armor": 1,
       "value": 35,
-      "examine": "A hood of oiled reed-fibre. Rain beads and runs off it."
+      "examine": "A hood of oiled reed-fibre. Rain beads and runs off it.",
+      "set": "fen"
     },
     {
       "id": "salt-hauberk",
@@ -5035,7 +5053,8 @@
       "slot": "body",
       "armor": 2,
       "value": 60,
-      "examine": "A hauberk of pale rings, crusted white where the brine dried."
+      "examine": "A hauberk of pale rings, crusted white where the brine dried.",
+      "set": "salt"
     },
     {
       "id": "moon-circlet",
@@ -5049,7 +5068,8 @@
       "slot": "head",
       "armor": 2,
       "value": 65,
-      "examine": "A thin circlet set with a cloudy moonstone. It catches light that is not there."
+      "examine": "A thin circlet set with a cloudy moonstone. It catches light that is not there.",
+      "set": "moon"
     },
     {
       "id": "moon-disc",
@@ -5063,7 +5083,8 @@
       "slot": "offhand",
       "armor": 2,
       "value": 70,
-      "examine": "A disc of pale stone on a silver grip, balanced like a shield."
+      "examine": "A disc of pale stone on a silver grip, balanced like a shield.",
+      "set": "moon"
     },
     {
       "id": "ember-forge-blade",
@@ -5081,7 +5102,8 @@
       "faction": "ember",
       "minStanding": 6,
       "examine": "A blade of black iron with a red seam. The forge master will not sell it to a stranger.",
-      "technique": "power-strike"
+      "technique": "power-strike",
+      "set": "ember"
     },
     {
       "id": "fen-warden-cloak",
@@ -5117,7 +5139,8 @@
       "forSale": true,
       "faction": "salt",
       "minStanding": 6,
-      "examine": "A shield of pale salt-iron, crusted white at the rim."
+      "examine": "A shield of pale salt-iron, crusted white at the rim.",
+      "set": "salt"
     },
     {
       "id": "moon-blessed-circlet",
@@ -5135,7 +5158,8 @@
       "forSale": true,
       "faction": "moon",
       "minStanding": 6,
-      "examine": "A silver circlet set with a clear moonstone. It is warm under moonlight."
+      "examine": "A silver circlet set with a clear moonstone. It is warm under moonlight.",
+      "set": "moon"
     },
     {
       "id": "night-cloak",
@@ -5153,7 +5177,8 @@
       "forSale": true,
       "guild": "night-market",
       "minRank": "cutpurse",
-      "examine": "A cloak of matte black cloth with a dozen hidden pockets."
+      "examine": "A cloak of matte black cloth with a dozen hidden pockets.",
+      "set": "night"
     },
     {
       "id": "thief-dagger",
@@ -5171,7 +5196,8 @@
       "guild": "night-market",
       "minRank": "runner",
       "technique": "backstab",
-      "examine": "A narrow blade with a dull finish and a quick balance."
+      "examine": "A narrow blade with a dull finish and a quick balance.",
+      "set": "night"
     },
     {
       "id": "assassin-blade",
@@ -5189,7 +5215,8 @@
       "guild": "night-market",
       "minRank": "shadow",
       "technique": "backstab",
-      "examine": "A black blade with a single silver line down the spine."
+      "examine": "A black blade with a single silver line down the spine.",
+      "set": "night"
     },
     {
       "id": "ashen-robe",
@@ -5207,7 +5234,8 @@
       "forSale": true,
       "faction": "ashen",
       "minStanding": 3,
-      "examine": "Grey cloth woven with a thread that drinks the light."
+      "examine": "Grey cloth woven with a thread that drinks the light.",
+      "set": "ashen"
     },
     {
       "id": "unholy-mace",
@@ -5225,7 +5253,8 @@
       "faction": "ashen",
       "minStanding": 6,
       "technique": "drain",
-      "examine": "A black mace with a cracked symbol on the head. It is warm to the touch."
+      "examine": "A black mace with a cracked symbol on the head. It is warm to the touch.",
+      "set": "ashen"
     },
     {
       "id": "red-axe",
@@ -5243,7 +5272,8 @@
       "faction": "red",
       "minStanding": 3,
       "technique": "rage",
-      "examine": "A heavy axe with a red-painted haft and a chipped edge."
+      "examine": "A heavy axe with a red-painted haft and a chipped edge.",
+      "set": "red"
     },
     {
       "id": "red-boots",
@@ -5261,7 +5291,8 @@
       "forSale": true,
       "faction": "red",
       "minStanding": 6,
-      "examine": "Scuffed leather boots with iron toe-caps."
+      "examine": "Scuffed leather boots with iron toe-caps.",
+      "set": "red"
     }
   ],
   "climate": {

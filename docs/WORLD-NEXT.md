@@ -42,6 +42,7 @@ and the AI prompt/router state layer.
 | M30 | **done** — Faction standing: Ember/Fen/Salt/Moon kills raise persistent standing; the `standing` command, four quartermaster shops and five gated gear pieces (ember cloak/blade, fen cloak, salt shield, moon circlet); 124 objects | award/persist, rank thresholds, shop locks, `world.standing`, every prior check |
 | M31 | **done** — Weapon techniques: Power Strike (sword), Cleave (greatsword), Bash (club/hammer) and Chill Strike (fen staff), with tick cooldowns, setup effects and `world.technique` spans; no new quests | weapon data, cooldowns, reducer setup, stun/status, every prior check |
 | M32 | **done** — Outlaw paths: Night Market guild (runner/cutpurse/shadow/master), Ashen Hand and Red Company standing, Backstab/Rage/Drain techniques, daggers/axe/unholy mace and quartermaster gear; 131 objects / 55 mobiles | guild seed/advance, rank perks, faction standing, shop locks, new techniques, every prior check |
+| M33 | **done** — The forge: salvage into set components, +1..+3 upgrades with coins, 3/4-piece set bonuses, `components`/`upgrade`/`salvage` commands and `world.forge` spans; 131 objects | cost scaling, salvage yield, persistence, set counting, every prior check |
 
 ## Rules that keep the model green
 

@@ -366,6 +366,49 @@
         "refused": "There is no fleeing combat. A fight ends only with a death."
       }
     },
+    "upgrade": {
+      "aliases": [
+        "improve",
+        "forge"
+      ],
+      "argument": "object",
+      "messages": {
+        "noForge": "The forge master works at the Cold Forge.",
+        "missing": "You are not carrying a %s.",
+        "notGear": "The forge only works on weapons and armour.",
+        "quest": "The forge will not touch %o; it is tied to a quest.",
+        "max": "%o is already at its highest upgrade.",
+        "components": "You need more forge components.",
+        "poor": "You cannot afford the %o coin upgrade.",
+        "done": "You upgrade %o to +%s."
+      }
+    },
+    "salvage": {
+      "aliases": [
+        "melt",
+        "scrap"
+      ],
+      "argument": "object",
+      "messages": {
+        "noForge": "The forge master works at the Cold Forge.",
+        "missing": "You are not carrying a %s.",
+        "notGear": "The forge only breaks down weapons and armour.",
+        "worn": "Remove or unwield %o first.",
+        "quest": "The forge will not break down %o; it is tied to a quest.",
+        "coin": "The forge does not melt money.",
+        "done": "You salvage %o into %s."
+      }
+    },
+    "components": {
+      "aliases": [
+        "parts",
+        "materials"
+      ],
+      "argument": "none",
+      "messages": {
+        "list": "%s"
+      }
+    },
     "standing": {
       "aliases": [
         "reputation",

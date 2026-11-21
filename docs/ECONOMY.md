@@ -126,6 +126,14 @@ The second gear pass fills the thinner slots:
 
 The world now has 120 objects. Body and offhand are no longer one-item slots.
 
+## The forge
+
+The Cold Forge (room 63) is the material sink. `salvage <item>` breaks a spare
+gear piece into its set component; `upgrade <item>` spends components and
+coins to raise a weapon or armour piece to **+3**. `components` shows the
+counts. Three matching set pieces give +1 armour and four give +1 damage.
+`docs/FORGE.md` records the recipes and salvage yield.
+
 ## What is not here
 
 No bank, no player-to-player trade window beyond `give`, no weight or

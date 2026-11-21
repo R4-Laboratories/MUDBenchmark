@@ -13,7 +13,7 @@ import { advance, due as pulseDue, makePulse } from "./generated/Pulses.mjs";
 import { levelForXp, nextLevelXp } from "./levels.mjs";
 import { applyQuestEvent, emptyProgress, normalizeQuestState, questById, questMet } from "./quests.mjs";
 import { GUILD_HALL, GUILD_VAULT_CAPACITY, RANKS, guildId, guildLevelFor, guildVaultHolder, isGuildVaultHolder, rankAtLeast, removeMember, successor, validGuildName, perksFor, guildBonus } from "./guilds.mjs";
-import { armorOf, slotOf, weaponOf } from "./equipment.mjs";
+import { armorOf, setBonus, slotOf, weaponDamageOf, weaponOf } from "./equipment.mjs";
 import { maxManaFor, spellById, spellPower } from "./magic.mjs";
 import { FACTIONS } from "./factions.mjs";
 import { TECHNIQUES, techniqueForWeapon, techniqueReady } from "./techniques.mjs";
@@ -141,7 +141,7 @@ function tickStatuses(next, events) {
 }
 
 function applySpell(state, actor, spell, target, events) {
-  const focus = weaponOf(actor, state.objects)?.damage ?? 0;
+  const focus = weaponDamageOf(weaponOf(actor, state.objects));
   const power = spellPower(actor, focus);
   if (spell.effect === "damage" && target) {
     const damage = 1 + nextFrom(state.tick * 7 + actor.room, spell.damage ?? 4) + power;
@@ -409,6 +409,7 @@ export function upgradeState(saved, base) {
       guild: guilds[identity.guild] ? identity.guild : null,
       guildRank: guilds[identity.guild]?.members?.[name] ?? null,
       standing: { ...(identity.standing ?? {}) },
+      components: { ...(identity.components ?? {}) },
       quests: identity.quests ?? { active: [], completed: [] },
     };
   };
@@ -533,6 +534,7 @@ export function checkpointIdentities(state) {
       guild: actor.guild ?? null,
       guildRank: actor.guildRank ?? null,
       standing: { ...(actor.standing ?? {}) },
+      components: { ...(actor.components ?? {}) },
       quests: actor.quests ?? { active: [], completed: [] },
       ignored: [...(actor.ignored ?? [])],
       title: actor.title ?? null,
@@ -688,6 +690,7 @@ export function step({ state, rooms, intents, actions = [] }) {
           guild: null,
           guildRank: null,
           standing: {},
+          components: {},
           quests: { active: [], completed: [] },
           wielding: null,
           mana: 5, maxMana: 5, spellbook: [], armorBonus: 0, buffUntil: null, questCycles: {},
@@ -759,6 +762,7 @@ export function step({ state, rooms, intents, actions = [] }) {
       actor.guild = null;
       actor.guildRank = null;
       actor.standing = {};
+      actor.components = {};
       actor.quests = { active: [], completed: [] };
       actor.maxHp = BASE_HP;
       actor.hp = BASE_HP;
@@ -1226,6 +1230,7 @@ export function step({ state, rooms, intents, actions = [] }) {
       actor.guild = next.guilds[known.guild] ? known.guild : null;
       actor.guildRank = actor.guild ? (next.guilds[actor.guild].members[actor.key] ?? null) : null;
       actor.standing = { ...(known.standing ?? {}) };
+      actor.components = { ...(known.components ?? {}) };
       actor.quests = {
         active: [...(known.quests?.active ?? [])],
         completed: [...(known.quests?.completed ?? [])],
@@ -1425,6 +1430,7 @@ export function step({ state, rooms, intents, actions = [] }) {
           guild: actor.guild ?? null,
           guildRank: actor.guildRank ?? null,
           standing: { ...(actor.standing ?? {}) },
+          components: { ...(actor.components ?? {}) },
           quests: actor.quests ?? { active: [], completed: [] },
         };
       }
@@ -1788,6 +1794,44 @@ export function step({ state, rooms, intents, actions = [] }) {
       continue;
     }
 
+    if (intent.kind === "upgrade") {
+      const object = next.objects.find((o) => o.id === intent.objectId);
+      if (!object || object.holder !== actor.id || object.eaten) continue;
+      const plus = object.plus ?? 0;
+      if (plus >= 3) continue;
+      const component = intent.component;
+      const have = actor.components?.[component] ?? 0;
+      if (!component || have < intent.count) continue;
+      const coins = (intent.coinIds ?? [])
+        .map((coinId) => next.objects.find((o) => o.id === coinId))
+        .filter((coin) => coin && coin.holder === actor.id && (coin.flags ?? []).includes("coin"));
+      const paid = coins.reduce((sum, coin) => sum + coin.value, 0);
+      if (paid < intent.coins) continue;
+      for (const coin of coins) {
+        coin.holder = null;
+        coin.room = actor.room;
+      }
+      actor.components = { ...(actor.components ?? {}), [component]: have - intent.count };
+      if (actor.components[component] <= 0) delete actor.components[component];
+      object.plus = plus + 1;
+      events.push({ onlyId: actor.id, text: `You upgrade ${object.name} to +${object.plus}.\r\n` });
+      continue;
+    }
+
+    if (intent.kind === "salvage") {
+      const object = next.objects.find((o) => o.id === intent.objectId);
+      if (!object || object.holder !== actor.id || object.eaten) continue;
+      if (object.worn || actor.wielding === object.id) continue;
+      if ((object.flags ?? []).includes("coin")) continue;
+      object.eaten = true;
+      object.holder = null;
+      object.room = null;
+      object.inside = null;
+      actor.components = { ...(actor.components ?? {}), [intent.component]: (actor.components?.[intent.component] ?? 0) + intent.amount };
+      events.push({ onlyId: actor.id, text: `You salvage ${object.name} into ${intent.amount} ${intent.component}.\r\n` });
+      continue;
+    }
+
     if (intent.kind === "sell") {
       const object = next.objects.find((o) => o.id === intent.objectId);
       if (!object || object.holder !== actor.id || object.eaten) continue;
@@ -1992,7 +2036,7 @@ export function step({ state, rooms, intents, actions = [] }) {
       const techniqueBonus = next.actors.includes(attacker) ? (attacker.nextAttackBonus ?? 0) : 0;
       const techniqueStatus = next.actors.includes(attacker) ? (attacker.nextAttackStatus ?? null) : null;
       const techniqueDrain = next.actors.includes(attacker) ? Boolean(attacker.nextAttackDrain) : false;
-      const weaponDamage = (weapon?.damage ?? 0) + rank.damage + techniqueBonus;
+      const weaponDamage = weaponDamageOf(weapon) + rank.damage + setBonus(attacker, next.objects).damage + techniqueBonus;
       const npcDamage = next.npcs.includes(attacker) ? (attacker.damage ?? 0) : null;
       const guard = next.actors.includes(target) && (target.guardUntil ?? -1) > next.tick ? (target.guardArmor ?? 0) : 0;
       const targetArmor = (next.actors.includes(target) ? armorOf(target, next.objects) : (target.armor ?? 0)) - statusArmorPenalty(target) + guard;
