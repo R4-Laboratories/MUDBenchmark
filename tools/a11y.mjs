@@ -201,6 +201,68 @@ try {
   report.reducedMotion = reduced;
   if (reduced.feed !== "auto") failures.push(`/watch: reduced motion did not stop smooth feed scrolling (${reduced.feed})`);
 
+  await send("Emulation.setDeviceMetricsOverride", { width: 390, height: 844, deviceScaleFactor: 2, mobile: true });
+  const mobile = {};
+  for (const path of ["/", "/watch", "/stats"]) {
+    await send("Page.navigate", { url: `http://127.0.0.1:${webPort}${path}` });
+    await wait(900);
+    const data = await evaluate(`(() => {
+      const visible = (el) => !el.hidden && el.offsetParent !== null && getComputedStyle(el).visibility !== "hidden" && getComputedStyle(el).display !== "none";
+      let menu = null;
+      if (location.pathname === "/") {
+        const toggle = document.querySelector("#mobile-nav-toggle");
+        if (toggle) {
+          toggle.click();
+          const nav = document.querySelector("#mobile-nav");
+          menu = {
+            toggleVisible: toggle.offsetParent !== null,
+            expanded: toggle.getAttribute("aria-expanded"),
+            hidden: nav.hidden,
+            stats: nav.querySelector('a[href="/stats"]')?.textContent ?? "",
+          };
+          toggle.click();
+        }
+      }
+      const controls = [...document.querySelectorAll("button,input,select,textarea")].filter(visible).map((el) => {
+        const r = el.getBoundingClientRect();
+        return { tag: el.tagName, id: el.id, text: (el.getAttribute("aria-label") || el.textContent || el.placeholder || "").trim().slice(0, 40), w: Math.round(r.width), h: Math.round(r.height) };
+      });
+      const links = [...document.querySelectorAll("header a, .hero-actions a, #mobile-nav a, .dir-cta")].filter(visible).map((el) => {
+        const r = el.getBoundingClientRect();
+        return { text: el.textContent.trim().slice(0, 40), href: el.getAttribute("href"), w: Math.round(r.width), h: Math.round(r.height) };
+      });
+      const state = document.querySelector("#state") ? {
+        text: document.querySelector("#state").textContent.trim(),
+        width: Math.round(document.querySelector("#state").getBoundingClientRect().width),
+        fontSize: getComputedStyle(document.querySelector("#state")).fontSize,
+      } : null;
+      const latest = document.querySelector("#latest") ? visible(document.querySelector("#latest")) : false;
+      return {
+        path: location.pathname,
+        overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+        scrollWidth: document.documentElement.scrollWidth,
+        clientWidth: document.documentElement.clientWidth,
+        controls,
+        links,
+        state,
+        latest,
+        menu,
+      };
+    })()`);
+    mobile[path] = data;
+    if (data.overflow) failures.push(`${path}: mobile horizontal overflow (${data.scrollWidth} > ${data.clientWidth})`);
+    const smallControls = data.controls.filter((control) => control.w < 24 || control.h < 24);
+    if (smallControls.length) failures.push(`${path}: touch targets under 24px ${smallControls.map((control) => `${control.id || control.tag}:${control.w}x${control.h}`).join(",")}`);
+    const smallLinks = data.links.filter((link) => link.h < 24);
+    if (smallLinks.length) failures.push(`${path}: navigation links under 24px high ${smallLinks.map((link) => `${link.text}:${link.h}`).join(",")}`);
+    if (path === "/") {
+      if (!data.menu?.toggleVisible || data.menu.expanded !== "true" || data.menu.hidden || !data.menu.stats.includes("Stats")) failures.push(`/: mobile menu failed ${JSON.stringify(data.menu)}`);
+      if (!data.state?.text || data.state.fontSize === "0px") failures.push(`/: connection state is not visible (${JSON.stringify(data.state)})`);
+      if (data.latest) failures.push("/: Latest button is visible over the guest hero");
+    }
+  }
+  report.mobile = mobile;
+
   console.log(JSON.stringify(report, null, 2));
   if (failures.length) {
     console.error("\nA11Y FAILURES:", failures.join(" | "));

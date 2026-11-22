@@ -34,7 +34,12 @@
     .card{border:1px solid var(--line);border-radius:8px;background:var(--surface);padding:9px 10px;color:var(--faint);font-size:10px;letter-spacing:.06em;text-transform:uppercase}
     .card b{display:block;color:var(--text);font-size:16px;font-weight:600;letter-spacing:0;text-transform:none;margin-top:2px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
     .split{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-    @media(max-width:800px){.split{grid-template-columns:1fr}}
+    @media(max-width:800px){
+      .split{grid-template-columns:1fr}
+      header a{min-height:36px;display:inline-flex;align-items:center;padding:0 2px}
+      .pulse-range button{min-height:40px;padding:0 12px}
+      .panel{overflow-x:auto}
+    }
     table{width:100%;border-collapse:collapse;font-size:12px}
     th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
     th{color:var(--faint);font-size:10px;letter-spacing:.08em;text-transform:uppercase}

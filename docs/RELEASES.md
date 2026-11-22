@@ -397,6 +397,11 @@ Rehearsed 2026-11-16:
   showed dawn winning 30/41 (73.2%); the candidate sample is 25/40 (62.5%, CI
   47.0–75.8) and the confirmation is 37/60 (61.7%, CI 49.0–72.9), with the
   hit/damage curve unchanged (MB-222/223/225);
+- v0.91.35 (mobile accessibility) adds a labelled header menu for Stats, Watch,
+  Telemetry and font controls on phones, shows the connection state as text,
+  hides the guest Latest overlay and raises primary touch targets to 44px; the
+  browser audit now also runs a 390x844 phone pass for overflow, 24px targets,
+  menu behavior, visible status and guest layout (MB-226/227);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

@@ -9,8 +9,9 @@ small, explicit accessibility contract:
   near-instant change;
 - the game log is a labelled `role="log"` with a live announcer for status;
 - the Character sheet is keyboard-reachable through the same Studio tabs;
-- mobile layouts wrap the stream tools, collapse the header status and keep the
-  command entry usable.
+- mobile layouts keep Stats, Watch, Telemetry and the font controls in a
+  labelled header menu, show the connection state as text rather than a
+  colour-only dot, and keep primary touch targets at least 44px high.
 
 ## What the Gate checks
 
@@ -26,7 +27,11 @@ The CI Gate also runs `node tools/a11y.mjs`, a browser audit that checks `/`,
 - watch tabs expose `aria-controls`, `aria-selected` and arrow-key navigation;
 - tables, charts and the HP sparkline have accessible names;
 - the core palette meets WCAG AA (the audit reports the exact ratios);
-- `prefers-reduced-motion: reduce` turns off smooth feed scrolling.
+- `prefers-reduced-motion: reduce` turns off smooth feed scrolling;
+- at a 390x844 phone viewport, no page scrolls horizontally, visible controls
+  and header/hero/menu links are at least 24px, the mobile menu opens with
+  `aria-expanded` and contains Stats, the `#state` text is visible, and a guest
+  does not see the Latest overlay.
 
 ## Audit results (v0.91.32)
 
@@ -39,9 +44,24 @@ The CI Gate also runs `node tools/a11y.mjs`, a browser audit that checks `/`,
 - Reduced motion: watch feed scroll behavior is `auto`; live dot animation is
   disabled.
 
+## Audit results (v0.91.35)
+
+- The desktop audit remains green on `/`, `/watch` and `/stats`.
+- Mobile 390x844: no horizontal overflow on any of the three pages; visible
+  controls and navigation links meet the 24px minimum; the game header menu
+  opens, exposes Stats/Watch, moves focus into the panel, and Escape returns
+  focus to the toggle.
+- The mobile connection state shows `connecting…`, `connected` or the error as
+  text; the colour-only dot is gone.
+- A guest no longer sees the Latest jump button over the landing hero.
+- The mobile Telemetry item mirrors the desktop gate: it is marked unavailable
+  until an AI run is active and explains that in the status line.
+- A focused browser run exercises the menu, font controls, Telemetry gate,
+  Escape handling and desktop restoration (`mobile interaction: ok`).
+
 ## Still open
 
 The audit uses Chrome's accessibility tree, not a spoken screen reader. A human
-VoiceOver/NVDA pass, a mobile touch-target review and a contrast check of any
-future theme remain manual work. The browser audit is a regression check, not a
-certification.
+VoiceOver/NVDA pass and a final hands-on phone review remain manual work, as
+does a contrast check of any future theme. The browser audit is a regression
+check, not a certification.
