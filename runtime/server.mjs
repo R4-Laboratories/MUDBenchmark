@@ -40,7 +40,7 @@ import { chatAllowed, reportAllowed, reportRecord } from "./moderation.mjs";
 import { verifyPrismSession, verifyPersonaOwner, verifyPrismAction, verifySessionKey, prismDisplay } from "./prism-auth.mjs";
 import { CREDENTIAL, identityAdmits } from "./identity.mjs";
 import { normalizePrismId, ownerAllowed, rebindPlan } from "./rebind.mjs";
-import { normalizeStreamEvent, publicStreamText } from "./stream.mjs";
+import { MAX_STREAM_DELAY, PVP_STREAM_DELAY, normalizeStreamEvent, publicStreamText, streamDelay } from "./stream.mjs";
 import { normalizeAiTurn, aiTurnAttributes } from "./metrics.mjs";
 import { worldOverview, worldStatus, worldStatusText } from "./worldstatus.mjs";
 import { levelsText, leaderboardText, leaderboardRows, duelLadderText, mapText, shortcutsText } from "./visibility.mjs";
@@ -176,6 +176,7 @@ const transports = new Map(); // id -> { send, close, welcomed }
 const spectators = new Set(); // public /watch sockets
 let live = null; // { actorId, name, account, room, tick, startedAt, status, events }
 let lastLive = null; // last completed stream: name, room, endedAt, peakViewers, highlights
+const recentRuns = []; // completed public runs, newest first
 let nextViewer = 1;
 const pending = [];
 const accountSessions = new Map(); // id -> { key, kind: "prism" | "legacy" }
@@ -438,6 +439,11 @@ function publicLive() {
     peakViewers: live.peakViewers ?? spectators.size,
     chat: live.chat !== false,
     poll: live.poll ? publicPoll(live.poll) : null,
+    delay: liveDelay(live),
+    pending: live.pending.length,
+    meta: live.meta,
+    state: live.state,
+    stats: live.stats,
     events: live.events.slice(-80),
   };
 }
@@ -450,16 +456,24 @@ function publicPoll(poll) {
   };
 }
 
-function publicLast() {
-  if (!lastLive) return null;
+function publicRun(run) {
+  if (!run) return null;
   return {
-    name: lastLive.name,
-    room: lastLive.room,
-    startedAt: lastLive.startedAt,
-    endedAt: lastLive.endedAt,
-    peakViewers: lastLive.peakViewers ?? 0,
-    highlights: lastLive.highlights.slice(-8),
+    name: run.name,
+    room: run.room,
+    startedAt: run.startedAt,
+    endedAt: run.endedAt,
+    peakViewers: run.peakViewers ?? 0,
+    delay: run.delay ?? 0,
+    meta: run.meta ?? null,
+    stats: run.stats ?? null,
+    highlights: (run.highlights ?? []).slice(-8),
+    eventCount: run.eventCount ?? 0,
   };
+}
+
+function publicLast() {
+  return publicRun(lastLive);
 }
 
 function broadcastStream(payload) {
@@ -471,6 +485,23 @@ function broadcastStream(payload) {
 
 function broadcastViewers() {
   broadcastStream({ type: "viewers", viewers: spectators.size });
+}
+
+function pvpActive(actorId) {
+  const actor = actorById(actorId);
+  if (!actor) return false;
+  for (const engagement of state.engagements ?? []) {
+    if (engagement.attackerId !== actor.id && engagement.targetId !== actor.id) continue;
+    const otherId = engagement.attackerId === actor.id ? engagement.targetId : engagement.attackerId;
+    const other = state.actors.find((candidate) => candidate.id === otherId);
+    if (other?.key) return true;
+  }
+  return false;
+}
+
+function liveDelay(stream = live) {
+  if (!stream) return 0;
+  return streamDelay(stream.delay, pvpActive(stream.actorId));
 }
 
 function startLive(id) {
@@ -488,6 +519,13 @@ function startLive(id) {
     status: "live",
     chat: true,
     poll: null,
+    delay: 0,
+    announcedDelay: 0,
+    pending: [],
+    meta: null,
+    state: null,
+    stats: null,
+    eventCount: 0,
     events: [],
   };
   broadcastStream({ type: "live", live: publicLive() });
@@ -497,17 +535,71 @@ function startLive(id) {
 function stopLive(id = null) {
   if (!live) return false;
   if (id != null && live.actorId !== id) return false;
-  lastLive = {
+  const ended = {
     name: live.name,
     room: live.room,
     startedAt: live.startedAt,
     endedAt: new Date().toISOString(),
     peakViewers: live.peakViewers ?? spectators.size,
+    delay: liveDelay(live),
+    meta: live.meta,
+    stats: live.stats,
     highlights: live.events.filter((event) => event.kind === "highlight").slice(-20),
+    eventCount: live.eventCount,
   };
+  lastLive = ended;
+  recentRuns.unshift(ended);
+  if (recentRuns.length > 8) recentRuns.length = 8;
   live = null;
   broadcastStream({ type: "off", last: publicLast() });
   return true;
+}
+
+function releaseLiveEvent(event) {
+  if (!live) return;
+  if (event.kind === "room") live.room = event.text;
+  if (event.tick != null) live.tick = event.tick;
+  if (event.kind === "status") live.status = event.text;
+  if (event.kind === "meta") {
+    live.meta = {
+      provider: event.provider ?? null,
+      model: event.model ?? null,
+      goal: event.goal ?? null,
+      character: event.character ?? null,
+    };
+  }
+  if (event.kind === "state") live.state = event;
+  if (event.kind === "stats") live.stats = event;
+  live.events.push(event);
+  if (live.events.length > 120) live.events.splice(0, live.events.length - 120);
+  live.eventCount += 1;
+  broadcastStream({
+    type: "event",
+    event,
+    name: live.name,
+    room: live.room,
+    tick: live.tick,
+    status: live.status,
+    viewers: spectators.size,
+  });
+}
+
+function flushLiveQueue() {
+  if (!live) return;
+  const delay = liveDelay(live);
+  if (delay !== live.announcedDelay) {
+    live.announcedDelay = delay;
+    broadcastStream({ type: "delay", delay, pending: live.pending.length });
+  }
+  if (!live.pending.length) return;
+  const now = Date.now();
+  const due = [];
+  live.pending = live.pending.filter((item) => {
+    if (item.releaseAt <= now) { due.push(item.event); return false; }
+    return true;
+  });
+  for (const event of due) releaseLiveEvent(event);
+  if (due.length) broadcastStream({ type: "delay", delay, pending: live.pending.length });
 }
 
 function publishLive(id, event) {
@@ -517,22 +609,16 @@ function publishLive(id, event) {
     if (!publicText) return false;
     event = { ...event, text: publicText };
   }
-  if (!event.text && event.kind !== "status") return false;
-  if (event.kind === "room") live.room = event.text;
-  if (event.tick != null) live.tick = event.tick;
-  if (event.kind === "status") live.status = event.text;
+  if (!event.text && !["status", "meta", "state", "stats"].includes(event.kind)) return false;
   const published = { ...event, at: new Date().toISOString() };
-  live.events.push(published);
-  if (live.events.length > 120) live.events.splice(0, live.events.length - 120);
-  broadcastStream({
-    type: "event",
-    event: published,
-    name: live.name,
-    room: live.room,
-    tick: live.tick,
-    status: live.status,
-    viewers: spectators.size,
-  });
+  const delay = liveDelay(live);
+  if (delay > 0) {
+    live.pending.push({ event: published, releaseAt: Date.now() + delay * 1000 });
+    if (live.pending.length > 500) live.pending.splice(0, live.pending.length - 500);
+    broadcastStream({ type: "delay", delay, pending: live.pending.length });
+    return true;
+  }
+  releaseLiveEvent(published);
   return true;
 }
 
@@ -952,6 +1038,18 @@ async function handleCommand(id, line) {
       if (!startLive(id)) return sendTo(id, "The stream could not start.\r\n");
       sendTo(id, "#stream-state on\r\n");
       return sendTo(id, "Public stream on: /watch\r\n");
+    }
+    if (action === "delay") {
+      if (!live || live.actorId !== id) return sendTo(id, "This run is not live.\r\n");
+      const seconds = Number(rest[1]);
+      if (!Number.isFinite(seconds) || seconds < 0 || seconds > MAX_STREAM_DELAY) {
+        return sendTo(id, `Usage: stream delay <0-${MAX_STREAM_DELAY}> (seconds).\r\n`);
+      }
+      live.delay = Math.round(seconds);
+      live.announcedDelay = liveDelay(live);
+      broadcastStream({ type: "delay", delay: live.announcedDelay, pending: live.pending.length });
+      const pvp = pvpActive(live.actorId) ? ` PvP minimum is ${PVP_STREAM_DELAY}s.` : "";
+      return sendTo(id, `Stream delay ${live.delay}s.${pvp}\r\n`);
     }
     if (action === "off") {
       if (stopLive(id)) {
@@ -3105,6 +3203,7 @@ function onTick() {
 }
 
 setInterval(onTick, TICK_MS);
+setInterval(flushLiveQueue, 500);
 
 // --- transports ----------------------------------------------------------
 
@@ -3436,8 +3535,14 @@ const web = http.createServer(async (req, res) => {
         viewers: current.viewers,
         chat: current.chat,
         poll: current.poll,
+        delay: current.delay,
+        pending: current.pending,
+        meta: current.meta,
+        state: current.state,
+        stats: current.stats,
       } : null,
       last: publicLast(),
+      recent: recentRuns.map(publicRun),
       viewers: spectators.size,
       tick: state.tick,
       rooms: Object.keys(ROOMS).length,

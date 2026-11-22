@@ -376,6 +376,11 @@ Rehearsed 2026-11-16:
   a collapsed custom-provider drawer; and a header agent chip that keeps an
   agent running across Play/AI view switches with separate human and agent
   scrollbacks (MB-211);
+- v0.91.31 (watch surface) adds the live/recent agent directory, structured
+  decision cards, a Run stats tab with HP/mana/XP, level, room, quest, turn,
+  commands, latency and tokens, an eight-run archive, and a server-enforced
+  PvP stream delay (60s minimum) with a streamer-selectable 0/30/60/120s delay
+  (MB-213);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

@@ -443,6 +443,8 @@
   }
   #stream-tools button { height: 26px; padding: 0 8px; font-size: 10.5px; background: transparent; color: var(--muted); }
   #stream-tools button:hover { color: var(--text); }
+  #stream-delay { height: 26px; padding: 0 4px; border: 1px solid var(--line); border-radius: 4px; background: transparent; color: var(--muted); font: 10.5px/1 var(--font-ui); }
+  #stream-delay:disabled { opacity: .45; }
   #stream-tools .spacer { flex: 1; }
   #stream-tools a { color: var(--link); font-size: 10.5px; text-decoration: none; white-space: nowrap; }
   #ai-stream { color: var(--accent) !important; border-color: rgba(94,234,212,.3) !important; }
@@ -712,6 +714,12 @@
         </div>
         <div id="stream-tools">
           <button type="button" id="ai-stream">Go live</button>
+          <select id="stream-delay" title="Public stream delay" aria-label="Public stream delay" disabled>
+            <option value="0">No delay</option>
+            <option value="30">30s delay</option>
+            <option value="60">60s delay</option>
+            <option value="120">120s delay</option>
+          </select>
           <button type="button" id="stream-poll">Start poll</button>
           <button type="button" id="stream-poll-close">Close poll</button>
           <button type="button" id="stream-chat-toggle">Chat off</button>
@@ -1157,6 +1165,7 @@
   const streamPoll = document.getElementById("stream-poll");
   const streamPollClose = document.getElementById("stream-poll-close");
   const streamChatToggle = document.getElementById("stream-chat-toggle");
+  const streamDelay = document.getElementById("stream-delay");
   const aiStop = document.getElementById("ai-stop");
   const aiTitle = document.getElementById("ai-title");
   const aiSub = document.getElementById("ai-sub");
@@ -2861,15 +2870,47 @@
   }
 
   function setStreaming(next) {
+    if (AI.streaming === next) return;
     AI.streaming = next;
     aiStream.textContent = next ? "Stop stream" : "Go live";
     aiStream.classList.toggle("live", next);
+    if (streamDelay) streamDelay.disabled = !next;
     if (!next && streamChatToggle) streamChatToggle.textContent = "Chat off";
+    if (next) {
+      publishStream({
+        kind: "meta",
+        provider: AI.config?.provider,
+        model: AI.config?.model,
+        goal: GOALS[AI.config?.goal]?.label ?? "Explorer",
+        character: AI.name || AI.character || null,
+        tick: AI.lastTick,
+      });
+    }
   }
 
   function publishStream(event) {
     if (!AI.streaming || AI.socket?.readyState !== WebSocket.OPEN) return;
     AI.socket.send(`stream event ${JSON.stringify(event)}\n`);
+  }
+
+  function publishState() {
+    const self = AI.state?.self;
+    if (!self) return;
+    publishStream({
+      kind: "state",
+      hp: self.hp ?? null,
+      maxHp: self.max_hp ?? null,
+      mana: self.mana ?? null,
+      maxMana: self.max_mana ?? null,
+      level: self.level ?? null,
+      xp: self.xp ?? null,
+      nextXp: self.next_xp ?? null,
+      room: AI.state?.room?.name ?? AI.room ?? null,
+      zone: AI.state?.room?.zone ?? null,
+      quest: self.active_quests?.[0]?.name ?? null,
+      tick: AI.lastTick,
+      turn: AI.turn,
+    });
   }
 
   function sendMetric(fields) {
@@ -3400,7 +3441,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       }
       const stateLine = text.match(/^#state (.*)\r?\n?$/);
       if (stateLine) {
-        try { AI.state = JSON.parse(stateLine[1]); renderSheet(); } catch {}
+        try { AI.state = JSON.parse(stateLine[1]); renderSheet(); publishState(); } catch {}
         return;
       }
       const tickLine = text.match(/^#tick (\d+)\r?\n?$/);
@@ -3735,6 +3776,28 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       AI.commands += 1;
       addLine(`> ${parsed.command}`, "ai-cmd");
       if (AI.streaming) {
+        publishStream({
+          kind: "decision",
+          text: parsed.thought || `Chose ${parsed.command}.`,
+          command: parsed.command,
+          room: AI.room || AI.state?.room?.name || null,
+          turn,
+          tick: AI.lastTick,
+        });
+        publishStream({
+          kind: "stats",
+          turn,
+          commands: AI.commands,
+          latencyMs: latency,
+          tokensIn: AI.usage.prompt,
+          tokensOut: AI.usage.completion,
+          provider: AI.config.provider,
+          model: AI.config.model,
+          timeouts: AI.timeouts,
+          invalid: AI.lastValidation?.invalid ? 1 : 0,
+          loops: AI.loopBroken ? 1 : 0,
+          tick: AI.lastTick,
+        });
         publishStream({ kind: "command", text: parsed.command, turn, tick: AI.lastTick });
         publishStream({ kind: "status", text: "live", tick: AI.lastTick });
       }
@@ -3803,6 +3866,11 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       AI.socket?.send("stream on\n");
       addChat("system", "Opening the public stream at /watch.");
     }
+  });
+  streamDelay.addEventListener("change", () => {
+    if (!AI.streaming) return;
+    AI.socket?.send(`stream delay ${streamDelay.value}\n`);
+    addChat("system", `Stream delay ${streamDelay.value}s. PvP raises it to 60s automatically.`);
   });
   streamPoll.addEventListener("click", () => {
     if (!AI.streaming) { addChat("system", "Go live first."); return; }
