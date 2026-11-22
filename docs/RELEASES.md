@@ -402,6 +402,12 @@ Rehearsed 2026-11-16:
   hides the guest Latest overlay and raises primary touch targets to 44px; the
   browser audit now also runs a 390x844 phone pass for overflow, 24px targets,
   menu behavior, visible status and guest layout (MB-226/227);
+- v0.91.36 (second PvP balance adjustment) raises the ember brand damage 7 → 8
+  after a paired live sample on 7 fixed ticks × both login orders × both
+  orientations: current dawn 16/28 (57.1%), candidate 14/28 (50.0%), two flips
+  to ember and none back; ember's finishing margin improved in 22/28 pairs and
+  never worsened (mean 5.14 HP, 95% CI 2.86–7.42), matching the fixed-damage
+  model's 50.0% prediction (MB-230/231);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

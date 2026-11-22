@@ -4385,7 +4385,7 @@
         "weapon"
       ],
       "slot": "mainhand",
-      "damage": 7,
+      "damage": 8,
       "value": 35,
       "examine": "A blade of black iron with a red edge. It hums when the flame moves.",
       "forSale": false,
