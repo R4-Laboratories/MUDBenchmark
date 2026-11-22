@@ -234,7 +234,7 @@ swapped orientation dawn is pvp-b.
   intervals include 50%; watch-list only.
 - No one-shot: the winner retained 17–34% of max HP on average.
 
-### Candidate v0.91.34 adjustment
+### Candidate v0.91.34 adjustment and confirmation
 
 The first data-driven PvP change is a small Red Company buff: **ember brand
 damage 6 → 7** and **Red Company helm armour 2 → 3**. The ember sample kit now
@@ -244,10 +244,12 @@ uses the Red Company helm instead of the generic iron helmet.
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Baseline | 41 | 978 | 426 | 43.56% | 9.76 | 11.93 | 30 (73.2%, 58.1–84.3) | 18.9 / 65 |
 | Candidate | 40 | 926 | 409 | **44.17%** | **10.21** | **11.57** | **25 (62.5%, 47.0–75.8)** | 17.4 / 65 |
+| Confirmed | 60 | 1,422 | 623 | **43.81%** | **10.11** | **11.85** | **37 (61.7%, 49.0–72.9)** | 16.7 / 65 |
 
-The candidate is not an overcorrection: the point estimate moves from 73.2% to
-62.5%, the confidence interval now includes 50%, and the hit/damage curve is
-unchanged. It remains a watch item until a larger independent or human sample.
+The confirmation adds 20 matches (original 17/30, swapped 20/30). The point
+estimate stays at 61.7%, the confidence interval includes 50%, and the
+hit/damage curve is unchanged. The adjustment is kept; no further value
+changed. It remains a watch item until a larger independent or human sample.
 
 ## Decision
 
@@ -262,8 +264,9 @@ data-driven PvP adjustment:** ember brand 6 → 7 and Red Company helm 2 → 3.
   sample, not a balance sample.
 - The independent dawn/ember baseline was 30/41 (73.2%, CI 58.1–84.3) with
   dawn winning in both orientations. The v0.91.34 candidate is 25/40 (62.5%,
-  CI 47.0–75.8), with hit rate 44.17% and average damage 10.21. The adjustment
-  is modest and moves the matchup toward even; it does not prove balance.
+  CI 47.0–75.8), and the 60-match confirmation is 37/60 (61.7%, CI 49.0–72.9),
+  with hit rate 43.81% and average damage 10.11. The adjustment is kept; it is
+  modest and moves the matchup toward even, but does not prove balance.
 - The L5 pvp-b 19/29 (65.5%, CI 47.3–80.1) and L10 pvp-a 12/20 (60%, CI
   38.7–78.1) remain watch items; no change.
 - No other damage, armour, food or level values changed. The deterministic

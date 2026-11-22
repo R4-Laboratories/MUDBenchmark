@@ -1377,6 +1377,12 @@
       "level": "some-true",
       "statement": "Production v0.91.34 serves the first data-driven PvP adjustment: ember brand damage 7 (was 6) and Red Company helm armour 3 (was 2), verified in the deployed artifact. The pre-change independent sample was 41 matches, 978 attacks, 426 hits (43.56%), 9.76 damage, 11.93 rounds, dawn 30 wins (73.2%, 95% CI 58.1-84.3%), winner 18.9/65. The candidate sample was 40 matches, 926 attacks, 409 hits (44.17%), 10.21 damage, 11.57 rounds, dawn 25 wins (62.5%, CI 47.0-75.8%), winner 17.4/65. No other damage, armour, food or level values changed; the deterministic PvP band is 46.25% at 400 seeds. World 116 rooms, 14 zones, 20 quests, 57 mobiles and 145 objects. Main Gate 45042923826 green, publish 45043856827.",
       "authority": "GitHub PR #46 merge c0b389a 2026-11-22; main Gate 45042923826; publish 45043856827; release v0.91.34; wick deploy output and artifact world.json; local random-tick PvP runs"
+    },
+    {
+      "id": "MB-225",
+      "level": "some-true",
+      "statement": "The v0.91.34 PvP adjustment was confirmed with 20 additional random-tick dawn/ember matches (10 original, 10 swapped). Combined 60 matches: 1,422 attacks, 623 hits (43.81%), 10.11 average damage, 11.85 rounds, dawn 37 wins (61.7%, 95% CI 49.0-72.9%), winner 16.7/65 HP; original 17/30, swapped 20/30. The point estimate is essentially the 40-match candidate (62.5%); the confidence interval includes 50%; the hit/damage curve is unchanged. The adjustment is kept; no further balance values changed.",
+      "authority": "local isolated tools/pvp-session.mjs random-tick samples; baseline, candidate and confirmation spans; 2026-11-22"
     }
   ]
 }

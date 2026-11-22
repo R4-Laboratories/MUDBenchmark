@@ -395,7 +395,8 @@ Rehearsed 2026-11-16:
 - v0.91.34 (first PvP balance adjustment) raises the ember brand damage 6 → 7
   and the Red Company helm armour 2 → 3 after independent random-tick samples
   showed dawn winning 30/41 (73.2%); the candidate sample is 25/40 (62.5%, CI
-  47.0–75.8) with the hit/damage curve unchanged (MB-222/223);
+  47.0–75.8) and the confirmation is 37/60 (61.7%, CI 49.0–72.9), with the
+  hit/damage curve unchanged (MB-222/223/225);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);
