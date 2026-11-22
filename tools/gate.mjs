@@ -1691,6 +1691,14 @@ let controls = { ok: true, why: [] };
   const tuningSource = readFileSync(join(root, "tools/tuning-session.mjs"), "utf8");
   check(!/flee/.test(agentSource) && /take all/.test(agentSource) && /drink/.test(agentSource), "the CLI agent still exposes flee or lacks the new commands");
   check(/summarizePlayers/.test(tuningSource) && /mirror-wraith/.test(tuningSource) && /taskOk/.test(tuningSource), "the remote tuning harness is missing");
+  const aiSource = readFileSync(join(root, "runtime/web/ai.mjs"), "utf8");
+  const pvpAgentsSource = readFileSync(join(root, "tools/pvp-agents.mjs"), "utf8");
+  const pvpSessionSource = readFileSync(join(root, "tools/pvp-session.mjs"), "utf8");
+  check(/duel <name>, duel accept/.test(agentSource) && /"duel"/.test(agentSource) && /AGENT_SCENARIO/.test(agentSource), "the CLI agent is missing the PvP contract");
+  check(/duel <name>/.test(aiSource) && /room\.actors/.test(aiSource) && /duel \$\{actor\}/.test(aiSource), "the browser AI is missing PvP actions");
+  check(/actors: actor\?\.key \? state\.actors\.filter/.test(serverSource), "the room state does not expose other actors");
+  check(/AGENT_SCENARIO: "pvp"/.test(pvpAgentsSource) && /duel/.test(pvpAgentsSource), "the two-agent PvP runner is missing");
+  check(/dawn-ember/.test(pvpSessionSource) && /kitFor/.test(pvpSessionSource), "the asymmetric PvP matchup is missing");
   check(armorOf({ id: "w", guild: "wardens", guildRank: "scout" }, []) === 1, "the Wardens scout armour perk is not in armorOf");
   check(equipmentText({ id: "w", guild: "wardens", guildRank: "ranger" }, []).includes("+1 rank"), "the Wardens ranger damage perk is not in equipment");
   const groups = inventoryGroups([

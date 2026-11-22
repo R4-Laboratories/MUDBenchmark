@@ -29,6 +29,7 @@ const args = new Map(process.argv.slice(2).map((arg) => {
 const LEVEL = Number(args.get("level") ?? process.env.PVP_LEVEL ?? 5);
 const MATCHES = Math.max(1, Number(args.get("matches") ?? process.env.PVP_MATCHES ?? 12));
 const STAGGER_MS = Math.max(0, Number(args.get("stagger") ?? process.env.PVP_STAGGER ?? 0));
+const MATCHUP = args.get("matchup") ?? process.env.PVP_MATCHUP ?? "mirror";
 const PASSWORD = "pvp-pass";
 const RING = 33;
 const NAMES = ["pvp-a", "pvp-b"];
@@ -63,6 +64,16 @@ const KIT = LEVEL >= 10
       ["gloves", "pair of leather gloves", "wear"],
       ["shield", "round shield", "wear"],
     ];
+const EMBER_KIT = [
+  ["ember-brand", "ember brand", "wield"],
+  ["helmet", "iron helmet", "wear"],
+  ["eclipse-plate", "eclipse plate", "wear"],
+  ["ember-cloak", "ember cloak", "wear"],
+  ["shield", "round shield", "wear"],
+  ["boots", "pair of leather boots", "wear"],
+  ["gloves", "pair of leather gloves", "wear"],
+];
+const kitFor = (color) => MATCHUP === "dawn-ember" && color === "cobalt" ? EMBER_KIT : KIT;
 
 const sleep = wait;
 const makeState = (world) => {
@@ -91,7 +102,7 @@ const makeState = (world) => {
 const makeWorldPath = (dir) => {
   const raw = JSON.parse(readFileSync(join(process.cwd(), "world", "data", "world.json"), "utf8"));
   for (const color of ["crimson", "cobalt"]) {
-    for (const [templateId, label, action] of KIT) {
+    for (const [templateId, label, action] of kitFor(color)) {
       const template = raw.objects.find((object) => object.id === templateId);
       if (!template) throw new Error(`missing kit object ${templateId}`);
       const clone = structuredClone(template);
@@ -205,7 +216,7 @@ const oneMatch = async (matchNumber, first) => {
     const b = byName["pvp-b"];
     const gearFor = (client, color) => {
       const commands = [];
-      for (const [templateId, label, action] of KIT) {
+      for (const [templateId, label, action] of kitFor(color)) {
         commands.push(`take ${color} ${label}`, `${action} ${color} ${label}`);
       }
       return commands;
@@ -266,6 +277,7 @@ const oneMatch = async (matchNumber, first) => {
       match: matchNumber,
       first,
       level: LEVEL,
+      matchup: MATCHUP,
       winner,
       loser,
       durationMs,
@@ -316,6 +328,7 @@ const totals = results.reduce((sum, result) => {
 }, { matches: 0, attacks: 0, hits: 0, damage: 0, rounds: 0, wins: {}, winnerHp: 0, maxHp: 0 });
 const summary = {
   level: LEVEL,
+  matchup: MATCHUP,
   matches: totals.matches,
   failures: failures.length,
   attacks: totals.attacks,

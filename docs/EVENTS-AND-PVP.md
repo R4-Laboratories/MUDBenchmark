@@ -49,11 +49,15 @@ board fills in as more characters fight.
 
 ## Live PvP evidence
 
-The live two-client mirror sample is recorded in `docs/TUNING.md`. It uses the
-real Ring `duel`/`accept`/`attack` flow on an isolated server and the server's
-combat spans. The mirror is deterministic, so its winner is not a win-rate
-estimate; it is a close-fight and damage-curve check. Asymmetric or
-model-driven PvP remains the next evidence.
+The live PvP evidence is recorded in `docs/TUNING.md`:
+
+- a two-client mirror sample using the real Ring `duel`/`accept`/`attack` flow;
+- two remote OpenCode/DeepSeek agents in the same flow (`tools/pvp-agents.mjs`);
+- an asymmetric dawn vs ember scripted sample.
+
+The mirror and asymmetric setups are deterministic, so their winners are not
+win-rate estimates; they are close-fight, damage-curve and agent-path checks.
+A larger independent sample remains the next evidence.
 
 ## Stream delay
 

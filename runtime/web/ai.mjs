@@ -89,7 +89,7 @@ export function normalizeBase(input) {
 export const COMMANDS = `look, look <thing>, examine <thing>, who, say <text>, global <text>,
 tell <name> <text>, mail <name> <text>, channels, answer <word>, claim <word>,
 claim unknown, north, south, east, west, up, down (n/s/e/w/u/d), attack <name>,
-wield <weapon>, unwield, technique <name>, inventory [category], coins, standing, components, upgrade <item>, salvage <item>, take <thing>, take all, drop <thing>, put <thing> in <thing>,
+duel <name>, duel accept, duel decline, wield <weapon>, unwield, technique <name>, inventory [category], coins, standing, components, upgrade <item>, salvage <item>, take <thing>, take all, drop <thing>, put <thing> in <thing>,
 open <thing>, close <thing>, wear <thing>, remove <thing>, eat <thing>, drink <thing>, light <thing>,
 buy <thing>, sell <thing>, list, wait, wave, nod, bow, laugh, sigh, shrug, dance,
 smile, grin, frown, cheer, salute, point, ponder, stretch, shiver, yawn, wink, hug, highfive, poke,
@@ -99,12 +99,12 @@ levels, leaderboard (top/lb), ladder (pvp/duels), map [zone], shortcuts, tutoria
 guild create <name>, guild join <name>, guild leave, guild who, guild list, guild chat <text>,
 guild rank <member> <rank>, guild disband, vault, deposit <item>, withdraw <item>, ignore/unignore <name>, ignoring, titles, title <id|none>, facts, recall <word>, talk <name>, spells, train <spell>, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search, turn, push, ring, world, help, go <direction>`;
 
-const FAST_COMMANDS = "look, examine <thing>, inventory, standing, score, equipment, quests, say <text>, tell <name> <text>, global <text>, talk <name>, who, north/south/east/west/up/down, take/drop/wear/wield, take all, attack <name>, cast <spell>, buy/sell/list, open/close, quest accept <id>, deliver <thing> to <name>, guild create/join/leave/who/chat, vault/deposit/withdraw, ignore/unignore, titles/title, facts, recall, wait, search, world, help, wave/nod/bow/laugh";
+const FAST_COMMANDS = "look, examine <thing>, inventory, standing, score, equipment, quests, say <text>, tell <name> <text>, global <text>, talk <name>, who, north/south/east/west/up/down, take/drop/wear/wield, take all, attack <name>, duel <name>, duel accept, cast <spell>, buy/sell/list, open/close, quest accept <id>, deliver <thing> to <name>, guild create/join/leave/who/chat, vault/deposit/withdraw, ignore/unignore, titles/title, facts, recall, wait, search, world, help, wave/nod/bow/laugh";
 
 const VERBS = new Set([
   "look", "l", "examine", "x", "ex", "who", "wh", "awake", "aw", "answer", "claim", "say", "tell", "mail", "go", "coins", "money", "purse", "standing", "reputation", "factions", "components", "parts", "materials", "upgrade", "improve", "forge", "salvage", "melt", "scrap", "technique", "tech",
   "global", "gossip", "gos", "goss", "trade", "channels", "north", "south", "east", "west", "up", "down",
-  "n", "s", "e", "w", "u", "d", "attack", "kill", "wield", "unwield", "inventory",
+  "n", "s", "e", "w", "u", "d", "attack", "kill", "duel", "wield", "unwield", "inventory",
   "i", "inv", "equipment", "eq", "take", "get", "g", "t", "grab", "drink", "quaff", "drop", "dr", "put", "open", "close",
   "wear", "remove", "eat", "light", "extinguish", "buy", "sell", "list", "wait", "wave", "nod", "bow",
   "laugh", "sigh", "shrug", "dance", "score", "sc", "stats", "quests", "q", "j", "quest", "guild", "gc",
@@ -112,7 +112,7 @@ const VERBS = new Set([
   "vault", "gvault", "bank", "gvlt", "deposit", "dep", "store", "ds", "withdraw", "wd", "retrieve", "wdr",
   "ignore", "ign", "mute", "unignore", "unign", "unmute", "ignoring", "ignored", "ignores", "titles", "title", "facts", "recall", "remember", "mem",
   "levels", "leaderboard", "top", "lb", "ranks", "ladder", "pvp", "duels", "map", "shortcuts", "tutorial", "first", "firststeps",
-  "smile", "grin", "frown", "cheer", "salute", "point", "ponder", "stretch", "shiver", "yawn", "wink", "hug", "highfive", "poke", "whistle", "sing", "hum", "mutter", "shout", "clap", "cry", "apologize", "congratulate", "battle", "combat", "bt",
+  "smile", "grin", "frown", "cheer", "salute", "point", "ponder", "stretch", "shiver", "yawn", "wink", "hug", "highfive", "poke", "whistle", "sing", "hum", "mutter", "shout", "clap", "cry", "apologize", "congratulate", "battle", "combat", "bt", "duel",
 ]);
 
 export const DEFAULT_GOAL =
@@ -210,6 +210,12 @@ export function buildActionMenu(state = null) {
       menu.add(`talk ${npc.name}`);
       if (!room.safe && npc.aggression > 0) menu.add(`attack ${npc.name}`);
     }
+    for (const actor of room.actors ?? []) {
+      if (room.arena) {
+        menu.add(`duel ${actor}`);
+        menu.add(`attack ${actor}`);
+      }
+    }
     for (const action of room.actions ?? []) menu.add(`${action.verb} ${action.target}`);
   }
   for (const line of ["say <text>", "tell <name> <text>", "global <text>", "talk <name>", "wave", "nod", "bow", "laugh", "smile", "grin", "cheer", "salute", "ponder", "whistle", "sing", "hug", "highfive", "who", "battle", "equipment", "spells", "leaderboard", "levels", "map", "shortcuts", "quests"]) {
@@ -234,7 +240,7 @@ const FREE_VERBS = new Set([
   "recall", "remember", "mem",
   "facts", "memory", "knowledge",
   "levels", "leaderboard", "top", "lb", "ranks", "map", "shortcuts", "tutorial", "first", "firststeps",
-  "smile", "grin", "frown", "cheer", "salute", "point", "ponder", "stretch", "shiver", "yawn", "wink", "hug", "highfive", "poke", "whistle", "sing", "hum", "mutter", "shout", "clap", "cry", "apologize", "congratulate", "battle", "combat", "bt",
+  "smile", "grin", "frown", "cheer", "salute", "point", "ponder", "stretch", "shiver", "yawn", "wink", "hug", "highfive", "poke", "whistle", "sing", "hum", "mutter", "shout", "clap", "cry", "apologize", "congratulate", "battle", "combat", "bt", "duel",
 ]);
 const TARGET_VERBS = new Set([
   "examine", "x", "ex", "take", "get", "g", "t", "grab", "drink", "quaff", "drop", "dr", "discard",
@@ -260,6 +266,7 @@ const stateVocabulary = (state = null) => {
       for (const item of object.contents ?? []) add(item);
     }
     for (const npc of room.npcs ?? []) add(npc.name);
+    for (const actor of room.actors ?? []) add(actor);
     for (const action of room.actions ?? []) { add(action.verb); add(action.target); }
   }
   for (const item of state?.self?.inventory_names ?? []) add(item);
