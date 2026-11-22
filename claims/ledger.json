@@ -1347,6 +1347,12 @@
       "level": "some-true",
       "statement": "The v0.91.33 PvP evidence includes two remote model-agent duels and an asymmetric dawn-vs-ember live sample. Model level 5: A 8 rounds, 6/46 damage vs 2/12, winner 28/40. Model level 10: A 12 rounds, 6/68 vs 4/48, winner 11/65. Asymmetric dawn/ember: 8 deterministic matches, 200 attacks, 84 hits (42.0%), 10.48 average damage, 12.5 rounds, dawn 8/8 with two close outcomes (winner 3/65 and 19/65). The model sample is a behaviour/path check, not a balance sample; the asymmetric sample is deterministic and not a win rate. No balance values changed; a larger independent or human sample remains open.",
       "authority": "local isolated tools/pvp-session.mjs and tools/pvp-agents.mjs runs; OpenCode/DeepSeek; server world.combat/world.duel spans; 2026-11-22"
+    },
+    {
+      "id": "MB-220",
+      "level": "some-true",
+      "statement": "Production v0.91.33 serves the agent PvP contract: /agent.mjs includes duel/duel accept/duel decline, AGENT_SCENARIO=pvp and the stay-in-the-Ring guard; /ai.mjs includes the duel command contract and room.actors; #state exposes other actors in the room. Two remote OpenCode/DeepSeek agents completed the Ring flow at level 5 (8 rounds, winner 28/40) and level 10 (12 rounds, winner 11/65). The asymmetric dawn/ember scripted sample completed 8 deterministic matches (200 attacks, 84 hits, 42.0%, 10.48 average damage, 12.5 rounds; dawn won the two close outcomes at 3/65 and 19/65). No balance values changed. World 116 rooms, 14 zones, 20 quests, 57 mobiles and 145 objects. Main Gate 44989981518 green, publish 44990722958.",
+      "authority": "GitHub PR #45 merge 7282cbe 2026-11-22; main Gate 44989981518; publish 44990722958; release v0.91.33; wick deploy output, /agent.mjs, /ai.mjs and /health; local pvp-session/pvp-agents runs"
     }
   ]
 }

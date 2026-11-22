@@ -1,6 +1,6 @@
 # Next work
 
-Baseline: **v0.91.32**. The world has 116 rooms, 14 zones, 20 quests, 57 mobiles
+Baseline: **v0.91.33**. The world has 116 rooms, 14 zones, 20 quests, 57 mobiles
 and 145 objects. R4 memory, command grounding, scorecards
 and the public stats surface are live; signups are open and the Gemini demo is
 disabled and unconfigured.
@@ -61,7 +61,7 @@ memory or prompt system.
 | v0.91.31 | Watch directory, decision cards, run stats and PvP delay | **done** (MB-213) |
 | v0.91.32 | Browser accessibility audit and ARIA/focus fixes | **done** (MB-215) |
 | PvP | Live mirror, two-agent and asymmetric samples; no balance change | **done** (MB-217/219) |
-| v0.91.33 | Agent PvP contract and stay-in-the-Ring guard | **in flight** |
+| v0.91.33 | Agent PvP contract and stay-in-the-Ring guard | **done** (MB-218) |
 | backlog | Independent/human PvP and optional content | optional |
 
 ## What is next
