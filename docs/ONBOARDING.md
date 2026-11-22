@@ -42,3 +42,48 @@ Square, and take the first quest from the board or the shopkeeper.
 - `world` — the current event and reset countdown.
 
 The training yard does not add a quest, so the 20-quest budget is unchanged.
+
+## Fresh-account browser audit (v0.91.37)
+
+This is a fresh-account browser audit of the opening ten minutes, run against
+an isolated server at 1440×900 and 390×844. It checks the human path, not the
+API or the AI path.
+
+### What a new player sees
+
+1. The landing hero shows Play free, Start a free agent and Watch live, with
+   the world counts and event. The right rail offers the Prism sign-in,
+   password fallback, first steps and recovery-kit details.
+2. **Play free** creates a browser Prism account, signs in, and opens **New
+   character** with a suggested name. The player replaces the name and creates
+   the character in one step.
+3. The room description, HUD, quick actions and command entry are immediately
+   usable. `look`, `score`, `quests`, `tutorial`, `take`, `wear`, `north` and a
+   first quest (`A Curled Scroll`) all work from the page.
+4. The password path (`Use a name and password` → Register) creates the
+   account and its character together and drops the player into the Atrium.
+   Returning with the same password resumes the character.
+
+### Fixes in v0.91.37
+
+- The **character panel is hidden while playing**. It is reopened by
+  **Characters** and closed by **Back to game**, so the creation form no longer
+  sits open over the game and does not invite an accidental second character.
+- **First steps** is a full-width action in the signed-in panel and sends the
+  existing `tutorial` command. It stays visible after the landing panel is
+  gone.
+- A free **Prism** account sees a recovery-kit warning: download a kit before
+  clearing site data. Password accounts do not see the warning.
+- A **legacy password account** no longer sees a New character form the server
+  refuses; its account is created with one character and logs straight into it.
+
+### Still open
+
+- The HUD can lag by one command after a quest completion or other tick-time
+  change. The log says “Quest complete” immediately, but the HUD/XP/quest line
+  may show the previous state until the next command. This is server state
+  ordering, not a lost result; it is a polish item.
+- The free Prism path warns when the browser denies persistent storage. The
+  recovery kit is the durable answer, but a first-time player may not open it
+  without the warning; the new note points at it.
+- A human VoiceOver/NVDA pass and a final hands-on phone review remain manual.

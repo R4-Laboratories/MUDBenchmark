@@ -991,6 +991,7 @@
           <div id="recover-list"></div>
           <p class="small muted" id="recover-status"></p>
         </details>
+        <div class="row"><button type="button" id="characters-close">Back to game</button></div>
         <div class="row"><button type="button" id="sign-out">Sign out</button></div>
       </section>
 
@@ -998,11 +999,15 @@
         <h2>Signed in</h2>
         <p>You are <strong id="signed-name">…</strong>. The character keeps level, XP, guild and quests; items stay in the world.</p>
         <div class="row">
+          <button type="button" id="first-steps">First steps</button>
+        </div>
+        <div class="row">
           <button type="button" id="characters-button">Characters</button>
           <button type="button" id="help">Help</button>
           <button type="button" id="who">Who</button>
           <button type="button" id="quit">Quit</button>
         </div>
+        <p class="small muted" id="account-persistence" hidden>Free Prism id? Download a recovery kit below before clearing site data.</p>
         <details class="small muted" id="recovery-kit">
           <summary>Recovery kit</summary>
           <p>Download an encrypted backup. It is the only way to restore this account if this browser's storage is lost. Keep the file offline; anyone with it and the passphrase can take the account. Create the kit before starting an AI persona if you want the persona included.</p>
@@ -1169,6 +1174,7 @@
   const recoverStatus = document.getElementById("recover-status");
   const charactersButton = document.getElementById("characters-button");
   const signOut = document.getElementById("sign-out");
+  const charactersClose = document.getElementById("characters-close");
   const recoveryPass = document.getElementById("recovery-pass");
   const recoveryPass2 = document.getElementById("recovery-pass2");
   const recoveryDownload = document.getElementById("recovery-download");
@@ -1184,6 +1190,7 @@
   const handoffStatus = document.getElementById("handoff-status");
   const signed = document.getElementById("signed");
   const signedName = document.getElementById("signed-name");
+  const accountPersistence = document.getElementById("account-persistence");
   const latest = document.getElementById("latest");
   const prismLogin = document.getElementById("prism-login");
   const mobileNavToggle = document.getElementById("mobile-nav-toggle");
@@ -1342,6 +1349,7 @@
   let resumeOnDisconnect = true;
   let stick = true;
   let characterState = { account: "", characters: [], delegated: {} };
+  let charactersRequested = false;
   let playState = null;
 
   const AI = {
@@ -1671,7 +1679,9 @@
       if (charactersLine) {
         try {
           const info = JSON.parse(charactersLine[1]);
-          renderCharacters(info);
+          const showCharacters = charactersRequested || !authed || !signedName.textContent.trim();
+          charactersRequested = false;
+          renderCharacters(info, { show: showCharacters });
           void refreshHero();
           if (resumeCharacter && playAuth === "prism") {
             const previous = resumeCharacter;
@@ -1731,10 +1741,11 @@
         }
         const nowKnown = text.match(/You are now ([^\r\n.]+)\./i);
         if (nowKnown) signedName.textContent = nowKnown[1];
+        const playingCharacter = Boolean(signedAs || nowKnown);
         account.style.display = "none";
         if (characterState.account) {
-          charactersPanel.hidden = false;
           renderCharacters(characterState);
+          charactersPanel.hidden = playingCharacter;
         } else {
           charactersPanel.hidden = true;
         }
@@ -1789,12 +1800,15 @@
     return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
   };
 
-  function renderCharacters(info) {
+  function renderCharacters(info, { show = true } = {}) {
     characterState = {
       account: info?.account ?? "",
       characters: [...(info?.characters ?? [])],
       delegated: { ...(info?.delegated ?? {}) },
     };
+    const prismAccount = String(characterState.account).startsWith("prism:");
+    accountPersistence.hidden = !prismAccount;
+    createCharacterForm.hidden = !prismAccount;
     accountName.textContent = characterState.account || "Prism account";
     characterList.innerHTML = "";
     if (!characterState.characters.length) {
@@ -1815,10 +1829,12 @@
       row.appendChild(button);
       characterList.appendChild(row);
     }
-    charactersPanel.hidden = false;
+    charactersPanel.hidden = !show;
     account.style.display = "none";
     characterHint.textContent = characterState.characters.length
-      ? "Pick a character, or create another. Switching takes over that character."
+      ? (prismAccount
+        ? "Pick a character, or create another. Switching takes over that character."
+        : "Pick a character to play.")
       : "A random name is suggested; replace it with any name you like.";
     if (!characterState.characters.length && !newCharacter.value.trim()) {
       newCharacter.value = randomCharacterName();
@@ -1952,7 +1968,11 @@
     send(`create ${name}`, `create ${name}`);
     newCharacter.value = "";
   });
-  charactersButton.addEventListener("click", () => send("characters", "characters"));
+  charactersButton.addEventListener("click", () => {
+    charactersRequested = true;
+    send("characters", "characters");
+  });
+  charactersClose.addEventListener("click", () => { charactersPanel.hidden = true; });
   signOut.addEventListener("click", () => {
     playAuth = null;
     resumeCharacter = null;
@@ -2225,6 +2245,7 @@
     setTimeout(() => document.getElementById("prism-login").click(), 1800);
   });
 
+  document.getElementById("first-steps").addEventListener("click", () => send("tutorial", "tutorial"));
   document.getElementById("help").addEventListener("click", () => send("help", "help"));
   document.getElementById("who").addEventListener("click", () => send("who", "who"));
   document.getElementById("quit").addEventListener("click", () => send("quit", "quit"));

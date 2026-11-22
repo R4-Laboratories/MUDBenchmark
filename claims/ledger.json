@@ -1425,6 +1425,18 @@
       "level": "some-true",
       "statement": "Production v0.91.36 serves the second data-driven PvP adjustment: ember brand damage 8 (was 7), Red Company helm armour 3, verified in the deployed artifact. The paired live sample used 7 fixed start ticks x both login orders x both kit orientations (28 unique pairs per arm): current v0.91.34 dawn 16/28 (57.1%), candidate ember 8 dawn 14/28 (50.0%), 2 flips to ember and none back; the paired dawn-minus-ember HP margin improved for ember in 22/28 pairs, unchanged 6, worsened 0, mean -5.14 HP (95% CI -7.42 to -2.86; sign-test p<0.0001). The fixed-damage model puts v0.91.34 at 61.3%, v0.91.36 at 50.0%, and ember 9 at 39.3%; the deterministic PvP band is 42.75% at 400 seeds. World 116 rooms, 14 zones, 20 quests, 57 mobiles and 145 objects. Main Gate 45062076563 green, publish 45062852277. No further PvP value changed.",
       "authority": "GitHub PR #51 merge 606dcac 2026-11-22; main Gate 45062076563; publish 45062852277; release v0.91.36; wick deploy output and artifact world.json; paired local pvp-session runs; tools/pvp-model.mjs"
+    },
+    {
+      "id": "MB-233",
+      "level": "build",
+      "statement": "v0.91.37 fixes the first-time human onboarding found in a fresh-account browser audit. The character panel is hidden while a character is playing; Characters reopens it and Back to game closes it. First steps is a full-width signed-in action wired to the tutorial command. Free Prism accounts see a recovery-kit warning, and legacy password accounts no longer see a New character form the server refuses. The Gate checks the onboarding source contract.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-234",
+      "level": "some-true",
+      "statement": "The v0.91.37 onboarding was audited in an isolated server at 1440x900 and 390x844. Play free created a Prism account, the character form created audit-human, and the panel then hid while playing; First steps opened the tutorial; Characters reopened the panel and Back to game closed it; no horizontal overflow at 390x844. The password path registered audit-pass with an auto-created character, signed out, logged back in and resumed the character; the legacy New character form was hidden. Still open: the HUD can lag by one command after a tick-time quest completion; a human VoiceOver/NVDA pass and final hands-on phone review remain manual.",
+      "authority": "local headless-Chrome human audit against an isolated runtime/server.mjs; 2026-11-22"
     }
   ]
 }
