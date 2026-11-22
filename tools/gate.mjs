@@ -1355,6 +1355,7 @@ let stream = { ok: true, why: [] };
   const page = readFileSync(join(root, "runtime/web/index.html"), "utf8");
   check(/class="skip"/.test(page) && /prefers-reduced-motion/.test(page) && /:focus-visible/.test(page) && /role="log"/.test(page) && /aria-live="polite"/.test(page), "the accessibility shell contract is missing");
   check(/id="mobile-nav-toggle"/.test(page) && /id="mobile-nav"/.test(page) && /body\.guest #latest/.test(page) && /min-height: 44px/.test(page), "the mobile navigation or guest status contract is missing");
+  check(/id="first-steps"/.test(page) && /id="account-persistence"/.test(page) && /id="characters-close"/.test(page) && /charactersPanel\.hidden = playingCharacter/.test(page) && /createCharacterForm\.hidden = !prismAccount/.test(page), "the first-run onboarding contract is missing");
   check(/id="ai-stream"/.test(page) && /#stream-chat/.test(page), "the AI panel has no Go live path");
   check(/gemini-demo/.test(page) && /requestDemoToken/.test(page) && /#demo-token/.test(page), "the UI has no Gemini demo path");
   check(/r4-context/.test(page) && /r4-remember/.test(page) && /requestR4Context/.test(page), "the UI has no R4 context path");

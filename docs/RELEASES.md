@@ -408,6 +408,11 @@ Rehearsed 2026-11-16:
   to ember and none back; ember's finishing margin improved in 22/28 pairs and
   never worsened (mean 5.14 HP, 95% CI 2.86–7.42), matching the fixed-damage
   model's 50.0% prediction (MB-230/231);
+- v0.91.37 (first-time human onboarding) hides the character-creation panel
+  while a character is playing, adds a full-width First steps action, warns
+  free Prism accounts to save a recovery kit and hides the unsupported New
+  character form on legacy accounts; `docs/ONBOARDING.md` records the audit
+  (MB-233/234);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);
