@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // Two-client live PvP sample against isolated servers.
 //
-//   node tools/pvp-session.mjs --level=5 --matches=12
-//   node tools/pvp-session.mjs --level=10 --matches=12
+//   node tools/pvp-session.mjs --level=5 --matches=12 --random-tick=1
+//   node tools/pvp-session.mjs --level=10 --matches=12 --matchup=dawn-ember --random-tick=1
 //
 // Each match starts a fresh world with both characters in The Ring, gives each
 // an identical mirrored kit, logs both in through the real WebSocket, and runs
@@ -30,11 +30,12 @@ const LEVEL = Number(args.get("level") ?? process.env.PVP_LEVEL ?? 5);
 const MATCHES = Math.max(1, Number(args.get("matches") ?? process.env.PVP_MATCHES ?? 12));
 const STAGGER_MS = Math.max(0, Number(args.get("stagger") ?? process.env.PVP_STAGGER ?? 0));
 const MATCHUP = args.get("matchup") ?? process.env.PVP_MATCHUP ?? "mirror";
+const RANDOM_TICK = args.get("random-tick") === "1" || process.env.PVP_RANDOM_TICK === "1";
 const PASSWORD = "pvp-pass";
 const RING = 33;
 const NAMES = ["pvp-a", "pvp-b"];
 const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-const OUT = join(process.cwd(), "local", "pvp", `level-${LEVEL}-${stamp}`);
+const OUT = join(process.cwd(), "local", "pvp", `level-${LEVEL}-${MATCHUP}-${stamp}`);
 mkdirSync(OUT, { recursive: true });
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -160,6 +161,8 @@ const oneMatch = async (matchNumber, first) => {
   const worldPath = makeWorldPath(dir);
   const world = loadWorld({ mode: "single", path: worldPath });
   const state = makeState(world);
+  const startTick = RANDOM_TICK ? Math.floor(Math.random() * 1_000_000) : state.tick;
+  state.tick = startTick;
   const stateFile = join(dir, "state.json");
   writeFileSync(stateFile, JSON.stringify(state));
   const holoPort = await port();
@@ -278,6 +281,7 @@ const oneMatch = async (matchNumber, first) => {
       first,
       level: LEVEL,
       matchup: MATCHUP,
+      startTick,
       winner,
       loser,
       durationMs,
@@ -329,6 +333,7 @@ const totals = results.reduce((sum, result) => {
 const summary = {
   level: LEVEL,
   matchup: MATCHUP,
+  randomTick: RANDOM_TICK,
   matches: totals.matches,
   failures: failures.length,
   attacks: totals.attacks,

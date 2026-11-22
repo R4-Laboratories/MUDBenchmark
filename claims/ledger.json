@@ -1353,6 +1353,12 @@
       "level": "some-true",
       "statement": "Production v0.91.33 serves the agent PvP contract: /agent.mjs includes duel/duel accept/duel decline, AGENT_SCENARIO=pvp and the stay-in-the-Ring guard; /ai.mjs includes the duel command contract and room.actors; #state exposes other actors in the room. Two remote OpenCode/DeepSeek agents completed the Ring flow at level 5 (8 rounds, winner 28/40) and level 10 (12 rounds, winner 11/65). The asymmetric dawn/ember scripted sample completed 8 deterministic matches (200 attacks, 84 hits, 42.0%, 10.48 average damage, 12.5 rounds; dawn won the two close outcomes at 3/65 and 19/65). No balance values changed. World 116 rooms, 14 zones, 20 quests, 57 mobiles and 145 objects. Main Gate 44989981518 green, publish 44990722958.",
       "authority": "GitHub PR #45 merge 7282cbe 2026-11-22; main Gate 44989981518; publish 44990722958; release v0.91.33; wick deploy output, /agent.mjs, /ai.mjs and /health; local pvp-session/pvp-agents runs"
+    },
+    {
+      "id": "MB-221",
+      "level": "some-true",
+      "statement": "Independent random-tick live PvP samples: level-5 mirror 17 matches, 434 attacks, 213 hits (49.1%, 95% CI 44.4-53.8%), 5.42 average damage, 12.76 rounds, pvp-b 12 / pvp-a 5 (70.6%, CI 46.9-86.7%), winner 13.6/40 HP; level-10 mirror 8 matches, 192 attacks, 82 hits (42.7%, CI 35.9-49.8%), 10.6 damage, 12.0 rounds, 4/4 wins, winner 11.8/65; level-10 dawn/ember 8 matches, 188 attacks, 81 hits (43.1%, CI 36.2-50.2%), 9.8 damage, 11.75 rounds, dawn 6 / ember 2 (75%, CI 40.9-92.9%), winner 20.8/65. Hit/damage match the armour/weapon curve; the level-5 pvp-b lean and dawn/ember lean are watch items, not a balance decision. No balance values changed.",
+      "authority": "local isolated tools/pvp-session.mjs random-tick runs; server world.combat/world.duel spans; 2026-11-22"
     }
   ]
 }

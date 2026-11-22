@@ -213,6 +213,27 @@ The existing deterministic sampler's 47% for this matchup is not contradicted by
 two close outcomes; the live sample says the matchup warrants a larger,
 independent pass, not a damage change.
 
+### Independent random-tick samples (post-v0.91.33)
+
+`tools/pvp-session.mjs --random-tick=1` starts each fresh world at a random
+world tick, so the combat rolls are no longer the same sequence. The sample
+below combines a pilot plus two eight-match batches where applicable.
+
+| Matchup | Matches | Attacks | Hits | Hit rate (95% CI) | Avg damage | Exchange rounds | Wins | Winner HP |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| L5 mirror | 17 | 434 | 213 | **49.1%** (44.4–53.8%) | **5.42** | **12.76** | B 12 / A 5 (70.6%, 46.9–86.7%) | 13.6 / 40 |
+| L10 mirror | 8 | 192 | 82 | **42.7%** (35.9–49.8%) | **10.6** | **12.0** | A 4 / B 4 | 11.8 / 65 |
+| L10 dawn/ember | 8 | 188 | 81 | **43.1%** (36.2–50.2%) | **9.8** | **11.75** | dawn 6 / ember 2 (75%, 40.9–92.9%) | 20.8 / 65 |
+
+- The hit rates match `57 - armour` (50% at L5, 44% at L10), and average
+  damage matches `1..4 + weapon` (5.5 and 10.5) within the sample.
+- The level-10 mirror is even. The level-5 mirror leans to pvp-b and the
+  dawn/ember matchup leans to dawn, but both 95% intervals include 50%; this
+  is watch-list evidence, not a balance result.
+- The level-5 lean may be a connection-order/initiative artifact; the level-10
+  mirror did not reproduce it.
+- No one-shot: the winner retained 18–34% of max HP on average.
+
 ## Decision
 
 No balance value changes in v0.91.19, v0.91.20, v0.91.26 or this pass.
@@ -229,10 +250,14 @@ No balance value changes in v0.91.19, v0.91.20, v0.91.26 or this pass.
   model-facing PvP path but is a behaviour sample, not a balance sample. The
   asymmetric dawn/ember sample is close (winner at 3/65 in one outcome) and
   deterministic; the 8/8 does not establish a win rate.
-- No damage, armour, food or level change is justified. The next PvP pass needs
-  independent seeds, asymmetric gear with more matchups, or human players. If
-  dawn vs ember remains above roughly 65% across an independent sample, revisit
-  the ember brand or dawn armour; do not tune from this one.
+- No damage, armour, food or level change is justified. The independent
+  samples match the hit/damage curve; the level-5 pvp-b lean and the dawn/ember
+  lean are watch items, not decisions.
+- The next PvP pass should collect 20–30 independent matches per matchup,
+  especially dawn vs ember and a level-5 login-order-balanced batch. If dawn
+  remains above roughly 65% with a confidence interval excluding 50%, revisit
+  the ember brand or dawn armour; if the level-5 pvp-b lean persists, inspect
+  initiative/connection order. Human PvP remains the strongest evidence.
 
 The deterministic bands remain the reference:
 

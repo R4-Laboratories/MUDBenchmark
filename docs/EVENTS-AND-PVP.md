@@ -57,7 +57,9 @@ The live PvP evidence is recorded in `docs/TUNING.md`:
 
 The mirror and asymmetric setups are deterministic, so their winners are not
 win-rate estimates; they are close-fight, damage-curve and agent-path checks.
-A larger independent sample remains the next evidence.
+A larger independent sample remains the next evidence. The random-tick samples
+recorded in `docs/TUNING.md` show the expected hit/damage curve; the level-5
+pvp-b lean and the dawn/ember lean are watch items, not a balance decision.
 
 ## Stream delay
 
