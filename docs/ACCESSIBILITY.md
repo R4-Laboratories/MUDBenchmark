@@ -18,7 +18,7 @@ small, explicit accessibility contract:
 The Gate inspects the page source for skip links, focus-visible rules,
 reduced-motion handling, labelled logs, ARIA tab semantics and named tables.
 The CI Gate also runs `node tools/a11y.mjs`, a browser audit that checks `/`,
-`/watch` and `/stats`:
+`/watch`, `/stats` and the signed-in game:
 
 - main and level-1 heading landmarks;
 - accessible names on buttons, links, textboxes, comboboxes and tabs;
@@ -31,7 +31,12 @@ The CI Gate also runs `node tools/a11y.mjs`, a browser audit that checks `/`,
 - at a 390x844 phone viewport, no page scrolls horizontally, visible controls
   and header/hero/menu links are at least 24px, the mobile menu opens with
   `aria-expanded` and contains Stats, the `#state` text is visible, and a guest
-  does not see the Latest overlay.
+  does not see the Latest overlay;
+- in the signed-in game, the character panel is hidden, the First steps and
+  Characters controls are visible and named, First steps opens the tutorial,
+  Back to game closes the panel, the command input has focus, the HUD and
+  command entry meet 24px targets on desktop and 390x844, and the signed-in
+  phone layout has no horizontal overflow.
 
 ## Audit results (v0.91.32)
 
@@ -58,6 +63,20 @@ The CI Gate also runs `node tools/a11y.mjs`, a browser audit that checks `/`,
   until an AI run is active and explains that in the status line.
 - A focused browser run exercises the menu, font controls, Telemetry gate,
   Escape handling and desktop restoration (`mobile interaction: ok`).
+
+## Audit results (v0.91.39)
+
+- The signed-in game audit creates a Prism character from the landing page and
+  checks the live shell rather than only the guest pages.
+- The HUD quick actions and exit buttons were 22px high; they are now 24px on
+  desktop (32px on mobile), so every visible signed-in control meets the 24px
+  target.
+- Signed-in desktop: character panel hidden, First steps/Characters/Help/Who/
+  Quit named and visible, `#cmd` focused, no unnamed interactive roles.
+- Signed-in 390x844: no horizontal overflow; First steps, Characters, command
+  input and HUD actions meet the target; the recovery note is visible for the
+  free Prism account.
+- First steps opens the tutorial; Back to game closes the Characters panel.
 
 ## Still open
 

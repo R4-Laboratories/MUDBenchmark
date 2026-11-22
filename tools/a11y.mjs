@@ -263,6 +263,88 @@ try {
   }
   report.mobile = mobile;
 
+  // Signed-in game shell. The guest audits above never create a character, so
+  // the HUD, First steps and the hidden character panel need their own pass.
+  await send("Emulation.setEmulatedMedia", { features: [] });
+  await send("Emulation.setDeviceMetricsOverride", { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
+  await send("Page.navigate", { url: `http://127.0.0.1:${webPort}/` });
+  await wait(1200);
+  await evaluate('document.querySelector("#hero-play").click()');
+  await until(() => evaluate('document.querySelector("#new-character") && !document.querySelector("#characters").hidden'), "signed-in character form", 15000);
+  await evaluate('document.querySelector("#new-character").value = "a11y-player"; document.querySelector("#create-character-form").requestSubmit()');
+  await until(() => evaluate('!document.querySelector("#cmd").disabled && !document.querySelector("#signed").hidden'), "signed-in game", 15000);
+  await wait(500);
+  const signedIn = await evaluate(`(() => {
+    const visible = (el) => el && !el.hidden && el.offsetParent !== null && getComputedStyle(el).visibility !== "hidden" && getComputedStyle(el).display !== "none";
+    const controls = [...document.querySelectorAll("#signed button, #hud button, #entry input, #entry button")].filter(visible).map((el) => {
+      const r = el.getBoundingClientRect();
+      return { id: el.id, text: (el.getAttribute("aria-label") || el.textContent || el.placeholder || "").trim().slice(0, 30), w: Math.round(r.width), h: Math.round(r.height) };
+    });
+    return {
+      signed: visible(document.querySelector("#signed")),
+      characters: visible(document.querySelector("#characters")),
+      firstSteps: visible(document.querySelector("#first-steps")),
+      persistence: visible(document.querySelector("#account-persistence")),
+      hud: visible(document.querySelector("#hud")),
+      cmdEnabled: !document.querySelector("#cmd")?.disabled,
+      focus: document.activeElement?.id || document.activeElement?.tagName,
+      controls,
+      overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+    };
+  })()`);
+  report.signedIn = signedIn;
+  if (!signedIn.signed || signedIn.characters || !signedIn.firstSteps || !signedIn.persistence || !signedIn.hud || !signedIn.cmdEnabled || signedIn.focus !== "cmd") {
+    failures.push(`signed-in shell failed ${JSON.stringify(signedIn)}`);
+  }
+  const smallSigned = signedIn.controls.filter((control) => control.w < 24 || control.h < 24);
+  if (smallSigned.length) failures.push(`signed-in: touch targets under 24px ${smallSigned.map((control) => `${control.id || control.text}:${control.w}x${control.h}`).join(",")}`);
+
+  await evaluate('document.querySelector("#first-steps").click()');
+  await wait(700);
+  const firstSteps = await evaluate('document.querySelector("#log").innerText.includes("First steps:")');
+  if (!firstSteps) failures.push("signed-in: First steps did not open the tutorial");
+
+  await evaluate('document.querySelector("#characters-button").click()');
+  await until(() => evaluate('!document.querySelector("#characters").hidden'), "characters panel", 5000);
+  await evaluate('document.querySelector("#characters-close").click()');
+  await wait(200);
+  const closed = await evaluate('document.querySelector("#characters").hidden');
+  if (!closed) failures.push("signed-in: Back to game did not close the characters panel");
+
+  const signedTree = await send("Accessibility.getFullAXTree");
+  const signedNodes = (signedTree.nodes ?? []).filter((node) => !node.ignored);
+  const signedUnnamed = signedNodes
+    .filter((node) => ["button", "link", "textbox", "combobox", "tab", "checkbox"].includes(node.role?.value ?? "") && !(node.name?.value ?? "").trim())
+    .map((node) => node.role?.value ?? "");
+  if (signedUnnamed.length) failures.push(`signed-in: unnamed interactive roles ${signedUnnamed.join(",")}`);
+
+  await send("Emulation.setDeviceMetricsOverride", { width: 390, height: 844, deviceScaleFactor: 2, mobile: true });
+  await wait(400);
+  const signedMobile = await evaluate(`(() => {
+    const visible = (el) => el && !el.hidden && el.offsetParent !== null && getComputedStyle(el).visibility !== "hidden" && getComputedStyle(el).display !== "none";
+    const controls = [...document.querySelectorAll("#signed button, #hud button, #entry input, #entry button")].filter(visible).map((el) => {
+      const r = el.getBoundingClientRect();
+      return { id: el.id, text: (el.getAttribute("aria-label") || el.textContent || el.placeholder || "").trim().slice(0, 30), w: Math.round(r.width), h: Math.round(r.height) };
+    });
+    return {
+      signed: visible(document.querySelector("#signed")),
+      characters: visible(document.querySelector("#characters")),
+      firstSteps: visible(document.querySelector("#first-steps")),
+      persistence: visible(document.querySelector("#account-persistence")),
+      cmd: visible(document.querySelector("#cmd")),
+      state: document.querySelector("#state")?.textContent.trim(),
+      controls,
+      overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+    };
+  })()`);
+  report.signedInMobile = signedMobile;
+  if (!signedMobile.signed || signedMobile.characters || !signedMobile.firstSteps || !signedMobile.persistence || !signedMobile.cmd || !signedMobile.state) {
+    failures.push(`signed-in mobile shell failed ${JSON.stringify(signedMobile)}`);
+  }
+  if (signedMobile.overflow) failures.push("signed-in mobile: horizontal overflow");
+  const smallSignedMobile = signedMobile.controls.filter((control) => control.w < 24 || control.h < 24);
+  if (smallSignedMobile.length) failures.push(`signed-in mobile: touch targets under 24px ${smallSignedMobile.map((control) => `${control.id || control.text}:${control.w}x${control.h}`).join(",")}`);
+
   console.log(JSON.stringify(report, null, 2));
   if (failures.length) {
     console.error("\nA11Y FAILURES:", failures.join(" | "));
