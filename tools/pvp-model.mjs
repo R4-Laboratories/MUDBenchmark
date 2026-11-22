@@ -38,9 +38,11 @@ const withArmor = (base, armor) => ({ ...base, armor });
 
 const DAWN = kit("dawn-blade", ["dawn-crown", "eclipse-plate", "ember-cloak", "shield", "boots", "gloves"]);
 const EMBER_BASE = kit("ember-brand", ["helmet", "eclipse-plate", "ember-cloak", "shield", "boots", "gloves"]);
-const EMBER_CURRENT = kit("ember-brand", ["red-helm", "eclipse-plate", "ember-cloak", "shield", "boots", "gloves"]);
+const EMBER_RED = kit("ember-brand", ["red-helm", "eclipse-plate", "ember-cloak", "shield", "boots", "gloves"]);
 const EMBER_BASELINE = withWeapon(EMBER_BASE, 6);
-const EMBER_NEXT = withWeapon(EMBER_CURRENT, 8);
+const EMBER_V034 = withWeapon(EMBER_RED, 7);
+const EMBER_CURRENT = EMBER_RED;
+const EMBER_NEXT = withWeapon(EMBER_RED, 9);
 const MIRROR_5 = kit("sword", ["jerkin", "helmet", "boots", "gloves", "shield"]);
 const MIRROR_10 = DAWN;
 
@@ -109,8 +111,9 @@ const scenarios = [
   { name: "level 5 mirror", dawn: MIRROR_5, ember: MIRROR_5, hp: maxHpForLevel(5) },
   { name: "level 10 mirror", dawn: MIRROR_10, ember: MIRROR_10, hp: maxHpForLevel(10) },
   { name: "dawn/ember baseline (6 / 2)", dawn: DAWN, ember: EMBER_BASELINE, hp: maxHpForLevel(10) },
-  { name: "dawn/ember current (7 / 3)", dawn: DAWN, ember: EMBER_CURRENT, hp: maxHpForLevel(10) },
-  { name: "dawn/ember next (8 / 3)", dawn: DAWN, ember: EMBER_NEXT, hp: maxHpForLevel(10) },
+  { name: "dawn/ember v0.91.34 (7 / 3)", dawn: DAWN, ember: EMBER_V034, hp: maxHpForLevel(10) },
+  { name: "dawn/ember v0.91.36 (8 / 3)", dawn: DAWN, ember: EMBER_CURRENT, hp: maxHpForLevel(10) },
+  { name: "dawn/ember next (9 / 3)", dawn: DAWN, ember: EMBER_NEXT, hp: maxHpForLevel(10) },
 ];
 const rows = scenarios.map((scenario) => ({ name: scenario.name, ...rate(scenario.dawn, scenario.ember, scenario.hp) }));
 
@@ -120,6 +123,7 @@ const output = {
   dawn: { weapon: DAWN.weapon, armor: DAWN.armor },
   ember: {
     baseline: { weapon: EMBER_BASELINE.weapon, armor: EMBER_BASELINE.armor },
+    v034: { weapon: EMBER_V034.weapon, armor: EMBER_V034.armor },
     current: { weapon: EMBER_CURRENT.weapon, armor: EMBER_CURRENT.armor },
     next: { weapon: EMBER_NEXT.weapon, armor: EMBER_NEXT.armor },
   },

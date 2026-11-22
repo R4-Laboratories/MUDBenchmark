@@ -1407,6 +1407,18 @@
       "level": "some-true",
       "statement": "Live PvP uses deterministic pseudo-RNG, not Math.random: the hit roll varies every round, but damage is fixed for each attacker within a duel because violence is every 12 ticks and 12*7 is divisible by 4. Across 141 random-tick dawn/ember matches, all 282 side-fights had exactly one damage value per side and every side had both hits and misses (per-side hit rates 25-75%, mean 44.1%). The higher-fixed-damage side won 89/107 decisive matches (83.2%). tools/pvp-model.mjs samples 1000 start ticks x both id assignments x both orientations with the real attackRoll: L5 and L10 mirrors 50.0/50.0, dawn/ember baseline (ember 6 / helm 2) 72.9% dawn, v0.91.34 (ember 7 / helm 3) 61.3%, next (ember 8 / helm 3) 50.0%. The model reproduces the live baseline 73.2% and candidate 62.5% within a point, validating v0.91.34. tools/balance.mjs increments the tick each round and its 46.25% PvP band is not the live gear model. tools/pvp-session.mjs gained --ticks, --world and --label for paired live samples. No production value changed.",
       "authority": "local tools/pvp-model.mjs and tools/pvp-session.mjs; 141 live random-tick dawn/ember report spans; 2026-11-22"
+    },
+    {
+      "id": "MB-230",
+      "level": "build",
+      "statement": "v0.91.36 raises the ember brand damage from 7 to 8; the Red Company helm stays at armour 3. The Gate checks both values. The fixed-damage PvP model reads the new world data and puts dawn/ember at 50.0% (was 61.3% at ember 7); a further ember 9 / helm 3 models at 39.3% dawn. The deterministic PvP band is 42.75% at 400 seeds, inside the Gate 25-75 band.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-231",
+      "level": "some-true",
+      "statement": "The v0.91.36 ember-8 candidate was confirmed in a paired live sample: 7 fixed start ticks x 2 login orders x 2 kit orientations = 28 unique pairs per arm. Current v0.91.34 (ember 7 / helm 3) dawn won 16/28 (57.1%); candidate v0.91.36 (ember 8 / helm 3) dawn won 14/28 (50.0%); 2 pairs flipped to ember and 0 to dawn, McNemar p=0.50. The paired dawn-minus-ember HP margin improved for ember in 22/28 pairs, was unchanged in 6 and worsened in 0; mean change -5.14 HP (95% CI -7.42 to -2.86), sign-test p<0.0001. The fixed-damage model predicted 61.3% -> 50.0%. A further ember 9 / helm 3 models at 39.3% dawn, so 8 is the stopping point.",
+      "authority": "local tools/pvp-session.mjs paired runs with /tmp/pvp-current.json and /tmp/pvp-next.json; 2026-11-22"
     }
   ]
 }

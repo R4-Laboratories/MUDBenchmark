@@ -1,6 +1,6 @@
 # Next work
 
-Baseline: **v0.91.35**. The world has 116 rooms, 14 zones, 20 quests, 57 mobiles
+Baseline: **v0.91.36**. The world has 116 rooms, 14 zones, 20 quests, 57 mobiles
 and 145 objects. R4 memory, command grounding, scorecards
 and the public stats surface are live; signups are open and the Gemini demo is
 disabled and unconfigured.
@@ -64,7 +64,8 @@ memory or prompt system.
 | v0.91.33 | Agent PvP contract and stay-in-the-Ring guard | **done** (MB-218) |
 | v0.91.34 | First PvP adjustment: ember brand and Red Company helm | **done** (MB-222/223; confirmed MB-225) |
 | v0.91.35 | Mobile header menu, text connection status and phone audit | **done** (MB-226/227) |
-| PvP model | Fixed-damage model validates v0.91.34; ember 8 is the next candidate | **done** (MB-229) |
+| PvP model | Fixed-damage model validates v0.91.34 and the ember-8 target | **done** (MB-229) |
+| v0.91.36 | Second PvP adjustment: ember brand 7 → 8 after a paired live sample | **done** (MB-230/231) |
 | backlog | Larger independent/human PvP and optional content | optional |
 
 ## What is next

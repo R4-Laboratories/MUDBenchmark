@@ -1569,7 +1569,7 @@ let techniques = { ok: true, why: [] };
   for (const id of ["sword", "greatsword", "club", "forge-hammer", "ember-brand", "fen-staff", "dawn-blade", "ember-forge-blade"]) {
     check(Boolean(techniqueForWeapon(world.objects.find((object) => object.id === id))), `weapon ${id} has no technique`);
   }
-  check(world.objects.find((object) => object.id === "ember-brand")?.damage === 7 && world.objects.find((object) => object.id === "red-helm")?.armor === 3, "the v0.91.34 PvP balance values are wrong");
+  check(world.objects.find((object) => object.id === "ember-brand")?.damage === 8 && world.objects.find((object) => object.id === "red-helm")?.armor === 3, "the v0.91.36 PvP balance values are wrong");
   check(TECHNIQUES["power-strike"]?.bonus === 4 && TECHNIQUES.bash?.rounds === 12 && TECHNIQUES.guard?.armor === 3, "the technique definitions are wrong");
   run([{ kind: "join", actorId: "t", name: "tech" }]);
   run([{ kind: "login", actorId: "t", key: "tech", token: null, authenticated: true }]);

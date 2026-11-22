@@ -276,7 +276,8 @@ and both kit orientations with the real `attackRoll`:
 | Level 10 mirror | 50.0% | 50.0% |
 | Dawn/ember baseline (ember 6 / helm 2) | **72.9%** | 27.1% |
 | Dawn/ember v0.91.34 (ember 7 / helm 3) | **61.3%** | 38.7% |
-| Dawn/ember next (ember 8 / helm 3) | **50.0%** | 50.0% |
+| Dawn/ember v0.91.36 (ember 8 / helm 3) | **50.0%** | 50.0% |
+| Dawn/ember next (ember 9 / helm 3) | 39.3% | **60.7%** |
 
 The model reproduces the live baseline (73.2%) and candidate (62.5%) within a
 point, so the v0.91.34 evidence is valid. It also explains why the
@@ -285,10 +286,28 @@ every round, giving damage variance the live server does not have. The live
 fixed-damage model is the reference for PvP gear; the deterministic band stays
 useful for the PvE bands and the Gate's broad 25–75% guard.
 
-**No production change in v0.91.35.** The next PvP candidate is ember brand
-damage 8, which the model puts at 50/50; it needs a live paired sample before
-any value changes. `tools/pvp-session.mjs` now accepts `--ticks`, `--world` and
-`--label` for that paired run.
+### v0.91.36 paired live confirmation
+
+The ember-8 candidate was sampled live in a paired design: 7 fixed start ticks
+× 2 login orders × 2 kit orientations = 28 unique pairs. Because only ember
+damage changes, the hit rolls are identical within a pair and the comparison is
+an exact counterfactual.
+
+| Arm | Dawn wins | Dawn share |
+| --- | --- | --- |
+| v0.91.34 current (ember 7 / helm 3) | 16 / 28 | 57.1% |
+| v0.91.36 candidate (ember 8 / helm 3) | 14 / 28 | **50.0%** |
+
+Two pairs flipped from dawn to ember and none flipped back. The win-flip
+McNemar p is 0.50, so the win count alone is not significant at this sample
+size. The paired finishing margin is much more sensitive: dawn-minus-ember HP
+improved for ember in 22/28 pairs, was unchanged in 6, and worsened in 0; the
+mean change is **-5.14 HP** (95% CI -7.42 to -2.86; sign-test p < 0.0001). The
+candidate also matches the fixed-damage model's 50.0% prediction.
+
+**v0.91.36 ships ember brand damage 8.** A further +1 (9 / 3) models at 39.3%
+dawn, which would overcorrect; no further value changed. `tools/pvp-session.mjs`
+accepts `--ticks`, `--world` and `--label` for future paired runs.
 
 ## Decision
 
@@ -309,18 +328,17 @@ data-driven PvP adjustment:** ember brand 6 → 7 and Red Company helm 2 → 3.
 - The L5 pvp-b 19/29 (65.5%, CI 47.3–80.1) and L10 pvp-a 12/20 (60%, CI
   38.7–78.1) remain watch items; no change.
 - No other damage, armour, food or level values changed. The deterministic
-  PvP band for dawn/ember is 46.25% at 400 seeds, inside the Gate's 25–75%;
+  PvP band for dawn/ember is 42.75% at 400 seeds, inside the Gate's 25–75%;
   it is a different tick model from live and is not used as the PvP gear
   reference.
-- The fixed-damage model puts the baseline at 72.9% and v0.91.34 at 61.3%,
-  matching the live 73.2% and 62.5% samples. The adjustment is validated and
-  kept. The model's next candidate, ember damage 8, is 50.0%; it needs a live
-  paired sample before shipping.
-- The next PvP pass should collect a paired live sample (same start ticks and
-  both orientations) plus a human/model sample. If dawn remains above roughly
-  65% with a CI excluding 50%, revisit the ember brand or burn; if it falls
-  below 50%, revert part of this change. If the L5 pvp-b lean persists,
-  inspect initiative/connection order.
+- The fixed-damage model puts the baseline at 72.9%, v0.91.34 at 61.3%, and
+  v0.91.36 at 50.0%, matching the live 73.2%, 62.5% and 50.0% samples. The
+  v0.91.36 paired sample improved ember's margin in 22/28 pairs without a
+  single regression. **v0.91.36 is the second data-driven PvP adjustment:**
+  ember brand 7 → 8.
+- No further PvP value changes. Ember 9 / helm 3 models at 39.3% dawn, so it
+  would overcorrect. A larger human/model sample remains the next check; if
+  the L5 pvp-b lean persists, inspect initiative/connection order.
 
 The deterministic bands remain the reference:
 
