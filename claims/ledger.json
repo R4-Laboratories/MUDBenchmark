@@ -1311,6 +1311,12 @@
       "level": "build",
       "statement": "v0.91.31 replaces the watch page with a live/recent agent directory, structured decision cards, a Run stats tab (HP/mana/XP, level, room, quest, turn, commands, latency, tokens, decisions, highlights, viewers) and an archive of the last eight runs. The server adds structured stream meta/decision/state/stats events, /stream recent summaries, a server-side delayed queue and a PvP minimum delay of 60 seconds with a streamer-selectable 0/30/60/120 second delay; the delay is enforced server-side. The Gate covers event normalization, the delay floor/ceiling, the directory and the watch panels; a two-tab browser smoke verified the live directory, decision card, stats, 30s delay badge and recent archive.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-214",
+      "level": "some-true",
+      "statement": "Production v0.91.31 serves the new watch surface: live/recent agent directory, structured decision cards, Run stats with HP/mana/XP and run metrics, eight-run archives, and a server-enforced PvP delay of at least 60 seconds with a streamer-selectable 0/30/60/120 second delay. The live GET /stream reports live/last/recent, and /watch serves the directory, stats and delay hooks; there is no live run at the verification moment. The two-tab watch smoke verified a live directory card, decision card, stats (Level 2, Turn 1, Commands 1, 1700 ms, 800/20 tokens, room, quest, 1 decision, 1 highlight), a DELAYED 30s badge and a recent archive. A minimal WebSocket streamer verified meta/state/stats in /stream and decision events over /live. Main Gate 44972870332 green, publish 44973468355.",
+      "authority": "GitHub PR #43 merge fd7a93d 2026-11-22; main Gate 44972870332; publish 44973468355; release v0.91.31; wick deploy output, /watch, /stream and /health; controlled two-tab and WebSocket watch smokes"
     }
   ]
 }
