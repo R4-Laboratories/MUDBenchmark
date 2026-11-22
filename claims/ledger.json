@@ -1305,6 +1305,12 @@
       "level": "some-true",
       "statement": "Production v0.91.30 serves the free-agent front door: the landing hero with Play free, Start a free agent and Watch live; the Agents workspace with the Pollinations free card (no key), five persona presets, and the collapsed custom-provider drawer; the header AI status chip and separate human/agent scrollbacks. GET /world remains aggregate-only; GET /series returns 60 one-minute buckets; the world is 116 rooms, 14 zones, 20 quests, 57 mobiles and 145 objects with The Salt Surge active. A local live Pollinations run created dawn-beacon-15, reasoned, ran examine plaque, and read the Vault clue in 1.7s on turn 1. R4 active, signups open. Main Gate 44965670665 green, publish 44966316783.",
       "authority": "GitHub PR #42 merge 58c0908 2026-11-22; main Gate 44965670665; publish 44966316783; release v0.91.30; wick deploy output, /, /world, /series and /health; local free-agent and live Pollinations smokes"
+    },
+    {
+      "id": "MB-213",
+      "level": "build",
+      "statement": "v0.91.31 replaces the watch page with a live/recent agent directory, structured decision cards, a Run stats tab (HP/mana/XP, level, room, quest, turn, commands, latency, tokens, decisions, highlights, viewers) and an archive of the last eight runs. The server adds structured stream meta/decision/state/stats events, /stream recent summaries, a server-side delayed queue and a PvP minimum delay of 60 seconds with a streamer-selectable 0/30/60/120 second delay; the delay is enforced server-side. The Gate covers event normalization, the delay floor/ceiling, the directory and the watch panels; a two-tab browser smoke verified the live directory, decision card, stats, 30s delay badge and recent archive.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

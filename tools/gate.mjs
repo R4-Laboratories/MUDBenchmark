@@ -55,7 +55,7 @@ import { admissionAdmits, decodeAdmissionRequest } from "./admission.mjs";
 import { measureCandidates } from "./measure.mjs";
 import { normalizePrismId, ownerAllowed, rebindPlan, tokenHash } from "../runtime/rebind.mjs";
 import { deleteLegacy } from "./delete-legacy.mjs";
-import { normalizeStreamEvent, publicStreamText } from "../runtime/stream.mjs";
+import { MAX_STREAM_DELAY, PVP_STREAM_DELAY, normalizeStreamEvent, publicStreamText, streamDelay } from "../runtime/stream.mjs";
 import { normalizeAiTurn, aiTurnAttributes } from "../runtime/metrics.mjs";
 import { summarizeSeries, summarizeTrends } from "../runtime/trends.mjs";
 import { playerLines, summarizePlayers } from "../runtime/playerstats.mjs";
@@ -1322,6 +1322,18 @@ let stream = { ok: true, why: [] };
   check(normalizeStreamEvent({ kind: "text", text: "A guard tells you x" }) === null, "a private-only text event was accepted");
   check(normalizeStreamEvent({ kind: "secret", text: "x" }) === null, "an unknown event kind was accepted");
   check(normalizeStreamEvent({ kind: "command", text: "x".repeat(500) })?.text.length === 240, "a command was not bounded");
+  const meta = normalizeStreamEvent({ kind: "meta", provider: "pollinations", model: "openai-fast", goal: "Explorer", character: "scout", owner: "secret" });
+  check(meta?.model === "openai-fast" && meta?.goal === "Explorer" && !("owner" in meta), "the stream meta event is wrong");
+  const decision = normalizeStreamEvent({ kind: "decision", text: "I should examine the plaque.", command: "examine plaque", turn: 1 });
+  check(decision?.command === "examine plaque" && decision?.text.includes("plaque"), "the decision event is wrong");
+  check(normalizeStreamEvent({ kind: "decision", text: "A guard tells you x" }) === null, "a private decision was accepted");
+  const streamState = normalizeStreamEvent({ kind: "state", hp: 12, maxHp: 20, mana: 5, maxMana: 5, level: 2, xp: 30, nextXp: 100, room: "The Atrium", quest: "A Curled Scroll", turn: 1 });
+  check(streamState?.hp === 12 && streamState?.room === "The Atrium" && streamState?.quest === "A Curled Scroll", "the stream state event is wrong");
+  const streamStats = normalizeStreamEvent({ kind: "stats", turn: 1, commands: 1, latencyMs: 1700, tokensIn: 800, model: "openai-fast" });
+  check(streamStats?.commands === 1 && streamStats?.latencyMs === 1700, "the stream stats event is wrong");
+  check(streamDelay(0, false) === 0 && streamDelay(30, false) === 30, "the chosen stream delay is wrong");
+  check(streamDelay(0, true) === PVP_STREAM_DELAY && streamDelay(30, true) === PVP_STREAM_DELAY, "the PvP stream delay floor is wrong");
+  check(streamDelay(120, true) === 120 && streamDelay(MAX_STREAM_DELAY + 100, false) === MAX_STREAM_DELAY, "the stream delay ceiling is wrong");
   const serverText = readFileSync(join(root, "runtime/server.mjs"), "utf8");
   check(/pathname === "\/live"/.test(serverText), "the server has no /live spectator socket");
   check(/#stream-state/.test(serverText), "the server does not confirm stream state");
@@ -1470,6 +1482,9 @@ let telemetry = { ok: true, why: [] };
   check(/startFreeAgent/.test(pageSource) && /ensurePrismOwner/.test(pageSource) && /id="agent-chip"/.test(pageSource), "the one-click free-agent flow is missing");
   check(/id="pulse-activity"/.test(statsSource) && /\/series\?minutes=/.test(statsSource), "the public world pulse chart is missing");
   check(/pathname === "\/series"/.test(serverSource) && /summarizeSeries\(/.test(serverSource) && /verb === "overview"/.test(serverSource) && /worldStatus\(state, ROOMS, \{ detail: false \}\)/.test(serverSource), "the overview or series route is missing");
+  const watchSource = readFileSync(join(root, "runtime/web/watch.html"), "utf8");
+  check(/id="agent-cards"/.test(watchSource) && /decision-card/.test(watchSource) && /id="stats-panel"/.test(watchSource) && /id="delay-badge"/.test(watchSource) && /loadDirectory/.test(watchSource), "the watch directory, decisions or stats panel is missing");
+  check(/flushLiveQueue/.test(serverSource) && /PVP_STREAM_DELAY/.test(serverSource) && /recentRuns/.test(serverSource) && /recent: recentRuns\.map\(publicRun\)/.test(serverSource) && /stream delay/.test(serverSource), "the stream delay or recent-run directory is missing");
 
   if (telemetry.why.length) { telemetry.ok = false; failures.push(`the telemetry foundation is broken: ${telemetry.why[0]}`); }
 }

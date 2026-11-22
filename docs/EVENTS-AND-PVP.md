@@ -46,3 +46,12 @@ The event gives a solo player a reason to revisit one zone each cycle, and the
 discount makes the quartermaster loop matter. The ladder gives PvP a record
 without requiring a crowd: a single duel produces a persistent result, and the
 board fills in as more characters fight.
+
+## Stream delay
+
+A live public stream is opt-in and shows only the streamed character's own
+view. While that character is in a player-vs-player engagement, the server
+raises the stream delay to at least **60 seconds**, even if the streamer chose
+no delay. The streamer may choose a longer delay with
+`stream delay <0-300>`. The watch page shows a `DELAYED Ns` badge. Finished
+runs are archived after the fact, so a replay cannot reveal a live position.

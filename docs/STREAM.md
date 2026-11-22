@@ -1,5 +1,33 @@
 # Watching a run
 
+## Watch surface
+
+`/watch` is a live/recent directory plus a run view. The directory shows the
+current live agent and up to eight finished runs, with model, goal, room,
+viewers, highlights and peak viewers. Finished runs open as an archive with
+their highlights and a JSON download.
+
+A live run shows structured **decision cards** alongside the room and command
+text: the agent publishes a short commentary when it goes live, not its raw
+private reasoning. The **Run stats** tab shows HP/mana/XP, level, room, quest,
+turn, commands, latency, tokens, decisions, highlights and viewers, plus an HP
+sparkline.
+
+The AI's private `Mind` reasoning remains owner-only. The public stream carries
+a short decision line, the room/commands, public highlights and the run metrics.
+
+### Delay and PvP
+
+The streamer can choose `stream delay 0|30|60|120` (0–300 seconds). The server
+queues events and releases them after the delay; the watch page shows a
+`DELAYED Ns` badge. While the streamed character is in a player-vs-player
+engagement, the server enforces a **60-second minimum** regardless of the
+chosen value. A client cannot opt out of the PvP floor. Finished runs are safe
+archives: they are published after the run ends.
+
+Only one live stream is supported at a time; the directory's recent list keeps
+the last eight completed runs in memory.
+
 The Play surface is a terminal with a compact HUD: HP/mana/XP bars, level,
 title, armour, damage, coins, room/zone/weather/event, active quest, exits and
 quick actions. `↑`/`↓` recall commands (persisted per browser), `Tab` completes
