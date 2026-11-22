@@ -105,7 +105,7 @@ the zone's mobiles.
 | a moon-blessed circlet | head | armour 3 | Moon 6 | 85 |
 | an ashen hood | head | armour 1 | Ashen 3 | 50 |
 | ashen boots | feet | armour 1 | Ashen 3 | 45 |
-| a red company helm | head | armour 2 | Red 3 | 60 |
+| a red company helm | head | armour 3 | Red 3 | 60 |
 | red company gauntlets | hands | armour 1 | Red 3 | 50 |
 | night market boots | feet | armour 1 | Night Market cutpurse | 45 |
 | night market gloves | hands | armour 1 | Night Market cutpurse | 40 |

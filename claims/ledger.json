@@ -1359,6 +1359,18 @@
       "level": "some-true",
       "statement": "Independent random-tick live PvP samples: level-5 mirror 17 matches, 434 attacks, 213 hits (49.1%, 95% CI 44.4-53.8%), 5.42 average damage, 12.76 rounds, pvp-b 12 / pvp-a 5 (70.6%, CI 46.9-86.7%), winner 13.6/40 HP; level-10 mirror 8 matches, 192 attacks, 82 hits (42.7%, CI 35.9-49.8%), 10.6 damage, 12.0 rounds, 4/4 wins, winner 11.8/65; level-10 dawn/ember 8 matches, 188 attacks, 81 hits (43.1%, CI 36.2-50.2%), 9.8 damage, 11.75 rounds, dawn 6 / ember 2 (75%, CI 40.9-92.9%), winner 20.8/65. Hit/damage match the armour/weapon curve; the level-5 pvp-b lean and dawn/ember lean are watch items, not a balance decision. No balance values changed.",
       "authority": "local isolated tools/pvp-session.mjs random-tick runs; server world.combat/world.duel spans; 2026-11-22"
+    },
+    {
+      "id": "MB-222",
+      "level": "build",
+      "statement": "v0.91.34 raises the ember brand damage from 6 to 7 and the Red Company helm armour from 2 to 3. The ember PvP kit now uses the Red Company helm, and tools/balance.mjs uses the same helm in the dawn/ember scenario. The deterministic PvP band remains 46.25% at 400 seeds, inside the Gate 25-75 band; the Gate checks the object values.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-223",
+      "level": "some-true",
+      "statement": "The v0.91.34 PvP candidate was sampled in both dawn/ember orientations with random world ticks: 40 matches, 926 attacks, 409 hits (44.17%), 10.21 average damage, 11.57 rounds, dawn 25 wins (62.5%, 95% CI 47.0-75.8%), winner 17.4/65 HP. The baseline before the change was 41 matches, 978 attacks, 426 hits (43.56%), 9.76 damage, 11.93 rounds, dawn 30 wins (73.2%, CI 58.1-84.3%). The adjustment moves toward even without overcorrecting; a larger independent/human sample is still needed.",
+      "authority": "local isolated tools/pvp-session.mjs random-tick samples; baseline and candidate spans; 2026-11-22"
     }
   ]
 }
