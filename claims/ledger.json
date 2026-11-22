@@ -1395,6 +1395,12 @@
       "level": "some-true",
       "statement": "The v0.91.35 mobile pass was verified locally: node tools/a11y.mjs reports ok on the desktop and 390x844 audits (no horizontal overflow, no control or navigation link under 24px, menu opens with Stats, #state text visible, guest Latest hidden); a focused headless-Chrome interaction run passes 15 checks covering menu focus, font size 16px to 17px, the Telemetry AI-run gate, Escape focus return and desktop Stats/Watch restoration. node tools/gate.mjs passes. A human VoiceOver/NVDA pass and final hands-on phone review remain open.",
       "authority": "local tools/a11y.mjs, tools/gate.mjs and /tmp/mobile-interaction.mjs run 2026-11-22; not a release or deployment claim"
+    },
+    {
+      "id": "MB-228",
+      "level": "some-true",
+      "statement": "Production v0.91.35 serves the mobile accessibility pass: the game header has a labelled Menu button (#mobile-nav-toggle) opening Stats, Watch live, Telemetry and font controls (#mobile-nav); the connection state renders as text (production showed 'connected', 75px wide); the guest Latest overlay is hidden; and primary touch targets are 44px on phones. The mobile Telemetry item mirrors the AI-run gate. A 390x844 headless-Chrome check against https://play.r4labs.org/ found no horizontal overflow, the menu visible and expanded with Stats/Watch, visible state text and hidden guest Latest. World 116 rooms, 14 zones, 20 quests, 57 mobiles and 145 objects. Main Gate 45050246339 green, publish 45051025293. A human VoiceOver/NVDA pass and final hands-on phone review remain open.",
+      "authority": "GitHub PR #47 merge eb5c641 2026-11-22; main Gate 45050246339; publish 45051025293; release v0.91.35; wick deploy output and served page; production mobile Chrome check at play.r4labs.org"
     }
   ]
 }
