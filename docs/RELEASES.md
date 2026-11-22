@@ -418,6 +418,10 @@ Rehearsed 2026-11-16:
   changes update the HUD immediately instead of one command later; the
   browser reconnect test now checks take/wear updates ARM without an
   intervening command (MB-236/237);
+- v0.91.39 (signed-in accessibility audit) extends `tools/a11y.mjs` to create
+  a Prism character and check the live shell at desktop and 390x844, and raises
+  the HUD quick-action/exit targets from 22px to 24px (32px on mobile)
+  (MB-239/240);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

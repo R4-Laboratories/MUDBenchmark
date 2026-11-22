@@ -1461,6 +1461,18 @@
       "level": "some-true",
       "statement": "Production v0.91.38 serves the post-tick HUD refresh. The deployed runtime/server.mjs contains the refreshIds hook; the browser reconnect test took and wore a cloak and saw ARM 1 in the HUD before another command, then passed restart, Prism resume, competing-tab takeover and interrupted-quit checks. The refresh is sent only to actors whose pending intent ran; login/register keep their own state send. World 116 rooms, 14 zones, 20 quests, 57 mobiles and 145 objects. Main Gate 45079552578 green, publish 45080312435. A human VoiceOver/NVDA pass and final hands-on phone review remain manual.",
       "authority": "GitHub PR #54 merge e17e8a8 2026-11-22; main Gate 45079552578; publish 45080312435; release v0.91.38; wick deploy output, artifact server.mjs and /health; local macOS Chrome reconnect test"
+    },
+    {
+      "id": "MB-239",
+      "level": "build",
+      "statement": "v0.91.39 extends tools/a11y.mjs from the guest pages to the signed-in game: it creates a Prism character, checks the hidden character panel, First steps/Characters controls, command focus, unnamed interactive roles, the tutorial and Back to game, and repeats the 390x844 overflow/target checks in the live shell. The HUD quick-action and exit buttons are raised from 22px to 24px on desktop (32px on mobile) after the audit found them below the 24px target.",
+      "gate": "tools/a11y.mjs"
+    },
+    {
+      "id": "MB-240",
+      "level": "some-true",
+      "statement": "The v0.91.39 signed-in accessibility audit passes locally at 1440x900 and 390x844. It creates a Prism character, confirms the character panel is hidden, First steps and Characters are visible/named, First steps opens the tutorial, Back to game closes the panel, #cmd has focus, no unnamed interactive roles are present, no horizontal overflow occurs, and all visible signed-in controls meet 24px after the HUD target fix. The guest desktop/mobile audits, contrast and reduced-motion checks remain green. A human VoiceOver/NVDA pass and final hands-on phone review remain manual.",
+      "authority": "local tools/a11y.mjs run with macOS Chrome; 2026-11-22"
     }
   ]
 }
