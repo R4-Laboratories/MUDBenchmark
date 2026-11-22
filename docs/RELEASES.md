@@ -381,6 +381,12 @@ Rehearsed 2026-11-16:
   commands, latency and tokens, an eight-run archive, and a server-enforced
   PvP stream delay (60s minimum) with a streamer-selectable 0/30/60/120s delay
   (MB-213);
+- v0.91.32 (accessibility audit) adds `tools/a11y.mjs` to the CI Gate and fixes
+  the issues it found: first-Tab skip links on all pages, watch/stats
+  focus-visible rules, full tab/tabpanel ARIA and arrow-key navigation, a watch
+  transcript log and polite announcer, named tables and charts, dynamic HP
+  sparkline labels, and removal of the sign-in autofocus that pre-empted the
+  skip link (MB-215);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

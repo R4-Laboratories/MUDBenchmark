@@ -7,12 +7,16 @@
   <style>
     :root {
       --bg:#080b0f; --surface:#0d1219; --surface-2:#111823; --line:#1e2a38;
-      --text:#e6edf5; --muted:#9aa8b8; --faint:#7d8b9c; --accent:#5eead4;
+      --text:#e6edf5; --muted:#9aa8b8; --faint:#7d8b9c; --accent:#5eead4; --accent-ink:#04110f;
       --link:#7dd3fc; --warn:#fbbf24; --danger:#fb7185;
       --font-ui:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
       --font-mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
     }
     *{box-sizing:border-box}
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+    .skip{position:absolute;left:8px;top:-40px;z-index:100;padding:8px 10px;border-radius:6px;background:var(--accent);color:#04110f;font-weight:700;text-decoration:none}
+    .skip:focus{top:8px}
+    a:focus-visible,button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     body{margin:0;background:var(--bg);color:var(--text);font:13px/1.5 var(--font-ui)}
     header{min-height:52px;display:flex;align-items:center;gap:12px;padding:0 16px;border-bottom:1px solid var(--line)}
     .brand-mark{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;background:var(--accent);color:#04110f;font-weight:800}
@@ -60,6 +64,7 @@
   </style>
 </head>
 <body>
+  <a class="skip" href="#main">Skip to telemetry</a>
   <header>
     <span class="brand-mark">M</span>
     <strong class="wordmark">MUDBench <span>Stats</span></strong>
@@ -67,24 +72,24 @@
     <a href="/">Play / Watch AI →</a>
     <a href="/watch">Live stream →</a>
   </header>
-  <main>
+  <main id="main">
     <h1>World telemetry</h1>
     <p class="sub">A public view of the simulation: world size, player sessions, quest completion, AI turns, model latency, command use, leaderboard and the last stream. No account keys, private thoughts, tells or mail.</p>
     <section class="pulse-panel">
       <div class="pulse-head">
         <h2>World pulse</h2>
         <div class="pulse-range" id="pulse-range" role="group" aria-label="Chart window">
-          <button type="button" data-minutes="60" class="active">1h</button>
-          <button type="button" data-minutes="360">6h</button>
-          <button type="button" data-minutes="1440">24h</button>
+          <button type="button" data-minutes="60" class="active" aria-pressed="true">1h</button>
+          <button type="button" data-minutes="360" aria-pressed="false">6h</button>
+          <button type="button" data-minutes="1440" aria-pressed="false">24h</button>
         </div>
       </div>
       <svg id="pulse-activity" class="pulse-chart" viewBox="0 0 800 180" role="img" aria-label="Accepted and refused commands over time"></svg>
       <svg id="pulse-events" class="pulse-chart" viewBox="0 0 800 180" role="img" aria-label="Combat rounds, quest completions and AI turns over time"></svg>
       <div class="pulse-legend" id="pulse-legend"></div>
-      <div class="pulse-meta"><span id="pulse-updated">loading…</span><a href="/series?minutes=60" target="_blank" rel="noopener">Raw series JSON ↗</a></div>
+      <div class="pulse-meta"><span id="pulse-updated" role="status" aria-live="polite">loading…</span><a href="/series?minutes=60" target="_blank" rel="noopener">Raw series JSON ↗</a></div>
     </section>
-    <p id="updated">loading…</p>
+    <p id="updated" role="status" aria-live="polite">loading…</p>
     <section>
       <h2>World</h2>
       <div class="cards" id="world-cards"></div>
@@ -95,7 +100,7 @@
       <div class="split" style="margin-top:10px">
         <div class="panel">
           <div class="small muted" style="margin-bottom:6px">Quest completion (per character)</div>
-          <table><thead><tr><th>Quest</th><th>Actors</th><th>Finished</th><th>Rate</th></tr></thead><tbody id="player-quests"></tbody></table>
+          <table aria-label="Quest completion"><thead><tr><th scope="col">Quest</th><th scope="col">Actors</th><th scope="col">Finished</th><th scope="col">Rate</th></tr></thead><tbody id="player-quests"></tbody></table>
         </div>
         <div class="panel">
           <div class="small muted" style="margin-bottom:6px">Levels at the last snapshot</div>
@@ -109,7 +114,7 @@
         <div class="cards" id="ai-cards"></div>
         <div class="panel" style="margin-top:10px">
           <div class="small muted" style="margin-bottom:6px">Models</div>
-          <table><thead><tr><th>Model</th><th>Turns</th><th>p50</th><th>p95</th><th>Invalid</th><th>Loops</th></tr></thead><tbody id="models"></tbody></table>
+          <table aria-label="AI models"><thead><tr><th scope="col">Model</th><th scope="col">Turns</th><th scope="col">p50</th><th scope="col">p95</th><th scope="col">Invalid</th><th scope="col">Loops</th></tr></thead><tbody id="models"></tbody></table>
         </div>
       </section>
       <section>
@@ -121,7 +126,7 @@
       <section>
         <h2>Leaderboard</h2>
         <div class="panel">
-          <table><thead><tr><th>#</th><th>Character</th><th>Level</th><th>XP</th><th>Quests</th><th>Guild</th></tr></thead><tbody id="board"></tbody></table>
+          <table aria-label="Leaderboard"><thead><tr><th scope="col">#</th><th scope="col">Character</th><th scope="col">Level</th><th scope="col">XP</th><th scope="col">Quests</th><th scope="col">Guild</th></tr></thead><tbody id="board"></tbody></table>
         </div>
       </section>
       <section>
@@ -219,6 +224,11 @@
   };
   const renderPulse = (data, cached) => {
     const series = data?.series ?? [];
+    const totals = data?.totals ?? {};
+    document.getElementById("pulse-activity").setAttribute("aria-label",
+      `Commands over time: ${totals.commands ?? 0} accepted, ${totals.refused ?? 0} refused.`);
+    document.getElementById("pulse-events").setAttribute("aria-label",
+      `Events over time: ${totals.combats ?? 0} combat rounds, ${totals.quests ?? 0} quests, ${totals.aiTurns ?? 0} AI turns.`);
     drawPulse("pulse-activity", series, [
       { key: "commands", color: "#5eead4" },
       { key: "refused", color: "#fbbf24" },
@@ -230,7 +240,6 @@
     ]);
     const legend = document.getElementById("pulse-legend");
     legend.replaceChildren();
-    const totals = data?.totals ?? {};
     for (const [label, color, value] of [
       ["commands", "#5eead4", totals.commands],
       ["refused", "#fbbf24", totals.refused],
@@ -260,7 +269,10 @@
   for (const button of document.querySelectorAll("#pulse-range button")) {
     button.addEventListener("click", () => {
       pulseMinutes = Number(button.dataset.minutes) || 60;
-      for (const other of document.querySelectorAll("#pulse-range button")) other.classList.toggle("active", other === button);
+      for (const other of document.querySelectorAll("#pulse-range button")) {
+        other.classList.toggle("active", other === button);
+        other.setAttribute("aria-pressed", String(other === button));
+      }
       void pulse();
     });
   }

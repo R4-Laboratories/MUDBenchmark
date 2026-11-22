@@ -15,6 +15,7 @@
       --muted: #9aa8b8;
       --faint: #7d8b9c;
       --accent: #5eead4;
+      --accent-ink: #04110f;
       --accent-2: #7dd3fc;
       --warn: #fbbf24;
       --danger: #fb7185;
@@ -25,6 +26,19 @@
     }
     * { box-sizing: border-box; }
     [hidden] { display: none !important; }
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+    }
+    .skip {
+      position: absolute; left: 8px; top: -40px; z-index: 100; padding: 8px 10px;
+      border-radius: 6px; background: var(--accent); color: #04110f;
+      font-weight: 700; text-decoration: none;
+    }
+    .skip:focus { top: 8px; }
+    a:focus-visible, button:focus-visible, input:focus-visible, [tabindex]:focus-visible {
+      outline: 2px solid var(--accent); outline-offset: 2px;
+    }
     html, body { height: 100%; }
     body {
       margin: 0; background: var(--bg); color: var(--text);
@@ -175,6 +189,7 @@
   </style>
 </head>
 <body>
+  <a class="skip" href="#main">Skip to transcript</a>
   <header>
     <span class="dot" id="dot"></span>
     <strong class="brand">MUDBench <span class="muted">LIVE</span></strong>
@@ -187,7 +202,7 @@
     <a href="/stats" class="small">Stats</a>
     <a href="/" class="small">Play / start an agent →</a>
   </header>
-  <section id="directory" aria-label="Agent directory">
+  <section id="directory" role="region" aria-label="Agent directory">
     <div class="dir-head">
       <div>
         <h1>Watch an agent play</h1>
@@ -197,8 +212,8 @@
     </div>
     <div id="agent-cards"></div>
   </section>
-  <main>
-    <div id="feed">
+  <main id="main">
+    <div id="feed" role="log" aria-label="Agent transcript" aria-live="off" tabindex="0">
       <div id="offline">
         <h1>No agent is live right now</h1>
         <p>Start a free agent from the game, then press <strong>Go live</strong> in the run panel.</p>
@@ -208,10 +223,10 @@
     </div>
     <aside id="side">
       <div id="side-tabs" role="tablist" aria-label="Watch panels">
-        <button type="button" class="side-tab active" data-side="chat" role="tab" aria-selected="true">Chat</button>
-        <button type="button" class="side-tab" data-side="stats" role="tab" aria-selected="false">Run stats</button>
+        <button type="button" class="side-tab active" id="tab-chat" data-side="chat" role="tab" aria-selected="true" aria-controls="chat-panel" tabindex="0">Chat</button>
+        <button type="button" class="side-tab" id="tab-stats" data-side="stats" role="tab" aria-selected="false" aria-controls="stats-panel" tabindex="-1">Run stats</button>
       </div>
-      <div id="chat-panel">
+      <div id="chat-panel" role="tabpanel" aria-labelledby="tab-chat" tabindex="0">
         <div id="poll" hidden></div>
         <div id="chat" aria-live="polite" aria-label="Audience chat"></div>
         <form id="chat-form">
@@ -219,7 +234,7 @@
           <button type="submit" disabled>Send</button>
         </form>
       </div>
-      <div id="stats-panel" hidden>
+      <div id="stats-panel" role="tabpanel" aria-labelledby="tab-stats" tabindex="0" hidden>
         <div class="run-meta" id="run-meta">No live run.</div>
         <div class="live-bars" id="live-bars"></div>
         <svg id="hp-spark" viewBox="0 0 240 64" role="img" aria-label="HP over the run"></svg>
@@ -228,6 +243,7 @@
       </div>
     </aside>
   </main>
+  <div id="watch-announcer" class="sr-only" role="status" aria-live="polite"></div>
   <script type="module">
     const dot = document.getElementById("dot");
     const character = document.getElementById("character");
@@ -247,6 +263,7 @@
     const hpSpark = document.getElementById("hp-spark");
     const runStats = document.getElementById("run-stats");
     const delayNote = document.getElementById("delay-note");
+    const watchAnnouncer = document.getElementById("watch-announcer");
 
     let socket = null;
     let retry = 0;
@@ -268,17 +285,30 @@
       stick = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 60;
     });
 
+    function selectSide(tab, focus = false) {
+      const which = tab.dataset.side;
+      for (const other of document.querySelectorAll(".side-tab")) {
+        const active = other === tab;
+        other.classList.toggle("active", active);
+        other.setAttribute("aria-selected", String(active));
+        other.tabIndex = active ? 0 : -1;
+      }
+      document.getElementById("chat-panel").hidden = which !== "chat";
+      document.getElementById("stats-panel").hidden = which !== "stats";
+      if (which === "stats") renderStats();
+      if (focus) tab.focus();
+    }
     for (const tab of document.querySelectorAll(".side-tab")) {
-      tab.addEventListener("click", () => {
-        const which = tab.dataset.side;
-        for (const other of document.querySelectorAll(".side-tab")) {
-          const active = other === tab;
-          other.classList.toggle("active", active);
-          other.setAttribute("aria-selected", String(active));
-        }
-        document.getElementById("chat-panel").hidden = which !== "chat";
-        document.getElementById("stats-panel").hidden = which !== "stats";
-        if (which === "stats") renderStats();
+      tab.addEventListener("click", () => selectSide(tab));
+      tab.addEventListener("keydown", (event) => {
+        if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+        event.preventDefault();
+        const tabs = [...document.querySelectorAll(".side-tab")];
+        const index = tabs.indexOf(tab);
+        const next = event.key === "Home" ? tabs[0]
+          : event.key === "End" ? tabs[tabs.length - 1]
+          : tabs[(index + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length];
+        selectSide(next, true);
       });
     }
 
@@ -387,6 +417,7 @@
       if (event.kind === "decision") {
         decisions += 1;
         decisionCard(event);
+        watchAnnouncer.textContent = `Decision: ${event.text}`;
         renderStats();
         return;
       }
@@ -452,6 +483,9 @@
 
     function drawSpark() {
       hpSpark.replaceChildren();
+      hpSpark.setAttribute("aria-label", liveState
+        ? `HP over the run: ${value(liveState.hp)} of ${value(liveState.maxHp)}.`
+        : "HP over the run: no state snapshots yet.");
       const W = 240, H = 64, P = 5;
       const grid = document.createElementNS("http://www.w3.org/2000/svg", "line");
       grid.setAttribute("x1", P); grid.setAttribute("x2", W - P);
@@ -526,6 +560,7 @@
       tick.textContent = live?.tick != null ? `tick ${live.tick}` : "";
       delayBadge.hidden = !live || delay <= 0;
       delayBadge.textContent = `DELAYED ${delay}s`;
+      if (live) watchAnnouncer.textContent = `Run live: ${live.name}${live.room ? ` in ${live.room}` : ""}.`;
       const chatOn = live ? live.chat !== false : false;
       input.disabled = !live || !chatOn;
       send.disabled = !live || !chatOn;
@@ -741,6 +776,7 @@
         setLive(null);
         showOffline();
         loadDirectory();
+        watchAnnouncer.textContent = "The run ended.";
         line("The run ended.", "status");
         return;
       }
@@ -761,6 +797,7 @@
         delay = payload.delay ?? 0;
         if (live) live.delay = delay;
         updateHeader();
+        watchAnnouncer.textContent = delay > 0 ? `Stream delayed by ${delay} seconds.` : "Stream delay removed.";
         renderStats();
         return;
       }
