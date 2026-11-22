@@ -49,7 +49,7 @@ captain. Standing comes from the Eclipse Court:
 - eclipse regent +3
 
 Its quartermaster sells a red company axe (mainhand, damage 6, Rage, standing
-3), a red company helm (head, armour 2), red company gauntlets (hands, armour
+3), a red company helm (head, armour 3), red company gauntlets (hands, armour
 1), and red company boots (feet, armour 2, standing 6).
 
 ## The three path techniques

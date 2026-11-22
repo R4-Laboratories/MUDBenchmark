@@ -60,8 +60,9 @@ memory or prompt system.
 | v0.91.30 | Free-agent front door, personas and custom-provider drawer | **done** (MB-211) |
 | v0.91.31 | Watch directory, decision cards, run stats and PvP delay | **done** (MB-213) |
 | v0.91.32 | Browser accessibility audit and ARIA/focus fixes | **done** (MB-215) |
-| PvP | Live mirror, two-agent, asymmetric and random-tick samples; no balance change | **done** (MB-217/219/221) |
+| PvP | Live mirror, two-agent, asymmetric and random-tick samples | **done** (MB-217/219/221) |
 | v0.91.33 | Agent PvP contract and stay-in-the-Ring guard | **done** (MB-218) |
+| v0.91.34 | First PvP adjustment: ember brand and Red Company helm | **in flight** (MB-222/223) |
 | backlog | Larger independent/human PvP and optional content | optional |
 
 ## What is next

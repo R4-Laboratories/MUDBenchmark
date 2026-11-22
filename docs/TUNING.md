@@ -213,51 +213,65 @@ The existing deterministic sampler's 47% for this matchup is not contradicted by
 two close outcomes; the live sample says the matchup warrants a larger,
 independent pass, not a damage change.
 
-### Independent random-tick samples (post-v0.91.33)
+### Independent random-tick samples (v0.91.33 baseline)
 
 `tools/pvp-session.mjs --random-tick=1` starts each fresh world at a random
-world tick, so the combat rolls are no longer the same sequence. The sample
-below combines a pilot plus two eight-match batches where applicable.
+world tick, so the combat rolls are independent. Both orientations of the
+dawn/ember matchup are run: in the normal orientation dawn is pvp-a; in the
+swapped orientation dawn is pvp-b.
 
 | Matchup | Matches | Attacks | Hits | Hit rate (95% CI) | Avg damage | Exchange rounds | Wins | Winner HP |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| L5 mirror | 17 | 434 | 213 | **49.1%** (44.4–53.8%) | **5.42** | **12.76** | B 12 / A 5 (70.6%, 46.9–86.7%) | 13.6 / 40 |
-| L10 mirror | 8 | 192 | 82 | **42.7%** (35.9–49.8%) | **10.6** | **12.0** | A 4 / B 4 | 11.8 / 65 |
-| L10 dawn/ember | 8 | 188 | 81 | **43.1%** (36.2–50.2%) | **9.8** | **11.75** | dawn 6 / ember 2 (75%, 40.9–92.9%) | 20.8 / 65 |
+| L5 mirror | 29 | 728 | 352 | **48.35%** (44.7–52.0) | **5.58** | **12.55** | B 19 / A 10 (65.5%, 47.3–80.1) | 13.8 / 40 |
+| L10 mirror | 20 | 490 | 209 | **42.65%** (38.3–47.1) | **10.44** | **12.25** | A 12 / B 8 (60%, 38.7–78.1) | 11.1 / 65 |
+| L10 dawn/ember baseline | 41 | 978 | 426 | **43.56%** (40.4–46.8) | **9.76** | **11.93** | dawn 30 / ember 11 (73.2%, 58.1–84.3) | 18.9 / 65 |
 
+- The dawn/ember baseline is 15/20 in the normal orientation and 15/21 in the
+  swapped orientation; the kit effect is not just the A/B side.
 - The hit rates match `57 - armour` (50% at L5, 44% at L10), and average
   damage matches `1..4 + weapon` (5.5 and 10.5) within the sample.
-- The level-10 mirror is even. The level-5 mirror leans to pvp-b and the
-  dawn/ember matchup leans to dawn, but both 95% intervals include 50%; this
-  is watch-list evidence, not a balance result.
-- The level-5 lean may be a connection-order/initiative artifact; the level-10
-  mirror did not reproduce it.
-- No one-shot: the winner retained 18–34% of max HP on average.
+- The L5 mirror leans to pvp-b and the L10 mirror leans to pvp-a, but both
+  intervals include 50%; watch-list only.
+- No one-shot: the winner retained 17–34% of max HP on average.
+
+### Candidate v0.91.34 adjustment
+
+The first data-driven PvP change is a small Red Company buff: **ember brand
+damage 6 → 7** and **Red Company helm armour 2 → 3**. The ember sample kit now
+uses the Red Company helm instead of the generic iron helmet.
+
+| Sample | Matches | Attacks | Hits | Hit rate | Avg damage | Rounds | Dawn wins | Winner HP |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Baseline | 41 | 978 | 426 | 43.56% | 9.76 | 11.93 | 30 (73.2%, 58.1–84.3) | 18.9 / 65 |
+| Candidate | 40 | 926 | 409 | **44.17%** | **10.21** | **11.57** | **25 (62.5%, 47.0–75.8)** | 17.4 / 65 |
+
+The candidate is not an overcorrection: the point estimate moves from 73.2% to
+62.5%, the confidence interval now includes 50%, and the hit/damage curve is
+unchanged. It remains a watch item until a larger independent or human sample.
 
 ## Decision
 
-No balance value changes in v0.91.19, v0.91.20, v0.91.26 or this pass.
+No balance value changes before v0.91.34. **v0.91.34 makes the first
+data-driven PvP adjustment:** ember brand 6 → 7 and Red Company helm 2 → 3.
 
-- The 64.3% remote hit rate is within sampling noise of the `57 - armour`
-  curve; 14 rounds is too small to distinguish it from 57%.
-- Average damage 4.67 matches a short sword's `1..4 + 3` range (expected 5.5).
-- The fights ended in kills with no player deaths; the wraith is an early
-  Undervault mobile, not a capstone.
-- The live mirror duels are close and consistent with the armour/damage curve:
-  the winner finished at 4/40 and 11/65. No damage, armour, food or level
-  change is justified.
-- The live mirror cannot estimate a win rate; the two-agent sample proves the
-  model-facing PvP path but is a behaviour sample, not a balance sample. The
-  asymmetric dawn/ember sample is close (winner at 3/65 in one outcome) and
-  deterministic; the 8/8 does not establish a win rate.
-- No damage, armour, food or level change is justified. The independent
-  samples match the hit/damage curve; the level-5 pvp-b lean and the dawn/ember
-  lean are watch items, not decisions.
-- The next PvP pass should collect 20–30 independent matches per matchup,
-  especially dawn vs ember and a level-5 login-order-balanced batch. If dawn
-  remains above roughly 65% with a confidence interval excluding 50%, revisit
-  the ember brand or dawn armour; if the level-5 pvp-b lean persists, inspect
-  initiative/connection order. Human PvP remains the strongest evidence.
+- Historical: the 64.3% remote hit rate is within sampling noise of the
+  `57 - armour` curve; average damage 4.67 matches `1..4 + 3`; the wraith
+  fights ended in kills with no player deaths.
+- The live mirror duels are close and consistent with the armour/damage curve.
+- The two-agent sample proves the model-facing PvP path but is a behaviour
+  sample, not a balance sample.
+- The independent dawn/ember baseline was 30/41 (73.2%, CI 58.1–84.3) with
+  dawn winning in both orientations. The v0.91.34 candidate is 25/40 (62.5%,
+  CI 47.0–75.8), with hit rate 44.17% and average damage 10.21. The adjustment
+  is modest and moves the matchup toward even; it does not prove balance.
+- The L5 pvp-b 19/29 (65.5%, CI 47.3–80.1) and L10 pvp-a 12/20 (60%, CI
+  38.7–78.1) remain watch items; no change.
+- No other damage, armour, food or level values changed. The deterministic
+  PvP band for dawn/ember is 46.25% at 400 seeds, inside the Gate's 25–75%.
+- The next PvP pass should collect 20–30 candidate matches plus a human/model
+  sample. If dawn remains above roughly 65% with a CI excluding 50%, revisit
+  the ember brand or burn; if it falls below 50%, revert part of this change.
+  If the L5 pvp-b lean persists, inspect initiative/connection order.
 
 The deterministic bands remain the reference:
 

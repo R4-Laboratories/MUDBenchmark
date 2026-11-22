@@ -58,7 +58,7 @@ const scenarios = [
   { band: "unseeded", name: "level 10 unarmored / regent", level: 10, gear: [], enemy: "eclipse-regent" },
   { band: "pvp", name: "level 5 sword+jerkin mirror", level: 5, gear: ["sword", "jerkin"], enemyPlayer: true, enemyLevel: 5, enemyGear: ["sword", "jerkin"] },
   { band: "pvp", name: "level 5 spark / sword+jerkin", level: 5, gear: [], spells: ["spark"], guild: "mages", enemyPlayer: true, enemyLevel: 5, enemyGear: ["sword", "jerkin"] },
-  { band: "pvp", name: "level 10 dawn blade+plate / ember brand+plate", level: 10, gear: ["dawn-blade", "dawn-crown", "eclipse-plate", "ember-cloak", "shield"], enemyPlayer: true, enemyLevel: 10, enemyGear: ["ember-brand", "helmet", "eclipse-plate", "ember-cloak", "shield"] },
+  { band: "pvp", name: "level 10 dawn blade+plate / ember brand+plate", level: 10, gear: ["dawn-blade", "dawn-crown", "eclipse-plate", "ember-cloak", "shield"], enemyPlayer: true, enemyLevel: 10, enemyGear: ["ember-brand", "red-helm", "eclipse-plate", "ember-cloak", "shield"] },
 ];
 
 const STATUS_ROUNDS = { burn: 2, bleed: 3, chill: 2 };

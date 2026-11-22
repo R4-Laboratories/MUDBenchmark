@@ -3,6 +3,7 @@
 //
 //   node tools/pvp-session.mjs --level=5 --matches=12 --random-tick=1
 //   node tools/pvp-session.mjs --level=10 --matches=12 --matchup=dawn-ember --random-tick=1
+//   node tools/pvp-session.mjs --level=10 --matches=20 --matchup=dawn-ember --random-tick=1 --swap=1
 //
 // Each match starts a fresh world with both characters in The Ring, gives each
 // an identical mirrored kit, logs both in through the real WebSocket, and runs
@@ -31,11 +32,12 @@ const MATCHES = Math.max(1, Number(args.get("matches") ?? process.env.PVP_MATCHE
 const STAGGER_MS = Math.max(0, Number(args.get("stagger") ?? process.env.PVP_STAGGER ?? 0));
 const MATCHUP = args.get("matchup") ?? process.env.PVP_MATCHUP ?? "mirror";
 const RANDOM_TICK = args.get("random-tick") === "1" || process.env.PVP_RANDOM_TICK === "1";
+const SWAP = args.get("swap") === "1" || process.env.PVP_SWAP === "1";
 const PASSWORD = "pvp-pass";
 const RING = 33;
 const NAMES = ["pvp-a", "pvp-b"];
 const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-const OUT = join(process.cwd(), "local", "pvp", `level-${LEVEL}-${MATCHUP}-${stamp}`);
+const OUT = join(process.cwd(), "local", "pvp", `level-${LEVEL}-${MATCHUP}${SWAP ? "-swap" : ""}-${stamp}`);
 mkdirSync(OUT, { recursive: true });
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -67,14 +69,18 @@ const KIT = LEVEL >= 10
     ];
 const EMBER_KIT = [
   ["ember-brand", "ember brand", "wield"],
-  ["helmet", "iron helmet", "wear"],
+  ["red-helm", "red company helm", "wear"],
   ["eclipse-plate", "eclipse plate", "wear"],
   ["ember-cloak", "ember cloak", "wear"],
   ["shield", "round shield", "wear"],
   ["boots", "pair of leather boots", "wear"],
   ["gloves", "pair of leather gloves", "wear"],
 ];
-const kitFor = (color) => MATCHUP === "dawn-ember" && color === "cobalt" ? EMBER_KIT : KIT;
+const kitFor = (color) => {
+  if (MATCHUP !== "dawn-ember") return KIT;
+  const dawnSide = (color === "crimson") !== SWAP;
+  return dawnSide ? KIT : EMBER_KIT;
+};
 
 const sleep = wait;
 const makeState = (world) => {
@@ -281,6 +287,7 @@ const oneMatch = async (matchNumber, first) => {
       first,
       level: LEVEL,
       matchup: MATCHUP,
+      swap: SWAP,
       startTick,
       winner,
       loser,
@@ -333,6 +340,7 @@ const totals = results.reduce((sum, result) => {
 const summary = {
   level: LEVEL,
   matchup: MATCHUP,
+  swap: SWAP,
   randomTick: RANDOM_TICK,
   matches: totals.matches,
   failures: failures.length,

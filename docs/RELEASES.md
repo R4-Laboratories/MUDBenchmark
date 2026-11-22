@@ -391,7 +391,11 @@ Rehearsed 2026-11-16:
   CLI agent and browser AI command contracts, exposes other actors in the
   room state, adds a PvP stay-in-the-Ring guard and `tools/pvp-agents.mjs`,
   and records two remote-model duels plus an asymmetric dawn/ember live sample.
-  No balance values changed (MB-218/219);
+  No balance values changed in the agent-contract release (MB-218/219).
+- v0.91.34 (first PvP balance adjustment) raises the ember brand damage 6 → 7
+  and the Red Company helm armour 2 → 3 after independent random-tick samples
+  showed dawn winning 30/41 (73.2%); the candidate sample is 25/40 (62.5%, CI
+  47.0–75.8) with the hit/damage curve unchanged (MB-222/223);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);
