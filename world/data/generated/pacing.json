@@ -1,8 +1,8 @@
 {
   "schema": "mudbenchmark/pacing/1",
-  "candidate": "c-09c54744b4d9",
-  "report": "2453da0ad8f5d8b8a2fc254fe6bfc47d4bfb39841134700a3afed4d68cc26e0d",
-  "worldHash": "6c027d0f31f81a7911da24faf4e92b88e1c1a744bdeb74f0a058242366263adc",
+  "candidate": "c-06ebf86895d9",
+  "report": "1cb02af952b9316125605eb8abce974acd8091189bd3e6019482851575006469",
+  "worldHash": "726326ab7718f645a96fbe5fec7d2c8e4b8371c4b68936278e753100781afd53",
   "changes": [
     {
       "group": "hostile-damage",
@@ -35,6 +35,54 @@
       "field": "period",
       "from": 32,
       "to": 40
+    },
+    {
+      "group": "shop-price",
+      "collection": "objects",
+      "target": "jerkin",
+      "field": "price",
+      "from": 10,
+      "to": 13
+    },
+    {
+      "group": "shop-price",
+      "collection": "objects",
+      "target": "lamp",
+      "field": "price",
+      "from": 8,
+      "to": 10
+    },
+    {
+      "group": "shop-price",
+      "collection": "objects",
+      "target": "lantern",
+      "field": "price",
+      "from": 8,
+      "to": 10
+    },
+    {
+      "group": "shop-price",
+      "collection": "objects",
+      "target": "stew",
+      "field": "price",
+      "from": 3,
+      "to": 4
+    },
+    {
+      "group": "shop-price",
+      "collection": "objects",
+      "target": "sword",
+      "field": "price",
+      "from": 14,
+      "to": 18
+    },
+    {
+      "group": "shop-price",
+      "collection": "objects",
+      "target": "torch",
+      "field": "price",
+      "from": 3,
+      "to": 4
     }
   ],
   "admission": {
@@ -44,9 +92,9 @@
     "benefit": true,
     "bounds": true,
     "checks": true,
-    "candidate": "c-09c54744b4d9",
-    "report": "2453da0ad8f5d8b8a2fc254fe6bfc47d4bfb39841134700a3afed4d68cc26e0d",
-    "worldHash": "6c027d0f31f81a7911da24faf4e92b88e1c1a744bdeb74f0a058242366263adc",
+    "candidate": "c-06ebf86895d9",
+    "report": "1cb02af952b9316125605eb8abce974acd8091189bd3e6019482851575006469",
+    "worldHash": "726326ab7718f645a96fbe5fec7d2c8e4b8371c4b68936278e753100781afd53",
     "kernel": "sha256:cc0cd971f1090692e7fad9ad7b23a3a35dada64168de74110b321d3e31c30258"
   }
 }
