@@ -184,7 +184,11 @@
   #hero-agent:hover { border-color: var(--accent); color: var(--accent); }
   #hero-watch { border: 1px solid transparent; background: transparent; color: var(--link); }
   .hero-alt { margin: 10px 0 0; font-size: 11px; color: var(--faint); }
-  .link-button { border: 0; background: none; padding: 0; color: var(--link); font: inherit; cursor: pointer; }
+  .link-button {
+    display: inline-flex; align-items: center; min-height: 24px; padding: 0 2px;
+    border: 0; background: none; color: var(--link); font: inherit; cursor: pointer;
+  }
+  .link-button:hover { text-decoration: underline; }
   .hero-live { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 18px; }
   .hero-live span { padding: 5px 8px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); font: 10.5px/1.4 var(--font-mono); }
   .hero-live .live { color: var(--danger); border-color: rgba(251,113,133,.3); }
@@ -579,13 +583,44 @@
     body.ai-mode:not(.ai-running) aside { padding: 18px 16px 32px; }
     .setup-grid { grid-template-columns: 1fr; }
   }
+  #mobile-nav-toggle {
+    display: none; height: 34px; min-width: 44px; padding: 0 8px;
+    border: 1px solid var(--line-2); border-radius: var(--r-control);
+    background: var(--surface-2); color: var(--text); font: 600 11px/1 var(--font-ui);
+  }
+  #mobile-nav {
+    position: fixed; z-index: 80; top: calc(var(--hdr) + 4px); right: 8px;
+    width: min(220px, calc(100vw - 16px)); padding: 6px;
+    border: 1px solid var(--line-2); border-radius: 10px;
+    background: var(--surface); box-shadow: var(--shadow-overlay);
+  }
+  #mobile-nav:not([hidden]) { display: flex; flex-direction: column; gap: 2px; }
+  #mobile-nav a, #mobile-nav button {
+    min-height: 44px; display: flex; align-items: center; padding: 0 10px;
+    border: 0; border-radius: 6px; background: transparent; color: var(--text);
+    font: 500 12px/1.3 var(--font-ui); text-decoration: none; text-align: left;
+  }
+  #mobile-nav a:hover, #mobile-nav button:hover { background: var(--surface-2); }
+  #mobile-nav .mobile-font { display: flex; gap: 4px; }
+  #mobile-nav .mobile-font button { flex: 1; justify-content: center; }
+  #mobile-telemetry[aria-disabled="true"] { opacity: .55; }
+  body.guest #latest { display: none !important; }
   @media (max-width: 767px) {
     :root { --hdr: 48px; }
     header { gap: 7px; padding: 0 9px; }
-    .header-actions a { display: none; }
+    .header-actions a, #telemetry-open, #font-down, #font-up { display: none; }
+    #mobile-nav-toggle { display: inline-flex; align-items: center; justify-content: center; }
     #tagline { display: none; }
     .brand-copy strong { font-size: 11px; }
-    #state { width: 22px; max-width: 22px; padding: 0; justify-content: center; font-size: 0; }
+    #modes button { height: 30px; padding: 0 8px; font-size: 11px; }
+    #state { width: auto; max-width: 92px; padding: 0 6px; justify-content: flex-start; font-size: 9.5px; }
+    #agent-chip { display: none !important; }
+    .hero-actions button, .hero-actions a { min-height: 44px; }
+    .link-button { min-height: 44px; padding: 0 4px; }
+    #prism-login { min-height: 44px; }
+    #entry { flex-basis: 60px; }
+    #entry input, #entry button { height: 44px; }
+    #hud-actions button, #hud-exits button { min-height: 32px; }
     #font-down, #font-up { display: none; }
     main { padding: 0; gap: 0; }
     #terminal, #ai-live { border-radius: 0; border-left: 0; border-right: 0; }
@@ -634,8 +669,18 @@
       <button type="button" id="telemetry-open" title="Open telemetry" aria-expanded="false" aria-controls="observe">Telemetry</button>
       <button type="button" id="font-down" title="Smaller text" aria-label="Smaller text">A−</button>
       <button type="button" id="font-up" title="Larger text" aria-label="Larger text">A+</button>
+      <button type="button" id="mobile-nav-toggle" aria-expanded="false" aria-controls="mobile-nav" aria-label="Open menu">Menu</button>
     </div>
   </header>
+  <nav id="mobile-nav" aria-label="Menu" hidden>
+    <a href="/stats" target="_blank" rel="noopener">Stats</a>
+    <a href="/watch" target="_blank" rel="noopener">Watch live ↗</a>
+    <button type="button" id="mobile-telemetry" aria-disabled="true">Telemetry</button>
+    <div class="mobile-font">
+      <button type="button" id="mobile-font-down" aria-label="Smaller text">A−</button>
+      <button type="button" id="mobile-font-up" aria-label="Larger text">A+</button>
+    </div>
+  </nav>
   <main id="main">
     <section id="terminal">
       <div id="livebar">
@@ -1141,6 +1186,11 @@
   const signedName = document.getElementById("signed-name");
   const latest = document.getElementById("latest");
   const prismLogin = document.getElementById("prism-login");
+  const mobileNavToggle = document.getElementById("mobile-nav-toggle");
+  const mobileNav = document.getElementById("mobile-nav");
+  const mobileTelemetry = document.getElementById("mobile-telemetry");
+  const mobileFontDown = document.getElementById("mobile-font-down");
+  const mobileFontUp = document.getElementById("mobile-font-up");
   const modePlay = document.getElementById("mode-play");
   const modeAI = document.getElementById("mode-ai");
 
@@ -1381,7 +1431,7 @@
     if (target !== log) return;
     requestAnimationFrame(() => {
       if (stick) log.scrollTop = log.scrollHeight;
-      latest.style.display = stick ? "none" : "block";
+      latest.style.display = !authed || stick ? "none" : "block";
     });
   };
 
@@ -2003,6 +2053,27 @@
   }
 
   prismLogin.addEventListener("click", () => signInPrism(true));
+
+  const setMobileNav = (open) => {
+    mobileNav.hidden = !open;
+    mobileNavToggle.setAttribute("aria-expanded", String(open));
+    mobileNavToggle.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+    if (open) mobileNav.querySelector("a, button")?.focus();
+  };
+  mobileNavToggle.addEventListener("click", (event) => {
+    event.stopPropagation();
+    setMobileNav(mobileNav.hidden);
+  });
+  document.addEventListener("click", (event) => {
+    if (!mobileNav.hidden && !mobileNav.contains(event.target) && !mobileNavToggle.contains(event.target)) setMobileNav(false);
+  });
+  mobileTelemetry.addEventListener("click", () => {
+    setMobileNav(false);
+    telemetryOpen.click();
+  });
+  mobileNav.querySelectorAll("a").forEach((link) => link.addEventListener("click", () => setMobileNav(false)));
+  mobileFontDown.addEventListener("click", () => document.getElementById("font-down").click());
+  mobileFontUp.addEventListener("click", () => document.getElementById("font-up").click());
   for (const field of [nameInput, passwordInput]) {
     field.addEventListener("keydown", (event) => {
       if (event.key !== "Enter") return;
@@ -2323,7 +2394,9 @@
   });
   const telemetryOpen = document.getElementById("telemetry-open");
   function updateTelemetryAvailability() {
-    telemetryOpen.setAttribute("aria-disabled", AI.running ? "false" : "true");
+    const available = AI.running ? "false" : "true";
+    telemetryOpen.setAttribute("aria-disabled", available);
+    mobileTelemetry.setAttribute("aria-disabled", available);
   }
   function setTelemetry(open) {
     if (open && !AI.running) {
@@ -2369,7 +2442,12 @@
 
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") return;
-    if (document.body.classList.contains("world-focus")) closeWorld();
+    if (!mobileNav.hidden) {
+      const hadFocus = mobileNav.contains(document.activeElement);
+      setMobileNav(false);
+      if (hadFocus) mobileNavToggle.focus();
+    }
+    else if (document.body.classList.contains("world-focus")) closeWorld();
     else if (document.body.classList.contains("model-focus")) closeModel();
     else if (document.body.classList.contains("telemetry-focus")) setTelemetry(false);
   });
@@ -3004,8 +3082,14 @@
 
   async function refreshHero() {
     if (!hero) return;
-    if (authed || characterState.account || mode === "ai") { hero.hidden = true; return; }
+    if (authed || characterState.account || mode === "ai") {
+      hero.hidden = true;
+      document.body.classList.remove("guest");
+      return;
+    }
     hero.hidden = false;
+    document.body.classList.add("guest");
+    latest.style.display = "none";
     if (AI.running) {
       heroStatus.textContent = "Your agent is running. Use the AI live chip in the header to open it.";
       heroStatus.className = "small muted";

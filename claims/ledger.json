@@ -1383,6 +1383,18 @@
       "level": "some-true",
       "statement": "The v0.91.34 PvP adjustment was confirmed with 20 additional random-tick dawn/ember matches (10 original, 10 swapped). Combined 60 matches: 1,422 attacks, 623 hits (43.81%), 10.11 average damage, 11.85 rounds, dawn 37 wins (61.7%, 95% CI 49.0-72.9%), winner 16.7/65 HP; original 17/30, swapped 20/30. The point estimate is essentially the 40-match candidate (62.5%); the confidence interval includes 50%; the hit/damage curve is unchanged. The adjustment is kept; no further balance values changed.",
       "authority": "local isolated tools/pvp-session.mjs random-tick samples; baseline, candidate and confirmation spans; 2026-11-22"
+    },
+    {
+      "id": "MB-226",
+      "level": "build",
+      "statement": "v0.91.35 adds a mobile header menu (#mobile-nav-toggle, #mobile-nav) with Stats, Watch, Telemetry and font controls; shows #state as text instead of a colour-only dot; hides the guest Latest overlay; and raises primary mobile touch targets to 44px while keeping the inline hero button at least 24px. tools/a11y.mjs now runs a 390x844 pass on /, /watch and /stats for horizontal overflow, 24px controls and navigation links, menu open/aria-expanded/Stats, visible #state text and hidden guest Latest. tools/gate.mjs checks the mobile navigation and guest contract. The CI Gate runs node tools/a11y.mjs.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-227",
+      "level": "some-true",
+      "statement": "The v0.91.35 mobile pass was verified locally: node tools/a11y.mjs reports ok on the desktop and 390x844 audits (no horizontal overflow, no control or navigation link under 24px, menu opens with Stats, #state text visible, guest Latest hidden); a focused headless-Chrome interaction run passes 15 checks covering menu focus, font size 16px to 17px, the Telemetry AI-run gate, Escape focus return and desktop Stats/Watch restoration. node tools/gate.mjs passes. A human VoiceOver/NVDA pass and final hands-on phone review remain open.",
+      "authority": "local tools/a11y.mjs, tools/gate.mjs and /tmp/mobile-interaction.mjs run 2026-11-22; not a release or deployment claim"
     }
   ]
 }

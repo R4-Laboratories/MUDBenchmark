@@ -1,6 +1,6 @@
 # Next work
 
-Baseline: **v0.91.34**. The world has 116 rooms, 14 zones, 20 quests, 57 mobiles
+Baseline: **v0.91.35**. The world has 116 rooms, 14 zones, 20 quests, 57 mobiles
 and 145 objects. R4 memory, command grounding, scorecards
 and the public stats surface are live; signups are open and the Gemini demo is
 disabled and unconfigured.
@@ -63,6 +63,7 @@ memory or prompt system.
 | PvP | Live mirror, two-agent, asymmetric and random-tick samples | **done** (MB-217/219/221) |
 | v0.91.33 | Agent PvP contract and stay-in-the-Ring guard | **done** (MB-218) |
 | v0.91.34 | First PvP adjustment: ember brand and Red Company helm | **done** (MB-222/223; confirmed MB-225) |
+| v0.91.35 | Mobile header menu, text connection status and phone audit | **done** (MB-226/227) |
 | backlog | Larger independent/human PvP and optional content | optional |
 
 ## What is next
@@ -94,9 +95,10 @@ memory or prompt system.
    reserved-word policy; `report <name> <reason>` writes a durable operator
    queue while sharing the chat guard. The remaining gap is a routine operator
    review loop, not another player-facing control.
-7. **Accessibility evidence.** Source checks and the browser audit pass
-   (landmarks, names, first-Tab skip links, tabs, tables, contrast and reduced
-   motion). A human VoiceOver/NVDA pass and a mobile touch-target review remain
+7. **Accessibility evidence.** Source checks and the desktop plus 390x844
+   mobile browser audits pass (landmarks, names, first-Tab skip links, tabs,
+   tables, contrast, reduced motion, no overflow, 24px targets and the mobile
+   menu). A human VoiceOver/NVDA pass and a final hands-on phone review remain
    open.
 8. **Federation.** Draft PR #11 is green on `f99bf75` after rebasing onto
    v0.91.28: the Gate, the three federation tests, crash recovery and browser
