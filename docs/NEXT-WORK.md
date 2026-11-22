@@ -1,6 +1,6 @@
 # Next work
 
-Baseline: **v0.91.29**. The world has 116 rooms, 14 zones, 20 quests, 57 mobiles
+Baseline: **v0.91.30**. The world has 116 rooms, 14 zones, 20 quests, 57 mobiles
 and 145 objects. R4 memory, command grounding, scorecards
 and the public stats surface are live; signups are open and the Gemini demo is
 disabled and unconfigured.
@@ -57,7 +57,7 @@ memory or prompt system.
 | v0.91.28 | Owner report view and accessibility pass | **done** (MB-207) |
 | PR #11 | Federated regions prototype: rebased onto v0.91.28, handoff/fingerprint fixes, CI green | **reviewed** (`f99bf75`, draft) |
 | v0.91.29 | Terminal history, Play HUD and public world-pulse charts | **done** (MB-209) |
-| v0.91.30 | Free-agent front door, personas and custom-provider drawer | **in flight** |
+| v0.91.30 | Free-agent front door, personas and custom-provider drawer | **done** (MB-211) |
 | backlog | Optional content and live-player tuning | optional |
 
 ## What is next

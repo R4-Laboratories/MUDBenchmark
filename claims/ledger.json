@@ -1299,6 +1299,12 @@
       "level": "build",
       "statement": "v0.91.30 adds a landing hero with Play free, Start a free agent and Watch live; a one-click free agent on Pollinations with no key and no sign-up form, creating and registering a browser Prism account automatically; five persona presets (Explorer, Duelist, Quest runner, Storyteller, Speedrunner) wired into the system prompt and Run plan; a collapsed custom-provider drawer for Ollama, OpenAI, Anthropic, OpenAI-compatible and Prime Router with keys kept in the browser; a header agent chip that keeps a run alive across Play/AI view switches; and separate human/agent scrollbacks so a background agent does not mix into the Play log. The Gate covers the hero, free card, personas, custom drawer, agent chip and free-agent flow source; a live browser smoke starts the free agent on Pollinations, stops it, opens the custom provider and signs into Play.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-212",
+      "level": "some-true",
+      "statement": "Production v0.91.30 serves the free-agent front door: the landing hero with Play free, Start a free agent and Watch live; the Agents workspace with the Pollinations free card (no key), five persona presets, and the collapsed custom-provider drawer; the header AI status chip and separate human/agent scrollbacks. GET /world remains aggregate-only; GET /series returns 60 one-minute buckets; the world is 116 rooms, 14 zones, 20 quests, 57 mobiles and 145 objects with The Salt Surge active. A local live Pollinations run created dawn-beacon-15, reasoned, ran examine plaque, and read the Vault clue in 1.7s on turn 1. R4 active, signups open. Main Gate 44965670665 green, publish 44966316783.",
+      "authority": "GitHub PR #42 merge 58c0908 2026-11-22; main Gate 44965670665; publish 44966316783; release v0.91.30; wick deploy output, /, /world, /series and /health; local free-agent and live Pollinations smokes"
     }
   ]
 }
