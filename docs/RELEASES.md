@@ -413,6 +413,11 @@ Rehearsed 2026-11-16:
   free Prism accounts to save a recovery kit and hides the unsupported New
   character form on legacy accounts; `docs/ONBOARDING.md` records the audit
   (MB-233/234);
+- v0.91.38 (HUD freshness) sends a post-tick `#state` to actors whose pending
+  command intent ran, so quest completion, XP, inventory, armour and combat
+  changes update the HUD immediately instead of one command later; the
+  browser reconnect test now checks take/wear updates ARM without an
+  intervening command (MB-236/237);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

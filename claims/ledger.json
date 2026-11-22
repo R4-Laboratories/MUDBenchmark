@@ -1443,6 +1443,18 @@
       "level": "some-true",
       "statement": "Production v0.91.37 serves the first-time human onboarding fixes. The served shell contains First steps (#first-steps), Back to game (#characters-close), the free-Prism recovery note (#account-persistence), and the logic that hides the character panel while playing and the New character form on legacy accounts. The isolated browser audit at 1440x900 and 390x844 created a Prism character, confirmed the panel hidden while playing, First steps opened the tutorial, Characters/Back to game toggled the panel, no horizontal overflow; a password account registered with an auto-created character, signed out, logged back in and resumed, with the legacy New character form hidden. World 116 rooms, 14 zones, 20 quests, 57 mobiles and 145 objects. Main Gate 45075315983 green, publish 45076167234. Remaining polish: the HUD can lag by one command after a tick-time quest completion; a human VoiceOver/NVDA pass and final hands-on phone review remain manual.",
       "authority": "GitHub PR #53 merge fd1ec67 2026-11-22; main Gate 45075315983; publish 45076167234; release v0.91.37; wick deploy output and served page; local headless-Chrome onboarding audit"
+    },
+    {
+      "id": "MB-236",
+      "level": "build",
+      "statement": "v0.91.38 sends a post-tick #state to each actor whose pending command intent ran, excluding login/register (which already send their own state). The refresh is limited to affected actors, so the HUD catches up after take, wear, quest, movement, combat and spell intents without a per-tick broadcast. runtime/session-reconnect.test.mjs now takes and wears a cloak and asserts the HUD reports ARM 1 before another command. The CI Gate runs this test in its browser reconnect step.",
+      "gate": "runtime/session-reconnect.test.mjs"
+    },
+    {
+      "id": "MB-237",
+      "level": "some-true",
+      "statement": "The v0.91.38 post-tick HUD refresh was verified with the browser reconnect test on macOS Chrome: the Prism character took a grey cloak, wore it, and the HUD showed ARM 1 before any further command; the full test then passed the restart, Prism resume, competing-tab takeover and interrupted-quit checks in 16.2 s. The server only sends the extra state to actors with a pending intent in that tick.",
+      "authority": "local CHROME_BIN macOS Chrome run of runtime/session-reconnect.test.mjs; 2026-11-22"
     }
   ]
 }
