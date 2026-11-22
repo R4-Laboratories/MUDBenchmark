@@ -64,6 +64,7 @@ memory or prompt system.
 | v0.91.33 | Agent PvP contract and stay-in-the-Ring guard | **done** (MB-218) |
 | v0.91.34 | First PvP adjustment: ember brand and Red Company helm | **done** (MB-222/223; confirmed MB-225) |
 | v0.91.35 | Mobile header menu, text connection status and phone audit | **done** (MB-226/227) |
+| PvP model | Fixed-damage model validates v0.91.34; ember 8 is the next candidate | **done** (MB-229) |
 | backlog | Larger independent/human PvP and optional content | optional |
 
 ## What is next

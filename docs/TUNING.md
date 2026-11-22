@@ -251,6 +251,45 @@ estimate stays at 61.7%, the confidence interval includes 50%, and the
 hit/damage curve is unchanged. The adjustment is kept; no further value
 changed. It remains a watch item until a larger independent or human sample.
 
+### Fixed-damage PvP model (v0.91.35 correction)
+
+The live server resolves violence every 12 ticks. `attackRoll` derives damage
+from `tick * 7 mod 4`, and 12 × 7 is divisible by 4, so **each attacker's damage
+is constant for the whole duel**. The hit roll uses `tick * 13 mod 100`, and
+12 × 13 = 156 is not divisible by 100, so hit/miss still varies every round.
+Combat has no `Math.random`: it is a deterministic LCG seeded by the tick and
+actor id, which is what makes replay and acceptance vectors possible.
+
+Across the 141 independent dawn/ember matches, all 282 side-fights had exactly
+one damage value, and every side had both hits and misses (per-side hit rates
+25–75%, mean 44.1%). The side with the higher fixed damage won 89 of 107
+decisive matches (83.2%); the L5 mirror's higher-damage side won 25/29 and the
+L10 mirror's 16/20. That is the live mechanic, not a confound: it amplifies the
+gear gap instead of averaging it away.
+
+`tools/pvp-model.mjs` samples every start-tick phase, both actor-id assignments
+and both kit orientations with the real `attackRoll`:
+
+| Scenario | Dawn win | Ember win |
+| --- | --- | --- |
+| Level 5 mirror | 50.0% | 50.0% |
+| Level 10 mirror | 50.0% | 50.0% |
+| Dawn/ember baseline (ember 6 / helm 2) | **72.9%** | 27.1% |
+| Dawn/ember v0.91.34 (ember 7 / helm 3) | **61.3%** | 38.7% |
+| Dawn/ember next (ember 8 / helm 3) | **50.0%** | 50.0% |
+
+The model reproduces the live baseline (73.2%) and candidate (62.5%) within a
+point, so the v0.91.34 evidence is valid. It also explains why the
+`tools/balance.mjs` PvP band reports 46.25%: that sampler increments the tick
+every round, giving damage variance the live server does not have. The live
+fixed-damage model is the reference for PvP gear; the deterministic band stays
+useful for the PvE bands and the Gate's broad 25–75% guard.
+
+**No production change in v0.91.35.** The next PvP candidate is ember brand
+damage 8, which the model puts at 50/50; it needs a live paired sample before
+any value changes. `tools/pvp-session.mjs` now accepts `--ticks`, `--world` and
+`--label` for that paired run.
+
 ## Decision
 
 No balance value changes before v0.91.34. **v0.91.34 makes the first
@@ -270,11 +309,18 @@ data-driven PvP adjustment:** ember brand 6 → 7 and Red Company helm 2 → 3.
 - The L5 pvp-b 19/29 (65.5%, CI 47.3–80.1) and L10 pvp-a 12/20 (60%, CI
   38.7–78.1) remain watch items; no change.
 - No other damage, armour, food or level values changed. The deterministic
-  PvP band for dawn/ember is 46.25% at 400 seeds, inside the Gate's 25–75%.
-- The next PvP pass should collect 20–30 candidate matches plus a human/model
-  sample. If dawn remains above roughly 65% with a CI excluding 50%, revisit
-  the ember brand or burn; if it falls below 50%, revert part of this change.
-  If the L5 pvp-b lean persists, inspect initiative/connection order.
+  PvP band for dawn/ember is 46.25% at 400 seeds, inside the Gate's 25–75%;
+  it is a different tick model from live and is not used as the PvP gear
+  reference.
+- The fixed-damage model puts the baseline at 72.9% and v0.91.34 at 61.3%,
+  matching the live 73.2% and 62.5% samples. The adjustment is validated and
+  kept. The model's next candidate, ember damage 8, is 50.0%; it needs a live
+  paired sample before shipping.
+- The next PvP pass should collect a paired live sample (same start ticks and
+  both orientations) plus a human/model sample. If dawn remains above roughly
+  65% with a CI excluding 50%, revisit the ember brand or burn; if it falls
+  below 50%, revert part of this change. If the L5 pvp-b lean persists,
+  inspect initiative/connection order.
 
 The deterministic bands remain the reference:
 

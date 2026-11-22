@@ -4,6 +4,7 @@
 //   node tools/pvp-session.mjs --level=5 --matches=12 --random-tick=1
 //   node tools/pvp-session.mjs --level=10 --matches=12 --matchup=dawn-ember --random-tick=1
 //   node tools/pvp-session.mjs --level=10 --matches=20 --matchup=dawn-ember --random-tick=1 --swap=1
+//   node tools/pvp-session.mjs --level=10 --matches=12 --matchup=dawn-ember --ticks=100003,200007 --label=baseline --world=/tmp/baseline.json
 //
 // Each match starts a fresh world with both characters in The Ring, gives each
 // an identical mirrored kit, logs both in through the real WebSocket, and runs
@@ -33,11 +34,14 @@ const STAGGER_MS = Math.max(0, Number(args.get("stagger") ?? process.env.PVP_STA
 const MATCHUP = args.get("matchup") ?? process.env.PVP_MATCHUP ?? "mirror";
 const RANDOM_TICK = args.get("random-tick") === "1" || process.env.PVP_RANDOM_TICK === "1";
 const SWAP = args.get("swap") === "1" || process.env.PVP_SWAP === "1";
+const TICKS = (args.get("ticks") ?? "").split(",").filter(Boolean).map(Number);
+const WORLD_SOURCE = args.get("world") ?? join(process.cwd(), "world", "data", "world.json");
+const LABEL = args.get("label") ?? "";
 const PASSWORD = "pvp-pass";
 const RING = 33;
 const NAMES = ["pvp-a", "pvp-b"];
 const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-const OUT = join(process.cwd(), "local", "pvp", `level-${LEVEL}-${MATCHUP}${SWAP ? "-swap" : ""}-${stamp}`);
+const OUT = join(process.cwd(), "local", "pvp", `level-${LEVEL}-${MATCHUP}${SWAP ? "-swap" : ""}${LABEL ? `-${LABEL}` : ""}-${stamp}`);
 mkdirSync(OUT, { recursive: true });
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -107,7 +111,7 @@ const makeState = (world) => {
 };
 
 const makeWorldPath = (dir) => {
-  const raw = JSON.parse(readFileSync(join(process.cwd(), "world", "data", "world.json"), "utf8"));
+  const raw = JSON.parse(readFileSync(WORLD_SOURCE, "utf8"));
   for (const color of ["crimson", "cobalt"]) {
     for (const [templateId, label, action] of kitFor(color)) {
       const template = raw.objects.find((object) => object.id === templateId);
@@ -167,7 +171,9 @@ const oneMatch = async (matchNumber, first) => {
   const worldPath = makeWorldPath(dir);
   const world = loadWorld({ mode: "single", path: worldPath });
   const state = makeState(world);
-  const startTick = RANDOM_TICK ? Math.floor(Math.random() * 1_000_000) : state.tick;
+  const startTick = TICKS.length
+    ? TICKS[(matchNumber - 1) % TICKS.length]
+    : RANDOM_TICK ? Math.floor(Math.random() * 1_000_000) : state.tick;
   state.tick = startTick;
   const stateFile = join(dir, "state.json");
   writeFileSync(stateFile, JSON.stringify(state));
@@ -288,6 +294,7 @@ const oneMatch = async (matchNumber, first) => {
       level: LEVEL,
       matchup: MATCHUP,
       swap: SWAP,
+      label: LABEL,
       startTick,
       winner,
       loser,
@@ -341,7 +348,10 @@ const summary = {
   level: LEVEL,
   matchup: MATCHUP,
   swap: SWAP,
+  label: LABEL,
   randomTick: RANDOM_TICK,
+  ticks: TICKS,
+  world: WORLD_SOURCE,
   matches: totals.matches,
   failures: failures.length,
   attacks: totals.attacks,
