@@ -143,16 +143,56 @@ consistent with the deterministic 51% unseeded level-8 band and does not
 justify a damage or armour change. A complete kill needs a longer wall or more
 turns; the harness now defaults the high scenario to 300 seconds.
 
+## Live two-client PvP (post-v0.91.32)
+
+`tools/pvp-session.mjs` starts a fresh isolated server per match, puts both
+characters in The Ring, gives each an identical mirrored kit, logs both in
+through the real WebSocket, and runs the real `duel` → `duel accept` →
+`attack` flow. The report is built from `world.session`, `world.combat` and
+`world.duel` spans, not a reducer simulation.
+
+```sh
+node tools/pvp-session.mjs --level=5 --matches=8 --stagger=4000
+node tools/pvp-session.mjs --level=10 --matches=8 --stagger=4000
+```
+
+| Level | Matches | Distinct outcomes | Attacks | Hits | Hit rate | Avg damage on hit | Exchange rounds | Winner HP |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 5 | 8 | 2 | 240 | 96 | **40.0%** | **6.5** | **15** | **4 / 40** |
+| 10 | 8 | 2 | 192 | 80 | **41.7%** | **11.4** | **12** | **11 / 65** |
+
+- Level 5 kit: short sword, leather jerkin, iron helmet, boots, gloves and
+  round shield (armour 7; `57 - armour` expects 50%).
+- Level 10 kit: dawn blade, dawn crown, eclipse plate, ember cloak, shield,
+  boots and gloves (armour 13; expects 44%).
+- Every match ended in a death; the loser respawned in the Ring at full HP.
+  Nothing was one-shot.
+- The mirrored setup is **deterministic**: the same login order reproduces the
+  same roll sequence, so the eight matches are four repeats of two distinct
+  outcomes per level, not eight independent trials. The sample therefore
+  cannot estimate a win rate. The winner was not the side that landed the
+  first blow: pvp-a landed first in every match and split 4/4 at both levels.
+- The observed hit rates are inside the small-sample range of `57 - armour`
+  (40.0% vs 50%, 41.7% vs 44%). Average damage matches `1..4 + weapon`
+  (6.5 vs 5.5, 11.4 vs 10.5).
+- This is **two live clients, not two LLM agents**. Model-driven PvP and
+  asymmetric-gear PvP remain open.
+
 ## Decision
 
-No balance value changes in v0.91.19, v0.91.20 or v0.91.26.
+No balance value changes in v0.91.19, v0.91.20, v0.91.26 or this pass.
 
 - The 64.3% remote hit rate is within sampling noise of the `57 - armour`
   curve; 14 rounds is too small to distinguish it from 57%.
 - Average damage 4.67 matches a short sword's `1..4 + 3` range (expected 5.5).
 - The fights ended in kills with no player deaths; the wraith is an early
   Undervault mobile, not a capstone.
-- There is still no PvP sample and no unseeded level 8-10 sample.
+- The live mirror duels are close and consistent with the armour/damage curve:
+  the winner finished at 4/40 and 11/65. No damage, armour, food or level
+  change is justified.
+- The live mirror cannot estimate a win rate; the next PvP pass needs
+  asymmetric gear, staggered/model-driven clients, or human players. The
+  deterministic bands remain the reference for now.
 
 The deterministic bands remain the reference:
 
@@ -163,7 +203,7 @@ high      86–97%
 capstone  62–100%
 ```
 
-What would change the conclusion: an unseeded level 8-10 session, a PvP sample,
-or repeated player deaths against the same mobile. The next tuning pass should
-collect those before touching damage, armour, food/ale healing or the level
-curve.
+What would change the conclusion: an asymmetric or model-driven PvP sample,
+a complete unseeded level-10 session, or repeated player deaths against the
+same mobile. The next tuning pass should collect those before touching damage,
+armour, food/ale healing or the level curve.

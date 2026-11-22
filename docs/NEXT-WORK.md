@@ -60,16 +60,19 @@ memory or prompt system.
 | v0.91.30 | Free-agent front door, personas and custom-provider drawer | **done** (MB-211) |
 | v0.91.31 | Watch directory, decision cards, run stats and PvP delay | **done** (MB-213) |
 | v0.91.32 | Browser accessibility audit and ARIA/focus fixes | **done** (MB-215) |
-| backlog | Optional content and live-player tuning | optional |
+| PvP | Live two-client mirror sample; no balance change | **done** (MB-217) |
+| backlog | Asymmetric/model-driven PvP and optional content | optional |
 
 ## What is next
 
 1. **Live-run tuning.** The sampler is deterministic, not live evidence. Two
    remote DeepSeek Mirror Pool sessions produced 14 rounds, a 64.3% hit rate,
-   4.67 average damage and no deaths. The sampler now adds PvP (41–47% across
-   three matchups) and unseeded high-level bands (51% at level 8, 18% at level
-   10). No balance change is justified yet; the next pass needs a real human or
-   unscripted PvP sample.
+   4.67 average damage and no deaths. The live two-client PvP mirror sample adds
+   240 level-5 attacks (40.0% hit rate, 6.5 damage) and 192 level-10 attacks
+   (41.7% hit rate, 11.4 damage), with winners at 4/40 and 11/65 HP and no
+   one-shot. The mirror is deterministic, so a win-rate estimate still needs
+   asymmetric gear, model-driven clients or human players. No balance change
+   is justified.
 2. **Outlaw paths.** The Night Market is the third rank guild; the Ashen Hand
    and Red Company are standing factions. Thieves/assassins use daggers and
    Backstab, barbarians use axes and Rage, dark priests use unholy maces and

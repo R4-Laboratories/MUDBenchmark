@@ -1329,6 +1329,12 @@
       "level": "some-true",
       "statement": "Production v0.91.32 serves the accessibility contract on /, /watch and /stats: skip links, main ids, role=log on the game and watch transcripts, watch tablist/tabs with aria-controls, a watch announcer, and named quest/model/leaderboard tables. The CI Gate now includes tools/a11y.mjs; the local audit reports main/h1 landmarks, no unnamed interactive controls, skip link as first Tab, arrow-key watch tabs, core-palette contrast 5.41-16.71 and reduced-motion feed scrolling auto. The world is 116 rooms, 14 zones, 20 quests, 57 mobiles and 145 objects. A human VoiceOver/NVDA pass and mobile touch-target review remain. Main Gate 44982036295 green, publish 44982586226.",
       "authority": "GitHub PR #44 merge d4f8e36 2026-11-22; main Gate 44982036295; publish 44982586226; release v0.91.32; wick deploy output, /, /watch, /stats and /health; local tools/a11y.mjs audit"
+    },
+    {
+      "id": "MB-217",
+      "level": "some-true",
+      "statement": "A live two-client PvP sample against isolated servers (8 mirrored level-5 duels and 8 mirrored level-10 duels) used the real Ring duel/accept/attack flow and server spans. Level 5: 240 attacks, 96 hits (40.0%), 6.5 average damage on a hit, 15 exchange rounds, winner at 4/40 HP. Level 10: 192 attacks, 80 hits (41.7%), 11.4 average damage on a hit, 12 exchange rounds, winner at 11/65 HP. Every match ended in a death, no one-shot. The mirrored setup is deterministic (two distinct outcomes per level, repeated four times), and the first blow did not determine the winner, so the sample is not a win-rate estimate. No balance value changed; asymmetric/model-driven PvP remains open.",
+      "authority": "local isolated two-client PvP runs via tools/pvp-session.mjs; server world.session/world.combat/world.duel spans; 2026-11-22"
     }
   ]
 }

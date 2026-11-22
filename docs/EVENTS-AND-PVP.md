@@ -47,6 +47,14 @@ discount makes the quartermaster loop matter. The ladder gives PvP a record
 without requiring a crowd: a single duel produces a persistent result, and the
 board fills in as more characters fight.
 
+## Live PvP evidence
+
+The live two-client mirror sample is recorded in `docs/TUNING.md`. It uses the
+real Ring `duel`/`accept`/`attack` flow on an isolated server and the server's
+combat spans. The mirror is deterministic, so its winner is not a win-rate
+estimate; it is a close-fight and damage-curve check. Asymmetric or
+model-driven PvP remains the next evidence.
+
 ## Stream delay
 
 A live public stream is opt-in and shows only the streamed character's own
