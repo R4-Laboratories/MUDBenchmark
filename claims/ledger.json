@@ -1455,6 +1455,12 @@
       "level": "some-true",
       "statement": "The v0.91.38 post-tick HUD refresh was verified with the browser reconnect test on macOS Chrome: the Prism character took a grey cloak, wore it, and the HUD showed ARM 1 before any further command; the full test then passed the restart, Prism resume, competing-tab takeover and interrupted-quit checks in 16.2 s. The server only sends the extra state to actors with a pending intent in that tick.",
       "authority": "local CHROME_BIN macOS Chrome run of runtime/session-reconnect.test.mjs; 2026-11-22"
+    },
+    {
+      "id": "MB-238",
+      "level": "some-true",
+      "statement": "Production v0.91.38 serves the post-tick HUD refresh. The deployed runtime/server.mjs contains the refreshIds hook; the browser reconnect test took and wore a cloak and saw ARM 1 in the HUD before another command, then passed restart, Prism resume, competing-tab takeover and interrupted-quit checks. The refresh is sent only to actors whose pending intent ran; login/register keep their own state send. World 116 rooms, 14 zones, 20 quests, 57 mobiles and 145 objects. Main Gate 45079552578 green, publish 45080312435. A human VoiceOver/NVDA pass and final hands-on phone review remain manual.",
+      "authority": "GitHub PR #54 merge e17e8a8 2026-11-22; main Gate 45079552578; publish 45080312435; release v0.91.38; wick deploy output, artifact server.mjs and /health; local macOS Chrome reconnect test"
     }
   ]
 }
