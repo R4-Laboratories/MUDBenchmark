@@ -370,6 +370,12 @@ Rehearsed 2026-11-16:
   `/series` world-pulse charts (MB-209). The first deploy exposed a
   `curl | grep -q` SIGPIPE false rollback on the larger page; the deploy helper
   now downloads the asset probe before grepping.
+- v0.91.30 (free agent front door) adds a landing hero with Play free, Start a
+  free agent and Watch live; one-click Pollinations free agents with a browser
+  Prism account created and registered automatically; five persona presets;
+  a collapsed custom-provider drawer; and a header agent chip that keeps an
+  agent running across Play/AI view switches with separate human and agent
+  scrollbacks (MB-211);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

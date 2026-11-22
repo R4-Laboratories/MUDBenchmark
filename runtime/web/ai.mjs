@@ -119,6 +119,33 @@ export const DEFAULT_GOAL =
   "Explore the temple, the town and the wilds. Find the Vault word and answer at the Shrine. " +
   "Grow stronger, take on quests, and make the run interesting to watch. Stay alive.";
 
+export const GOALS = {
+  explorer: {
+    label: "Explorer",
+    goal: DEFAULT_GOAL,
+  },
+  duelist: {
+    label: "Duelist",
+    goal: "Train your weapon, equip the best gear you can find, and challenge the Ring beneath the Docks. " +
+      "Learn your techniques, pick fights you can win, and climb the duel ladder. Stay alive.",
+  },
+  quests: {
+    label: "Quest runner",
+    goal: "Focus on the quest board. Accept quests, complete their objectives, deliver them and keep a steady " +
+      "level curve. Explore only when a quest requires it, and keep the run moving.",
+  },
+  storyteller: {
+    label: "Storyteller",
+    goal: "Talk to every NPC, read the lore, explore the world and make the run interesting to watch. " +
+      "Take quests that reveal the world's story and share what you find.",
+  },
+  speedrunner: {
+    label: "Speedrunner",
+    goal: "Reach the highest level and complete the most quests in the fewest turns. Move efficiently, " +
+      "avoid unnecessary fights, and use the fastest valid command.",
+  },
+};
+
 export function buildSystemPrompt({ name = "scout", goal = DEFAULT_GOAL, fast = false, deliberate = false } = {}) {
   if (fast) {
     return `You are ${name}, an autonomous player in MUDBench. You may reason when the situation needs it; this turn is ${deliberate ? "deliberate" : "direct"}.

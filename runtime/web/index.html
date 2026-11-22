@@ -84,6 +84,16 @@
   }
   #state.live { color: var(--accent); border-color: rgba(94,234,212,.35); }
   #state.live::before { background: var(--accent); }
+  #agent-chip {
+    display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 9px;
+    border: 1px solid rgba(94,234,212,.35); border-radius: 999px; background: var(--surface);
+    color: var(--accent); font: 600 10.5px/1 var(--font-ui); cursor: pointer;
+  }
+  #agent-chip::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+  #agent-chip.paused { color: var(--warn); border-color: rgba(251,191,36,.35); }
+  #agent-chip.paused::before { background: var(--warn); }
+  #agent-chip.error { color: var(--danger); border-color: rgba(251,113,133,.35); }
+  #agent-chip.error::before { background: var(--danger); }
   .header-actions { display: flex; align-items: center; gap: 4px; flex: 0 0 auto; }
   .header-actions a, .header-actions button {
     height: 26px; display: inline-flex; align-items: center; gap: 4px;
@@ -155,6 +165,49 @@
   #hud-exits:empty { display: none; }
   #hud-exits button { height: 22px; padding: 0 7px; font-size: 10px; background: rgba(94,234,212,.06); color: var(--accent); border-color: rgba(94,234,212,.25); }
   #hud-exits button:hover { background: rgba(94,234,212,.12); }
+  #hero {
+    flex: 0 0 auto; padding: 30px 30px 24px; border-bottom: 1px solid var(--line);
+    background:
+      radial-gradient(900px 240px at 10% -20%, rgba(94,234,212,.12), transparent 60%),
+      linear-gradient(180deg, rgba(17,24,35,.6), rgba(13,18,25,.2));
+  }
+  .hero-eyebrow { color: var(--accent); font: 600 10px/1.5 var(--font-mono); letter-spacing: .14em; text-transform: uppercase; }
+  #hero h1 { margin: 8px 0 7px; font: 600 30px/1.15 var(--font-ui); letter-spacing: -.02em; max-width: 20ch; }
+  .hero-copy { max-width: 64ch; margin: 0 0 16px; color: var(--muted); font-size: 13px; line-height: 1.55; }
+  .hero-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .hero-actions button, .hero-actions a {
+    height: 38px; padding: 0 14px; display: inline-flex; align-items: center;
+    border-radius: var(--r-control); font: 600 12px/1 var(--font-ui); text-decoration: none; cursor: pointer;
+  }
+  #hero-play { border: 1px solid transparent; background: var(--accent-strong); color: var(--accent-ink); }
+  #hero-agent { border: 1px solid var(--line-2); background: transparent; color: var(--text); }
+  #hero-agent:hover { border-color: var(--accent); color: var(--accent); }
+  #hero-watch { border: 1px solid transparent; background: transparent; color: var(--link); }
+  .hero-alt { margin: 10px 0 0; font-size: 11px; color: var(--faint); }
+  .link-button { border: 0; background: none; padding: 0; color: var(--link); font: inherit; cursor: pointer; }
+  .hero-live { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 18px; }
+  .hero-live span { padding: 5px 8px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); font: 10.5px/1.4 var(--font-mono); }
+  .hero-live .live { color: var(--danger); border-color: rgba(251,113,133,.3); }
+  .hero-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 18px; }
+  .hero-step { padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: rgba(13,18,25,.6); }
+  .hero-step b { display: block; margin-bottom: 3px; color: var(--text); font-size: 11px; }
+  .hero-step span { color: var(--faint); font-size: 11px; line-height: 1.45; }
+  body.ai-mode #hero { display: none !important; }
+  #ai-free {
+    margin: 10px 0 14px; padding: 14px; border: 1px solid rgba(94,234,212,.3); border-radius: 10px;
+    background: linear-gradient(135deg, rgba(94,234,212,.08), rgba(13,18,25,.9));
+  }
+  .free-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .free-head h3 { margin: 0; font-size: 15px; color: var(--text); }
+  .free-badge { padding: 2px 6px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font: 700 9px/1.4 var(--font-ui); letter-spacing: .08em; }
+  #ai-free > p { margin: 0 0 8px; font-size: 11.5px; }
+  #ai-free .field { margin-bottom: 8px; }
+  #ai-free-start { width: 100%; height: 40px; border-color: transparent; background: var(--accent-strong); color: var(--accent-ink); font-weight: 700; }
+  #ai-free-status { min-height: 16px; margin: 6px 0 0; font-size: 11px; }
+  .ai-custom { margin-top: 6px; border-top: 1px solid var(--line); padding-top: 8px; }
+  .ai-custom > summary { color: var(--muted); font-size: 11.5px; cursor: pointer; }
+  .ai-custom[open] > summary { color: var(--text); margin-bottom: 6px; }
+  body.ai-running #ai-free { display: none; }
   #world-scrim { display: none; position: fixed; inset: 0; z-index: 85; background: rgba(2,4,7,.68); backdrop-filter: blur(2px); }
   body.world-focus #world-scrim { display: block; }
   #world-panel {
@@ -182,6 +235,10 @@
   .world-table td.num { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
   .world-table td.room { color: var(--accent); }
   @media (max-width: 767px) {
+    #hero { padding: 20px 16px 18px; }
+    #hero h1 { font-size: 24px; }
+    .hero-steps { grid-template-columns: 1fr; }
+    .hero-live span { font-size: 10px; }
     #hud { padding: 7px 10px; }
     #hud-bars { min-width: 100%; order: 3; }
     #hud-stats { display: none; }
@@ -564,9 +621,10 @@
     <div class="header-center">
       <div id="modes" role="group" aria-label="Workspace mode">
         <button type="button" id="mode-play" class="mode active" aria-pressed="true">Play</button>
-        <button type="button" id="mode-ai" class="mode" aria-pressed="false">Watch AI</button>
+        <button type="button" id="mode-ai" class="mode" aria-pressed="false">Agents</button>
       </div>
       <span id="state" role="status">connecting…</span>
+      <button type="button" id="agent-chip" hidden>AI live</button>
     </div>
     <div class="header-actions">
       <a href="/stats" target="_blank" rel="noopener">Stats</a>
@@ -586,6 +644,24 @@
         <span class="spacer"></span>
         <span id="live-status" class="muted">setting up</span>
       </div>
+      <section id="hero" aria-label="Welcome to MUDBench">
+        <div class="hero-eyebrow">Persistent world · people + agents</div>
+        <h1>Play a world that watches back.</h1>
+        <p class="hero-copy">A text world where humans and AI agents share one simulation. Play free, or launch a free agent and watch it quest, fight and learn. The same world is the benchmark: every decision, action and result is recorded.</p>
+        <div class="hero-actions">
+          <button type="button" id="hero-play">Play free</button>
+          <button type="button" id="hero-agent">Start a free agent</button>
+          <a id="hero-watch" href="/watch" target="_blank" rel="noopener">Watch live ↗</a>
+        </div>
+        <p class="hero-alt"><button type="button" id="hero-password" class="link-button">Use a name and password</button> · <a href="/stats" target="_blank" rel="noopener">Public stats</a></p>
+        <div class="hero-live" id="hero-live"><span>loading world…</span></div>
+        <div class="hero-steps">
+          <div class="hero-step"><b>1 · Play</b><span>Create a character and explore 116 rooms, quests, guilds and the Ring.</span></div>
+          <div class="hero-step"><b>2 · Launch an agent</b><span>Free with no key. Pick a persona and watch it make decisions in the open.</span></div>
+          <div class="hero-step"><b>3 · Watch the benchmark</b><span>Live telemetry, decisions, fights and world-pulse charts, all public.</span></div>
+        </div>
+        <p id="hero-status" class="small muted" role="status" aria-live="polite"></p>
+      </section>
       <div id="hud" hidden aria-label="Character status">
         <div id="hud-top">
           <div class="hud-id"><strong id="hud-name">—</strong><span id="hud-level">L1</span><span id="hud-title"></span></div>
@@ -702,9 +778,22 @@
       </section>
     <aside>
       <section class="panel" id="ai-setup" aria-label="Model control">
-        <h2>Model control</h2>
-        <p>Pick a provider, model and character. Your provider key stays in this browser.</p>
-        <div class="setup-grid">
+        <h2>Start an agent</h2>
+        <p>Start free in one click, or bring your own model and key.</p>
+        <div id="ai-free">
+          <div class="free-head"><span class="free-badge">Free</span><h3>Start a free agent</h3></div>
+          <p>Pollinations · no key · no sign-up form. A browser account is created automatically so the agent keeps its character.</p>
+          <div class="field">
+            <label for="ai-goal">Persona</label>
+            <select id="ai-goal"></select>
+          </div>
+          <button type="button" id="ai-free-start">Start free agent</button>
+          <p id="ai-free-status" role="status" aria-live="polite">Free, no key, no per-player quota here. The public endpoint is best-effort.</p>
+        </div>
+        <details id="ai-custom" class="ai-custom">
+          <summary>Use another model / bring your own key</summary>
+          <p class="small muted">Ollama is local and free. OpenAI, Anthropic and any OpenAI-compatible endpoint can use your own key; it stays in this browser.</p>
+          <div class="setup-grid">
           <div class="field">
             <label for="ai-provider">Brain</label>
             <select id="ai-provider"></select>
@@ -748,15 +837,16 @@
         <div class="launch-bar">
           <p id="ai-hint" role="status" aria-live="polite"></p>
           <div class="launch-actions">
-            <button type="button" id="ai-start">Start AI run</button>
+            <button type="button" id="ai-start">Start with this model</button>
             <button type="button" id="ai-forget">Forget key</button>
           </div>
         </div>
+        </details>
         <details class="small muted">
           <summary>How this works</summary>
-          <p>1. Pick a brain. Ollama is free and local; OpenAI and Anthropic need a key.</p>
-          <p>2. When you are signed in, the AI is a persona of your Prism id; your device signs the owner action. Sign in with Prism first; the AI does not create a separate account.</p>
-          <p>3. It sees the same room text you do, types one command per turn, and waits for the server like any player.</p>
+          <p>1. <strong>Start free</strong> uses Pollinations with no key and no sign-up form. A browser Prism account is created automatically so the agent can keep its character.</p>
+          <p>2. <strong>Custom model</strong> supports Ollama locally, OpenAI, Anthropic, Prime Router and any OpenAI-compatible endpoint. Your key stays in this browser.</p>
+          <p>3. The agent is a persona of your Prism id; your device signs the owner action. It sees the same room text you do, types one command per turn, and waits for the server like any player.</p>
           <p>4. Send direction in the Director chat. The AI replies there and its private reasoning appears in Mind.</p>
           <p>5. A compact memory of rooms, tried commands and stale results is kept per character in this browser and injected every turn. A loop guard breaks repeated observation commands instead of pausing the run.</p>
           <p>The game server never sees the provider key.</p>
@@ -773,6 +863,7 @@
           <div class="plan-row"><span>Brain</span><b id="plan-brain">Ollama</b></div>
           <div class="plan-row"><span>Model</span><b id="plan-model">llama3.2</b></div>
           <div class="plan-row"><span>Character</span><b id="plan-character">auto</b></div>
+          <div class="plan-row"><span>Persona</span><b id="plan-persona">Explorer</b></div>
           <div class="plan-row"><span>Mode</span><b id="plan-mode">Standard</b></div>
         </div>
         <ol class="plan-steps">
@@ -791,7 +882,7 @@
           <button type="button" id="prism-login" autofocus>Use my Prism id</button>
         </div>
         <p class="small muted">The first time, this browser creates an id. That id is the account, not a character. It is not portable yet.</p>
-        <details class="small muted">
+        <details class="small muted" id="password-login">
           <summary>Use a name and password instead</summary>
           <div class="field">
             <label for="name">Name</label>
@@ -810,7 +901,7 @@
         <details class="small muted">
           <summary>First steps</summary>
           <p>After signing in, name a character and type <code>look</code>, <code>score</code>, then <code>quests</code>. The <code>tutorial</code> command walks the first steps, including <code>quest accept first-steps</code>. <code>map</code>, <code>levels</code> and <code>leaderboard</code> show the world; <code>shortcuts</code> lists the fast forms.</p>
-          <p><a href="/watch" target="_blank" rel="noopener">Watch an AI</a> · <a href="/stats" target="_blank" rel="noopener">Public stats</a></p>
+          <p><a href="/watch" target="_blank" rel="noopener">Watch an agent</a> · <a href="/stats" target="_blank" rel="noopener">Public stats</a></p>
         </details>
         <details class="small muted" id="recovery-restore-box">
           <summary>Restore from a recovery kit</summary>
@@ -948,10 +1039,10 @@
       </section>
 
       <section class="panel" id="watch-card">
-        <h2>Watch an AI</h2>
+        <h2>AI agents</h2>
         <p id="watch-summary">Ollama · llama3.2</p>
         <div class="watch-actions">
-          <button type="button" id="watch-open">Open AI setup →</button>
+          <button type="button" id="watch-open">Open agents →</button>
           <a href="/watch" target="_blank" rel="noopener">Public watch page ↗</a>
         </div>
       </section>
@@ -992,10 +1083,12 @@
     <h3 class="pane-title" style="margin-top:14px">Players</h3>
     <div id="world-players"></div>
   </section>
+  <div id="play-log-buffer" hidden></div>
+  <div id="ai-log-buffer" hidden></div>
   <div id="announcer" class="sr-only" role="status" aria-live="polite"></div>
 <script type="module">
   import {
-    PROVIDERS, DEFAULT_GOAL, buildSystemPrompt, buildUserPrompt,
+    PROVIDERS, DEFAULT_GOAL, GOALS, buildSystemPrompt, buildUserPrompt,
     parseBrain, buildActionMenu, validateCommand, repairCommand, requestFor, replyFrom, readSseText, trimHistory, normalizeBase,
   } from "/ai.mjs";
   import { emptyMemory, rememberResult, memoryPrompt, loopWarning, breakLoop, shouldBreakLoop, publicMemoryText } from "/memory.mjs";
@@ -1004,6 +1097,8 @@
   import { createLinkOffer, parseLinkUri, requestLink, acceptLinkRequest, completeLink, linkCode, revokeDevice, resolvePrism, linkQr } from "/prism-id.mjs";
 
   const log = document.getElementById("log");
+  const playLogBuffer = document.getElementById("play-log-buffer");
+  const aiLogBuffer = document.getElementById("ai-log-buffer");
   const state = document.getElementById("state");
   const cmd = document.getElementById("cmd");
   const nameInput = document.getElementById("name");
@@ -1099,7 +1194,18 @@
   const planBrain = document.getElementById("plan-brain");
   const planModel = document.getElementById("plan-model");
   const planCharacter = document.getElementById("plan-character");
+  const planPersona = document.getElementById("plan-persona");
   const planMode = document.getElementById("plan-mode");
+  const aiGoal = document.getElementById("ai-goal");
+  const aiFreeStart = document.getElementById("ai-free-start");
+  const aiFreeStatus = document.getElementById("ai-free-status");
+  const agentChip = document.getElementById("agent-chip");
+  const hero = document.getElementById("hero");
+  const heroLive = document.getElementById("hero-live");
+  const heroStatus = document.getElementById("hero-status");
+  const heroPlay = document.getElementById("hero-play");
+  const heroAgent = document.getElementById("hero-agent");
+  const heroPassword = document.getElementById("hero-password");
   const modelEdit = document.getElementById("model-edit");
   const modelScrim = document.getElementById("model-scrim");
   const modelApply = document.getElementById("model-apply");
@@ -1164,6 +1270,8 @@
   };
 
   let mode = "play";
+  let playLogHTML = "";
+  let aiLogHTML = "";
   let prismSession = null;
   let playAuth = null;
   let pendingOffer = null;
@@ -1179,7 +1287,7 @@
 
   const AI = {
     socket: null, config: null, identity: null, name: "",
-    running: false, paused: false, authed: false, busy: false,
+    running: false, paused: false, authed: false, busy: false, status: "ready",
     observed: "", quiet: null, reconnect: null, registering: false,
     turn: 0, commands: 0, latencies: [], usage: { prompt: 0, completion: 0 },
     history: [], director: [], transcript: [], thoughts: [], room: "",
@@ -1228,39 +1336,45 @@
     });
   };
 
-  const addLine = (text, cls) => {
+  const addLine = (text, cls, target = log) => {
     const line = document.createElement("div");
     line.className = `line${cls ? ` ${cls}` : ""}`;
     line.textContent = text;
-    log.appendChild(line);
+    target.appendChild(line);
   };
 
-  const append = (text, cls) => {
+  const append = (text, cls, target = log) => {
+    const aiStage = target === aiLogBuffer || (target === log && mode === "ai");
     const clean = String(text).replace(/\r/g, "").replace(/\n+$/, "");
     const lines = clean.split("\n");
     for (const line of lines) {
-      if (!line.trim()) { addLine("", "spacer"); continue; }
+      if (!line.trim()) { addLine("", "spacer", target); continue; }
       let kind = cls ?? "event";
       if (/^\[.*\]$/.test(line.trim())) {
         kind = "room";
-        AI.exits = [];
+        if (aiStage) AI.exits = [];
       }
       else if (/^(Here|Objects):$/i.test(line.trim())) kind = "label";
       else if (/^  /.test(line)) kind = "item";
       else if (/^Exits:/i.test(line.trim())) {
         kind = "exits";
-        AI.exits = line.replace(/^Exits:\s*/i, "").split(/[,\s]+/).map((dir) => dir.replace(/[^a-z]/gi, "")).filter(Boolean);
+        const dirs = line.replace(/^Exits:\s*/i, "").split(/[,\s]+/).map((dir) => dir.replace(/[^a-z]/gi, "")).filter(Boolean);
+        if (aiStage) AI.exits = dirs;
       }
       else if (/^(Night|Dawn|Day|Dusk)\./.test(line.trim())) kind = "scene";
       else if (/^(Welcome|Account|Signing|You must sign|That name|No such|Usage|Goodbye|Connected|New here)/i.test(line.trim())) kind = "sys";
       else if (!cls && !/^\[/.test(line.trim())) kind = "desc";
-      addLine(line, kind);
+      addLine(line, kind, target);
     }
+    if (target !== log) return;
     requestAnimationFrame(() => {
       if (stick) log.scrollTop = log.scrollHeight;
       latest.style.display = stick ? "none" : "block";
     });
   };
+
+  const appendPlay = (text, cls) => append(text, cls, mode === "play" ? log : playLogBuffer);
+  const appendAI = (text, cls) => append(text, cls, mode === "ai" ? log : aiLogBuffer);
 
   const HISTORY_KEY = "mudbench-command-history";
   let commandHistory = (() => {
@@ -1465,6 +1579,7 @@
       playState = null;
       hud.hidden = true;
       closeWorld();
+      void refreshHero();
       signed.style.display = "none";
       charactersPanel.hidden = true;
       account.style.display = "block";
@@ -1495,6 +1610,7 @@
         try {
           const info = JSON.parse(charactersLine[1]);
           renderCharacters(info);
+          void refreshHero();
           if (resumeCharacter && playAuth === "prism") {
             const previous = resumeCharacter;
             resumeCharacter = null;
@@ -1521,7 +1637,7 @@
         return;
       }
       if (/^#tick \d+\r?\n?$/.test(text)) return;
-      append(text);
+      appendPlay(text);
       if (/signed in elsewhere/i.test(text)) {
         playAuth = null;
         resumeCharacter = null;
@@ -1566,6 +1682,7 @@
         cmd.placeholder = "look · say <text> · ↑ history · Tab complete · Ctrl+L clear";
         cmd.focus();
         renderHud();
+        void refreshHero();
       }
       if (/Goodbye\./.test(text)) {
         resumeCharacter = null;
@@ -1786,6 +1903,7 @@
     playState = null;
     hud.hidden = true;
     closeWorld();
+    void refreshHero();
     cmd.disabled = true;
     cmd.placeholder = "Sign in to play";
     try { playSocket?.close(); } catch {}
@@ -2118,6 +2236,8 @@
   // --- mode ---------------------------------------------------------------
   function setMode(next) {
     if (next === mode) return;
+    if (mode === "play") playLogHTML = log.innerHTML;
+    else aiLogHTML = log.innerHTML;
     mode = next;
     document.body.classList.toggle("ai-mode", mode === "ai");
     document.body.classList.remove("model-focus", "telemetry-focus");
@@ -2135,6 +2255,11 @@
     if (mode === "ai") {
       // Keep the human's play socket signed in. The human and the AI can be
       // online at once; watching must not quit the character.
+      log.innerHTML = aiLogHTML;
+      if (aiLogBuffer.childNodes.length) {
+        log.append(...aiLogBuffer.childNodes);
+        aiLogBuffer.replaceChildren();
+      }
       account.style.display = "none";
       signed.style.display = "none";
       if (!AI.running) {
@@ -2143,10 +2268,22 @@
         detectLocalModels();
       } else {
         document.body.classList.add("ai-running");
+        setAIStatus(AI.status);
         snapToLatest();
       }
     } else {
-      stopAI(true);
+      // A view switch is not a lifecycle action: the agent keeps running while
+      // the human plays, and the header chip is the way back to it.
+      log.innerHTML = playLogHTML;
+      if (playLogBuffer.childNodes.length) {
+        log.append(...playLogBuffer.childNodes);
+        playLogBuffer.replaceChildren();
+      }
+      stick = true;
+      requestAnimationFrame(() => {
+        log.scrollTop = log.scrollHeight;
+        latest.style.display = "none";
+      });
       document.body.classList.remove("ai-mode", "ai-running");
       account.style.display = authed ? "none" : "block";
       signed.style.display = authed ? "block" : "none";
@@ -2158,12 +2295,15 @@
       state.className = "live";
       renderHandoff();
       refreshLiveCard();
+      updateAgentChip();
+      void refreshHero();
     }
     updateTelemetryAvailability();
   }
 
   modePlay.addEventListener("click", () => setMode("play"));
   modeAI.addEventListener("click", () => setMode("ai"));
+  agentChip.addEventListener("click", () => setMode("ai"));
   try { history.scrollRestoration = "manual"; } catch {}
   window.addEventListener("pageshow", () => {
     const rail = document.querySelector("aside");
@@ -2242,6 +2382,12 @@
     option.textContent = provider.label;
     aiProvider.appendChild(option);
   }
+  for (const [id, goal] of Object.entries(GOALS)) {
+    const option = document.createElement("option");
+    option.value = id;
+    option.textContent = goal.label;
+    aiGoal.appendChild(option);
+  }
 
   function applyProvider(id, reset = true) {
     const provider = PROVIDERS[id] ?? PROVIDERS.ollama;
@@ -2281,6 +2427,7 @@
     if (planBrain) planBrain.textContent = provider?.label ?? aiProvider.value;
     if (planModel) planModel.textContent = model;
     if (planCharacter) planCharacter.textContent = character;
+    if (planPersona) planPersona.textContent = GOALS[aiGoal.value]?.label ?? "Explorer";
     if (planMode) planMode.textContent = `${aiFast.checked ? "Direct" : "Full"} · ${aiReasoning.value}`;
     if (!AI.running) aiSub.textContent = summary;
   }
@@ -2291,6 +2438,7 @@
       base: normalizeBase(aiBase.value.trim()),
       model: aiModel.value.trim(),
       character: aiCharacter.value.trim(),
+      goal: aiGoal.value,
       fast: aiFast.checked,
       reasoning: aiReasoning.value,
     };
@@ -2306,6 +2454,7 @@
     aiBase.value = config.base ?? PROVIDERS[aiProvider.value].base;
     aiModel.value = config.model ?? PROVIDERS[aiProvider.value].model;
     aiCharacter.value = config.character === "scout" ? "" : (config.character ?? "");
+    aiGoal.value = GOALS[config.goal] ? config.goal : "explorer";
     aiFast.checked = config.fast !== false;
     aiReasoning.value = config.reasoning ?? "auto";
     aiKey.value = "";
@@ -2333,7 +2482,7 @@
     aiKey.value = keyFor(aiBase.value);
     detectLocalModels();
   });
-  for (const field of [aiBase, aiModel, aiCharacter, aiFast, aiReasoning]) {
+  for (const field of [aiBase, aiModel, aiCharacter, aiGoal, aiFast, aiReasoning]) {
     field.addEventListener("change", () => { persistConfig(false); syncModelSummary(); });
   }
 
@@ -2529,6 +2678,7 @@
       maxTokens: fast ? 120 : 400,
       fast,
       reasoning: aiReasoning.value,
+      goal: aiGoal.value,
     };
     if (!config.base || !config.model) {
       showHint("Set a base URL and a model first.", true);
@@ -2628,6 +2778,8 @@
 
     persistConfig(true);
     log.innerHTML = "";
+    aiLogHTML = "";
+    aiLogBuffer.replaceChildren();
     chat.innerHTML = "";
     mind.innerHTML = "";
     snapToLatest();
@@ -2655,6 +2807,7 @@
 
   function stopAI(silent = false) {
     AI.running = false;
+    updateAgentChip();
     updateTelemetryAvailability();
     document.body.classList.remove("model-focus", "telemetry-focus");
     telemetryOpen.setAttribute("aria-expanded", "false");
@@ -2685,11 +2838,26 @@
   }
 
   function setAIStatus(text) {
-    const label = `AI ${text}`;
-    state.textContent = label;
-    state.className = text === "live" || text === "thinking" ? "live" : "";
+    AI.status = text;
+    if (mode === "ai") {
+      const label = `AI ${text}`;
+      state.textContent = label;
+      state.className = text === "live" || text === "thinking" ? "live" : "";
+    }
     liveStatus.textContent = text;
     livebar.classList.toggle("live", text === "live" || text === "thinking");
+    updateAgentChip();
+  }
+
+  function updateAgentChip() {
+    if (!agentChip) return;
+    agentChip.hidden = !AI.running || mode === "ai";
+    if (!AI.running) return;
+    const active = AI.status === "live" || AI.status === "thinking";
+    agentChip.textContent = AI.status === "error" ? "AI error" : AI.paused ? "AI paused" : active ? "AI live" : "AI starting";
+    agentChip.classList.toggle("paused", AI.paused && AI.status !== "error");
+    agentChip.classList.toggle("error", AI.status === "error");
+    agentChip.title = "Open the agent workspace";
   }
 
   function setStreaming(next) {
@@ -2726,6 +2894,119 @@
     if (AI.streaming) publishStream({ kind: "status", text: next ? "paused" : "live", tick: AI.lastTick });
     if (!next) scheduleTurn(250);
   }
+
+  const waitUntil = async (check, timeout = 10000) => {
+    const end = Date.now() + timeout;
+    while (Date.now() < end) {
+      if (check()) return true;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    return false;
+  };
+
+  async function ensurePrismOwner() {
+    if (prismSession && (characterState.account || authed)) return;
+    if (!playSocket || playSocket.readyState !== WebSocket.OPEN) {
+      if (mode !== "play") setMode("play");
+      connectPlay();
+      if (!(await waitUntil(() => playSocket?.readyState === WebSocket.OPEN, 5000))) {
+        throw new Error("The game connection is not ready.");
+      }
+    }
+    const session = await prismSignIn("default", location.origin);
+    prismSession = await loadSession("default");
+    if (!prismSession) throw new Error("The browser could not create a Prism session.");
+    playAuth = "prism";
+    renderDevices();
+    if (playSocket?.readyState === WebSocket.OPEN) playSocket.send(`prism ${b64uJson(session)}\n`);
+    if (!(await waitUntil(() => characterState.account || authed, 10000))) {
+      throw new Error("The server did not accept the Prism session.");
+    }
+  }
+
+  async function startFreeAgent(statusNode = heroStatus) {
+    if (AI.running) { setMode("ai"); return; }
+    const buttons = [heroAgent, aiFreeStart].filter(Boolean);
+    for (const button of buttons) button.disabled = true;
+    if (statusNode) {
+      statusNode.textContent = "Preparing your free agent…";
+      statusNode.className = "small muted";
+    }
+    try {
+      await ensurePrismOwner();
+      const goal = GOALS[aiGoal.value] ? aiGoal.value : "explorer";
+      setMode("ai");
+      aiProvider.value = "pollinations";
+      applyProvider("pollinations");
+      aiCharacter.value = "";
+      aiGoal.value = goal;
+      await startAI();
+      if (!AI.running && statusNode) {
+        statusNode.textContent = aiHint.textContent || "The free agent could not start.";
+        statusNode.className = "small err";
+      } else if (statusNode) {
+        statusNode.textContent = "";
+      }
+    } catch (error) {
+      if (statusNode) {
+        statusNode.textContent = `Free agent: ${error.message}`;
+        statusNode.className = "small err";
+      }
+      setAIStatus("error");
+    } finally {
+      for (const button of buttons) button.disabled = false;
+    }
+  }
+
+  async function refreshHero() {
+    if (!hero) return;
+    if (authed || characterState.account || mode === "ai") { hero.hidden = true; return; }
+    hero.hidden = false;
+    if (AI.running) {
+      heroStatus.textContent = "Your agent is running. Use the AI live chip in the header to open it.";
+      heroStatus.className = "small muted";
+    }
+    try {
+      const [world, stream] = await Promise.all([
+        fetch("/world", { signal: AbortSignal.timeout(3000) }).then((response) => response.json()),
+        fetch("/stream", { signal: AbortSignal.timeout(3000) }).then((response) => response.json()),
+      ]);
+      const bits = [
+        `${world.online ?? 0} online`,
+        `${world.rooms ?? "—"} rooms`,
+        `${world.quests ?? "—"} quests`,
+      ];
+      if (world.event?.name) bits.push(world.event.name);
+      const live = stream.live;
+      bits.push(live ? `LIVE: ${live.name} in ${live.room} · ${live.viewers} watching` : "No agent live right now");
+      heroLive.replaceChildren(...bits.map((text) => {
+        const span = document.createElement("span");
+        span.textContent = text;
+        if (text.startsWith("LIVE:")) span.className = "live";
+        return span;
+      }));
+    } catch {
+      heroLive.replaceChildren();
+      const span = document.createElement("span");
+      span.textContent = "World status unavailable; you can still play.";
+      heroLive.appendChild(span);
+    }
+  }
+
+  heroPlay.addEventListener("click", () => {
+    account.scrollIntoView({ behavior: "smooth", block: "center" });
+    prismLogin.click();
+  });
+  heroPassword.addEventListener("click", () => {
+    const box = document.getElementById("password-login");
+    if (box) box.open = true;
+    account.scrollIntoView({ behavior: "smooth", block: "center" });
+    nameInput.focus();
+  });
+  heroAgent.addEventListener("click", () => { void startFreeAgent(heroStatus); });
+  aiFreeStart.addEventListener("click", () => { void startFreeAgent(aiFreeStatus); });
+  void refreshHero();
+  setInterval(refreshHero, 30000);
 
   let chatStick = true;
   chat.addEventListener("scroll", () => {
@@ -3164,9 +3445,11 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         addChat("system", "This AI was signed in from another tab or device; it stopped here.");
         return;
       }
-      AI.observed += text;
-      append(text);
-      if (AI.streaming) publishStream({ kind: "text", text, tick: AI.lastTick });
+      const setupLine = /^(Signed in as |Account .*Characters:|Character .+ created\.|Signing in as |Connected\. Register|Welcome to MUDBench\.)/;
+      const visible = text.split(/\r?\n/).filter((line) => !setupLine.test(line.trim())).join("\n").trim();
+      AI.observed += visible ? `${visible}\n` : "";
+      if (visible) appendAI(visible);
+      if (AI.streaming) publishStream({ kind: "text", text: visible || text, tick: AI.lastTick });
       if (/Public stream on/i.test(text)) setStreaming(true);
       if (/Public stream off/i.test(text)) setStreaming(false);
       if (/Another run is live right now|stream could not start/i.test(text)) {
@@ -3308,7 +3591,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       AI.loopBroken = false;
       const actions = buildActionMenu(promptState);
       const deliberate = needsReasoning();
-      const system = buildSystemPrompt({ name: AI.name || "an autonomous player", goal: DEFAULT_GOAL, fast: AI.config.fast, deliberate });
+      const system = buildSystemPrompt({ name: AI.name || "an autonomous player", goal: GOALS[AI.config.goal]?.goal ?? DEFAULT_GOAL, fast: AI.config.fast, deliberate });
       const user = buildUserPrompt({
         turn,
         observation,

@@ -1293,6 +1293,12 @@
       "level": "some-true",
       "statement": "Production v0.91.29 serves 116 rooms, 14 zones, 20 quests, 57 mobiles and 145 objects; The Salt Surge is active. Public GET /world is aggregate-only and no longer includes actors or top; GET /series returns 60 one-minute buckets; the served page contains the HUD and World panel hooks; /stats contains the World pulse charts. The first v0.91.29 deploy rolled back on a false login-assets probe because curl | grep -q hit SIGPIPE under pipefail on the larger page; after downloading the page before grep on wick and in deploy/mudbench-deploy.sh, the redeploy succeeded. R4 active, signups open. Main Gate 44961678533 green, publish 44962358589.",
       "authority": "GitHub PR #41 merge aab73bf 2026-11-21; main Gate 44961678533; publish 44962358589; release v0.91.29; wick deploy output and /world, /series, /, /stats, /health; local UX smoke and reconnect test"
+    },
+    {
+      "id": "MB-211",
+      "level": "build",
+      "statement": "v0.91.30 adds a landing hero with Play free, Start a free agent and Watch live; a one-click free agent on Pollinations with no key and no sign-up form, creating and registering a browser Prism account automatically; five persona presets (Explorer, Duelist, Quest runner, Storyteller, Speedrunner) wired into the system prompt and Run plan; a collapsed custom-provider drawer for Ollama, OpenAI, Anthropic, OpenAI-compatible and Prime Router with keys kept in the browser; a header agent chip that keeps a run alive across Play/AI view switches; and separate human/agent scrollbacks so a background agent does not mix into the Play log. The Gate covers the hero, free card, personas, custom drawer, agent chip and free-agent flow source; a live browser smoke starts the free agent on Pollinations, stops it, opens the custom provider and signs into Play.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }
