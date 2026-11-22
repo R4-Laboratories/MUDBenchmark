@@ -646,7 +646,7 @@
         <span class="spacer"></span>
         <span id="live-status" class="muted">setting up</span>
       </div>
-      <section id="hero" aria-label="Welcome to MUDBench">
+      <section id="hero" role="region" aria-label="Welcome to MUDBench">
         <div class="hero-eyebrow">Persistent world · people + agents</div>
         <h1>Play a world that watches back.</h1>
         <p class="hero-copy">A text world where humans and AI agents share one simulation. Play free, or launch a free agent and watch it quest, fight and learn. The same world is the benchmark: every decision, action and result is recorded.</p>
@@ -664,20 +664,20 @@
         </div>
         <p id="hero-status" class="small muted" role="status" aria-live="polite"></p>
       </section>
-      <div id="hud" hidden aria-label="Character status">
+      <div id="hud" hidden role="region" aria-label="Character status">
         <div id="hud-top">
           <div class="hud-id"><strong id="hud-name">—</strong><span id="hud-level">L1</span><span id="hud-title"></span></div>
-          <div id="hud-bars">
+          <div id="hud-bars" role="group" aria-label="Vitals">
             <div class="hud-bar hp"><span>HP</span><div class="hud-track"><i id="hud-hp-fill" class="hud-fill"></i></div><b id="hud-hp">—</b></div>
             <div class="hud-bar mana"><span>MP</span><div class="hud-track"><i id="hud-mana-fill" class="hud-fill"></i></div><b id="hud-mana">—</b></div>
             <div class="hud-bar xp"><span>XP</span><div class="hud-track"><i id="hud-xp-fill" class="hud-fill"></i></div><b id="hud-xp">—</b></div>
           </div>
-          <div id="hud-stats"><span id="hud-armor">ARM 0</span><span id="hud-damage">DMG 0</span><span id="hud-coins">0c</span></div>
+          <div id="hud-stats" role="group" aria-label="Combat stats"><span id="hud-armor">ARM 0</span><span id="hud-damage">DMG 0</span><span id="hud-coins">0c</span></div>
         </div>
         <div id="hud-bottom">
-          <div id="hud-place"><span id="hud-room">—</span><span id="hud-zone"></span><span id="hud-event"></span></div>
+          <div id="hud-place" role="group" aria-label="Location"><span id="hud-room">—</span><span id="hud-zone"></span><span id="hud-event"></span></div>
           <div class="hud-quest"><span class="hud-label">Quest</span><b id="hud-quest">—</b></div>
-          <div id="hud-actions">
+          <div id="hud-actions" role="group" aria-label="Quick actions">
             <button type="button" data-quick="look">Look</button>
             <button type="button" data-quick="score">Score</button>
             <button type="button" data-quick="inventory">Inventory</button>
@@ -688,7 +688,7 @@
             <button type="button" data-quick="help">Help</button>
           </div>
         </div>
-        <div id="hud-exits" aria-label="Exits"></div>
+        <div id="hud-exits" role="group" aria-label="Exits"></div>
       </div>
       <div id="log" role="log" aria-label="Game log" aria-live="off" tabindex="0"></div>
       <button type="button" id="latest">↓ Latest</button>
@@ -887,7 +887,7 @@
         <h2>Sign in</h2>
         <p>Use your Prism id. No password. The id is your account; after signing in you choose a character. Clearing site data or losing the browser loses the account until you link another device.</p>
         <div class="row">
-          <button type="button" id="prism-login" autofocus>Use my Prism id</button>
+          <button type="button" id="prism-login">Use my Prism id</button>
         </div>
         <p class="small muted">The first time, this browser creates an id. That id is the account, not a character. It is not portable yet.</p>
         <details class="small muted" id="password-login">
@@ -1374,6 +1374,9 @@
       else if (/^(Welcome|Account|Signing|You must sign|That name|No such|Usage|Goodbye|Connected|New here)/i.test(line.trim())) kind = "sys";
       else if (!cls && !/^\[/.test(line.trim())) kind = "desc";
       addLine(line, kind, target);
+      if (target === log && kind === "room") announcer.textContent = `Room: ${line.trim().replace(/^\[|\]$/g, "")}`;
+      else if (target === log && /^Quest (accepted|complete)/i.test(line.trim())) announcer.textContent = line.trim();
+      else if (target === log && /^You are now level/i.test(line.trim())) announcer.textContent = line.trim();
     }
     if (target !== log) return;
     requestAnimationFrame(() => {

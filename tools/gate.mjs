@@ -1477,12 +1477,15 @@ let telemetry = { ok: true, why: [] };
   check(overview.fights[0]?.attacker === "alice" && overview.fights[0]?.target === statusState.npcs[0].name, "the overview fight names are wrong");
   const pageSource = readFileSync(join(root, "runtime/web/index.html"), "utf8");
   const statsSource = readFileSync(join(root, "runtime/web/stats.html"), "utf8");
+  const watchSource = readFileSync(join(root, "runtime/web/watch.html"), "utf8");
   check(/id="hud"/.test(pageSource) && /mudbench-command-history/.test(pageSource) && /id="world-panel"/.test(pageSource) && /#overview \(\.\*\)/.test(pageSource), "the terminal HUD or world panel is missing");
   check(/id="hero"/.test(pageSource) && /id="hero-agent"/.test(pageSource) && /id="ai-free"/.test(pageSource) && /id="ai-goal"/.test(pageSource) && /id="ai-custom"/.test(pageSource), "the landing hero or free-agent card is missing");
   check(/startFreeAgent/.test(pageSource) && /ensurePrismOwner/.test(pageSource) && /id="agent-chip"/.test(pageSource), "the one-click free-agent flow is missing");
   check(/id="pulse-activity"/.test(statsSource) && /\/series\?minutes=/.test(statsSource), "the public world pulse chart is missing");
+  check(/class="skip"/.test(watchSource) && /role="log"/.test(watchSource) && /role="tablist"/.test(watchSource) && /aria-controls="chat-panel"/.test(watchSource) && /id="watch-announcer"/.test(watchSource), "the watch accessibility contract is missing");
+  check(/class="skip"/.test(statsSource) && /id="main"/.test(statsSource) && /aria-label="Quest completion"/.test(statsSource) && /aria-label="AI models"/.test(statsSource), "the stats accessibility contract is missing");
+  check(/tools\/a11y\.mjs/.test(readFileSync(join(root, ".github/workflows/gate.yml"), "utf8")), "the browser accessibility audit is not in the Gate workflow");
   check(/pathname === "\/series"/.test(serverSource) && /summarizeSeries\(/.test(serverSource) && /verb === "overview"/.test(serverSource) && /worldStatus\(state, ROOMS, \{ detail: false \}\)/.test(serverSource), "the overview or series route is missing");
-  const watchSource = readFileSync(join(root, "runtime/web/watch.html"), "utf8");
   check(/id="agent-cards"/.test(watchSource) && /decision-card/.test(watchSource) && /id="stats-panel"/.test(watchSource) && /id="delay-badge"/.test(watchSource) && /loadDirectory/.test(watchSource), "the watch directory, decisions or stats panel is missing");
   check(/flushLiveQueue/.test(serverSource) && /PVP_STREAM_DELAY/.test(serverSource) && /recentRuns/.test(serverSource) && /recent: recentRuns\.map\(publicRun\)/.test(serverSource) && /stream delay/.test(serverSource), "the stream delay or recent-run directory is missing");
 

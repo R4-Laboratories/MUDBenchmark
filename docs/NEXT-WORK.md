@@ -59,6 +59,7 @@ memory or prompt system.
 | v0.91.29 | Terminal history, Play HUD and public world-pulse charts | **done** (MB-209) |
 | v0.91.30 | Free-agent front door, personas and custom-provider drawer | **done** (MB-211) |
 | v0.91.31 | Watch directory, decision cards, run stats and PvP delay | **done** (MB-213) |
+| v0.91.32 | Browser accessibility audit and ARIA/focus fixes | **in flight** |
 | backlog | Optional content and live-player tuning | optional |
 
 ## What is next
@@ -88,9 +89,10 @@ memory or prompt system.
    reserved-word policy; `report <name> <reason>` writes a durable operator
    queue while sharing the chat guard. The remaining gap is a routine operator
    review loop, not another player-facing control.
-7. **Accessibility evidence.** The source contract is checked, but a manual
-   VoiceOver/NVDA pass, a colour-contrast audit and a keyboard-only playtest
-   remain open.
+7. **Accessibility evidence.** Source checks and the browser audit pass
+   (landmarks, names, first-Tab skip links, tabs, tables, contrast and reduced
+   motion). A human VoiceOver/NVDA pass and a mobile touch-target review remain
+   open.
 8. **Federation.** Draft PR #11 is green on `f99bf75` after rebasing onto
    v0.91.28: the Gate, the three federation tests, crash recovery and browser
    reconnect pass. It remains draft pending a two-region security review and a

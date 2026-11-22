@@ -43,6 +43,8 @@ jobs:
         run: node --test runtime/crash-recovery.test.mjs
       - name: Browser reconnect
         run: node --test runtime/session-reconnect.test.mjs
+      - name: Browser accessibility
+        run: node tools/a11y.mjs
       - name: Next improvement
         if: always()
         run: node tools/tick.mjs
