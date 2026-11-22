@@ -79,11 +79,11 @@ API or the AI path.
 
 ### Still open
 
-- The HUD can lag by one command after a quest completion or other tick-time
-  change. The log says “Quest complete” immediately, but the HUD/XP/quest line
-  may show the previous state until the next command. This is server state
-  ordering, not a lost result; it is a polish item.
 - The free Prism path warns when the browser denies persistent storage. The
   recovery kit is the durable answer, but a first-time player may not open it
   without the warning; the new note points at it.
 - A human VoiceOver/NVDA pass and a final hands-on phone review remain manual.
+
+The HUD lag after a tick-time quest completion was fixed in v0.91.38: a
+command intent now sends a post-tick `#state` to the actor whose intent ran, so
+the HUD/XP/quest line catches up without waiting for the next command.

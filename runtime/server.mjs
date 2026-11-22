@@ -3015,6 +3015,12 @@ function progressionSnapshot(actor) {
 
 function onTick() {
   const intents = pending.splice(0);
+  // A command intent is applied in the tick, after handleCommand has already
+  // sent the state the HUD saw when the command was typed. Refresh only the
+  // actors whose intent ran, so the HUD does not stay one command behind.
+  const refreshIds = new Set(intents
+    .filter((intent) => intent.actorId && intent.kind !== "login" && intent.kind !== "register")
+    .map((intent) => intent.actorId));
   const identityChanged = intents.some((intent) => ["login", "register", "password", "claim", "claimLegacy", "rebindLegacy", "createCharacter", "ownAccount", "retireAccount", "handoffCharacter", "revokeHandoff", "train", "guildAdvance", "ignore", "unignore", "setTitle", "learnFact", "clearQuestMigration"].includes(intent.kind));
   const previousProgress = new Map(state.actors.filter((actor) => actor.key)
     .map((actor) => [actor.id, progressionSnapshot(actor)]));
@@ -3171,6 +3177,14 @@ function onTick() {
       const disabled = state.identities[actor.key]?.unrecognizedSkills ?? [];
       if (disabled.length) sendTo(actor.id, `Skills not recognized here: ${disabled.join(", ")}.\r\n`);
     }
+  }
+
+  // Refresh the HUD for actors whose pending intent changed the world this
+  // tick. The login/register path above already sent its own state.
+  for (const id of refreshIds) {
+    const actor = actorById(id);
+    if (!actor || !transports.has(id)) continue;
+    sendTo(id, `#state ${JSON.stringify(selfState(actor))}\r\n`);
   }
 
   // Anything typed before the actor existed is played now, in order.

@@ -153,6 +153,13 @@ test("browser reconnects after a region restart without losing the player sessio
   await evaluate('document.querySelector("#new-character").value = "bob"; document.querySelector("#create-character-form").requestSubmit()');
   await expect('!document.querySelector("#cmd").disabled && document.querySelector("#signed-name").textContent === "bob"', "Prism character");
   await wait(300);
+  await evaluate('document.querySelector("#cmd").value = "take cloak"; document.querySelector("#entry").requestSubmit()');
+  await expect('document.querySelector("#log").textContent.includes("You take a grey cloak.")', "take cloak");
+  await wait(350);
+  await evaluate('document.querySelector("#cmd").value = "wear cloak"; document.querySelector("#entry").requestSubmit()');
+  await expect('document.querySelector("#log").textContent.includes("You wear a grey cloak.")', "wear cloak");
+  await expect('document.querySelector("#hud").textContent.includes("ARM 1")', "HUD armour after pending intent");
+  await wait(350);
   await evaluate('document.querySelector("#cmd").value = "quest accept scroll"; document.querySelector("#entry").requestSubmit()');
   await expect('document.querySelector("#log").textContent.includes("Quest accepted: A Curled Scroll.")', "quest progress");
 
