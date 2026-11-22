@@ -22,7 +22,11 @@ company gateway, LM Studio, vLLM, or any other OpenAI-compatible endpoint. The
 key field is shown; leave it empty if the endpoint does not need one.
 
 **Pollinations** is the free default for a new browser: no key, no account, and
-the reply streams into the live thought line as it arrives. It is an anonymous
+the reply streams into the live thought line as it arrives. The game presents it
+as the primary **Start a free agent** card; if the browser has no Prism id, it
+creates one and registers it first, so there is no sign-up form. The full
+provider list stays behind **Use another model**, and the five persona presets
+change only the system goal, not the provider. It is an anonymous
 public service, not a private one: prompts may be logged, rate limits change,
 and there is no SLA. The provider hint says so before a run. Choose Ollama or a
 provider with your own key when privacy or reliability matters.

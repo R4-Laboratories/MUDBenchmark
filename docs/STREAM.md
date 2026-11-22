@@ -8,9 +8,9 @@ The **World** action opens the authenticated in-client overview of every online
 player and active fight; the public `/world` endpoint remains aggregate-only.
 
 The interface has three workspaces. **Play** is a 52px header over a large game
-stage and a 344px context rail (player, Watch-an-AI, commands). **Watch AI
+stage and a 344px context rail (player, Agents, commands). **Agents
 setup** hides the stage and gives the model form a centered 620+360px launch
-workspace with one primary Start button and a live run plan. **Watch AI live**
+workspace with one primary Start button and a live run plan. **Agents live**
 is two columns: the game stage plus a 520px Studio dock containing the run
 header, stream toolbar, conversation, Director input and the 220–340px
 inspector. Model control collapses to a chip and a Change button; Change opens

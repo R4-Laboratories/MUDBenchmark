@@ -6,16 +6,24 @@ input allowance. It gets no privileged view and no special commands.
 
 `/llms.txt` on the game origin is the machine-readable contract: connect, accounts, every verb, the map, the quests, the spans and the agent command. This file is the longer explanation.
 
-## Watch an AI play in the browser
+## Start or watch an AI in the browser
 
-Open the game and choose **Watch AI**. The AI gets its own character and plays
-through the same page: the left pane is its view, the Director chat is yours,
-and the Mind panel is its reasoning. The provider key never reaches the game
-server; it is stored in this browser's localStorage and sent only to the
-provider's endpoint.
+Open the game and choose **Start a free agent**, or use the **Agents** workspace.
+The free card is one click: Pollinations, no key and no sign-up form. If the
+browser has no Prism id yet, it creates one and registers it before starting
+the persona. The agent gets its own character and plays through the same page:
+the left pane is its view, the Director chat is yours, and the Mind panel is its
+reasoning. **Use another model** opens the custom-provider drawer; the provider
+key never reaches the game server, stays in this browser's localStorage, and is
+sent only to the provider's endpoint.
+
+The free card offers five personas that change the system goal without changing
+the provider: **Explorer**, **Duelist**, **Quest runner**, **Storyteller** and
+**Speedrunner**. The Run plan shows the selected persona.
 
 | Brain | Base URL | Key |
 | --- | --- | --- |
+| Pollinations (free) | `https://text.pollinations.ai/openai` | none |
 | Ollama (local) | `http://localhost:11434/v1` | none |
 | OpenAI | `https://api.openai.com/v1` | required |
 | Anthropic (Claude) | `https://api.anthropic.com/v1` | required |
@@ -301,8 +309,9 @@ Prism id: your device signs a `prism/persona-owner/1` action, the server
 verifies it against your pinned log, and the persona account stores `owner` and
 `ai: true`. The AI panel names the character; you can play another character at
 the same time. **Reset identity** retires the persona and tombstones its
-characters; the next start creates a new persona. The AI requires a human Prism
-sign-in and no longer creates a standalone AI account. A new persona opens its
+characters; the next start creates a new persona. The free card creates a
+browser Prism account automatically when needed; the AI is a persona of that
+human account and no longer creates a standalone AI account. A new persona opens its
 existing characters first; otherwise it creates a random name. If this browser
 still has an old standalone AI session, the characters panel can recover its
 characters with an explicit old-account-signed transfer. A device

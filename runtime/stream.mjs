@@ -18,6 +18,8 @@ const PRIVATE = [
   /^Password\b/i,
   /^Account\b/i,
   /^Signed in\b/i,
+  /^Signing in as\b/i,
+  /^Character .+ created\.$/i,
   /^Welcome\b/i,
   /^No such name\b/i,
   /^That name\b/i,
