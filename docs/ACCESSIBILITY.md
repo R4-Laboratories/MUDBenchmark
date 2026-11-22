@@ -78,6 +78,41 @@ The CI Gate also runs `node tools/a11y.mjs`, a browser audit that checks `/`,
   free Prism account.
 - First steps opens the tutorial; Back to game closes the Characters panel.
 
+## Manual pass checklist
+
+This is the part the browser audit cannot do. Use a real screen reader and a
+real phone, not the Chrome accessibility tree.
+
+### VoiceOver (macOS) or NVDA (Windows)
+
+1. Load `/` and press Tab once: **Skip to game** must be the first stop and
+   must move focus to the game.
+2. Sign in, create a character, and confirm the HUD (name, level, HP/mana/XP,
+   room, quest, exits) is announced sensibly rather than as one unlabelled
+   blob.
+3. Read the command log: the room description and `> command` lines should be
+   navigable; the live announcer should announce status changes without
+   repeating the whole log.
+4. Activate **First steps** and confirm the tutorial is announced. Activate
+   **Characters** and **Back to game**; focus must move into the panel and
+   return to a sensible control.
+5. On `/watch`, use the side tabs with the keyboard and confirm the selected
+   tab, panel and transcript are announced.
+6. On `/stats`, confirm tables and charts have names and the range buttons
+   report their selected state.
+
+### Phone
+
+1. At 390×844, open the header **Menu**; Stats, Watch and Telemetry must be
+   reachable by touch, and Escape/close must return focus to the toggle.
+2. Use the command input, Send, HUD quick actions and exit buttons; targets
+   must be comfortable and the page must not scroll sideways.
+3. Scroll the log and press **Latest**; the view must jump to the newest line.
+4. Sign in with Prism and with a name/password; confirm the character panel,
+   First steps and recovery-kit note are reachable.
+
+Record the browser, screen reader, phone and any failures in the session note.
+
 ## Still open
 
 The audit uses Chrome's accessibility tree, not a spoken screen reader. A human

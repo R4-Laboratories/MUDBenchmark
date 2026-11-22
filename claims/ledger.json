@@ -1473,6 +1473,12 @@
       "level": "some-true",
       "statement": "The v0.91.39 signed-in accessibility audit passes locally at 1440x900 and 390x844. It creates a Prism character, confirms the character panel is hidden, First steps and Characters are visible/named, First steps opens the tutorial, Back to game closes the panel, #cmd has focus, no unnamed interactive roles are present, no horizontal overflow occurs, and all visible signed-in controls meet 24px after the HUD target fix. The guest desktop/mobile audits, contrast and reduced-motion checks remain green. A human VoiceOver/NVDA pass and final hands-on phone review remain manual.",
       "authority": "local tools/a11y.mjs run with macOS Chrome; 2026-11-22"
+    },
+    {
+      "id": "MB-241",
+      "level": "some-true",
+      "statement": "Production v0.91.39 serves the signed-in accessibility audit and the HUD target fix: the served page has 24px #hud-actions and #hud-exits buttons (32px mobile). The local a11y audit creates a Prism character, confirms the hidden character panel, First steps/Characters controls, command focus, named controls, tutorial, Back to game, no overflow and 24px targets at 1440x900 and 390x844. The guest desktop/mobile, contrast and reduced-motion checks remain green. docs/ACCESSIBILITY.md adds a manual VoiceOver/NVDA and phone checklist. World 116 rooms, 14 zones, 20 quests, 57 mobiles and 145 objects. Main Gate 45083703182 green, publish 45084630432. The human pass remains manual.",
+      "authority": "GitHub PR #55 merge 20fab31 2026-11-22; main Gate 45083703182; publish 45084630432; release v0.91.39; wick deploy output and served page; local tools/a11y.mjs"
     }
   ]
 }
