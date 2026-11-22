@@ -60,8 +60,9 @@ memory or prompt system.
 | v0.91.30 | Free-agent front door, personas and custom-provider drawer | **done** (MB-211) |
 | v0.91.31 | Watch directory, decision cards, run stats and PvP delay | **done** (MB-213) |
 | v0.91.32 | Browser accessibility audit and ARIA/focus fixes | **done** (MB-215) |
-| PvP | Live two-client mirror sample; no balance change | **done** (MB-217) |
-| backlog | Asymmetric/model-driven PvP and optional content | optional |
+| PvP | Live mirror, two-agent and asymmetric samples; no balance change | **done** (MB-217/219) |
+| v0.91.33 | Agent PvP contract and stay-in-the-Ring guard | **in flight** |
+| backlog | Independent/human PvP and optional content | optional |
 
 ## What is next
 

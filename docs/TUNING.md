@@ -175,8 +175,43 @@ node tools/pvp-session.mjs --level=10 --matches=8 --stagger=4000
 - The observed hit rates are inside the small-sample range of `57 - armour`
   (40.0% vs 50%, 41.7% vs 44%). Average damage matches `1..4 + weapon`
   (6.5 vs 5.5, 11.4 vs 10.5).
-- This is **two live clients, not two LLM agents**. Model-driven PvP and
-  asymmetric-gear PvP remain open.
+- The first pass was **two live clients, not two LLM agents**.
+
+### Two remote model agents (v0.91.33)
+
+`tools/pvp-agents.mjs` starts two `runtime/agent.mjs` processes on an isolated
+server. Both use OpenCode/DeepSeek and the real Ring flow: take/wield/wear the
+mirrored kit, challenge, accept, attack. `AGENT_SCENARIO=pvp` replaces the
+default Vault route and a stay-in-the-Ring guard prevents wandering.
+
+| Level | Winner | Rounds | Attacks | Winner hits/damage | Loser hits/damage | Winner HP | Agent turns A/B |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 5 | pvp-a | 8 | 16 | 6 / 46 | 2 / 12 | 28 / 40 | 26 / 24 |
+| 10 | pvp-a | 12 | 24 | 6 / 68 | 4 / 48 | 11 / 65 | 36 / 33 |
+
+Both agents took their own kits, wielded/wore them, and completed challenge →
+accept → attack. The challenger used Power Strike at level 5 and Cleave at
+level 10; the defender did not use a technique. This is a **model-behaviour
+sample, not a balance sample**: the two models did not make equivalent choices.
+The level-10 first attempt was discarded: one agent wandered and hit its turn
+cap before the duel ended. The stay-in-the-Ring guard and a 60-turn budget made
+the rerun complete.
+
+### Asymmetric dawn vs ember (v0.91.33)
+
+`node tools/pvp-session.mjs --level=10 --matches=8 --matchup=dawn-ember` runs
+the scripted live duel with the two kits already in the deterministic sampler:
+
+| Matches | Distinct outcomes | Attacks | Hits | Hit rate | Avg damage | Rounds | Winner | Winner HP |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 8 | 2 | 200 | 84 | **42.0%** | **10.48** | **12.5** | dawn/pvp-a 8/8 | 11 / 65 avg (3 and 19) |
+
+The dawn kit (8-damage blade, armour 13) beat the ember kit (6-damage brand with
+burn, armour 12) in both distinct outcomes, but the close outcome finished at
+**3/65 HP**. The setup is deterministic, so 8/8 is not eight independent wins.
+The existing deterministic sampler's 47% for this matchup is not contradicted by
+two close outcomes; the live sample says the matchup warrants a larger,
+independent pass, not a damage change.
 
 ## Decision
 
@@ -190,9 +225,14 @@ No balance value changes in v0.91.19, v0.91.20, v0.91.26 or this pass.
 - The live mirror duels are close and consistent with the armour/damage curve:
   the winner finished at 4/40 and 11/65. No damage, armour, food or level
   change is justified.
-- The live mirror cannot estimate a win rate; the next PvP pass needs
-  asymmetric gear, staggered/model-driven clients, or human players. The
-  deterministic bands remain the reference for now.
+- The live mirror cannot estimate a win rate; the two-agent sample proves the
+  model-facing PvP path but is a behaviour sample, not a balance sample. The
+  asymmetric dawn/ember sample is close (winner at 3/65 in one outcome) and
+  deterministic; the 8/8 does not establish a win rate.
+- No damage, armour, food or level change is justified. The next PvP pass needs
+  independent seeds, asymmetric gear with more matchups, or human players. If
+  dawn vs ember remains above roughly 65% across an independent sample, revisit
+  the ember brand or dawn armour; do not tune from this one.
 
 The deterministic bands remain the reference:
 

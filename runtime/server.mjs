@@ -843,6 +843,7 @@ function selfState(actor) {
       exits,
       objects: objectsHere,
       npcs: npcsHere,
+      actors: actor?.key ? state.actors.filter((candidate) => candidate.id !== actor.id && candidate.room === actor.room && candidate.key).map((candidate) => candidate.name) : [],
       actions: actionsHere,
     } : null,
   } : null;

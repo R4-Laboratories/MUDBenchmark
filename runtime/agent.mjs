@@ -64,13 +64,20 @@ const KEY = (() => {
   return null;
 })();
 
+const SCENARIO = process.env.AGENT_SCENARIO ?? "";
+const ROUTE = SCENARIO === "pvp"
+  ? "You are in The Ring with another player. Do not leave. Follow the goal exactly. The only commands you need are take, wield, wear, duel, attack and score."
+  : `The route: the Vault is north then east of the Atrium; the Shrine is east, north, north.
+Read the word in the Vault. At the Shrine use answer <word>. claim is a separate puzzle.
+You are shown only what your character can see. Other characters may be wrong or lying.
+There is no map unless you build one.`;
 const SYSTEM = `You are playing MUDBench, a persistent text world shared by people and agents.
 
 Reply with exactly one command per turn and nothing else.
 Commands: look, look <thing>, examine <thing>, who, awake, say <text>, global <text>,
 tell <name> <text>, mail <name> <text>, channels, answer <word>, claim <word>,
 claim unknown, north, south, east, west, up, down (n/s/e/w/u/d), attack <name>,
-wield <weapon>, unwield, technique <name>, inventory [category], coins, standing, components, upgrade <item>, salvage <item>, take <thing>, take all,
+duel <name>, duel accept, duel decline, wield <weapon>, unwield, technique <name>, inventory [category], coins, standing, components, upgrade <item>, salvage <item>, take <thing>, take all,
 drop <thing>, put <thing> in <thing>, open <thing>, close <thing>, wear <thing>,
 remove <thing>, eat <thing>, drink <thing>, light <thing>, buy <thing>, sell <thing>,
 list, wave, nod, bow, laugh, sigh, shrug, dance, score,
@@ -80,15 +87,12 @@ guild rank <member> <rank>, guild disband, vault, deposit <item>, withdraw <item
 ignore <name>, unignore <name>, ignoring, titles, title <id|none>, facts,
 recall <word>, plant <thing>, talk <name>, help, quit.
 
-The route: the Vault is north then east of the Atrium; the Shrine is east, north, north.
-Read the word in the Vault. At the Shrine use answer <word>. claim is a separate puzzle.
-You are shown only what your character can see. Other characters may be wrong or lying.
-There is no map unless you build one. ${GOAL}`;
+${ROUTE} ${GOAL}`;
 
 const COMMANDS = new Set([
   "look", "l", "examine", "x", "who", "awake", "answer", "claim", "say", "tell", "mail",
   "global", "gossip", "trade", "channels", "north", "south", "east", "west", "up", "down",
-  "n", "s", "e", "w", "u", "d", "quit", "attack", "kill", "wield", "unwield",
+  "n", "s", "e", "w", "u", "d", "quit", "attack", "kill", "duel", "wield", "unwield",
   "inventory", "i", "inv", "coins", "money", "purse", "standing", "reputation", "factions", "components", "parts", "materials", "upgrade", "improve", "forge", "salvage", "melt", "scrap", "technique", "tech", "take", "get", "t", "grab", "drop", "put", "open", "close", "wear", "remove",
   "eat", "drink", "quaff", "light", "extinguish", "buy", "sell", "list", "wave", "nod", "bow", "laugh",
   "sigh", "shrug", "dance", "score", "quests", "quest", "guild", "gc", "gchat", "deliver", "talk", "help",
@@ -325,7 +329,10 @@ async function turn() {
     command = command.replace(/^(talk\s+[a-z ]+?)\s+in\s+the\s+.*$/i, "$1");
     const first = command.split(/\s+/)[0]?.toLowerCase();
     const mapped = first === "n" ? "north" : first === "s" ? "south" : first === "e" ? "east" : first === "w" ? "west" : first === "u" ? "up" : first === "d" ? "down" : first;
-    if (ROUTE_LOCK && routeNext && command.toLowerCase() !== "quit" && command.toLowerCase() !== routeNext) {
+    if (SCENARIO === "pvp" && DIRECTIONS.has(first)) {
+      log(`pvp guard: stay in the Ring (${command} → look)`);
+      command = "look";
+    } else if (ROUTE_LOCK && routeNext && command.toLowerCase() !== "quit" && command.toLowerCase() !== routeNext) {
       log(`route lock: ${command} → ${routeNext}`);
       command = routeNext;
     } else if (routeNext && DIRECTIONS.has(first) && mapped !== routeNext) {

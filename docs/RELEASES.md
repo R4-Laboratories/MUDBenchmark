@@ -387,6 +387,11 @@ Rehearsed 2026-11-16:
   transcript log and polite announcer, named tables and charts, dynamic HP
   sparkline labels, and removal of the sign-in autofocus that pre-empted the
   skip link (MB-215);
+- v0.91.33 (agent PvP path) adds `duel` / `duel accept` / `duel decline` to the
+  CLI agent and browser AI command contracts, exposes other actors in the
+  room state, adds a PvP stay-in-the-Ring guard and `tools/pvp-agents.mjs`,
+  and records two remote-model duels plus an asymmetric dawn/ember live sample.
+  No balance values changed (MB-218/219);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);
