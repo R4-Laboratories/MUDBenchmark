@@ -1419,6 +1419,12 @@
       "level": "some-true",
       "statement": "The v0.91.36 ember-8 candidate was confirmed in a paired live sample: 7 fixed start ticks x 2 login orders x 2 kit orientations = 28 unique pairs per arm. Current v0.91.34 (ember 7 / helm 3) dawn won 16/28 (57.1%); candidate v0.91.36 (ember 8 / helm 3) dawn won 14/28 (50.0%); 2 pairs flipped to ember and 0 to dawn, McNemar p=0.50. The paired dawn-minus-ember HP margin improved for ember in 22/28 pairs, was unchanged in 6 and worsened in 0; mean change -5.14 HP (95% CI -7.42 to -2.86), sign-test p<0.0001. The fixed-damage model predicted 61.3% -> 50.0%. A further ember 9 / helm 3 models at 39.3% dawn, so 8 is the stopping point.",
       "authority": "local tools/pvp-session.mjs paired runs with /tmp/pvp-current.json and /tmp/pvp-next.json; 2026-11-22"
+    },
+    {
+      "id": "MB-232",
+      "level": "some-true",
+      "statement": "Production v0.91.36 serves the second data-driven PvP adjustment: ember brand damage 8 (was 7), Red Company helm armour 3, verified in the deployed artifact. The paired live sample used 7 fixed start ticks x both login orders x both kit orientations (28 unique pairs per arm): current v0.91.34 dawn 16/28 (57.1%), candidate ember 8 dawn 14/28 (50.0%), 2 flips to ember and none back; the paired dawn-minus-ember HP margin improved for ember in 22/28 pairs, unchanged 6, worsened 0, mean -5.14 HP (95% CI -7.42 to -2.86; sign-test p<0.0001). The fixed-damage model puts v0.91.34 at 61.3%, v0.91.36 at 50.0%, and ember 9 at 39.3%; the deterministic PvP band is 42.75% at 400 seeds. World 116 rooms, 14 zones, 20 quests, 57 mobiles and 145 objects. Main Gate 45062076563 green, publish 45062852277. No further PvP value changed.",
+      "authority": "GitHub PR #51 merge 606dcac 2026-11-22; main Gate 45062076563; publish 45062852277; release v0.91.36; wick deploy output and artifact world.json; paired local pvp-session runs; tools/pvp-model.mjs"
     }
   ]
 }
