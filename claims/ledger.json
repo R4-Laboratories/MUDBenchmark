@@ -1641,6 +1641,12 @@
       "level": "some-true",
       "statement": "The 45-room Grey Keep passed the Gate map, dark/light, action and reliquary-cap checks. A live Warden scout at the Weeping Bailey used track to find the gate guard in The Iron Gate, the crown in The Vault, the librarian in The Library and the sealed guardian in The Sealed Room. The first-slice live Night Market pick and 9-XP reliquary walk remain valid. World 161 rooms / 15 zones / 79 mobiles / 194 objects.",
       "authority": "local /tmp/warden-track.mjs and /tmp/keep-live.mjs; tools/gate.mjs; 2026-11-23"
+    },
+    {
+      "id": "MB-269",
+      "level": "some-true",
+      "statement": "Production v0.91.48 serves the full Grey Keep: 161 rooms, 15 zones, 20 quests, 79 mobiles and 194 objects; /world and the artifact show 45 grey-keep rooms. The keep adds the upper gallery/chambers, library/map room, servants' wing, crypt/ossuary/reliquary vault/sealed room, gate roof, armory, smithy, well, cistern, kennel, hayloft and tower cell with immersive descriptions. It adds the Warden track/seek scout skill (live: gate guard in Iron Gate, crown in Vault, librarian in Library, sealed guardian in Sealed Room), library cabinet/star chart, sealed guardian and the 100-XP-per-reset reliquary cap. Night Market pick and the 9-XP reliquary walk remain valid. Main Gate 45250635925 green, publish 45252056484.",
+      "authority": "GitHub PR #64 merge 6b325b9 2026-11-23; main Gate 45250635925; publish 45252056484; release v0.91.48; wick deploy output, /world, artifact world.json and health; local /tmp/warden-track.mjs and /tmp/keep-live.mjs"
     }
   ]
 }
