@@ -43,6 +43,29 @@ Square, and take the first quest from the board or the shopkeeper.
 
 The training yard does not add a quest, so the 20-quest budget is unchanged.
 
+## Core loop and quest coins (v0.91.42)
+
+A first-hour audit on an isolated server found the basic economy gap: after
+First Steps and A Curled Scroll the character had 35 XP, a free practice sword
+and **0 coins**, while the smith's short sword costs 18. The shop listed gear
+the player could not buy, and the first quests paid only XP.
+
+Fixes:
+
+- First Steps now includes a visit to the Training Yard, so the guided tour
+  teaches the safe practice gear instead of ending in the Corridor.
+- The tutorial gives the route from the Atrium to the Yard
+  (`south, west, north, east`) and names the Smithy east of Market Square.
+- First Steps, A Curled Scroll, Bread for the Shop and The True Word pay
+  10/10/5/10 coins. Two starter quests buy the short sword; the practice sword
+  remains a free fallback.
+- Buying, training and forge upgrades now consume the selected coins. The
+  audit found the payment left on the shop floor, where the buyer could pick
+  it back up; the Gate tests now require the coins to be gone.
+
+After the fix, the same loop reaches 20 coins from the first two quests, buys
+the 18-coin short sword, and leaves no payment behind.
+
 ## Fresh-account browser audit (v0.91.37)
 
 This is a fresh-account browser audit of the opening ten minutes, run against

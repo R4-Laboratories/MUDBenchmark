@@ -1654,7 +1654,7 @@ let forge = { ok: true, why: [] };
   let actor = state.actors.find((entry) => entry.id === "f");
   check(state.objects.find((object) => object.id === "sword").plus === 1, "the upgrade did not raise the plus");
   check(actor.components["ember-ore"] === 8, "the upgrade did not consume components");
-  check(state.objects.find((object) => object.id === "gold").holder === null, "the upgrade did not consume coins");
+  check(state.objects.find((object) => object.id === "gold")?.eaten === true && state.objects.find((object) => object.id === "gold")?.room === null, "the upgrade did not consume coins");
   const jerkin = state.objects.find((object) => object.id === "jerkin");
   jerkin.holder = "f"; jerkin.room = null; jerkin.forSale = false; jerkin.worn = false;
   run([{ kind: "salvage", actorId: "f", objectId: "jerkin", component: "ember-ore", amount: 1 }]);
@@ -1839,7 +1839,7 @@ let magic = { ok: true, why: [] };
   run([{ kind: "train", actorId: "m2", spellId: "detect", cost: 27, coinIds: ["coin-train"] }]);
   const trainee = state.actors.find((entry) => entry.id === "m2");
   check(trainee?.spellbook?.includes("detect"), "paid training did not add the spell");
-  check(state.objects.find((o) => o.id === "coin-train")?.holder === null, "paid training did not consume the coins");
+  check(state.objects.find((o) => o.id === "coin-train")?.eaten === true && state.objects.find((o) => o.id === "coin-train")?.room === null, "paid training did not consume the coins");
   if (magic.why.length) { magic.ok = false; failures.push(`magic is broken: ${magic.why[0]}`); }
 }
 
@@ -2167,10 +2167,13 @@ let firstSteps = { ok: true, why: [] };
   check(Boolean(quest) && quest.level === 1, "the First Steps quest is missing");
   state.actors.push({ id: "n", key: "new", account: "new", name: "new", room: 1, visited: [1], level: 1, xp: 0, maxHp: 10, hp: 10, maxMana: 5, mana: 5, spellbook: [], guild: null, guildRank: null, wielding: null, quests: { active: [], completed: [] } });
   run([{ kind: "questAccept", actorId: "n", questId: "first-steps" }]);
-  run([{ kind: "move", actorId: "n", dir: "north", to: 2 }]);
+  for (const [dir, to] of [["north", 2], ["south", 1], ["south", 8], ["west", 10], ["north", 24], ["east", 116]]) {
+    run([{ kind: "move", actorId: "n", dir, to }]);
+  }
   const actor = state.actors.find((entry) => entry.id === "n");
   check(actor.quests.completed.includes("first-steps"), "the First Steps tour did not complete");
   check(actor.xp >= 20, "the First Steps quest did not pay XP");
+  check(state.objects.some((object) => object.holder === "n" && (object.flags ?? []).includes("coin") && object.value === 10), "the First Steps quest did not pay coins");
   if (firstSteps.why.length) { firstSteps.ok = false; failures.push(`first steps are broken: ${firstSteps.why[0]}`); }
 }
 
@@ -2742,7 +2745,7 @@ let shop = { ok: true, why: [] };
   state.actors[0].room = 3;
   run([{ kind: "buy", actorId: "gate", objectId: "lamp", room: 3, coinIds: ["coin"], messages: say("buy") }]);
   check(object("lamp").holder === "gate" && !object("lamp").forSale, "the lamp was not bought");
-  check(object("coin").room === 3, "the shop did not take the coins");
+  check(object("coin").eaten === true && object("coin").room === null, "the shop did not consume the payment");
 
   // Selling: a 6-value cloak pays 3 copper, minted for the sale.
   state.actors[0].room = 1;
