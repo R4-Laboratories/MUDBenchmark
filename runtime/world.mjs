@@ -80,6 +80,21 @@ export function attackRoll({ tick, attackerId, weaponDamage = 0, targetArmor = 0
 }
 
 /** The armour a character is wearing, from the objects currently on them. */
+/** Move carried coins into the character's persistent gold. Returns the amount. */
+export function bankHeldCoins(actor, objects) {
+  let banked = 0;
+  for (const object of objects) {
+    if (object.holder !== actor.id || object.eaten) continue;
+    if (!(object.flags ?? []).includes("coin")) continue;
+    banked += Number(object.value) || 0;
+    object.eaten = true;
+    object.holder = null;
+    object.room = null;
+    object.inside = null;
+  }
+  return banked;
+}
+
 function consumeCoins(coins) {
   for (const coin of coins) {
     coin.eaten = true;
@@ -439,6 +454,7 @@ export function upgradeState(saved, base) {
       memory: { facts: { ...(identity.memory?.facts ?? {}) } },
       level: identity.level ?? 1,
       xp: identity.xp ?? 0,
+      gold: Number.isInteger(identity.gold) && identity.gold >= 0 ? identity.gold : 0,
       guild: guilds[identity.guild] ? identity.guild : null,
       guildRank: guilds[identity.guild]?.members?.[name] ?? null,
       standing: { ...(identity.standing ?? {}) },
@@ -836,6 +852,7 @@ export function step({ state, rooms, intents, actions = [] }) {
         role: 0,
         level: 1,
         xp: 0,
+        gold: 0,
         guild: null,
         guildRank: null,
         quests: { active: [], completed: [] },
@@ -1230,7 +1247,7 @@ export function step({ state, rooms, intents, actions = [] }) {
       if (!known && account && !intent.prism) {
         known = {
           kind: "character", owner: accountKey, name: intent.name ?? intent.key,
-          role: intent.role ?? 0, level: 1, xp: 0, guild: null, guildRank: null,
+          role: intent.role ?? 0, level: 1, xp: 0, gold: 0, guild: null, guildRank: null,
           quests: { active: [], completed: [] },
         };
         next.identities[intent.key] = known;
@@ -1283,6 +1300,26 @@ export function step({ state, rooms, intents, actions = [] }) {
         active: [...(known.quests?.active ?? [])],
         completed: [...(known.quests?.completed ?? [])],
       };
+      const bank = Number.isInteger(known.gold) && known.gold > 0 ? known.gold : 0;
+      if (bank > 0) {
+        next.objects.push({
+          id: `coin-bank-${next.tick}-${actor.id}-${next.objects.length}`,
+          name: `a purse of ${bank} coin${bank === 1 ? "" : "s"}`,
+          flags: ["takeable", "coin"],
+          value: bank,
+          holder: actor.id,
+          room: null,
+          inside: null,
+          home: null,
+          homeInside: null,
+          worn: false,
+          open: false,
+          lit: false,
+          eaten: false,
+          forSale: false,
+          ephemeral: true,
+        });
+      }
       // Do not restore inventory: what the character carried was dropped
       // where they logged out and belongs to the world until the reset.
       next.identities[intent.key] = {
@@ -1293,6 +1330,7 @@ export function step({ state, rooms, intents, actions = [] }) {
         role: actor.role,
         level: actor.level,
         xp: actor.xp,
+        gold: 0,
         guild: actor.guild,
         guildRank: actor.guildRank,
         quests: actor.quests,
@@ -1326,7 +1364,7 @@ export function step({ state, rooms, intents, actions = [] }) {
       account.characters = [...account.characters, intent.name];
       next.identities[intent.name] = {
         kind: "character", owner: intent.accountKey, name: intent.name,
-        role: 0, level: 1, xp: 0, guild: null, guildRank: null,
+        role: 0, level: 1, xp: 0, gold: 0, guild: null, guildRank: null,
         quests: { active: [], completed: [] },
       };
       continue;
@@ -1456,8 +1494,10 @@ export function step({ state, rooms, intents, actions = [] }) {
         next.engagements = next.engagements.filter((e) => e.attackerId !== actor.id && e.targetId !== actor.id);
         events.push({ room: actor.room, text: `${actor.name} leaves the Ring. The duel ends.`, exceptId: actor.id });
       }
-      // Items are mortal: they fall where the character stood and belong to
-      // the world until the two-hour reset. Only progression is written down.
+      // Equipment is mortal and falls where the character stood. Coins are
+      // the exception: they are the character's gold and are banked into the
+      // identity so a logout does not erase them.
+      const banked = bankHeldCoins(actor, next.objects);
       for (const object of next.objects) {
         if (object.holder !== actor.id) continue;
         object.holder = null;
@@ -1475,6 +1515,7 @@ export function step({ state, rooms, intents, actions = [] }) {
           role: actor.role ?? 0,
           level: actor.level ?? 1,
           xp: actor.xp ?? 0,
+          gold: (identity.gold ?? 0) + banked,
           guild: actor.guild ?? null,
           guildRank: actor.guildRank ?? null,
           standing: { ...(actor.standing ?? {}) },
@@ -2148,11 +2189,16 @@ export function step({ state, rooms, intents, actions = [] }) {
             }
           }
         } else {
-          // A dead character drops what they carry where they fell and wakes
-          // at the start with their progress intact. The Ring is different:
-          // a duel takes no goods.
+          // A dead character keeps their gold (banked) and drops equipment
+          // where they fell, then wakes at the start with progress intact.
+          // The Ring is different: a duel takes no goods.
           const deathRoom = target.room;
           if (!rooms[deathRoom]?.arena) {
+            const banked = bankHeldCoins(target, next.objects);
+            if (target.key && banked > 0) {
+              const identity = next.identities[target.key] ?? {};
+              next.identities[target.key] = { ...identity, gold: (identity.gold ?? 0) + banked };
+            }
             for (const object of next.objects) {
               if (object.holder !== target.id) continue;
               object.holder = null;
@@ -2205,10 +2251,14 @@ export function step({ state, rooms, intents, actions = [] }) {
     next.engagements = [];
     next.duels = [];
     for (const actor of next.actors) { actor.wielding = null; actor.effects = []; }
-    next.objects = next.objects.filter((object) => !object.ephemeral);
+    // Held coins are the character's gold and survive the reset. Every other
+    // ephemeral object (minted coins on the floor) is swept up.
+    next.objects = next.objects.filter((object) => !object.ephemeral
+      || (object.holder !== null && object.holder !== undefined && (object.flags ?? []).includes("coin")));
     const vaultContainers = new Set(next.objects.filter((object) => isGuildVaultHolder(object.holder)).map((object) => object.id));
     for (const object of next.objects) {
       if (isGuildVaultHolder(object.holder) || vaultContainers.has(object.inside)) continue;
+      if (object.holder !== null && object.holder !== undefined && (object.flags ?? []).includes("coin")) continue;
       object.holder = null;
       object.room = object.home;
       object.inside = object.homeInside;

@@ -14,8 +14,10 @@ coin is worth 10, a silver mark 5, and a copper coin 1. `coins` (aliases
 
 A purchase selects carried coins largest-first until the price is covered. The
 shop keeps the change; buying with a gold coin for a 3-coin item spends the
-gold. The reset sweeps up coin objects minted by a sale and returns the fixed
-coin stacks to their home rooms.
+gold. Coins carried by a character are that character's gold: they are banked
+on logout, death and graceful shutdown, minted back on login, and survive the
+two-hour reset. Ephemeral coins on the floor are swept by the reset; fixed coin
+stacks return to their home rooms.
 
 Coins are ordinary objects, so they are dropped on death, can be given away,
 and appear in `inventory` under the Coins group. This is the simplest system

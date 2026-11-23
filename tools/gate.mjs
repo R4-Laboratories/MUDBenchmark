@@ -2590,6 +2590,77 @@ let items = { ok: true, why: [] };
   if (!items.ok) failures.push(`item properties are broken: ${items.why[0]}`);
 }
 
+// Persistence: gold is banked on logout/death and survives reset; equipment
+// does not follow the character offline.
+let goldPersistence = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  let state = initialState(world.rooms, world.npcs, world.objects, world.start, world.climate, channelTable.channels);
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
+  const check = (condition, why) => { if (!condition) { goldPersistence.ok = false; goldPersistence.why.push(why); } };
+  run([{ kind: "join", actorId: "p", name: "persist" }]);
+  const actor = state.actors[0];
+  Object.assign(actor, {
+    key: "p", account: "p", name: "p", room: 1, level: 3, xp: 250,
+    maxHp: maxHpForLevel(3), hp: maxHpForLevel(3), wielding: "sword-p",
+  });
+  state.accounts.p = {
+    kind: "legacy", name: "p", characters: ["p"], passwordHash: null, salt: null,
+    tokenHash: null, retired: false, mergedInto: null,
+  };
+  state.identities.p = {
+    kind: "character", owner: "p", name: "p", role: 0, level: 3, xp: 250, gold: 0,
+    guild: null, guildRank: null, quests: { active: [], completed: [] },
+    spellbook: [], maxMana: 7, questCycles: {},
+  };
+  const coin = {
+    id: "coin-p", name: "a gold coin", flags: ["takeable", "coin"], value: 10,
+    holder: "p", room: null, inside: null, home: null, homeInside: null,
+    worn: false, open: false, lit: false, eaten: false, forSale: false, ephemeral: true,
+  };
+  const sword = {
+    id: "sword-p", name: "a short sword", flags: ["takeable", "weapon"], damage: 3,
+    holder: "p", room: null, inside: null, home: 9, homeInside: null,
+    worn: false, open: false, lit: false, eaten: false, forSale: false,
+  };
+  state.objects.push(coin, sword);
+  run([{ kind: "leave", actorId: "p" }]);
+  check(state.identities.p.gold === 10, "logout did not bank the carried gold");
+  check(state.objects.find((object) => object.id === "coin-p")?.eaten === true, "logout left the carried coin in the world");
+  check(state.objects.find((object) => object.id === "sword-p")?.holder === null && state.objects.find((object) => object.id === "sword-p")?.room === 1, "logout did not drop the sword where the character stood");
+  check(state.identities.p.level === 3 && state.identities.p.xp === 250, "logout did not keep level and XP");
+
+  run([{ kind: "join", actorId: "p2", name: "p" }]);
+  run([{ kind: "login", actorId: "p2", key: "p", account: "p", token: null, authenticated: true }]);
+  const returned = state.actors.find((entry) => entry.id === "p2");
+  const bankCoin = state.objects.find((object) => object.holder === "p2" && (object.flags ?? []).includes("coin"));
+  check(bankCoin?.value === 10, "login did not mint the banked gold");
+  check(returned.wielding === null, "login restored a weapon");
+  check(state.objects.find((object) => object.id === "sword-p")?.holder === null, "login restored the dropped sword");
+  check(returned.level === 3 && returned.xp === 250, "login lost level or XP");
+
+  const resetCoin = {
+    id: "coin-reset", name: "a silver mark", flags: ["takeable", "coin"], value: 7,
+    holder: "p2", room: null, inside: null, home: null, homeInside: null,
+    worn: false, open: false, lit: false, eaten: false, forSale: false, ephemeral: true,
+  };
+  const resetSword = {
+    id: "sword-reset", name: "a practice sword", flags: ["takeable", "weapon"], damage: 1,
+    holder: "p2", room: null, inside: null, home: 116, homeInside: null,
+    worn: false, open: false, lit: false, eaten: false, forSale: false,
+  };
+  state.objects.push(resetCoin, resetSword);
+  returned.wielding = "sword-reset";
+  state.pulses.area = { period: 1, remaining: 1 };
+  run([]);
+  state.pulses.area = { period: AREA_PERIOD, remaining: AREA_PERIOD };
+  check(state.objects.find((object) => object.id === "coin-reset")?.holder === "p2", "the reset took held gold");
+  check(state.objects.find((object) => object.id === "sword-reset")?.holder === null && state.objects.find((object) => object.id === "sword-reset")?.room === 116, "the reset did not return equipment home");
+  check(state.actors.find((entry) => entry.id === "p2")?.wielding === null, "the reset left a weapon wielded");
+  check(returned.level === 3 && returned.xp === 250, "the reset lost level or XP");
+  if (!goldPersistence.ok) failures.push(`persistence is broken: ${goldPersistence.why[0]}`);
+}
+
 // Time and weather must move, and the night must change behaviour: a speaker
 // sleeps when the world is dark and talks when it is light.
 let climate = { ok: true, why: [], changes: 0, nightTalk: 0, dayTalk: 0 };
@@ -2764,7 +2835,7 @@ let shop = { ok: true, why: [] };
   check(object("lamp").room === 3 && object("lamp").forSale, "the reset did not return the lamp to the shop");
   check(object("torch").room === 3 && object("torch").forSale, "the reset did not return the torch to the shelf");
   check(!object("cloak").eaten && object("cloak").room === 1, "the reset did not return the sold cloak");
-  check(state.objects.every((o) => !o.ephemeral), "the reset left minted coins in the world");
+  check(state.objects.every((o) => !o.ephemeral || (o.holder && (o.flags ?? []).includes("coin"))), "the reset left minted coins on the floor");
   if (!shop.ok) failures.push(`the shop is broken: ${shop.why[0]}`);
 }
 

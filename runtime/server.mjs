@@ -15,7 +15,7 @@ import { recordSpan, digest, TELEMETRY_LOG, PLAYER_LOG_FILE, ensurePlayerLog } f
 import { readSpanTail, readSpansTail, redactSpans } from "./spans.mjs";
 import { summarizeSeries, summarizeTrends } from "./trends.mjs";
 import { summarizePlayers } from "./playerstats.mjs";
-import { step, initialState, digestState, phaseAt, upgradeState, releaseHeldObjects, checkpointIdentities, armorOf, nextFrom, TICK_MS } from "./world.mjs";
+import { step, initialState, digestState, phaseAt, upgradeState, releaseHeldObjects, checkpointIdentities, bankHeldCoins, armorOf, nextFrom, TICK_MS } from "./world.mjs";
 import { equipmentOf, equipmentText, inventoryGroups, setBonus, weaponDamageOf, weaponOf, wornBySlot } from "./equipment.mjs";
 import { techniqueForWeapon } from "./techniques.mjs";
 import { COMPONENTS, componentsText, componentForItem, salvageYield, upgradeCost } from "./forge.mjs";
@@ -3833,5 +3833,17 @@ web.listen(WEB_PORT, "127.0.0.1", () => {
 });
 
 for (const signal of ["SIGINT", "SIGTERM"]) {
-  process.on(signal, () => { process.exit(saveState() ? 0 : 1); });
+  process.on(signal, () => {
+    // A graceful stop is an offline transition: bank carried coins into the
+    // character before the checkpoint. Equipment still falls on restart.
+    for (const actor of state.actors ?? []) {
+      if (!actor.key) continue;
+      const banked = bankHeldCoins(actor, state.objects);
+      if (banked > 0) {
+        const identity = state.identities[actor.key] ?? {};
+        state.identities[actor.key] = { ...identity, gold: (identity.gold ?? 0) + banked };
+      }
+    }
+    process.exit(saveState() ? 0 : 1);
+  });
 }

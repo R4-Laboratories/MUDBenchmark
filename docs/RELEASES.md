@@ -438,6 +438,11 @@ Rehearsed 2026-11-16:
   shops, training and forge upgrades consume payment instead of leaving the
   coins in the room. The first two quests now buy the short sword, and the
   Gate checks that paid coins are gone (MB-248/249);
+- v0.91.43 (persistent gold) banks carried coins into the character's `gold`
+  on logout, death and graceful shutdown, mints them back on login, and keeps
+  held coins through the two-hour reset while equipment returns home and the
+  wielded item is cleared. The Gate persistence test covers logout, login and
+  reset (MB-251/252);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

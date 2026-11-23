@@ -10,6 +10,7 @@ Phase G model, which persisted inventory and position.
 | --- | --- | --- |
 | account name, password hash, salt, role | `state.identities[key]` | on login |
 | level and experience | the identity | on login |
+| gold | the identity (`gold`, banked carried coins) | on login, as carried coins |
 | guild membership and rank | the identity | on login |
 | quests active and completed | the identity | on login |
 | mail | `state.mail`, keyed by identity | on login |
@@ -23,10 +24,15 @@ Phase G model, which persisted inventory and position.
 | visited set | forgotten | only the start room |
 | inventory | dropped in the room the character stood in | empty |
 | worn things | dropped, no longer worn | empty |
+| carried coins | **banked into `gold`** | minted back as one carried purse |
 
-After a clean logout, dropped objects remain where they fell, lootable, until
-the two-hour reset. A player who logs out in the Vault leaves their sword in
-the Vault; another player can take it; the reset returns it to its home.
+After a clean logout, equipment drops where the character stood, lootable,
+until the two-hour reset. A player who logs out in the Vault leaves their
+sword in the Vault; another player can take it; the reset returns it to its
+home. Coins are the exception: they become the character's persistent gold,
+not floor loot. A graceful server stop banks online characters' coins before
+the checkpoint; a process kill can still leave recent carried coins in the
+world, as with any uncheckpointed change.
 
 ## The two-hour reset
 
@@ -34,19 +40,24 @@ At 28,800 ticks (two hours at 250 ms) the world resets:
 
 - every object returns to its home room and container, closed and unlit as it
   started;
-- ephemeral objects (minted coins) disappear;
+- ephemeral objects on the floor (minted coins) disappear;
+- **coins carried by an online character survive the reset** as that
+  character's gold;
 - every mobile returns home, revives at full health, and drops its engagements;
 - shops restock because their stock is ordinary objects;
 - every actor is told: `The world shudders. Everything returns to where it
   began.`
 
-An object held at reset returns home too. The reset is the world's, not the
-character's: level, XP, guild, quests and mail survive it.
+Equipment held at reset returns home and the wielded item is cleared. The
+reset is the world's, not the character's: level, XP, gold, guild, quests and
+mail survive it.
 
-No other path respawns an item. A logout or death drops held objects where the
-character stood; a clean restart keeps them there. After a crash, `heldRoom`
-records where a carried object was at the last checkpoint, which may be an
-older location. World changes since that checkpoint can be lost.
+No other path respawns an item. A logout or death drops equipment where the
+character stood; carried coins are banked instead. A clean restart keeps
+dropped equipment there. After a crash, `heldRoom` records where a carried
+object was at the last checkpoint, which may be an older location. World
+changes since that checkpoint can be lost, including recently carried coins
+that were not banked by a graceful stop.
 
 ## Checkpoints
 
@@ -84,5 +95,6 @@ are safe.
 
 ## What is still open
 
-Death penalties, PvP loot rules and quest-item binding are Phase I–J decisions.
-The current rule is the simple one: objects are mortal, characters are not.
+Death now keeps gold but drops equipment; PvP loot rules and quest-item
+binding are still Phase I–J decisions. The current rule is the simple one:
+equipment is mortal, the character's level, XP and gold are not.
