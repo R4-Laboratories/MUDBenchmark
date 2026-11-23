@@ -457,6 +457,76 @@
         "actor": "You press the memory rose into the bed. The roots part and a stair opens downward.",
         "others": "%a plants a rose; the garden floor opens."
       }
+    },
+    {
+      "id": "pick-postern",
+      "room": 118,
+      "verb": "pick",
+      "target": "postern door",
+      "requires": {
+        "guild": "night-market",
+        "rank": "runner"
+      },
+      "effects": [
+        {
+          "kind": "revealExit",
+          "dir": "north"
+        },
+        {
+          "kind": "message",
+          "text": "The old lock gives under the pick. The postern swings inward onto a servant passage."
+        }
+      ],
+      "messages": {
+        "actor": "You work the postern lock.",
+        "others": "%a works the postern lock."
+      }
+    },
+    {
+      "id": "unlock-postern",
+      "room": 118,
+      "verb": "unlock",
+      "target": "postern door",
+      "requires": {
+        "item": "keep-gate-key"
+      },
+      "effects": [
+        {
+          "kind": "revealExit",
+          "dir": "north"
+        },
+        {
+          "kind": "message",
+          "text": "The iron key turns. The postern opens onto a servant passage."
+        }
+      ],
+      "messages": {
+        "actor": "You unlock the postern.",
+        "others": "%a unlocks the postern."
+      }
+    },
+    {
+      "id": "unlock-vault",
+      "room": 130,
+      "verb": "unlock",
+      "target": "vault door",
+      "requires": {
+        "item": "keep-vault-key"
+      },
+      "effects": [
+        {
+          "kind": "revealExit",
+          "dir": "east"
+        },
+        {
+          "kind": "message",
+          "text": "The black key turns with a sound like a bone setting. The vault door opens."
+        }
+      ],
+      "messages": {
+        "actor": "You unlock the vault.",
+        "others": "%a unlocks the vault."
+      }
     }
   ]
 }

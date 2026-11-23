@@ -799,6 +799,17 @@
         "missing": "Consider what?",
         "none": "There is no %s here."
       }
+    },
+    "offer": {
+      "aliases": [
+        "sacrifice"
+      ],
+      "argument": "object",
+      "messages": {
+        "missing": "Offer what?",
+        "none": "You are not carrying %s.",
+        "line": "The reliquary accepts %o."
+      }
     }
   }
 }

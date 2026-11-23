@@ -205,11 +205,11 @@
     },
     "11": {
       "name": "The King's Road",
-      "text": "The road leaves the square and runs south between low walls. A signpost stands at the fork: the forest lies south, the old well east, the graveyard west. The market is north. The signpost leans; the walls are full of beetles and dry grass.",
+      "text": "The road leaves the square and runs south between low walls. A signpost stands at the fork: the forest lies south, the old well east, the graveyard west. Beyond the signpost, a rutted track climbs toward the Grey Keep, its towers black against the sky. The market is north. The signpost leans; the walls are full of beetles and dry grass.",
       "safe": false,
       "exits": {
         "north": 8,
-        "south": 15,
+        "south": 117,
         "east": 16,
         "west": 17
       },
@@ -221,7 +221,8 @@
       "ambient": [
         "A cart creaks somewhere out of sight.",
         "The wind carries the smell of rain."
-      ]
+      ],
+      "south": 117
     },
     "12": {
       "name": "The Upstairs Landing",
@@ -278,10 +279,10 @@
     },
     "15": {
       "name": "The Forest Edge",
-      "text": "The road gives way to grass and the first rank of trees. A path runs east into the deep forest, and the river lies south. The King's Road is north. The undergrowth is loud; the path is churned by hooves.",
+      "text": "The road gives way to grass and the first rank of trees. A path runs east into the deep forest, and the river lies south. The King's Road and the Grey Keep lie north. The undergrowth is loud; the path is churned by hooves.",
       "safe": false,
       "exits": {
-        "north": 11,
+        "north": 117,
         "east": 18,
         "south": 19
       },
@@ -293,7 +294,8 @@
       "ambient": [
         "Branches move without wind.",
         "Something large shifts in the undergrowth."
-      ]
+      ],
+      "north": 117
     },
     "16": {
       "name": "The Old Well",
@@ -2128,6 +2130,280 @@
         "Straw dust drifts from the dummy.",
         "The trainer taps a stick against the flagstones."
       ]
+    },
+    "117": {
+      "name": "The Grey Road",
+      "text": "The King's Road narrows to a rutted track between blackthorn hedges and a ditch of brown water. Ahead, the Grey Keep closes the valley: a curtain wall split by an old crack, three towers, and a gatehouse whose portcullis hangs half-raised like a jaw. Crows lift from the battlements, circle once, and settle again.",
+      "exits": {
+        "north": 11,
+        "south": 15,
+        "east": 118
+      },
+      "details": {
+        "gatehouse": "The gatehouse is a squat block of grey stone. Its iron teeth are crusted with rust, and a smaller postern door sits to one side.",
+        "ditch": "The ditch is shallow and choked with nettles. Something pale turns over in the water and is gone.",
+        "standard": "A faded banner hangs from the wall: a red hand on a field of grey. The cloth is older than the cracks around it."
+      },
+      "ambient": [
+        "A shutter knocks somewhere behind the wall.",
+        "The crows go quiet all at once."
+      ]
+    },
+    "118": {
+      "name": "The Iron Gate",
+      "text": "The gatehouse smells of wet iron and old smoke. A portcullis hangs above the passage, its points dark with grease, and murder holes open in the vaulted ceiling. To the north, a narrow postern door is set into the wall beneath a faded red hand. The bailey waits beyond the inner arch.",
+      "exits": {
+        "west": 117,
+        "east": 119
+      },
+      "secretExits": {
+        "north": 125
+      },
+      "details": {
+        "portcullis": "The portcullis is chained a hand's width above the floor. The chain disappears into a slot in the wall.",
+        "postern": "The postern is low and narrow, its lock green with age. A runner's mark is scratched beside the keyhole.",
+        "murder holes": "The holes are dark and cold. A draft rises through them, carrying the smell of the cellar."
+      },
+      "ambient": [
+        "The chain above the portcullis creaks once.",
+        "A rat crosses the threshold and vanishes into the wall."
+      ]
+    },
+    "119": {
+      "name": "The Weeping Bailey",
+      "text": "Rain has worn the bailey to a sheet of grey mud. A dry fountain stands at the centre, its basin full of leaves and broken tile, and a gallows frame leans against the far wall. The great hall rises north, the stables east, and the barracks south; the gatehouse is west.",
+      "exits": {
+        "west": 118,
+        "north": 122,
+        "east": 120,
+        "south": 121
+      },
+      "details": {
+        "fountain": "The fountain is dry. A stone fish lies at the bottom with one eye chipped away.",
+        "gallows": "The gallows has no rope. Someone has scratched four names into the upright, then crossed out three.",
+        "mud": "The mud is deep enough to hold a boot. A line of old footprints leads to the barracks door."
+      },
+      "ambient": [
+        "Water drips from the eaves with a slow, patient rhythm.",
+        "A door bangs somewhere in the keep, then stops."
+      ]
+    },
+    "120": {
+      "name": "The Stables",
+      "text": "Straw rots in the stalls and the roof has lost a third of its slate. Bridles hang from their pegs like empty nooses, and a dog's bowl lies cracked by the door. The smell of horse is old, but something else has been sleeping here.",
+      "exits": {
+        "west": 119,
+        "south": 123
+      },
+      "details": {
+        "stalls": "Six stalls, five empty. The sixth is heaped with straw and something dark that does not move.",
+        "tack": "The leather is dry and stiff. A red company badge is nailed to the beam above the bridles.",
+        "bowl": "The bowl is empty except for a few black hairs and a tooth."
+      },
+      "ambient": [
+        "Straw rustles in a stall with no wind.",
+        "A horse bit rings softly against the wall."
+      ]
+    },
+    "121": {
+      "name": "The Guard Barracks",
+      "text": "Rows of iron bunks fill the low room, each with a folded red cloak and a straw tick. A spear rack stands against the wall, and a strongbox sits at the foot of the nearest bunk. The ceiling is stained with smoke and old rain.",
+      "exits": {
+        "north": 119,
+        "east": 123
+      },
+      "details": {
+        "bunks": "The bunks are neatly made. One has been slept in recently; the blanket is still warm.",
+        "rack": "The rack holds three spears. A fourth peg is empty, and the dust around it has been disturbed.",
+        "strongbox": "The strongbox is banded with iron. Its lock is simple, but the box is heavy."
+      },
+      "ambient": [
+        "A cloak stirs although the door is closed.",
+        "The strongbox gives a small, settling click."
+      ]
+    },
+    "122": {
+      "name": "The Great Hall",
+      "text": "A long table runs the length of the hall, its boards scarred by knives and rings. Banners hang from the rafters, red hands fading to brown, and a cold hearth fills the room with the smell of old ash. Doors lead to the kitchen and the solar, and a stair beyond the high table climbs into the tower.",
+      "exits": {
+        "south": 119,
+        "west": 123,
+        "east": 127,
+        "down": 126
+      },
+      "details": {
+        "table": "The table is set for a meal that never came. A silver plate sits at the head, untouched.",
+        "banners": "The banners are the same red hand as the gate. The oldest is furred with dust.",
+        "hearth": "The hearth is cold, but the ash is deep. A child's wooden horse lies half-buried in it."
+      },
+      "ambient": [
+        "A banner moves in a draft that smells of rain.",
+        "Something small scratches behind the hearth."
+      ]
+    },
+    "123": {
+      "name": "The Kitchen",
+      "text": "Cold ovens gape along one wall, their mouths black with soot. Bundles of dried herbs hang from the beams, and a pot of stew sits cooling on the block. A narrow stair descends to the cellar; a servants' door leads west to the barracks, and the hall is east.",
+      "exits": {
+        "north": 120,
+        "west": 121,
+        "east": 122,
+        "down": 124
+      },
+      "details": {
+        "ovens": "The ovens are cold. A loaf of bread has been left inside one to prove, and forgotten.",
+        "herbs": "The herbs are dusty but still sharp: thyme, rue, and something bitter that catches the throat.",
+        "stew": "The stew is thick and smells of root vegetables and pepper. It is still faintly warm."
+      },
+      "ambient": [
+        "A pot lid rattles softly on the block.",
+        "The cellar stair breathes cold air up into the kitchen."
+      ]
+    },
+    "124": {
+      "name": "The Cellar",
+      "text": "The cellar is a low vault of wet stone. Barrels stand in rows, their hoops furred with mould, and water ticks somewhere in the dark. A low arch leads south toward the dungeons, and a narrow servants' passage opens east.",
+      "exits": {
+        "up": 123,
+        "east": 125,
+        "south": 130
+      },
+      "dark": true,
+      "darkText": "The cellar is a well of cold dark. Water ticks somewhere, and the air smells of wet stone and old wine. You can make out only the stair behind you.",
+      "details": {
+        "barrels": "The barrels are empty, or nearly so. One has been broken open and its staves scattered.",
+        "water": "A thin sheet of water covers the floor. It reflects nothing without light.",
+        "arch": "The arch is low and wet. A colder draft comes through it, carrying the smell of iron."
+      },
+      "ambient": [
+        "A drop falls into water somewhere close.",
+        "The dark presses against the edges of the stair."
+      ]
+    },
+    "125": {
+      "name": "The Servant Passage",
+      "text": "A narrow passage runs behind the great hall, its walls blackened by years of candle smoke. Small doors open into the kitchen and the chapel, and a low postern door leads south to the gatehouse. Handprints mark the plaster at shoulder height, as if someone was dragged this way.",
+      "exits": {
+        "south": 118,
+        "west": 124,
+        "east": 126
+      },
+      "details": {
+        "handprints": "The prints are small and dark. They stop halfway down the passage.",
+        "postern": "The postern is barred from this side. The bar is new wood among old iron.",
+        "smoke": "The soot is thickest near the chapel door, where candle smoke has seeped under the frame."
+      },
+      "ambient": [
+        "A draft pulls at the chapel door.",
+        "The passage smells of tallow and wet plaster."
+      ]
+    },
+    "126": {
+      "name": "The Chapel of Ash",
+      "text": "The chapel is small and cold, its walls white with old ash. A stone reliquary stands before the altar, and a thin figure in grey keeps a vigil beside it. A stair climbs to the great hall; the servant passage is west. Candles have burned down to stubs in every niche; the air smells of wax and rain.",
+      "exits": {
+        "west": 125,
+        "up": 122
+      },
+      "safe": true,
+      "details": {
+        "reliquary": "The reliquary is a block of pale stone with a narrow slot in its lid. The slot is worn smooth.",
+        "curator": "The curator's robe is grey with ash. Their hands are clean, and their eyes are very old.",
+        "candles": "The candles are cold. One still has a thread of smoke rising from it."
+      },
+      "ambient": [
+        "A candle gutters although there is no wind.",
+        "The reliquary is warm to the touch."
+      ]
+    },
+    "127": {
+      "name": "The Solar",
+      "text": "The solar is the keep's one warm room, its window glass cracked but still holding the grey light. A writing desk stands beneath the window, a chest beside it, and a narrow stair climbs into the tower. The floor is covered with a faded carpet that has been rolled back from the wall.",
+      "exits": {
+        "west": 122,
+        "up": 128
+      },
+      "details": {
+        "desk": "The desk is tidy. A ledger lies open to a page of names, all crossed through.",
+        "chest": "The chest is banded with dark iron. The lock is small and bright, as if recently oiled.",
+        "window": "The window looks over the bailey. From here the gallows casts a long, thin shadow."
+      },
+      "ambient": [
+        "The window glass ticks in its frame.",
+        "A page turns on the desk with no hand to turn it."
+      ]
+    },
+    "128": {
+      "name": "The Tower Stair",
+      "text": "The spiral stair climbs through the thickness of the tower wall. Arrow slits let in thin grey light, and the steps are worn into shallow cups. The air is cold and smells of stone dust; above, the stair vanishes into the tower's dark.",
+      "exits": {
+        "down": 127,
+        "up": 129
+      },
+      "dark": true,
+      "darkText": "The spiral stair vanishes into blackness. A cold wind moves down the well of stone; you can see only the next slit of grey light above you.",
+      "details": {
+        "slits": "The arrow slits are narrow. Through one, the bailey looks small and very far below.",
+        "steps": "The steps are worn smooth in the centre. Someone has counted them in chalk: forty-one.",
+        "wall": "The wall is cold and slightly damp. A red hand has been painted over the old stone."
+      },
+      "ambient": [
+        "Wind worries at the arrow slits.",
+        "A loose stone clicks somewhere above."
+      ]
+    },
+    "129": {
+      "name": "The Tower Top",
+      "text": "The tower top is open to the sky. The battlements are broken in two places, and the valley spreads out below in bands of grey field and black wood. A tall figure in a red cloak stands at the parapet with a drawn blade, watching the road. The wind pulls at the cloak but the figure does not move.",
+      "exits": {
+        "down": 128
+      },
+      "details": {
+        "battlements": "The battlements are cracked and furred with lichen. A red banner hangs limp from one merlon.",
+        "valley": "The valley is quiet. The river is a thin silver line, and the forest is a dark stain.",
+        "captain": "The captain's blade is old but well kept. A signet ring glints on the sword hand."
+      },
+      "ambient": [
+        "The wind carries the smell of rain and woodsmoke.",
+        "The captain's cloak snaps once and falls still."
+      ]
+    },
+    "130": {
+      "name": "The Dungeon",
+      "text": "The dungeon is a row of cells cut into the rock, their doors rusted open. Chains hang from the walls, and a prisoner sits in the far cell with a bowl of water beside him. A riveted iron door is set into the east wall, its lock black with age.",
+      "exits": {
+        "north": 124
+      },
+      "secretExits": {
+        "east": 131
+      },
+      "details": {
+        "cells": "The cells are empty except for straw and old marks on the walls. One mark is a tally that stops at eleven.",
+        "prisoner": "The prisoner is thin and quiet. His wrists are scarred, but the chains no longer hold him.",
+        "vault door": "The vault door is iron, banded and riveted. The keyhole is a narrow slit with no key in it."
+      },
+      "ambient": [
+        "A chain shifts in the dark.",
+        "The prisoner's bowl rings softly against the stone."
+      ]
+    },
+    "131": {
+      "name": "The Vault",
+      "text": "The vault is a low room of black iron and cold stone. Shelves line the walls, most of them empty; a few strongboxes sit in the dust. A low plinth at the far end holds a crown of pale metal, and something large breathes in the dark beside it.",
+      "exits": {
+        "west": 130
+      },
+      "dark": true,
+      "darkText": "The vault is black except for a thin seam under the door. Something metal shifts in the dark, and something larger breathes.",
+      "details": {
+        "shelves": "The shelves are empty except for dust and a few copper coins fused to the wood.",
+        "crown": "The crown is pale and plain, its points worn soft. It is worth more than the keep.",
+        "dark": "The dark is not empty. Something moves at the edge of hearing."
+      },
+      "ambient": [
+        "Metal creaks in the dark.",
+        "The breathing stops, then begins again."
+      ]
     }
   },
   "task": {
@@ -3395,6 +3671,254 @@
       "description": "A straw dummy on a wooden post, patched and re-patched.",
       "examine": "Straw, sacking and a great deal of practice.",
       "dialogue": []
+    },
+    {
+      "id": "keep-gate-guard",
+      "name": "a red gate guard",
+      "room": 118,
+      "home": 118,
+      "zone": "grey-keep",
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "level": 4,
+      "hp": 22,
+      "maxHp": 22,
+      "damage": 3,
+      "armor": 2,
+      "aggression": 35,
+      "xp": 45,
+      "loot": [],
+      "description": "A broad guard in a red cloak stands beside the portcullis, spear grounded.",
+      "examine": "The guard's spear is notched. A red hand is stitched over the breast of the cloak.",
+      "dialogue": []
+    },
+    {
+      "id": "keep-bailey-guard",
+      "name": "a red bailey guard",
+      "room": 119,
+      "home": 119,
+      "zone": "grey-keep",
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "level": 4,
+      "hp": 24,
+      "maxHp": 24,
+      "damage": 4,
+      "armor": 2,
+      "aggression": 45,
+      "xp": 50,
+      "loot": [],
+      "description": "A guard in a mud-spattered red cloak watches the fountain.",
+      "examine": "The guard's boots are wrapped with cloth against the cold. A knife hangs at the belt.",
+      "dialogue": []
+    },
+    {
+      "id": "keep-hall-guard",
+      "name": "a red hall guard",
+      "room": 122,
+      "home": 122,
+      "zone": "grey-keep",
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "level": 5,
+      "hp": 26,
+      "maxHp": 26,
+      "damage": 4,
+      "armor": 2,
+      "aggression": 40,
+      "xp": 60,
+      "loot": [],
+      "description": "A tall guard stands at the high table with a naked blade across his arms.",
+      "examine": "The blade is plain and sharp. The guard's eyes never leave the doors.",
+      "dialogue": []
+    },
+    {
+      "id": "keep-hound",
+      "name": "a brindled hound",
+      "room": 120,
+      "home": 120,
+      "zone": "grey-keep",
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "level": 3,
+      "hp": 16,
+      "maxHp": 16,
+      "damage": 4,
+      "armor": 1,
+      "aggression": 60,
+      "xp": 25,
+      "loot": [],
+      "description": "A brindled hound lifts its head from the straw. Its eyes are yellow and steady.",
+      "examine": "The hound is thin, but its shoulders are heavy. A red collar is half-buried in its fur.",
+      "dialogue": []
+    },
+    {
+      "id": "keep-barracks-guard",
+      "name": "a red barracks guard",
+      "room": 121,
+      "home": 121,
+      "zone": "grey-keep",
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "level": 4,
+      "hp": 20,
+      "maxHp": 20,
+      "damage": 3,
+      "armor": 2,
+      "aggression": 50,
+      "xp": 40,
+      "loot": [],
+      "description": "A guard sits on the nearest bunk, cleaning her nails with a knife.",
+      "examine": "The knife is thin and well used. A red cloak is folded beside her.",
+      "dialogue": []
+    },
+    {
+      "id": "keep-steward",
+      "name": "the grey steward",
+      "room": 122,
+      "home": 122,
+      "zone": "grey-keep",
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "level": 3,
+      "hp": 15,
+      "maxHp": 15,
+      "damage": 0,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 0,
+      "loot": [],
+      "description": "A thin man in a grey coat stands at the high table, hands folded.",
+      "examine": "The steward's coat is old but carefully mended. His hands are ink-stained.",
+      "dialogue": [
+        "The Grey Keep was a border house before the Red Company came. Now it is a waystation for things that do not want to be seen.",
+        "The captain keeps the tower. The vault key is in the solar chest, or it was when the last steward had it.",
+        "The chapel is the only safe room left. The curator does not ask where your treasures came from."
+      ]
+    },
+    {
+      "id": "keep-cook",
+      "name": "the keep cook",
+      "room": 123,
+      "home": 123,
+      "zone": "grey-keep",
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "level": 3,
+      "hp": 12,
+      "maxHp": 12,
+      "damage": 0,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 0,
+      "loot": [],
+      "description": "A round woman in a stained apron stirs the cold stew with a wooden spoon.",
+      "examine": "The cook's hands are scarred with old burns. A knife hangs at her waist, but she does not reach for it.",
+      "dialogue": [
+        "Take the bread and the stew. The cellar is dark, and the dark is not kind.",
+        "The guards eat first. The rest of us eat what the guards leave."
+      ]
+    },
+    {
+      "id": "keep-curator",
+      "name": "the ash curator",
+      "room": 126,
+      "home": 126,
+      "zone": "grey-keep",
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "level": 4,
+      "hp": 18,
+      "maxHp": 18,
+      "damage": 0,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 0,
+      "loot": [],
+      "description": "A figure in ash-grey robes stands beside the reliquary, face hidden in a deep hood.",
+      "examine": "The curator's sleeves are clean. A pale scar crosses the back of one hand.",
+      "dialogue": [
+        "The reliquary takes worth and returns what the living can carry. Offer a treasure, and it will give you experience.",
+        "Gold is for the living. A thing of worth is for the road. Choose what you can leave behind.",
+        "The chapel is safe. The rest of the keep is not."
+      ]
+    },
+    {
+      "id": "keep-captain",
+      "name": "the red captain",
+      "room": 129,
+      "home": 129,
+      "zone": "grey-keep",
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "level": 6,
+      "hp": 40,
+      "maxHp": 40,
+      "damage": 6,
+      "armor": 3,
+      "aggression": 80,
+      "xp": 150,
+      "loot": [
+        "keep-captain-signet"
+      ],
+      "description": "A tall figure in a red cloak stands at the parapet, blade drawn.",
+      "examine": "The captain's blade is old and very clean. A signet ring glints on the sword hand.",
+      "dialogue": []
+    },
+    {
+      "id": "keep-prisoner",
+      "name": "the prisoner",
+      "room": 130,
+      "home": 130,
+      "zone": "grey-keep",
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "level": 3,
+      "hp": 12,
+      "maxHp": 12,
+      "damage": 0,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 0,
+      "loot": [],
+      "description": "A thin prisoner sits in the far cell with a bowl of water beside him.",
+      "examine": "His wrists are scarred, but the chains no longer hold him. His eyes are clear.",
+      "dialogue": [
+        "The vault key is in the solar chest. The captain wears the only other key, and he does not lend it.",
+        "The vault is dark. Take a light, or the dark will take you.",
+        "I have been here longer than the captain. I know the sound of that door."
+      ]
+    },
+    {
+      "id": "keep-vault-hound",
+      "name": "a black vault hound",
+      "room": 131,
+      "home": 131,
+      "zone": "grey-keep",
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "level": 5,
+      "hp": 24,
+      "maxHp": 24,
+      "damage": 5,
+      "armor": 2,
+      "aggression": 60,
+      "xp": 70,
+      "loot": [],
+      "description": "A black hound stands beside the plinth, eyes catching the thin seam of light.",
+      "examine": "The hound's coat is rough and hot. Its collar is iron, and the tag is worn smooth.",
+      "dialogue": []
     }
   ],
   "zones": [
@@ -3596,6 +4120,27 @@
         112,
         113,
         114
+      ]
+    },
+    {
+      "id": "grey-keep",
+      "name": "The Grey Keep",
+      "rooms": [
+        117,
+        118,
+        119,
+        120,
+        121,
+        122,
+        123,
+        124,
+        125,
+        126,
+        127,
+        128,
+        129,
+        130,
+        131
       ]
     }
   ],
@@ -5559,6 +6104,239 @@
         "readable"
       ],
       "examine": "The board lists: take all; wield <weapon>; wear <armour>; attack <target>; technique; score; equipment. At the bottom: 'The dummy is patient. The Ring is not.'"
+    },
+    {
+      "id": "keep-barracks-chest",
+      "name": "a banded strongbox",
+      "room": 121,
+      "flags": [
+        "fixed",
+        "container"
+      ],
+      "capacity": 2,
+      "open": false,
+      "examine": "A banded strongbox. The lock is simple and the lid is heavy.",
+      "openAtStart": false
+    },
+    {
+      "id": "keep-solar-chest",
+      "name": "a dark iron chest",
+      "room": 127,
+      "flags": [
+        "fixed",
+        "container"
+      ],
+      "capacity": 2,
+      "open": false,
+      "examine": "A dark iron chest with a small bright lock. It has been oiled recently.",
+      "openAtStart": false
+    },
+    {
+      "id": "keep-gate-key",
+      "name": "an iron postern key",
+      "inside": "keep-barracks-chest",
+      "flags": [
+        "takeable"
+      ],
+      "value": 5,
+      "examine": "A short iron key, green at the teeth. A runner's mark is scratched on the bow."
+    },
+    {
+      "id": "keep-vault-key",
+      "name": "a black vault key",
+      "inside": "keep-solar-chest",
+      "flags": [
+        "takeable"
+      ],
+      "value": 12,
+      "examine": "A long black key with a square bow. It is cold even in a warm hand."
+    },
+    {
+      "id": "keep-reliquary",
+      "name": "a pale stone reliquary",
+      "room": 126,
+      "flags": [
+        "fixed"
+      ],
+      "examine": "A block of pale stone with a narrow slot in the lid. The slot is worn smooth by offerings."
+    },
+    {
+      "id": "keep-lantern",
+      "name": "a tin lantern",
+      "room": 118,
+      "flags": [
+        "takeable",
+        "light"
+      ],
+      "lit": false,
+      "value": 6,
+      "examine": "A tin lantern with a horn pane. The wick is dry but sound."
+    },
+    {
+      "id": "keep-torch",
+      "name": "a pitch torch",
+      "room": 123,
+      "flags": [
+        "takeable",
+        "light"
+      ],
+      "lit": false,
+      "value": 2,
+      "examine": "A pitch-soaked torch. It would burn for an hour."
+    },
+    {
+      "id": "keep-stew",
+      "name": "a bowl of keep stew",
+      "room": 123,
+      "flags": [
+        "takeable",
+        "food"
+      ],
+      "bites": 2,
+      "heal": 4,
+      "value": 3,
+      "examine": "Root vegetables, pepper and something richer. It is still faintly warm."
+    },
+    {
+      "id": "keep-bread",
+      "name": "a loaf of keep bread",
+      "room": 123,
+      "flags": [
+        "takeable",
+        "food"
+      ],
+      "bites": 2,
+      "heal": 2,
+      "value": 2,
+      "examine": "A coarse loaf, still warm from an oven that has long gone cold."
+    },
+    {
+      "id": "keep-spear",
+      "name": "a red company spear",
+      "room": 121,
+      "flags": [
+        "takeable",
+        "weapon"
+      ],
+      "slot": "mainhand",
+      "damage": 4,
+      "value": 30,
+      "examine": "A spear with a red-painted haft and a leaf-shaped head. The edge is well kept."
+    },
+    {
+      "id": "keep-helm",
+      "name": "a red company helm",
+      "room": 121,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "head",
+      "armor": 2,
+      "value": 20,
+      "examine": "A dented iron helm with a red cloth tail."
+    },
+    {
+      "id": "keep-shield",
+      "name": "a red company shield",
+      "room": 122,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "offhand",
+      "armor": 2,
+      "technique": "guard",
+      "value": 25,
+      "examine": "A round shield painted with a red hand. The rim is notched."
+    },
+    {
+      "id": "keep-mail",
+      "name": "a red company mail shirt",
+      "room": 127,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "body",
+      "armor": 2,
+      "value": 35,
+      "examine": "A short mail shirt, red with rust at the rings. It is heavier than it looks."
+    },
+    {
+      "id": "keep-silver-plate",
+      "name": "a silver plate",
+      "room": 122,
+      "flags": [
+        "takeable"
+      ],
+      "value": 24,
+      "examine": "A silver plate stamped with a red hand. The silver is soft and old."
+    },
+    {
+      "id": "keep-gilt-cup",
+      "name": "a gilt cup",
+      "room": 127,
+      "flags": [
+        "takeable"
+      ],
+      "value": 30,
+      "examine": "A cup washed with gold. The gilt is worn thin at the rim."
+    },
+    {
+      "id": "keep-candlesticks",
+      "name": "a pair of silver candlesticks",
+      "room": 126,
+      "flags": [
+        "takeable"
+      ],
+      "value": 18,
+      "examine": "Two silver candlesticks, black with old wax. They are heavier than they look."
+    },
+    {
+      "id": "keep-crown",
+      "name": "the Grey Crown",
+      "room": 131,
+      "flags": [
+        "takeable"
+      ],
+      "value": 80,
+      "examine": "A crown of pale metal, its points worn soft. It is worth more than the keep."
+    },
+    {
+      "id": "keep-vault-ledger",
+      "name": "a vault ledger",
+      "room": 131,
+      "flags": [
+        "takeable",
+        "readable"
+      ],
+      "readable": true,
+      "value": 35,
+      "examine": "A ledger of names and debts. The last page is blank except for a red hand."
+    },
+    {
+      "id": "keep-captain-signet",
+      "name": "the captain's signet",
+      "room": 129,
+      "flags": [
+        "takeable"
+      ],
+      "value": 50,
+      "examine": "A heavy signet ring stamped with a red hand. The band is worn thin."
+    },
+    {
+      "id": "keep-banner",
+      "name": "a faded red banner",
+      "room": 122,
+      "flags": [
+        "fixed",
+        "readable"
+      ],
+      "examine": "A red hand on a field of grey. The cloth is older than the cracks around it. A name has been cut away."
     }
   ],
   "climate": {

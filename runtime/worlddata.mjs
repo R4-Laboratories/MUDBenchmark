@@ -126,6 +126,8 @@ export function loadWorld({ mode = "single", path = DEFAULT_PATH } = {}) {
     if (room.ambient !== undefined && !Array.isArray(room.ambient)) {
       errors.push(`room ${id} has ambient lines that are not a list`);
     }
+    if (room.dark !== undefined && typeof room.dark !== "boolean") errors.push(`room ${id} has a non-boolean dark flag`);
+    if (room.darkText !== undefined && typeof room.darkText !== "string") errors.push(`room ${id} has a non-string darkText`);
     rooms[numeric] = {
       name: room.name ?? `Room ${id}`,
       exits: room.exits ?? {},
@@ -134,6 +136,8 @@ export function loadWorld({ mode = "single", path = DEFAULT_PATH } = {}) {
       notices: room.notices ?? [],
       safe: room.safe === true,
       arena: room.arena === true,
+      dark: room.dark === true,
+      darkText: room.darkText ?? null,
       details: room.details ?? {},
       secrets: room.secrets ?? {},
       ambient: room.ambient ?? [],

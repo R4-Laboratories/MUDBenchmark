@@ -2593,6 +2593,48 @@ let items = { ok: true, why: [] };
   if (!items.ok) failures.push(`item properties are broken: ${items.why[0]}`);
 }
 
+// The Grey Keep: a 15-room questless site with keys, a locked shortcut, dark
+// rooms, a guild-only pick, and the reliquary treasure sink.
+let keep = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  const table = loadActions({ world });
+  const check = (condition, why) => { if (!condition) { keep.ok = false; keep.why.push(why); } };
+  const zone = world.zones.find((entry) => entry.id === "grey-keep");
+  check(Boolean(zone) && zone.rooms.length === 15 && zone.rooms.every((room) => world.rooms[room]), "the Grey Keep zone is not 15 connected rooms");
+  check(world.rooms[11]?.exits?.south === 117 && world.rooms[15]?.exits?.north === 117
+    && world.rooms[117]?.exits?.north === 11 && world.rooms[117]?.exits?.south === 15, "the Grey Keep road does not connect to the King's Road and Forest Edge");
+  check(world.rooms[118]?.secretExits?.north === 125 && world.rooms[125]?.exits?.south === 118, "the postern shortcut is not connected");
+  check(world.rooms[130]?.secretExits?.east === 131 && world.rooms[131]?.exits?.west === 130, "the vault door is not connected");
+  check(["124", "128", "131"].every((room) => world.rooms[room]?.dark === true), "the cellar, tower stair or vault is not dark");
+  const object = (id) => world.objects.find((entry) => entry.id === id);
+  check(object("keep-gate-key")?.inside === "keep-barracks-chest" && object("keep-vault-key")?.inside === "keep-solar-chest", "the keep keys are not in their chests");
+  check(object("keep-reliquary")?.room === 126 && object("keep-crown")?.value >= 50 && object("keep-captain-signet")?.value >= 40, "the reliquary or keep treasure is missing");
+  check(world.npcs.some((npc) => npc.id === "keep-curator" && npc.room === 126) && world.npcs.some((npc) => npc.id === "keep-captain" && npc.room === 129), "the curator or captain is missing");
+  check(table.errors.length === 0, `the keep action table is invalid: ${table.errors[0]}`);
+  const pick = table.actions.find((action) => action.id === "pick-postern");
+  const unlock = table.actions.find((action) => action.id === "unlock-postern");
+  const vault = table.actions.find((action) => action.id === "unlock-vault");
+  check(pick?.requires?.guild === "night-market" && pick?.requires?.rank === "runner", "the postern pick is not Night Market rank-gated");
+  check(unlock?.requires?.item === "keep-gate-key" && vault?.requires?.item === "keep-vault-key", "the keep key actions are wrong");
+  const dark = renderRoom({
+    room: world.rooms[124], role: 0, others: ["a guard"], objects: ["a chest"], light: false,
+  });
+  check(dark.includes("well of cold dark") && !dark.includes("a chest") && !dark.includes("a guard"), "dark rooms leak objects or actors without light");
+  const lit = renderRoom({
+    room: world.rooms[124], role: 0, others: ["a guard"], objects: ["a chest"], light: true,
+  });
+  check(lit.includes("[The Cellar]") && lit.includes("a chest") && lit.includes("a guard"), "lit rooms do not render objects or actors");
+  let state = initialState(world.rooms, world.npcs, world.objects, 117, world.climate, channelTable.channels, world.levels, questTable.quests);
+  state.actors.push({ id: "k", key: "k", account: "k", name: "k", room: 126, visited: [126], level: 4, xp: 0, maxHp: 35, hp: 35, mana: 5, maxMana: 5, spellbook: [], guild: null, guildRank: null, wielding: null, quests: { active: [], completed: [] } });
+  state.objects.push({ id: "keep-test-treasure", name: "a test treasure", room: null, holder: "k", inside: null, flags: ["takeable"], value: 20, eaten: false });
+  const result = step({ state, rooms: world.rooms, intents: [{ kind: "offer", actorId: "k", objectId: "keep-test-treasure" }] });
+  state = result.state;
+  const offered = state.objects.find((entry) => entry.id === "keep-test-treasure");
+  check(state.actors[0].xp === 10 && offered?.eaten === true, "the reliquary did not consume a treasure for XP");
+  if (!keep.ok) failures.push(`the Grey Keep is broken: ${keep.why[0]}`);
+}
+
 // Persistence: gold is banked on logout/death and survives reset; equipment
 // does not follow the character offline.
 let goldPersistence = { ok: true, why: [] };

@@ -217,6 +217,7 @@ function applySpell(state, actor, spell, target, events) {
     actor.visited = [...new Set([...(actor.visited ?? []), state.start])];
     events.push({ onlyId: actor.id, text: "The guild's road folds; you are back in the Atrium.\r\n" });
   } else if (spell.effect === "light") {
+    actor.lightUntil = Math.max(actor.lightUntil ?? 0, state.tick + 600);
     events.push({ onlyId: actor.id, text: "A cold light follows you.\r\n" });
   } else if (spell.effect === "detect") {
     events.push({ onlyId: actor.id, text: "You read the room for what it is hiding.\r\n" });
@@ -1858,6 +1859,21 @@ export function step({ state, rooms, intents, actions = [] }) {
       continue;
     }
 
+    if (intent.kind === "offer") {
+      const object = next.objects.find((entry) => entry.id === intent.objectId);
+      if (!object || object.holder !== actor.id || object.eaten) continue;
+      if ((object.flags ?? []).includes("coin") || !Number.isInteger(object.value) || object.value < 5) continue;
+      const xp = Math.max(1, Math.floor(object.value / 2));
+      object.eaten = true;
+      object.holder = null;
+      object.room = null;
+      object.inside = null;
+      object.worn = false;
+      awardXp(next, actor, xp, events);
+      events.push({ onlyId: actor.id, text: `The reliquary takes ${object.name}; you gain ${xp} experience.\r\n` });
+      continue;
+    }
+
     if (intent.kind === "light" || intent.kind === "extinguish") {
       const object = next.objects.find((o) => o.id === intent.objectId);
       if (!object || object.eaten) continue;
@@ -2258,7 +2274,7 @@ export function step({ state, rooms, intents, actions = [] }) {
     }
     next.engagements = [];
     next.duels = [];
-    for (const actor of next.actors) { actor.wielding = null; actor.effects = []; }
+    for (const actor of next.actors) { actor.wielding = null; actor.effects = []; actor.lightUntil = 0; }
     // Held coins are the character's gold and survive the reset. Every other
     // ephemeral object (minted coins on the floor) is swept up.
     next.objects = next.objects.filter((object) => !object.ephemeral

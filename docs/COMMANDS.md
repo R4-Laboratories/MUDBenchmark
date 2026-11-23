@@ -47,6 +47,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `list` | `shop`, `stock`, `ls` | none |
 | `mail` | `letter`, `m` | actor text |
 | `map` | `mp` | optional zone |
+| `offer` | `sacrifice` | object |
 | `open` | `op` | object |
 | `overview` | `ov` | none |
 | `put` | `insert`, `pt` | object in object |
@@ -162,11 +163,11 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 8 | Market Square | town | yes | north 1, east 9, west 10, south 11, up 35, down 105 |
 | 9 | The Smithy | town | yes | west 8 |
 | 10 | The Gilded Rat | town | yes | east 8, up 12, north 24 |
-| 11 | The King's Road | town | no | north 8, south 15, east 16, west 17 |
+| 11 | The King's Road | town | no | north 8, south 117, east 16, west 17 |
 | 12 | The Upstairs Landing | town | yes | down 10, east 13, west 14 |
 | 13 | The East Guest Room | town | yes | west 12 |
 | 14 | The West Guest Room | town | yes | east 12 |
-| 15 | The Forest Edge | wilds | no | north 11, east 18, south 19 |
+| 15 | The Forest Edge | wilds | no | north 117, east 18, south 19 |
 | 16 | The Old Well | wilds | no | west 11 |
 | 17 | The Graveyard | wilds | no | east 11, south 21 |
 | 18 | The Deep Forest | wilds | no | west 15, south 20, east 86 |
@@ -268,4 +269,19 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 114 | The Spring Keeper's Rest | garden | yes | south 113 |
 | 115 | The Wardens' Lodge | town | yes | down 24 |
 | 116 | The Training Yard | town | no | west 24 |
+| 117 | The Grey Road | grey-keep | no | north 11, south 15, east 118 |
+| 118 | The Iron Gate | grey-keep | no | west 117, east 119 |
+| 119 | The Weeping Bailey | grey-keep | no | west 118, north 122, east 120, south 121 |
+| 120 | The Stables | grey-keep | no | west 119, south 123 |
+| 121 | The Guard Barracks | grey-keep | no | north 119, east 123 |
+| 122 | The Great Hall | grey-keep | no | south 119, west 123, east 127, down 126 |
+| 123 | The Kitchen | grey-keep | no | north 120, west 121, east 122, down 124 |
+| 124 | The Cellar | grey-keep | no | up 123, east 125, south 130 |
+| 125 | The Servant Passage | grey-keep | no | south 118, west 124, east 126 |
+| 126 | The Chapel of Ash | grey-keep | yes | west 125, up 122 |
+| 127 | The Solar | grey-keep | no | west 122, up 128 |
+| 128 | The Tower Stair | grey-keep | no | down 127, up 129 |
+| 129 | The Tower Top | grey-keep | no | down 128 |
+| 130 | The Dungeon | grey-keep | no | north 124 |
+| 131 | The Vault | grey-keep | no | west 130 |
 

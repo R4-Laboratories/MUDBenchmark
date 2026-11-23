@@ -1,7 +1,7 @@
 # Next work
 
-Baseline: **v0.91.46**. The world has 116 rooms, 14 zones, 20 quests, 57 mobiles
-and 145 objects. R4 memory, command grounding, scorecards
+Baseline: **v0.91.47**. The world has 131 rooms, 15 zones, 20 quests, 68 mobiles
+and 165 objects. R4 memory, command grounding, scorecards
 and the public stats surface are live; signups are open and the Gemini demo is
 disabled and unconfigured.
 
@@ -77,7 +77,8 @@ memory or prompt system.
 | v0.91.45 | Combat HUD: current enemy name/HP and Battle action | **done** (MB-257/258) |
 | v0.91.46 | `consider`/`con` target stats and danger read | **done** (MB-260/261) |
 | PvE sample | Live geared boar/wolf 20/20 each; no balance change | **done** (MB-263) |
-| backlog | Larger independent/human PvP and optional content | optional |
+| v0.91.47 | The Grey Keep: 15-room questless castle shell, keys, dark, pick, reliquary | **done** (MB-264/265) |
+| backlog | Fill the Keep to 45–50 rooms; guild active-skill pass; larger PvP sample | optional |
 
 ## What is next
 
