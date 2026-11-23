@@ -113,6 +113,13 @@ real phone, not the Chrome accessibility tree.
 
 Record the browser, screen reader, phone and any failures in the session note.
 
+## Audit results (v0.91.44)
+
+- The signed-in audit checks the HUD reset countdown at desktop and 390x844;
+  both render a `reset …` label without overflow.
+- The reset warning is a ordinary room log line, so it uses the existing
+  labelled log rather than a new live region.
+
 ## Still open
 
 The audit uses Chrome's accessibility tree, not a spoken screen reader. A human

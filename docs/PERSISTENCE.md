@@ -36,7 +36,9 @@ world, as with any uncheckpointed change.
 
 ## The two-hour reset
 
-At 28,800 ticks (two hours at 250 ms) the world resets:
+At 28,800 ticks (two hours at 250 ms) the world resets. The HUD shows a reset
+countdown and the world warns at five minutes and one minute. Logout and death
+state that gold is kept and equipment stays behind.
 
 - every object returns to its home room and container, closed and unlit as it
   started;

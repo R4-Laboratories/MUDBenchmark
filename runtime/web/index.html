@@ -155,6 +155,7 @@
   #hud-room { color: var(--accent); font-weight: 600; }
   #hud-zone { color: var(--faint); }
   #hud-event { padding: 2px 6px; border: 1px solid rgba(251,191,36,.25); border-radius: 999px; color: var(--warn); }
+  #hud-reset { color: var(--faint); font: 10px/1.3 var(--font-mono); }
   .hud-quest { display: flex; gap: 6px; align-items: baseline; min-width: 0; font-size: 11px; color: var(--muted); }
   .hud-quest b { color: var(--text); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .hud-label { color: var(--faint); font-size: 9px; letter-spacing: .1em; text-transform: uppercase; }
@@ -720,7 +721,7 @@
           <div id="hud-stats" role="group" aria-label="Combat stats"><span id="hud-armor">ARM 0</span><span id="hud-damage">DMG 0</span><span id="hud-coins">0c</span></div>
         </div>
         <div id="hud-bottom">
-          <div id="hud-place" role="group" aria-label="Location"><span id="hud-room">—</span><span id="hud-zone"></span><span id="hud-event"></span></div>
+          <div id="hud-place" role="group" aria-label="Location"><span id="hud-room">—</span><span id="hud-zone"></span><span id="hud-event"></span><span id="hud-reset" title="World reset countdown"></span></div>
           <div class="hud-quest"><span class="hud-label">Quest</span><b id="hud-quest">—</b></div>
           <div id="hud-actions" role="group" aria-label="Quick actions">
             <button type="button" data-quick="look">Look</button>
@@ -1296,6 +1297,7 @@
   const hudRoom = document.getElementById("hud-room");
   const hudZone = document.getElementById("hud-zone");
   const hudEvent = document.getElementById("hud-event");
+  const hudReset = document.getElementById("hud-reset");
   const hudQuest = document.getElementById("hud-quest");
   const hudExits = document.getElementById("hud-exits");
   const worldPanel = document.getElementById("world-panel");
@@ -1481,6 +1483,20 @@
     return node;
   };
 
+  let resetDeadline = 0;
+  const duration = (value) => {
+    const total = Math.max(0, Math.round(Number(value) || 0));
+    if (total >= 3600) return `${Math.floor(total / 3600)}h ${Math.floor((total % 3600) / 60)}m`;
+    if (total >= 60) return `${Math.floor(total / 60)}m`;
+    return `${total}s`;
+  };
+  const updateResetLabel = () => {
+    if (!resetDeadline) { hudReset.textContent = ""; hudReset.hidden = true; return; }
+    const seconds = Math.max(0, Math.round((resetDeadline - Date.now()) / 1000));
+    hudReset.hidden = false;
+    hudReset.textContent = seconds <= 0 ? "reset due" : `reset ${duration(seconds)}`;
+  };
+
   function renderHud() {
     const self = playState?.self;
     if (!self || !authed) { hud.hidden = true; return; }
@@ -1502,6 +1518,9 @@
     hudZone.textContent = [room?.zone, playState?.world?.phase, playState?.world?.weather].filter(Boolean).join(" · ");
     hudEvent.textContent = playState?.world?.event?.name ?? "";
     hudEvent.hidden = !playState?.world?.event?.name;
+    const resetSeconds = Number(playState?.world?.reset_seconds);
+    resetDeadline = Number.isFinite(resetSeconds) && resetSeconds > 0 ? Date.now() + resetSeconds * 1000 : 0;
+    updateResetLabel();
     const quest = self.active_quests?.[0];
     hudQuest.textContent = quest
       ? `${quest.name}${quest.objectives?.[0] ? ` — ${quest.objectives[0]}` : ""}`
@@ -3126,6 +3145,7 @@
         `${world.quests ?? "—"} quests`,
       ];
       if (world.event?.name) bits.push(world.event.name);
+      if (Number.isFinite(Number(world.reset?.seconds))) bits.push(`reset in ${duration(world.reset.seconds)}`);
       const live = stream.live;
       bits.push(live ? `LIVE: ${live.name} in ${live.room} · ${live.viewers} watching` : "No agent live right now");
       heroLive.replaceChildren(...bits.map((text) => {
@@ -3156,6 +3176,7 @@
   aiFreeStart.addEventListener("click", () => { void startFreeAgent(aiFreeStatus); });
   void refreshHero();
   setInterval(refreshHero, 30000);
+  setInterval(updateResetLabel, 1000);
 
   let chatStick = true;
   chat.addEventListener("scroll", () => {

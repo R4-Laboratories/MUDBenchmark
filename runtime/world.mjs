@@ -1508,6 +1508,9 @@ export function step({ state, rooms, intents, actions = [] }) {
       }
       if (actor.key) {
         const identity = next.identities[actor.key] ?? {};
+        if (banked > 0) {
+          events.push({ onlyId: actor.id, text: `You bank ${banked} coin${banked === 1 ? "" : "s"}; equipment stays behind.\r\n` });
+        }
         const { inventory, worn, room, visited, ...rest } = identity;
         next.identities[actor.key] = {
           ...rest,
@@ -2214,7 +2217,7 @@ export function step({ state, rooms, intents, actions = [] }) {
           target.room = next.start;
           if (!target.visited.includes(next.start)) target.visited.push(next.start);
           const inRing = rooms[deathRoom]?.arena === true;
-          events.push({ onlyId: target.id, text: inRing ? "You fall. The Ring takes no goods.\r\n" : "You die, and wake at the start.\r\n" });
+          events.push({ onlyId: target.id, text: inRing ? "You fall. The Ring takes no goods.\r\n" : "You die, and wake at the start. Your gold is kept; your equipment falls here.\r\n" });
           events.push({ room: deathRoom, text: inRing ? `${target.name} falls in the Ring.` : `${target.name} is dead.`, exceptId: target.id });
           next.duels = next.duels.filter((duel) => ![duel.challengerId, duel.targetId].includes(target.id));
           if (next.actors.includes(attacker)) {
@@ -2238,6 +2241,11 @@ export function step({ state, rooms, intents, actions = [] }) {
 
   if (violenceDue) tickStatuses(next, events);
 
+  if (!areaDue && [1200, 240].includes(next.pulses.area.remaining)) {
+    const minutes = next.pulses.area.remaining === 1200 ? 5 : 1;
+    const text = `The world resets in ${minutes} minute${minutes === 1 ? "" : "s"}. Gold, level and XP persist; equipment returns home.\r\n`;
+    for (const room of Object.keys(rooms)) events.push({ room: Number(room), text });
+  }
   if (areaDue) {
     // The old MUD reset: the world returns to its starting arrangement and the
     // cycle advances, so a long session is a series of games, not one drift.

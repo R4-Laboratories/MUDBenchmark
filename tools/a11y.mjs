@@ -287,6 +287,7 @@ try {
       persistence: visible(document.querySelector("#account-persistence")),
       hud: visible(document.querySelector("#hud")),
       cmdEnabled: !document.querySelector("#cmd")?.disabled,
+      reset: document.querySelector("#hud-reset")?.textContent.trim() ?? "",
       focus: document.activeElement?.id || document.activeElement?.tagName,
       controls,
       overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
@@ -296,6 +297,7 @@ try {
   if (!signedIn.signed || signedIn.characters || !signedIn.firstSteps || !signedIn.persistence || !signedIn.hud || !signedIn.cmdEnabled || signedIn.focus !== "cmd") {
     failures.push(`signed-in shell failed ${JSON.stringify(signedIn)}`);
   }
+  if (!/^reset /.test(signedIn.reset)) failures.push(`signed-in reset countdown missing: ${signedIn.reset}`);
   const smallSigned = signedIn.controls.filter((control) => control.w < 24 || control.h < 24);
   if (smallSigned.length) failures.push(`signed-in: touch targets under 24px ${smallSigned.map((control) => `${control.id || control.text}:${control.w}x${control.h}`).join(",")}`);
 
@@ -332,6 +334,7 @@ try {
       firstSteps: visible(document.querySelector("#first-steps")),
       persistence: visible(document.querySelector("#account-persistence")),
       cmd: visible(document.querySelector("#cmd")),
+      reset: document.querySelector("#hud-reset")?.textContent.trim() ?? "",
       state: document.querySelector("#state")?.textContent.trim(),
       controls,
       overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
@@ -341,6 +344,7 @@ try {
   if (!signedMobile.signed || signedMobile.characters || !signedMobile.firstSteps || !signedMobile.persistence || !signedMobile.cmd || !signedMobile.state) {
     failures.push(`signed-in mobile shell failed ${JSON.stringify(signedMobile)}`);
   }
+  if (!/^reset /.test(signedMobile.reset)) failures.push(`signed-in mobile reset countdown missing: ${signedMobile.reset}`);
   if (signedMobile.overflow) failures.push("signed-in mobile: horizontal overflow");
   const smallSignedMobile = signedMobile.controls.filter((control) => control.w < 24 || control.h < 24);
   if (smallSignedMobile.length) failures.push(`signed-in mobile: touch targets under 24px ${smallSignedMobile.map((control) => `${control.id || control.text}:${control.w}x${control.h}`).join(",")}`);
