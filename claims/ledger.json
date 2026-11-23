@@ -1623,6 +1623,12 @@
       "level": "some-true",
       "statement": "The Grey Keep was walked live on an isolated server with a level-6 Night Market runner: the King's Road room text, Guild pick of the postern (discovered 118:north), the Servant Passage, chapel candlesticks offered at the reliquary for 9 XP (score 9/6000), the dark Cellar showing only the dark line before the lantern was lit, and the lit Cellar showing barrels after. The Gate validates the 15-room zone, keys/chests, dark/light rendering, postern/vault actions and the reliquary reducer. World 131 rooms / 15 zones / 68 mobiles / 165 objects.",
       "authority": "local isolated server /tmp/keep-live.mjs; tools/gate.mjs; 2026-11-23"
+    },
+    {
+      "id": "MB-266",
+      "level": "some-true",
+      "statement": "Production v0.91.47 serves The Grey Keep: 131 rooms, 15 zones, 20 quests, 68 mobiles and 165 objects. The live /world and artifact show 15 Grey Keep rooms and the grey-keep zone. The keep has the keyed postern/vault, Night Market runner pick, dark cellar/tower/vault with working lantern/torch/light, food and level-4-6 gear, guards, an optional captain, and the chapel reliquary offer (non-coin treasure worth 5+ for floor(value/2) XP). The local live walk found 118:north with pick, offered candlesticks for 9 XP, and saw the dark cellar before/after lighting the lantern. Gate checks the zone graph, keys/chests, dark/light rendering, guild/key actions and reliquary reducer. Main Gate 45230253292 green, publish 45231727781.",
+      "authority": "GitHub PR #63 merge 3645de3 2026-11-23; main Gate 45230253292; publish 45231727781; release v0.91.47; wick deploy output, /world, artifact world.json and health; local /tmp/keep-live.mjs"
     }
   ]
 }
