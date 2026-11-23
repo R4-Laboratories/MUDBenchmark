@@ -422,6 +422,12 @@ Rehearsed 2026-11-16:
   a Prism character and check the live shell at desktop and 390x844, and raises
   the HUD quick-action/exit targets from 22px to 24px (32px on mobile)
   (MB-239/240);
+- v0.91.40 (watch replay) keeps the last eight completed runs with up to 400
+  released events each, serves one at `/stream?run=<id>`, and adds a Replay
+  decisions view with Play/Back/Step, a scrubber, decision cards, command/text
+  timeline and state/stats summary. Finished runs replay without the live PvP
+  delay; pending delayed events are not archived. A Chrome test publishes a
+  synthetic run, checks the archive and steps the replay (MB-242/243);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

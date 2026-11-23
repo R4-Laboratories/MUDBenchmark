@@ -122,6 +122,12 @@
     .archive-card .archive-meta { color: var(--muted); font-size: 12px; margin-bottom: 8px; }
     .archive-card ul { margin: 0 0 10px; padding-left: 18px; color: var(--text); font-size: 12px; line-height: 1.5; }
     .archive-card button { background: transparent; color: var(--accent); border: 1px solid var(--line); padding: 5px 9px; font-size: 11px; }
+    .replay-controls { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin: 10px 0 6px; }
+    .replay-controls input[type="range"] { flex: 1; min-width: 120px; accent-color: var(--accent); }
+    .replay-status { color: var(--muted); font: 11px/1.4 var(--font-mono); }
+    .replay-live { margin: 6px 0; padding: 7px 9px; border: 1px solid var(--line); border-radius: 6px; color: var(--muted); font: 11.5px/1.5 var(--font-mono); }
+    .replay-feed { display: flex; flex-direction: column; gap: 7px; margin-top: 8px; }
+    .archive-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
     #offline { margin: 40px auto; max-width: 620px; padding: 26px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); text-align: center; }
     #offline h1 { margin: 0 0 8px; font-size: 18px; }
     #offline p { color: var(--muted); }
@@ -280,6 +286,7 @@
     let highlights = 0;
     let delay = 0;
     let viewingArchive = false;
+    let replay = null;
     let metaShown = false;
     let myId = null;
     let myVote = null;
@@ -323,12 +330,12 @@
     };
     const time = (iso) => iso ? new Date(iso).toLocaleTimeString() : "";
 
-    function line(text, cls = "desc") {
+    function line(text, cls = "desc", target = feed) {
       const node = document.createElement("div");
       node.className = `line ${cls}`;
       node.textContent = text;
-      feed.appendChild(node);
-      if (stick) requestAnimationFrame(() => { feed.scrollTop = feed.scrollHeight; });
+      target.appendChild(node);
+      if (target === feed && stick) requestAnimationFrame(() => { feed.scrollTop = feed.scrollHeight; });
     }
 
     function chatLine(from, text, mine = false) {
@@ -345,7 +352,7 @@
       chat.scrollTop = chat.scrollHeight;
     }
 
-    function decisionCard(event) {
+    function decisionCard(event, target = feed) {
       const card = document.createElement("div");
       card.className = "decision-card";
       const meta = document.createElement("div");
@@ -365,11 +372,11 @@
         action.textContent = `→ ${event.command}${event.room ? ` · ${event.room}` : ""}`;
         card.appendChild(action);
       }
-      feed.appendChild(card);
-      if (stick) requestAnimationFrame(() => { feed.scrollTop = feed.scrollHeight; });
+      target.appendChild(card);
+      if (target === feed && stick) requestAnimationFrame(() => { feed.scrollTop = feed.scrollHeight; });
     }
 
-    function highlightCard(event) {
+    function highlightCard(event, target = feed, clipName = live?.name) {
       const card = document.createElement("div");
       card.className = "highlight-card";
       const meta = document.createElement("div");
@@ -386,7 +393,7 @@
       copy.type = "button";
       copy.textContent = "Copy clip";
       copy.addEventListener("click", async () => {
-        const clip = JSON.stringify({ kind: "mudbenchmark/clip/1", live: live?.name ?? null, ...event }, null, 2);
+        const clip = JSON.stringify({ kind: "mudbenchmark/clip/1", live: clipName ?? null, ...event }, null, 2);
         try { await navigator.clipboard.writeText(clip); copy.textContent = "Copied"; }
         catch { copy.textContent = "Copy failed"; }
       });
@@ -394,7 +401,7 @@
       download.type = "button";
       download.textContent = "Download clip";
       download.addEventListener("click", () => {
-        const clip = JSON.stringify({ kind: "mudbenchmark/clip/1", live: live?.name ?? null, ...event }, null, 2);
+        const clip = JSON.stringify({ kind: "mudbenchmark/clip/1", live: clipName ?? null, ...event }, null, 2);
         const blob = new Blob([clip], { type: "application/json" });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
@@ -403,8 +410,8 @@
         setTimeout(() => URL.revokeObjectURL(link.href), 1000);
       });
       card.append(meta, body, copy, download);
-      feed.appendChild(card);
-      if (stick) requestAnimationFrame(() => { feed.scrollTop = feed.scrollHeight; });
+      target.appendChild(card);
+      if (target === feed && stick) requestAnimationFrame(() => { feed.scrollTop = feed.scrollHeight; });
     }
 
     function renderEvent(event, scroll = true) {
@@ -558,18 +565,20 @@
     }
 
     function updateHeader() {
-      dot.classList.toggle("live", Boolean(live));
-      character.textContent = live ? live.name : "no run";
-      room.textContent = live?.room ? `· ${live.room}` : "";
-      tick.textContent = live?.tick != null ? `tick ${live.tick}` : "";
-      delayBadge.hidden = !live || delay <= 0;
+      const showingReplay = Boolean(replay);
+      dot.classList.toggle("live", Boolean(live) && !showingReplay);
+      character.textContent = showingReplay ? `replay · ${replay.run.name ?? "Agent"}` : live ? live.name : "no run";
+      room.textContent = showingReplay ? (replay.run.room ? `· ${replay.run.room}` : "") : live?.room ? `· ${live.room}` : "";
+      tick.textContent = showingReplay ? "archived" : live?.tick != null ? `tick ${live.tick}` : "";
+      delayBadge.hidden = showingReplay || !live || delay <= 0;
       delayBadge.textContent = `DELAYED ${delay}s`;
-      if (live) watchAnnouncer.textContent = `Run live: ${live.name}${live.room ? ` in ${live.room}` : ""}.`;
+      if (showingReplay) watchAnnouncer.textContent = `Replay of ${replay.run.name ?? "the archived run"}.`;
+      else if (live) watchAnnouncer.textContent = `Run live: ${live.name}${live.room ? ` in ${live.room}` : ""}.`;
       const chatOn = live ? live.chat !== false : false;
-      input.disabled = !live || !chatOn;
-      send.disabled = !live || !chatOn;
-      input.placeholder = !live ? "No run is live" : chatOn ? "Say something to the run…" : "Audience chat is off";
-      document.title = live ? `${live.name} — MUDBench Live` : "MUDBench Live";
+      input.disabled = showingReplay || !live || !chatOn;
+      send.disabled = showingReplay || !live || !chatOn;
+      input.placeholder = showingReplay ? "Replay mode" : !live ? "No run is live" : chatOn ? "Say something to the run…" : "Audience chat is off";
+      document.title = showingReplay ? `Replay ${replay.run.name} — MUDBench` : live ? `${live.name} — MUDBench Live` : "MUDBench Live";
     }
 
     function showOffline() {
@@ -589,9 +598,194 @@
       feed.appendChild(box);
     }
 
+    function replayStateText() {
+      const state = replay?.state;
+      if (!state) return "State: —";
+      const parts = [
+        `HP ${value(state.hp)}/${value(state.maxHp)}`,
+        `mana ${value(state.mana)}/${value(state.maxMana)}`,
+        state.level != null ? `L${state.level}` : null,
+        state.room || null,
+        state.quest || null,
+      ].filter(Boolean);
+      return parts.join(" · ");
+    }
+
+    function replayPause() {
+      if (!replay) return;
+      if (replay.timer) { clearInterval(replay.timer); replay.timer = null; }
+      if (replay.dom?.play) replay.dom.play.textContent = "Play";
+    }
+
+    function applyReplayEvent(event) {
+      if (!replay || !event) return;
+      if (event.kind === "meta") return;
+      if (event.kind === "state") {
+        replay.state = event;
+        if (replay.dom?.state) replay.dom.state.textContent = replayStateText();
+        return;
+      }
+      if (event.kind === "stats") {
+        replay.stats = event;
+        return;
+      }
+      const timeline = replay.dom.timeline;
+      if (event.kind === "decision") { decisionCard(event, timeline); return; }
+      if (event.kind === "highlight") { highlightCard(event, timeline, replay.run.name); return; }
+      if (event.kind === "command") { line(`> ${event.text}`, "cmd", timeline); return; }
+      if (event.kind === "room") { line(`[${event.text}]`, "room", timeline); return; }
+      if (event.kind === "status") { line(event.text, "status", timeline); return; }
+      if (!event.text) return;
+      for (const part of String(event.text).split("\n")) {
+        if (!part.trim()) { line("", "desc", timeline); continue; }
+        if (/^\[.*\]$/.test(part.trim())) line(part, "room", timeline);
+        else if (/^(Here|Objects):$/i.test(part.trim())) line(part, "item", timeline);
+        else if (/^  /.test(part)) line(part, "item", timeline);
+        else if (/^Exits:/i.test(part.trim())) line(part, "exits", timeline);
+        else line(part, "desc", timeline);
+      }
+    }
+
+    function replayProgress() {
+      if (!replay) return;
+      const total = replay.events.length;
+      replay.dom.range.value = String(replay.index);
+      replay.dom.status.textContent = `${replay.index} / ${total}${replay.index >= total ? " · complete" : ""}`;
+      if (stick) feed.scrollTop = feed.scrollHeight;
+    }
+
+    function replaySeek(target) {
+      if (!replay) return;
+      replayPause();
+      replay.index = 0;
+      replay.state = null;
+      replay.dom.timeline.replaceChildren();
+      replay.dom.state.textContent = "State: —";
+      const limit = Math.max(0, Math.min(replay.events.length, Number(target) || 0));
+      for (let index = 0; index < limit; index += 1) {
+        applyReplayEvent(replay.events[index]);
+        replay.index = index + 1;
+      }
+      replayProgress();
+    }
+
+    function replayStep() {
+      if (!replay || replay.index >= replay.events.length) { replayPause(); return; }
+      applyReplayEvent(replay.events[replay.index]);
+      replay.index += 1;
+      replayProgress();
+      if (replay.index >= replay.events.length) {
+        replayPause();
+        replay.dom.play.textContent = "Replay";
+      }
+    }
+
+    function replayPlay() {
+      if (!replay || !replay.events.length) return;
+      if (replay.timer) { replayPause(); return; }
+      if (replay.index >= replay.events.length) replaySeek(0);
+      replay.dom.play.textContent = "Pause";
+      replay.timer = setInterval(replayStep, 700);
+    }
+
+    function renderReplay(run) {
+      if (replay?.timer) clearInterval(replay.timer);
+      const events = (run.events ?? []).filter(Boolean);
+      replay = { run, events, index: 0, timer: null, state: null, stats: null, dom: null };
+      viewingArchive = true;
+      feed.replaceChildren();
+      const card = document.createElement("div");
+      card.className = "archive-card";
+      const title = document.createElement("h2");
+      title.textContent = `Replay: ${run.name ?? "Agent"}`;
+      const meta = document.createElement("div");
+      meta.className = "archive-meta";
+      const ended = run.endedAt ? new Date(run.endedAt).toLocaleString() : "ended";
+      meta.textContent = `${run.room ?? "unknown room"} · ${ended} · ${run.eventCount ?? events.length} events (${events.length} archived) · ${run.meta?.model ?? "model"}${run.meta?.goal ? ` · ${run.meta.goal}` : ""}`;
+      const summary = document.createElement("div");
+      summary.className = "replay-live";
+      const stats = run.stats ?? {};
+      summary.textContent = [
+        stats.commands != null ? `${stats.commands} commands` : null,
+        stats.turn != null ? `turn ${stats.turn}` : null,
+        stats.latencyMs != null ? `${Math.round(Number(stats.latencyMs))} ms` : null,
+        run.peakViewers != null ? `${run.peakViewers} peak` : null,
+      ].filter(Boolean).join(" · ") || "Archived run";
+      const stateBox = document.createElement("div");
+      stateBox.className = "replay-live";
+      stateBox.textContent = "State: —";
+      const controls = document.createElement("div");
+      controls.className = "replay-controls";
+      const play = document.createElement("button");
+      play.type = "button";
+      play.textContent = "Play";
+      play.disabled = !events.length;
+      const back = document.createElement("button");
+      back.type = "button";
+      back.textContent = "Back";
+      back.disabled = !events.length;
+      const step = document.createElement("button");
+      step.type = "button";
+      step.textContent = "Step";
+      step.disabled = !events.length;
+      const range = document.createElement("input");
+      range.type = "range";
+      range.min = "0";
+      range.max = String(events.length);
+      range.value = "0";
+      range.setAttribute("aria-label", "Replay position");
+      range.disabled = !events.length;
+      const close = document.createElement("button");
+      close.type = "button";
+      close.textContent = live ? "Return to live" : "Close replay";
+      controls.append(play, back, step, range, close);
+      const status = document.createElement("div");
+      status.className = "replay-status";
+      status.textContent = events.length ? `0 / ${events.length}` : "No events archived for this run.";
+      const timeline = document.createElement("div");
+      timeline.className = "replay-feed";
+      card.append(title, meta, summary, stateBox, controls, status, timeline);
+      feed.appendChild(card);
+      replay.dom = { play, back, step, range, status, state: stateBox, timeline };
+      play.addEventListener("click", () => { if (replay?.timer) replayPause(); else replayPlay(); });
+      back.addEventListener("click", () => { if (replay) replaySeek(Math.max(0, replay.index - 1)); });
+      step.addEventListener("click", () => { replayPause(); replayStep(); });
+      range.addEventListener("input", () => { if (replay) replaySeek(Number(range.value)); });
+      close.addEventListener("click", () => {
+        replayPause();
+        replay = null;
+        viewingArchive = false;
+        if (live) showLiveFeed();
+        else { showOffline(); updateHeader(); }
+      });
+      updateHeader();
+      if (!events.length) { play.disabled = true; back.disabled = true; step.disabled = true; range.disabled = true; }
+    }
+
+    async function loadReplay(run) {
+      if (!run?.id) return;
+      try {
+        const res = await fetch(`/stream?run=${encodeURIComponent(run.id)}`, { signal: AbortSignal.timeout(5000) });
+        if (!res.ok) throw new Error("archive not found");
+        const data = await res.json();
+        if (!data.run?.events?.length) throw new Error("no events archived");
+        renderReplay(data.run);
+        feed.scrollIntoView({ behavior: "smooth", block: "start" });
+      } catch (error) {
+        renderArchive(run);
+        const note = document.createElement("p");
+        note.className = "small muted";
+        note.textContent = `Replay unavailable: ${error.message}`;
+        feed.appendChild(note);
+      }
+    }
+
     function renderArchive(run) {
       if (!run) return;
+      if (replay?.timer) clearInterval(replay.timer);
+      replay = null;
       viewingArchive = true;
+      updateHeader();
       feed.replaceChildren();
       const card = document.createElement("div");
       card.className = "archive-card";
@@ -613,6 +807,15 @@
         }
         card.appendChild(list);
       }
+      const actions = document.createElement("div");
+      actions.className = "archive-actions";
+      if (run.id && (run.hasReplay || (run.archivedEvents ?? 0) > 0)) {
+        const replayButton = document.createElement("button");
+        replayButton.type = "button";
+        replayButton.textContent = "Replay decisions";
+        replayButton.addEventListener("click", () => void loadReplay(run));
+        actions.appendChild(replayButton);
+      }
       const download = document.createElement("button");
       download.type = "button";
       download.textContent = "Download run";
@@ -624,13 +827,17 @@
         link.click();
         setTimeout(() => URL.revokeObjectURL(link.href), 1000);
       });
-      card.appendChild(download);
+      actions.appendChild(download);
+      card.appendChild(actions);
       feed.appendChild(card);
     }
 
     function showLiveFeed() {
       if (!live) return;
+      if (replay?.timer) clearInterval(replay.timer);
+      replay = null;
       viewingArchive = false;
+      updateHeader();
       metaShown = false;
       decisions = 0;
       highlights = 0;
@@ -645,6 +852,7 @@
     }
 
     function setLive(next) {
+      if (next && replay) { if (replay.timer) clearInterval(replay.timer); replay = null; }
       live = next ? { ...next, events: [...(next.events ?? [])] } : null;
       liveMeta = next?.meta ?? null;
       liveState = next?.state ?? null;
@@ -778,7 +986,7 @@
       }
       if (payload.type === "off") {
         setLive(null);
-        showOffline();
+        if (!replay) showOffline();
         loadDirectory();
         watchAnnouncer.textContent = "The run ended.";
         line("The run ended.", "status");
