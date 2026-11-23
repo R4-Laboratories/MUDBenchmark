@@ -1,8 +1,8 @@
 {
   "schema": "mudbenchmark/pacing/1",
-  "candidate": "c-0f5ec925e602",
-  "report": "85239f0dec73b748d580b6f6a64f409803ad67a1550637a6214570ec5a7b2670",
-  "worldHash": "726326ab7718f645a96fbe5fec7d2c8e4b8371c4b68936278e753100781afd53",
+  "candidate": "c-2386f72f2192",
+  "report": "86ae81a60ae688b9246d80e6946ff6fe027097a92c79962573ce0816dfb3c94b",
+  "worldHash": "746a9798fe6c57986a2d667ecb8e3dbfcc8561e8e9f699291cd6930787e51ceb",
   "changes": [
     {
       "group": "hostile-damage",
@@ -26,7 +26,7 @@
       "target": "moth",
       "field": "period",
       "from": 48,
-      "to": 75
+      "to": 60
     },
     {
       "group": "temple-period",
@@ -34,7 +34,7 @@
       "target": "rat",
       "field": "period",
       "from": 32,
-      "to": 50
+      "to": 40
     },
     {
       "group": "shop-price",
@@ -92,9 +92,9 @@
     "benefit": true,
     "bounds": true,
     "checks": true,
-    "candidate": "c-0f5ec925e602",
-    "report": "85239f0dec73b748d580b6f6a64f409803ad67a1550637a6214570ec5a7b2670",
-    "worldHash": "726326ab7718f645a96fbe5fec7d2c8e4b8371c4b68936278e753100781afd53",
+    "candidate": "c-2386f72f2192",
+    "report": "86ae81a60ae688b9246d80e6946ff6fe027097a92c79962573ce0816dfb3c94b",
+    "worldHash": "746a9798fe6c57986a2d667ecb8e3dbfcc8561e8e9f699291cd6930787e51ceb",
     "kernel": "sha256:cc0cd971f1090692e7fad9ad7b23a3a35dada64168de74110b321d3e31c30258"
   }
 }
