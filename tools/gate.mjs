@@ -65,7 +65,7 @@ import { worldOverview, worldStatus, worldStatusText } from "../runtime/worldsta
 import { redactCommand, sanitizeIntent, sanitizeState, scrubSecrets, scrubSpan } from "../runtime/telemetry-policy.mjs";
 import { planRetention } from "../runtime/retention.mjs";
 import { equipmentOf, equipmentText, inventoryGroups, setBonus } from "../runtime/equipment.mjs";
-import { maxManaFor, spellPower } from "../runtime/magic.mjs";
+import { maxManaFor, spellById, spellPower } from "../runtime/magic.mjs";
 import { trainingCost } from "../runtime/magic.mjs";
 import { findAction, loadActions } from "../runtime/actions.mjs";
 import { auditAccounts } from "../runtime/account-audit.mjs";
@@ -2595,8 +2595,8 @@ let items = { ok: true, why: [] };
   if (!items.ok) failures.push(`item properties are broken: ${items.why[0]}`);
 }
 
-// The Grey Keep: a 15-room questless site with keys, a locked shortcut, dark
-// rooms, a guild-only pick, and the reliquary treasure sink.
+// The Grey Keep: a 45-room questless site with keys, a locked shortcut, dark
+// rooms, a guild-only pick, a scout trail skill and the reliquary sink.
 let keep = { ok: true, why: [] };
 {
   const world = loadWorld({ mode: "single" });
@@ -2642,6 +2642,36 @@ let keep = { ok: true, why: [] };
   state = capped.state;
   check(state.actors[0].xp === 10 && state.objects.find((entry) => entry.id === "keep-test-full")?.eaten === false, "the reliquary did not enforce the reset cap");
   if (!keep.ok) failures.push(`the Grey Keep is broken: ${keep.why[0]}`);
+}
+
+// The Arcanum: a 21-room Mages' tower with detect/shield gates, dark rooms and
+// a prism vault, reached from the one-room guild hall.
+let arcanum = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  const table = loadActions({ world });
+  const check = (condition, why) => { if (!condition) { arcanum.ok = false; arcanum.why.push(why); } };
+  const zone = world.zones.find((entry) => entry.id === "arcanum");
+  check(Boolean(zone) && zone.rooms.length === 21 && zone.rooms.every((room) => world.rooms[room]), "the Arcanum zone is not 21 connected rooms");
+  check(world.rooms[34]?.exits?.up === 162 && world.rooms[162]?.exits?.down === 34, "the Arcanum stair does not connect to the guild hall");
+  check(world.rooms[171]?.secretExits?.north === 177 && world.rooms[177]?.exits?.south === 171, "the rune gallery secret door is not connected");
+  check(world.rooms[180]?.secretExits?.east === 181 && world.rooms[181]?.exits?.west === 180, "the star well ward is not connected");
+  check(["169", "177", "180", "181"].every((room) => world.rooms[room]?.dark === true), "a dark Arcanum room is missing its dark flag");
+  const object = (id) => world.objects.find((entry) => entry.id === id);
+  check(object("arcanum-codex")?.inside === "arcanum-study-chest" && object("arcanum-seal")?.inside === "arcanum-seal-chest" && object("arcanum-prism-heart")?.room === 181, "the Arcanum treasures are missing");
+  check(world.npcs.some((npc) => npc.id === "arcanum-prism-keeper" && npc.room === 181 && npc.loot?.includes("arcanum-prism-heart")) && world.npcs.some((npc) => npc.id === "arcanum-apprentice" && npc.room === 163) && world.npcs.some((npc) => npc.id === "arcanum-astronomer" && npc.room === 168), "an Arcanum NPC is missing");
+  check(table.errors.length === 0, `the Arcanum action table is invalid: ${table.errors[0]}`);
+  const runes = table.actions.find((action) => action.id === "read-runes");
+  const ward = table.actions.find((action) => action.id === "pass-ward");
+  check(runes?.room === 171 && runes?.requires?.spell === "detect" && runes?.effects?.some((effect) => effect.kind === "revealExit" && effect.dir === "north"), "the rune-wall detect action is wrong");
+  check(ward?.room === 180 && ward?.requires?.spell === "shield" && ward?.effects?.some((effect) => effect.kind === "revealExit" && effect.dir === "east"), "the star-well shield action is wrong");
+  check(["detect", "light", "shield"].every((id) => spellById(id)), "a spell gate names a missing spell");
+  let state = initialState(world.rooms, world.npcs, world.objects, 171, world.climate, channelTable.channels, world.levels, questTable.quests);
+  state.actors.push({ id: "m", key: "m", account: "m", name: "m", room: 171, visited: [171], level: 3, xp: 0, maxHp: 30, hp: 30, mana: 9, maxMana: 9, spellbook: ["detect"], guild: "mages", guildRank: "apprentice", wielding: null, quests: { active: [], completed: [] } });
+  const result = step({ state, rooms: world.rooms, intents: [{ kind: "action", actorId: "m", actionId: "read-runes" }], actions: table.actions });
+  state = result.state;
+  check(state.actors[0].found?.includes("171:north") === true, "the detect action did not reveal the rune door");
+  if (!arcanum.ok) failures.push(`the Arcanum is broken: ${arcanum.why[0]}`);
 }
 
 // Persistence: gold is banked on logout/death and survives reset; equipment

@@ -527,6 +527,52 @@
         "actor": "You unlock the vault.",
         "others": "%a unlocks the vault."
       }
+    },
+    {
+      "id": "read-runes",
+      "room": 171,
+      "verb": "read",
+      "target": "runes",
+      "requires": {
+        "spell": "detect"
+      },
+      "effects": [
+        {
+          "kind": "revealExit",
+          "dir": "north"
+        },
+        {
+          "kind": "message",
+          "text": "The runes answer the detect spell. The carved eye opens, and the north wall becomes a door."
+        }
+      ],
+      "messages": {
+        "actor": "You read the runes.",
+        "others": "%a reads the runes."
+      }
+    },
+    {
+      "id": "pass-ward",
+      "room": 180,
+      "verb": "pass",
+      "target": "ward",
+      "requires": {
+        "spell": "shield"
+      },
+      "effects": [
+        {
+          "kind": "revealExit",
+          "dir": "east"
+        },
+        {
+          "kind": "message",
+          "text": "Your shield meets the ward and the gap opens onto the prism vault."
+        }
+      ],
+      "messages": {
+        "actor": "You pass the ward.",
+        "others": "%a passes the ward."
+      }
     }
   ]
 }

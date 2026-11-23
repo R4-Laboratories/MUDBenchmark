@@ -3,8 +3,8 @@
 This was the queued AberMUD-style content and systems track. The v0.47/v0.48 slices
 have landed: eight equipment slots, six spells and the Mages' Guild, eleven
 Lantern Quarter/Undervault rooms, five personal quests, a guild ledger quest,
-a searchable secret stair, three data-driven room actions and mage rank advancement. The world is now 161 rooms,
-15 zones, 20 quests, 79 mobiles and 194 objects. The foundation from v0.46 remains:
+a searchable secret stair, three data-driven room actions and mage rank advancement. The world is now 181 rooms,
+15 zones, 20 quests, 90 mobiles and 214 objects. The foundation from v0.46 remains:
 short command forms, `equipment`, `world`/`status`, the hidden `#state` line,
 and the AI prompt/router state layer.
 
@@ -46,6 +46,7 @@ and the AI prompt/router state layer.
 | M34 | **done** — Events and PvP: Ember/Fen/Salt/Moon event rotation with doubled standing and 20% quartermaster discount, plus the persistent Ring duel ladder and `ladder`/`pvp`/`duels`; 131 objects | event rotation/discount, duel records/rating, ladder text, every prior check |
 | M35 | **done** — Sets, sheet and training: complete Ashen/Red/Night sets, shield Guard, five lore readables, web Character sheet/shop stats and the Training Yard; 116 rooms / 57 mobiles / 145 objects | set completion, Guard, lore, sheet DOM, training yard, every prior check |
 | M36 | **done** — The Grey Keep: 45 questless rooms off the King's Road, immersive descriptions, a keyed postern/vault, Night Market `pick`, Warden `track`, dark rooms with light, food/gear, an optional captain and sealed guardian, and the reliquary sacrifice. 161 rooms / 15 zones / 79 mobiles / 194 objects | map/keys, dark/light, guild pick/track, reliquary cap, every prior check |
+| M37 | **done** — The Arcanum: 21-room Mages' tower above the guild hall, with the detect-gated rune wall, shield-gated star-well ward, light-gated dark rooms, laboratories, observatory, mirror room, cold library and prism vault; 181 rooms / 15 zones / 90 mobiles / 214 objects | map/secrets, spell gates, dark/light, prism keeper loot, live walk, every prior check |
 
 ## Rules that keep the model green
 

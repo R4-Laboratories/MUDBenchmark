@@ -187,7 +187,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 31 | The Docks | harbor | no | west 30, north 32, down 33 |
 | 32 | The Lighthouse | harbor | no | south 31, down 81 |
 | 33 | The Ring | harbor | no | up 31 |
-| 34 | The Mages' Guild | arcanum | yes | down 1 |
+| 34 | The Mages' Guild | arcanum | yes | down 1, up 162 |
 | 35 | The Lantern Stair | lantern | yes | down 8, north 36 |
 | 36 | The Arcade of Sigils | lantern | yes | south 35, east 37, west 38, north 39 |
 | 37 | The Spellwright's Shop | lantern | yes | west 36 |
@@ -315,4 +315,24 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 159 | The Study | grey-keep | no | west 138, north 158 |
 | 160 | The Sealed Room | grey-keep | no | west 147 |
 | 161 | The Tower Cell | grey-keep | no | west 128 |
+| 162 | The Spiral Stair | arcanum | no | down 34, up 163 |
+| 163 | The Hall of Names | arcanum | no | down 162, up 164, north 165, south 166 |
+| 164 | The Lecture Hall | arcanum | no | down 163, up 167, east 168, west 169 |
+| 165 | The Scriptorium | arcanum | no | south 163, east 170 |
+| 166 | The Lower Laboratory | arcanum | no | north 163, east 171 |
+| 167 | The Upper Laboratory | arcanum | no | down 164, up 172, east 173 |
+| 168 | The Observatory | arcanum | no | west 164, up 174 |
+| 169 | The Star Stair | arcanum | no | east 164, up 175 |
+| 170 | The Prism Chamber | arcanum | no | west 165, north 176 |
+| 171 | The Rune Gallery | arcanum | no | west 166 |
+| 172 | The Sealed Vault | arcanum | no | down 167, north 178 |
+| 173 | The Bellows | arcanum | no | west 167, up 179 |
+| 174 | The Aviary | arcanum | no | down 168, west 175 |
+| 175 | The Mirror Room | arcanum | no | down 169, east 174, up 180 |
+| 176 | The Archivist's Study | arcanum | no | south 170, up 181 |
+| 177 | The Cold Library | arcanum | no | south 171, east 178 |
+| 178 | The High Walk | arcanum | no | south 172, west 177, east 179 |
+| 179 | The Orrery | arcanum | no | down 173, west 178, north 180 |
+| 180 | The Star Well | arcanum | no | down 175, south 179 |
+| 181 | The Prism Vault | arcanum | no | down 176, west 180 |
 
