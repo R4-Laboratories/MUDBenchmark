@@ -1647,6 +1647,18 @@
       "level": "some-true",
       "statement": "Production v0.91.48 serves the full Grey Keep: 161 rooms, 15 zones, 20 quests, 79 mobiles and 194 objects; /world and the artifact show 45 grey-keep rooms. The keep adds the upper gallery/chambers, library/map room, servants' wing, crypt/ossuary/reliquary vault/sealed room, gate roof, armory, smithy, well, cistern, kennel, hayloft and tower cell with immersive descriptions. It adds the Warden track/seek scout skill (live: gate guard in Iron Gate, crown in Vault, librarian in Library, sealed guardian in Sealed Room), library cabinet/star chart, sealed guardian and the 100-XP-per-reset reliquary cap. Night Market pick and the 9-XP reliquary walk remain valid. Main Gate 45250635925 green, publish 45252056484.",
       "authority": "GitHub PR #64 merge 6b325b9 2026-11-23; main Gate 45250635925; publish 45252056484; release v0.91.48; wick deploy output, /world, artifact world.json and health; local /tmp/warden-track.mjs and /tmp/keep-live.mjs"
+    },
+    {
+      "id": "MB-270",
+      "level": "build",
+      "statement": "v0.91.49 opens The Arcanum as a 21-room Mages' tower above room 34: spiral stair, hall of names, lecture hall, scriptorium, lower and upper laboratories, observatory, star stair, prism chamber, rune gallery, sealed vault, bellows, aviary, mirror room, archivist's study, cold library, high walk, orrery, star well and prism vault. `read runes` requires detect and reveals north to 177; `pass ward` requires shield and reveals east to 181; rooms 169/177/180/181 are dark and need light. Adds the prism keeper, two golems, mirror wraith, gargoyle, owls, star wisp and guild NPCs, with the prism heart, sealed codex, guild seal, star chart, prism shard and star water. World 181 rooms / 15 zones / 20 quests / 90 mobiles / 214 objects; no new quests.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-271",
+      "level": "some-true",
+      "statement": "The 21-room Arcanum passed the Gate map, spell-gate, dark/light, treasure and reducer checks, including a reducer test that read-runes records 171:north for a character with detect. A live /tmp/arcanum-live.mjs walk from The Mages' Guild cast light, climbed to the Rune Gallery, read runes to open The Cold Library, climbed the Star Stair and Mirror Room, and passed the ward into The Prism Vault. The character finished with discovered [\"171:north\",\"180:east\"], light true, and the prism keeper and prism heart in room 181. World 181 rooms / 15 zones / 90 mobiles / 214 objects.",
+      "authority": "local /tmp/arcanum-live.mjs; tools/gate.mjs; 2026-11-23"
     }
   ]
 }

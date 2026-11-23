@@ -116,7 +116,7 @@ the zone's mobiles.
 | a red company axe | mainhand | damage 6, Rage | Red 3 | 65 |
 | red company boots | feet | armour 2 | Red 6 | 55 |
 
-The world now has 194 objects.
+The world now has 214 objects.
 
 The second gear pass fills the thinner slots:
 

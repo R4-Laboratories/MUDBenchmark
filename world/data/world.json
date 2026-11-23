@@ -631,10 +631,11 @@
     },
     "34": {
       "name": "The Mages' Guild",
-      "text": "A round hall of dark stone and colder light. Shelves of bound books climb to a ceiling lost in shadow; a brass orrery turns without a hand; the stair back to the Atrium waits at the edge of the circle.",
+      "text": "The Mages' Guild fills a round chamber beneath an open oculus. A brass orrery turns without a hand, shelves of scrolls line the walls, and the archmage waits beside a stair that climbs into the tower. The air smells of ink, dust and a storm that has not broken.",
       "safe": true,
       "exits": {
-        "down": 1
+        "down": 1,
+        "up": 162
       },
       "details": {
         "orrery": "The brass rings turn through a sky that is not the one above the Atrium. One ring is missing its moon.",
@@ -2949,6 +2950,367 @@
       ],
       "dark": true,
       "darkText": "The tower cell is dark. Chains shift somewhere close, and a thin slit of grey light hangs above."
+    },
+    "162": {
+      "name": "The Spiral Stair",
+      "text": "A narrow stair winds up through the Arcanum, its walls set with lamps that burn without smoke. The steps are worn in the centre, and the air grows colder with every turn. A landing opens above; the guild hall falls away below.",
+      "exits": {
+        "down": 34,
+        "up": 163
+      },
+      "details": {
+        "lamps": "The lamps are cold glass globes. A pale light moves inside them without heat.",
+        "steps": "The steps are worn into shallow cups. A chalk mark counts the turns.",
+        "walls": "The walls are set with small stones that catch the light like eyes."
+      },
+      "ambient": [
+        "The lamps dim and brighten in a slow rhythm.",
+        "A draft climbs the stair, smelling of cold metal."
+      ]
+    },
+    "163": {
+      "name": "The Hall of Names",
+      "text": "Plaques of black stone line the hall, each cut with the name of a mage and a date. A brass orrery turns at the centre of the floor, and doors open north and south. The air is very still, as if the room is listening.",
+      "exits": {
+        "down": 162,
+        "up": 164,
+        "north": 165,
+        "south": 166
+      },
+      "details": {
+        "plaques": "The names are old. The newest plaque is blank except for a cut line.",
+        "orrery": "The orrery turns without a mechanism. The planets are small and very cold.",
+        "floor": "The floor is a mosaic of a sky. One star is missing."
+      },
+      "ambient": [
+        "A plaque ticks as it warms.",
+        "The orrery completes a turn and begins again."
+      ]
+    },
+    "164": {
+      "name": "The Lecture Hall",
+      "text": "Tiered benches face a chalk board covered in half-erased diagrams. A lectern stands at the centre, and the air smells of chalk and cold stone. Doors lead up to the laboratories, east to the observatory and west to the star stair.",
+      "exits": {
+        "down": 163,
+        "up": 167,
+        "east": 168,
+        "west": 169
+      },
+      "details": {
+        "board": "The diagrams show a circle within a circle. The last line is smudged.",
+        "benches": "The benches are empty. One has a chalk mark in the shape of a hand.",
+        "lectern": "The lectern is plain wood. A dry quill lies across it."
+      },
+      "ambient": [
+        "Chalk dust falls from the board.",
+        "A bench creaks under no weight."
+      ]
+    },
+    "165": {
+      "name": "The Scriptorium",
+      "text": "Slanted desks fill the scriptorium, each with a candle stub and a dry inkpot. Scrolls hang from racks along the wall, and a narrow door east leads to the prism chamber. The room smells of paper, wax and old ink.",
+      "exits": {
+        "south": 163,
+        "east": 170
+      },
+      "details": {
+        "desks": "The desks are scored with careful lines. One holds a half-finished scroll.",
+        "racks": "The racks are full of scrolls. Most are copies of the same warning.",
+        "ink": "The inkpots are dry. One still holds a skin of black ink."
+      },
+      "ambient": [
+        "A scroll edge curls in a draft.",
+        "The candle stubs gutter together."
+      ]
+    },
+    "166": {
+      "name": "The Lower Laboratory",
+      "text": "Benches of glass and copper fill the lower laboratory, and a cold furnace squats against the wall. Jars of reagents line the shelves, and a door east leads to the rune gallery. The air is sharp and faintly bitter.",
+      "exits": {
+        "north": 163,
+        "east": 171
+      },
+      "details": {
+        "furnace": "The furnace is cold. A thin residue of silver clings to its mouth.",
+        "jars": "The jars are labelled in a careful hand. One is cracked and empty.",
+        "benches": "The benches are stained with rings. A pair of tongs lies in the dust."
+      },
+      "ambient": [
+        "A jar ticks as it cools.",
+        "The bitter smell catches the back of the throat."
+      ]
+    },
+    "167": {
+      "name": "The Upper Laboratory",
+      "text": "The upper laboratory is a round room of copper coils and glass vessels. A furnace glows faintly at the centre, and a stone golem stands beside it with its hands in the coals. Doors lead down to the lecture hall, up to the sealed vault and east to the bellows.",
+      "exits": {
+        "down": 164,
+        "up": 172,
+        "east": 173
+      },
+      "details": {
+        "furnace": "The furnace is banked but alive. The coals are white at the heart.",
+        "coils": "The copper coils hum. A thin blue spark crawls along one.",
+        "golem": "The golem is jointed stone. Its hands are buried in the coals."
+      },
+      "ambient": [
+        "The coils hum a note too low to hear.",
+        "A coal shifts in the furnace."
+      ]
+    },
+    "168": {
+      "name": "The Observatory",
+      "text": "A great brass telescope fills the observatory, pointed at a slit in the roof. Star charts cover the walls, and a desk holds a lamp and a half-finished calculation. A stair climbs to the aviary; the lecture hall is west.",
+      "exits": {
+        "west": 164,
+        "up": 174
+      },
+      "details": {
+        "telescope": "The telescope is tall and cold. The lens is clear and very deep.",
+        "charts": "The charts show a star that is not in the sky. It is circled in red.",
+        "desk": "The desk is covered in calculations. The last line is unfinished."
+      },
+      "ambient": [
+        "The telescope ticks as it tracks.",
+        "A star chart lifts at the corner."
+      ]
+    },
+    "169": {
+      "name": "The Star Stair",
+      "text": "The star stair climbs through a shaft of black stone, its steps lit only by narrow openings in the wall. The air is cold and thin, and the stair turns so tightly that the wall is always at your shoulder. The mirror room waits above.",
+      "exits": {
+        "east": 164,
+        "up": 175
+      },
+      "details": {
+        "slits": "The slits show slices of night sky. The stars do not move.",
+        "steps": "The steps are narrow and worn. A fine frost covers the edges.",
+        "wall": "The wall is cold and smooth. A chalk star is drawn at eye height."
+      },
+      "ambient": [
+        "A draft climbs the shaft.",
+        "Frost crackles underfoot."
+      ],
+      "dark": true,
+      "darkText": "The star stair is dark. Cold air climbs past you, and the steps are edged with frost. A thin slit of sky shows somewhere above."
+    },
+    "170": {
+      "name": "The Prism Chamber",
+      "text": "A prism of pale glass stands on a stone plinth at the centre of the chamber, turning slowly in a light that has no source. The walls are faceted, and the floor is a mosaic of a white star. A door north leads to the archivist's study; the scriptorium is west.",
+      "exits": {
+        "west": 165,
+        "north": 176
+      },
+      "details": {
+        "prism": "The prism is cold and clear. A white light turns inside it.",
+        "plinth": "The plinth is plain stone. The prism has worn a shallow cup in the top.",
+        "mosaic": "The star has eight points. One point is missing."
+      },
+      "ambient": [
+        "The prism turns a fraction and stops.",
+        "A white reflection crosses the wall."
+      ]
+    },
+    "171": {
+      "name": "The Rune Gallery",
+      "text": "Runes cover the gallery walls in tight, interlocking lines. A low stone table holds a bowl of black sand, and the north wall is smooth except for a single carved eye. The runes are cold to the touch and very sharp.",
+      "exits": {
+        "west": 166
+      },
+      "details": {
+        "runes": "The runes are cut deep. They shift when seen from the corner of the eye.",
+        "table": "The table is stained black. The sand in the bowl is warm.",
+        "eye": "The carved eye is closed. A thin line of dust runs from its corner."
+      },
+      "ambient": [
+        "The runes click softly.",
+        "The black sand stirs without wind."
+      ],
+      "secretExits": {
+        "north": 177
+      }
+    },
+    "172": {
+      "name": "The Sealed Vault",
+      "text": "The sealed vault is a windowless room of black stone. A stone chest sits at the centre, its lid bound with silver wire, and the walls are covered in older seals. The air is dry and still, and the only door returns down to the laboratory.",
+      "exits": {
+        "down": 167,
+        "north": 178
+      },
+      "details": {
+        "chest": "The chest is stone, bound with silver wire. The wire is unbroken.",
+        "seals": "The seals are older than the guild. One has been scratched away.",
+        "walls": "The walls are black and warm. A faint light moves behind them."
+      },
+      "ambient": [
+        "The silver wire hums.",
+        "A seal cracks somewhere in the wall."
+      ]
+    },
+    "173": {
+      "name": "The Bellows",
+      "text": "A great leather bellows fills the room, its mouth joined to a copper pipe that climbs through the ceiling. A stone golem works the handle in slow, patient strokes, and the air is hot and dry. The upper laboratory is west; the orrery waits above.",
+      "exits": {
+        "west": 167,
+        "up": 179
+      },
+      "details": {
+        "bellows": "The bellows are cracked but whole. The leather is dark with soot.",
+        "pipe": "The pipe is hot. A thin whistle escapes at a joint.",
+        "golem": "The golem's hands are worn smooth. It does not look up."
+      },
+      "ambient": [
+        "The bellows sighs and fills.",
+        "The pipe ticks as it heats."
+      ]
+    },
+    "174": {
+      "name": "The Aviary",
+      "text": "The aviary is open to the sky through a broken dome. Owls nest in the rafters, their eyes catching the light, and the floor is white with droppings and old feathers. A stair descends to the observatory; the mirror room is west.",
+      "exits": {
+        "down": 168,
+        "west": 175
+      },
+      "details": {
+        "owls": "The owls are pale and silent. One turns its head without moving its body.",
+        "dome": "The dome is cracked. A night sky shows through the gap.",
+        "feathers": "The feathers are white and grey. One is longer than a hand."
+      },
+      "ambient": [
+        "An owl shifts on the beam.",
+        "A feather turns slowly to the floor."
+      ]
+    },
+    "175": {
+      "name": "The Mirror Room",
+      "text": "A tall mirror of black glass fills the far wall, its surface rippling like water. The room is bare except for a stone bench and a mark on the floor where something has been dragged. A stair descends to the star stair; the aviary is east, and the star well waits above.",
+      "exits": {
+        "down": 169,
+        "east": 174,
+        "up": 180
+      },
+      "details": {
+        "mirror": "The mirror reflects the room, but the reflection is a half-step late.",
+        "bench": "The bench is cold. A handprint is burned into the stone.",
+        "mark": "The mark is dark and old. It runs from the mirror to the stair."
+      },
+      "ambient": [
+        "The mirror ripples.",
+        "A reflection moves at the edge of sight."
+      ]
+    },
+    "176": {
+      "name": "The Archivist's Study",
+      "text": "The study is crowded with shelves, boxes and a desk buried under paper. A narrow stair climbs to the prism vault, and the prism chamber is south. The archivist's chair is turned away from the door, and a cold cup sits beside the lamp.",
+      "exits": {
+        "south": 170,
+        "up": 181
+      },
+      "details": {
+        "desk": "The desk is covered with letters. One is sealed with a red hand.",
+        "shelves": "The shelves hold boxes of index cards, each tied with black thread.",
+        "chair": "The chair is turned to the wall. It is warm."
+      },
+      "ambient": [
+        "A page turns on the desk.",
+        "The cold cup rings softly against the wood."
+      ]
+    },
+    "177": {
+      "name": "The Cold Library",
+      "text": "The cold library is a narrow room of frosted shelves. Books stand in blocks of ice, their titles blurred, and the air is so cold that breath hangs. The rune gallery is south; the high walk east.",
+      "exits": {
+        "south": 171,
+        "east": 178
+      },
+      "details": {
+        "shelves": "The books are frozen shut. One cover is clear enough to read: 'On the Sealed Eye'.",
+        "ice": "The ice is clear and blue. A dark shape is frozen at the centre of one block.",
+        "air": "The air is sharp and still. Frost grows on every edge."
+      },
+      "ambient": [
+        "Ice creaks in the shelves.",
+        "A frozen page turns with a sound like a knife."
+      ],
+      "dark": true,
+      "darkText": "The cold library is dark. Frost creaks around you, and the air is sharp enough to cut."
+    },
+    "178": {
+      "name": "The High Walk",
+      "text": "The high walk runs around the tower's crown, open to the sky on one side and walled on the other. Gargoyles crouch at the corners, their stone wings spread, and the valley lies far below. The sealed vault is south, the cold library west and the orrery east.",
+      "exits": {
+        "south": 172,
+        "west": 177,
+        "east": 179
+      },
+      "details": {
+        "gargoyles": "The gargoyles are weathered but whole. One has a fresh chip at the jaw.",
+        "valley": "The valley is grey and green. The keep is a small dark shape at the road.",
+        "wall": "The wall is carved with a long list of names. The last is unfinished."
+      },
+      "ambient": [
+        "Wind pulls at the walk.",
+        "A gargoyle's wing creaks."
+      ]
+    },
+    "179": {
+      "name": "The Orrery",
+      "text": "A great orrery fills the room, its brass rings turning around a cold white sun. The floor is a map of the sky, and the air smells of oil and old metal. The bellows are below, the high walk west and the star well north.",
+      "exits": {
+        "down": 173,
+        "west": 178,
+        "north": 180
+      },
+      "details": {
+        "orrery": "The orrery is enormous. Its planets are small and very cold.",
+        "sun": "The white sun is glass. A crack runs through it.",
+        "floor": "The floor is a sky map. One star is missing."
+      },
+      "ambient": [
+        "The orrery turns with a soft click.",
+        "A brass ring hums."
+      ]
+    },
+    "180": {
+      "name": "The Star Well",
+      "text": "The star well is a round shaft open to the night sky, its walls set with cold lamps. A narrow walk circles the well, and the water at the bottom reflects stars that are not overhead. The mirror room is below, the orrery south, and a warded gap opens east.",
+      "exits": {
+        "down": 175,
+        "south": 179
+      },
+      "details": {
+        "well": "The well is deep. The water reflects a sky that is not the one above.",
+        "lamps": "The lamps are cold. Their light falls upward.",
+        "walk": "The walk is narrow and wet. The stone is furred with frost."
+      },
+      "ambient": [
+        "A star moves in the water.",
+        "The lamps dim together."
+      ],
+      "secretExits": {
+        "east": 181
+      },
+      "dark": true,
+      "darkText": "The star well is black. Cold lamps glow somewhere above, and the water below reflects a sky that is not there."
+    },
+    "181": {
+      "name": "The Prism Vault",
+      "text": "The prism vault is a high room of black glass and silver wire. A white prism hangs at the centre, turning slowly, and shelves of sealed boxes line the walls. A stair descends to the archivist's study; the star well is west.",
+      "exits": {
+        "down": 176,
+        "west": 180
+      },
+      "details": {
+        "prism": "The prism is white and perfect. Its light falls on every surface at once.",
+        "boxes": "The boxes are sealed with silver wire. One has been opened and left empty.",
+        "walls": "The walls are black glass. Your reflection is very small."
+      },
+      "ambient": [
+        "The prism turns and the light shifts.",
+        "A silver wire hums."
+      ],
+      "dark": true,
+      "darkText": "The prism vault is dark except for a white point of light turning at the centre. Silver wires hum in the black glass."
     }
   },
   "task": {
@@ -4709,6 +5071,254 @@
         "The captain keeps the sealed room's coin. He does not know what it is.",
         "The ossuary wall is cracked. The crack is wider than it looks."
       ]
+    },
+    {
+      "id": "arcanum-apprentice",
+      "name": "a guild apprentice",
+      "room": 163,
+      "home": 163,
+      "zone": "arcanum",
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "level": 3,
+      "hp": 12,
+      "maxHp": 12,
+      "damage": 0,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 0,
+      "loot": [],
+      "description": "A young apprentice stands beside the orrery with a book held to their chest.",
+      "examine": "The apprentice's sleeves are chalk-dusted. They watch the turning planets.",
+      "dialogue": [
+        "The hall remembers every mage who passed through it. The newest plaque is waiting.",
+        "The rune gallery is east of the laboratory. You need the detect spell to read the wall."
+      ]
+    },
+    {
+      "id": "arcanum-lecturer",
+      "name": "the grey lecturer",
+      "room": 164,
+      "home": 164,
+      "zone": "arcanum",
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "level": 4,
+      "hp": 16,
+      "maxHp": 16,
+      "damage": 0,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 0,
+      "loot": [],
+      "description": "A thin lecturer stands at the board with a stick of chalk.",
+      "examine": "The lecturer's hands are white with chalk. The board is covered in circles.",
+      "dialogue": [
+        "A ward is a promise made visible. Shield is the simplest promise.",
+        "The upper laboratory is hot. The golem there does not distinguish student from fuel."
+      ]
+    },
+    {
+      "id": "arcanum-golem",
+      "name": "a furnace golem",
+      "room": 167,
+      "home": 167,
+      "zone": "arcanum",
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "level": 5,
+      "hp": 30,
+      "maxHp": 30,
+      "damage": 5,
+      "armor": 3,
+      "aggression": 60,
+      "xp": 90,
+      "loot": [],
+      "description": "A stone golem stands at the furnace, its hands buried in the coals.",
+      "examine": "The golem's joints are seamed with copper. Heat shows through the cracks.",
+      "dialogue": []
+    },
+    {
+      "id": "arcanum-astronomer",
+      "name": "the star astronomer",
+      "room": 168,
+      "home": 168,
+      "zone": "arcanum",
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "level": 4,
+      "hp": 14,
+      "maxHp": 14,
+      "damage": 0,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 0,
+      "loot": [],
+      "description": "A small figure in a dark coat stands at the telescope, one eye closed.",
+      "examine": "The astronomer's hands are stained with ink. A star chart is tucked under one arm.",
+      "dialogue": [
+        "There is a star in the charts that is not in the sky. It is above the keep.",
+        "The aviary is above. The owls do not like the mirror room."
+      ]
+    },
+    {
+      "id": "arcanum-bellows-golem",
+      "name": "the bellows golem",
+      "room": 173,
+      "home": 173,
+      "zone": "arcanum",
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "level": 5,
+      "hp": 26,
+      "maxHp": 26,
+      "damage": 4,
+      "armor": 2,
+      "aggression": 50,
+      "xp": 70,
+      "loot": [],
+      "description": "A stone golem works the great bellows with slow, patient strokes.",
+      "examine": "The golem's hands are worn smooth. It does not look up.",
+      "dialogue": []
+    },
+    {
+      "id": "arcanum-owl",
+      "name": "a pale owl",
+      "room": 174,
+      "home": 174,
+      "zone": "arcanum",
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "level": 3,
+      "hp": 8,
+      "maxHp": 8,
+      "damage": 0,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 0,
+      "loot": [],
+      "description": "A pale owl watches from the broken dome, its eyes like small moons.",
+      "examine": "The owl's feathers are white and grey. It turns its head without moving its body.",
+      "dialogue": [
+        "The owl says: the mirror is a door that forgets which side it is on.",
+        "The owl says: the star well reflects a sky that is not yours."
+      ]
+    },
+    {
+      "id": "arcanum-mirror-wraith",
+      "name": "a mirror wraith",
+      "room": 175,
+      "home": 175,
+      "zone": "arcanum",
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "level": 5,
+      "hp": 24,
+      "maxHp": 24,
+      "damage": 4,
+      "armor": 1,
+      "aggression": 60,
+      "xp": 70,
+      "loot": [],
+      "description": "A tall shape stands in the black mirror, made of reflected light and old anger.",
+      "examine": "It has your face, and it is not your face.",
+      "dialogue": []
+    },
+    {
+      "id": "arcanum-archivist",
+      "name": "the archivist",
+      "room": 176,
+      "home": 176,
+      "zone": "arcanum",
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "level": 4,
+      "hp": 18,
+      "maxHp": 18,
+      "damage": 0,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 0,
+      "loot": [],
+      "description": "A narrow figure in a grey coat stands behind the desk, sorting letters.",
+      "examine": "The archivist's fingers are ink-stained. A sealed letter lies under one hand.",
+      "dialogue": [
+        "The prism vault is above. The stair is behind me; the ward in the star well is the other way.",
+        "The sealed eye in the rune gallery opens only to detect. The cold library is behind it."
+      ]
+    },
+    {
+      "id": "arcanum-gargoyle",
+      "name": "a stone gargoyle",
+      "room": 178,
+      "home": 178,
+      "zone": "arcanum",
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "level": 5,
+      "hp": 28,
+      "maxHp": 28,
+      "damage": 5,
+      "armor": 3,
+      "aggression": 60,
+      "xp": 80,
+      "loot": [],
+      "description": "A stone gargoyle crouches at the corner of the walk, wings half-spread.",
+      "examine": "The gargoyle's jaw is chipped. Its eyes are cut deep and very dark.",
+      "dialogue": []
+    },
+    {
+      "id": "arcanum-star-wisp",
+      "name": "a star wisp",
+      "room": 180,
+      "home": 180,
+      "zone": "arcanum",
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "level": 4,
+      "hp": 18,
+      "maxHp": 18,
+      "damage": 4,
+      "armor": 0,
+      "aggression": 50,
+      "xp": 40,
+      "loot": [],
+      "description": "A cold point of light drifts above the star well, trailing a line of frost.",
+      "examine": "The wisp is a small star with no heat. It circles the well and returns.",
+      "dialogue": []
+    },
+    {
+      "id": "arcanum-prism-keeper",
+      "name": "the prism keeper",
+      "room": 181,
+      "home": 181,
+      "zone": "arcanum",
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "level": 7,
+      "hp": 50,
+      "maxHp": 50,
+      "damage": 6,
+      "armor": 3,
+      "aggression": 80,
+      "xp": 200,
+      "loot": [
+        "arcanum-prism-heart"
+      ],
+      "description": "A tall figure in white stands beneath the prism, face hidden in reflected light.",
+      "examine": "The keeper's robe is seamed with silver. The light does not touch their face.",
+      "dialogue": []
     }
   ],
   "zones": [
@@ -4781,7 +5391,27 @@
       "id": "arcanum",
       "name": "The Arcanum",
       "rooms": [
-        34
+        34,
+        162,
+        163,
+        164,
+        165,
+        166,
+        167,
+        168,
+        169,
+        170,
+        171,
+        172,
+        173,
+        174,
+        175,
+        176,
+        177,
+        178,
+        179,
+        180,
+        181
       ]
     },
     {
@@ -7491,6 +8121,228 @@
       "readable": true,
       "value": 6,
       "examine": "A scrap of paper covered in a thin, careful hand. It names the sealed room and the coin."
+    },
+    {
+      "id": "arcanum-name-plaque",
+      "name": "a black stone plaque",
+      "room": 163,
+      "flags": [
+        "fixed",
+        "readable"
+      ],
+      "readable": true,
+      "examine": "A plaque of black stone. The newest name is cut but not filled with silver."
+    },
+    {
+      "id": "arcanum-lecture-notes",
+      "name": "a sheaf of lecture notes",
+      "room": 164,
+      "flags": [
+        "takeable",
+        "readable"
+      ],
+      "readable": true,
+      "value": 8,
+      "examine": "Notes on wards and circles. The last page is a warning about the furnace golem."
+    },
+    {
+      "id": "arcanum-scroll-spark",
+      "name": "a scroll of spark",
+      "room": 165,
+      "flags": [
+        "takeable",
+        "readable"
+      ],
+      "readable": true,
+      "spell": "spark",
+      "value": 12,
+      "examine": "A short attack formula. The margins are full of cautions."
+    },
+    {
+      "id": "arcanum-quill",
+      "name": "a silver quill",
+      "room": 165,
+      "flags": [
+        "takeable"
+      ],
+      "value": 10,
+      "examine": "A silver quill with a black nib. It is cold to the touch."
+    },
+    {
+      "id": "arcanum-reagent",
+      "name": "a jar of silver reagent",
+      "room": 166,
+      "flags": [
+        "takeable"
+      ],
+      "value": 12,
+      "examine": "A jar of silver powder. It moves when the jar is still."
+    },
+    {
+      "id": "arcanum-crystal",
+      "name": "a laboratory crystal",
+      "room": 167,
+      "flags": [
+        "takeable"
+      ],
+      "value": 50,
+      "examine": "A crystal of blue glass, warm at the centre. A spark moves inside it."
+    },
+    {
+      "id": "arcanum-star-chart",
+      "name": "a star chart",
+      "room": 168,
+      "flags": [
+        "takeable",
+        "readable"
+      ],
+      "readable": true,
+      "value": 35,
+      "examine": "A chart of the sky over the keep. One star is circled in red."
+    },
+    {
+      "id": "arcanum-prism-shard",
+      "name": "a prism shard",
+      "room": 170,
+      "flags": [
+        "takeable"
+      ],
+      "value": 60,
+      "examine": "A shard of pale glass. A white light moves inside it."
+    },
+    {
+      "id": "arcanum-runes",
+      "name": "the rune wall",
+      "room": 171,
+      "flags": [
+        "fixed",
+        "readable"
+      ],
+      "readable": true,
+      "examine": "The runes are cut deep. The carved eye in the north wall is closed."
+    },
+    {
+      "id": "arcanum-seal-chest",
+      "name": "a sealed stone chest",
+      "room": 172,
+      "flags": [
+        "fixed",
+        "container"
+      ],
+      "capacity": 2,
+      "open": false,
+      "openAtStart": false,
+      "examine": "A stone chest bound with silver wire. The wire is unbroken."
+    },
+    {
+      "id": "arcanum-seal",
+      "name": "a sealed guild seal",
+      "inside": "arcanum-seal-chest",
+      "flags": [
+        "takeable"
+      ],
+      "value": 40,
+      "examine": "A black stone seal stamped with a closed eye. It is warm."
+    },
+    {
+      "id": "arcanum-star-glass",
+      "name": "a disc of star glass",
+      "room": 178,
+      "flags": [
+        "takeable"
+      ],
+      "value": 20,
+      "examine": "A disc of dark glass with a fixed star at the centre."
+    },
+    {
+      "id": "arcanum-orrery",
+      "name": "the great orrery",
+      "room": 179,
+      "flags": [
+        "fixed",
+        "readable"
+      ],
+      "readable": true,
+      "examine": "A brass orrery turning around a cold white sun. The sun has a crack."
+    },
+    {
+      "id": "arcanum-mirror",
+      "name": "the black mirror",
+      "room": 175,
+      "flags": [
+        "fixed"
+      ],
+      "examine": "A tall mirror of black glass. Your reflection is a half-step late."
+    },
+    {
+      "id": "arcanum-mirror-shard",
+      "name": "a mirror shard",
+      "room": 175,
+      "flags": [
+        "takeable"
+      ],
+      "value": 30,
+      "examine": "A shard of black glass. Your reflection is missing."
+    },
+    {
+      "id": "arcanum-study-chest",
+      "name": "a study chest",
+      "room": 176,
+      "flags": [
+        "fixed",
+        "container"
+      ],
+      "capacity": 2,
+      "open": false,
+      "openAtStart": false,
+      "examine": "A small chest of dark wood, bound with silver. The lock is open."
+    },
+    {
+      "id": "arcanum-codex",
+      "name": "a sealed codex",
+      "inside": "arcanum-study-chest",
+      "flags": [
+        "takeable",
+        "readable"
+      ],
+      "readable": true,
+      "value": 55,
+      "examine": "A codex bound in black leather. The clasp is a closed eye."
+    },
+    {
+      "id": "arcanum-cold-book",
+      "name": "a frozen book",
+      "room": 177,
+      "flags": [
+        "takeable",
+        "readable"
+      ],
+      "readable": true,
+      "value": 25,
+      "examine": "A book frozen in a block of clear ice. The title is 'On the Sealed Eye'."
+    },
+    {
+      "id": "arcanum-prism-heart",
+      "name": "the prism heart",
+      "room": 181,
+      "flags": [
+        "takeable"
+      ],
+      "value": 100,
+      "examine": "A white prism the size of a fist. Its light falls on every surface at once."
+    },
+    {
+      "id": "arcanum-star-water",
+      "name": "a flask of star water",
+      "room": 180,
+      "flags": [
+        "takeable",
+        "food"
+      ],
+      "bites": 1,
+      "heal": 6,
+      "value": 18,
+      "examine": "A flask of cold water with a fixed star at the bottom."
     }
   ],
   "climate": {

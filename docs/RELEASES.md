@@ -467,6 +467,15 @@ Rehearsed 2026-11-16:
   Warden `track`/`seek` scout skill, the library cabinet and star chart, the
   sealed guardian and the 100-XP-per-reset reliquary cap. World 161 rooms / 15
   zones / 20 quests / 79 mobiles / 194 objects (MB-267/268);
+- v0.91.49 (The Arcanum) opens the Mages' Guild tower as 21 rooms: spiral stair,
+  hall of names, lecture hall, scriptorium, lower/upper laboratories, observatory,
+  star stair, prism chamber, rune gallery, sealed vault, bellows, aviary, mirror
+  room, archivist's study, cold library, high walk, orrery, star well and prism
+  vault. `read runes` needs detect; `pass ward` needs shield; four rooms are
+  dark and need light. Adds the prism keeper, golems, wraith, gargoyle, owls and
+  guild lore, with the prism heart, sealed codex, guild seal and star water.
+  World 181 rooms / 15 zones / 20 quests / 90 mobiles / 214 objects; no new
+  quests (MB-270/271);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

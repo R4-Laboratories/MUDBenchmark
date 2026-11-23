@@ -80,7 +80,8 @@ experience.
 
 The first slice is now **45 rooms**: gate/bailey, upper floor, library and map
 room, servants' wing, crypt and sealed room, gate roof, armory, smithy, well,
-cistern, kennel and hayloft. The next content step is not more rooms here but
-another deep site — the working mine, the shipwreck or the monastery — and
-folding the tiny one-to-five-room zones into larger places rather than
-multiplying zone labels.
+cistern, kennel and hayloft. The Mages' tower is now the second deep guild
+site (`docs/ARCANUM.md`, 21 rooms); the next content step is not more rooms in
+either place but another site — the working mine, the shipwreck or the
+monastery — and folding the tiny one-to-five-room zones into larger places
+rather than multiplying zone labels.
