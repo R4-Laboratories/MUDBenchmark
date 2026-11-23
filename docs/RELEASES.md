@@ -461,6 +461,12 @@ Rehearsed 2026-11-16:
   guards and an optional level-6 captain, and a chapel reliquary that consumes
   treasure for experience. World 131 rooms / 15 zones / 20 quests / 68 mobiles
   / 165 objects (MB-264/265);
+- v0.91.48 (Grey Keep fill) extends the keep to 45 rooms: upper gallery and
+  chambers, library and map room, servants' wing, crypt/ossuary/sealed room,
+  gate roof, armory, smithy, well, cistern, kennel and hayloft. It adds the
+  Warden `track`/`seek` scout skill, the library cabinet and star chart, the
+  sealed guardian and the 100-XP-per-reset reliquary cap. World 161 rooms / 15
+  zones / 20 quests / 79 mobiles / 194 objects (MB-267/268);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

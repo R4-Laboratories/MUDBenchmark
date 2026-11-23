@@ -810,6 +810,16 @@
         "none": "You are not carrying %s.",
         "line": "The reliquary accepts %o."
       }
+    },
+    "track": {
+      "aliases": [
+        "seek"
+      ],
+      "argument": "target",
+      "messages": {
+        "missing": "Track what?",
+        "none": "You find no trail for %s."
+      }
     }
   }
 }

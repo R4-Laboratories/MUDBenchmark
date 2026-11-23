@@ -116,7 +116,7 @@ the zone's mobiles.
 | a red company axe | mainhand | damage 6, Rage | Red 3 | 65 |
 | red company boots | feet | armour 2 | Red 6 | 55 |
 
-The world now has 165 objects.
+The world now has 194 objects.
 
 The second gear pass fills the thinner slots:
 
@@ -157,8 +157,7 @@ keeps any change because the selection is greedy, not exact.
 
 The Chapel of Ash in the Grey Keep has a pale reliquary. `offer <treasure>` (or
 `sacrifice <treasure>`) consumes a carried non-coin item worth at least 5 and
-grants `floor(value / 2)` experience. Gold is not accepted, and the item is
-gone until the two-hour reset restores the world's treasure. It is a choice
+grants `floor(value / 2)` experience, capped at 100 XP per two-hour reset. Gold is not accepted, and the item is gone until the reset restores the world's treasure. It is a choice
 between selling for coins, keeping a set piece, or turning a find into XP.
 
 ## What is not here
