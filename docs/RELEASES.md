@@ -448,6 +448,9 @@ Rehearsed 2026-11-16:
   persist and equipment returns home, and tells the player on death/logout
   that gold is kept and equipment stays behind; the tutorial states the reset
   rule (MB-254/255);
+- v0.91.45 (combat HUD) adds current enemies with name and HP to `#state`, a
+  combat strip in the live HUD, and a Battle quick action; the training dummy
+  shows `999/999 HP` without typing `battle` (MB-257/258);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);
