@@ -62,6 +62,9 @@ Fixes:
 - Buying, training and forge upgrades now consume the selected coins. The
   audit found the payment left on the shop floor, where the buyer could pick
   it back up; the Gate tests now require the coins to be gone.
+- `consider <target>` / `con` reads a target's level, HP, damage and armour and
+  gives a harmless/fair/dangerous read, so the first boar or wolf is a choice
+  rather than a surprise.
 
 After the fix, the same loop reaches 20 coins from the first two quests, buys
 the 18-coin short sword, and leaves no payment behind.

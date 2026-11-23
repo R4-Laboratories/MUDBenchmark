@@ -1605,6 +1605,12 @@
       "level": "some-true",
       "statement": "Production v0.91.46 serves consider/con. The deployed server has the consider branch and the harmless read; the deployed verbs.json registers consider with con as an alias; the live browser audit at the Training Yard returned 'a training dummy \u2014 999/999 hp, damage 0, armour 0. It is harmless.' while the combat HUD showed the same dummy. The command reports level (players), HP/max HP, damage and armour, and reads harmless/fair/dangerous from HP, damage and armour against the actor's gear. World 116 rooms, 14 zones, 20 quests, 57 mobiles and 145 objects. Main Gate 45136298994 green, publish 45137367335.",
       "authority": "GitHub PR #62 merge 09cf0b0 2026-11-23; main Gate 45136298994; publish 45137367335; release v0.91.46; wick deploy output, artifact server.mjs/verbs.json and health; local headless-Chrome audit"
+    },
+    {
+      "id": "MB-263",
+      "level": "some-true",
+      "statement": "The v0.91.46 first-hour PvE sample used tools/pve-session.mjs: fresh isolated server per match, enemy pinned, level-1 character with the free practice sword/shield, random world tick, current pacing boar 14 HP / 3 damage. Boar: 20/20 wins, 7.3 average rounds, 13.05/20 average HP. Wolf: 20/20, 9.3 rounds, 11.8/20 HP. The deterministic unarmed novice/boar band is 58.5%; the free Training Yard gear makes the first encounters safe, and consider reads them. No balance value changed; a human/asymmetric sample remains the next check.",
+      "authority": "local tools/pve-session.mjs 20-match boar and wolf samples; 2026-11-23"
     }
   ]
 }

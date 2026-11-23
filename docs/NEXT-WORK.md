@@ -1,6 +1,6 @@
 # Next work
 
-Baseline: **v0.91.45**. The world has 116 rooms, 14 zones, 20 quests, 57 mobiles
+Baseline: **v0.91.46**. The world has 116 rooms, 14 zones, 20 quests, 57 mobiles
 and 145 objects. R4 memory, command grounding, scorecards
 and the public stats surface are live; signups are open and the Gemini demo is
 disabled and unconfigured.
@@ -75,6 +75,8 @@ memory or prompt system.
 | v0.91.43 | Persistent gold across logout, death and reset; equipment reset | **done** (MB-251/252) |
 | v0.91.44 | Reset countdown, warnings and gold/equipment messages | **done** (MB-254/255) |
 | v0.91.45 | Combat HUD: current enemy name/HP and Battle action | **done** (MB-257/258) |
+| v0.91.46 | `consider`/`con` target stats and danger read | **done** (MB-260/261) |
+| PvE sample | Live geared boar/wolf 20/20 each; no balance change | **done** (MB-263) |
 | backlog | Larger independent/human PvP and optional content | optional |
 
 ## What is next

@@ -451,6 +451,10 @@ Rehearsed 2026-11-16:
 - v0.91.45 (combat HUD) adds current enemies with name and HP to `#state`, a
   combat strip in the live HUD, and a Battle quick action; the training dummy
   shows `999/999 HP` without typing `battle` (MB-257/258);
+- v0.91.46 (consider) adds `consider`/`con`: target level, HP, damage and
+  armour, plus a harmless/fair/dangerous read based on HP, damage and armour;
+  the training dummy reads harmless. The tutorial points at it before the
+  first fight (MB-260/261);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

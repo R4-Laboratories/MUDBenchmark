@@ -340,6 +340,23 @@ data-driven PvP adjustment:** ember brand 6 → 7 and Red Company helm 2 → 3.
   would overcorrect. A larger human/model sample remains the next check; if
   the L5 pvp-b lean persists, inspect initiative/connection order.
 
+### Live early PvE sample (v0.91.46)
+
+`tools/pve-session.mjs` starts a fresh isolated server per match, pins the
+enemy, puts a level-1 character in the free practice gear, and attacks with a
+random world tick. The current pacing makes the boar 14 HP / 3 damage.
+
+| Enemy | Matches | Player wins | Average rounds | Average player HP |
+| --- | ---: | ---: | ---: | ---: |
+| wild boar | 20 | 20 (100%) | 7.3 | 13.05 / 20 |
+| grey wolf | 20 | 20 (100%) | 9.3 | 11.8 / 20 |
+
+The deterministic unarmed novice/boar band is 58.5%, so the first boar is a
+real risk only if the player skips the Training Yard. With the free practice
+sword and shield it is safe; the wolf costs about one more round and 1.3 more
+HP. **No balance change**: the first-hour gear and `consider` read are enough,
+and a human/asymmetric sample remains the next check.
+
 The deterministic bands remain the reference:
 
 ```
