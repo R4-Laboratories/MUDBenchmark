@@ -1581,6 +1581,12 @@
       "level": "some-true",
       "statement": "The v0.91.45 combat HUD was verified in a live browser at 1440x900: the character walked Atrium -> Market -> Gilded Rat -> Guild Hall -> Training Yard, took and wielded the practice sword, attacked the dummy, and the HUD showed \"a training dummy\" with \"999/999 HP\" and a Battle action without typing battle. The reset countdown showed at the same time. tools/a11y.mjs and tools/gate.mjs pass.",
       "authority": "local isolated headless-Chrome combat audit; tools/gate.mjs; tools/a11y.mjs; 2026-11-23"
+    },
+    {
+      "id": "MB-259",
+      "level": "some-true",
+      "statement": "Production v0.91.45 serves the combat HUD: the served page has #hud-combat, #hud-combat-name and a Battle quick action; the deployed server's #state includes enemies, and the live browser audit showed 'a training dummy' with '999/999 HP' at the Training Yard without typing battle, alongside the reset countdown. The enemies array is limited to the actor's engagements and omits dead targets. The Gate and signed-in a11y audits pass. World 116 rooms, 14 zones, 20 quests, 57 mobiles and 145 objects. Main Gate 45129311911 green, publish 45130240621.",
+      "authority": "GitHub PR #61 merge 407c1f3 2026-11-23; main Gate 45129311911; publish 45130240621; release v0.91.45; wick deploy output, served page, artifact server.mjs and health; local headless-Chrome combat audit"
     }
   ]
 }
