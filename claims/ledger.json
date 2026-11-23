@@ -1563,6 +1563,12 @@
       "level": "some-true",
       "statement": "The v0.91.44 reset clarity was verified locally: the Gate persistence test advances a 1,201-tick area pulse to 1,200 and sees the five-minute warning; the signed-in accessibility audit creates a character and sees a non-empty reset countdown at 1440x900 and 390x844 with no overflow; the full Gate and a11y audits pass. The death message now says gold is kept and equipment falls; the logout message banks coins and says equipment stays behind. The countdown is client-updated between states and shows reset due until the next state after the reset.",
       "authority": "local node tools/gate.mjs and node tools/a11y.mjs; 2026-11-23"
+    },
+    {
+      "id": "MB-256",
+      "level": "some-true",
+      "statement": "Production v0.91.44 serves reset clarity: the served game page has #hud-reset, resetDeadline and the hero reset line; the deployed world.mjs broadcasts five-minute and one-minute warnings that gold/level/XP persist and equipment returns home; death and logout messages say gold is kept/equipment stays; the tutorial states the rule. The Gate persistence test advances a 1,201-tick pulse to 1,200 and sees the five-minute warning; tools/a11y.mjs creates a character and checks the reset countdown at 1440x900 and 390x844 with no overflow. World 116 rooms, 14 zones, 20 quests, 57 mobiles and 145 objects. Main Gate 45122161300 green, publish 45123006930. The countdown is client-updated between states and shows reset due until the next state after a reset.",
+      "authority": "GitHub PR #60 merge fddd3b6 2026-11-23; main Gate 45122161300; publish 45123006930; release v0.91.44; wick deploy output, served page, artifact world.mjs and health; local tools/gate.mjs and tools/a11y.mjs"
     }
   ]
 }
