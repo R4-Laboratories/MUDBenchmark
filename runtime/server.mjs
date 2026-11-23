@@ -838,6 +838,24 @@ function selfState(actor) {
         return quest ? { id: quest.id, name: quest.name, objectives: questLines(quest, entry.progress, actor, state.objects) } : null;
       }).filter(Boolean)
     : [];
+  const enemies = [];
+  if (actor?.key) {
+    for (const engagement of state.engagements ?? []) {
+      if (engagement.attackerId !== actor.id && engagement.targetId !== actor.id) continue;
+      const otherId = engagement.attackerId === actor.id ? engagement.targetId : engagement.attackerId;
+      if (enemies.some((entry) => entry.id === otherId)) continue;
+      const other = state.actors.find((entry) => entry.id === otherId)
+        ?? state.npcs.find((entry) => entry.id === otherId);
+      if (!other || other.dead) continue;
+      enemies.push({
+        id: otherId,
+        name: other.name,
+        hp: Number.isFinite(other.hp) ? other.hp : null,
+        maxHp: Number.isFinite(other.maxHp) ? other.maxHp : null,
+        level: Number.isFinite(other.level) ? other.level : null,
+      });
+    }
+  }
   const self = actor?.key ? {
     name: actor.name,
     level: actor.level ?? 1,
@@ -878,6 +896,7 @@ function selfState(actor) {
     damage: weaponDamageOf(weaponOf(actor, state.objects)) + guildBonus(actor).damage + setBonus(actor, state.objects).damage,
     spell_power: spellPower(actor, weaponDamageOf(weaponOf(actor, state.objects))),
     effects: (actor.effects ?? []).map((effect) => ({ id: effect.id, name: effect.name, rounds: effect.rounds })),
+    enemies,
     inventory_names: state.objects.filter((object) => object.holder === actor.id && !object.worn && !object.eaten).map((object) => object.name),
     wielding: state.objects.find((object) => object.id === actor.wielding)?.name ?? null,
     worn: state.objects.filter((object) => object.holder === actor.id && object.worn).map((object) => object.name),

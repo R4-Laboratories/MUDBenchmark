@@ -1359,6 +1359,7 @@ let stream = { ok: true, why: [] };
   check(/id="mobile-nav-toggle"/.test(page) && /id="mobile-nav"/.test(page) && /body\.guest #latest/.test(page) && /min-height: 44px/.test(page), "the mobile navigation or guest status contract is missing");
   check(/id="first-steps"/.test(page) && /id="account-persistence"/.test(page) && /id="characters-close"/.test(page) && /charactersPanel\.hidden = playingCharacter/.test(page) && /createCharacterForm\.hidden = !prismAccount/.test(page), "the first-run onboarding contract is missing");
   check(/id="hud-reset"/.test(page) && /resetDeadline/.test(page), "the reset countdown is missing");
+  check(/id="hud-combat"/.test(page) && /data-quick="battle"/.test(page) && /enemies,/.test(serverText), "the combat HUD is missing");
   check(/id="ai-stream"/.test(page) && /#stream-chat/.test(page), "the AI panel has no Go live path");
   check(/gemini-demo/.test(page) && /requestDemoToken/.test(page) && /#demo-token/.test(page), "the UI has no Gemini demo path");
   check(/r4-context/.test(page) && /r4-remember/.test(page) && /requestR4Context/.test(page), "the UI has no R4 context path");
