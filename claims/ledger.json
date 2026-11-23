@@ -1527,6 +1527,12 @@
       "level": "some-true",
       "statement": "A first-hour audit on an isolated server before the change reached First Steps and A Curled Scroll with 35 XP, free practice gear and 0 coins while the smith short sword cost 18; the shop was not reachable. After the change the same loop reaches 20 coins from the first two quests, buys the short sword for 18, and leaves no payment in the smithy or inventory. The audit also found that buy/train/upgrade left paid coins in the room; the fix consumes them and the Gate reducer tests verify the coins are eaten and removed. The Tutorial now gives the Yard and Smithy routes.",
       "authority": "local isolated runtime/server.mjs first-hour audit; tools/gate.mjs reducer shop/first-steps/training/upgrade tests; 2026-11-23"
+    },
+    {
+      "id": "MB-250",
+      "level": "some-true",
+      "statement": "Production v0.91.42 serves the first-hour core-loop fix. The deployed quests.json pays First Steps 10, A Curled Scroll 10, Bread for the Shop 5 and The True Word 10 coins; First Steps includes the Training Yard visit and the tutorial gives the Yard/Smithy routes. The deployed world.mjs contains consumeCoins and uses it for buy, train and forge upgrade, so paid coins are removed instead of left in the room. The isolated first-hour audit now reaches 20 coins from the first two quests, buys the 18-coin short sword, and leaves no payment in the smithy or inventory; the Gate reducer tests cover First Steps coins and all three coin sinks. World 116 rooms, 14 zones, 20 quests, 57 mobiles and 145 objects. Main Gate 45101265305 green, publish 45102063031.",
+      "authority": "GitHub PR #58 merge 51c5008 2026-11-23; main Gate 45101265305; publish 45102063031; release v0.91.42; wick deploy output, artifact quests.json/world.mjs and health; local first-hour audit; tools/gate.mjs"
     }
   ]
 }
