@@ -1491,6 +1491,12 @@
       "level": "some-true",
       "statement": "The v0.91.40 watch replay was verified with a synthetic streamed run: seven normalized events (meta, command, decision, state, stats, highlight, text) were published, the run was stopped, GET /stream returned a summary with an id/hasReplay/archivedEvents=7 and no events array, GET /stream?run=<id> returned all seven events, an unknown id returned 404, and Chrome loaded /watch, opened the recent archive, clicked Replay decisions, stepped three events and saw the decision text and > look command. The browser test passes in about 4 s. Archives are in memory and capped at eight runs / 400 events; chat, polls and pending delayed events are not replayed.",
       "authority": "local CHROME_BIN macOS Chrome run of runtime/watch-replay.test.mjs; 2026-11-22"
+    },
+    {
+      "id": "MB-244",
+      "level": "some-true",
+      "statement": "Production v0.91.40 serves replayable watch archives: the served /watch page contains Replay decisions, function renderReplay and replay-controls, the runtime keeps the last eight completed runs with up to 400 released events, GET /stream?run=<id> serves one archive, and an unknown id returns 404. The local Chrome test published a synthetic seven-event run, verified the summary has no events, fetched all seven through the archive endpoint, loaded /watch, opened the archive, clicked Replay decisions, stepped three events and saw the decision and command. Archives are in memory and clear on restart; chat/polls and pending delayed events are not replayed. World 116 rooms, 14 zones, 20 quests, 57 mobiles and 145 objects. Main Gate 45091309002 green, publish 45092113680. docs/WATCH.md records the delay, cap and privacy rules.",
+      "authority": "GitHub PR #56 merge dda1071 2026-11-22; main Gate 45091309002; publish 45092113680; release v0.91.40; wick deploy output, /watch and /stream?run=missing; local runtime/watch-replay.test.mjs"
     }
   ]
 }
