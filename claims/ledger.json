@@ -1509,6 +1509,12 @@
       "level": "some-true",
       "statement": "The v0.91.41 durable archive was verified locally: a synthetic seven-event run was completed, the archive file held the run id and seven events, the server was stopped and restarted, GET /stream still returned the same recent run with hasReplay, GET /stream?run=<id> still returned all seven events, and Chrome opened /watch and stepped the replay after the restart. The browser test passes in about 6.4 s. Archives are capped at eight runs / 400 released events; chat, polls and pending delayed events are not replayed.",
       "authority": "local CHROME_BIN macOS Chrome run of runtime/watch-replay.test.mjs; 2026-11-22"
+    },
+    {
+      "id": "MB-247",
+      "level": "some-true",
+      "statement": "Production v0.91.41 serves durable watch replay. The deployed runtime/server.mjs contains STREAM_ARCHIVE_FILE, saveStreamArchive and loadStreamArchive; the default is stream-archive.json next to STATE_FILE, written with mode 0600 by temporary file and rename and loaded at startup. No completed run had been archived at the verification moment, so the archive file was correctly absent; the local browser test completed a synthetic run, saw the archive file with the run id and seven events, restarted the server, confirmed the restored run and events, and replayed it in Chrome in about 6.4 s. Archives remain eight runs / 400 released events; chat, polls and pending delayed events are not replayed. World 116 rooms, 14 zones, 20 quests, 57 mobiles and 145 objects. Main Gate 45095366965 green, publish 45096148409.",
+      "authority": "GitHub PR #57 merge 2d0e486 2026-11-23; main Gate 45095366965; publish 45096148409; release v0.91.41; wick deploy output, artifact server.mjs and health; local runtime/watch-replay.test.mjs"
     }
   ]
 }
