@@ -10,10 +10,10 @@ export const PROVIDERS = {
   groq: {
     label: "Groq (free key, fast)",
     base: "https://api.groq.com/openai/v1",
-    model: "llama-3.1-8b-instant",
+    model: "openai/gpt-oss-20b",
     needsKey: true,
     keyMode: "required",
-    hint: "Create a free key at console.groq.com/keys. The free tier is fast and generous (about 30 requests/minute, 14,400/day for the 8B model); the key stays in this browser and goes only to api.groq.com.",
+    hint: "Create a free key at console.groq.com/keys. The free tier is fast (about 30 requests/minute, 1,000/day for the 20B model); the key stays in this browser and goes only to api.groq.com.",
   },
   ollama: {
     label: "Ollama (local)",
@@ -53,7 +53,7 @@ export const PROVIDERS = {
     model: "llama-3.1-8b-instant",
     needsKey: false,
     keyMode: "proxy",
-    hint: "Operator-funded fast model for Prism accounts. The server holds the key and enforces a small per-account quota; no key reaches this browser.",
+    hint: "Operator-provided fast model for Prism accounts. The server runs the model or holds the key; no key reaches this browser, and a per-account quota applies.",
   },
   "gemini-demo": {
     label: "Gemini demo (Prism only)",
@@ -448,7 +448,11 @@ ${questBlock ? `${questBlock}\n` : ""}
 DIRECTOR:
 ${steering}
 ${note ? `\nNOTE: ${note}\n` : ""}
-Choose one command. You may use say, tell or global to talk; ACTIONS is a shortlist, not a cage.`;
+Choose one command. You may use say, tell or global to talk; ACTIONS is a shortlist, not a cage.
+Reply with exactly these three lines and nothing else:
+THOUGHT: one short sentence.
+REPLY: none
+COMMAND: one command.`;
   }
   return `TURN ${turn}
 ROOM:
@@ -461,7 +465,10 @@ ${questBlock ? `${questBlock}\n` : ""}
 DIRECTOR:
 ${steering}
 ${note ? `\nNOTE: ${note}\n` : ""}
-What is your next move?`;
+What is your next move? Reply with exactly these three lines:
+THOUGHT: one short sentence.
+REPLY: none
+COMMAND: one command.`;
 }
 
 // The model is asked for three labelled sections, but a local model will
@@ -488,6 +495,16 @@ export function parseBrain(text) {
     .replace(/^[`"'*>-\s]+|[`"'*.\s]+$/g, "")
     .trim();
 
+  // Small local models sometimes put the chosen action on the REPLY line and
+  // stop before COMMAND. Treat a short REPLY that starts with a legal verb as
+  // the command, then clear the reply so the director does not see it twice.
+  if (!command && out.reply) {
+    const guess = out.reply.split("\n")[0].replace(/^[`"'*>-\s]+|[`"'*.\s]+$/g, "").trim();
+    if (guess && guess.split(/\s+/).length <= 4 && VERBS.has(guess.split(/\s+/)[0]?.toLowerCase())) {
+      command = guess;
+      out.reply = "";
+    }
+  }
   if (!command) {
     for (const raw of String(text ?? "").split("\n").reverse()) {
       const guess = raw.replace(/^[`"'*>-\s]+|[`"'*.\s]+$/g, "").trim();

@@ -12,11 +12,11 @@ Open the game and choose **Start a free agent**, or use the **Agents** workspace
 The free card starts fast play with **Groq**. Create a free key at
 `console.groq.com/keys` (no card), paste it once, and the agent uses the 8B
 instant model: quick replies and a generous free tier (about 30 requests per
-minute, 14,400 per day). The key stays in this browser and goes only to
-`api.groq.com`. If the operator configured a server-side fast model, the
-**Free fast (operator)** preset appears and the agent starts with no key at all:
-the server holds the key, and the browser receives only a short-lived token and
-a per-account quota. If the browser has no Prism id yet, the free card creates
+minute, 1,000 per day). The key stays in this browser and goes only to
+`api.groq.com`. If the operator configured a local model or a server-side key,
+the **Free fast (operator)** preset appears and the agent starts with no key at
+all: the server runs or holds the model, the quotas are high enough not to cut a
+session, and the browser receives only a short-lived token. If the browser has no Prism id yet, the free card creates
 one and registers it before starting the persona. The agent gets its own
 character and plays through the same page: the left pane is its view, the
 Director chat is yours, and the Mind panel is its reasoning. **Use another
