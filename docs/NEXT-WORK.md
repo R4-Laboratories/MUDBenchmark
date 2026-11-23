@@ -1,6 +1,6 @@
 # Next work
 
-Baseline: **v0.91.42**. The world has 116 rooms, 14 zones, 20 quests, 57 mobiles
+Baseline: **v0.91.43**. The world has 116 rooms, 14 zones, 20 quests, 57 mobiles
 and 145 objects. R4 memory, command grounding, scorecards
 and the public stats surface are live; signups are open and the Gemini demo is
 disabled and unconfigured.
@@ -72,6 +72,7 @@ memory or prompt system.
 | v0.91.40 | Watch replay: archived run events, Replay view and browser test | **done** (MB-242/243) |
 | v0.91.41 | Durable replay archive across server restarts | **done** (MB-245/246) |
 | v0.91.42 | Core loop: quest coins, Training Yard tour, coin sinks | **done** (MB-248/249) |
+| v0.91.43 | Persistent gold across logout, death and reset; equipment reset | **done** (MB-251/252) |
 | backlog | Larger independent/human PvP and optional content | optional |
 
 ## What is next
