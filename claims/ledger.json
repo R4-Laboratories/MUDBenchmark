@@ -1659,6 +1659,12 @@
       "level": "some-true",
       "statement": "The 21-room Arcanum passed the Gate map, spell-gate, dark/light, treasure and reducer checks, including a reducer test that read-runes records 171:north for a character with detect. A live /tmp/arcanum-live.mjs walk from The Mages' Guild cast light, climbed to the Rune Gallery, read runes to open The Cold Library, climbed the Star Stair and Mirror Room, and passed the ward into The Prism Vault. The character finished with discovered [\"171:north\",\"180:east\"], light true, and the prism keeper and prism heart in room 181. World 181 rooms / 15 zones / 90 mobiles / 214 objects.",
       "authority": "local /tmp/arcanum-live.mjs; tools/gate.mjs; 2026-11-23"
+    },
+    {
+      "id": "MB-272",
+      "level": "some-true",
+      "statement": "Production v0.91.49 serves the 21-room Arcanum: 181 rooms, 15 zones, 20 quests, 90 mobiles and 214 objects; /world and the artifact show 21 arcanum rooms. The tower adds the spiral stair, hall of names, lecture hall, scriptorium, laboratories, observatory, star stair, prism chamber, rune gallery, sealed vault, bellows, aviary, mirror room, archivist's study, cold library, high walk, orrery, star well and prism vault. read runes needs detect and opens 171 north; pass ward needs shield and opens 180 east; rooms 169/177/180/181 are dark and need light. The prism keeper, golems, wraith, gargoyle, owls and guild NPCs are live with the prism heart, sealed codex, guild seal, star chart, prism shard and star water. Main Gate 45257289711 green, publish 45258708317.",
+      "authority": "GitHub PR #65 merge 3d19212 2026-11-23; main Gate 45257289711; publish 45258708317; release v0.91.49; wick deploy output, /world, artifact world.json and health; local /tmp/arcanum-live.mjs"
     }
   ]
 }
