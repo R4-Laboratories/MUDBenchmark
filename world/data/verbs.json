@@ -789,6 +789,16 @@
       "messages": {
         "empty": "You have not learned any facts yet."
       }
+    },
+    "consider": {
+      "aliases": [
+        "con"
+      ],
+      "argument": "target",
+      "messages": {
+        "missing": "Consider what?",
+        "none": "There is no %s here."
+      }
     }
   }
 }
