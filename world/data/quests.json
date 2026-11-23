@@ -21,7 +21,8 @@
         }
       ],
       "rewards": {
-        "xp": 50
+        "xp": 50,
+        "coins": 10
       },
       "complete": "The shrine accepts the true word.",
       "requires": []
@@ -64,7 +65,8 @@
         }
       ],
       "rewards": {
-        "xp": 10
+        "xp": 10,
+        "coins": 5
       },
       "complete": "The shopkeeper takes the loaf.",
       "requires": []
@@ -130,7 +132,8 @@
         }
       ],
       "rewards": {
-        "xp": 15
+        "xp": 15,
+        "coins": 10
       },
       "complete": "The scroll is yours."
     },
@@ -424,7 +427,7 @@
       "name": "First Steps",
       "level": 1,
       "giver": "the bard",
-      "description": "A short tour for a new arrival: stand in the Atrium, then walk north into the Corridor.",
+      "description": "A short tour for a new arrival: stand in the Atrium, walk north into the Corridor, then visit the Training Yard.",
       "objectives": [
         {
           "kind": "visit",
@@ -435,10 +438,16 @@
           "kind": "visit",
           "room": 2,
           "text": "Walk north into the Corridor"
+        },
+        {
+          "kind": "visit",
+          "room": 116,
+          "text": "Visit the Training Yard"
         }
       ],
       "rewards": {
-        "xp": 20
+        "xp": 20,
+        "coins": 10
       },
       "complete": "The bard nods. The first step is always the same.",
       "requires": []

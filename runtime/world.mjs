@@ -80,6 +80,37 @@ export function attackRoll({ tick, attackerId, weaponDamage = 0, targetArmor = 0
 }
 
 /** The armour a character is wearing, from the objects currently on them. */
+function consumeCoins(coins) {
+  for (const coin of coins) {
+    coin.eaten = true;
+    coin.holder = null;
+    coin.room = null;
+    coin.inside = null;
+  }
+}
+
+function awardCoins(state, actor, amount, questId, events) {
+  if (!Number.isInteger(amount) || amount < 1) return;
+  state.objects.push({
+    id: `coin-${state.tick}-${actor.id}-${questId}-${state.objects.length}`,
+    name: `a purse of ${amount} coin${amount === 1 ? "" : "s"}`,
+    flags: ["takeable", "coin"],
+    value: amount,
+    holder: actor.id,
+    room: null,
+    inside: null,
+    home: null,
+    homeInside: null,
+    worn: false,
+    open: false,
+    lit: false,
+    eaten: false,
+    forSale: false,
+    ephemeral: true,
+  });
+  events.push({ onlyId: actor.id, text: `You receive ${amount} coin${amount === 1 ? "" : "s"}.\r\n` });
+}
+
 function awardXp(state, actor, amount, events) {
   actor.xp = (actor.xp ?? 0) + amount;
   const level = levelForXp(state.levels ?? DEFAULT_LEVELS, actor.xp);
@@ -199,6 +230,7 @@ function advanceQuests(state, actor, event, events) {
         reward.inside = null;
         reward.worn = false;
       }
+      awardCoins(state, actor, quest.rewards?.coins ?? 0, quest.id, events);
       current.completed.push(quest.id);
       actor.questCycles = { ...(actor.questCycles ?? {}), [quest.id]: state.cycle ?? 0 };
       if (quest.rewards?.guildXp && actor.guild && state.guilds?.[actor.guild]) {
@@ -1575,10 +1607,7 @@ export function step({ state, rooms, intents, actions = [] }) {
         .filter((coin) => coin && coin.holder === actor.id && (coin.flags ?? []).includes("coin") && !coin.eaten);
       const paid = coins.reduce((sum, coin) => sum + coin.value, 0);
       if (paid < cost) continue;
-      for (const coin of coins) {
-        coin.holder = null;
-        coin.room = actor.room;
-      }
+      consumeCoins(coins);
       actor.spellbook = [...book, spell.id];
       actor.maxMana = maxManaFor(actor);
       events.push({ onlyId: actor.id, text: `You learn ${spell.name}.\r\n` });
@@ -1805,10 +1834,7 @@ export function step({ state, rooms, intents, actions = [] }) {
       const paid = coins.reduce((sum, coin) => sum + coin.value, 0);
       if (paid < object.price) continue;
       // The shop keeps the change: the selection is greedy, not exact.
-      for (const coin of coins) {
-        coin.holder = null;
-        coin.room = intent.room;
-      }
+      consumeCoins(coins);
       object.forSale = false;
       object.holder = actor.id;
       object.room = null;
@@ -1831,10 +1857,7 @@ export function step({ state, rooms, intents, actions = [] }) {
         .filter((coin) => coin && coin.holder === actor.id && (coin.flags ?? []).includes("coin"));
       const paid = coins.reduce((sum, coin) => sum + coin.value, 0);
       if (paid < intent.coins) continue;
-      for (const coin of coins) {
-        coin.holder = null;
-        coin.room = actor.room;
-      }
+      consumeCoins(coins);
       actor.components = { ...(actor.components ?? {}), [component]: have - intent.count };
       if (actor.components[component] <= 0) delete actor.components[component];
       object.plus = plus + 1;

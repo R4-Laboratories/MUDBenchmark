@@ -142,7 +142,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `cistern` | The Cistern Key | 6 | Enter the Cistern; Carry the bone key | 90 xp |
 | `choir` | The Black Choir | 7 | Defeat the choir moth; Carry the black bell | 120 xp |
 | `reliquary` | The Sealed Reliquary | 8 | Enter the Sealed Reliquary; Carry the reliquary lens | 150 xp |
-| `first-steps` | First Steps | 1 | Stand in the Atrium; Walk north into the Corridor | 20 xp |
+| `first-steps` | First Steps | 1 | Stand in the Atrium; Walk north into the Corridor; Visit the Training Yard | 20 xp |
 | `hall-word` | A Word in the Hall | 2 | Talk to the market woman; Talk to the guild clerk | 70 xp |
 | `guild-dawn` | The Dawn Archive | 10 | Reach the Dawn Gate; Carry the dawn crown | 500 xp |
 | `guild-trial` | The Archmage's Trial | 10 | Defeat the eclipse regent; Deliver the regent's sigil to the archmage | 300 xp |

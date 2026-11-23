@@ -141,6 +141,16 @@ coins to raise a weapon or armour piece to **+3**. `components` shows the
 counts. Three matching set pieces give +1 armour and four give +1 damage.
 `docs/FORGE.md` records the recipes and salvage yield.
 
+## Quest coins and sinks
+
+The four starter quests pay physical coins as well as XP: First Steps 10, A
+Curled Scroll 10, Bread for the Shop 5, and The True Word 10. Two starter
+quests are enough to buy the short sword at the smithy.
+
+A purchase, training fee or forge upgrade **consumes** the selected coins.
+Payment never remains in the room for the buyer to pick up again. The shop
+keeps any change because the selection is greedy, not exact.
+
 ## What is not here
 
 No bank, no player-to-player trade window beyond `give`, no weight or
