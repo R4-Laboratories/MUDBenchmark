@@ -9,7 +9,7 @@ import http from "node:http";
 import { readFileSync, statSync, writeFileSync, appendFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join as joinPath } from "node:path";
-import { createHash, randomBytes } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { WebSocketServer } from "ws";
 import { recordSpan, digest, TELEMETRY_LOG, PLAYER_LOG_FILE, ensurePlayerLog } from "./telemetry.mjs";
 import { readSpanTail, readSpansTail, redactSpans } from "./spans.mjs";
@@ -456,9 +456,10 @@ function publicPoll(poll) {
   };
 }
 
-function publicRun(run) {
+function publicRun(run, { includeEvents = false } = {}) {
   if (!run) return null;
-  return {
+  const summary = {
+    id: run.id ?? null,
     name: run.name,
     room: run.room,
     startedAt: run.startedAt,
@@ -469,7 +470,11 @@ function publicRun(run) {
     stats: run.stats ?? null,
     highlights: (run.highlights ?? []).slice(-8),
     eventCount: run.eventCount ?? 0,
+    archivedEvents: run.events?.length ?? 0,
+    hasReplay: Boolean(run.events?.length),
   };
+  if (includeEvents) summary.events = run.events ?? [];
+  return summary;
 }
 
 function publicLast() {
@@ -527,6 +532,7 @@ function startLive(id) {
     stats: null,
     eventCount: 0,
     events: [],
+    archive: [],
   };
   broadcastStream({ type: "live", live: publicLive() });
   return live;
@@ -536,6 +542,7 @@ function stopLive(id = null) {
   if (!live) return false;
   if (id != null && live.actorId !== id) return false;
   const ended = {
+    id: randomUUID(),
     name: live.name,
     room: live.room,
     startedAt: live.startedAt,
@@ -546,6 +553,7 @@ function stopLive(id = null) {
     stats: live.stats,
     highlights: live.events.filter((event) => event.kind === "highlight").slice(-20),
     eventCount: live.eventCount,
+    events: live.archive.slice(-400),
   };
   lastLive = ended;
   recentRuns.unshift(ended);
@@ -572,6 +580,8 @@ function releaseLiveEvent(event) {
   if (event.kind === "stats") live.stats = event;
   live.events.push(event);
   if (live.events.length > 120) live.events.splice(0, live.events.length - 120);
+  live.archive.push(event);
+  if (live.archive.length > 400) live.archive.splice(0, live.archive.length - 400);
   live.eventCount += 1;
   broadcastStream({
     type: "event",
@@ -3537,6 +3547,19 @@ const web = http.createServer(async (req, res) => {
   if (pathname === "/stream") {
     // A small public status read for the landing page. The watch socket still
     // carries the event feed; this never exposes chat identities or commands.
+    const runId = new URL(req.url, "http://localhost").searchParams.get("run");
+    if (runId) {
+      const run = recentRuns.find((entry) => entry.id === runId)
+        ?? (lastLive?.id === runId ? lastLive : null);
+      if (!run) {
+        res.writeHead(404, { "content-type": "application/json", "cache-control": "no-store" });
+        res.end(JSON.stringify({ error: "run not found" }));
+        return;
+      }
+      res.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
+      res.end(JSON.stringify({ schema: "mudbenchmark/stream-archive/1", run: publicRun(run, { includeEvents: true }) }));
+      return;
+    }
     const current = publicLive();
     res.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
     res.end(JSON.stringify({

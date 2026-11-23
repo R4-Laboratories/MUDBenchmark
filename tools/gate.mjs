@@ -1346,6 +1346,7 @@ let stream = { ok: true, why: [] };
   check(/pathname === "\/api\/demo"/.test(serverText) && /pathname === "\/api\/gemini\/v1\/chat\/completions"/.test(serverText), "the Gemini demo routes are missing");
   check(/r4-context/.test(serverText) && /R4_URL/.test(serverText), "the R4 memory proxy is missing");
   check(/lastLive/.test(serverText) && /publicLast/.test(serverText), "the stream archive is missing");
+  check(/mudbenchmark\/stream-archive\/1/.test(serverText) && /includeEvents/.test(serverText) && /live\.archive/.test(serverText), "the stream replay archive is missing");
   check(/SIGNUP_MODE/.test(serverText) && /SIGNUPS_OPEN/.test(serverText), "the operator signup mode is missing");
   check(/minuteRemaining/.test(serverText) && /demoRemaining/.test(web), "the demo quota alert fields are missing");
   check(/GEMINI_API_KEY/.test(serverText) && /x-demo-token/.test(serverText) && /GEMINI_DAILY_TURNS/.test(serverText), "the Gemini proxy lost its key, token or quota");
@@ -1362,6 +1363,7 @@ let stream = { ok: true, why: [] };
   const watch = readFileSync(join(root, "runtime/web/watch.html"), "utf8");
   check(/WebSocket\(`\$\{scheme\}\/\/\$\{location\.host\}\/live`\)/.test(watch), "the watch page does not connect to /live");
   check(/function renderPoll/.test(watch) && /highlight-card/.test(watch), "the watch page has no poll or highlight");
+  check(/function renderReplay/.test(watch) && /Replay decisions/.test(watch) && /stream\?run=/.test(watch), "the watch replay UI is missing");
   if (stream.why.length) { stream.ok = false; failures.push(`the public stream is broken: ${stream.why[0]}`); }
 }
 
