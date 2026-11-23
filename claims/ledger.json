@@ -1545,6 +1545,12 @@
       "level": "some-true",
       "statement": "The v0.91.43 persistence rule is verified in the Gate reducer: a level-3/250-XP character with a 10-coin purse and a sword logs out; the purse is banked as gold 10, the sword falls in the room, and level/XP stay. Logging in mints a 10-coin purse, restores level/XP, restores no weapon, and keeps the dropped sword unheld. Forcing the two-hour reset keeps a held 7-coin purse, returns a held practice sword to room 116, clears the wielded item, and keeps level/XP. The area period remains 28,800 ticks. A graceful server stop banks online coins; a hard process kill can still leave recent coins in the world.",
       "authority": "tools/gate.mjs persistence block; 2026-11-23"
+    },
+    {
+      "id": "MB-253",
+      "level": "some-true",
+      "statement": "Production v0.91.43 serves the persistence rule: the two-hour reset is AREA_PERIOD 28,800 ticks, carried coins are banked into identity.gold on logout, death and graceful shutdown, login mints the banked gold back as a carried purse, and the reset keeps held coins while returning equipment home and clearing the wielded item. The deployed world.mjs contains bankHeldCoins, AREA_PERIOD = 28_800 and the gold identity update. The Gate persistence test covers a level-3/250-XP character with a 10-coin purse and sword: logout banks 10 and drops the sword; login mints 10 and restores no weapon; forced reset keeps a held 7-coin purse, returns a practice sword to room 116 and clears wielding. Level/XP survive all three. World 116 rooms, 14 zones, 20 quests, 57 mobiles and 145 objects. Main Gate 45112799985 green, publish 45113607149. A hard kill can still leave recent carried coins in the world; a graceful stop banks them.",
+      "authority": "GitHub PR #59 merge 798163e 2026-11-23; main Gate 45112799985; publish 45113607149; release v0.91.43; wick deploy output, artifact world.mjs and health; tools/gate.mjs persistence test"
     }
   ]
 }
