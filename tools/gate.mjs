@@ -168,7 +168,7 @@ let webAI = { ok: true, why: [] };
   const check = (condition, why) => { if (!condition) { webAI.ok = false; webAI.why.push(why); } };
   check(!PROVIDERS.ollama?.needsKey && !PROVIDERS.custom?.needsKey && !PROVIDERS["prime-router"]?.needsKey && !PROVIDERS["free-fast"]?.needsKey, "a no-key provider requires a key");
   check(!PROVIDERS.pollinations, "Pollinations is still offered");
-  check(PROVIDERS.groq?.base === "https://api.groq.com/openai/v1" && PROVIDERS.groq?.keyMode === "required" && PROVIDERS.groq?.model === "llama-3.1-8b-instant", "the Groq fast provider is not configured");
+  check(PROVIDERS.groq?.base === "https://api.groq.com/openai/v1" && PROVIDERS.groq?.keyMode === "required" && PROVIDERS.groq?.model === "openai/gpt-oss-20b", "the Groq fast provider is not configured");
   check(/console\.groq\.com\/keys/.test(PROVIDERS.groq?.hint ?? ""), "the Groq hint does not link the free key");
   check(PROVIDERS["free-fast"]?.base === "/api/free/v1" && PROVIDERS["free-fast"]?.keyMode === "proxy" && !PROVIDERS["free-fast"]?.needsKey, "the operator fast provider is not server-keyed");
   check(isThrottledStatus(402) && isThrottledStatus(429) && !isThrottledStatus(500), "the throttle status set is wrong");
@@ -206,12 +206,16 @@ let webAI = { ok: true, why: [] };
   check(good.reply === "On my way.", "the parser lost the reply");
   const bare = parseBrain("I will look around.\nlook");
   check(bare.command === "look", "the parser did not fall back to a bare verb");
+  const replyOnly = parseBrain("THOUGHT: The exit is north.\nREPLY: north");
+  check(replyOnly.command === "north" && replyOnly.reply === "", "the parser did not recover a command from REPLY");
   const quit = parseBrain("THOUGHT: done\nCOMMAND: quit");
   check(quit.command === "look", "the parser let the model quit the session");
   const system = buildSystemPrompt({ name: "scout" });
   check(system.includes("scout") && system.includes("COMMAND:"), "the system prompt lost the name or format");
   const user = buildUserPrompt({ turn: 2, observation: "[The Atrium]", director: ["go north"] });
   check(user.includes("TURN 2") && user.includes("go north"), "the user prompt lost the turn or direction");
+  const fastFormatUser = buildUserPrompt({ turn: 2, observation: "[The Atrium]", fast: true, actions: ["look", "north"] });
+  check(/THOUGHT: one short sentence/.test(fastFormatUser) && /COMMAND: one command/.test(fastFormatUser), "the fast prompt lost the output format");
   const stateUser = buildUserPrompt({
     turn: 3,
     observation: "[The Atrium]",

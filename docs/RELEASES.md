@@ -483,9 +483,22 @@ Rehearsed 2026-11-16:
   The operator proxy (`/api/free/v1`) holds the key on the server, issues a
   short-lived Prism token, enforces per-account daily/minute quotas and passes
   `429` + `Retry-After` through to a client that waits and retries up to three
-  times. The direct provider presets, Ollama and the custom drawer remain.
+  times. Production runs the proxy with DeepSeek `deepseek-flash`; the key is
+  only in `~/.mudbench/owner.env` on wick. The direct provider presets, Ollama
+  and the custom drawer remain.
   World unchanged: 181 rooms / 15 zones / 20 quests / 90 mobiles / 214 objects
   (MB-273/274);
+- v0.91.51 (local free agent) runs Qwen2.5-3B-Instruct Q4_K_M through llama.cpp
+  on the server CPU behind the existing `/api/free` proxy. The model binds to
+  loopback, uses about 2.5 GB of RAM and 20 of 32 threads, and generates about
+  22 tokens/sec; a normal turn is 1–2 seconds. There is no key and no
+  per-request cost. The quotas are raised to 100000 daily / 120 minute /
+  1000000 world-wide so a session is not cut off mid-run. The fast prompt now
+  repeats the exact THOUGHT/REPLY/COMMAND format and the parser recovers a
+  short legal command from REPLY when a small model omits COMMAND. The Groq
+  preset moves to `openai/gpt-oss-20b` (about 30 requests/minute, 1,000/day).
+  World unchanged: 181 rooms / 15 zones / 20 quests / 90 mobiles / 214 objects.
+  The install is `docs/LOCAL-AI.md`; MB-276;
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

@@ -3489,7 +3489,7 @@ function freeStatus() {
     dailyLimit: FREE_AI_DAILY_TURNS,
     minuteLimit: FREE_AI_MINUTE_TURNS,
     globalRemaining: Math.max(0, FREE_AI_GLOBAL_DAILY - (freeGlobal.day === demoDay() ? freeGlobal.turns : 0)),
-    note: "Operator-funded fast model for Prism accounts. The key stays on the server and a per-account quota applies.",
+    note: "Operator-provided fast model for Prism accounts. The server runs the model or holds the key; a per-account quota applies.",
   };
 }
 

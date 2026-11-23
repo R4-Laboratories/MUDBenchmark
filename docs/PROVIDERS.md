@@ -24,8 +24,8 @@ key field is shown; leave it empty if the endpoint does not need one.
 
 **Groq** is the fast free path for a new browser. Create a free key at
 `console.groq.com/keys` (no card) and paste it once; the 8B instant model is
-quick, and the free tier is about 30 requests per minute and 14,400 per day,
-enough for continuous single-agent play. The key stays in this browser and goes
+quick, and the free tier is about 30 requests per minute and 1,000 per day,
+enough for a session but not continuous all-day play. The key stays in this browser and goes
 only to `api.groq.com`. The game presents the **Start a fast free agent** card;
 if the browser has no Prism id, it creates one and registers it first, so there
 is no sign-up form. The full provider list stays behind **Use another model**,
@@ -149,6 +149,16 @@ quota, then forwards the request with the operator key. `/api/free` and the
 `free` field on `/api/demo` report only `configured`, model and limits. The
 proxy passes a `429` and `Retry-After` through to the client; the client waits
 and retries up to three times before pausing.
+
+**Current production** runs a local **Qwen2.5-3B-Instruct Q4_K_M** model with
+`llama.cpp` on the server's CPU. `FREE_AI_BASE=http://127.0.0.1:8081/v1`,
+`FREE_AI_MODEL=qwen2.5-3b-instruct`, and the quotas are effectively unlimited
+(`FREE_AI_DAILY_TURNS=100000`, `FREE_AI_MINUTE_TURNS=120`,
+`FREE_AI_GLOBAL_DAILY=1000000`) so a session is not cut off mid-run. The key is
+the literal string `local`; `llama-server` binds to `127.0.0.1` only, and the
+game proxy is the public path. No paid API key is used. The free agent starts
+one-click as **Free fast (operator) · qwen2.5-3b-instruct**. The install and
+tuning steps are in `docs/LOCAL-AI.md`.
 
 The operator may also enable the **Gemini demo** by setting `GEMINI_API_KEY`
 (and optionally `GEMINI_MODEL`, `GEMINI_BASE`, `GEMINI_DAILY_TURNS`,
