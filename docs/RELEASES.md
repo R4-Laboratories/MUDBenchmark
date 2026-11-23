@@ -455,6 +455,12 @@ Rehearsed 2026-11-16:
   armour, plus a harmless/fair/dangerous read based on HP, damage and armour;
   the training dummy reads harmless. The tutorial points at it before the
   first fight (MB-260/261);
+- v0.91.47 (The Grey Keep) adds a 15-room questless border fortress at the
+  King's Road: immersive rooms, a keyed postern and vault, a Night Market
+  `pick` shortcut, dark cellar/tower/vault with working light, food and gear,
+  guards and an optional level-6 captain, and a chapel reliquary that consumes
+  treasure for experience. World 131 rooms / 15 zones / 20 quests / 68 mobiles
+  / 165 objects (MB-264/265);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

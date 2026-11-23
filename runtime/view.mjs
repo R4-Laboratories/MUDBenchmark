@@ -10,8 +10,16 @@
  *           tick: number, cleared: (role: number, level: number) => boolean }} input
  * @returns {string} the text a player sees
  */
-export function describe({ room, role = 0, others = [], beasts = [], objects = [], tick = 0, phase = null, weather = null, cleared }) {
+export function describe({ room, role = 0, others = [], beasts = [], objects = [], tick = 0, phase = null, weather = null, cleared, light = true }) {
   const exits = Object.keys(room.exits ?? {}).join(", ") || "none";
+  if (room.dark === true && !light) {
+    return `${[
+      "",
+      `[${room.name}]`,
+      room.darkText ?? "The dark is complete. You can feel the room only as a cold space around you.",
+      `Exits: ${exits}.`,
+    ].join("\r\n")}\r\n`;
+  }
   const lines = [``, `[${room.name}]`, room.text];
 
   // Time and weather are atmosphere, not a status panel.

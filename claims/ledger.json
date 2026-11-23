@@ -1611,6 +1611,18 @@
       "level": "some-true",
       "statement": "The v0.91.46 first-hour PvE sample used tools/pve-session.mjs: fresh isolated server per match, enemy pinned, level-1 character with the free practice sword/shield, random world tick, current pacing boar 14 HP / 3 damage. Boar: 20/20 wins, 7.3 average rounds, 13.05/20 average HP. Wolf: 20/20, 9.3 rounds, 11.8/20 HP. The deterministic unarmed novice/boar band is 58.5%; the free Training Yard gear makes the first encounters safe, and consider reads them. No balance value changed; a human/asymmetric sample remains the next check.",
       "authority": "local tools/pve-session.mjs 20-match boar and wolf samples; 2026-11-23"
+    },
+    {
+      "id": "MB-264",
+      "level": "build",
+      "statement": "v0.91.47 adds The Grey Keep, a 15-room questless castle shell off the King's Road: 15 reciprocal rooms with immersive descriptions, a keyed postern and vault, a Night Market runner-only pick action, dark cellar/tower/vault rooms with working lantern/torch/light spell, food and level-4-6 gear, guards and an optional captain, and a chapel reliquary offering treasure for floor(value/2) XP. It also adds room dark/darkText validation, action guild/rank requirements, the offer reducer and the light state. World 131 rooms / 15 zones / 20 quests / 68 mobiles / 165 objects; no new quests.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-265",
+      "level": "some-true",
+      "statement": "The Grey Keep was walked live on an isolated server with a level-6 Night Market runner: the King's Road room text, Guild pick of the postern (discovered 118:north), the Servant Passage, chapel candlesticks offered at the reliquary for 9 XP (score 9/6000), the dark Cellar showing only the dark line before the lantern was lit, and the lit Cellar showing barrels after. The Gate validates the 15-room zone, keys/chests, dark/light rendering, postern/vault actions and the reliquary reducer. World 131 rooms / 15 zones / 68 mobiles / 165 objects.",
+      "authority": "local isolated server /tmp/keep-live.mjs; tools/gate.mjs; 2026-11-23"
     }
   ]
 }

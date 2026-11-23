@@ -682,7 +682,12 @@ function broadcast(room, text, exceptId, fromKey = null) {
 function describe(room, selfId) {
   const r = ROOMS[room];
   if (!r) return "You are nowhere.\r\n";
-  const role = actorById(selfId)?.role ?? 0;
+  const actor = actorById(selfId);
+  const role = actor?.role ?? 0;
+  const light = Boolean((actor?.lightUntil ?? 0) > state.tick)
+    || state.objects.some((object) => object.lit === true
+      && (object.flags ?? []).includes("light")
+      && (object.holder === actor?.id || object.room === room));
   const objectsHere = state.objects
     .filter((o) => o.room === room && !o.inside && !o.eaten)
     .map((o) => {
@@ -701,6 +706,7 @@ function describe(room, selfId) {
     phase: phaseAt(state.tick, state.climate),
     weather: state.climate.weather[state.weather]?.text ?? null,
     cleared: isCleared,
+    light,
   });
 }
 
@@ -830,6 +836,8 @@ function selfState(actor) {
         .filter((action) => !action.requires?.spell || (actor.spellbook ?? []).includes(action.requires.spell))
         .filter((action) => !action.requires?.item || state.objects.some((object) => object.id === action.requires.item && object.holder === actor.id && !object.eaten))
         .filter((action) => !action.requires?.fact || Boolean(actor.memory?.facts?.[action.requires.fact]))
+        .filter((action) => !action.requires?.guild || action.requires.guild === actor.guild)
+        .filter((action) => !action.requires?.rank || progressionAtLeast(actor.guildRank, action.requires.rank, state.guilds[actor.guild]?.ranks ?? []))
         .map((action) => ({ verb: action.verb, target: action.target }))
     : [];
   const activeQuests = actor?.key
@@ -896,6 +904,8 @@ function selfState(actor) {
     damage: weaponDamageOf(weaponOf(actor, state.objects)) + guildBonus(actor).damage + setBonus(actor, state.objects).damage,
     spell_power: spellPower(actor, weaponDamageOf(weaponOf(actor, state.objects))),
     effects: (actor.effects ?? []).map((effect) => ({ id: effect.id, name: effect.name, rounds: effect.rounds })),
+    light: Boolean((actor.lightUntil ?? 0) > state.tick)
+      || state.objects.some((object) => object.lit === true && object.holder === actor.id && (object.flags ?? []).includes("light")),
     enemies,
     inventory_names: state.objects.filter((object) => object.holder === actor.id && !object.worn && !object.eaten).map((object) => object.name),
     wielding: state.objects.find((object) => object.id === actor.wielding)?.name ?? null,
@@ -1776,6 +1786,15 @@ async function handleCommand(id, line) {
 
   const roomAction = findAction(ACTION_TABLE.actions, { verb, target: restRaw.join(" "), room: actor.room });
   if (roomAction) {
+    if (roomAction.requires?.guild && actor.guild !== roomAction.requires.guild) {
+      return sendTo(id, `Only a member of ${roomAction.requires.guild} can do that.\r\n`);
+    }
+    if (roomAction.requires?.rank) {
+      const ranks = state.guilds[actor.guild]?.ranks ?? [];
+      if (!actor.guild || !progressionAtLeast(actor.guildRank, roomAction.requires.rank, ranks)) {
+        return sendTo(id, `You are not ranked for that.\r\n`);
+      }
+    }
     if (roomAction.requires?.spell && !(actor.spellbook ?? []).includes(roomAction.requires.spell)) {
       return sendTo(id, `You need to know ${roomAction.requires.spell} to do that.\r\n`);
     }
@@ -1790,6 +1809,26 @@ async function handleCommand(id, line) {
       "actor.id": id,
       "action.id": roomAction.id,
       "action.verb": roomAction.verb,
+      "room.id": actor.room,
+      "world.tick": state.tick,
+    }, 0);
+    return;
+  }
+
+  if (named === "offer") {
+    const messages = VERB_TABLE.verbs.offer.messages;
+    if (!state.objects.some((object) => object.id === "keep-reliquary" && object.room === actor.room)) {
+      return sendTo(id, "There is no reliquary here.\r\n");
+    }
+    if (!words) return sendTo(id, `${messages.missing}\r\n`);
+    const object = findObject(words, (entry) => entry.holder === id && !entry.eaten
+      && !(entry.flags ?? []).includes("coin") && Number.isInteger(entry.value) && entry.value >= 5);
+    if (!object) return sendTo(id, `${render(messages.none, { words })}\r\n`);
+    pending.push({ kind: "offer", actorId: id, objectId: object.id, messages });
+    recordSpan("world.offer", {
+      "actor.id": id,
+      "object.id": object.id,
+      "object.value": object.value,
       "room.id": actor.room,
       "world.tick": state.tick,
     }, 0);
