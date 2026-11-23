@@ -428,6 +428,10 @@ Rehearsed 2026-11-16:
   timeline and state/stats summary. Finished runs replay without the live PvP
   delay; pending delayed events are not archived. A Chrome test publishes a
   synthetic run, checks the archive and steps the replay (MB-242/243);
+- v0.91.41 (durable replay) writes completed runs to `STREAM_ARCHIVE_FILE`
+  (default next to the state file, mode 0600, atomic rename), loads the last
+  eight at startup and keeps the replay after a restart. The browser test now
+  stops the server, restarts it, and replays the restored run (MB-245/246);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

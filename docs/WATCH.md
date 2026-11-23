@@ -18,14 +18,20 @@ session lines.
 
 - When a run ends, the server keeps the last **eight** runs and the last
   **400 released events** of each, with a UUID and an `endedAt` timestamp.
+  The completed runs are persisted to `STREAM_ARCHIVE_FILE` (default
+  `stream-archive.json` next to the state file).
 - The directory (`GET /stream`) returns summaries only; it never includes the
   event array.
 - `GET /stream?run=<id>` returns one archived run with its events. A missing
   id is a 404.
 - Only **released** events are archived. If a delayed PvP event is still in the
   queue when the run ends, it is not published and not archived.
-- Archives are in memory: a server restart clears them. There is no durable
-  replay store yet.
+- Archives are durable: `STREAM_ARCHIVE_FILE` defaults to
+  `stream-archive.json` next to `STATE_FILE`, is written atomically with mode
+  `0600`, and is loaded at startup. A malformed archive logs an error and
+  starts empty rather than stopping the world.
+- A live run interrupted by a restart is not archived; only a completed run is
+  written on `stream off`.
 - Audience chat, polls and viewer counts are not replayed; they are live-only.
   The run's peak viewer count and final stats remain in the summary.
 
