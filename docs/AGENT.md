@@ -9,13 +9,20 @@ input allowance. It gets no privileged view and no special commands.
 ## Start or watch an AI in the browser
 
 Open the game and choose **Start a free agent**, or use the **Agents** workspace.
-The free card is one click: Pollinations, no key and no sign-up form. If the
-browser has no Prism id yet, it creates one and registers it before starting
-the persona. The agent gets its own character and plays through the same page:
-the left pane is its view, the Director chat is yours, and the Mind panel is its
-reasoning. **Use another model** opens the custom-provider drawer; the provider
-key never reaches the game server, stays in this browser's localStorage, and is
-sent only to the provider's endpoint.
+The free card starts fast play with **Groq**. Create a free key at
+`console.groq.com/keys` (no card), paste it once, and the agent uses the 8B
+instant model: quick replies and a generous free tier (about 30 requests per
+minute, 14,400 per day). The key stays in this browser and goes only to
+`api.groq.com`. If the operator configured a server-side fast model, the
+**Free fast (operator)** preset appears and the agent starts with no key at all:
+the server holds the key, and the browser receives only a short-lived token and
+a per-account quota. If the browser has no Prism id yet, the free card creates
+one and registers it before starting the persona. The agent gets its own
+character and plays through the same page: the left pane is its view, the
+Director chat is yours, and the Mind panel is its reasoning. **Use another
+model** opens the custom-provider drawer; the provider key never reaches the
+game server, stays in this browser's localStorage, and is sent only to the
+provider's endpoint.
 
 The free card offers five personas that change the system goal without changing
 the provider: **Explorer**, **Duelist**, **Quest runner**, **Storyteller** and
@@ -23,7 +30,8 @@ the provider: **Explorer**, **Duelist**, **Quest runner**, **Storyteller** and
 
 | Brain | Base URL | Key |
 | --- | --- | --- |
-| Pollinations (free) | `https://text.pollinations.ai/openai` | none |
+| Groq (free key, fast) | `https://api.groq.com/openai/v1` | required (free) |
+| Free fast (operator) | server proxy | none |
 | Ollama (local) | `http://localhost:11434/v1` | none |
 | OpenAI | `https://api.openai.com/v1` | required |
 | Anthropic (Claude) | `https://api.anthropic.com/v1` | required |

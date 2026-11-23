@@ -1665,6 +1665,18 @@
       "level": "some-true",
       "statement": "Production v0.91.49 serves the 21-room Arcanum: 181 rooms, 15 zones, 20 quests, 90 mobiles and 214 objects; /world and the artifact show 21 arcanum rooms. The tower adds the spiral stair, hall of names, lecture hall, scriptorium, laboratories, observatory, star stair, prism chamber, rune gallery, sealed vault, bellows, aviary, mirror room, archivist's study, cold library, high walk, orrery, star well and prism vault. read runes needs detect and opens 171 north; pass ward needs shield and opens 180 east; rooms 169/177/180/181 are dark and need light. The prism keeper, golems, wraith, gargoyle, owls and guild NPCs are live with the prism heart, sealed codex, guild seal, star chart, prism shard and star water. Main Gate 45257289711 green, publish 45258708317.",
       "authority": "GitHub PR #65 merge 3d19212 2026-11-23; main Gate 45257289711; publish 45258708317; release v0.91.49; wick deploy output, /world, artifact world.json and health; local /tmp/arcanum-live.mjs"
+    },
+    {
+      "id": "MB-273",
+      "level": "build",
+      "statement": "v0.91.50 removes Pollinations because its anonymous text tier is one reply every 45 seconds per IP. The free card now uses Groq's free 8B instant model with a player key, or the operator fast proxy when GROQ_API_KEY/FREE_AI_KEY is configured. The proxy at /api/free/v1/chat/completions holds the key server-side, reuses the short-lived Prism demo token, enforces per-account daily/minute and world-wide quotas, passes 429 and Retry-After through, and returns only the upstream completion. The client waits on 429/402 using Retry-After, retries up to three times, preserves the observation, and pauses only after the retry budget. Provider presets: Groq, Ollama, OpenAI, Anthropic, custom, free-fast, Gemini demo, Prime Router. Applies to 181 rooms / 15 zones / 20 quests / 90 mobiles / 214 objects.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-274",
+      "level": "some-true",
+      "statement": "Local browser evidence for the fast-agent path: with the operator proxy configured to a mock OpenAI-compatible upstream, the free card selected Free fast (operator), passed a 429 with Retry-After 2 through the proxy, waited 2s, retried successfully, and the agent explored The Atrium, The Corridor and The Vault in a live headless Chrome session. The mock saw 17 requests (16 successful), /api/free reported configured with the mock model and 984 global turns left, and the page showed no Brain error. A direct Pollinations probe reproduced the old failure: 402 FREE_LIMIT, 1 reply every 45 seconds per IP, Retry-After 32. Production deployment and a real Groq key are still pending.",
+      "authority": "local /tmp/free-ai-proxy-test.mjs; curl Pollinations probe 2026-11-23; tools/gate.mjs"
     }
   ]
 }

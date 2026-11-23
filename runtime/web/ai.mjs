@@ -7,13 +7,13 @@
 // localStorage and goes only to the provider's own endpoint.
 
 export const PROVIDERS = {
-  pollinations: {
-    label: "Pollinations (free, no key)",
-    base: "https://text.pollinations.ai/openai",
-    model: "openai-fast",
-    needsKey: false,
-    keyMode: "none",
-    hint: "Anonymous public endpoint. No key and streaming, but best-effort: prompts may be logged by the service and rate limits change. Use Ollama or your own provider for privacy or reliability.",
+  groq: {
+    label: "Groq (free key, fast)",
+    base: "https://api.groq.com/openai/v1",
+    model: "llama-3.1-8b-instant",
+    needsKey: true,
+    keyMode: "required",
+    hint: "Create a free key at console.groq.com/keys. The free tier is fast and generous (about 30 requests/minute, 14,400/day for the 8B model); the key stays in this browser and goes only to api.groq.com.",
   },
   ollama: {
     label: "Ollama (local)",
@@ -47,6 +47,14 @@ export const PROVIDERS = {
     keyMode: "optional",
     hint: "Any OpenAI-compatible /v1/chat/completions endpoint. Add a key if the gateway needs one; it stays in this browser.",
   },
+  "free-fast": {
+    label: "Free fast (operator)",
+    base: "/api/free/v1",
+    model: "llama-3.1-8b-instant",
+    needsKey: false,
+    keyMode: "proxy",
+    hint: "Operator-funded fast model for Prism accounts. The server holds the key and enforces a small per-account quota; no key reaches this browser.",
+  },
   "gemini-demo": {
     label: "Gemini demo (Prism only)",
     base: "/api/gemini/v1",
@@ -64,6 +72,41 @@ export const PROVIDERS = {
     hint: "Run Prime Router locally on :8000. It adds the hypersphere injection before the model call.",
   },
 };
+
+export function isThrottledStatus(status) {
+  return status === 402 || status === 429;
+}
+
+// Retry-After is either delta-seconds or an HTTP date. Return milliseconds, or
+// null when the header is missing or unparseable.
+export function retryAfterMs(headers, now = Date.now()) {
+  const raw = headers?.get?.("retry-after") ?? headers?.["retry-after"];
+  if (raw == null || raw === "") return null;
+  const seconds = Number(raw);
+  if (Number.isFinite(seconds)) return Math.max(0, Math.round(seconds * 1000));
+  const date = Date.parse(String(raw));
+  return Number.isFinite(date) ? Math.max(0, date - now) : null;
+}
+
+// What the client should wait after a throttle. Use Retry-After when the
+// provider sends it; otherwise wait a short default before trying again.
+export function throttleWaitMs(provider, headers, now = Date.now()) {
+  const retry = retryAfterMs(headers, now);
+  if (retry !== null) return retry;
+  return 15_000;
+}
+
+export const MAX_THROTTLE_WAIT_MS = 120_000;
+export const MAX_THROTTLE_RETRIES = 3;
+
+// A rate limit is only worth retrying inside the session if the server says the
+// wait is short and we have not already burned the retry budget. A daily quota
+// (hours of Retry-After) pauses the agent instead of leaving it in a long wait.
+export function throttlePlan({ provider, headers, attempt = 1, now = Date.now() }) {
+  const waitMs = Math.max(1000, throttleWaitMs(provider, headers, now));
+  return { waitMs, retry: waitMs <= MAX_THROTTLE_WAIT_MS && attempt <= MAX_THROTTLE_RETRIES };
+}
+
 
 // Accept the URL a provider's docs actually show: a bare host, a base with a
 // trailing slash, or the full chat endpoint. The client always appends the
@@ -478,24 +521,7 @@ const reasoningEffortFor = (model) => {
 };
 
 export function requestFor(provider, config, system, messages) {
-  const fallbackBase = provider === "pollinations" ? PROVIDERS.pollinations.base : "";
-  const base = normalizeBase(config.base || fallbackBase);
-  if (provider === "pollinations") {
-    // The public endpoint is already the OpenAI-compatible chat URL, not a
-    // /v1 base. It streams SSE without a key.
-    const root = base.replace(/\/+$/, "");
-    return {
-      url: /\/openai$/i.test(root) ? root : `${root}/openai`,
-      headers: { "content-type": "application/json" },
-      body: {
-        model: config.model ?? "openai-fast",
-        messages: [{ role: "system", content: system }, ...messages],
-        temperature: config.temperature ?? 0,
-        max_tokens: config.maxTokens ?? 300,
-        stream: true,
-      },
-    };
-  }
+  const base = normalizeBase(config.base || "");
   if (provider === "ollama") {
     // Ollama's native chat endpoint is the only one that can switch thinking
     // off explicitly. The OpenAI-compatible path silently spends reasoning
@@ -545,7 +571,7 @@ export function requestFor(provider, config, system, messages) {
       },
     };
   }
-  if (provider === "gemini-demo") {
+  if (provider === "gemini-demo" || provider === "free-fast") {
     return {
       url: `${base}/chat/completions`,
       headers: {
