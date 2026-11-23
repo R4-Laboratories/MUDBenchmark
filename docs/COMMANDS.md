@@ -24,6 +24,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `close` | `shut`, `cl` | object |
 | `coins` | `money`, `purse` | none |
 | `components` | `parts`, `materials` | none |
+| `consider` | `con` | target |
 | `deliver` | `handin`, `dv` | object to actor |
 | `deposit` | `dep`, `store`, `ds` | object |
 | `drink` | `quaff` | object |

@@ -1648,7 +1648,7 @@ async function handleCommand(id, line) {
   }
 
   if (verb === "tutorial") {
-    return sendTo(id, `First steps:\r\n  1. look — read the room and its exits.\r\n  2. score — your level, HP, gear and quests.\r\n  3. quests — available quests; accept First Steps with: quest accept first-steps.\r\n  4. north — walk to the Corridor, then visit the Training Yard to finish the tour.\r\n  5. talk bard — meet the first NPC.\r\n  6. map, levels, leaderboard — see the world and the standings.\r\n  7. shortcuts — every fast command.\r\nThe world resets every two hours: you keep gold, level and XP; equipment stays in the world.\r\nWatch an AI from the setup panel, or read /stats for the public telemetry.\r\nTraining yard: from the Atrium go south, west, north, east (east of the Guild Hall). Take the practice gear, attack the dummy, then try technique.\r\nSmithy: east of Market Square. Quest coins and sold loot buy a short sword or armour.\r\n`);
+    return sendTo(id, `First steps:\r\n  1. look — read the room and its exits.\r\n  2. score — your level, HP, gear and quests.\r\n  3. quests — available quests; accept First Steps with: quest accept first-steps.\r\n  4. north — walk to the Corridor, then visit the Training Yard to finish the tour.\r\n  5. talk bard — meet the first NPC.\r\n  6. map, levels, leaderboard — see the world and the standings.\r\n  7. shortcuts — every fast command; consider <target> reads its HP, damage and armour before a fight.\r\nThe world resets every two hours: you keep gold, level and XP; equipment stays in the world.\r\nWatch an AI from the setup panel, or read /stats for the public telemetry.\r\nTraining yard: from the Atrium go south, west, north, east (east of the Guild Hall). Take the practice gear, attack the dummy, then try technique.\r\nSmithy: east of Market Square. Quest coins and sold loot buy a short sword or armour.\r\n`);
   }
 
   if (verb === "help" || verb === "commands") {
@@ -2213,6 +2213,28 @@ async function handleCommand(id, line) {
     const messages = VERB_TABLE.verbs.flee.messages;
     recordSpan("world.flee", { "actor.id": id, "flee.refused": true, "world.tick": state.tick }, 0);
     return sendTo(id, `${messages.refused}\r\n`);
+  }
+
+  if (named === "consider") {
+    const messages = VERB_TABLE.verbs.consider.messages;
+    const needle = words.toLowerCase();
+    if (!needle) return sendTo(id, `${messages.missing}\r\n`);
+    const target = [...actorsIn(actor.room).filter((entry) => entry.id !== id), ...npcsIn(actor.room)]
+      .find((entry) => entry.name.toLowerCase().includes(needle) || entry.name.toLowerCase().includes(`a ${needle}`));
+    if (!target) return sendTo(id, `${render(messages.none, { words: needle })}\r\n`);
+    const hp = target.hp ?? null;
+    const maxHp = target.maxHp ?? hp;
+    const level = Number.isFinite(target.level) ? `level ${target.level}, ` : "";
+    const damage = target.damage ?? (weaponDamageOf(weaponOf(target, state.objects)) + guildBonus(target).damage + setBonus(target, state.objects).damage);
+    const armor = target.armor ?? armorOf(target, state.objects);
+    const threat = (maxHp ?? 0) + (damage ?? 0) * 4 + (armor ?? 0) * 2;
+    const own = (actor.maxHp ?? 20) + (weaponDamageOf(weaponOf(actor, state.objects)) * 4) + (armorOf(actor, state.objects) * 2);
+    const ratio = threat / Math.max(1, own);
+    const read = damage === 0 ? "It is harmless."
+      : ratio > 1.25 ? "It looks dangerous."
+        : ratio >= 0.7 ? "It looks like a fair fight."
+          : "It looks weaker than you.";
+    return sendTo(id, `${target.name} — ${level}${hp ?? "?"}/${maxHp ?? "?"} hp, damage ${damage ?? "?"}, armour ${armor ?? "?"}. ${read}\r\n`);
   }
 
   if (verb === "battle" || verb === "combat") {

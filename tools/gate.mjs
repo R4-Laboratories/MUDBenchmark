@@ -1682,6 +1682,7 @@ let controls = { ok: true, why: [] };
   check(verbTable.byAlias.get("k") === "attack", "k is not attack");
   check(verbTable.byAlias.get("sc") === "score", "sc is not score");
   check(verbTable.byAlias.get("coins") === "coins" && verbTable.byAlias.get("money") === "coins", "coins/money are not registered");
+  check(verbTable.byAlias.get("consider") === "consider" && verbTable.byAlias.get("con") === "consider", "consider/con are not registered");
   check(verbTable.byAlias.get("standing") === "standing" && verbTable.byAlias.get("reputation") === "standing" && verbTable.byAlias.get("factions") === "standing", "standing/reputation are not registered");
   check(factionRank("ember", 0).name === "outsider" && factionRank("ember", 3).name === "spark" && factionRank("ember", 6).name === "forgefriend" && factionRank("ember", 10).name === "ember-sworn", "the faction ranks are wrong");
   check(factionAllows({ ember: 5 }, "ember", 3) && !factionAllows({ ember: 2 }, "ember", 3), "the faction standing gate is wrong");
