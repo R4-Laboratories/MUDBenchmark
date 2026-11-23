@@ -2276,6 +2276,30 @@ async function handleCommand(id, line) {
     return sendTo(id, `${target.name} — ${level}${hp ?? "?"}/${maxHp ?? "?"} hp, damage ${damage ?? "?"}, armour ${armor ?? "?"}. ${read}\r\n`);
   }
 
+  if (named === "track") {
+    const guild = state.guilds?.[actor.guild];
+    if (actor.guild !== "wardens" || !progressionAtLeast(actor.guildRank, "scout", guild?.ranks ?? [])) {
+      return sendTo(id, "Only a Warden scout can read a trail.\r\n");
+    }
+    if (!words) return sendTo(id, "Track what?\r\n");
+    const trails = [];
+    for (const npc of state.npcs.filter((entry) => !entry.dead && entry.name.toLowerCase().includes(words)).slice(0, 4)) {
+      trails.push(`${npc.name} is in ${ROOMS[npc.room]?.name ?? "an unknown room"}.`);
+    }
+    for (const object of state.objects.filter((entry) => !entry.eaten && entry.name.toLowerCase().includes(words)
+      && (entry.holder || entry.room !== null || entry.inside)).slice(0, 4)) {
+      let roomId = object.room;
+      if (roomId == null && object.inside) roomId = state.objects.find((entry) => entry.id === object.inside)?.room ?? null;
+      if (object.holder) {
+        const holder = state.actors.find((entry) => entry.id === object.holder);
+        if (holder) trails.push(`${object.name} is carried by ${holder.name} in ${ROOMS[holder.room]?.name ?? "an unknown room"}.`);
+        continue;
+      }
+      if (roomId != null) trails.push(`${object.name} lies in ${ROOMS[roomId]?.name ?? "an unknown room"}.`);
+    }
+    return sendTo(id, trails.length ? `${trails.join("\r\n")}\r\n` : `You find no trail for ${words}.\r\n`);
+  }
+
   if (verb === "battle" || verb === "combat") {
     const fights = [];
     for (const engagement of state.engagements ?? []) {

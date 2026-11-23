@@ -69,6 +69,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `tell` | `whisper`, `te` | actor text |
 | `title` | `settitle` | title or none |
 | `titles` | `titlelist`, `achievements` | none |
+| `track` | `seek` | target |
 | `tutorial` | `first`, `firststeps` | none |
 | `unignore` | `unign`, `unmute` | actor |
 | `unwield` | `sheathe`, `uw` | none |
@@ -270,18 +271,48 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 115 | The Wardens' Lodge | town | yes | down 24 |
 | 116 | The Training Yard | town | no | west 24 |
 | 117 | The Grey Road | grey-keep | no | north 11, south 15, east 118 |
-| 118 | The Iron Gate | grey-keep | no | west 117, east 119 |
-| 119 | The Weeping Bailey | grey-keep | no | west 118, north 122, east 120, south 121 |
-| 120 | The Stables | grey-keep | no | west 119, south 123 |
-| 121 | The Guard Barracks | grey-keep | no | north 119, east 123 |
-| 122 | The Great Hall | grey-keep | no | south 119, west 123, east 127, down 126 |
+| 118 | The Iron Gate | grey-keep | no | west 117, east 119, up 149 |
+| 119 | The Weeping Bailey | grey-keep | no | west 118, north 122, east 120, south 121, down 152 |
+| 120 | The Stables | grey-keep | no | west 119, south 123, east 154, up 155 |
+| 121 | The Guard Barracks | grey-keep | no | north 119, east 123, up 150, west 151 |
+| 122 | The Great Hall | grey-keep | no | south 119, west 123, east 127, down 126, up 132 |
 | 123 | The Kitchen | grey-keep | no | north 120, west 121, east 122, down 124 |
-| 124 | The Cellar | grey-keep | no | up 123, east 125, south 130 |
-| 125 | The Servant Passage | grey-keep | no | south 118, west 124, east 126 |
-| 126 | The Chapel of Ash | grey-keep | yes | west 125, up 122 |
-| 127 | The Solar | grey-keep | no | west 122, up 128 |
-| 128 | The Tower Stair | grey-keep | no | down 127, up 129 |
-| 129 | The Tower Top | grey-keep | no | down 128 |
+| 124 | The Cellar | grey-keep | no | up 123, east 125, south 130, west 152 |
+| 125 | The Servant Passage | grey-keep | no | south 118, west 124, east 126, north 141 |
+| 126 | The Chapel of Ash | grey-keep | yes | west 125, up 122, down 146 |
+| 127 | The Solar | grey-keep | no | west 122, up 128, north 138 |
+| 128 | The Tower Stair | grey-keep | no | down 127, up 129, east 161 |
+| 129 | The Tower Top | grey-keep | no | down 128, north 139 |
 | 130 | The Dungeon | grey-keep | no | north 124 |
 | 131 | The Vault | grey-keep | no | west 130 |
+| 132 | The Long Gallery | grey-keep | no | down 122, north 133, south 134, west 135, east 136 |
+| 133 | The North Chamber | grey-keep | no | south 132 |
+| 134 | The South Chamber | grey-keep | no | north 132, east 137 |
+| 135 | The Nursery | grey-keep | no | east 132 |
+| 136 | The Library | grey-keep | no | west 132, north 137, east 158 |
+| 137 | The Map Room | grey-keep | no | south 136, west 134 |
+| 138 | The Solar Balcony | grey-keep | no | south 127, east 159 |
+| 139 | The Roof | grey-keep | no | south 129, west 156, north 140 |
+| 140 | The Bell Tower | grey-keep | no | south 139 |
+| 141 | The Servants' Wing | grey-keep | no | south 125, north 142, west 143 |
+| 142 | The Laundry | grey-keep | no | south 141, east 143 |
+| 143 | The Servants' Hall | grey-keep | yes | east 141, north 144, south 145, west 142 |
+| 144 | The Stillroom | grey-keep | no | south 143 |
+| 145 | The Back Stair | grey-keep | no | north 143, up 158 |
+| 146 | The Crypt | grey-keep | no | up 126, north 147, east 148 |
+| 147 | The Ossuary | grey-keep | no | south 146 |
+| 148 | The Reliquary Vault | grey-keep | no | west 146 |
+| 149 | The Watch Room | grey-keep | no | down 118, up 156, north 157, south 150 |
+| 150 | The Armory | grey-keep | no | north 149, down 121, east 151 |
+| 151 | The Castle Smithy | grey-keep | no | west 150, east 121 |
+| 152 | The Well | grey-keep | no | up 119, east 124, down 153 |
+| 153 | The Cistern | grey-keep | no | up 152, south 154 |
+| 154 | The Kennel | grey-keep | no | west 120, north 153 |
+| 155 | The Hayloft | grey-keep | no | down 120, east 156 |
+| 156 | The Gate Roof | grey-keep | no | down 149, west 155, east 139 |
+| 157 | The Narrow Watch | grey-keep | no | south 149 |
+| 158 | The High Hall | grey-keep | no | west 136, south 159, down 145 |
+| 159 | The Study | grey-keep | no | west 138, north 158 |
+| 160 | The Sealed Room | grey-keep | no | west 147 |
+| 161 | The Tower Cell | grey-keep | no | west 128 |
 

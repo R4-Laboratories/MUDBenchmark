@@ -2154,7 +2154,8 @@
       "text": "The gatehouse smells of wet iron and old smoke. A portcullis hangs above the passage, its points dark with grease, and murder holes open in the vaulted ceiling. To the north, a narrow postern door is set into the wall beneath a faded red hand. The bailey waits beyond the inner arch.",
       "exits": {
         "west": 117,
-        "east": 119
+        "east": 119,
+        "up": 149
       },
       "secretExits": {
         "north": 125
@@ -2176,7 +2177,8 @@
         "west": 118,
         "north": 122,
         "east": 120,
-        "south": 121
+        "south": 121,
+        "down": 152
       },
       "details": {
         "fountain": "The fountain is dry. A stone fish lies at the bottom with one eye chipped away.",
@@ -2193,7 +2195,9 @@
       "text": "Straw rots in the stalls and the roof has lost a third of its slate. Bridles hang from their pegs like empty nooses, and a dog's bowl lies cracked by the door. The smell of horse is old, but something else has been sleeping here.",
       "exits": {
         "west": 119,
-        "south": 123
+        "south": 123,
+        "east": 154,
+        "up": 155
       },
       "details": {
         "stalls": "Six stalls, five empty. The sixth is heaped with straw and something dark that does not move.",
@@ -2210,7 +2214,9 @@
       "text": "Rows of iron bunks fill the low room, each with a folded red cloak and a straw tick. A spear rack stands against the wall, and a strongbox sits at the foot of the nearest bunk. The ceiling is stained with smoke and old rain.",
       "exits": {
         "north": 119,
-        "east": 123
+        "east": 123,
+        "up": 150,
+        "west": 151
       },
       "details": {
         "bunks": "The bunks are neatly made. One has been slept in recently; the blanket is still warm.",
@@ -2229,7 +2235,8 @@
         "south": 119,
         "west": 123,
         "east": 127,
-        "down": 126
+        "down": 126,
+        "up": 132
       },
       "details": {
         "table": "The table is set for a meal that never came. A silver plate sits at the head, untouched.",
@@ -2266,7 +2273,8 @@
       "exits": {
         "up": 123,
         "east": 125,
-        "south": 130
+        "south": 130,
+        "west": 152
       },
       "dark": true,
       "darkText": "The cellar is a well of cold dark. Water ticks somewhere, and the air smells of wet stone and old wine. You can make out only the stair behind you.",
@@ -2286,7 +2294,8 @@
       "exits": {
         "south": 118,
         "west": 124,
-        "east": 126
+        "east": 126,
+        "north": 141
       },
       "details": {
         "handprints": "The prints are small and dark. They stop halfway down the passage.",
@@ -2303,7 +2312,8 @@
       "text": "The chapel is small and cold, its walls white with old ash. A stone reliquary stands before the altar, and a thin figure in grey keeps a vigil beside it. A stair climbs to the great hall; the servant passage is west. Candles have burned down to stubs in every niche; the air smells of wax and rain.",
       "exits": {
         "west": 125,
-        "up": 122
+        "up": 122,
+        "down": 146
       },
       "safe": true,
       "details": {
@@ -2321,7 +2331,8 @@
       "text": "The solar is the keep's one warm room, its window glass cracked but still holding the grey light. A writing desk stands beneath the window, a chest beside it, and a narrow stair climbs into the tower. The floor is covered with a faded carpet that has been rolled back from the wall.",
       "exits": {
         "west": 122,
-        "up": 128
+        "up": 128,
+        "north": 138
       },
       "details": {
         "desk": "The desk is tidy. A ledger lies open to a page of names, all crossed through.",
@@ -2338,7 +2349,8 @@
       "text": "The spiral stair climbs through the thickness of the tower wall. Arrow slits let in thin grey light, and the steps are worn into shallow cups. The air is cold and smells of stone dust; above, the stair vanishes into the tower's dark.",
       "exits": {
         "down": 127,
-        "up": 129
+        "up": 129,
+        "east": 161
       },
       "dark": true,
       "darkText": "The spiral stair vanishes into blackness. A cold wind moves down the well of stone; you can see only the next slit of grey light above you.",
@@ -2356,7 +2368,8 @@
       "name": "The Tower Top",
       "text": "The tower top is open to the sky. The battlements are broken in two places, and the valley spreads out below in bands of grey field and black wood. A tall figure in a red cloak stands at the parapet with a drawn blade, watching the road. The wind pulls at the cloak but the figure does not move.",
       "exits": {
-        "down": 128
+        "down": 128,
+        "north": 139
       },
       "details": {
         "battlements": "The battlements are cracked and furred with lichen. A red banner hangs limp from one merlon.",
@@ -2404,6 +2417,538 @@
         "Metal creaks in the dark.",
         "The breathing stops, then begins again."
       ]
+    },
+    "132": {
+      "name": "The Long Gallery",
+      "text": "Portraits of the old march lords hang in a long, cold line, their faces darkened by smoke. A runner of faded carpet leads past four closed doors to a library at the end. Dust hangs in the window light, and one portrait has been turned to the wall.",
+      "exits": {
+        "down": 122,
+        "north": 133,
+        "south": 134,
+        "west": 135,
+        "east": 136
+      },
+      "details": {
+        "portraits": "The march lords wear grey and red. The last portrait has been turned face-to-wall, but the frame is newer than the rest.",
+        "carpet": "The carpet is worn to the warp in a straight line from the stair to the library.",
+        "doors": "Two doors stand open, two are closed. The closed ones are the north and south chambers."
+      },
+      "ambient": [
+        "A portrait creaks on its hook.",
+        "Dust turns in the window light although the air is still."
+      ]
+    },
+    "133": {
+      "name": "The North Chamber",
+      "text": "A great bed with a torn canopy fills the north chamber. The window looks over the valley, and a banded chest sits at the foot of the bed. The room smells of cedar and cold ash, and the bed has not been slept in for a long time.",
+      "exits": {
+        "south": 132
+      },
+      "details": {
+        "bed": "The canopy is torn but the sheets are clean. A red cloak is folded on the pillow.",
+        "chest": "A banded chest with a simple lock. The wood is cedar; the bands are iron.",
+        "window": "The window looks down the valley. The Grey Road is a pale thread in the dark."
+      },
+      "ambient": [
+        "The canopy shivers in a draft.",
+        "The chest settles with a small click."
+      ]
+    },
+    "134": {
+      "name": "The South Chamber",
+      "text": "This was a child's room: a narrow bed, a shelf of wooden animals, and a small desk beneath the window. The desk has been pushed against the wall, and a door behind it leads to a room of maps. A toy horse lies on its side in the dust.",
+      "exits": {
+        "north": 132,
+        "east": 137
+      },
+      "details": {
+        "desk": "The desk is small and scored with ink. A child's name has been carved into the lid and scratched out.",
+        "shelf": "The wooden animals are carved with care. One is missing its head.",
+        "toy": "A wooden horse with a red thread for a mane. It is colder than the room."
+      },
+      "ambient": [
+        "The toy horse rocks once and stops.",
+        "The window rattles softly in its frame."
+      ]
+    },
+    "135": {
+      "name": "The Nursery",
+      "text": "A crib stands against the wall beneath a painted sky, and a music box sits on a chest of drawers. The room is neat, as if waiting for someone who never came. A doll with a cracked face sits in the crib with its hands folded.",
+      "exits": {
+        "east": 132
+      },
+      "details": {
+        "crib": "The crib is empty except for the doll. The blankets are turned down.",
+        "music box": "A small music box with a silver key. It is wound but silent.",
+        "doll": "The doll's face is cracked from brow to chin. Its eyes are two black beads."
+      },
+      "ambient": [
+        "The music box turns a quarter-turn and stops.",
+        "The painted sky seems to move at the edge of sight."
+      ]
+    },
+    "136": {
+      "name": "The Library",
+      "text": "Shelves climb to the ceiling, packed with ledgers, maps and books that have swollen with damp. A brass ladder runs on a rail, and a locked cabinet stands in the corner beneath a sheet of dust. The air smells of paper, leather and old smoke.",
+      "exits": {
+        "west": 132,
+        "north": 137,
+        "east": 158
+      },
+      "details": {
+        "shelves": "The shelves are deep. Most of the books are ledgers; a few are histories with their spines cut away.",
+        "ladder": "The brass ladder is polished by hands. It stops at a shelf where the books have been pulled forward.",
+        "cabinet": "A narrow cabinet with a brass lock. The keyhole is small and clean."
+      },
+      "ambient": [
+        "A page turns somewhere in the stacks.",
+        "The ladder rings softly against its rail."
+      ]
+    },
+    "137": {
+      "name": "The Map Room",
+      "text": "A long table fills the map room, covered with charts of the valley and the roads beyond it. Brass pins mark the keep, the forest and a sealed room beneath the chapel. A cabinet of rolled maps stands against the west wall.",
+      "exits": {
+        "south": 136,
+        "west": 134
+      },
+      "details": {
+        "table": "The charts are annotated in a careful hand. The sealed room is circled in red.",
+        "pins": "The pins are brass and cold. One has been pushed through the chapel.",
+        "maps": "The rolled maps are dusty. One shows a road that no longer exists."
+      },
+      "ambient": [
+        "A pin rolls across the table and stops.",
+        "The charts rustle although the window is shut."
+      ]
+    },
+    "138": {
+      "name": "The Solar Balcony",
+      "text": "The balcony hangs over the bailey from the solar's north wall. The rail is carved with vines, and a spyglass on a tripod points at the forest. Wind moves through the open shutters, carrying the smell of rain and old stone.",
+      "exits": {
+        "south": 127,
+        "east": 159
+      },
+      "details": {
+        "rail": "The carved vines are worn smooth. A chip of grey paint flakes under a finger.",
+        "spyglass": "A brass spyglass on a wooden tripod. The lens is clear and very cold.",
+        "view": "The bailey is a grey bowl below. The gate guard is a small red mark at the wall."
+      },
+      "ambient": [
+        "The shutters knock against the wall.",
+        "The spyglass trembles on its tripod."
+      ]
+    },
+    "139": {
+      "name": "The Roof",
+      "text": "The keep's roof is a sea of grey slate broken by chimneys and a single narrow walkway. The wind is stronger here, and the valley opens in every direction. A bell tower rises at the north end; the gate roof lies west.",
+      "exits": {
+        "south": 129,
+        "west": 156,
+        "north": 140
+      },
+      "details": {
+        "slate": "The slate is cracked and lifting. A fall from here would be long.",
+        "chimneys": "The chimneys are cold. One has a jackdaw's nest wedged into the pot.",
+        "walkway": "The walkway is narrow and slick with rain. It runs from the tower to the gate."
+      },
+      "ambient": [
+        "The wind pulls at your clothes.",
+        "A slate shifts underfoot with a dry click."
+      ]
+    },
+    "140": {
+      "name": "The Bell Tower",
+      "text": "A great bronze bell hangs in the open tower, green with weather and silent. The rope has been cut and coiled on the floor, and pigeons nest in the frame above. The roof falls away below the bell, and the valley is very far down.",
+      "exits": {
+        "south": 139
+      },
+      "details": {
+        "bell": "The bell is huge and green. A red hand is cast into its shoulder.",
+        "rope": "The rope is cut cleanly and coiled. It has not been used in years.",
+        "pigeons": "The pigeons watch from the frame. One is missing a foot."
+      },
+      "ambient": [
+        "The bell hums faintly in the wind.",
+        "A pigeon shifts its weight on the beam."
+      ]
+    },
+    "141": {
+      "name": "The Servants' Wing",
+      "text": "A low corridor runs behind the great hall, its walls stained by candle smoke and years of work. Doors open to a laundry, a servants' hall and a stillroom; a narrow back stair climbs to the high hall. The air smells of soap, herbs and old cooking.",
+      "exits": {
+        "south": 125,
+        "north": 142,
+        "west": 143
+      },
+      "details": {
+        "doors": "The doors are plain and low. One has a chalk mark at shoulder height.",
+        "smoke": "The soot is thickest near the ceiling. The plaster is warm in one place.",
+        "stair": "The back stair is narrow enough to touch both walls. It creaks under a foot."
+      },
+      "ambient": [
+        "A pot lid rings somewhere behind a door.",
+        "The corridor smells briefly of fresh bread, then of dust."
+      ]
+    },
+    "142": {
+      "name": "The Laundry",
+      "text": "Tubs of grey water stand along the wall, and sheets hang from a line across the ceiling like frozen ghosts. A copper boiler is cold, and a chest of folded linen sits beneath the window. The room smells of soap and wet wool.",
+      "exits": {
+        "south": 141,
+        "east": 143
+      },
+      "details": {
+        "tubs": "The water is cold and filmed with dust. A wooden paddle leans against the rim.",
+        "sheets": "The sheets are stiff with age. One still holds the shape of a body.",
+        "chest": "A plain chest of folded linen. The lid is warped but sound."
+      },
+      "ambient": [
+        "A sheet moves on the line.",
+        "Water drips into a tub with a hollow note."
+      ]
+    },
+    "143": {
+      "name": "The Servants' Hall",
+      "text": "A long trestle table fills the servants' hall, with benches worn smooth by years of meals. A hearth at the end still holds a little warmth, and a pot of stew hangs above it. The cook and a thin servant watch the door; this is the one room in the keep that feels lived in.",
+      "exits": {
+        "east": 141,
+        "north": 144,
+        "south": 145,
+        "west": 142
+      },
+      "details": {
+        "table": "The table is scrubbed clean. A loaf of bread and a knife sit at one end.",
+        "hearth": "The hearth is banked, not dead. The stew smells of root vegetables and pepper.",
+        "benches": "The benches are worn into hollows. One has a child's initials cut into the edge."
+      },
+      "ambient": [
+        "The stew bubbles softly.",
+        "A bench creaks under a weight that is not there."
+      ],
+      "safe": true
+    },
+    "144": {
+      "name": "The Stillroom",
+      "text": "Glass jars line the stillroom shelves, holding dried leaves, powders and things that were never plants. A copper still squats in the corner, and a worktable is covered with knives, bowls and a mortar. The air is sharp and medicinal.",
+      "exits": {
+        "south": 143
+      },
+      "details": {
+        "jars": "The jars are labelled in a careful hand. One label has been scratched out.",
+        "still": "The copper still is cold and clean. A thin residue stains the spout.",
+        "table": "The table is crowded with knives and bowls. A mortar holds a green paste."
+      },
+      "ambient": [
+        "A jar ticks as it cools.",
+        "The sharp smell catches the back of your throat."
+      ]
+    },
+    "145": {
+      "name": "The Back Stair",
+      "text": "A narrow stair climbs from the servants' wing to the high hall, its steps worn into shallow cups. The walls are close enough to touch on both sides, and a small door at the top is painted the same grey as the stone. A draft pulls upward, carrying the smell of the hall's cold hearth.",
+      "exits": {
+        "north": 143,
+        "up": 158
+      },
+      "details": {
+        "steps": "The steps are worn smooth in the centre. A chalk tally climbs the wall beside them.",
+        "door": "The top door is grey and unremarkable. The latch is on the hall side.",
+        "draft": "The draft is steady and cold. It smells of old smoke."
+      },
+      "ambient": [
+        "The stair creaks under a foot.",
+        "The door at the top settles in its frame."
+      ]
+    },
+    "146": {
+      "name": "The Crypt",
+      "text": "The crypt lies beneath the chapel, a low vault of stone shelves and sealed tombs. The air is cold and tastes of dust; candles have burned down to wax in every niche. A passage leads north to the ossuary, and a iron door east opens onto the reliquary vault.",
+      "exits": {
+        "up": 126,
+        "north": 147,
+        "east": 148
+      },
+      "details": {
+        "tombs": "The tombs are sealed with plain stone slabs. One slab has been moved aside.",
+        "candles": "The candles are cold. Wax has run down the wall in long grey tears.",
+        "door": "The east door is iron, banded and cold. It is not locked."
+      },
+      "ambient": [
+        "A candle gutters although there is no draft.",
+        "Something shifts in the dark beyond the tombs."
+      ],
+      "dark": true,
+      "darkText": "The crypt is black. Cold stone presses close, and the air tastes of dust and old wax. You can see only the stair behind you."
+    },
+    "147": {
+      "name": "The Ossuary",
+      "text": "Bones fill the niches of the ossuary, sorted by kind and tied with faded red thread. A low stone table holds a single skull and a bowl of dust. The south passage returns to the crypt; the east wall is cracked, and a cold draft comes through the crack.",
+      "exits": {
+        "south": 146
+      },
+      "details": {
+        "niches": "The niches are full. The bones are old and dry, sorted with a care that feels recent.",
+        "table": "The table is stained dark. The skull faces the cracked wall.",
+        "crack": "The crack is narrow but deep. The draft through it smells of iron and cold stone."
+      },
+      "ambient": [
+        "A bone settles in its niche.",
+        "The draft through the crack rises and falls like breathing."
+      ],
+      "secretExits": {
+        "east": 160
+      },
+      "dark": true,
+      "darkText": "The ossuary is dark. Dry bones click somewhere close, and a cold draft comes through a crack in the east wall."
+    },
+    "148": {
+      "name": "The Reliquary Vault",
+      "text": "The reliquary vault is a small stone room lined with empty shelves. A stone plinth at the centre holds a single reliquary of black glass, and dust lies thick on the floor. The iron door west returns to the crypt.",
+      "exits": {
+        "west": 146
+      },
+      "details": {
+        "plinth": "The plinth is plain stone. The reliquary on it is black glass, cold and clear.",
+        "shelves": "The shelves are empty except for dust and a few rings where vessels once stood.",
+        "reliquary": "The black reliquary holds a pale light that does not reach the room."
+      },
+      "ambient": [
+        "The reliquary hums at the edge of hearing.",
+        "Dust settles in a slow spiral."
+      ]
+    },
+    "149": {
+      "name": "The Watch Room",
+      "text": "The gate watch room is cramped and warm, with a map table, a rack of spears and a narrow window over the road. A cup of cold tea sits beside a ledger, and a door north opens onto a smaller watch post. Stairs climb to the gate roof and descend to the gatehouse.",
+      "exits": {
+        "down": 118,
+        "up": 156,
+        "north": 157,
+        "south": 150
+      },
+      "details": {
+        "map table": "The map is marked with patrols and a red line at the forest edge.",
+        "spears": "The spears are orderly. One has a broken point.",
+        "ledger": "The ledger records watches, weather and one line repeated: 'No one came.'"
+      },
+      "ambient": [
+        "The window rattles in the wind.",
+        "A spear shifts in the rack."
+      ]
+    },
+    "150": {
+      "name": "The Armory",
+      "text": "Racks of spears and shields line the armory, and a banded chest sits beneath the window. The air is thick with oil and old leather. A door west leads to the castle smithy; the barracks stair descends south.",
+      "exits": {
+        "north": 149,
+        "down": 121,
+        "east": 151
+      },
+      "details": {
+        "racks": "The racks are full. The weapons are plain but well kept.",
+        "chest": "A banded chest with a heavy lock. The lid is closed.",
+        "window": "The window is small and barred. The bailey is a grey slice below."
+      },
+      "ambient": [
+        "Oil and cold iron smell sharp in the air.",
+        "A shield settles against its rack."
+      ]
+    },
+    "151": {
+      "name": "The Castle Smithy",
+      "text": "A cold forge fills one wall, its mouth black with old clinker. The anvil is scarred and steady, and hammers hang in a row beside it. A door east returns to the barracks; the armory is north.",
+      "exits": {
+        "west": 150,
+        "east": 121
+      },
+      "details": {
+        "forge": "The forge is cold, but the ash is deep. Someone has banked it carefully.",
+        "anvil": "The anvil rings faintly when touched. Its face is worn into a shallow bowl.",
+        "hammers": "The hammers are heavy and well used. One has a red rag wrapped around the haft."
+      },
+      "ambient": [
+        "The forge ticks as it cools.",
+        "A hammer knocks softly against the wall."
+      ]
+    },
+    "152": {
+      "name": "The Well",
+      "text": "A stone well opens in the floor of a low, damp chamber beneath the bailey. The shaft drops into black water, and a bucket hangs from a frayed rope. A passage east leads toward the cellar; a stair descends to the cistern.",
+      "exits": {
+        "up": 119,
+        "east": 124,
+        "down": 153
+      },
+      "details": {
+        "well": "The well is deep. The water below is black and very still.",
+        "bucket": "The bucket is cracked and dry. The rope is frayed but holds.",
+        "shaft": "The shaft is lined with wet stone. A cold draft rises from it."
+      },
+      "ambient": [
+        "Water drips far below.",
+        "The rope creaks against the wellhead."
+      ],
+      "dark": true,
+      "darkText": "The well chamber is dark. Water drips far below, and the stone is cold and wet underfoot."
+    },
+    "153": {
+      "name": "The Cistern",
+      "text": "A shallow reservoir fills the cistern, black and still. Stone pillars rise from the water to a low ceiling, and a narrow ledge runs around the edge. Something has been dragged across the ledge, leaving a dark smear. The well stair climbs north; the kennel is south.",
+      "exits": {
+        "up": 152,
+        "south": 154
+      },
+      "details": {
+        "water": "The water is black and still. It reflects nothing without light.",
+        "pillars": "The pillars are slick with green. One is cracked at the base.",
+        "ledge": "The ledge is narrow and wet. The smear is old and dark."
+      },
+      "ambient": [
+        "A drop falls into the cistern.",
+        "Something moves in the water at the edge of hearing."
+      ],
+      "dark": true,
+      "darkText": "The cistern is black. Water lapped at the ledge, and something moved in the dark beyond the pillars."
+    },
+    "154": {
+      "name": "The Kennel",
+      "text": "Straw covers the floor of the kennel, and wooden bowls line the wall. A low door west returns to the stables; a stair south descends to the cistern. The smell of wet dog is strong, and the straw has been disturbed recently.",
+      "exits": {
+        "west": 120,
+        "north": 153
+      },
+      "details": {
+        "bowls": "The bowls are empty except for a little grey water.",
+        "straw": "The straw is deep and warm. Something has been sleeping here.",
+        "door": "The door is low and chewed at the corner."
+      },
+      "ambient": [
+        "Straw rustles in the dark.",
+        "A low growl starts and stops."
+      ]
+    },
+    "155": {
+      "name": "The Hayloft",
+      "text": "The hayloft is warm and dusty, lit by a single shutter. Bales are stacked to the roof, and a ladder descends to the stables. A narrow door east opens onto the gate roof; pigeons nest in the eaves.",
+      "exits": {
+        "down": 120,
+        "east": 156
+      },
+      "details": {
+        "bales": "The bales are old but dry. A fork is buried in one.",
+        "ladder": "The ladder is rough wood. The rungs are worn smooth.",
+        "door": "The door is low and warped. Daylight shows around the frame."
+      },
+      "ambient": [
+        "Hay dust turns in the light.",
+        "A pigeon flutters in the eaves."
+      ]
+    },
+    "156": {
+      "name": "The Gate Roof",
+      "text": "The gate roof is a flat expanse of lead and slate above the portcullis. A signal horn hangs from a post, and the roof walk runs east to the keep and west to the hayloft. The road below is a pale ribbon in the dark.",
+      "exits": {
+        "down": 149,
+        "west": 155,
+        "east": 139
+      },
+      "details": {
+        "horn": "A brass signal horn, green with weather. It has no mouthpiece.",
+        "parapet": "The parapet is low and broken in one place.",
+        "walk": "The lead walk is soft underfoot. It slopes toward the bailey."
+      },
+      "ambient": [
+        "The wind hums across the horn.",
+        "Lead creaks as it cools."
+      ]
+    },
+    "157": {
+      "name": "The Narrow Watch",
+      "text": "A narrow watch post looks down the road through a slit in the wall. A cot, a stool and a cold brazier fill the room. A slate ledger hangs from a nail beside the slit, its last page empty.",
+      "exits": {
+        "south": 149
+      },
+      "details": {
+        "slit": "The slit frames the road and the dark treeline. Nothing moves on it.",
+        "cot": "The cot is unmade. The blanket is thin and damp.",
+        "ledger": "The ledger's last page is blank except for a date and a single word: 'Quiet.'"
+      },
+      "ambient": [
+        "The brazier ticks as it cools.",
+        "Wind worries at the slit."
+      ]
+    },
+    "158": {
+      "name": "The High Hall",
+      "text": "A second hall occupies the upper floor, smaller and colder than the great hall below. A long table is set with cracked plates, and a high seat stands against the wall beneath a torn banner. The back stair descends to the servants' wing, the library is west, and a study lies south.",
+      "exits": {
+        "west": 136,
+        "south": 159,
+        "down": 145
+      },
+      "details": {
+        "table": "The table is set for a meal that was never eaten. The plates are cracked and dry.",
+        "high seat": "The high seat is carved with a red hand. The cushion has been slashed.",
+        "banner": "The banner is torn. A name has been cut from the cloth."
+      },
+      "ambient": [
+        "A plate rocks on the table.",
+        "The banner stirs in a draft."
+      ]
+    },
+    "159": {
+      "name": "The Study",
+      "text": "The study is small and cluttered, with a desk under the window, a chest against the wall and books stacked on every surface. A map of the keep is pinned to the desk, marked with a red circle beneath the chapel. The balcony is west; the high hall is north.",
+      "exits": {
+        "west": 138,
+        "north": 158
+      },
+      "details": {
+        "desk": "The desk is covered with notes. One page repeats a single word: 'Sealed.'",
+        "chest": "A small chest with a brass lock. The key is missing.",
+        "map": "The keep map marks a sealed room beneath the ossuary. The circle is fresh."
+      },
+      "ambient": [
+        "A page slides from the desk.",
+        "The window glass ticks in its frame."
+      ]
+    },
+    "160": {
+      "name": "The Sealed Room",
+      "text": "The sealed room is a narrow cell of dry stone, hidden behind the ossuary wall. A single coin rests on a stone shelf, and a tall shape stands in the corner with its back to the door. The air is cold and still, and the coin catches the light like an eye.",
+      "exits": {
+        "west": 147
+      },
+      "details": {
+        "coin": "A pale coin, older than the keep. A closed hand is stamped on its face.",
+        "shape": "The shape is tall and still. It has not turned, but it knows you are here.",
+        "shelf": "The shelf is dry and clean. The coin is the only thing on it."
+      },
+      "ambient": [
+        "The coin rings faintly.",
+        "The shape breathes once, very slowly."
+      ],
+      "dark": true,
+      "darkText": "The sealed room is black. A single point of pale light rests on a shelf, and something tall stands in the corner."
+    },
+    "161": {
+      "name": "The Tower Cell",
+      "text": "A small cell is cut into the tower wall, its only light a slit above head height. Chains hang from an iron ring, and a thin prisoner sits against the wall with a scrap of blanket. A narrow door west returns to the tower stair.",
+      "exits": {
+        "west": 128
+      },
+      "details": {
+        "chains": "The chains are old and short. The manacles are open.",
+        "prisoner": "The prisoner is thin and very still. His eyes follow you.",
+        "slit": "The slit shows a slice of grey sky and the edge of the roof."
+      },
+      "ambient": [
+        "A chain shifts against the wall.",
+        "The prisoner breathes out slowly."
+      ],
+      "dark": true,
+      "darkText": "The tower cell is dark. Chains shift somewhere close, and a thin slit of grey light hangs above."
     }
   },
   "task": {
@@ -3919,6 +4464,251 @@
       "description": "A black hound stands beside the plinth, eyes catching the thin seam of light.",
       "examine": "The hound's coat is rough and hot. Its collar is iron, and the tag is worn smooth.",
       "dialogue": []
+    },
+    {
+      "id": "keep-gallery-guard",
+      "name": "a red gallery guard",
+      "room": 132,
+      "home": 132,
+      "zone": "grey-keep",
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "level": 5,
+      "hp": 28,
+      "maxHp": 28,
+      "damage": 4,
+      "armor": 2,
+      "aggression": 35,
+      "xp": 65,
+      "loot": [],
+      "description": "A guard in a red cloak stands at the turn of the gallery.",
+      "examine": "The guard's boots are quiet on the carpet. A short blade hangs at her side.",
+      "dialogue": []
+    },
+    {
+      "id": "keep-librarian",
+      "name": "the grey librarian",
+      "room": 136,
+      "home": 136,
+      "zone": "grey-keep",
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "level": 4,
+      "hp": 16,
+      "maxHp": 16,
+      "damage": 0,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 0,
+      "loot": [],
+      "description": "A thin figure in a grey coat sorts books at the far shelf.",
+      "examine": "The librarian's hands are ink-stained and careful. A brass key hangs at the belt.",
+      "dialogue": [
+        "The cabinet holds the star chart. The map room knows more than the library.",
+        "The sealed room is beneath the ossuary. The wall is cracked wider than it looks."
+      ]
+    },
+    {
+      "id": "keep-servant",
+      "name": "a thin servant",
+      "room": 143,
+      "home": 143,
+      "zone": "grey-keep",
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "level": 3,
+      "hp": 10,
+      "maxHp": 10,
+      "damage": 0,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 0,
+      "loot": [],
+      "description": "A thin servant stands by the hearth with a wooden spoon.",
+      "examine": "The servant's sleeves are rolled. Her hands are red from the cold.",
+      "dialogue": [
+        "The cook keeps the stew for the guards. Take a bowl if you must.",
+        "The back stair goes up to the high hall. The captain uses it when he does not want to be seen."
+      ]
+    },
+    {
+      "id": "keep-watch-sergeant",
+      "name": "the watch sergeant",
+      "room": 149,
+      "home": 149,
+      "zone": "grey-keep",
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "level": 5,
+      "hp": 30,
+      "maxHp": 30,
+      "damage": 5,
+      "armor": 2,
+      "aggression": 40,
+      "xp": 75,
+      "loot": [],
+      "description": "A broad sergeant stands over the map table, scarred hands flat on the wood.",
+      "examine": "The sergeant's knuckles are split. A red hand is stitched on his sleeve.",
+      "dialogue": []
+    },
+    {
+      "id": "keep-armory-guard",
+      "name": "the armory guard",
+      "room": 150,
+      "home": 150,
+      "zone": "grey-keep",
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "level": 6,
+      "hp": 32,
+      "maxHp": 32,
+      "damage": 5,
+      "armor": 3,
+      "aggression": 45,
+      "xp": 90,
+      "loot": [],
+      "description": "A guard in a red cloak stands among the spear racks, shield on one arm.",
+      "examine": "The guard's shield is painted with a red hand. The paint is fresh.",
+      "dialogue": []
+    },
+    {
+      "id": "keep-smith",
+      "name": "the castle smith",
+      "room": 151,
+      "home": 151,
+      "zone": "grey-keep",
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "level": 4,
+      "hp": 22,
+      "maxHp": 22,
+      "damage": 0,
+      "armor": 1,
+      "aggression": 0,
+      "xp": 0,
+      "loot": [],
+      "description": "A broad figure in a leather apron sits beside the cold forge.",
+      "examine": "The smith's hands are scarred and steady. A hammer rests across his knees.",
+      "dialogue": [
+        "The forge is cold. The Red Company took the coal and left the iron.",
+        "The armory is north. The sergeant keeps the good mail under lock."
+      ]
+    },
+    {
+      "id": "keep-kennel-hound",
+      "name": "a red kennel hound",
+      "room": 154,
+      "home": 154,
+      "zone": "grey-keep",
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "level": 3,
+      "hp": 16,
+      "maxHp": 16,
+      "damage": 4,
+      "armor": 1,
+      "aggression": 60,
+      "xp": 25,
+      "loot": [],
+      "description": "A red-coated hound rises from the straw, lips lifted from its teeth.",
+      "examine": "The hound is lean and hot. Its collar is iron, with a broken tag.",
+      "dialogue": []
+    },
+    {
+      "id": "keep-cistern-thing",
+      "name": "a pale cistern thing",
+      "room": 153,
+      "home": 153,
+      "zone": "grey-keep",
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "level": 5,
+      "hp": 26,
+      "maxHp": 26,
+      "damage": 5,
+      "armor": 1,
+      "aggression": 70,
+      "xp": 80,
+      "loot": [],
+      "description": "A pale shape stands in the cistern water, too thin to be a person.",
+      "examine": "The thing has no face. Its skin is the colour of the water.",
+      "dialogue": []
+    },
+    {
+      "id": "keep-ossuary-wisp",
+      "name": "a bone wisp",
+      "room": 147,
+      "home": 147,
+      "zone": "grey-keep",
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "level": 4,
+      "hp": 18,
+      "maxHp": 18,
+      "damage": 4,
+      "armor": 0,
+      "aggression": 50,
+      "xp": 45,
+      "loot": [],
+      "description": "A cold light drifts above the ossuary table, trailing a line of dust.",
+      "examine": "The wisp is a pale flame with no heat. It circles the skull and returns.",
+      "dialogue": []
+    },
+    {
+      "id": "keep-sealed-guardian",
+      "name": "the sealed guardian",
+      "room": 160,
+      "home": 160,
+      "zone": "grey-keep",
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "level": 7,
+      "hp": 55,
+      "maxHp": 55,
+      "damage": 7,
+      "armor": 4,
+      "aggression": 80,
+      "xp": 220,
+      "loot": [
+        "keep-guardian-shard"
+      ],
+      "description": "A tall shape of dry stone stands in the corner, its back to the door.",
+      "examine": "The guardian is jointed like a statue. Its hands are closed around nothing.",
+      "dialogue": []
+    },
+    {
+      "id": "keep-cell-prisoner",
+      "name": "the tower prisoner",
+      "room": 161,
+      "home": 161,
+      "zone": "grey-keep",
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "level": 4,
+      "hp": 12,
+      "maxHp": 12,
+      "damage": 0,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 0,
+      "loot": [],
+      "description": "A thin prisoner sits against the tower wall, a scrap of blanket over his knees.",
+      "examine": "The prisoner's wrists are scarred. His eyes are clear and very tired.",
+      "dialogue": [
+        "The captain keeps the sealed room's coin. He does not know what it is.",
+        "The ossuary wall is cracked. The crack is wider than it looks."
+      ]
     }
   ],
   "zones": [
@@ -4140,7 +4930,37 @@
         128,
         129,
         130,
-        131
+        131,
+        132,
+        133,
+        134,
+        135,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143,
+        144,
+        145,
+        146,
+        147,
+        148,
+        149,
+        150,
+        151,
+        152,
+        153,
+        154,
+        155,
+        156,
+        157,
+        158,
+        159,
+        160,
+        161
       ]
     }
   ],
@@ -6337,6 +7157,340 @@
         "readable"
       ],
       "examine": "A red hand on a field of grey. The cloth is older than the cracks around it. A name has been cut away."
+    },
+    {
+      "id": "keep-north-chest",
+      "name": "a cedar chest",
+      "room": 133,
+      "flags": [
+        "fixed",
+        "container"
+      ],
+      "capacity": 2,
+      "open": false,
+      "openAtStart": false,
+      "examine": "A cedar chest with iron bands. The lock is simple."
+    },
+    {
+      "id": "keep-library-cabinet",
+      "name": "a locked book cabinet",
+      "room": 136,
+      "flags": [
+        "fixed",
+        "container"
+      ],
+      "capacity": 2,
+      "open": false,
+      "openAtStart": false,
+      "examine": "A narrow cabinet with a brass lock. The keyhole is small and clean."
+    },
+    {
+      "id": "keep-star-chart",
+      "name": "a star chart",
+      "inside": "keep-library-cabinet",
+      "flags": [
+        "takeable",
+        "readable"
+      ],
+      "readable": true,
+      "value": 30,
+      "examine": "A chart of stars over the valley. One star is circled in red above the keep."
+    },
+    {
+      "id": "keep-jewel-box",
+      "name": "a jewel box",
+      "inside": "keep-north-chest",
+      "flags": [
+        "takeable"
+      ],
+      "value": 45,
+      "examine": "A small box of dark wood. The velvet inside is empty except for a ring-shaped mark."
+    },
+    {
+      "id": "keep-child-toy",
+      "name": "a wooden horse",
+      "room": 134,
+      "flags": [
+        "takeable"
+      ],
+      "value": 8,
+      "examine": "A wooden horse with a red thread mane. It is colder than the room."
+    },
+    {
+      "id": "keep-music-box",
+      "name": "a silver music box",
+      "room": 135,
+      "flags": [
+        "fixed",
+        "readable"
+      ],
+      "readable": true,
+      "examine": "A small music box with a silver key. It is wound but silent."
+    },
+    {
+      "id": "keep-doll",
+      "name": "a cracked doll",
+      "room": 135,
+      "flags": [
+        "takeable"
+      ],
+      "value": 12,
+      "examine": "A doll with a cracked face and two black bead eyes."
+    },
+    {
+      "id": "keep-spyglass",
+      "name": "a brass spyglass",
+      "room": 138,
+      "flags": [
+        "takeable"
+      ],
+      "value": 35,
+      "examine": "A brass spyglass on a wooden tripod. The lens is clear and very cold."
+    },
+    {
+      "id": "keep-laundry-chest",
+      "name": "a linen chest",
+      "room": 142,
+      "flags": [
+        "fixed",
+        "container"
+      ],
+      "capacity": 2,
+      "open": false,
+      "openAtStart": false,
+      "examine": "A plain chest of folded linen. The lid is warped but sound."
+    },
+    {
+      "id": "keep-linen",
+      "name": "a bolt of good linen",
+      "room": 142,
+      "flags": [
+        "takeable"
+      ],
+      "value": 10,
+      "examine": "A bolt of linen, still clean. It is worth more than the chest."
+    },
+    {
+      "id": "keep-servant-stew",
+      "name": "a bowl of servant stew",
+      "room": 143,
+      "flags": [
+        "takeable",
+        "food"
+      ],
+      "bites": 2,
+      "heal": 4,
+      "value": 3,
+      "examine": "Root vegetables and pepper. It is hot."
+    },
+    {
+      "id": "keep-healing-herb",
+      "name": "a bundle of healing herbs",
+      "room": 144,
+      "flags": [
+        "takeable",
+        "food"
+      ],
+      "bites": 1,
+      "heal": 6,
+      "value": 8,
+      "examine": "A bundle of narrow leaves with a sharp, clean smell."
+    },
+    {
+      "id": "keep-crypt-chest",
+      "name": "a stone chest",
+      "room": 146,
+      "flags": [
+        "fixed",
+        "container"
+      ],
+      "capacity": 2,
+      "open": false,
+      "openAtStart": false,
+      "examine": "A stone chest, its lid carved with a closed hand."
+    },
+    {
+      "id": "keep-crypt-relic",
+      "name": "a bone reliquary",
+      "inside": "keep-crypt-chest",
+      "flags": [
+        "takeable"
+      ],
+      "value": 35,
+      "examine": "A small reliquary of yellowed bone. Something rattles inside."
+    },
+    {
+      "id": "keep-ossuary-urn",
+      "name": "a sealed urn",
+      "room": 147,
+      "flags": [
+        "takeable"
+      ],
+      "value": 20,
+      "examine": "A sealed urn of grey clay. It is heavier than it looks."
+    },
+    {
+      "id": "keep-relic",
+      "name": "a black glass reliquary",
+      "room": 148,
+      "flags": [
+        "takeable"
+      ],
+      "value": 60,
+      "examine": "A reliquary of black glass. A pale light moves inside it."
+    },
+    {
+      "id": "keep-armory-mail",
+      "name": "a red company mail shirt",
+      "room": 150,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "body",
+      "armor": 3,
+      "value": 45,
+      "examine": "A short mail shirt, red with rust at the rings. It is heavier than it looks."
+    },
+    {
+      "id": "keep-armory-spear",
+      "name": "a sergeant's spear",
+      "room": 150,
+      "flags": [
+        "takeable",
+        "weapon"
+      ],
+      "slot": "mainhand",
+      "damage": 5,
+      "value": 40,
+      "examine": "A spear with a black haft and a leaf-shaped head. The edge is very clean."
+    },
+    {
+      "id": "keep-smith-hammer",
+      "name": "a forge hammer",
+      "room": 151,
+      "flags": [
+        "takeable",
+        "weapon"
+      ],
+      "slot": "mainhand",
+      "damage": 5,
+      "value": 35,
+      "technique": "bash",
+      "examine": "A heavy hammer with a square head. The haft is wrapped in wire."
+    },
+    {
+      "id": "keep-smith-apron",
+      "name": "a leather forge apron",
+      "room": 151,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "body",
+      "armor": 1,
+      "value": 12,
+      "examine": "A scarred leather apron. It smells of smoke and old iron."
+    },
+    {
+      "id": "keep-cistern-pearl",
+      "name": "a cistern pearl",
+      "room": 153,
+      "flags": [
+        "takeable"
+      ],
+      "value": 30,
+      "examine": "A pale pearl, cold and faintly wet. It reflects a light that is not there."
+    },
+    {
+      "id": "keep-hound-collar",
+      "name": "an iron hound collar",
+      "room": 154,
+      "flags": [
+        "takeable"
+      ],
+      "value": 15,
+      "examine": "A heavy iron collar with a broken tag. The leather is chewed."
+    },
+    {
+      "id": "keep-signal-horn",
+      "name": "a brass signal horn",
+      "room": 156,
+      "flags": [
+        "fixed",
+        "readable"
+      ],
+      "readable": true,
+      "examine": "A brass signal horn, green with weather. It has no mouthpiece."
+    },
+    {
+      "id": "keep-high-candlesticks",
+      "name": "a pair of silver candlesticks",
+      "room": 158,
+      "flags": [
+        "takeable"
+      ],
+      "value": 30,
+      "examine": "Two silver candlesticks, black with old wax. They are heavier than they look."
+    },
+    {
+      "id": "keep-study-chest",
+      "name": "a small brass-bound chest",
+      "room": 159,
+      "flags": [
+        "fixed",
+        "container"
+      ],
+      "capacity": 2,
+      "open": false,
+      "openAtStart": false,
+      "examine": "A small chest with a brass lock. The lock hangs open."
+    },
+    {
+      "id": "keep-warden-letter",
+      "name": "a sealed letter",
+      "inside": "keep-study-chest",
+      "flags": [
+        "takeable",
+        "readable"
+      ],
+      "readable": true,
+      "value": 15,
+      "examine": "A letter sealed with a red hand. The writer warns of the sealed room."
+    },
+    {
+      "id": "keep-first-coin",
+      "name": "the first coin",
+      "room": 160,
+      "flags": [
+        "takeable"
+      ],
+      "value": 50,
+      "examine": "A pale coin, older than the keep. A closed hand is stamped on its face."
+    },
+    {
+      "id": "keep-guardian-shard",
+      "name": "a guardian shard",
+      "room": 160,
+      "flags": [
+        "takeable"
+      ],
+      "value": 60,
+      "examine": "A shard of dry stone, warm to the touch. It hums like a struck bell."
+    },
+    {
+      "id": "keep-cell-note",
+      "name": "a prisoner's note",
+      "room": 161,
+      "flags": [
+        "takeable",
+        "readable"
+      ],
+      "readable": true,
+      "value": 6,
+      "examine": "A scrap of paper covered in a thin, careful hand. It names the sealed room and the coin."
     }
   ],
   "climate": {

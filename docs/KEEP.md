@@ -1,26 +1,36 @@
 # The Grey Keep
 
-The Grey Keep is the first **questless depth slice**: a 15-room border fortress
-at the King's Road, built to be worked through for keys, treasure, food, light
-and a way back. It does not add a quest, so the 20-quest budget is unchanged.
+The Grey Keep is the first **questless depth slice**: a 45-room border
+fortress at the King's Road, built to be worked through for keys, treasure,
+food, light and a way back. It does not add a quest, so the 20-quest budget is
+unchanged.
 
 ## Map
 
 ```text
-King's Road (11) — The Grey Road (117) — Forest Edge (15)
+King's Road (11) — Grey Road (117) — Forest Edge (15)
                          |
-                    The Iron Gate (118) ——— The Weeping Bailey (119)
-                         | secret north              north/east/south
-                    Servant Passage (125)      Hall (122) / Stables (120) / Barracks (121)
-                      /          \                   |
-             Cellar (124)     Chapel (126)       Solar (127)
-              |     \             |                  |
-        Dungeon (130) \          Hall (122)       Tower Stair (128)
-              | secret east                          |
-           Vault (131)                           Tower Top (129)
+                    Iron Gate (118) ——— Weeping Bailey (119)
+                    |  secret north       | north/east/south/down
+               Servant Passage (125)  Hall (122) / Stables (120) / Barracks (121) / Well (152)
+                 /       |       \          |             |             |
+          Cellar (124) Chapel (126) Servants (141)  Solar (127)  Kennel (154)  Armory (150)
+             |           |             |               |              |            |
+        Dungeon (130) Crypt (146)  Laundry (142)   Tower Stair (128) Cistern (153) Smithy (151)
+             |           |             |               |              |            |
+          Vault (131) Ossuary (147) Servants' Hall (143) Tower Top (129) Hayloft (155)
+                         | secret east      |                                |
+                    Sealed Room (160)  Stillroom (144) — Back Stair (145) — Gate Roof (156)
+                                                                              |
+                                                                         Watch (149/157)
+
+Upper floor: Hall (122) -> Long Gallery (132) -> North Chamber (133) / South Chamber (134) /
+Nursery (135) / Library (136) / Map Room (137); Solar (127) -> Balcony (138) -> Study (159);
+Library -> High Hall (158) -> Study.
 ```
 
-The full walkable graph is checked by the Gate; every exit is reciprocal.
+
+The Gate checks the full 45-room graph; every exit is reciprocal.
 
 ## Keys and shortcuts
 
@@ -29,14 +39,20 @@ The full walkable graph is checked by the Gate; every exit is reciprocal.
   Passage.
 - **A Night Market runner** can `pick postern` instead; the action is filtered
   from everyone else and refused server-side if the guild or rank is wrong.
+- **A Warden scout** can `track <name>` (or `seek`) to list matching mobiles,
+  objects and containers with the room that holds them. This is how the keep
+  rewards a second guild's active skill.
+- The **library cabinet** in the Library (136) holds the star chart; the
+  **sealed room** is behind the cracked ossuary wall (147).
 - **Black vault key** is in the dark iron chest in the Solar (127).
   `unlock vault` at the Dungeon (130) reveals the east door to the Vault (131).
 
 ## Light and dark
 
-The Cellar (124), Tower Stair (128) and Vault (131) are **dark**. Without a lit
-light or the `light` spell, `look` shows only the room name, a dark line and the
-exits. A lit lantern or torch, or `cast light`, reveals the usual description,
+The Cellar (124), Tower Stair (128), Vault (131), Crypt (146), Ossuary (147),
+Well (152), Cistern (153), Sealed Room (160) and Tower Cell (161) are **dark**.
+Without a lit light or the `light` spell, `look` shows only the room name, a
+dark line and the exits. A lit lantern or torch, or `cast light`, reveals the usual description,
 objects and mobiles. The lantern is in the Iron Gate; the kitchen has a torch.
 
 ## Food and gear
@@ -55,14 +71,16 @@ offer <treasure>
 ```
 
 The reliquary consumes a carried non-coin item worth at least 5 and grants
-`floor(value / 2)` experience. The item is gone; the two-hour reset restores
-world treasure. Gold is not accepted. This is a choice between selling for
-coins, keeping a set piece, or turning it into experience.
+`floor(value / 2)` experience, capped at **100 XP per two-hour reset**. The
+item is gone; the reset restores world treasure. Gold is not accepted. This is
+a choice between selling for coins, keeping a set piece, or turning it into
+experience.
 
 ## What comes next
 
-This is the **shell**, not the finished 45–50 room castle. The next fill adds
-the upper floors, the roof, the servants' wing and the sealed crypt, then tests
-the full loop from the King's Road to the vault and back. The same pattern can
-become the working mine, the shipwreck and the monastery; the tiny zones should
-eventually be folded into larger places rather than multiplied.
+The first slice is now **45 rooms**: gate/bailey, upper floor, library and map
+room, servants' wing, crypt and sealed room, gate roof, armory, smithy, well,
+cistern, kennel and hayloft. The next content step is not more rooms here but
+another deep site — the working mine, the shipwreck or the monastery — and
+folding the tiny one-to-five-room zones into larger places rather than
+multiplying zone labels.

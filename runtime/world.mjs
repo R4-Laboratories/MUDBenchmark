@@ -138,6 +138,8 @@ function awardXp(state, actor, amount, events) {
   }
 }
 
+const MAX_RELIQUARY_XP = 100;
+
 const STATUS = {
   burn: { id: "burn", name: "burning", damage: 1, rounds: 2 },
   bleed: { id: "bleed", name: "bleeding", damage: 1, rounds: 3 },
@@ -456,6 +458,8 @@ export function upgradeState(saved, base) {
       level: identity.level ?? 1,
       xp: identity.xp ?? 0,
       gold: Number.isInteger(identity.gold) && identity.gold >= 0 ? identity.gold : 0,
+      sacrificeCycle: Number.isInteger(identity.sacrificeCycle) ? identity.sacrificeCycle : 0,
+      sacrificeXp: Number.isInteger(identity.sacrificeXp) && identity.sacrificeXp >= 0 ? identity.sacrificeXp : 0,
       guild: guilds[identity.guild] ? identity.guild : null,
       guildRank: guilds[identity.guild]?.members?.[name] ?? null,
       standing: { ...(identity.standing ?? {}) },
@@ -584,6 +588,8 @@ export function checkpointIdentities(state) {
       role: actor.role ?? 0,
       level: actor.level ?? 1,
       xp: actor.xp ?? 0,
+      sacrificeCycle: actor.sacrificeCycle ?? 0,
+      sacrificeXp: actor.sacrificeXp ?? 0,
       guild: actor.guild ?? null,
       guildRank: actor.guildRank ?? null,
       standing: { ...(actor.standing ?? {}) },
@@ -854,6 +860,8 @@ export function step({ state, rooms, intents, actions = [] }) {
         level: 1,
         xp: 0,
         gold: 0,
+        sacrificeCycle: 0,
+        sacrificeXp: 0,
         guild: null,
         guildRank: null,
         quests: { active: [], completed: [] },
@@ -1248,7 +1256,7 @@ export function step({ state, rooms, intents, actions = [] }) {
       if (!known && account && !intent.prism) {
         known = {
           kind: "character", owner: accountKey, name: intent.name ?? intent.key,
-          role: intent.role ?? 0, level: 1, xp: 0, gold: 0, guild: null, guildRank: null,
+          role: intent.role ?? 0, level: 1, xp: 0, gold: 0, sacrificeCycle: 0, sacrificeXp: 0, guild: null, guildRank: null,
           quests: { active: [], completed: [] },
         };
         next.identities[intent.key] = known;
@@ -1278,6 +1286,8 @@ export function step({ state, rooms, intents, actions = [] }) {
       actor.role = known.role ?? 0;
       actor.level = known.level ?? 1;
       actor.xp = known.xp ?? 0;
+      actor.sacrificeCycle = known.sacrificeCycle ?? 0;
+      actor.sacrificeXp = known.sacrificeXp ?? 0;
       actor.maxHp = maxHpForLevel(actor.level);
       actor.hp = actor.maxHp;
       actor.wielding = null;
@@ -1332,6 +1342,8 @@ export function step({ state, rooms, intents, actions = [] }) {
         level: actor.level,
         xp: actor.xp,
         gold: 0,
+        sacrificeCycle: actor.sacrificeCycle ?? 0,
+        sacrificeXp: actor.sacrificeXp ?? 0,
         guild: actor.guild,
         guildRank: actor.guildRank,
         quests: actor.quests,
@@ -1365,7 +1377,7 @@ export function step({ state, rooms, intents, actions = [] }) {
       account.characters = [...account.characters, intent.name];
       next.identities[intent.name] = {
         kind: "character", owner: intent.accountKey, name: intent.name,
-        role: 0, level: 1, xp: 0, gold: 0, guild: null, guildRank: null,
+        role: 0, level: 1, xp: 0, gold: 0, sacrificeCycle: 0, sacrificeXp: 0, guild: null, guildRank: null,
         quests: { active: [], completed: [] },
       };
       continue;
@@ -1520,6 +1532,8 @@ export function step({ state, rooms, intents, actions = [] }) {
           level: actor.level ?? 1,
           xp: actor.xp ?? 0,
           gold: (identity.gold ?? 0) + banked,
+          sacrificeCycle: actor.sacrificeCycle ?? 0,
+          sacrificeXp: actor.sacrificeXp ?? 0,
           guild: actor.guild ?? null,
           guildRank: actor.guildRank ?? null,
           standing: { ...(actor.standing ?? {}) },
@@ -1863,7 +1877,15 @@ export function step({ state, rooms, intents, actions = [] }) {
       const object = next.objects.find((entry) => entry.id === intent.objectId);
       if (!object || object.holder !== actor.id || object.eaten) continue;
       if ((object.flags ?? []).includes("coin") || !Number.isInteger(object.value) || object.value < 5) continue;
-      const xp = Math.max(1, Math.floor(object.value / 2));
+      const cycle = next.cycle ?? 0;
+      const used = actor.sacrificeCycle === cycle ? (actor.sacrificeXp ?? 0) : 0;
+      const xp = Math.min(Math.max(1, Math.floor(object.value / 2)), Math.max(0, MAX_RELIQUARY_XP - used));
+      if (xp < 1) {
+        events.push({ onlyId: actor.id, text: "The reliquary is quiet; it has taken all it will take this reset.\r\n" });
+        continue;
+      }
+      actor.sacrificeCycle = cycle;
+      actor.sacrificeXp = used + xp;
       object.eaten = true;
       object.holder = null;
       object.room = null;
