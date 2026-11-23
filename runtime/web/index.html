@@ -840,14 +840,15 @@
         <h2>Start an agent</h2>
         <p>Start free in one click, or bring your own model and key.</p>
         <div id="ai-free">
-          <div class="free-head"><span class="free-badge">Free</span><h3>Start a free agent</h3></div>
-          <p>Pollinations · no key · no sign-up form. A browser account is created automatically so the agent keeps its character.</p>
+          <div class="free-head"><span class="free-badge">Fast</span><h3>Start a fast free agent</h3></div>
+          <p>Groq · free key · 8B instant. A browser account is created automatically so the agent keeps its character.</p>
+          <p class="small muted">Create a key at <a href="https://console.groq.com/keys" target="_blank" rel="noreferrer">console.groq.com/keys</a> (no card). The key stays in this browser. If the operator configured a shared fast model, the agent starts without one.</p>
           <div class="field">
             <label for="ai-goal">Persona</label>
             <select id="ai-goal"></select>
           </div>
           <button type="button" id="ai-free-start">Start free agent</button>
-          <p id="ai-free-status" role="status" aria-live="polite">Free, no key, no per-player quota here. The public endpoint is best-effort.</p>
+          <p id="ai-free-status" role="status" aria-live="polite">Paste a free Groq key under “Use another model”, or use the operator’s shared fast model.</p>
         </div>
         <details id="ai-custom" class="ai-custom">
           <summary>Use another model / bring your own key</summary>
@@ -873,7 +874,7 @@
               <button type="button" id="ai-find">Find</button>
             </div>
             <datalist id="ai-models"></datalist>
-            <p class="small muted" id="ai-local">Pollinations is the free default and needs no key. Ollama and Prime Router also need no key.</p>
+            <p class="small muted" id="ai-local">Groq needs a free key; Ollama and Prime Router need none. The operator fast model needs no key.</p>
           </div>
           <div class="field" id="ai-key-field">
             <label for="ai-key">API key <span class="muted">(this browser only)</span></label>
@@ -903,7 +904,7 @@
         </details>
         <details class="small muted">
           <summary>How this works</summary>
-          <p>1. <strong>Start free</strong> uses Pollinations with no key and no sign-up form. A browser Prism account is created automatically so the agent can keep its character.</p>
+          <p>1. <strong>Start fast</strong> uses a free Groq key, or the operator’s shared fast model when one is configured. A browser Prism account is created automatically so the agent can keep its character.</p>
           <p>2. <strong>Custom model</strong> supports Ollama locally, OpenAI, Anthropic, Prime Router and any OpenAI-compatible endpoint. Your key stays in this browser.</p>
           <p>3. The agent is a persona of your Prism id; your device signs the owner action. It sees the same room text you do, types one command per turn, and waits for the server like any player.</p>
           <p>4. Send direction in the Director chat. The AI replies there and its private reasoning appears in Mind.</p>
@@ -1153,7 +1154,8 @@
 <script type="module">
   import {
     PROVIDERS, DEFAULT_GOAL, GOALS, buildSystemPrompt, buildUserPrompt,
-    parseBrain, buildActionMenu, validateCommand, repairCommand, requestFor, replyFrom, readSseText, trimHistory, normalizeBase,
+    parseBrain, buildActionMenu, validateCommand, repairCommand, requestFor, replyFrom, trimHistory, normalizeBase,
+    isThrottledStatus, throttlePlan,
   } from "/ai.mjs";
   import { emptyMemory, rememberResult, memoryPrompt, loopWarning, breakLoop, shouldBreakLoop, publicMemoryText } from "/memory.mjs";
   import { signIn as prismSignIn, reset as prismReset, load as loadSession, save as saveSession, personaSignIn, personaRetire, nextPersonaEpoch, createRecoveryKit, restoreRecoveryKit, characterHandoff, characterRevoke, characterTransfer, signChallenge } from "/prism-auth.mjs";
@@ -2523,6 +2525,7 @@
 
   for (const [id, provider] of Object.entries(PROVIDERS)) {
     if (id === "gemini-demo" && !DEMO.configured) continue;
+    if (id === "free-fast" && !DEMO.free?.configured) continue;
     const option = document.createElement("option");
     option.value = id;
     option.textContent = provider.label;
@@ -2542,6 +2545,7 @@
       aiModel.value = provider.model;
     }
     if (id === "gemini-demo" && DEMO.model) aiModel.value = DEMO.model;
+    if (id === "free-fast" && DEMO.free?.model) aiModel.value = DEMO.free.model;
     aiKeyField.hidden = ["none", "proxy"].includes(provider.keyMode ?? (provider.needsKey ? "required" : "none"));
     aiHint.textContent = provider.hint;
     aiHint.className = "small muted";
@@ -2595,10 +2599,22 @@
   function renderSetup() {
     document.querySelector("aside").scrollTop = 0;
     const config = loadJSON(CONFIG_KEY, {}) ?? {};
-    const wanted = config.provider ?? "pollinations";
-    aiProvider.value = wanted === "gemini-demo" && !DEMO.configured ? "ollama" : wanted;
-    aiBase.value = config.base ?? PROVIDERS[aiProvider.value].base;
-    aiModel.value = config.model ?? PROVIDERS[aiProvider.value].model;
+    const known = PROVIDERS[config.provider] ? config.provider : null;
+    let wanted = known ?? (DEMO.free?.configured ? "free-fast" : "groq");
+    if (wanted === "gemini-demo" && !DEMO.configured) wanted = "ollama";
+    if (wanted === "free-fast" && !DEMO.free?.configured) wanted = "groq";
+    const same = known === wanted;
+    aiProvider.value = wanted;
+    aiBase.value = same && config.base ? config.base : PROVIDERS[wanted].base;
+    aiModel.value = same && config.model ? config.model : PROVIDERS[wanted].model;
+    if (wanted === "free-fast" && DEMO.free?.model) aiModel.value = DEMO.free.model;
+    if (aiFreeStatus) {
+      aiFreeStatus.textContent = DEMO.free?.configured || DEMO.configured
+        ? "The operator fast model is ready; start without a key."
+        : keyFor(PROVIDERS.groq.base)
+          ? "Groq key saved; start the fast free agent."
+          : "Paste a free Groq key under “Use another model”.";
+    }
     aiCharacter.value = config.character === "scout" ? "" : (config.character ?? "");
     aiGoal.value = GOALS[config.goal] ? config.goal : "explorer";
     aiFast.checked = config.fast !== false;
@@ -2709,10 +2725,11 @@
 
   aiFind.addEventListener("click", async () => {
     const provider = aiProvider.value;
-    if (provider === "pollinations") {
-      fillModels(["openai-fast"]);
-      aiModel.value = "openai-fast";
-      aiHint.textContent = "Pollinations has one anonymous model: openai-fast.";
+    if (provider === "free-fast") {
+      const model = DEMO.free?.model ?? aiModel.value;
+      fillModels([model]);
+      aiModel.value = model;
+      aiHint.textContent = "The operator fast model is configured server-side; no key is needed here.";
       aiHint.className = "small muted";
       return;
     }
@@ -2917,6 +2934,11 @@
     AI.lastReply = null;
     AI.lastParsed = null;
     AI.lastLatency = 0;
+    AI.nextBrainAt = 0;
+    AI.rateRetries = 0;
+    AI.rateNotice = false;
+    clearInterval(AI.waitClock);
+    AI.waitClock = null;
     liveThought.textContent = "";
     AI.startedAt = new Date().toISOString();
     clearTimeout(AI.reconnect);
@@ -2961,6 +2983,9 @@
     AI.busy = false;
     clearTimeout(AI.quiet);
     clearTimeout(AI.reconnect);
+    clearInterval(AI.waitClock);
+    AI.waitClock = null;
+    AI.nextBrainAt = 0;
     // Capture the socket before clearing it: the timeout used to read
     // AI.socket after it was null, so the old socket stayed open and its
     // character stayed in the world.
@@ -3000,8 +3025,9 @@
     agentChip.hidden = !AI.running || mode === "ai";
     if (!AI.running) return;
     const active = AI.status === "live" || AI.status === "thinking";
-    agentChip.textContent = AI.status === "error" ? "AI error" : AI.paused ? "AI paused" : active ? "AI live" : "AI starting";
-    agentChip.classList.toggle("paused", AI.paused && AI.status !== "error");
+    const waiting = String(AI.status ?? "").startsWith("waiting");
+    agentChip.textContent = AI.status === "error" ? "AI error" : AI.paused ? "AI paused" : waiting ? "AI waiting" : active ? "AI live" : "AI starting";
+    agentChip.classList.toggle("paused", (AI.paused || waiting) && AI.status !== "error");
     agentChip.classList.toggle("error", AI.status === "error");
     agentChip.title = "Open the agent workspace";
   }
@@ -3111,11 +3137,33 @@
       statusNode.className = "small muted";
     }
     try {
+      const freeFast = Boolean(DEMO.free?.configured);
+      const geminiFast = Boolean(DEMO.configured);
+      const groqKey = keyFor(PROVIDERS.groq.base);
+      if (!freeFast && !geminiFast && !groqKey) {
+        setMode("ai");
+        const custom = document.getElementById("ai-custom");
+        if (custom) custom.open = true;
+        aiProvider.value = "groq";
+        applyProvider("groq");
+        aiKey.focus();
+        aiKey.scrollIntoView({ block: "center" });
+        showHint("Create a free Groq key at console.groq.com/keys, paste it in Key, then press Start with this model. The key stays in this browser.", true);
+        if (statusNode) {
+          statusNode.textContent = "Paste a free Groq key to start; it stays in this browser.";
+          statusNode.className = "small err";
+        }
+        if (aiFreeStatus && statusNode !== aiFreeStatus) {
+          aiFreeStatus.textContent = "Paste a free Groq key to start; it stays in this browser.";
+          aiFreeStatus.className = "small err";
+        }
+        return;
+      }
       await ensurePrismOwner();
       const goal = GOALS[aiGoal.value] ? aiGoal.value : "explorer";
       setMode("ai");
-      aiProvider.value = "pollinations";
-      applyProvider("pollinations");
+      aiProvider.value = freeFast ? "free-fast" : geminiFast ? "gemini-demo" : "groq";
+      applyProvider(aiProvider.value);
       aiCharacter.value = "";
       aiGoal.value = goal;
       await startAI();
@@ -3693,11 +3741,30 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
     };
   }
 
+  function freeSlotWait() {
+    return Math.max(0, (AI.nextBrainAt ?? 0) - Date.now());
+  }
+
+  function waitForFreeSlot(ms, reason = "the free-tier slot") {
+    const until = Date.now() + Math.max(0, ms);
+    clearInterval(AI.waitClock);
+    const paint = () => {
+      if (!AI.running) { clearInterval(AI.waitClock); return; }
+      const left = Math.max(0, Math.ceil((until - Date.now()) / 1000));
+      setAIStatus(left > 0 ? `waiting ${left}s` : "thinking");
+      if (left <= 0) clearInterval(AI.waitClock);
+    };
+    paint();
+    AI.waitClock = setInterval(paint, 1000);
+    if (AI.streaming) publishStream({ kind: "status", text: `waiting for ${reason}`, tick: AI.lastTick });
+  }
+
   function scheduleTurn(delay = 600) {
     clearTimeout(AI.quiet);
+    const wait = freeSlotWait();
     AI.quiet = setTimeout(() => {
       if (AI.running && AI.authed && !AI.paused && !AI.busy) runTurn();
-    }, delay);
+    }, Math.max(delay, wait));
   }
 
   function needsReasoning() {
@@ -3721,8 +3788,14 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
     // new since the last turn. Without this, steering a paused AI would queue
     // the message and then wait for an unrelated NPC to move.
     if (!observation && !force && AI.director.length === 0) return;
+    const hold = freeSlotWait();
+    if (hold > 0) {
+      if (force) addChat("system", `Free tier: the next reply is ready in ${Math.ceil(hold / 1000)}s.`);
+      waitForFreeSlot(hold);
+      scheduleTurn(hold);
+      return;
+    }
 
-    AI.observed = "";
     AI.busy = true;
     AI.turn += 1;
     const turn = AI.turn;
@@ -3790,11 +3863,11 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         note: notes.join(" "),
       });
       const messages = trimHistory([...AI.history, { role: "user", content: user }], AI.config.fast ? 2 : 8);
-      if (AI.config.provider === "gemini-demo") {
+      if (AI.config.provider === "gemini-demo" || AI.config.provider === "free-fast") {
         // A fresh token per turn survives a server restart and keeps the
         // proxy check bound to this authenticated game socket.
         const grant = await requestDemoToken();
-        if (AI.demoRemaining !== null && AI.demoRemaining <= 5 && !AI.demoWarned) {
+        if (AI.config.provider === "gemini-demo" && AI.demoRemaining !== null && AI.demoRemaining <= 5 && !AI.demoWarned) {
           AI.demoWarned = true;
           addChat("system", `Gemini demo: ${AI.demoRemaining} turns left today${AI.demoMinuteRemaining !== null ? `, ${AI.demoMinuteRemaining} this minute` : ""}.`);
         }
@@ -3806,6 +3879,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         at: new Date().toISOString(),
       };
       updateModelInspector();
+      AI.observed = "";
       const res = await fetch(request.url, {
         method: "POST",
         headers: request.headers,
@@ -3814,21 +3888,22 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       });
       if (!res.ok) {
         const detail = (await res.text()).slice(0, 240);
-        throw new Error(`${res.status} ${res.statusText}${detail ? ` — ${detail}` : ""}`);
+        const failure = new Error(`${res.status} ${res.statusText}${detail ? ` — ${detail}` : ""}`);
+        failure.status = res.status;
+        failure.headers = res.headers;
+        throw failure;
       }
       let text;
       let usage;
-      if (AI.config.provider === "pollinations" && res.body) {
-        ({ text, usage } = await readSseText(res, (partial) => {
-          AI.streamText = partial;
-          liveThought.textContent = partial.replace(/\s+/g, " ").slice(-140);
-        }));
-      } else {
+      {
         const body = await res.json();
         ({ text, usage } = replyFrom(AI.config.provider, body));
       }
       AI.streamText = "";
       if (!text) throw new Error("The model returned an empty reply.");
+      clearInterval(AI.waitClock);
+      AI.waitClock = null;
+      AI.rateRetries = 0;
       const latency = Math.round(performance.now() - started);
       const parsed = parseBrain(text);
       if (shouldBreakLoop(memory, { room: AI.room || AI.state?.room?.name, command: parsed.command, recent: AI.recent })) {
@@ -3957,6 +4032,8 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       const message = error?.name === "TimeoutError"
         ? `The model did not answer within ${AI.config?.fast ? 25 : 120} seconds.`
         : error.message;
+      const status = Number(error?.status) || 0;
+      const throttled = isThrottledStatus(status);
       sendMetric({
         kind: "ai.turn",
         provider: AI.config?.provider,
@@ -3964,6 +4041,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         latency_ms: Math.round(performance.now() - started),
         error: String(message),
         timeout: error?.name === "TimeoutError",
+        throttle: throttled,
         fast: Boolean(AI.config.fast),
         deliberate: Boolean(AI.lastRequest?.deliberate),
         reasoning: AI.config.reasoning,
@@ -3971,6 +4049,34 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         turn,
         tick: AI.lastTick,
       });
+      if (throttled) {
+        AI.rateRetries = (AI.rateRetries ?? 0) + 1;
+        const plan = throttlePlan({ provider: AI.config?.provider, headers: error.headers, attempt: AI.rateRetries });
+        if (plan.retry) {
+          const wait = plan.waitMs;
+          // No command was sent, so the observation that produced this request
+          // is still the right context for the retry.
+          AI.observed = [observation, AI.observed].filter(Boolean).join("\n").trim();
+          AI.nextBrainAt = Date.now() + wait;
+          AI.lastError = null;
+          if (!AI.rateNotice) {
+            AI.rateNotice = true;
+            addChat("system", `The provider is rate-limiting this session; the AI will retry in ${Math.ceil(wait / 1000)}s. If this repeats, the free quota is exhausted or the key needs a higher limit.`);
+          }
+          waitForFreeSlot(wait, "the rate-limit window");
+          scheduleTurn(wait);
+          return;
+        }
+        clearInterval(AI.waitClock);
+        AI.waitClock = null;
+        addChat("system", `Rate limit did not clear after ${AI.rateRetries} tries; the AI is paused. ${message}`);
+        AI.paused = true;
+        AI.lastError = String(message);
+        updatePause();
+        setAIStatus("error");
+        if (AI.streaming) publishStream({ kind: "status", text: "error", tick: AI.lastTick });
+        return;
+      }
       if (error?.name === "TimeoutError" && AI.timeouts < 2) {
         AI.timeouts += 1;
         addChat("system", `${message} Sending look and continuing.`);

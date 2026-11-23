@@ -1,9 +1,9 @@
 # Next work
 
-Baseline: **v0.91.49**. The world has 181 rooms, 15 zones, 20 quests, 90 mobiles
+Baseline: **v0.91.50**. The world has 181 rooms, 15 zones, 20 quests, 90 mobiles
 and 214 objects. R4 memory, command grounding, scorecards
-and the public stats surface are live; signups are open and the Gemini demo is
-disabled and unconfigured.
+and the public stats surface are live; signups are open. The Gemini demo remains
+disabled; the free agent uses a player Groq key or the operator fast proxy.
 
 The next phase is **endgame depth and evidence from real play**, not another
 memory or prompt system.
@@ -80,6 +80,7 @@ memory or prompt system.
 | v0.91.47 | The Grey Keep: 15-room questless castle shell, keys, dark, pick, reliquary | **done** (MB-264/265) |
 | v0.91.48 | Grey Keep fill to 45 rooms; Warden track; reliquary cap | **done** (MB-267/268) |
 | v0.91.49 | The Arcanum: 21-room Mages' tower; detect/shield gates; light-gated dark rooms | **done** (MB-270/271) |
+| v0.91.50 | Fast agent: remove Pollinations; Groq free key; operator fast proxy; 429 backoff | **done** (MB-273/274) |
 | backlog | Next deep site (mine/shipwreck/monastery); fold tiny zones; larger PvP sample | optional |
 
 ## What is next

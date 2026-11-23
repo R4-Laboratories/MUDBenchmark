@@ -1,15 +1,16 @@
 # Model providers
 
-The AI panel talks to seven presets through one browser-side registry. The
-game server never sees a user's provider key. The Gemini demo is the exception:
-its operator key stays on the server and the browser receives only a
-short-lived demo token.
+The AI panel talks to eight presets through one browser-side registry. The
+game server never sees a user's provider key. The two server-keyed presets are
+the exception: the operator key stays on the server and the browser receives
+only a short-lived token and a per-account quota.
 
 ## What you can select
 
 | Preset | Protocol | Key |
 | --- | --- | --- |
-| Pollinations (free) | OpenAI-compatible SSE, no key | none |
+| Groq (free key, fast) | OpenAI chat completions | required (free) |
+| Free fast (operator) | server proxy to Groq/Gemini/OpenAI-compatible | none |
 | Ollama (local) | OpenAI-compatible `/v1` | none |
 | OpenAI | OpenAI chat completions | required |
 | Anthropic (Claude) | Anthropic messages | required |
@@ -21,15 +22,25 @@ The custom preset is the path for OpenRouter, Groq, Together, LiteLLM, a
 company gateway, LM Studio, vLLM, or any other OpenAI-compatible endpoint. The
 key field is shown; leave it empty if the endpoint does not need one.
 
-**Pollinations** is the free default for a new browser: no key, no account, and
-the reply streams into the live thought line as it arrives. The game presents it
-as the primary **Start a free agent** card; if the browser has no Prism id, it
-creates one and registers it first, so there is no sign-up form. The full
-provider list stays behind **Use another model**, and the five persona presets
-change only the system goal, not the provider. It is an anonymous
-public service, not a private one: prompts may be logged, rate limits change,
-and there is no SLA. The provider hint says so before a run. Choose Ollama or a
-provider with your own key when privacy or reliability matters.
+**Groq** is the fast free path for a new browser. Create a free key at
+`console.groq.com/keys` (no card) and paste it once; the 8B instant model is
+quick, and the free tier is about 30 requests per minute and 14,400 per day,
+enough for continuous single-agent play. The key stays in this browser and goes
+only to `api.groq.com`. The game presents the **Start a fast free agent** card;
+if the browser has no Prism id, it creates one and registers it first, so there
+is no sign-up form. The full provider list stays behind **Use another model**,
+and the five persona presets change only the system goal, not the provider.
+
+If the operator configures a server-side key, the **Free fast (operator)**
+preset appears and the free card starts with no key at all. The server holds the
+key and enforces a per-Prism daily/minute quota; the browser receives only a
+short-lived token. This is the one-click path for players. The operator can use
+Groq (the default), Gemini, or any OpenAI-compatible endpoint.
+
+Pollinations is no longer offered. Its anonymous tier now allows one text reply
+every 45 seconds per IP, which is too slow for a playable agent and cannot be
+raised without a key. A local Ollama model remains the private, no-account
+option; user-supplied keys and custom endpoints are unchanged.
 
 An Anthropic-compatible gateway uses the **Anthropic (Claude)** preset with its
 base URL and key; the client sends `x-api-key` and the direct-browser header.
@@ -114,12 +125,30 @@ the thought.
 
 ## Hosted/free defaults
 
-**Pollinations** is the free, keyless default. The browser sends the prompt to
-`https://text.pollinations.ai/openai` with `stream: true`; `readSseText` shows
-the accumulating reply in the live thought line and returns the final text for
-the normal parser. The default model is `openai-fast` (GPT-OSS 20B). It is
-disclosed in the provider hint, not silent. It is best-effort: community
-capacity, caching and rate limits are outside this project's control.
+**Groq direct (free key).** The browser sends the prompt to
+`https://api.groq.com/openai/v1/chat/completions` with the player's key. The
+default model is `llama-3.1-8b-instant`. The key is stored per origin in this
+browser and never reaches the game server. The provider hint links the free key
+page and states the tier.
+
+**Operator fast model (server key).** Set `GROQ_API_KEY` (or `FREE_AI_KEY`) on
+the game server. The defaults are:
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `GROQ_API_KEY` / `FREE_AI_KEY` | empty | server-side key; never sent to the browser |
+| `FREE_AI_BASE` | `https://api.groq.com/openai/v1` | any OpenAI-compatible base |
+| `FREE_AI_MODEL` | `llama-3.1-8b-instant` | the model the proxy uses |
+| `FREE_AI_DAILY_TURNS` | `5000` | per-Prism daily turns |
+| `FREE_AI_MINUTE_TURNS` | `25` | per-Prism turns per minute |
+| `FREE_AI_GLOBAL_DAILY` | `14000` | world-wide daily turns |
+
+The browser calls `/api/free/v1/chat/completions` with the same short-lived
+`x-demo-token` used by the Gemini demo. The server checks the token and the
+quota, then forwards the request with the operator key. `/api/free` and the
+`free` field on `/api/demo` report only `configured`, model and limits. The
+proxy passes a `429` and `Retry-After` through to the client; the client waits
+and retries up to three times before pausing.
 
 The operator may also enable the **Gemini demo** by setting `GEMINI_API_KEY`
 (and optionally `GEMINI_MODEL`, `GEMINI_BASE`, `GEMINI_DAILY_TURNS`,
@@ -138,15 +167,17 @@ attribute quota and stop abuse, and there is no public Gemini endpoint that
 accepts anonymous requests. The operator key is the missing input; the code
 path is already built and dormant until `GEMINI_API_KEY` is set.
 
-The Gemini demo is still the server-keyed, quota-limited path for a Prism
-session. Pollinations is the keyless path and needs no login. A local model
+The Gemini demo remains a separate, server-keyed, quota-limited path. The
+operator fast model is the recommended one-click path for players; Groq direct
+is the recommended path when each player has their own free key. A local model
 remains the private, no-account option. Other options are unchanged:
 user-supplied keys, a local Ollama/LM Studio model, or a custom
 OpenAI-compatible endpoint.
 
-The UI discloses the Pollinations privacy caveat in the provider hint and the
-Gemini demo limits before a run. A key is never required just to watch an AI
-play.
+The UI discloses the Groq free-tier cadence in the provider hint and the
+operator/Gemini limits before a run. A key is never required just to watch an
+AI play. There is no keyless public text API with both unlimited volume and
+low latency; a key (player or operator) is required for continuous fast play.
 
 ## Errors
 
@@ -154,12 +185,16 @@ A failed test or turn names the layer that failed:
 
 - `401/403` — the key was refused for this host;
 - `404` — no chat endpoint at the normalized URL;
-- `429` — rate limit; retry later or switch provider (Pollinations is anonymous and shared);
-- `402` on Pollinations — the anonymous tier is saturated; wait or switch provider;
+- `429` — rate limit; the AI honors `Retry-After` and retries up to three times
+  before pausing. Check the Groq minute/day quota or the operator quota;
+- `402` — payment or free-tier exhaustion from a provider; switch provider or
+  add credit;
 - `TypeError: Failed to fetch` — usually CORS, a wrong URL, an offline host, or
   a local-network permission, not necessarily a bad key;
 - timeout — the model did not answer inside the deadline; direct mode falls
   back to `look` twice, then pauses;
-- `503` on the Gemini demo — the operator has not configured a key;
-- `429` on the Gemini demo — the per-account or world-wide demo quota is
-  reached; wait for the minute/day reset or use another provider.
+- `503` on the operator fast model or Gemini demo — the operator has not
+  configured a key;
+- `429` on the operator fast model or Gemini demo — the per-account or
+  world-wide quota is reached; wait for the minute/day reset or use another
+  provider.

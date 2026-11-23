@@ -476,6 +476,16 @@ Rehearsed 2026-11-16:
   guild lore, with the prism heart, sealed codex, guild seal and star water.
   World 181 rooms / 15 zones / 20 quests / 90 mobiles / 214 objects; no new
   quests (MB-270/271);
+- v0.91.50 (fast agent) removes Pollinations. The anonymous tier now allows one
+  reply every 45 seconds per IP, which is too slow for a playable agent. The
+  free card now uses Groq's free 8B instant model with a player key, or the
+  operator's server-side fast model when `GROQ_API_KEY`/`FREE_AI_KEY` is set.
+  The operator proxy (`/api/free/v1`) holds the key on the server, issues a
+  short-lived Prism token, enforces per-account daily/minute quotas and passes
+  `429` + `Retry-After` through to a client that waits and retries up to three
+  times. The direct provider presets, Ollama and the custom drawer remain.
+  World unchanged: 181 rooms / 15 zones / 20 quests / 90 mobiles / 214 objects
+  (MB-273/274);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);
