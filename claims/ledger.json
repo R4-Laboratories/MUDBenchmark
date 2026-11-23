@@ -1683,6 +1683,12 @@
       "level": "some-true",
       "statement": "v0.91.51 replaces the paid DeepSeek proxy key with a local free agent: Qwen2.5-3B-Instruct Q4_K_M running in llama.cpp on the server CPU (20 of 32 threads, 8192 context, two slots), bound to 127.0.0.1:8081. The game proxy is the only public path; FREE_AI_KEY is the literal string local and no paid key remains in owner.env. Measured about 22 tokens/sec and roughly 1-2 seconds per game turn; the 1.5B model was faster but looped on look, so the 3B is the production choice. A real local game session with the 3B read the Atrium plaque, examined the floor, walked north to the Corridor, and opened the oaken chest; a production headless session as amber-fox-33 read the plaque and walked north with no Brain error. Quotas are raised to 100000 daily / 120 minute / 1000000 world-wide so a session is not cut off. The fast prompt now repeats the THOUGHT/REPLY/COMMAND format and the parser recovers a short legal command from REPLY. The source includes deploy/mudbench-local-ai.service and docs/LOCAL-AI.md. World unchanged: 181 rooms / 15 zones / 20 quests / 90 mobiles / 214 objects. This supersedes the paid DeepSeek setup in MB-275.",
       "authority": "local /tmp/local-ai-game-test-3b.mjs and /tmp/prod-local-agent-3b.mjs; wick llama-server, systemd, /api/free and /health; 2026-11-23"
+    },
+    {
+      "id": "MB-277",
+      "level": "some-true",
+      "statement": "Production v0.91.51 serves the free agent from a local Qwen2.5-3B-Instruct Q4_K_M model: llama-server on the server CPU, 127.0.0.1:8081 only, 20 of 32 threads, 8192 context, about 22 tokens/sec. /api/free reports configured true with model qwen2.5-3b-instruct and limits 100000 daily / 120 minute / 1000000 world-wide. owner.env is mode 600 and contains FREE_AI_KEY=local; the paid DeepSeek key is gone. mudbench-local-ai.service is active and enabled on boot; the GPU training job was not touched. A clean headless production session as amber-fox-33 selected Free fast (operator) - qwen2.5-3b-instruct, walked north to The Corridor, opened the oaken chest, and took a copper coin, with no Brain error or mid-session quota stop. World 181 rooms / 15 zones / 20 quests / 90 mobiles / 214 objects. Main Gate 45275286702 green, publish 45276719458, release v0.91.51.",
+      "authority": "GitHub PR #67 merge 0d49ae7 2026-11-23; main Gate 45275286702; publish 45276719458; release v0.91.51; wick deploy, /api/free, /health, systemctl; local /tmp/prod-local-agent-final.mjs; /tmp/local-ai-game-test-3b.mjs"
     }
   ]
 }

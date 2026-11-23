@@ -89,7 +89,7 @@ impossible to hide decline.
 
 ## Status
 
-`v0.91.51` is published and deployed. This release is **not yet deployed**; it will be deployed immediately after the PR. wick runs the release artifact, not a
+`v0.91.51` is published and deployed. The free agent runs locally on the server CPU; no paid API key is configured. wick runs the release artifact, not a
 build directory, so the number on the box is a tag someone can point at:
 
 ```
