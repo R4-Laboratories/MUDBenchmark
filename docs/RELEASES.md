@@ -443,6 +443,11 @@ Rehearsed 2026-11-16:
   held coins through the two-hour reset while equipment returns home and the
   wielded item is cleared. The Gate persistence test covers logout, login and
   reset (MB-251/252);
+- v0.91.44 (reset clarity) adds a HUD reset countdown and hero world-reset
+  line, broadcasts five-minute and one-minute warnings that gold/level/XP
+  persist and equipment returns home, and tells the player on death/logout
+  that gold is kept and equipment stays behind; the tutorial states the reset
+  rule (MB-254/255);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

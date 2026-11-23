@@ -1358,6 +1358,7 @@ let stream = { ok: true, why: [] };
   check(/class="skip"/.test(page) && /prefers-reduced-motion/.test(page) && /:focus-visible/.test(page) && /role="log"/.test(page) && /aria-live="polite"/.test(page), "the accessibility shell contract is missing");
   check(/id="mobile-nav-toggle"/.test(page) && /id="mobile-nav"/.test(page) && /body\.guest #latest/.test(page) && /min-height: 44px/.test(page), "the mobile navigation or guest status contract is missing");
   check(/id="first-steps"/.test(page) && /id="account-persistence"/.test(page) && /id="characters-close"/.test(page) && /charactersPanel\.hidden = playingCharacter/.test(page) && /createCharacterForm\.hidden = !prismAccount/.test(page), "the first-run onboarding contract is missing");
+  check(/id="hud-reset"/.test(page) && /resetDeadline/.test(page), "the reset countdown is missing");
   check(/id="ai-stream"/.test(page) && /#stream-chat/.test(page), "the AI panel has no Go live path");
   check(/gemini-demo/.test(page) && /requestDemoToken/.test(page) && /#demo-token/.test(page), "the UI has no Gemini demo path");
   check(/r4-context/.test(page) && /r4-remember/.test(page) && /requestR4Context/.test(page), "the UI has no R4 context path");
@@ -2658,6 +2659,10 @@ let goldPersistence = { ok: true, why: [] };
   check(state.objects.find((object) => object.id === "sword-reset")?.holder === null && state.objects.find((object) => object.id === "sword-reset")?.room === 116, "the reset did not return equipment home");
   check(state.actors.find((entry) => entry.id === "p2")?.wielding === null, "the reset left a weapon wielded");
   check(returned.level === 3 && returned.xp === 250, "the reset lost level or XP");
+  state.pulses.area = { period: AREA_PERIOD, remaining: 1201 };
+  const warningEvents = run([]);
+  check(warningEvents.some((event) => /resets in 5 minutes/.test(event.text ?? "")), "the 5-minute reset warning is missing");
+  state.pulses.area = { period: AREA_PERIOD, remaining: AREA_PERIOD };
   if (!goldPersistence.ok) failures.push(`persistence is broken: ${goldPersistence.why[0]}`);
 }
 
