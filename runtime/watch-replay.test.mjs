@@ -65,22 +65,29 @@ test("a finished stream is archived and can be replayed in /watch", { timeout: 9
     await rm(directory, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
   });
 
-  const server = spawn(process.execPath, ["server.mjs"], {
-    cwd: new URL(".", import.meta.url),
-    env: {
-      ...process.env,
-      WEB_PORT: String(webPort),
-      TELNET_PORT: String(telnetPort),
-      STATE_FILE: join(directory, "world.json"),
-      IDENTITY_FILE: join(directory, "identities.json"),
-      TRACE_FILE: join(directory, "trace.jsonl"),
-      TELEMETRY_LOG: join(directory, "telemetry.jsonl"),
-      COMMAND_INTERVAL_MS: "0",
-      SIGNUP_MODE: "open",
-    },
-    stdio: "ignore",
-  });
-  children.add(server);
+  const archiveFile = join(directory, "stream-archive.json");
+  function startServer() {
+    const child = spawn(process.execPath, ["server.mjs"], {
+      cwd: new URL(".", import.meta.url),
+      env: {
+        ...process.env,
+        WEB_PORT: String(webPort),
+        TELNET_PORT: String(telnetPort),
+        STATE_FILE: join(directory, "world.json"),
+        STREAM_ARCHIVE_FILE: archiveFile,
+        IDENTITY_FILE: join(directory, "identities.json"),
+        TRACE_FILE: join(directory, "trace.jsonl"),
+        TELEMETRY_LOG: join(directory, "telemetry.jsonl"),
+        COMMAND_INTERVAL_MS: "0",
+        SIGNUP_MODE: "open",
+      },
+      stdio: "ignore",
+    });
+    children.add(child);
+    child.once("exit", () => children.delete(child));
+    return child;
+  }
+  let server = startServer();
   await until(() => fetch(`http://127.0.0.1:${webPort}/health`).then((response) => response.ok), "world server");
 
   const streamer = new WebSocket(`ws://127.0.0.1:${webPort}/`);
@@ -122,6 +129,19 @@ test("a finished stream is archived and can be replayed in /watch", { timeout: 9
   assert.equal(archive.run?.events?.length, events.length);
   assert.deepEqual(archive.run.events.map((event) => event.kind), events.map((event) => event.kind));
   assert.equal((await fetch(`http://127.0.0.1:${webPort}/stream?run=missing`)).status, 404);
+  const savedArchive = JSON.parse(await readFile(archiveFile, "utf8"));
+  assert.equal(savedArchive.runs?.[0]?.id, run.id);
+  assert.equal(savedArchive.runs?.[0]?.events?.length, events.length);
+
+  server.kill("SIGTERM");
+  await new Promise((resolve) => server.once("exit", resolve));
+  server = startServer();
+  await until(() => fetch(`http://127.0.0.1:${webPort}/health`).then((response) => response.ok), "restarted world server");
+  const restored = await (await fetch(`http://127.0.0.1:${webPort}/stream`)).json();
+  assert.equal(restored.recent?.[0]?.id, run.id, "the restart lost the archived run");
+  assert.equal(restored.recent?.[0]?.hasReplay, true);
+  const restoredArchive = await (await fetch(`http://127.0.0.1:${webPort}/stream?run=${encodeURIComponent(run.id)}`)).json();
+  assert.equal(restoredArchive.run?.events?.length, events.length);
 
   const chrome = spawn(process.env.CHROME_BIN ?? "google-chrome", [
     "--headless=new", "--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu",

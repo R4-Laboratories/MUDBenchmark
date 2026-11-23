@@ -6,9 +6,9 @@
 
 import net from "node:net";
 import http from "node:http";
-import { readFileSync, statSync, writeFileSync, appendFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { join as joinPath } from "node:path";
+import { dirname, join as joinPath } from "node:path";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { WebSocketServer } from "ws";
 import { recordSpan, digest, TELEMETRY_LOG, PLAYER_LOG_FILE, ensurePlayerLog } from "./telemetry.mjs";
@@ -53,6 +53,7 @@ const WEB_PORT = Number(process.env.WEB_PORT ?? 8090);
 // Identities and progress must not live on tmpfs. The default is a durable
 // directory outside the release artifact; the unit and the deploy set it too.
 const STATE_FILE = process.env.STATE_FILE ?? joinPath(homedir(), ".mudbench", "state", "world.json");
+const STREAM_ARCHIVE_FILE = process.env.STREAM_ARCHIVE_FILE ?? joinPath(dirname(STATE_FILE), "stream-archive.json");
 const IDENTITY_FILE = process.env.IDENTITY_FILE ?? joinPath(homedir(), ".mudbench", "state", "identities.json");
 const TRACE_FILE = process.env.TRACE_FILE ?? "/tmp/mudbench-trace.jsonl";
 const REPORT_FILE = process.env.REPORT_FILE ?? joinPath(homedir(), ".mudbench", "state", "reports.jsonl");
@@ -177,6 +178,41 @@ const spectators = new Set(); // public /watch sockets
 let live = null; // { actorId, name, account, room, tick, startedAt, status, events }
 let lastLive = null; // last completed stream: name, room, endedAt, peakViewers, highlights
 const recentRuns = []; // completed public runs, newest first
+
+function loadStreamArchive() {
+  if (!existsSync(STREAM_ARCHIVE_FILE)) return [];
+  try {
+    const parsed = JSON.parse(readFileSync(STREAM_ARCHIVE_FILE, "utf8"));
+    if (!Array.isArray(parsed?.runs)) throw new Error("runs array missing");
+    return parsed.runs
+      .filter((run) => run && typeof run.id === "string" && Array.isArray(run.events))
+      .slice(0, 8)
+      .map((run) => ({ ...run, events: run.events.slice(-400) }));
+  } catch (error) {
+    console.error(`stream archive: ${error.message}; starting with no archived runs`);
+    return [];
+  }
+}
+
+function saveStreamArchive() {
+  try {
+    mkdirSync(dirname(STREAM_ARCHIVE_FILE), { recursive: true });
+    const temporary = `${STREAM_ARCHIVE_FILE}.tmp`;
+    writeFileSync(temporary, `${JSON.stringify({
+      schema: "mudbenchmark/stream-archive/1",
+      savedAt: new Date().toISOString(),
+      runs: recentRuns,
+    })}\n`, { mode: 0o600 });
+    renameSync(temporary, STREAM_ARCHIVE_FILE);
+  } catch (error) {
+    // The archive is a watch convenience, not world state. Keep the run live
+    // in memory and report the failure rather than stopping the world.
+    console.error(`stream archive not saved: ${error.message}`);
+  }
+}
+
+recentRuns.push(...loadStreamArchive());
+lastLive = recentRuns[0] ?? null;
 let nextViewer = 1;
 const pending = [];
 const accountSessions = new Map(); // id -> { key, kind: "prism" | "legacy" }
@@ -558,6 +594,7 @@ function stopLive(id = null) {
   lastLive = ended;
   recentRuns.unshift(ended);
   if (recentRuns.length > 8) recentRuns.length = 8;
+  saveStreamArchive();
   live = null;
   broadcastStream({ type: "off", last: publicLast() });
   return true;
