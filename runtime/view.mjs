@@ -16,7 +16,7 @@ export function describe({ room, role = 0, others = [], beasts = [], objects = [
     return `${[
       "",
       `[${room.name}]`,
-      room.darkText ?? "The dark is complete. You can feel the room only as a cold space around you.",
+      room.darkText ?? "It is dark. You can see only the faint outline of the exits.",
       `Exits: ${exits}.`,
     ].join("\r\n")}\r\n`;
   }

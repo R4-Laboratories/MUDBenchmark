@@ -795,7 +795,14 @@
             <button type="button" class="tab" data-tab="model" role="tab" aria-selected="false">Model</button>
             <button type="button" class="tab" data-tab="bench" role="tab" aria-selected="false">Bench</button>
           </div>
-          <div id="mind-pane" class="pane" role="tabpanel"><div id="mind"></div></div>
+          <div id="mind-pane" class="pane" role="tabpanel">
+            <div id="notebook" class="model-block" hidden>
+              <h3>Notebook</h3>
+              <div id="notebook-goal" class="small muted"></div>
+              <div id="notebook-notes" class="small muted"></div>
+            </div>
+            <div id="mind"></div>
+          </div>
           <div id="sheet-pane" class="pane" role="tabpanel" hidden>
             <h3 class="pane-title">Character</h3>
             <div id="sheet-stats"></div>
@@ -1375,7 +1382,7 @@
     character: "", characterExplicit: false, createRetries: 0, lastRequest: null, lastReply: null, lastParsed: null, lastLatency: 0,
     persona: null, owner: null, personaAudience: null, tickFrom: null, lastTick: null,
     highlights: [], streaming: false, timeouts: 0, lastPoll: null, state: null,
-    memory: null, memoryKey: null, commandRoom: null, exits: [],
+    memory: null, memoryKey: null, notebook: null, notebookKey: null, commandRoom: null, exits: [],
     lastInvalid: null, lastValidation: null, loopBroken: false, lastR4: false, r4LastLatency: 0, emptyRetry: false,
   };
   const shortId = (id) => (id ? `${id.slice(0, 15)}…` : "—");
@@ -2757,6 +2764,48 @@
     try { localStorage.setItem(AI.memoryKey, JSON.stringify(AI.memory)); } catch {}
   }
 
+  function ensureNotebook() {
+    if (AI.notebook) return AI.notebook;
+    const key = `mudbench-ai-notebook:${AI.persona ?? AI.identity?.envelope?.body?.prism ?? AI.character ?? "ai"}`;
+    AI.notebookKey = key;
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw) AI.notebook = JSON.parse(raw);
+    } catch {}
+    if (!AI.notebook || typeof AI.notebook !== "object") AI.notebook = { goal: "", notes: [] };
+    if (!Array.isArray(AI.notebook.notes)) AI.notebook.notes = [];
+    return AI.notebook;
+  }
+
+  function saveNotebook() {
+    if (!AI.notebookKey || !AI.notebook) return;
+    try { localStorage.setItem(AI.notebookKey, JSON.stringify(AI.notebook)); } catch {}
+  }
+
+  function notebookText() {
+    const notebook = ensureNotebook();
+    return [
+      notebook.goal ? `Goal: ${notebook.goal}` : "",
+      ...(notebook.notes ?? []).map((note) => `- ${note}`),
+    ].filter(Boolean).join("\n");
+  }
+
+  function renderNotebook() {
+    const notebook = ensureNotebook();
+    const box = document.getElementById("notebook");
+    const goal = document.getElementById("notebook-goal");
+    const notes = document.getElementById("notebook-notes");
+    if (!box || !goal || !notes) return;
+    const list = notebook.notes ?? [];
+    box.hidden = !list.length && !notebook.goal;
+    goal.textContent = notebook.goal ? `Goal: ${notebook.goal}` : "";
+    notes.replaceChildren(...list.map((note) => {
+      const line = document.createElement("div");
+      line.textContent = `• ${note}`;
+      return line;
+    }));
+  }
+
   async function startAI() {
     const provider = aiProvider.value;
     const base = normalizeBase(aiBase.value.trim());
@@ -2845,6 +2894,8 @@
     AI.lastRequest = null;
     AI.memory = null;
     AI.memoryKey = null;
+    AI.notebook = null;
+    AI.notebookKey = null;
     AI.commandRoom = null;
     AI.exits = [];
     AI.lastInvalid = null;
@@ -2862,6 +2913,7 @@
     clearInterval(AI.waitClock);
     AI.waitClock = null;
     liveThought.textContent = "";
+    renderNotebook();
     AI.startedAt = new Date().toISOString();
     clearTimeout(AI.reconnect);
     renderHighlights();
@@ -3757,6 +3809,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         actions,
         memory: memoryText,
         r4: r4Text,
+        notebook: notebookText(),
         fast: AI.config.fast,
         note: notes.join(" "),
       });
@@ -3796,6 +3849,14 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       AI.emptyRetry = false;
       const latency = Math.round(performance.now() - started);
       const parsed = parseBrain(text);
+      if (parsed.note && !/^none[.!]?$/i.test(parsed.note)) {
+        const notebook = ensureNotebook();
+        const note = parsed.note.slice(0, 240);
+        if (!notebook.notes.includes(note)) notebook.notes.push(note);
+        notebook.notes = notebook.notes.slice(-12);
+        saveNotebook();
+        renderNotebook();
+      }
       if (shouldBreakLoop(memory, { room: AI.room || AI.state?.room?.name, command: parsed.command, recent: AI.recent })) {
         const forced = breakLoop(AI.recent, exits, memory);
         if (forced && forced !== parsed.command) {

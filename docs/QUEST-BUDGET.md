@@ -1,6 +1,6 @@
 # Quest budget
 
-The live world has **20 quests**. The 41 retired definitions are in
+The live world has **21 quests**. The 41 retired definitions are in
 `world/data/quests-archive.json`; the count is enforced at 20 in
 `world/ratchet.json`. A new quest fails the Gate until an existing one is
 retired.

@@ -1562,6 +1562,7 @@ export function step({ state, rooms, intents, actions = [] }) {
     }
 
     if (intent.kind === "move") {
+      if (next.engagements.some((entry) => entry.attackerId === actor.id || entry.targetId === actor.id)) continue;
       const room = rooms[actor.room];
       const found = (actor.found ?? []).includes(`${actor.room}:${intent.dir}`);
       const target = room?.exits?.[intent.dir] ?? (found ? room?.secretExits?.[intent.dir] : undefined);
@@ -1576,6 +1577,55 @@ export function step({ state, rooms, intents, actions = [] }) {
       actor.room = intent.to;
       if (!actor.visited.includes(actor.room)) actor.visited.push(actor.room);
       events.push({ room: intent.to, text: `${actor.name} arrives.`, exceptId: actor.id });
+      advanceQuests(next, actor, { kind: "visit", room: actor.room }, events);
+      continue;
+    }
+
+    if (intent.kind === "flee") {
+      const engagement = next.engagements.find((entry) => entry.attackerId === actor.id || entry.targetId === actor.id);
+      if (!engagement) continue;
+      const from = actor.room;
+      const to = rooms[from]?.exits?.[intent.dir];
+      if (!to || to !== intent.to) continue;
+      const before = Number.isFinite(actor.xp) ? actor.xp : 0;
+      const penalty = before > 0 ? Math.max(1, Math.floor(before * 0.1)) : 0;
+      actor.xp = Math.max(0, before - penalty);
+      actor.room = to;
+      if (!actor.visited.includes(actor.room)) actor.visited.push(actor.room);
+      next.engagements = next.engagements.filter((entry) => entry.attackerId !== actor.id && entry.targetId !== actor.id);
+      const duel = next.duels.find((entry) => entry.challengerId === actor.id || entry.targetId === actor.id);
+      if (duel) {
+        next.duels = next.duels.filter((entry) => entry !== duel);
+        actor.duelLosses = (actor.duelLosses ?? 0) + 1;
+        actor.duelRating = Math.max(0, (actor.duelRating ?? 1000) - 12);
+        events.push({ onlyId: actor.id, text: `You forfeit the duel. Rating ${actor.duelRating}.\r\n` });
+      }
+      events.push({ room: from, text: `${actor.name} flees ${intent.dir}.`, exceptId: actor.id });
+      events.push({ onlyId: actor.id, text: penalty ? `You flee ${intent.dir}, losing ${penalty} experience.\r\n` : `You flee ${intent.dir}.\r\n` });
+      events.push({ room: to, text: `${actor.name} arrives.`, exceptId: actor.id });
+      advanceQuests(next, actor, { kind: "visit", room: actor.room }, events);
+      continue;
+    }
+
+    if (intent.kind === "teleportItem") {
+      const object = next.objects.find((entry) => entry.id === intent.objectId && entry.holder === actor.id && !entry.eaten);
+      if (!object || !Number.isInteger(object.teleport) || !rooms[object.teleport]) continue;
+      const from = actor.room;
+      actor.room = object.teleport;
+      if (!actor.visited.includes(actor.room)) actor.visited.push(actor.room);
+      if (Number.isInteger(object.charges)) {
+        object.charges -= 1;
+        if (object.charges <= 0) {
+          object.eaten = true;
+          object.holder = null;
+          object.room = null;
+          object.inside = null;
+          object.worn = false;
+        }
+      }
+      events.push({ room: from, text: `${actor.name} vanishes.`, exceptId: actor.id });
+      events.push({ onlyId: actor.id, text: `You use ${object.name} and arrive in ${rooms[actor.room]?.name ?? "another room"}.\r\n` });
+      events.push({ room: actor.room, text: `${actor.name} appears.`, exceptId: actor.id });
       advanceQuests(next, actor, { kind: "visit", room: actor.room }, events);
       continue;
     }

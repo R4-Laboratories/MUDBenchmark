@@ -42,7 +42,7 @@ import { assemble } from "../runtime/router.mjs";
 import { AREA_PERIOD, BASE_HP, HP_PER_LEVEL, armorOf, attackRoll, checkpointIdentities, initialState, maxHpForLevel, nextFrom, phaseAt, releaseHeldObjects, step, upgradeState } from "../runtime/world.mjs";
 import { join } from "node:path";
 import { buildCandidates } from "./candidate.mjs";
-import { PROVIDERS, DEFAULT_GOAL, GOALS, buildSystemPrompt, buildUserPrompt, normalizeBase, parseBrain, readSseText, requestFor, replyFrom, trimHistory, validateCommand, repairCommand, isThrottledStatus, retryAfterMs, throttleWaitMs, throttlePlan } from "../runtime/web/ai.mjs";
+import { PROVIDERS, DEFAULT_GOAL, GOALS, buildSystemPrompt, buildUserPrompt, buildActionMenu, normalizeBase, parseBrain, readSseText, requestFor, replyFrom, trimHistory, validateCommand, repairCommand, isThrottledStatus, retryAfterMs, throttleWaitMs, throttlePlan } from "../runtime/web/ai.mjs";
 import { emptyMemory, noteRoom, rememberResult, memoryPrompt, loopWarning, breakLoop, shouldBreakLoop, pathTo, nextStep, routeHint, nearestTarget, seedMap, observedCommandSuccess } from "../runtime/web/memory.mjs";
 import { verifyPrismSession, verifyPersonaOwner, verifyPrismAction, verifySessionKey, sessionWithinWindow } from "../runtime/prism-auth.mjs";
 import { decodeIdentityRequest, identityAdmits } from "../runtime/identity.mjs";
@@ -188,6 +188,22 @@ let webAI = { ok: true, why: [] };
   const deepseekDeliberate = requestFor("deepseek", { base: PROVIDERS.deepseek.base, model: PROVIDERS.deepseek.model, key: "k", deliberate: true, maxTokens: 400 }, "sys", [{ role: "user", content: "hi" }]);
   check(deepseekDeliberate.body.reasoning_effort === "low" && deepseekDeliberate.body.max_tokens >= 600, "DeepSeek deliberate turns have no headroom");
   check(/emptyRetry/.test(web) && /DeepSeek returned only reasoning/.test(web), "the DeepSeek empty-reply retry is missing");
+  const noteParsed = parseBrain("THOUGHT: go\nREPLY: none\nNOTE: Goal: find the tide-stone\nCOMMAND: north");
+  check(noteParsed.note === "Goal: find the tide-stone" && noteParsed.command === "north", "the parser lost NOTE");
+  const selfUser = buildUserPrompt({
+    turn: 1, observation: "[The Cell]", fast: true, actions: ["attack a rat", "flee"], notebook: "- Goal: survive",
+    state: { self: { name: "bob", level: 2, hp: 10, max_hp: 20, inventory: 1, inventory_names: ["a loaf of bread"], coins: 5, enemies: [{ name: "a rat", hp: 3, maxHp: 5, level: 1 }] }, room: { name: "The Cell", zone: "town", actors: ["ann"] } },
+  });
+  check(selfUser.includes("SELF: bob") && selfUser.includes("COMBAT: a rat") && selfUser.includes("PACK:") && selfUser.includes("NOTEBOOK:") && selfUser.includes("NOTE: one durable note"), "the prompt lost self/combat/pack/notebook context");
+  const packMenu = buildActionMenu({ self: { inventory_names: ["a loaf of bread", "a brass lamp", "a short sword"], enemies: [{ name: "a rat" }], techniques: [{ id: "bash" }] }, room: { exits: [], objects: [], npcs: [], actions: [] } });
+  check(packMenu.includes("flee") && packMenu.includes("eat a loaf of bread") && packMenu.includes("light a brass lamp") && packMenu.includes("wield a short sword") && packMenu.includes("technique bash"), "the action menu lost combat or pack actions");
+  check(/NOTE: one durable note/.test(buildSystemPrompt({ name: "scout", fast: true })), "the system prompt lost the NOTE format");
+  check(/ensureNotebook/.test(web) && /AI\.notebook/.test(web) && /id="notebook"/.test(web), "the browser notebook is missing");
+  const serverSource2 = readFileSync(join(root, "runtime/server.mjs"), "utf8");
+  const worldSource = readFileSync(join(root, "runtime/world.mjs"), "utf8");
+  check(/MAX_CARRY = 20/.test(serverSource2) && /carryCount/.test(serverSource2), "the carry limit is missing");
+  check(/named === "use"/.test(serverSource2) && /intent.kind === "teleportItem"/.test(worldSource), "the teleport item path is missing");
+  check(/Movement is blocked in combat/.test(serverSource2) && /intent.kind === "flee"/.test(worldSource), "the combat movement/flee path is missing");
   check(/waiting \$\{left\}s/.test(web) && /throttlePlan/.test(web) && /AI waiting/.test(web), "the AI does not wait for a rate-limit window");
   check(/console\.groq\.com\/keys/.test(web) && /DeepSeek/.test(web), "the UI does not offer the Groq free key or DeepSeek");
   check(!/Pollinations/i.test(web), "the web shell still mentions Pollinations");
@@ -456,7 +472,7 @@ const channelTable = loadChannels();
 const socialTable = loadSocials();
 const questTable = loadQuests();
 measured.quests = questTable.quests.length;
-if (measured.quests > ratchet.mustNotGrow.quests) failures.push(`quests are ${measured.quests}, above the frozen ceiling of ${ratchet.mustNotGrow.quests}; the target is 20`);
+if (measured.quests > ratchet.mustNotGrow.quests) failures.push(`quests are ${measured.quests}, above the frozen ceiling of ${ratchet.mustNotGrow.quests}; the target is 21`);
 
 // The agent contract is generated from the same tables as the game: every verb,
 // room, channel and social must appear.
@@ -1702,6 +1718,8 @@ let controls = { ok: true, why: [] };
   check(verbTable.byAlias.get("coins") === "coins" && verbTable.byAlias.get("money") === "coins", "coins/money are not registered");
   check(verbTable.byAlias.get("consider") === "consider" && verbTable.byAlias.get("con") === "consider", "consider/con are not registered");
   check(verbTable.byAlias.get("track") === "track" && verbTable.byAlias.get("seek") === "track", "track/seek are not registered");
+  check(verbTable.byAlias.get("flee") === "flee" && verbTable.byAlias.get("retreat") === "flee", "flee/retreat are not registered");
+  check(verbTable.byAlias.get("use") === "use" && verbTable.byAlias.get("activate") === "use", "use/activate are not registered");
   check(verbTable.byAlias.get("standing") === "standing" && verbTable.byAlias.get("reputation") === "standing" && verbTable.byAlias.get("factions") === "standing", "standing/reputation are not registered");
   check(factionRank("ember", 0).name === "outsider" && factionRank("ember", 3).name === "spark" && factionRank("ember", 6).name === "forgefriend" && factionRank("ember", 10).name === "ember-sworn", "the faction ranks are wrong");
   check(factionAllows({ ember: 5 }, "ember", 3) && !factionAllows({ ember: 2 }, "ember", 3), "the faction standing gate is wrong");
@@ -2691,6 +2709,38 @@ let arcanum = { ok: true, why: [] };
   if (!arcanum.ok) failures.push(`the Arcanum is broken: ${arcanum.why[0]}`);
 }
 
+// The Mistfall: a 14-room island reached by ferry, with a dark wreck, an
+// identical-room hold maze, a story quest, a teleport stone and a carry test.
+let mistfall = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  const table = loadActions({ world });
+  const quests = loadQuests();
+  const check = (condition, why) => { if (!condition) { mistfall.ok = false; mistfall.why.push(why); } };
+  const zone = world.zones.find((entry) => entry.id === "mistfall");
+  check(Boolean(zone) && zone.rooms.length === 14 && zone.rooms.every((room) => world.rooms[room]), "the Mistfall zone is not 14 connected rooms");
+  check(world.rooms[30]?.secretExits?.west === 182 && world.rooms[182]?.exits?.east === 30, "the Mistfall ferry is not connected");
+  check(world.rooms[190]?.exits?.west === 184, "the drowned cave does not connect to the wreck");
+  check(["184", "185", "186", "187", "188", "190", "191", "192", "194"].every((room) => world.rooms[room]?.dark === true), "a dark Mistfall room is missing its dark flag");
+  const object = (id) => world.objects.find((entry) => entry.id === id);
+  check(object("mistfall-captain-log")?.room === 188 && object("mistfall-tide-stone")?.room === 192 && object("mistfall-wayfarer-stone")?.teleport === 30, "a Mistfall treasure is missing");
+  check(object("mistfall-storm-lantern")?.flags?.includes("light") && object("mistfall-ferry-token")?.forSale === true, "the lantern or ferry token is missing");
+  check(world.npcs.some((npc) => npc.id === "tide-guardian" && npc.room === 191) && world.npcs.some((npc) => npc.id === "mistfall-castaway" && npc.room === 183), "a Mistfall NPC is missing");
+  check(quests.quests.some((quest) => quest.id === "salt-rose" && quest.repeat === "reset" && quest.objectives.length === 4), "the Salt Rose quest is missing");
+  check(table.errors.length === 0, `the Mistfall action table is invalid: ${table.errors[0]}`);
+  const ferry = table.actions.find((action) => action.id === "board-mistfall-ferry");
+  check(ferry?.requires?.item === "mistfall-ferry-token" && ferry?.effects?.some((effect) => effect.kind === "teleport" && effect.room === 182), "the ferry action is wrong");
+  const dark = renderRoom({ room: { name: "Test Dark", text: "A test room.", exits: {}, dark: true }, role: 0, others: ["a rat"], objects: ["a knife"], light: false });
+  check(dark.includes("It is dark") && !dark.includes("a rat"), "the dark room leaked people or objects without light");
+  let state = initialState(world.rooms, world.npcs, world.objects, 1, world.climate, channelTable.channels, world.levels, quests.quests);
+  state.actors.push({ id: "m", key: "m", account: "m", name: "m", room: 1, visited: [1], level: 1, xp: 100, maxHp: 20, hp: 20, mana: 5, maxMana: 5, spellbook: [], guild: null, guildRank: null, wielding: null, quests: { active: [], completed: [] }, found: [] });
+  state.objects.push({ id: "mist-test-stone", name: "a test wayfarer stone", holder: "m", room: null, inside: null, teleport: 5, charges: 1, eaten: false, flags: ["takeable"] });
+  const moved = step({ state, rooms: world.rooms, intents: [{ kind: "teleportItem", actorId: "m", objectId: "mist-test-stone", to: 5 }], actions: [] });
+  state = moved.state;
+  check(state.actors[0].room === 5 && state.objects.find((entry) => entry.id === "mist-test-stone")?.eaten === true, "the teleport item did not move and spend a charge");
+  if (!mistfall.ok) failures.push(`the Mistfall is broken: ${mistfall.why[0]}`);
+}
+
 // Persistence: gold is banked on logout/death and survives reset; equipment
 // does not follow the character offline.
 let goldPersistence = { ok: true, why: [] };
@@ -3146,10 +3196,14 @@ let combat2 = { ok: true, why: [] };
   check(state.actors[0].hp === 9, `two bites healed to ${state.actors[0].hp} instead of 9`);
 
   state.actors[0].room = 2;
+  state.actors[0].xp = 100;
   run([{ kind: "attack", actorId: "a", targetId: "guard" }]);
   check(state.engagements.length === 2, "a PvE attack did not engage both sides");
+  run([{ kind: "move", actorId: "a", dir: "east", to: 4 }]);
+  check(state.engagements.length === 2 && state.actors[0].room === 2, "combat allowed movement");
   run([{ kind: "flee", actorId: "a", dir: "east", to: 4, messages: { actor: "FA", others: "FO" } }]);
-  check(state.engagements.length === 2 && state.actors[0].room === 2, "flee still escaped combat");
+  check(state.engagements.length === 0 && state.actors[0].room === 4, "flee did not move and end combat");
+  check(state.actors[0].xp < 100, "flee did not cost experience");
 
   state.actors[0].room = 2;
   state.actors[0].xp = 95;
@@ -3215,7 +3269,7 @@ let quests = { ok: true, why: [] };
   }
   const archive = loadQuestArchive();
   const check = (condition, why) => { if (!condition) { quests.ok = false; quests.why.push(why); } };
-  check(questTable.quests.length === 20, `the live quest count is ${questTable.quests.length}, not 20`);
+  check(questTable.quests.length === 21, `the live quest count is ${questTable.quests.length}, not 21`);
   check(archive.quests.length === 41 && archive.errors.length === 0, "the retired quest archive is not 41 valid definitions");
   const liveIds = new Set(questTable.quests.map((quest) => quest.id));
   const archiveIds = new Set(archive.quests.map((quest) => quest.id));

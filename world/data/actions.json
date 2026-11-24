@@ -573,6 +573,57 @@
         "actor": "You pass the ward.",
         "others": "%a passes the ward."
       }
+    },
+    {
+      "id": "board-mistfall-ferry",
+      "room": 30,
+      "verb": "board",
+      "target": "ferry",
+      "requires": {
+        "item": "mistfall-ferry-token"
+      },
+      "effects": [
+        {
+          "kind": "revealExit",
+          "dir": "west"
+        },
+        {
+          "kind": "consume",
+          "object": "mistfall-ferry-token"
+        },
+        {
+          "kind": "teleport",
+          "room": 182
+        },
+        {
+          "kind": "message",
+          "text": "The ferryman takes your token and poles the boat into the mist."
+        }
+      ],
+      "messages": {
+        "actor": "You board the Mistfall ferry.",
+        "others": "%a boards the Mistfall ferry."
+      }
+    },
+    {
+      "id": "return-mistfall-ferry",
+      "room": 182,
+      "verb": "board",
+      "target": "ferry",
+      "effects": [
+        {
+          "kind": "teleport",
+          "room": 30
+        },
+        {
+          "kind": "message",
+          "text": "The ferryman poles the boat back to the Harbor Quay."
+        }
+      ],
+      "messages": {
+        "actor": "You board the return ferry.",
+        "others": "%a boards the return ferry."
+      }
     }
   ]
 }

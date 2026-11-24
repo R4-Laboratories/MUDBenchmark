@@ -132,13 +132,14 @@ whistle, sing, hum, mutter, shout, clap, cry, apologize, congratulate, battle (c
 equipment, quests [active|available|done|all|<id>], quest accept <id>, quest abandon <id>, deliver <thing> to <name>,
 levels, leaderboard (top/lb), ladder (pvp/duels), map [zone], shortcuts, tutorial (first),
 guild create <name>, guild join <name>, guild leave, guild who, guild list, guild chat <text>,
-guild rank <member> <rank>, guild disband, vault, deposit <item>, withdraw <item>, ignore/unignore <name>, ignoring, titles, title <id|none>, facts, recall <word>, talk <name>, spells, train <spell>, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search, turn, push, ring, world, help, go <direction>`;
+guild rank <member> <rank>, guild disband, vault, deposit <item>, withdraw <item>, ignore/unignore <name>, ignoring, titles, title <id|none>, facts, recall <word>, talk <name>, spells, train <spell>, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search, turn, push, ring, use <item>, flee, technique <id>, world, help, go <direction>`;
 
-const FAST_COMMANDS = "look, examine <thing>, inventory, standing, score, equipment, quests, say <text>, tell <name> <text>, global <text>, talk <name>, who, north/south/east/west/up/down, take/drop/wear/wield, take all, attack <name>, duel <name>, duel accept, cast <spell>, buy/sell/list, open/close, quest accept <id>, deliver <thing> to <name>, guild create/join/leave/who/chat, vault/deposit/withdraw, ignore/unignore, titles/title, facts, recall, wait, search, world, help, wave/nod/bow/laugh";
+const FAST_COMMANDS = "look, examine <thing>, inventory, standing, score, equipment, quests, say <text>, tell <name> <text>, global <text>, talk <name>, who, north/south/east/west/up/down, take/drop/wear/wield, take all, attack <name>, flee, technique <id>, use <item>, duel <name>, duel accept, cast <spell>, buy/sell/list, open/close, quest accept <id>, deliver <thing> to <name>, guild create/join/leave/who/chat, vault/deposit/withdraw, ignore/unignore, titles/title, facts, recall, wait, search, world, help, wave/nod/bow/laugh";
 
 const VERBS = new Set([
   "look", "l", "examine", "x", "ex", "who", "wh", "awake", "aw", "answer", "claim", "say", "tell", "mail", "go", "coins", "money", "purse", "standing", "reputation", "factions", "components", "parts", "materials", "upgrade", "improve", "forge", "salvage", "melt", "scrap", "technique", "tech",
   "global", "gossip", "gos", "goss", "trade", "channels", "north", "south", "east", "west", "up", "down",
+  "flee", "use", "activate", "invoke",
   "n", "s", "e", "w", "u", "d", "attack", "kill", "duel", "wield", "unwield", "inventory",
   "i", "inv", "equipment", "eq", "take", "get", "g", "t", "grab", "drink", "quaff", "drop", "dr", "put", "open", "close",
   "wear", "remove", "eat", "light", "extinguish", "buy", "sell", "list", "wait", "wave", "nod", "bow",
@@ -184,17 +185,19 @@ export const GOALS = {
 export function buildSystemPrompt({ name = "scout", goal = DEFAULT_GOAL, fast = false, deliberate = false } = {}) {
   if (fast) {
     return `You are ${name}, an autonomous player in MUDBench. You may reason when the situation needs it; this turn is ${deliberate ? "deliberate" : "direct"}.
-Reply with exactly these three labelled lines:
+Reply with exactly these four labelled lines:
 THOUGHT: ${deliberate ? "up to three sentences of private reasoning" : "one short sentence of private reasoning"}.
 REPLY: a short message to the director, or "none".
+NOTE: one durable note for later (a goal, discovery, promise or plan), or "none".
 COMMAND: exactly one legal game command.
 
 Rules:
 - ACTIONS is a shortlist of what is in this room. You may use any legal command from the COMMANDS line, including speech.
 - To talk to players, use say <text>, tell <name> <text>, or global <text>. To talk to an NPC, use talk <name>.
-- Never invent a command. Never output quit. Keep the three labels.
-- Use only what ROOM, STATE, R4 CONTEXT, MEMORY, QUESTS and DIRECTOR show.
-- Follow the director unless it is impossible.
+- Never invent a command. Never output quit. Keep the four labels.
+- Use only what ROOM, STATE, R4 CONTEXT, MEMORY, QUESTS, PACK, COMBAT, SOCIAL and DIRECTOR show.
+- If COMBAT is present you cannot move. Fight, use a technique, heal/eat, or flee as a last resort; fleeing costs experience.
+- Use NOTE for long-term memory. It is saved and shown to you next turn.
 - If you are unsure, look, examine, inventory, or score.
 
 COMMANDS: ${FAST_COMMANDS}
@@ -204,14 +207,16 @@ Goal: ${goal}`;
   return `You are ${name}, an autonomous player in MUDBench, a persistent text world shared by people and agents.
 You see the game exactly as a player does: the latest room, events, and the result of your last command. You type one command per turn through the same interface. The server enforces the same 250 ms input limit on you as on a human. You have no privileged view and no special commands.
 
-Reply with exactly these three sections, in this order:
+Reply with exactly these four sections, in this order:
 THOUGHT: one or two sentences of private reasoning about what you see and what you will do.
 REPLY: a short message to the director, the human watching you. Use "none" if there is nothing to say.
+NOTE: one durable note for later (a goal, discovery, social promise or plan), or "none".
 COMMAND: exactly one game command, on one line.
 
 Example reply:
 THOUGHT: The plaque says the Vault keeps the word, and the Vault is north then east. I will head north first.
 REPLY: Going to the Vault.
+NOTE: Goal: read the Vault word, then answer at the Shrine.
 COMMAND: north
 
 Rules:
@@ -220,6 +225,8 @@ Rules:
 - Use only what the game showed you. If you are unsure, look, examine, or check your inventory.
 - The director can steer you. Follow the direction unless it is impossible or would break the rules.
 - Keep THOUGHT honest and specific: what you know, what you want, what you will try next.
+- Use NOTE for long-term memory: goals, discoveries, social commitments, plans. It is saved and shown next turn.
+- If COMBAT is present you cannot move. Fight, use a technique, heal/eat, or flee as a last resort; fleeing costs experience.
 - You may explore, talk, fight, trade, quest, and use the map you build.
 
 Commands:
@@ -253,11 +260,21 @@ export function buildActionMenu(state = null) {
     }
     for (const action of room.actions ?? []) menu.add(`${action.verb} ${action.target}`);
   }
+  if ((state?.self?.enemies ?? []).length) menu.add("flee");
+  for (const technique of state?.self?.techniques ?? []) menu.add(`technique ${technique.id}`);
+  for (const name of state?.self?.inventory_names ?? []) {
+    if (/bread|stew|herb|ration|meat|apple|cheese|soup|loaf|berry|fish/i.test(name)) menu.add(`eat ${name}`);
+    if (/water|ale|wine|tea|flask/i.test(name)) menu.add(`drink ${name}`);
+    if (/lamp|lantern|torch|candle/i.test(name)) menu.add(`light ${name}`);
+    if (/sword|axe|mace|dagger|spear|hammer|staff|bow|knife/i.test(name)) menu.add(`wield ${name}`);
+    if (/mail|plate|cloak|shield|helm|boots|gloves|bracers|apron|circlet/i.test(name)) menu.add(`wear ${name}`);
+    if (/stone|charm|token|horn|bell|mirror|compass/i.test(name)) menu.add(`use ${name}`);
+  }
   for (const line of ["say <text>", "tell <name> <text>", "global <text>", "talk <name>", "wave", "nod", "bow", "laugh", "smile", "grin", "cheer", "salute", "ponder", "whistle", "sing", "hug", "highfive", "who", "battle", "equipment", "spells", "leaderboard", "levels", "map", "shortcuts", "quests"]) {
     menu.add(line);
   }
   for (const spell of state?.self?.spells ?? []) menu.add(`cast ${spell}`);
-  return [...menu].slice(0, 32);
+  return [...menu].slice(0, 40);
 }
 
 const DIRECTION_ALIASES = {
@@ -408,7 +425,7 @@ export function repairCommand(command, state = null, reason = "") {
   return "look";
 }
 
-export function buildUserPrompt({ turn = 1, observation = "", director = [], state = null, note = "", fast = false, actions: injected = null, memory = "", r4 = "" } = {}) {
+export function buildUserPrompt({ turn = 1, observation = "", director = [], state = null, note = "", fast = false, actions: injected = null, memory = "", r4 = "", notebook = "" } = {}) {
   const steering = director.length
     ? director.map((line) => `- ${line}`).join("\n")
     : "none";
@@ -423,11 +440,25 @@ export function buildUserPrompt({ turn = 1, observation = "", director = [], sta
   const self = state?.self
     ? `YOU: level ${state.self.level} · ${state.self.xp}/${state.self.next_xp ?? "?"} xp · ${state.self.hp ?? "?"}/${state.self.max_hp ?? "?"} hp · ${state.self.mana ?? "?"}/${state.self.max_mana ?? "?"} mana · ${state.self.quests?.active ?? 0} active / ${state.self.quests?.completed ?? 0} done quests · ${state.self.inventory ?? 0} items${state.self.spells?.length ? ` · spells ${state.self.spells.join(", ")}` : ""}${state.self.guild ? ` · ${state.self.guild}${state.self.guild_rank ? ` (${state.self.guild_rank})` : ""}${Number.isFinite(state.self.guild_vault) ? ` · vault ${state.self.guild_vault}` : ""}` : ""}${state.self.title ? ` · title ${state.self.title}` : ""}${(state.self.ignoring ?? 0) ? ` · ignoring ${state.self.ignoring}` : ""}${(state.self.memory_facts ?? 0) ? ` · facts ${state.self.memory_facts}` : ""}${state.self.wielding ? ` · wielding ${state.self.wielding}` : ""}${Number.isFinite(state.self.spell_power) ? ` · spell power ${state.self.spell_power}` : ""}${(state.self.effects ?? []).length ? ` · effects ${(state.self.effects ?? []).map((effect) => `${effect.name} ${effect.rounds}`).join(", ")}` : ""}`
     : "";
-  const sheet = [world, self].filter(Boolean).join("\n");
+  const selfLine = state?.self
+    ? `SELF: ${state.self.name ?? "you"} · level ${state.self.level ?? 1}${state.self.guild ? ` · ${state.self.guild}${state.self.guild_rank ? ` (${state.self.guild_rank})` : ""}` : ""} · ${state.room?.zone ?? "unknown zone"} · ${state.room?.name ?? "unknown room"}`
+    : "";
+  const pack = state?.self
+    ? `PACK: ${(state.self.inventory ?? 0) + (state.self.worn ?? []).length}/20 items${(state.self.inventory_names ?? []).length ? ` (${state.self.inventory_names.join(", ")})` : ""} · coins ${state.self.coins ?? 0}${state.self.wielding ? ` · wielding ${state.self.wielding}` : ""}${(state.self.worn ?? []).length ? ` · worn ${state.self.worn.join(", ")}` : ""}`
+    : "";
+  const enemies = state?.self?.enemies ?? [];
+  const combat = enemies.length
+    ? `COMBAT: ${enemies.map((enemy) => `${enemy.name} ${enemy.hp ?? "?"}/${enemy.maxHp ?? "?"} hp${enemy.level ? ` level ${enemy.level}` : ""}`).join("; ")}. Movement is blocked. Fight, use a technique, heal/eat, or flee as a last resort (XP penalty).`
+    : "";
+  const social = state?.room?.actors?.length
+    ? `SOCIAL: ${state.room.actors.join(", ")}${state.self?.guild ? ` · guild ${state.self.guild}` : ""}`
+    : "";
+  const sheet = [world, selfLine, self, pack, combat, social].filter(Boolean).join("\n");
   const menu = actions.join(", ");
   const questBlock = quests ? `QUESTS:\n${quests}` : "";
   const memoryBlock = memory ? `MEMORY:\n${memory}\n` : "";
   const r4Block = r4 ? `R4 CONTEXT:\n${r4}\n` : "";
+  const notebookBlock = notebook ? `NOTEBOOK:\n${notebook}\n` : "";
   if (fast) {
     return `TURN ${turn}
 ROOM:
@@ -437,13 +468,15 @@ ACTIONS: ${menu}
 ${r4Block ? `\n${r4Block}` : ""}
 ${memoryBlock ? `\n${memoryBlock}` : ""}
 ${questBlock ? `${questBlock}\n` : ""}
+${notebookBlock ? `${notebookBlock}\n` : ""}
 DIRECTOR:
 ${steering}
 ${note ? `\nNOTE: ${note}\n` : ""}
 Choose one command. You may use say, tell or global to talk; ACTIONS is a shortlist, not a cage.
-Reply with exactly these three lines and nothing else:
+Reply with exactly these four lines and nothing else:
 THOUGHT: one short sentence.
 REPLY: none
+NOTE: one durable note, or none.
 COMMAND: one command.`;
   }
   return `TURN ${turn}
@@ -454,12 +487,14 @@ ${menu ? `ACTIONS: ${menu}\n` : ""}
 ${r4Block ? `${r4Block}\n` : ""}
 ${memoryBlock ? `${memoryBlock}\n` : ""}
 ${questBlock ? `${questBlock}\n` : ""}
+${notebookBlock ? `${notebookBlock}\n` : ""}
 DIRECTOR:
 ${steering}
 ${note ? `\nNOTE: ${note}\n` : ""}
-What is your next move? Reply with exactly these three lines:
+What is your next move? Reply with exactly these four lines:
 THOUGHT: one short sentence.
 REPLY: none
+NOTE: one durable note, or none.
 COMMAND: one command.`;
 }
 
@@ -468,10 +503,10 @@ COMMAND: one command.`;
 // falls back to the last line that starts with a known verb, then to look. It
 // never sends quit: the director owns the session.
 export function parseBrain(text) {
-  const out = { thought: "", reply: "", command: "" };
+  const out = { thought: "", reply: "", note: "", command: "" };
   let section = null;
   for (const raw of String(text ?? "").replace(/\r/g, "").split("\n")) {
-    const label = raw.match(/^\s*(THOUGHT|REPLY|COMMAND)\s*:\s*(.*)$/i);
+    const label = raw.match(/^\s*(THOUGHT|REPLY|NOTE|COMMAND)\s*:\s*(.*)$/i);
     if (label) {
       section = label[1].toLowerCase();
       out[section] += `${out[section] ? "\n" : ""}${label[2]}`;
@@ -479,9 +514,11 @@ export function parseBrain(text) {
     }
     if (section === "thought") out.thought += `\n${raw}`;
     if (section === "reply") out.reply += `\n${raw}`;
+    if (section === "note") out.note += `\n${raw}`;
   }
   out.thought = out.thought.trim();
   out.reply = out.reply.trim();
+  out.note = out.note.trim().slice(0, 240);
 
   let command = out.command.split("\n")[0]
     .replace(/^[`"'*>-\s]+|[`"'*.\s]+$/g, "")
@@ -509,7 +546,7 @@ export function parseBrain(text) {
 
   if (!command || /^quit$/i.test(command)) command = "look";
   if (command.length > 300) command = `${command.slice(0, 300)}`;
-  return { thought: out.thought, reply: out.reply, command };
+  return { thought: out.thought, reply: out.reply, note: out.note, command };
 }
 
 // Keep the last N user/assistant pairs and start on a user message. Anthropic

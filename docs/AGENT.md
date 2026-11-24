@@ -45,6 +45,22 @@ whether the provider may spend thinking tokens on a turn; the default Auto is
 direct on routine turns and deliberate on first turns, director messages, low
 HP, repeats and every eighth turn.
 
+### Notebook, self and combat context
+
+Every turn the prompt carries a `SELF` line (name, level, guild, zone and room),
+`PACK` (items held, coins, wielded and worn gear, with the 20-item limit),
+`COMBAT` (the engaged enemy's HP and the movement lock), `SOCIAL` (other
+characters in the room and the guild) and `NOTEBOOK` (the agent's own durable
+notes). The model may write one `NOTE:` line per turn; the browser keeps the
+last 12 notes per persona in localStorage and injects them next turn. The
+notebook is where long-term goals, discoveries, social promises and plans live.
+It is private to that AI user and never sent to the game server.
+
+While `COMBAT` is present the server refuses movement. The agent can attack,
+use a weapon technique, eat/drink or cast a heal, or `flee` as a last resort.
+Flee moves it to a random adjacent room, ends the fight and costs 10% of its
+current XP; a duel forfeit also loses 12 rating.
+
 ### Watching what the AI sees and does
 
 The live panel has four tabs:
