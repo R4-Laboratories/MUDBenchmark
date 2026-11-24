@@ -1,7 +1,7 @@
 # Next work
 
-Baseline: **v0.91.53**. The world has 181 rooms, 15 zones, 20 quests, 90 mobiles
-and 214 objects. R4 memory, command grounding, scorecards
+Baseline: **v0.91.54**. The world has 195 rooms, 16 zones, 21 quests, 95 mobiles
+and 227 objects. R4 memory, command grounding, scorecards
 and the public stats surface are live; signups are open. Every AI key is
 supplied by the player; Groq is the free option, and each browser harness runs
 its own R4 router. The server hosts no model and holds no provider key.
@@ -85,6 +85,7 @@ memory or prompt system.
 | v0.91.51 | Local free agent: Qwen2.5-3B on CPU, no key, no per-request cost; high quotas | **done** (MB-276), removed in v0.91.52 |
 | v0.91.52 | Bring your own key: Groq free, Anthropic/OpenAI/DeepSeek/custom; browser R4 router | **done** (MB-278/279) |
 | v0.91.53 | DeepSeek: thinking off fast, 300/600 token floors, empty-reply retry; key preservation | **done** (MB-281/282) |
+| v0.91.54 | Agent notebook/self/combat context; combat lock + costly flee; 20-slot pack; Mistfall dark/maze/ferry/teleport quest | **done** (MB-283/284/285) |
 | backlog | Next deep site (mine/shipwreck/monastery); fold tiny zones; larger PvP sample | optional |
 
 ## What is next

@@ -360,9 +360,14 @@
       }
     },
     "flee": {
-      "aliases": [],
+      "aliases": [
+        "retreat"
+      ],
       "argument": "none",
       "messages": {
+        "blocked": "You are in combat; attack, use a technique, or flee.",
+        "noFight": "You are not in combat.",
+        "noExit": "There is nowhere to flee.",
         "refused": "There is no fleeing combat. A fight ends only with a death."
       }
     },
@@ -819,6 +824,20 @@
       "messages": {
         "missing": "Track what?",
         "none": "You find no trail for %s."
+      }
+    },
+    "use": {
+      "aliases": [
+        "activate",
+        "invoke"
+      ],
+      "argument": "item",
+      "messages": {
+        "missing": "You are not carrying that.",
+        "notUsable": "Nothing happens.",
+        "noTarget": "The item has nowhere to take you.",
+        "actor": "You use %object.",
+        "others": "%a uses %object."
       }
     }
   }

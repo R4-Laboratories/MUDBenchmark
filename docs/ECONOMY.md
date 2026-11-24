@@ -116,7 +116,7 @@ the zone's mobiles.
 | a red company axe | mainhand | damage 6, Rage | Red 3 | 65 |
 | red company boots | feet | armour 2 | Red 6 | 55 |
 
-The world now has 214 objects.
+The world now has 227 objects. The pack holds 20 items (coins are separate); the Mistfall adds the ferry token, storm/wreck lanterns, captain's log, tide-stone, wayfarer's stone and wreck loot.
 
 The second gear pass fills the thinner slots:
 

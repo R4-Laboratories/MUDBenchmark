@@ -518,6 +518,16 @@ Rehearsed 2026-11-16:
   with a real DeepSeek key took the free gear, examined the Atrium plaque and
   walked north to the Corridor with no Brain error. World unchanged: 181 rooms /
   15 zones / 20 quests / 90 mobiles / 214 objects (MB-281/282);
+- v0.91.54 (The Mistfall) adds a 14-room island reached by a bought ferry
+  token: the dark wreck/hold/caves need a lantern, three identical hold rooms
+  form a maze, the Salt Rose story quest sends the player through the wreck to
+  the tide guardian and back to the lighthouse keeper, and the wayfarer's stone
+  is a reusable teleport item. It also adds the 20-slot pack, the combat lock
+  (movement is blocked while engaged; `flee` ends the fight and costs 10% XP),
+  the "It is dark" default, and the agent's persistent NOTEBOOK plus SELF, PACK,
+  COMBAT and SOCIAL prompt context. World 195 rooms / 16 zones / 21 quests / 95
+  mobiles / 227 objects. The live walk completed the Salt Rose quest; a real
+  DeepSeek session wrote and reused eight notes (MB-283/284/285);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

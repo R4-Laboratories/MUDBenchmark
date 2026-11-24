@@ -257,6 +257,9 @@ let nextId = 1;
 // Guards that must exist before this is reachable by anyone but us.
 const MAX_CLIENTS = Number(process.env.MAX_CLIENTS ?? 40);
 const MAX_ACCOUNTS = Number(process.env.MAX_ACCOUNTS ?? 500);
+const MAX_CARRY = 20;
+const carryCount = (state, actorId) => state.objects.filter((object) =>
+  object.holder === actorId && !object.eaten && !(object.flags ?? []).includes("coin")).length;
 // "open" accepts new legacy/Prism accounts; "closed" keeps existing logins but
 // refuses new accounts. Set SIGNUP_MODE=closed for a curated launch.
 const SIGNUP_MODE = String(process.env.SIGNUP_MODE ?? "open").toLowerCase();
@@ -1637,7 +1640,7 @@ async function handleCommand(id, line) {
     if (!actor?.key) {
       return sendTo(id, "MUDBench is a persistent world for people and agents.\r\nSign in with your Prism id, or register <name> <password> / login <name> <password>.\r\nThen type help for the commands.\r\n");
     }
-    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: take/t/g/tf, take all, drop/dp/dr, inventory/i, coins, standing/reputation, components, score/sc, quests/q, who/wh, spells/sp, cast/ca, say/sy, tell/te, give/gv, put/pt, open/op, close/cl, wear/wr, remove/rm, buy/b, sell/se, list/ls, drink, map/mp, leaderboard/lb, ladder/pvp, levels/lv, shortcuts/sh.\r\nMagic: spells (effects/mana), train <spell> at the Mages' Guild, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search. Combat: attack/kill/k, technique/tech (weapon move), battle/combat/bt (current HP), score (armour/damage), equipment/eq (slots and totals). Forge: upgrade/improve, salvage/melt, components at the Cold Forge. There is no fleeing a fight. Guild: guild join/leave/who/list/chat, guild advance (Mages, Wardens, Night Market), vault/deposit/withdraw in the Guild Hall. Social: ignore/unignore/ignoring, report/rep, titles/title, facts/memory, recall <word> at the shrine. Room actions: turn, push, ring where the room suggests.\r\nWorld: world or status (online, guilds, reset); overview/ov (the live player and fight panel); levels, leaderboard/top/lb, map [zone], shortcuts, quests active|available|done|all.<id>; tutorial (first) for the first steps.\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
+    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: take/t/g/tf, take all, drop/dp/dr, inventory/i, coins, standing/reputation, components, score/sc, quests/q, who/wh, spells/sp, cast/ca, say/sy, tell/te, give/gv, put/pt, open/op, close/cl, wear/wr, remove/rm, buy/b, sell/se, list/ls, drink, map/mp, leaderboard/lb, ladder/pvp, levels/lv, shortcuts/sh.\r\nMagic: spells (effects/mana), train <spell> at the Mages' Guild, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search. Combat: attack/kill/k, technique/tech (weapon move), battle/combat/bt (current HP), score (armour/damage), equipment/eq (slots and totals). Forge: upgrade/improve, salvage/melt, components at the Cold Forge. Movement is blocked in combat; flee is a last resort and costs experience. Guild: guild join/leave/who/list/chat, guild advance (Mages, Wardens, Night Market), vault/deposit/withdraw in the Guild Hall. Social: ignore/unignore/ignoring, report/rep, titles/title, facts/memory, recall <word> at the shrine. Room actions: turn, push, ring where the room suggests.\r\nWorld: world or status (online, guilds, reset); overview/ov (the live player and fight panel); levels, leaderboard/top/lb, map [zone], shortcuts, quests active|available|done|all.<id>; tutorial (first) for the first steps.\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
   }
 
   // A command typed before the join tick lands is queued, not refused: the
@@ -2151,6 +2154,7 @@ async function handleCommand(id, line) {
     if (!shopHere) return sendTo(id, `${messages.noShop}\r\n`);
     const object = findObject(words, (o) => o.room === actor.room && o.forSale && !o.eaten);
     if (!object) return sendTo(id, `${render(messages.missing, { words })}\r\n`);
+    if (carryCount(state, id) >= MAX_CARRY) return sendTo(id, `Your pack is full (${MAX_CARRY} items). Drop or sell something first.\r\n`);
     if (object.faction && object.minStanding && !factionAllows(actor.standing, object.faction, object.minStanding)) {
       return sendTo(id, `${object.name} requires ${FACTIONS[object.faction]?.name ?? object.faction} standing ${object.minStanding}.\r\n`);
     }
@@ -2217,10 +2221,29 @@ async function handleCommand(id, line) {
     return;
   }
 
+  if (named === "use") {
+    const messages = VERB_TABLE.verbs.use.messages;
+    const object = findObject(words, (o) => o.holder === id && !o.eaten);
+    if (!object) return sendTo(id, `${render(messages.missing, { words })}\r\n`);
+    if (!Number.isInteger(object.teleport) || !ROOMS[object.teleport]) return sendTo(id, `${messages.notUsable}\r\n`);
+    pending.push({ kind: "teleportItem", actorId: id, objectId: object.id, to: object.teleport, messages: {
+      actor: render(messages.actor, { object: object.name }),
+      others: render(messages.others, { actor: actor.name, object: object.name }),
+    } });
+    recordSpan("world.object", { "actor.id": id, "action.kind": "use", "object.id": object.id, "room.from": actor.room, "room.to": object.teleport, "world.tick": state.tick }, 0);
+    return;
+  }
+
   if (named === "flee") {
     const messages = VERB_TABLE.verbs.flee.messages;
-    recordSpan("world.flee", { "actor.id": id, "flee.refused": true, "world.tick": state.tick }, 0);
-    return sendTo(id, `${messages.refused}\r\n`);
+    const engagement = (state.engagements ?? []).find((entry) => entry.attackerId === id || entry.targetId === id);
+    if (!engagement) return sendTo(id, `${messages.noFight}\r\n`);
+    const exits = Object.entries(ROOMS[actor.room]?.exits ?? {});
+    if (!exits.length) return sendTo(id, `${messages.noExit}\r\n`);
+    const [dir, to] = exits[Math.floor(Math.random() * exits.length)];
+    pending.push({ kind: "flee", actorId: id, dir, to });
+    recordSpan("world.flee", { "actor.id": id, "flee.dir": dir, "room.from": actor.room, "room.to": to, "world.tick": state.tick }, 0);
+    return;
   }
 
   if (named === "consider") {
@@ -2831,7 +2854,7 @@ async function handleCommand(id, line) {
     if (!chosen.length) return sendTo(id, `${render(messages.noCategory, { words: filter })}\r\n`);
     const total = chosen.reduce((sum, group) => sum + group.items.length, 0);
     const details = chosen.map((group) => `${group.label} (${group.items.length}): ${group.items.map(label).join(", ")}`).join("\r\n  ");
-    return sendTo(id, `${render(messages.carrying, { words: `${total} item${total === 1 ? "" : "s"}:\r\n  ${details}` })}\r\n`);
+    return sendTo(id, `${render(messages.carrying, { words: `${total} item${total === 1 ? "" : "s"}:\r\n  ${details}` })}\r\nPack: ${carryCount(state, id)}/${MAX_CARRY}.\r\n`);
   }
 
   if (named === "coins") {
@@ -2852,10 +2875,14 @@ async function handleCommand(id, line) {
 
   if (named === "take" && /^(all|everything)$/i.test(words.trim())) {
     const messages = VERB_TABLE.verbs.take.messages;
-    const items = state.objects.filter((o) => o.room === actor.room && !o.inside && !o.eaten
+    const all = state.objects.filter((o) => o.room === actor.room && !o.inside && !o.eaten
       && o.holder === null && !(o.flags ?? []).includes("fixed") && !o.forSale);
-    if (!items.length) return sendTo(id, `${messages.nothing}\r\n`);
+    if (!all.length) return sendTo(id, `${messages.nothing}\r\n`);
+    const space = Math.max(0, MAX_CARRY - carryCount(state, id));
+    if (!space) return sendTo(id, `Your pack is full (${MAX_CARRY} items). Drop or sell something first.\r\n`);
+    const items = all.slice(0, space);
     const names = items.map((object) => object.name).join(", ");
+    if (items.length < all.length) sendTo(id, `Your pack can hold ${items.length} of ${all.length}; the rest stays here.\r\n`);
     pending.push({ kind: "takeAll", actorId: id, objectIds: items.map((object) => object.id), messages: {
       actor: `You take ${names}.\r\n`,
       others: `${actor.name} takes ${names}.`,
@@ -2874,6 +2901,7 @@ async function handleCommand(id, line) {
     if (!container.open) return sendTo(id, `${render(messages.closed, { target: container.name })}\r\n`);
     const object = findObject(what.trim(), (o) => o.inside === container.id && !o.eaten);
     if (!object) return sendTo(id, `${render(messages.empty, { words: what.trim(), target: container.name })}\r\n`);
+    if (carryCount(state, id) >= MAX_CARRY) return sendTo(id, `Your pack is full (${MAX_CARRY} items). Drop or sell something first.\r\n`);
     pending.push({ kind: "takeFrom", actorId: id, objectId: object.id, containerId: container.id, messages: {
       actor: render(messages.actor, { object: object.name, target: container.name }),
       others: render(messages.others, { actor: actor.name, object: object.name, target: container.name }),
@@ -2889,6 +2917,7 @@ async function handleCommand(id, line) {
     if (!object) return sendTo(id, `${render(messages.missing, { words: needle })}\r\n`);
     if ((object.flags ?? []).includes("fixed")) return sendTo(id, `${render(messages.fixed, { words: needle })}\r\n`);
     if (object.forSale) return sendTo(id, `${render(messages.forSale, { words: needle })}\r\n`);
+    if (carryCount(state, id) >= MAX_CARRY) return sendTo(id, `Your pack is full (${MAX_CARRY} items). Drop or sell something first.\r\n`);
     pending.push({ kind: "take", actorId: id, objectId: object.id, messages: {
       actor: render(messages.actor, { object: object.name }),
       others: render(messages.others, { actor: actor.name, object: object.name }),
@@ -3089,6 +3118,9 @@ async function handleCommand(id, line) {
 
   const dir = DIRECTIONS[verb];
   if (dir) {
+    if ((state.engagements ?? []).some((entry) => entry.attackerId === id || entry.targetId === id)) {
+      return sendTo(id, `${VERB_TABLE.verbs.flee.messages.blocked}\r\n`);
+    }
     const room = ROOMS[actor.room];
     const found = (actor.found ?? []).includes(`${actor.room}:${dir}`);
     const target = room.exits[dir] ?? (found ? room.secretExits?.[dir] : undefined);
@@ -3280,11 +3312,14 @@ function onTick() {
     }
   }
 
-  // A mover is shown the room it moved into.
+  // Anyone who changed rooms is shown the room they arrived in: ordinary
+  // movement, a flee, a ferry/teleport action or a teleport item.
   for (const intent of intents) {
-    if (intent.kind !== "move") continue;
+    const actionTeleport = intent.kind === "action"
+      && ACTION_TABLE.actions.find((action) => action.id === intent.actionId)?.effects?.some((effect) => effect.kind === "teleport");
+    if (!["move", "flee", "teleportItem"].includes(intent.kind) && !actionTeleport) continue;
     const actor = actorById(intent.actorId);
-    if (actor && actor.room === intent.to) sendTo(actor.id, describe(actor.room, actor.id));
+    if (actor && (intent.to == null || actor.room === intent.to)) sendTo(actor.id, describe(actor.room, actor.id));
   }
 
   // Someone who just claimed an identity is placed at their saved room.

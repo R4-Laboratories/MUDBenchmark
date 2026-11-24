@@ -33,7 +33,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `eat` | `taste`, `ea` | object |
 | `extinguish` | `douse`, `snuff`, `ext` | object |
 | `facts` | `memory`, `knowledge` | none |
-| `flee` | — | none |
+| `flee` | `retreat` | none |
 | `give` | `gv` | object to actor |
 | `guild` | `guilds` | subcommand |
 | `guildchat` | `gc`, `gchat` | text |
@@ -74,6 +74,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `unignore` | `unign`, `unmute` | actor |
 | `unwield` | `sheathe`, `uw` | none |
 | `upgrade` | `improve`, `forge` | object |
+| `use` | `activate`, `invoke` | item |
 | `vault` | `gvault`, `bank`, `gvlt` | none |
 | `wait` | `wa` | none |
 | `wear` | `don`, `wr` | object |
@@ -149,6 +150,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `hall-word` | A Word in the Hall | 2 | Talk to the market woman; Talk to the guild clerk | 70 xp |
 | `guild-dawn` | The Dawn Archive | 10 | Reach the Dawn Gate; Carry the dawn crown | 500 xp |
 | `guild-trial` | The Archmage's Trial | 10 | Defeat the eclipse regent; Deliver the regent's sigil to the archmage | 300 xp |
+| `salt-rose` | The Salt Rose | 2 | Enter the captain's cabin; Recover the captain's log; Defeat the tide guardian; Bring the tide-stone to the lighthouse keeper | 180 xp |
 
 ## Rooms
 
@@ -335,4 +337,18 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 179 | The Orrery | arcanum | no | down 173, west 178, north 180 |
 | 180 | The Star Well | arcanum | no | down 175, south 179 |
 | 181 | The Prism Vault | arcanum | no | down 176, west 180 |
+| 182 | The Mistfall Landing | mistfall | no | north 183, east 30 |
+| 183 | The Black Beach | mistfall | no | south 182, north 184, east 189 |
+| 184 | The Wreck of the Salt Rose | mistfall | no | south 183, north 185, east 190 |
+| 185 | The Hold | mistfall | no | south 184, west 186 |
+| 186 | The Hold | mistfall | no | east 185, west 187 |
+| 187 | The Hold | mistfall | no | east 186, south 188 |
+| 188 | The Captain's Cabin | mistfall | no | north 187 |
+| 189 | The Cliff Path | mistfall | no | west 183, north 190, east 193 |
+| 190 | The Cave Mouth | mistfall | no | south 189, east 191, west 184 |
+| 191 | The Drowned Cave | mistfall | no | west 190, east 192 |
+| 192 | The Tide Pool | mistfall | no | west 191, east 195 |
+| 193 | The Ruined Light | mistfall | no | west 189, north 194 |
+| 194 | The Signal Room | mistfall | no | south 193 |
+| 195 | The Grave Reef | mistfall | no | west 192 |
 
