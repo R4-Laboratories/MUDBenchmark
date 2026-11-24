@@ -763,6 +763,145 @@
         "actor": "You board the coracle.",
         "others": "%a boards the coracle."
       }
+    },
+    {
+      "id": "turn-foundry-wheel",
+      "room": 212,
+      "verb": "turn",
+      "target": "wheel",
+      "requires": {
+        "party": 2
+      },
+      "effects": [
+        {
+          "kind": "revealExit",
+          "dir": "down"
+        },
+        {
+          "kind": "message",
+          "text": "Two pairs of hands turn the wheel; the drowned stair opens."
+        }
+      ],
+      "messages": {
+        "actor": "You turn the wheel with your party.",
+        "others": "%a and the party turn the drowned wheel."
+      }
+    },
+    {
+      "id": "turn-foundry-valve",
+      "room": 215,
+      "verb": "turn",
+      "target": "valve",
+      "requires": {
+        "party": 2
+      },
+      "effects": [
+        {
+          "kind": "revealExit",
+          "dir": "down"
+        },
+        {
+          "kind": "message",
+          "text": "Two pairs of hands turn the valve; the stair below clears."
+        }
+      ],
+      "messages": {
+        "actor": "You turn the valve with your party.",
+        "others": "%a and the party turn the great valve."
+      }
+    },
+    {
+      "id": "pick-foundry-valve",
+      "room": 215,
+      "verb": "pick",
+      "target": "valve",
+      "requires": {
+        "guild": "night-market",
+        "rank": "runner"
+      },
+      "effects": [
+        {
+          "kind": "revealExit",
+          "dir": "down"
+        },
+        {
+          "kind": "message",
+          "text": "The pin gives under a thief's tool; the stair below clears."
+        }
+      ],
+      "messages": {
+        "actor": "You pick the valve pin.",
+        "others": "%a picks the valve pin."
+      }
+    },
+    {
+      "id": "open-foundry-sluice",
+      "room": 218,
+      "verb": "open",
+      "target": "sluice",
+      "requires": {
+        "party": 2
+      },
+      "effects": [
+        {
+          "kind": "revealExit",
+          "dir": "east"
+        },
+        {
+          "kind": "message",
+          "text": "Two pairs of hands lift the sluice; the water falls and the east passage opens."
+        }
+      ],
+      "messages": {
+        "actor": "You open the sluice with your party.",
+        "others": "%a and the party open the sluice."
+      }
+    },
+    {
+      "id": "turn-foundry-crane",
+      "room": 219,
+      "verb": "turn",
+      "target": "crane",
+      "requires": {
+        "party": 2
+      },
+      "effects": [
+        {
+          "kind": "revealExit",
+          "dir": "down"
+        },
+        {
+          "kind": "message",
+          "text": "Two pairs of hands turn the crane; the chain drops into the bellows hall."
+        }
+      ],
+      "messages": {
+        "actor": "You turn the crane with your party.",
+        "others": "%a and the party turn the crane."
+      }
+    },
+    {
+      "id": "pump-foundry-bellows",
+      "room": 222,
+      "verb": "pump",
+      "target": "bellows",
+      "requires": {
+        "party": 2
+      },
+      "effects": [
+        {
+          "kind": "revealExit",
+          "dir": "east"
+        },
+        {
+          "kind": "message",
+          "text": "Two pairs of hands work the bellows; the slag passage east clears."
+        }
+      ],
+      "messages": {
+        "actor": "You work the bellows with your party.",
+        "others": "%a and the party work the great bellows."
+      }
     }
   ]
 }

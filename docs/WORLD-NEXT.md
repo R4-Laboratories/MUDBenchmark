@@ -3,8 +3,8 @@
 This was the queued AberMUD-style content and systems track. The v0.47/v0.48 slices
 have landed: eight equipment slots, six spells and the Mages' Guild, eleven
 Lantern Quarter/Undervault rooms, five personal quests, a guild ledger quest,
-a searchable secret stair, three data-driven room actions and mage rank advancement. The world is now 213 rooms,
-17 zones, 22 quests, 100 mobiles and 240 objects. The foundation from v0.46 remains:
+a searchable secret stair, three data-driven room actions and mage rank advancement. The world is now 225 rooms,
+18 zones, 23 quests, 105 mobiles and 248 objects. The foundation from v0.46 remains:
 short command forms, `equipment`, `world`/`status`, the hidden `#state` line,
 and the AI prompt/router state layer.
 
@@ -50,7 +50,8 @@ and the AI prompt/router state layer.
 | M38 | **done** — The Mistfall: 16-room island by ferry, dark wreck/hold/caves with lanterns, identical-room hold maze, Salt Rose story quest, tide guardian, carry limit, reusable wayfarer stone, level gates and the two-player Twin Door/Tide Vault; 197 rooms / 16 zones / 21 quests / 95 mobiles / 228 objects | ferry/dark/maze, quest, level gates, twin door, carry/teleport, live walks, every prior check |
 | M39 | **done** — Danger and social layer: death costs 50% XP and a level (PvE/PvP), deaths counter and win-condition prompt, Night Market hide/detect, Completionist persona; two-client hide/twin-door session | death penalty, hide visibility/who/room, two-player door, prompt, every prior check |
 | M40 | **done** — The Deepdelve: 16-room party mine off the graveyard, with a party winch/pump/cart/seam, dark tunnels, a gas pocket and canaries, a coracle, a surveyor/captain/guardian story and a repeatable ore contract; 213 rooms / 17 zones / 22 quests / 100 mobiles / 240 objects | party invite/accept/decline/leave/kick/disband, shared XP and kill credit, party-only actions, gas, level gates, full live walk, every prior check |
-| M41 | **done** — The win condition: live completion tally (level 10, 22 quests, 17 hidden ways), permanent record and Worldbreaker title, persisted hidden ways, `completion`/`goal`/`win` command and AI `GOAL` context; 213 rooms / 17 zones / 22 quests / 100 mobiles / 240 objects | tally edges, record once, title, checkpoint persistence, live logout/login, every prior check |
+| M41 | **done** — The win condition: live completion tally, permanent record and Worldbreaker title, persisted hidden ways, `completion`/`goal`/`win` command and AI `GOAL` context; 213 rooms / 17 zones / 22 quests / 100 mobiles / 240 objects at the time | tally edges, record once, title, checkpoint persistence, live logout/login, every prior check |
+| M42 | **done** — The Drowned Foundry: 12-room level 9/10 party dungeon below the Deepdelve pool, five party actions, Night Market valve shortcut, foundry hammer/apron/ledger, repeatable Foundry quest and a party-scale master; 225 rooms / 18 zones / 23 quests / 105 mobiles / 248 objects | party actions, guild shortcut, dark/level gates, boss, shared XP/credit, full live walk, every prior check |
 
 ## Rules that keep the model green
 

@@ -622,6 +622,45 @@
       },
       "complete": "The mine captain takes the notes and the ore. The Deepdelve is mapped, and the seam is sealed again.",
       "requires": []
+    },
+    {
+      "id": "foundry",
+      "name": "The Drowned Foundry",
+      "level": 9,
+      "giver": "the foundry foreman",
+      "repeat": "reset",
+      "description": "The foundry below the Deepdelve drowned when the mine broke into the old works. The foreman wants the ledger, the master's core and proof that the forge is quiet.",
+      "objectives": [
+        {
+          "kind": "visit",
+          "room": 220,
+          "text": "Reach the master's office"
+        },
+        {
+          "kind": "collect",
+          "object": "foundry-ledger",
+          "text": "Recover the foundry ledger"
+        },
+        {
+          "kind": "kill",
+          "npc": "foundry-master",
+          "count": 1,
+          "text": "Defeat the foundry master"
+        },
+        {
+          "kind": "deliver",
+          "npc": "foundry-foreman",
+          "object": "foundry-master-core",
+          "count": 1,
+          "text": "Bring the master's core to the foreman"
+        }
+      ],
+      "rewards": {
+        "xp": 420,
+        "coins": 70
+      },
+      "complete": "The foreman takes the ledger and the core. The foundry is quiet, and the stair is barred behind you.",
+      "requires": []
     }
   ]
 }

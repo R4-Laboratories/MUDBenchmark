@@ -11,6 +11,8 @@ the actor's party has at least two members in the room.
 - The old shaft at **The Old Shaft (213)** returns to the Graveyard by `up`.
 - The mine head sells nothing; it has a lantern, a second lantern, a canary, a
   second canary and the mine captain. Take a light and a canary each.
+- **The Underground Pool (212)** also opens down to the **Drowned Foundry**
+  when a party turns the drowned wheel. See `docs/DROWNED-FOUNDRY.md`.
 
 The mine is **level-gated**:
 

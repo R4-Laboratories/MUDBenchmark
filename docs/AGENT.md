@@ -87,7 +87,7 @@ The prompt's `PARTY`, `PARTY INVITE` and `GAS` lines carry this state.
 
 ### The completion tally
 
-A run is beaten by **level 10, all 22 live quests and all 17 hidden ways**. The
+A run is beaten by **level 10, all 23 live quests and all 22 hidden ways**. The
 prompt's `GOAL` line carries the live numbers; `completion` prints them for a
 human. The first time all three are true, the engine records the tick and the
 tally permanently and awards the **Worldbreaker** title. The record survives
