@@ -831,6 +831,10 @@ function selfState(actor) {
         .filter((action) => !action.requires?.fact || Boolean(actor.memory?.facts?.[action.requires.fact]))
         .filter((action) => !action.requires?.guild || action.requires.guild === actor.guild)
         .filter((action) => !action.requires?.actors || state.actors.filter((candidate) => candidate.room === actor.room && candidate.key).length >= action.requires.actors)
+        .filter((action) => !action.requires?.party || (() => {
+          const party = state.parties.find((entry) => entry.id === actor.party);
+          return party && party.members.filter((memberId) => state.actors.some((candidate) => candidate.id === memberId && candidate.room === actor.room)).length >= action.requires.party;
+        })())
         .filter((action) => !action.requires?.rank || progressionAtLeast(actor.guildRank, action.requires.rank, state.guilds[actor.guild]?.ranks ?? []))
         .map((action) => ({ verb: action.verb, target: action.target }))
     : [];
@@ -864,6 +868,19 @@ function selfState(actor) {
     xp: actor.xp ?? 0,
     deaths: actor.deaths ?? 0,
     hidden: Boolean(actor.hidden),
+    party: (() => {
+      const party = state.parties.find((entry) => entry.id === actor.party);
+      if (!party) return null;
+      return {
+        id: party.id,
+        leader: state.actors.find((candidate) => candidate.id === party.leaderId)?.name ?? null,
+        members: party.members.map((memberId) => state.actors.find((candidate) => candidate.id === memberId)?.name ?? memberId),
+        size: party.members.length,
+      };
+    })(),
+    party_invites: state.parties
+      .filter((entry) => (entry.invites ?? []).includes(actor.id))
+      .map((entry) => state.actors.find((candidate) => candidate.id === entry.leaderId)?.name ?? "someone"),
     next_xp: nextLevelXp(state.levels, actor.level ?? 1),
     hp: actor.hp ?? null,
     max_hp: actor.maxHp ?? null,
@@ -912,6 +929,7 @@ function selfState(actor) {
       safe: room.safe === true,
       zone: room.zone ?? null,
       minLevel: room.minLevel ?? 0,
+      gas: room.gas === true,
       details: Object.keys(room.details ?? {}),
       exits,
       objects: objectsHere,
@@ -1071,6 +1089,68 @@ async function handleCommand(id, line) {
   // The public watch layer is opt-in and read-only. The streamer presses Go
   // live in the AI panel; only that authenticated actor can publish events.
   // Spectator chat is handled on the /live socket, not as a game command.
+  if (resolve(VERB_TABLE, verb) === "party") {
+    if (!actor?.key) return sendTo(id, "Sign in first.\r\n");
+    const messages = VERB_TABLE.verbs.party.messages;
+    const action = (rest[0] ?? "who").toLowerCase();
+    const party = state.parties.find((entry) => entry.id === actor.party) ?? null;
+    if (action === "who" || action === "status" || action === "list") {
+      if (!party) {
+        const invites = state.parties.filter((entry) => (entry.invites ?? []).includes(id));
+        if (!invites.length) return sendTo(id, `${messages.none}\r\n`);
+        const leaders = invites.map((entry) => state.actors.find((candidate) => candidate.id === entry.leaderId)?.name ?? "someone");
+        return sendTo(id, `Party invitations from ${leaders.join(", ")}. Type party accept.\r\n`);
+      }
+      const lines = (party.members ?? []).map((memberId) => {
+        const name = state.actors.find((candidate) => candidate.id === memberId)?.name ?? memberId;
+        return `${name}${memberId === party.leaderId ? " (leader)" : ""}`;
+      });
+      return sendTo(id, `${messages.status}: ${lines.join(", ")} · ${party.members.length} member${party.members.length === 1 ? "" : "s"}.\r\n`);
+    }
+    if (action === "invite") {
+      const targetName = rest.slice(1).join(" ");
+      const target = actorsIn(actor.room).find((candidate) => candidate.id !== id && candidate.name.toLowerCase().includes(targetName.toLowerCase()));
+      if (!target) return sendTo(id, `${messages.notHere}\r\n`);
+      pending.push({ kind: "partyInvite", actorId: id, targetId: target.id });
+      recordSpan("world.party", { "actor.id": id, "party.action": "invite", "target.id": target.id, "world.tick": state.tick }, 0);
+      return;
+    }
+    if (action === "accept") {
+      if (!state.parties.some((entry) => (entry.invites ?? []).includes(id))) return sendTo(id, `${messages.noInvite}\r\n`);
+      pending.push({ kind: "partyAccept", actorId: id });
+      recordSpan("world.party", { "actor.id": id, "party.action": "accept", "world.tick": state.tick }, 0);
+      return;
+    }
+    if (action === "decline") {
+      if (!state.parties.some((entry) => (entry.invites ?? []).includes(id))) return sendTo(id, `${messages.noInvite}\r\n`);
+      pending.push({ kind: "partyDecline", actorId: id });
+      recordSpan("world.party", { "actor.id": id, "party.action": "decline", "world.tick": state.tick }, 0);
+      return;
+    }
+    if (action === "leave") {
+      if (!party) return sendTo(id, `${messages.none}\r\n`);
+      pending.push({ kind: "partyLeave", actorId: id });
+      recordSpan("world.party", { "actor.id": id, "party.action": "leave", "world.tick": state.tick }, 0);
+      return;
+    }
+    if (action === "kick") {
+      if (!party || party.leaderId !== id) return sendTo(id, `${messages.notLeader}\r\n`);
+      const targetName = rest.slice(1).join(" ");
+      const target = state.actors.find((candidate) => candidate.id !== id && candidate.name.toLowerCase().includes(targetName.toLowerCase()));
+      if (!target || !party.members.includes(target.id)) return sendTo(id, `${messages.notHere}\r\n`);
+      pending.push({ kind: "partyKick", actorId: id, targetId: target.id });
+      recordSpan("world.party", { "actor.id": id, "party.action": "kick", "target.id": target.id, "world.tick": state.tick }, 0);
+      return;
+    }
+    if (action === "disband") {
+      if (!party || party.leaderId !== id) return sendTo(id, `${messages.notLeader}\r\n`);
+      pending.push({ kind: "partyDisband", actorId: id });
+      recordSpan("world.party", { "actor.id": id, "party.action": "disband", "world.tick": state.tick }, 0);
+      return;
+    }
+    return sendTo(id, `${messages.usage}\r\n`);
+  }
+
   if (verb === "r4-context" || verb === "r4-remember") {
     if (!actor?.key) return sendTo(id, `#${verb} ${JSON.stringify({ error: "Sign in with a Prism account first." })}\r\n`);
     const text = restRaw.join(" ").trim();
@@ -1647,7 +1727,7 @@ async function handleCommand(id, line) {
     if (!actor?.key) {
       return sendTo(id, "MUDBench is a persistent world for people and agents.\r\nSign in with your Prism id, or register <name> <password> / login <name> <password>.\r\nThen type help for the commands.\r\n");
     }
-    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: take/t/g/tf, take all, drop/dp/dr, inventory/i, coins, standing/reputation, components, score/sc, quests/q, who/wh, spells/sp, cast/ca, say/sy, tell/te, give/gv, put/pt, open/op, close/cl, wear/wr, remove/rm, buy/b, sell/se, list/ls, drink, map/mp, leaderboard/lb, ladder/pvp, levels/lv, shortcuts/sh.\r\nMagic: spells (effects/mana), train <spell> at the Mages' Guild, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search. Combat: attack/kill/k, technique/tech (weapon move), battle/combat/bt (current HP), score (armour/damage), equipment/eq (slots and totals). Forge: upgrade/improve, salvage/melt, components at the Cold Forge. Movement is blocked in combat; flee is a last resort and costs experience. Guild: guild join/leave/who/list/chat, guild advance (Mages, Wardens, Night Market), vault/deposit/withdraw in the Guild Hall. Social: ignore/unignore/ignoring, report/rep, titles/title, facts/memory, recall <word> at the shrine. Room actions: turn, push, ring where the room suggests.\r\nWorld: world or status (online, guilds, reset); overview/ov (the live player and fight panel); levels, leaderboard/top/lb, map [zone], shortcuts, quests active|available|done|all.<id>; tutorial (first) for the first steps.\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
+    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: take/t/g/tf, take all, drop/dp/dr, inventory/i, coins, standing/reputation, components, score/sc, quests/q, who/wh, spells/sp, cast/ca, say/sy, tell/te, give/gv, put/pt, open/op, close/cl, wear/wr, remove/rm, buy/b, sell/se, list/ls, drink, map/mp, leaderboard/lb, ladder/pvp, levels/lv, shortcuts/sh.\r\nMagic: spells (effects/mana), train <spell> at the Mages' Guild, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search. Combat: attack/kill/k, technique/tech (weapon move), battle/combat/bt (current HP), score (armour/damage), equipment/eq (slots and totals). Forge: upgrade/improve, salvage/melt, components at the Cold Forge. Movement is blocked in combat; flee is a last resort and costs experience. Guild: guild join/leave/who/list/chat, guild advance (Mages, Wardens, Night Market), vault/deposit/withdraw in the Guild Hall. Social: ignore/unignore/ignoring, report/rep, titles/title, facts/memory, recall <word> at the shrine. Party: party invite <name>, party accept, party leave, party who, party kick <name>, party disband; members in the same room share kill XP and quest credit. Room actions: turn, push, pump, strike, board, ring where the room suggests.\r\nWorld: world or status (online, guilds, reset); overview/ov (the live player and fight panel); levels, leaderboard/top/lb, map [zone], shortcuts, quests active|available|done|all.<id>; tutorial (first) for the first steps.\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
   }
 
   // A command typed before the join tick lands is queued, not refused: the
@@ -1786,6 +1866,13 @@ async function handleCommand(id, line) {
       const present = state.actors.filter((candidate) => candidate.room === actor.room && candidate.key).length;
       if (present < roomAction.requires.actors) {
         return sendTo(id, `That needs ${roomAction.requires.actors} people here; there ${present === 1 ? "is only one" : `are only ${present}`}.\r\n`);
+      }
+    }
+    if (roomAction.requires?.party) {
+      const party = state.parties.find((entry) => entry.id === actor.party);
+      const present = party ? party.members.filter((memberId) => state.actors.some((candidate) => candidate.id === memberId && candidate.room === actor.room)).length : 0;
+      if (!party || present < roomAction.requires.party) {
+        return sendTo(id, `That needs a party of ${roomAction.requires.party} here.\r\n`);
       }
     }
     if (roomAction.requires?.spell && !(actor.spellbook ?? []).includes(roomAction.requires.spell)) {
@@ -3223,6 +3310,19 @@ function onTick() {
   const progressChanged = state.actors.some((actor) => actor.key && previousProgress.has(actor.id)
     && previousProgress.get(actor.id) !== progressionSnapshot(actor))
     || intents.some((intent) => intent.kind === "leave" && previousProgress.has(intent.actorId));
+  // A party change or a shared kill changes another actor's HUD, not only the
+  // actor who typed. Refresh everyone whose progression moved, and every online
+  // actor when a party forms, joins, leaves or opens a party-only way.
+  for (const actor of state.actors) {
+    if (!actor.key || !transports.has(actor.id)) continue;
+    if (previousProgress.has(actor.id) && previousProgress.get(actor.id) !== progressionSnapshot(actor)) refreshIds.add(actor.id);
+  }
+  const partyTouched = intents.some((intent) => intent.kind.startsWith("party") || intent.kind === "leave")
+    || intents.some((intent) => intent.kind === "action"
+      && ACTION_TABLE.actions.find((action) => action.id === intent.actionId)?.requires?.party);
+  if (partyTouched) {
+    for (const actor of state.actors) if (actor.key && transports.has(actor.id)) refreshIds.add(actor.id);
+  }
   if ((result.checkpoint || identityChanged || progressChanged) && !saveState()) {
     console.error("state checkpoint failed; stopping before acknowledging changes");
     process.exit(1);

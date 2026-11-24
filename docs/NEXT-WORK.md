@@ -1,7 +1,7 @@
 # Next work
 
-Baseline: **v0.91.55**. The world has 197 rooms, 16 zones, 21 quests, 95 mobiles
-and 228 objects. R4 memory, command grounding, scorecards
+Baseline: **v0.91.56**. The world has 213 rooms, 17 zones, 22 quests, 100 mobiles
+and 240 objects. R4 memory, command grounding, scorecards
 and the public stats surface are live; signups are open. Every AI key is
 supplied by the player; Groq is the free option, and each browser harness runs
 its own R4 router. The server hosts no model and holds no provider key.
@@ -87,7 +87,8 @@ memory or prompt system.
 | v0.91.53 | DeepSeek: thinking off fast, 300/600 token floors, empty-reply retry; key preservation | **done** (MB-281/282) |
 | v0.91.54 | Agent notebook/self/combat context; combat lock + costly flee; 20-slot pack; Mistfall dark/maze/ferry/teleport quest | **done** (MB-283/284/285) |
 | v0.91.55 | Death penalty (50% XP + level); level gates; two-player Twin Door; Night Market hide/detect; Completionist | **done** (MB-286/287/288) |
-| backlog | Next deep site (mine/shipwreck/monastery); fold tiny zones; larger PvP sample | optional |
+| v0.91.56 | Party system (invite/accept/leave/kick/disband, shared kill XP and quest credit); Deepdelve party mine with winch, pump, cart, gas/canary, seam, coracle and ore contract | **done** (MB-289/290) |
+| backlog | Next deep site (flooded shipwreck/monastery); fold tiny zones; larger PvP sample | optional |
 
 ## What is next
 
@@ -103,7 +104,7 @@ memory or prompt system.
    and Red Company are standing factions. Thieves/assassins use daggers and
    Backstab, barbarians use axes and Rage, dark priests use unholy maces and
    Drain. No further rank guilds are planned for these archetypes.
-3. **Quest budget.** The live table is now 20; 41 retired definitions are in
+3. **Quest budget.** The live table is now 22; 41 retired definitions are in
    `world/data/quests-archive.json`, and active characters are migrated with a
    completion/abandon note. `docs/QUEST-BUDGET.md` records the spine.
 4. **Repeatable content.** The Archmage's Trial is the reset-cycle repeatable.
@@ -123,11 +124,13 @@ memory or prompt system.
    tables, contrast, reduced motion, no overflow, 24px targets and the mobile
    menu). A human VoiceOver/NVDA pass and a final hands-on phone review remain
    open.
-8. **Federation.** Draft PR #11 is green on `f99bf75` after rebasing onto
-   v0.91.28: the Gate, the three federation tests, crash recovery and browser
-   reconnect pass. It remains draft pending a two-region security review and a
-   checkpoint load test; production is unaffected while the federation
-   environment variables are unset.
+8. **Federation.** Draft PR #11 remains open. The owner decision is to reject
+   its current trust model: a mutually trusted peer receives legacy password
+   hashes and salts and can assert a character's progression. Federation must
+   use Prism-signed character grants, never transfer passwords, and fail closed
+   on an unknown grant. The draft is kept for the contributor to rework against
+   that model; production is unaffected while the federation environment
+   variables are unset.
 
 ## Historical workstreams
 

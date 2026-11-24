@@ -110,6 +110,9 @@ Moving, speaking, taking, attacking or using an item reveals them. The Mages'
 counts toward the Twin Door's two-player requirement, which makes a good
 partner for a heist.
 
+The Deepdelve mine later uses a formal **party** for its winch, pump, cart and
+seam; the Twin Door only checks that two bodies are present.
+
 ## Why this shape
 
 The island is easy to reach from the starting town, but it is not a corridor:

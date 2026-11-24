@@ -320,7 +320,9 @@
       "safe": false,
       "exits": {
         "east": 11,
-        "south": 21
+        "south": 21,
+        "down": 213,
+        "west": 198
       },
       "details": {
         "stones": "The names are worn away. One stone reads only: HE KNEW.",
@@ -3612,6 +3614,335 @@
         "Water drips somewhere above.",
         "The crown catches the light."
       ]
+    },
+    "198": {
+      "name": "The Old Mine Head",
+      "minLevel": 6,
+      "text": "A timber headframe stands over a black shaft, its wheel frozen and its ropes gone. A sign beside the cage reads DEEPDELVE \u2014 LEVEL 6 AND ABOVE. The graveyard is east; the cage waits below.",
+      "exits": {
+        "east": 17,
+        "down": 199
+      },
+      "details": {
+        "cage": "The cage is iron and empty. The rope is new.",
+        "sign": "The sign is burned into a board. Below it, someone has cut: BRING A PARTY AND A CANARY.",
+        "wheel": "The headframe wheel is rusted solid. It is only for show now."
+      },
+      "ambient": [
+        "The cage knocks against the shaft.",
+        "Wind moves through the headframe."
+      ]
+    },
+    "199": {
+      "name": "The Cage Landing",
+      "minLevel": 6,
+      "dark": true,
+      "darkText": "It is dark. The cage rope creaks above, and cold air moves past your face.",
+      "text": "The cage settles at a landing of wet stone. A tunnel runs west, and a stair descends into water noise. The shaft rises behind you, a thin grey line of daylight.",
+      "exits": {
+        "up": 198,
+        "west": 200,
+        "down": 201
+      },
+      "details": {
+        "cage": "The cage is iron and wet. The rope is frayed at the hitch.",
+        "stair": "The stair is slick. Water runs down it.",
+        "shaft": "The shaft is a grey line of daylight. It is very far up."
+      },
+      "ambient": [
+        "Water drips down the shaft.",
+        "The cage knocks against the landing."
+      ]
+    },
+    "200": {
+      "name": "The Winch Room",
+      "minLevel": 7,
+      "dark": true,
+      "darkText": "It is dark. A great winch waits in the black, its handle cold.",
+      "text": "A great iron winch fills the room, its drum wrapped in new rope. A locked hatch in the floor bears two handprints. The cage landing is east.",
+      "exits": {
+        "east": 199
+      },
+      "secretExits": {
+        "down": 202
+      },
+      "details": {
+        "winch": "The winch is iron and greased. Two handles are set for two pairs of hands.",
+        "hatch": "The hatch is iron and barred. Two handprints are worn into the bar.",
+        "rope": "The rope is new and tarred. It runs down through the hatch."
+      },
+      "ambient": [
+        "The winch ticks as it cools.",
+        "The hatch rattles in its frame."
+      ]
+    },
+    "201": {
+      "name": "The Flooded Shaft",
+      "minLevel": 7,
+      "dark": true,
+      "darkText": "It is dark. Black water moves at your feet, and a pump handle waits somewhere close.",
+      "text": "A flooded shaft opens below the landing, the water black and still. A iron pump stands on a stone shelf, its handle bound with rope. A passage east is choked with water and debris.",
+      "exits": {
+        "up": 199
+      },
+      "secretExits": {
+        "east": 202
+      },
+      "details": {
+        "pump": "The pump is iron and cold. Two handles are set side by side.",
+        "water": "The water is black and still. It reflects nothing.",
+        "passage": "The east passage is half-drowned. The pump could clear it."
+      },
+      "ambient": [
+        "Water laps at the shelf.",
+        "The pump handle knocks softly."
+      ]
+    },
+    "202": {
+      "name": "The Lower Tunnel",
+      "minLevel": 7,
+      "dark": true,
+      "darkText": "It is dark. The tunnel smells of wet timber and cold stone.",
+      "text": "A low tunnel of timber and wet stone. The walls are shored with old beams, and the floor is a run of black puddles. A cold draft comes from the east.",
+      "exits": {
+        "up": 200,
+        "west": 201,
+        "east": 203
+      },
+      "details": {
+        "beams": "The beams are shored with wedges. Some are new.",
+        "puddles": "The puddles are black and cold. They do not move.",
+        "draft": "The draft is cold and steady. It carries a smell of iron."
+      },
+      "ambient": [
+        "A beam settles.",
+        "Water drips in the dark."
+      ]
+    },
+    "203": {
+      "name": "The Lower Tunnel",
+      "minLevel": 7,
+      "dark": true,
+      "darkText": "It is dark. The tunnel smells of wet timber and cold stone.",
+      "text": "A low tunnel of timber and wet stone. The walls are shored with old beams, and the floor is a run of black puddles. A cold draft comes from the south.",
+      "exits": {
+        "west": 202,
+        "south": 204
+      },
+      "details": {
+        "beams": "The beams are shored with wedges. Some are new.",
+        "puddles": "The puddles are black and cold. They do not move.",
+        "draft": "The draft is cold and steady. It carries a smell of iron."
+      },
+      "ambient": [
+        "A beam settles.",
+        "Water drips in the dark."
+      ]
+    },
+    "204": {
+      "name": "The Ore Face",
+      "minLevel": 7,
+      "dark": true,
+      "darkText": "It is dark. Broken ore glitters faintly in the black.",
+      "text": "A broad face of black rock fills the end of the tunnel, veined with a dull red ore. A mine cart waits on broken rails, and a heap of raw ore lies at the foot of the face.",
+      "exits": {
+        "north": 203,
+        "east": 205
+      },
+      "secretExits": {
+        "down": 209
+      },
+      "details": {
+        "face": "The face is veined with red ore. It is warm to the touch.",
+        "cart": "The cart is iron and empty. The wheels are rusted but turn.",
+        "ore": "The raw ore is heavy and dull. It is worth carrying."
+      },
+      "ambient": [
+        "The cart creaks on its rails.",
+        "A pebble falls from the face."
+      ]
+    },
+    "205": {
+      "name": "The Surveyor's Camp",
+      "minLevel": 7,
+      "text": "A small camp is tucked into a dry alcove: a cot, a cold lamp, a table of maps and a crate of samples. The surveyor sits on the cot with one leg bound, a notebook open on her knee.",
+      "exits": {
+        "west": 204,
+        "east": 206
+      },
+      "details": {
+        "table": "The table is covered with maps of the mine. The deep seam is circled in red.",
+        "notebook": "The surveyor's notes. The last page reads: 'The seam is behind the gas. The guardian is in the deep gallery. Do not go alone.'",
+        "cot": "The cot is narrow and neat. The blanket is folded."
+      },
+      "ambient": [
+        "The lamp ticks as it cools.",
+        "The surveyor turns a page."
+      ]
+    },
+    "206": {
+      "name": "The Gas Pocket",
+      "minLevel": 7,
+      "dark": true,
+      "gas": true,
+      "darkText": "It is dark. The air is bad here; a canary would warn you.",
+      "text": "The tunnel opens into a low pocket where the air is thick and sweet. A dead canary lies by the wall, and the passage east is narrow. The rock sweats a pale film.",
+      "exits": {
+        "west": 205,
+        "east": 207
+      },
+      "details": {
+        "air": "The air is thick and sweet. It catches at the back of your throat.",
+        "canary": "The canary is dead and stiff. Its cage is bent.",
+        "film": "The pale film on the rock is damp and cold."
+      },
+      "ambient": [
+        "The air moves sluggishly.",
+        "A pebble clicks somewhere east."
+      ]
+    },
+    "207": {
+      "name": "The Sealed Seam",
+      "minLevel": 8,
+      "dark": true,
+      "darkText": "It is dark. A wall of sealed rock fills the end of the passage.",
+      "text": "A wall of black rock seals the passage, bound with iron bands and old lead. Two handprints are pressed into the lead, and a crack of red light shows at the centre. The gas pocket is west.",
+      "exits": {
+        "west": 206
+      },
+      "secretExits": {
+        "east": 208
+      },
+      "details": {
+        "seam": "The seam is banded with iron. The lead is cold.",
+        "handprints": "The handprints are deep and close together. Two people, pulling.",
+        "crack": "The crack is thin and red. It is warm."
+      },
+      "ambient": [
+        "The seam ticks as it cools.",
+        "Red light moves behind the crack."
+      ]
+    },
+    "208": {
+      "name": "The Sealed Vault",
+      "minLevel": 8,
+      "dark": true,
+      "darkText": "It is dark. A red glow moves over the sealed ore.",
+      "text": "A small vault of black rock, its walls shot through with red veins. A stone shelf holds a lump of sealed ore and a scatter of deep ore. The seam is west.",
+      "exits": {
+        "west": 207
+      },
+      "details": {
+        "ore": "The sealed ore is banded with lead. It is warm and heavy.",
+        "deep": "The deep ore is dark and dense. It is worth a great deal.",
+        "veins": "The red veins pulse slowly. The rock is warm."
+      },
+      "ambient": [
+        "The ore hums.",
+        "The red veins brighten and dim."
+      ]
+    },
+    "209": {
+      "name": "The Deep Gallery",
+      "minLevel": 8,
+      "dark": true,
+      "darkText": "It is dark. Something large breathes in the gallery.",
+      "text": "A high gallery of black rock, its walls hung with old tools and broken lamps. A cave troll squats among the bones, and a passage east leads toward a red glow.",
+      "exits": {
+        "up": 204,
+        "east": 210
+      },
+      "details": {
+        "tools": "The tools are rusted and abandoned. A pick stands in the rock.",
+        "bones": "The bones are broken and old. Some are not animal.",
+        "glow": "The red glow comes from the east. It is steady."
+      },
+      "ambient": [
+        "The troll shifts its weight.",
+        "A tool falls from the wall."
+      ]
+    },
+    "210": {
+      "name": "The Guardian's Chamber",
+      "minLevel": 8,
+      "dark": true,
+      "darkText": "It is dark. A tall shape stands in the red glow, and it is not stone.",
+      "text": "A round chamber of red-veined rock. A tall guardian stands at the centre, its body bound in iron and sealed ore, and a passage east leads to the foreman's office. The deep gallery is west.",
+      "exits": {
+        "west": 209,
+        "east": 211
+      },
+      "details": {
+        "guardian": "The guardian is iron and ore. Its hands are open.",
+        "veins": "The veins pulse in time with the guardian.",
+        "floor": "The floor is scuffed in a wide circle."
+      },
+      "ambient": [
+        "The guardian turns its head.",
+        "The red veins brighten."
+      ]
+    },
+    "211": {
+      "name": "The Foreman's Office",
+      "minLevel": 8,
+      "dark": true,
+      "darkText": "It is dark. A desk and a chest wait in the black.",
+      "text": "A small office cut into the rock: a desk, a chair, a banded chest and a shelf of ledgers. The guardian's chamber is west, and a stair descends to water.",
+      "exits": {
+        "west": 210,
+        "down": 212
+      },
+      "details": {
+        "desk": "The desk is covered with ledgers. The last entry is a list of names.",
+        "chest": "The chest is banded with iron. The lock is broken.",
+        "ledgers": "The ledgers record ore, pay and disappearances."
+      },
+      "ambient": [
+        "A ledger slips on the desk.",
+        "Water sounds below."
+      ]
+    },
+    "212": {
+      "name": "The Underground Pool",
+      "minLevel": 8,
+      "dark": true,
+      "darkText": "It is dark. Black water moves below, and a small boat knocks against stone.",
+      "text": "A black pool fills the bottom of the shaft, its water perfectly still. A small coracle is tied to an iron ring, and a low passage opens east beyond the water. The office stair climbs above.",
+      "exits": {
+        "up": 211
+      },
+      "secretExits": {
+        "east": 213
+      },
+      "details": {
+        "coracle": "The coracle is small and tarred. It will hold one.",
+        "water": "The water is black and still. It reflects nothing.",
+        "ring": "The iron ring is cold. The rope is new."
+      },
+      "ambient": [
+        "The coracle knocks against the stone.",
+        "Water drips from the ceiling."
+      ]
+    },
+    "213": {
+      "name": "The Old Shaft",
+      "minLevel": 8,
+      "dark": true,
+      "darkText": "It is dark. A cold shaft climbs toward a pinprick of grey light.",
+      "text": "A narrow shaft climbs toward the graveyard, its walls set with old iron rungs. A heap of old coins lies in the dust, and the pool passage is west. The air is cold and very still.",
+      "exits": {
+        "west": 212,
+        "up": 17
+      },
+      "details": {
+        "rungs": "The rungs are iron and cold. Some are missing.",
+        "coins": "Old coins are scattered in the dust. They are green with age.",
+        "light": "The grey light is very far above."
+      },
+      "ambient": [
+        "A rung ticks as it cools.",
+        "The light above does not move."
+      ]
     }
   },
   "task": {
@@ -5737,6 +6068,119 @@
       "description": "A crab the size of a dog clings to the black reef, shell wet and bright.",
       "examine": "The crab's shell is scarred. One claw is larger than the other.",
       "dialogue": []
+    },
+    {
+      "id": "mine-captain",
+      "name": "the mine captain",
+      "room": 198,
+      "home": 198,
+      "zone": "deepdelve",
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "level": 6,
+      "hp": 24,
+      "maxHp": 24,
+      "damage": 0,
+      "armor": 1,
+      "aggression": 0,
+      "xp": 0,
+      "loot": [],
+      "description": "A broad woman in a leather coat stands by the headframe, a lamp in one hand.",
+      "examine": "Her hands are scarred and her coat is patched. She watches the shaft.",
+      "dialogue": [
+        "The deep seam is behind the gas pocket. You will need a party and a canary.",
+        "The winch and the pump need two pairs of hands. The cart too.",
+        "The surveyor is camped below the ore face. Bring her notes back."
+      ]
+    },
+    {
+      "id": "mine-surveyor",
+      "name": "the surveyor",
+      "room": 205,
+      "home": 205,
+      "zone": "deepdelve",
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "level": 5,
+      "hp": 16,
+      "maxHp": 16,
+      "damage": 0,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 0,
+      "loot": [],
+      "description": "A thin woman sits on the cot with one leg bound, a notebook on her knee.",
+      "examine": "Her leg is splinted. Her hands are ink-stained and steady.",
+      "dialogue": [
+        "The seam is behind the gas. The guardian is in the deep gallery.",
+        "The canary is the only warning you get. Take it from the headframe.",
+        "Do not go alone. The winch and the seam both need two."
+      ]
+    },
+    {
+      "id": "mine-guardian",
+      "name": "the mine guardian",
+      "room": 210,
+      "home": 210,
+      "zone": "deepdelve",
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "level": 8,
+      "hp": 70,
+      "maxHp": 70,
+      "damage": 7,
+      "armor": 4,
+      "aggression": 85,
+      "xp": 240,
+      "loot": [],
+      "description": "A tall shape of iron and sealed ore stands in the red glow.",
+      "examine": "The guardian is bound in iron bands. Its hands are open and very still.",
+      "dialogue": []
+    },
+    {
+      "id": "gas-bat",
+      "name": "a gas bat",
+      "room": 206,
+      "home": 206,
+      "zone": "deepdelve",
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "level": 6,
+      "hp": 24,
+      "maxHp": 24,
+      "damage": 4,
+      "armor": 1,
+      "aggression": 60,
+      "xp": 45,
+      "loot": [],
+      "description": "A wide, pale bat clings to the ceiling, wings folded.",
+      "examine": "The bat's wings are thin as paper. Its eyes are closed.",
+      "dialogue": []
+    },
+    {
+      "id": "cave-troll",
+      "name": "a cave troll",
+      "room": 209,
+      "home": 209,
+      "zone": "deepdelve",
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "level": 7,
+      "hp": 46,
+      "maxHp": 46,
+      "damage": 5,
+      "armor": 2,
+      "aggression": 65,
+      "xp": 95,
+      "loot": [],
+      "description": "A broad troll squats among the bones, a pick across its knees.",
+      "examine": "The troll's hide is grey and scarred. The pick is not a tool in its hands.",
+      "dialogue": []
     }
   ],
   "zones": [
@@ -6031,6 +6475,28 @@
         195,
         196,
         197
+      ]
+    },
+    {
+      "id": "deepdelve",
+      "name": "The Deepdelve",
+      "rooms": [
+        198,
+        199,
+        200,
+        201,
+        202,
+        203,
+        204,
+        205,
+        206,
+        207,
+        208,
+        209,
+        210,
+        211,
+        212,
+        213
       ]
     }
   ],
@@ -8948,6 +9414,144 @@
       ],
       "value": 150,
       "examine": "A circlet of green glass and black metal, cold and heavy. The tide moves inside the glass."
+    },
+    {
+      "id": "mine-lantern",
+      "name": "a mine lantern",
+      "room": 198,
+      "flags": [
+        "takeable",
+        "light"
+      ],
+      "lit": false,
+      "value": 6,
+      "examine": "A heavy mine lantern with a wire guard. It still holds oil."
+    },
+    {
+      "id": "mine-canary",
+      "name": "a canary in a cage",
+      "room": 198,
+      "flags": [
+        "takeable",
+        "canary"
+      ],
+      "value": 12,
+      "examine": "A small yellow canary in a wire cage. It is quiet and watchful."
+    },
+    {
+      "id": "mine-raw-ore",
+      "name": "a lump of raw ore",
+      "room": 204,
+      "flags": [
+        "takeable"
+      ],
+      "value": 25,
+      "examine": "A heavy lump of black rock veined with red. It is warm."
+    },
+    {
+      "id": "mine-surveyor-notes",
+      "name": "the surveyor's notes",
+      "room": 205,
+      "flags": [
+        "takeable",
+        "readable"
+      ],
+      "readable": true,
+      "value": 30,
+      "examine": "The notes map the deep seam and the guardian. The last line reads: 'Do not go alone.'"
+    },
+    {
+      "id": "mine-sealed-ore",
+      "name": "a lump of sealed ore",
+      "room": 208,
+      "flags": [
+        "takeable"
+      ],
+      "value": 80,
+      "examine": "A lump of red ore bound in lead. It is warm and heavy."
+    },
+    {
+      "id": "mine-deep-ore",
+      "name": "a lump of deep ore",
+      "room": 208,
+      "flags": [
+        "takeable"
+      ],
+      "value": 50,
+      "examine": "A dark, dense ore. It is heavier than it looks."
+    },
+    {
+      "id": "mine-foreman-chest",
+      "name": "a banded chest",
+      "room": 211,
+      "flags": [
+        "fixed",
+        "container"
+      ],
+      "capacity": 2,
+      "open": false,
+      "openAtStart": false,
+      "examine": "A banded chest. The lock is broken."
+    },
+    {
+      "id": "mine-foreman-map",
+      "name": "a foreman's map",
+      "inside": "mine-foreman-chest",
+      "flags": [
+        "takeable",
+        "readable"
+      ],
+      "readable": true,
+      "value": 20,
+      "examine": "A map of the deep workings. The old shaft is marked as an exit to the graveyard."
+    },
+    {
+      "id": "mine-old-coins",
+      "name": "a heap of old coins",
+      "room": 213,
+      "flags": [
+        "takeable",
+        "coin"
+      ],
+      "value": 25,
+      "examine": "Old coins, green with age. They are still heavy."
+    },
+    {
+      "id": "mine-lantern-2",
+      "name": "a second mine lantern",
+      "room": 198,
+      "flags": [
+        "takeable",
+        "light"
+      ],
+      "lit": false,
+      "value": 6,
+      "examine": "A heavy mine lantern with a wire guard. It still holds oil."
+    },
+    {
+      "id": "mine-canary-2",
+      "name": "a second canary in a cage",
+      "room": 198,
+      "flags": [
+        "takeable",
+        "canary"
+      ],
+      "value": 12,
+      "examine": "A small yellow canary in a wire cage. It is quiet and watchful."
+    },
+    {
+      "id": "mine-pick",
+      "name": "a miner's pick",
+      "room": 204,
+      "flags": [
+        "takeable",
+        "weapon"
+      ],
+      "damage": 4,
+      "value": 45,
+      "slot": "mainhand",
+      "technique": "power-strike",
+      "examine": "A short-handled pick, balanced for rock and not for people. It will do."
     }
   ],
   "climate": {

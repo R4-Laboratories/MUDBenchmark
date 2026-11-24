@@ -583,6 +583,45 @@
       },
       "complete": "The lighthouse keeper takes the stone and reads the log. The Salt Rose is at rest.",
       "requires": []
+    },
+    {
+      "id": "deepdelve",
+      "name": "The Deepdelve",
+      "level": 6,
+      "giver": "the mine captain",
+      "repeat": "reset",
+      "description": "The mine captain sent a surveyor into the deep workings. She found a sealed seam, a gas pocket and a guardian of iron and ore. Bring her notes and the sealed ore back, and do not go alone.",
+      "objectives": [
+        {
+          "kind": "visit",
+          "room": 205,
+          "text": "Reach the surveyor's camp"
+        },
+        {
+          "kind": "collect",
+          "object": "mine-surveyor-notes",
+          "text": "Recover the surveyor's notes"
+        },
+        {
+          "kind": "kill",
+          "npc": "mine-guardian",
+          "count": 1,
+          "text": "Defeat the mine guardian"
+        },
+        {
+          "kind": "deliver",
+          "npc": "mine-captain",
+          "object": "mine-sealed-ore",
+          "count": 1,
+          "text": "Bring the sealed ore to the mine captain"
+        }
+      ],
+      "rewards": {
+        "xp": 320,
+        "coins": 50
+      },
+      "complete": "The mine captain takes the notes and the ore. The Deepdelve is mapped, and the seam is sealed again.",
+      "requires": []
     }
   ]
 }

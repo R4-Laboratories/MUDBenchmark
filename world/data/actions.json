@@ -647,6 +647,122 @@
         "actor": "You press the twin door with another pair of hands.",
         "others": "%a and another press the twin door."
       }
+    },
+    {
+      "id": "turn-deepdelve-winch",
+      "room": 200,
+      "verb": "turn",
+      "target": "winch",
+      "requires": {
+        "party": 2
+      },
+      "effects": [
+        {
+          "kind": "revealExit",
+          "dir": "down"
+        },
+        {
+          "kind": "message",
+          "text": "Two pairs of hands turn the winch; the hatch opens on a ladder."
+        }
+      ],
+      "messages": {
+        "actor": "You turn the winch with your party.",
+        "others": "%a and the party turn the winch."
+      }
+    },
+    {
+      "id": "pump-deepdelve-shaft",
+      "room": 201,
+      "verb": "pump",
+      "target": "shaft",
+      "requires": {
+        "party": 2
+      },
+      "effects": [
+        {
+          "kind": "revealExit",
+          "dir": "east"
+        },
+        {
+          "kind": "message",
+          "text": "Two pairs of hands work the pump; the east passage clears."
+        }
+      ],
+      "messages": {
+        "actor": "You pump the flooded shaft with your party.",
+        "others": "%a and the party pump the shaft."
+      }
+    },
+    {
+      "id": "board-deepdelve-cart",
+      "room": 204,
+      "verb": "board",
+      "target": "cart",
+      "requires": {
+        "party": 2
+      },
+      "effects": [
+        {
+          "kind": "revealExit",
+          "dir": "down"
+        },
+        {
+          "kind": "message",
+          "text": "The party frees the cart; a shaft drops into the deep gallery."
+        }
+      ],
+      "messages": {
+        "actor": "You board the mine cart with your party.",
+        "others": "%a and the party board the cart."
+      }
+    },
+    {
+      "id": "strike-deepdelve-seam",
+      "room": 207,
+      "verb": "strike",
+      "target": "seam",
+      "requires": {
+        "party": 2
+      },
+      "effects": [
+        {
+          "kind": "revealExit",
+          "dir": "east"
+        },
+        {
+          "kind": "message",
+          "text": "Two pairs of hands break the lead; the seam opens on the sealed vault."
+        }
+      ],
+      "messages": {
+        "actor": "You break the sealed seam with your party.",
+        "others": "%a and the party break the seam."
+      }
+    },
+    {
+      "id": "board-deepdelve-coracle",
+      "room": 212,
+      "verb": "board",
+      "target": "coracle",
+      "effects": [
+        {
+          "kind": "revealExit",
+          "dir": "east"
+        },
+        {
+          "kind": "teleport",
+          "room": 213
+        },
+        {
+          "kind": "message",
+          "text": "The coracle slides across the black pool to the old shaft."
+        }
+      ],
+      "messages": {
+        "actor": "You board the coracle.",
+        "others": "%a boards the coracle."
+      }
     }
   ]
 }

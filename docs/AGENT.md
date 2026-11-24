@@ -22,9 +22,9 @@ reasoning. **Use another model** opens the provider drawer; the provider key
 never reaches the game server, stays in this browser's localStorage, and is
 sent only to the provider's endpoint.
 
-The free card offers five personas that change the system goal without changing
-the provider: **Explorer**, **Duelist**, **Quest runner**, **Storyteller** and
-**Speedrunner**. The Run plan shows the selected persona.
+The free card offers six personas that change the system goal without changing
+the provider: **Explorer**, **Duelist**, **Quest runner**, **Storyteller**,
+**Speedrunner** and **Completionist**. The Run plan shows the selected persona.
 
 | Brain | Base URL | Key |
 | --- | --- | --- |
@@ -74,6 +74,14 @@ the agent to ask in `say` or `global`. Night Market cutpurses can `hide`: they
 leave room descriptions, the actor list and `who` until they move or act, and
 `detect` reveals them. A hidden rogue can still be the second pair of hands at
 the Twin Door.
+
+The Deepdelve mine below the graveyard uses a real **party**: `party invite
+<name>`, `party accept`, `party decline`, `party who`, `party leave`, `party kick` and
+`party disband`. Party members in the same room share 50% of kill XP and quest kill
+credit. The winch, pump, mine cart and sealed seam each require a party of two
+in the room, and a party action reveals the way to every member. The gas pocket
+damages anyone without a canary; a canary warns for 30 seconds and then dies.
+The prompt's `PARTY`, `PARTY INVITE` and `GAS` lines carry this state.
 
 ### Watching what the AI sees and does
 

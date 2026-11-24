@@ -479,7 +479,7 @@ const channelTable = loadChannels();
 const socialTable = loadSocials();
 const questTable = loadQuests();
 measured.quests = questTable.quests.length;
-if (measured.quests > ratchet.mustNotGrow.quests) failures.push(`quests are ${measured.quests}, above the frozen ceiling of ${ratchet.mustNotGrow.quests}; the target is 21`);
+if (measured.quests > ratchet.mustNotGrow.quests) failures.push(`quests are ${measured.quests}, above the frozen ceiling of ${ratchet.mustNotGrow.quests}; the target is 22`);
 
 // The agent contract is generated from the same tables as the game: every verb,
 // room, channel and social must appear.
@@ -2759,6 +2759,98 @@ let mistfall = { ok: true, why: [] };
   if (!mistfall.ok) failures.push(`the Mistfall is broken: ${mistfall.why[0]}`);
 }
 
+// The Deepdelve: a 16-room working mine reached from the graveyard, with a
+// party winch/pump/cart/seam, a gas pocket and canary, and an ore contract.
+let deepdelve = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  const table = loadActions({ world });
+  const quests = loadQuests();
+  const check = (condition, why) => { if (!condition) { deepdelve.ok = false; deepdelve.why.push(why); } };
+  const zone = world.zones.find((entry) => entry.id === "deepdelve");
+  check(Boolean(zone) && zone.rooms.length === 16 && zone.rooms.every((room) => world.rooms[room]), "the Deepdelve zone is not 16 connected rooms");
+  check(world.rooms[17]?.exits?.west === 198 && world.rooms[198]?.exits?.east === 17, "the mine head does not open off the graveyard");
+  check(world.rooms[17]?.exits?.down === 213 && world.rooms[213]?.exits?.up === 17, "the old shaft does not return to the graveyard");
+  check(world.rooms[198]?.exits?.down === 199 && world.rooms[199]?.exits?.up === 198, "the cage landing is not below the mine head");
+  check(world.rooms[199]?.exits?.west === 200 && world.rooms[200]?.secretExits?.down === 202 && world.rooms[202]?.exits?.up === 200, "the winch or lower tunnel is not connected");
+  check(world.rooms[199]?.exits?.down === 201 && world.rooms[201]?.secretExits?.east === 202 && world.rooms[202]?.exits?.west === 201, "the pump or lower tunnel is not connected");
+  check(world.rooms[204]?.exits?.east === 205 && world.rooms[205]?.exits?.west === 204, "the surveyor's camp is not off the ore face");
+  check(world.rooms[204]?.secretExits?.down === 209 && world.rooms[209]?.exits?.up === 204, "the mine cart or deep gallery is not connected");
+  check(world.rooms[206]?.gas === true && world.rooms[205]?.gas !== true, "the gas pocket is missing");
+  check(world.rooms[198]?.minLevel === 6 && world.rooms[199]?.minLevel === 6 && world.rooms[200]?.minLevel === 7 && world.rooms[206]?.minLevel === 7 && world.rooms[207]?.minLevel === 8 && world.rooms[213]?.minLevel === 8, "the Deepdelve level gates are missing");
+  check(["199", "200", "201", "202", "203", "204", "206", "207", "208", "209", "210", "211", "212", "213"].every((room) => world.rooms[room]?.dark === true), "a dark Deepdelve room is missing its dark flag");
+  const object = (id) => world.objects.find((entry) => entry.id === id);
+  check(object("mine-lantern")?.room === 198 && object("mine-canary")?.room === 198 && object("mine-surveyor-notes")?.room === 205, "a Deepdelve tool or note is missing");
+  check(object("mine-sealed-ore")?.room === 208 && object("mine-foreman-chest")?.flags?.includes("container") && object("mine-foreman-map")?.inside === "mine-foreman-chest", "the sealed ore or foreman chest is missing");
+  check(world.npcs.some((npc) => npc.id === "mine-captain" && npc.room === 198) && world.npcs.some((npc) => npc.id === "mine-surveyor" && npc.room === 205) && world.npcs.some((npc) => npc.id === "mine-guardian" && npc.room === 210), "a Deepdelve NPC is missing");
+  const quest = quests.quests.find((entry) => entry.id === "deepdelve");
+  check(quest?.level === 6 && quest?.repeat === "reset" && quest?.objectives?.length === 4, "the Deepdelve quest is missing");
+  check(table.errors.length === 0, `the Deepdelve action table is invalid: ${table.errors[0]}`);
+  const winch = table.actions.find((action) => action.id === "turn-deepdelve-winch");
+  const pump = table.actions.find((action) => action.id === "pump-deepdelve-shaft");
+  const cart = table.actions.find((action) => action.id === "board-deepdelve-cart");
+  const seam = table.actions.find((action) => action.id === "strike-deepdelve-seam");
+  check(winch?.requires?.party === 2 && pump?.requires?.party === 2 && cart?.requires?.party === 2 && seam?.requires?.party === 2, "a Deepdelve action is not party-gated");
+  check(winch?.effects?.some((effect) => effect.kind === "revealExit" && effect.dir === "down") && seam?.effects?.some((effect) => effect.kind === "revealExit" && effect.dir === "east"), "a Deepdelve action does not open its way");
+  const coracle = table.actions.find((action) => action.id === "board-deepdelve-coracle");
+  check(coracle?.requires?.party === undefined && coracle?.effects?.some((effect) => effect.kind === "teleport" && effect.room === 213), "the coracle is wrong");
+
+  // Party state, party-wide reveal and shared kill/quest credit.
+  let state = initialState(world.rooms, [], [], 200, world.climate, channelTable.channels, world.levels, quests.quests);
+  const actor = (id, name) => ({ id, key: id, account: id, name, room: 200, visited: [200], level: 7, xp: 1000, maxHp: 40, hp: 40, mana: 5, maxMana: 5, spellbook: [], guild: null, guildRank: null, wielding: null, quests: { active: [], completed: [] }, found: [] });
+  state.actors.push(actor("a", "ana"), actor("b", "bob"));
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents, actions: table.actions }); state = result.state; return result.events; };
+  run([{ kind: "partyInvite", actorId: "a", targetId: "b" }]);
+  run([{ kind: "partyDecline", actorId: "b" }]);
+  check(state.parties[0].invites.length === 0 && !state.actors[1].party, "the invitation was not declined");
+  run([{ kind: "partyInvite", actorId: "a", targetId: "b" }]);
+  run([{ kind: "partyAccept", actorId: "b" }]);
+  check(state.parties.length === 1 && state.parties[0].members.length === 2 && state.parties[0].leaderId === "a", "the party did not form");
+  run([{ kind: "action", actorId: "a", actionId: "turn-deepdelve-winch", messages: {} }]);
+  check(state.actors.every((entry) => entry.found.includes("200:down")), "a party action did not reveal the way to every member");
+  run([{ kind: "partyDisband", actorId: "a" }]);
+  check(state.parties.length === 0 && state.actors.every((entry) => entry.party === null), "the party did not disband");
+  state.actors.forEach((entry) => { entry.found = []; });
+  run([{ kind: "action", actorId: "a", actionId: "turn-deepdelve-winch", messages: {} }]);
+  check(state.actors.every((entry) => entry.found.length === 0), "a solo actor used a party-only action");
+
+  run([{ kind: "partyInvite", actorId: "a", targetId: "b" }]);
+  run([{ kind: "partyAccept", actorId: "b" }]);
+  run([{ kind: "partyKick", actorId: "a", targetId: "b" }]);
+  check(state.parties.length === 1 && state.parties[0].members.length === 1 && state.actors[1].party === null, "the leader could not kick a member");
+  run([{ kind: "partyLeave", actorId: "a" }]);
+  check(state.parties.length === 0 && state.actors[0].party === null, "the last member could not leave the party");
+
+  state.quests = [...state.quests, { id: "party-test", name: "Party Test", level: 1, repeat: "reset", objectives: [{ kind: "kill", npc: "party-mob", count: 1, text: "Kill the dummy" }], rewards: { xp: 0, coins: 0 }, requires: [] }];
+  state.actors[1].quests = { active: [{ id: "party-test", progress: {} }], completed: [] };
+  state.npcs.push({ id: "party-mob", name: "a party dummy", room: 200, home: 200, zone: "deepdelve", period: 180, jitter: 0, behaviour: "sentinel", level: 1, hp: 1, maxHp: 1, damage: 0, armor: 0, aggression: 0, xp: 100, loot: [], dead: false, clock: { period: 180, remaining: 180 } });
+  run([{ kind: "partyInvite", actorId: "a", targetId: "b" }]);
+  run([{ kind: "partyAccept", actorId: "b" }]);
+  const beforeB = state.actors[1].xp;
+  run([{ kind: "attack", actorId: "a", targetId: "party-mob" }]);
+  for (let i = 0; i < 240 && !state.npcs.find((npc) => npc.id === "party-mob").dead; i += 1) run([]);
+  check(state.actors[1].xp >= beforeB + 50, "a party member did not share kill experience");
+  check(state.actors[1].quests.completed.includes("party-test"), "a party member did not share quest kill credit");
+
+  // Gas: a canary buys five breaths, then dies; without one the air burns.
+  let gas = initialState(world.rooms, [], world.objects, 206, world.climate, channelTable.channels, world.levels, quests.quests);
+  gas.actors.push({ id: "g", key: "g", account: "g", name: "g", room: 206, visited: [206], level: 8, xp: 0, maxHp: 40, hp: 40, mana: 5, maxMana: 5, spellbook: [], guild: null, guildRank: null, wielding: null, quests: { active: [], completed: [] }, found: [] });
+  const canary = gas.objects.find((entry) => entry.id === "mine-canary");
+  canary.holder = "g"; canary.room = null;
+  const gasRun = (count) => { for (let i = 0; i < count; i += 1) { const result = step({ state: gas, rooms: world.rooms, intents: [], actions: table.actions }); gas = result.state; } };
+  gasRun(48);
+  check(gas.actors[0].hp === 40 && gas.actors[0].gasUntil > 0, "the canary did not protect against gas");
+  gasRun(96);
+  check(gas.objects.find((entry) => entry.id === "mine-canary").eaten === true, "the canary did not die after five breaths");
+  gasRun(24);
+  check(gas.actors[0].hp === 38, `gas did not damage an unprotected actor (${gas.actors[0].hp} hp)`);
+  gas.actors[0].hp = 1;
+  gasRun(24);
+  check(gas.actors[0].hp === 1, "gas killed a character instead of leaving them at 1 hp");
+
+  if (!deepdelve.ok) failures.push(`the Deepdelve is broken: ${deepdelve.why[0]}`);
+}
+
 // Persistence: gold is banked on logout/death and survives reset; equipment
 // does not follow the character offline.
 let goldPersistence = { ok: true, why: [] };
@@ -3293,7 +3385,7 @@ let quests = { ok: true, why: [] };
   }
   const archive = loadQuestArchive();
   const check = (condition, why) => { if (!condition) { quests.ok = false; quests.why.push(why); } };
-  check(questTable.quests.length === 21, `the live quest count is ${questTable.quests.length}, not 21`);
+  check(questTable.quests.length === 22, `the live quest count is ${questTable.quests.length}, not 22`);
   check(archive.quests.length === 41 && archive.errors.length === 0, "the retired quest archive is not 41 valid definitions");
   const liveIds = new Set(questTable.quests.map((quest) => quest.id));
   const archiveIds = new Set(archive.quests.map((quest) => quest.id));
@@ -3912,6 +4004,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"quests".padEnd(26)}  ${(quests.ok ? "accept, advance, pay" : "BROKEN").padStart(5)}   == facts, once`);
   console.log(`${"aggression".padEnd(26)}  ${(aggression.ok ? "1 duel" : "BROKEN").padStart(5)}   == mobs start fights`);
   console.log(`${"combat2".padEnd(26)}  ${(combat2.ok ? "weapons, armour, xp" : "BROKEN").padStart(5)}   == fight and grow`);
+  console.log(`${"deepdelve".padEnd(26)}  ${(deepdelve.ok ? "16 rooms, party, gas" : "BROKEN").padStart(5)}   == mine, winch, canary`);
   console.log(`${"combat".padEnd(26)}  ${(combat.outcome === "killed" ? `${combat.rounds} rounds` : "BROKEN").padStart(5)}   == kills`);
   console.log(`${"resume".padEnd(26)}  ${(resume.ok ? "1 save" : "BROKEN").padStart(5)}   == old checkpoint loads`);
   console.log(`${"climate".padEnd(26)}  ${(climate.ok ? `${climate.changes} changes` : "BROKEN").padStart(5)}   == day, night, weather`);

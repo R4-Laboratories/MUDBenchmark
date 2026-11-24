@@ -539,6 +539,22 @@ Rehearsed 2026-11-16:
   speaking, opened the Twin Door with one hidden partner and took the crown.
   Gate covers the death penalty, level gates, twin door, hide visibility and
   prompt (MB-286/287/288);
+- v0.91.56 (party and the Deepdelve) adds a real **party** (`party invite`,
+  `accept`, `decline`, `leave`, `kick`, `disband`, `who`, up to six), shared 50% kill XP
+  and quest kill credit for members in the same room, and a HUD refresh for
+  party changes and shared progression. It adds the **Deepdelve**, a 16-room
+  working mine off the graveyard: level 6/7/8 gates, dark tunnels, two lanterns
+  and two canaries, a party **winch**, **pump**, **mine cart** and **sealed
+  seam**, a **gas pocket** that burns without a canary, a **coracle** shortcut,
+  a surveyor/captain/guardian story and the repeatable **Deepdelve** ore
+  contract (320 XP / 50 coins). The agent prompt adds `PARTY`, `PARTY INVITE`
+  and `GAS` context and party/gas rules. World 213 rooms / 17 zones / 22 quests
+  / 100 mobiles / 240 objects. A two-client live session formed a party,
+  opened the winch, cart and seam for both members, crossed the gas with both
+  canaries, shared the guardian kill and 120 XP, completed the ore contract,
+  and a level-6 character was refused at the level-7 winch room. Gate covers
+  the mine map, party actions, shared XP/kill credit, gas and canary, and the
+  live walk (MB-289/290);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

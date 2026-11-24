@@ -4,7 +4,7 @@ A quest is a named set of facts about the world and a reward for making them
 true. There is no quest script: the engine advances an objective when an event
 matches it, checks the facts, and pays once.
 
-The live table is **21 quests**. The other 41 definitions are in
+The live table is **22 quests**. The other 41 definitions are in
 `world/data/quests-archive.json`; the budget and the migration rules are in
 `docs/QUEST-BUDGET.md`.
 
