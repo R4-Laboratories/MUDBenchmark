@@ -524,6 +524,10 @@ const ollamaThinks = (model) => /qwen3|deepseek-r1|deepseek-v3|magistral|gpt-oss
 
 const reasoningEffortFor = (model) => {
   const name = String(model ?? "").toLowerCase();
+  // DeepSeek V4.1 Flash can spend the whole fast-turn budget on reasoning and
+  // return an empty content field. Force thinking off on direct turns; the
+  // deliberate turn may use "low".
+  if (/deepseek/.test(name)) return "none";
   if (/gemini-2\.5/.test(name)) return "none";
   if (/gemini-[34]|gpt-5|(^|[-/])o[134]/.test(name)) return "minimal";
   return null;
@@ -584,6 +588,11 @@ export function requestFor(provider, config, system, messages) {
     ? (reasoningEffortFor(config.model) ? "low" : null)
     : (config.fast ? reasoningEffortFor(config.model) : null);
   const reasoningModel = /gpt-5|(^|[-/])o[134]/i.test(String(config.model ?? ""));
+  // DeepSeek needs headroom even when thinking is off; a 120-token fast cap
+  // can still end before the three labelled lines. The unused budget is free.
+  const maxTokens = provider === "deepseek"
+    ? Math.max(config.deliberate ? 600 : 300, Number(config.maxTokens) || 0)
+    : (config.maxTokens ?? 400);
   return {
     url: `${base}/chat/completions`,
     headers: {
@@ -596,7 +605,7 @@ export function requestFor(provider, config, system, messages) {
       ...(reasoningModel ? {} : { temperature: config.temperature ?? 0.7 }),
       ...(reasoningModel
         ? { max_completion_tokens: config.deliberate ? 800 : 300 }
-        : { max_tokens: config.maxTokens ?? 400 }),
+        : { max_tokens: maxTokens }),
       ...(reasoning ? { reasoning_effort: reasoning } : {}),
     },
   };

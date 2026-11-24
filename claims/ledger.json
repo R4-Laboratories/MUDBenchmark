@@ -1707,6 +1707,12 @@
       "level": "some-true",
       "statement": "Production v0.91.52 serves the bring-your-own-key agent. /api/free and /api/demo are 404; /router.mjs is 200. The deployed provider list is Groq (free key), Ollama, OpenAI, Anthropic, DeepSeek, custom and Prime Router, with no operator or Gemini entry. owner.env is mode 600 and contains only MUDBENCH_OWNER_TOKEN; no provider key or model is on the server. The local model service is inactive, no llama-server process remains, and the GPU training job was untouched. A clean headless production session clicked Start free agent with no key, selected Groq, opened the provider drawer, focused the key field, and showed the free-key prompt with no provider request. The local mock-provider session verified the browser R4 context in the request body and reached The Vault with no Brain error. World 181 rooms / 15 zones / 20 quests / 90 mobiles / 214 objects. Main Gate 45296234661 green, publish 45297639181, release v0.91.52.",
       "authority": "GitHub PR #68 merge e3b3552 2026-11-24; main Gate 45296234661; publish 45297639181; release v0.91.52; wick deploy, /api/free, /api/demo, /router.mjs, page options, owner.env names, systemctl and process checks; local /tmp/byok-browser-test.mjs and /tmp/prod-byo-nokey.mjs"
+    },
+    {
+      "id": "MB-281",
+      "level": "some-true",
+      "statement": "v0.91.53 fixes DeepSeek empty replies. Fast turns send reasoning_effort none and a 300-token floor; deliberate turns send low and 600. If content is still empty, the harness preserves the observation and retries once with 800 tokens. The setup panel no longer clears a key the player just typed, and startFreeAgent saves the key before setMode/startAI. A real browser session with the local DeepSeek key selected DeepSeek (API key) - deepseek-flash, took the grey cloak and satchel, examined the Atrium plaque, and walked north to the Corridor with no Brain error. World 181 rooms / 15 zones / 20 quests / 90 mobiles / 214 objects; no server model or provider key.",
+      "authority": "local /tmp/deepseek-browser-test.mjs; tools/gate.mjs; 2026-11-24"
     }
   ]
 }
