@@ -539,6 +539,19 @@ Rehearsed 2026-11-16:
   speaking, opened the Twin Door with one hidden partner and took the crown.
   Gate covers the death penalty, level gates, twin door, hide visibility and
   prompt (MB-286/287/288);
+- v0.91.58 (the win condition) records a completed run. A character beats
+  MUDBench at **level 10, all 22 live quests and all 17 hidden ways**; the
+  `completion` command (`goal`, `win`) and `score` show the tally, the agent
+  prompt carries a `GOAL` line, and the first completion writes a permanent
+  record with the tick and tally and awards the **Worldbreaker** title.
+  Discovered hidden ways (`found`) and the completion record are now saved in
+  the identity, so they survive death, reset, logout and restart; the record is
+  never removed by a later level loss or new content. Moderator/immortal access
+  is still not built. World unchanged: 213 rooms / 17 zones / 22 quests / 100
+  mobiles / 240 objects. The Gate checks the tally edges, one-time record,
+  title, checkpoint persistence and every prior check; a live client completed
+  a prepared run, wore Worldbreaker, logged out and back in with the record,
+  title and all 17 ways intact (MB-293/294);
 - v0.91.57 (guardian tuning) lowers the Deepdelve guardian from 70 HP, 7
   damage and 4 armour to **55 HP, 5 damage and 3 armour**. A deterministic
   two-actor simulator of a level-8 pair with the mine pick lost to the 70/7/4

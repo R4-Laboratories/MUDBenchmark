@@ -23,14 +23,16 @@ export function loadTitles({ path = DEFAULT_PATH } = {}) {
     if (ids.has(title.id)) errors.push(`title id "${title.id}" is used twice`);
     ids.add(title.id);
     if (typeof title.name !== "string" || !title.name) errors.push(`title ${title.id} has no name`);
-    if (typeof title.quest !== "string" || !title.quest) errors.push(`title ${title.id} has no quest`);
+    if (title.completion !== true && (typeof title.quest !== "string" || !title.quest)) {
+      errors.push(`title ${title.id} has no quest or completion condition`);
+    }
     titles.push({ ...title });
   }
   return { titles, errors };
 }
 
-export const earnedTitles = (titles, completed = []) =>
-  titles.filter((title) => completed.includes(title.quest));
+export const earnedTitles = (titles, completed = [], completion = false) =>
+  titles.filter((title) => (title.completion === true ? completion : completed.includes(title.quest)));
 
 export function titleLookup(titles, name) {
   const wanted = String(name ?? "").trim().toLowerCase();

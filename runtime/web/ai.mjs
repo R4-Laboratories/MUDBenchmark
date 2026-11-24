@@ -132,14 +132,14 @@ whistle, sing, hum, mutter, shout, clap, cry, apologize, congratulate, battle (c
 equipment, quests [active|available|done|all|<id>], quest accept <id>, quest abandon <id>, deliver <thing> to <name>,
 levels, leaderboard (top/lb), ladder (pvp/duels), map [zone], shortcuts, tutorial (first),
 guild create <name>, guild join <name>, guild leave, guild who, guild list, guild chat <text>,
-guild rank <member> <rank>, guild disband, vault, deposit <item>, withdraw <item>, ignore/unignore <name>, ignoring, titles, title <id|none>, facts, recall <word>, talk <name>, spells, train <spell>, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search, turn, push, pump, strike, board, ring, use <item>, flee, hide, party [invite|accept|decline|leave|who], technique <id>, world, help, go <direction>`;
+guild rank <member> <rank>, guild disband, vault, deposit <item>, withdraw <item>, ignore/unignore <name>, ignoring, titles, title <id|none>, facts, recall <word>, talk <name>, spells, train <spell>, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search, turn, push, pump, strike, board, ring, use <item>, flee, hide, party [invite|accept|decline|leave|who], completion, technique <id>, world, help, go <direction>`;
 
-const FAST_COMMANDS = "look, examine <thing>, inventory, standing, score, equipment, quests, say <text>, tell <name> <text>, global <text>, talk <name>, who, north/south/east/west/up/down, take/drop/wear/wield, take all, attack <name>, flee, hide, party [invite|accept|decline|leave|who], technique <id>, use <item>, duel <name>, duel accept, cast <spell>, buy/sell/list, open/close, quest accept <id>, deliver <thing> to <name>, guild create/join/leave/who/chat, vault/deposit/withdraw, ignore/unignore, titles/title, facts, recall, wait, search, world, help, wave/nod/bow/laugh";
+const FAST_COMMANDS = "look, examine <thing>, inventory, standing, score, equipment, quests, say <text>, tell <name> <text>, global <text>, talk <name>, who, north/south/east/west/up/down, take/drop/wear/wield, take all, attack <name>, flee, hide, party [invite|accept|decline|leave|who], completion, technique <id>, use <item>, duel <name>, duel accept, cast <spell>, buy/sell/list, open/close, quest accept <id>, deliver <thing> to <name>, guild create/join/leave/who/chat, vault/deposit/withdraw, ignore/unignore, titles/title, facts, recall, wait, search, world, help, wave/nod/bow/laugh";
 
 const VERBS = new Set([
   "look", "l", "examine", "x", "ex", "who", "wh", "awake", "aw", "answer", "claim", "say", "tell", "mail", "go", "coins", "money", "purse", "standing", "reputation", "factions", "components", "parts", "materials", "upgrade", "improve", "forge", "salvage", "melt", "scrap", "technique", "tech",
   "global", "gossip", "gos", "goss", "trade", "channels", "north", "south", "east", "west", "up", "down",
-  "flee", "use", "activate", "invoke", "hide", "sneak", "conceal", "party", "group",
+  "flee", "use", "activate", "invoke", "hide", "sneak", "conceal", "party", "group", "completion", "goal", "win",
   "n", "s", "e", "w", "u", "d", "attack", "kill", "duel", "wield", "unwield", "inventory",
   "i", "inv", "equipment", "eq", "take", "get", "g", "t", "grab", "drink", "quaff", "drop", "dr", "put", "open", "close",
   "wear", "remove", "eat", "light", "extinguish", "buy", "sell", "list", "wait", "wave", "nod", "bow",
@@ -205,7 +205,7 @@ Rules:
 - If COMBAT is present you cannot move. Fight, use a technique, heal/eat, or flee as a last resort; fleeing costs experience.
 - Use NOTE for long-term memory. It is saved and shown to you next turn.
 - Death is brutal: you lose 50% of current XP and one level, including to another player. Avoid fights beyond your level.
-- The run is beaten by reaching max level, completing every quest and solving every puzzle. Moderator/immortal mode is not implemented.
+- The run is beaten by reaching max level, completing every quest and finding every hidden way. The completion command shows the tally. Moderator/immortal mode is not implemented.
 - Some doors need two players; ask in say/global and wait for help. Use party invite/accept to group; party members in the same room share kill XP and quest credit. A hidden Night Market rogue can hide; moving or acting reveals them, and detect reveals hidden players.
 - Gas pockets damage you every few seconds; carry the canary from the Deepdelve mine head and leave before it dies.
 - If you are unsure, look, examine, inventory, or score.
@@ -238,7 +238,7 @@ Rules:
 - Use NOTE for long-term memory: goals, discoveries, social commitments, plans. It is saved and shown next turn.
 - If COMBAT is present you cannot move. Fight, use a technique, heal/eat, or flee as a last resort; fleeing costs experience.
 - Death is brutal: you lose 50% of current XP and one level, including to another player. Avoid fights beyond your level.
-- The run is beaten by reaching max level, completing every quest and solving every puzzle. Moderator/immortal mode is not implemented.
+- The run is beaten by reaching max level, completing every quest and finding every hidden way. The completion command shows the tally. Moderator/immortal mode is not implemented.
 - Some doors need two players; ask in say/global and wait for help. Use party invite/accept to group; party members in the same room share kill XP and quest credit. A hidden Night Market rogue can hide; moving or acting reveals them, and detect reveals hidden players.
 - Gas pockets damage you every few seconds; carry the canary from the Deepdelve mine head and leave before it dies.
 - You may explore, talk, fight, trade, quest, and use the map you build.
@@ -287,7 +287,7 @@ export function buildActionMenu(state = null) {
     if (/mail|plate|cloak|shield|helm|boots|gloves|bracers|apron|circlet/i.test(name)) menu.add(`wear ${name}`);
     if (/stone|charm|token|horn|bell|mirror|compass/i.test(name)) menu.add(`use ${name}`);
   }
-  for (const line of ["say <text>", "tell <name> <text>", "global <text>", "talk <name>", "wave", "nod", "bow", "laugh", "smile", "grin", "cheer", "salute", "ponder", "whistle", "sing", "hug", "highfive", "who", "battle", "equipment", "spells", "leaderboard", "levels", "map", "shortcuts", "quests"]) {
+  for (const line of ["say <text>", "tell <name> <text>", "global <text>", "talk <name>", "wave", "nod", "bow", "laugh", "smile", "grin", "cheer", "salute", "ponder", "whistle", "sing", "hug", "highfive", "who", "battle", "equipment", "spells", "leaderboard", "levels", "map", "shortcuts", "quests", "completion"]) {
     menu.add(line);
   }
   for (const spell of state?.self?.spells ?? []) menu.add(`cast ${spell}`);
@@ -483,10 +483,14 @@ export function buildUserPrompt({ turn = 1, observation = "", director = [], sta
     ? `PARTY INVITE: ${state.self.party_invites.join(", ")}. Type party accept or party decline.`
     : "";
   const deaths = state?.self ? `DEATHS: ${state.self.deaths ?? 0}.` : "";
+  const tally = state?.self?.completion;
+  const goalLine = tally
+    ? `GOAL: level ${tally.level}/${tally.maxLevel} · quests ${tally.quests}/${tally.questsTotal} · hidden ways ${tally.puzzles}/${tally.puzzlesTotal}${tally.achieved ? " · ACHIEVED" : ""}.`
+    : "";
   const party = state?.self?.party
     ? `PARTY: ${state.self.party.leader ?? "?"} leads ${state.self.party.members.join(", ")} (${state.self.party.size}).`
     : "";
-  const sheet = [world, selfLine, self, pack, combat, social, party, invites, lock, gas, hidden, deaths].filter(Boolean).join("\n");
+  const sheet = [world, selfLine, self, pack, combat, social, party, invites, goalLine, lock, gas, hidden, deaths].filter(Boolean).join("\n");
   const menu = actions.join(", ");
   const questBlock = quests ? `QUESTS:\n${quests}` : "";
   const memoryBlock = memory ? `MEMORY:\n${memory}\n` : "";

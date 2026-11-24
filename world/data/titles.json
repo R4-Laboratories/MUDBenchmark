@@ -1,15 +1,56 @@
 {
   "schema": "mudbenchmark/titles/1",
-  "note": "One title per kept quest. The quest budget is 20; retired titles were removed with their quests.",
+  "note": "One title per kept quest, plus Worldbreaker for the completed run. The quest budget is 22; retired titles were removed with their quests.",
   "titles": [
-    { "id": "newcomer", "name": "Newcomer", "quest": "first-steps" },
-    { "id": "wordkeeper", "name": "Wordkeeper", "quest": "word" },
-    { "id": "vaultkeeper", "name": "Vaultkeeper", "quest": "guardian" },
-    { "id": "mirrorwarden", "name": "Mirrorwarden", "quest": "mirror" },
-    { "id": "choirbane", "name": "Choirbane", "quest": "choir" },
-    { "id": "reliquarykeeper", "name": "Reliquarykeeper", "quest": "reliquary" },
-    { "id": "guildwarden", "name": "Guildwarden", "quest": "guild-warden" },
-    { "id": "dawnbringer", "name": "Dawnbringer", "quest": "guild-dawn" },
-    { "id": "trialkeeper", "name": "Trialkeeper", "quest": "guild-trial" }
+    {
+      "id": "newcomer",
+      "name": "Newcomer",
+      "quest": "first-steps"
+    },
+    {
+      "id": "wordkeeper",
+      "name": "Wordkeeper",
+      "quest": "word"
+    },
+    {
+      "id": "vaultkeeper",
+      "name": "Vaultkeeper",
+      "quest": "guardian"
+    },
+    {
+      "id": "mirrorwarden",
+      "name": "Mirrorwarden",
+      "quest": "mirror"
+    },
+    {
+      "id": "choirbane",
+      "name": "Choirbane",
+      "quest": "choir"
+    },
+    {
+      "id": "reliquarykeeper",
+      "name": "Reliquarykeeper",
+      "quest": "reliquary"
+    },
+    {
+      "id": "guildwarden",
+      "name": "Guildwarden",
+      "quest": "guild-warden"
+    },
+    {
+      "id": "dawnbringer",
+      "name": "Dawnbringer",
+      "quest": "guild-dawn"
+    },
+    {
+      "id": "trialkeeper",
+      "name": "Trialkeeper",
+      "quest": "guild-trial"
+    },
+    {
+      "id": "worldbreaker",
+      "name": "Worldbreaker",
+      "completion": true
+    }
   ]
 }

@@ -28,6 +28,7 @@ import { hashPassword, verifyPassword, validName, validNewName, validPassword, a
 import { CHAT_LIMIT, CHAT_WINDOW_MS, REPORT_INTERVAL_MS, REPORT_REASON_MAX, chatAllowed, reportAllowed, reportRecord } from "../runtime/moderation.mjs";
 import { ADJECTIVES, NOUNS, randomCharacterName, uniqueCharacterName, chooseCharacter } from "../runtime/web/names.mjs";
 import { loadTitles, earnedTitles } from "../runtime/titles.mjs";
+import { WORLDBREAKER_TITLE, completionLine, completionState, secretWays } from "../runtime/completion.mjs";
 import { TECHNIQUES, techniqueForWeapon, techniqueReady } from "../runtime/techniques.mjs";
 import { COMPONENTS, componentForItem, componentsText, salvageYield, upgradeCost } from "../runtime/forge.mjs";
 import { loadFacts, contextHasWord } from "../runtime/facts.mjs";
@@ -211,6 +212,9 @@ let webAI = { ok: true, why: [] };
   check(nightMenu.includes("hide"), "the Night Market action menu lost hide");
   check(/Death is brutal/.test(buildSystemPrompt({ name: "scout", fast: true })) && /max level/.test(buildSystemPrompt({ name: "scout", fast: true })), "the agent prompt lost the death/win condition");
   check(Boolean(GOALS.completionist), "the completionist goal is missing");
+  const goalUser = buildUserPrompt({ turn: 1, observation: "[The Atrium]", fast: true, actions: ["completion"], state: { self: { name: "bob", completion: { level: 10, maxLevel: 10, quests: 22, questsTotal: 22, puzzles: 17, puzzlesTotal: 17, achieved: true } }, room: {} } });
+  check(goalUser.includes("GOAL: level 10/10") && goalUser.includes("hidden ways 17/17") && goalUser.includes("ACHIEVED") && goalUser.includes("completion"), "the agent prompt lost the completion goal");
+  check(/named === "completion"/.test(serverSource2) && /completionState/.test(worldSource) && /actor.completion = record/.test(worldSource), "the completion command or record is missing");
   check(/waiting \$\{left\}s/.test(web) && /throttlePlan/.test(web) && /AI waiting/.test(web), "the AI does not wait for a rate-limit window");
   check(/console\.groq\.com\/keys/.test(web) && /DeepSeek/.test(web), "the UI does not offer the Groq free key or DeepSeek");
   check(!/Pollinations/i.test(web), "the web shell still mentions Pollinations");
@@ -3531,6 +3535,7 @@ let titles = { ok: true, why: [] };
   const check = (condition, why) => { if (!condition) { titles.ok = false; titles.why.push(why); } };
   check(table.errors.length === 0, `title validation failed: ${table.errors[0] ?? ""}`);
   for (const title of table.titles) {
+    if (title.completion === true) continue;
     if (!questTable.quests.some((quest) => quest.id === title.quest)) {
       titles.ok = false;
       titles.why.push(`${title.id} names unknown quest ${title.quest}`);
@@ -3543,6 +3548,9 @@ let titles = { ok: true, why: [] };
   const earned = earnedTitles(table.titles, state.actors[0].quests.completed);
   check(earned.length === 2, "the earned titles do not follow completed quests");
   check(table.titles.some((title) => title.id === "dawnbringer" && title.quest === "guild-dawn"), "the dawn title is missing");
+  check(table.titles.some((title) => title.id === "worldbreaker" && title.completion === true), "the Worldbreaker title is missing");
+  check(earnedTitles(table.titles, [], false).length === 0, "a completion title was earned without a completed run");
+  check(earnedTitles(table.titles, [], true).some((title) => title.id === "worldbreaker"), "the Worldbreaker title was not earned by a completed run");
   run([{ kind: "setTitle", actorId: "t", title: "Dawnbringer" }]);
   let actor = state.actors.find((entry) => entry.id === "t");
   check(actor.title === "Dawnbringer", "the title was not worn");
@@ -3552,6 +3560,54 @@ let titles = { ok: true, why: [] };
   actor = state.actors.find((entry) => entry.id === "t");
   check(actor.title === null, "the title was not cleared");
   if (titles.why.length) { titles.ok = false; failures.push(`titles are broken: ${titles.why[0]}`); }
+}
+
+// The win condition: max level, every live quest and every hidden way. The
+// tally is derived; the first completion is recorded permanently.
+let completion = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  const quests = loadQuests();
+  const levelTable = loadLevels();
+  const ways = secretWays(world.rooms);
+  const allQuests = quests.quests.map((quest) => quest.id);
+  const check = (condition, why) => { if (!condition) { completion.ok = false; completion.why.push(why); } };
+  check(ways.length === 17, `the hidden-way count is ${ways.length}, not 17`);
+  const base = {
+    level: 10, xp: 30000, quests: { active: [], completed: allQuests }, found: [...ways],
+  };
+  const done = completionState({ actor: base, rooms: world.rooms, quests: quests.quests, levels: levelTable.levels });
+  check(done.done && done.achieved && done.quests === 22 && done.questsTotal === 22 && done.puzzles === 17 && done.puzzlesTotal === 17 && done.maxLevel === 10, "the completed tally is wrong");
+  check(completionLine(done).includes("Run beaten") && completionLine(done).includes(WORLDBREAKER_TITLE), "the completion line is wrong");
+  check(!completionState({ actor: { ...base, level: 9 }, rooms: world.rooms, quests: quests.quests, levels: levelTable.levels }).done, "level 9 counted as a completed run");
+  check(!completionState({ actor: { ...base, quests: { active: [], completed: allQuests.slice(1) } }, rooms: world.rooms, quests: quests.quests, levels: levelTable.levels }).done, "a missing quest counted as a completed run");
+  check(!completionState({ actor: { ...base, found: ways.slice(1) }, rooms: world.rooms, quests: quests.quests, levels: levelTable.levels }).done, "a missing hidden way counted as a completed run");
+  const kept = completionState({ actor: { ...base, level: 9, found: [], quests: { active: [], completed: [] }, completion: { tick: 42 } }, rooms: world.rooms, quests: quests.quests, levels: levelTable.levels });
+  check(kept.achieved && !kept.done && kept.achievedAt === 42, "a recorded run did not survive a later reduced tally");
+
+  let state = initialState(world.rooms, [], [], 1, world.climate, channelTable.channels, levelTable.levels, quests.quests);
+  state.actors.push({
+    id: "w", key: "w", account: "w", name: "w", room: 1, visited: [1],
+    level: 10, xp: 30000, maxHp: maxHpForLevel(10), hp: maxHpForLevel(10), mana: 5, maxMana: 5,
+    spellbook: [], guild: null, guildRank: null, wielding: null,
+    quests: { active: [], completed: allQuests }, found: [...ways], completion: null, title: null,
+  });
+  state.identities.w = { kind: "character", owner: "w", name: "w", level: 10, xp: 30000, quests: { active: [], completed: allQuests }, found: [...ways], title: null };
+  const first = step({ state, rooms: world.rooms, intents: [], actions: [] });
+  state = first.state;
+  const actor = state.actors.find((entry) => entry.id === "w");
+  check(Number.isInteger(actor.completion?.tick) && actor.completion.level === 10 && actor.completion.quests === 22 && actor.completion.puzzles === 17, "the reducer did not record the completed run");
+  check(actor.title === WORLDBREAKER_TITLE, "the completed run did not wear the Worldbreaker title");
+  check(first.events.some((event) => event.completion && event.onlyId === "w"), "the completed run did not announce itself");
+  const record = { ...actor.completion };
+  const second = step({ state, rooms: world.rooms, intents: [], actions: [] });
+  state = second.state;
+  check(state.actors.find((entry) => entry.id === "w").completion.tick === record.tick, "the completed run was recorded twice");
+  checkpointIdentities(state);
+  check(state.identities.w?.found?.length === 17, "the found hidden ways did not survive a checkpoint");
+  check(state.identities.w?.completion?.tick === record.tick, "the completed run did not survive a checkpoint");
+  check(state.identities.w?.title === WORLDBREAKER_TITLE, "the Worldbreaker title did not survive a checkpoint");
+  if (!completion.ok) failures.push(`completion is broken: ${completion.why[0]}`);
 }
 
 // The Memory Garden is exploration now: facts, a fact-gated action and the
@@ -4005,6 +4061,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"aggression".padEnd(26)}  ${(aggression.ok ? "1 duel" : "BROKEN").padStart(5)}   == mobs start fights`);
   console.log(`${"combat2".padEnd(26)}  ${(combat2.ok ? "weapons, armour, xp" : "BROKEN").padStart(5)}   == fight and grow`);
   console.log(`${"deepdelve".padEnd(26)}  ${(deepdelve.ok ? "16 rooms, party, gas" : "BROKEN").padStart(5)}   == mine, winch, canary`);
+  console.log(`${"completion".padEnd(26)}  ${(completion.ok ? "level, quests, ways" : "BROKEN").padStart(5)}   == Worldbreaker`);
   console.log(`${"combat".padEnd(26)}  ${(combat.outcome === "killed" ? `${combat.rounds} rounds` : "BROKEN").padStart(5)}   == kills`);
   console.log(`${"resume".padEnd(26)}  ${(resume.ok ? "1 save" : "BROKEN").padStart(5)}   == old checkpoint loads`);
   console.log(`${"climate".padEnd(26)}  ${(climate.ok ? `${climate.changes} changes` : "BROKEN").padStart(5)}   == day, night, weather`);
