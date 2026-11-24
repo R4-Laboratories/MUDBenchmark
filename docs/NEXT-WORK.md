@@ -1,6 +1,6 @@
 # Next work
 
-Baseline: **v0.91.59**. The world has 225 rooms, 18 zones, 23 quests, 105 mobiles
+Baseline: **v0.91.60**. The world has 225 rooms, 15 zones, 23 quests, 105 mobiles
 and 248 objects. The run has a recorded win condition: level 10, all 23 quests
 and all 22 hidden ways, with the permanent Worldbreaker title. R4 memory, command grounding, scorecards
 and the public stats surface are live; signups are open. Every AI key is
@@ -92,7 +92,8 @@ memory or prompt system.
 | v0.91.57 | Deepdelve guardian tuned from 70/7/4 to 55/5/3 after a two-actor balance sample | **done** (MB-292) |
 | v0.91.58 | Win condition: completion tally, permanent record, Worldbreaker title, persisted hidden ways, `completion` command and AI `GOAL` | **done** (MB-293/294) |
 | v0.91.59 | The Drowned Foundry: 12-room level 9/10 party dungeon below the Deepdelve, five party actions, Night Market valve shortcut, foundry gear, repeatable quest and a party-scale master | **done** (MB-296/297) |
-| backlog | Fold tiny zones into larger districts; flooded shipwreck/monastery; moderator/immortal decision; larger PvP sample | optional |
+| v0.91.60 | Zone consolidation: Harbor into Town, Undercroft into the Lantern Quarter, Eclipse Court into the Moonlit Reach; 18 -> 15 zones, no room/quest changes | **done** (MB-299/300) |
+| backlog | Flooded shipwreck/monastery; moderator/immortal decision; larger PvP sample | optional |
 
 ## What is next
 

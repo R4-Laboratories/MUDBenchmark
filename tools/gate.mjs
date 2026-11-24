@@ -474,6 +474,21 @@ let worldMap = { ok: true, why: [], rooms: 0 };
   if (!worldMap.ok) failures.push(`the world map is broken: ${worldMap.why[0]}`);
 }
 
+// The small districts are folded into their parents; the rooms did not move.
+let zoneMap = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  const check = (condition, why) => { if (!condition) { zoneMap.ok = false; zoneMap.why.push(why); } };
+  const zone = (id) => world.zones.find((entry) => entry.id === id);
+  check(world.zones.length === 15, `the zone count is ${world.zones.length}, not 15`);
+  check(zone("town")?.rooms.includes(30) && zone("town")?.rooms.includes(33), "the Harbor is not in the Town zone");
+  check(zone("lantern")?.rooms.includes(25) && zone("lantern")?.rooms.includes(29), "the Undercroft is not in the Lantern Quarter zone");
+  check(zone("moon")?.rooms.includes(92) && zone("moon")?.rooms.includes(97), "the Eclipse Court is not in the Moonlit Reach zone");
+  check(!["harbor", "undercroft", "eclipse"].some((id) => zone(id)), "a folded zone id is still live");
+  check(world.zones.reduce((sum, entry) => sum + entry.rooms.length, 0) === Object.keys(world.rooms).length, "the zones do not cover every room exactly once");
+  if (!zoneMap.ok) failures.push(`the zone map is broken: ${zoneMap.why[0]}`);
+}
+
 // The verb table must resolve its own aliases and use only known codes.
 const verbTable = loadVerbs();
 if (verbTable.errors.length > 0) failures.push(`verbs are invalid: ${verbTable.errors[0]}`);
@@ -2327,7 +2342,7 @@ let eclipse = { ok: true, why: [] };
   check(table.errors.length === 0, `eclipse action validation failed: ${table.errors[0] ?? ""}`);
   check(world.rooms[91]?.exits?.up === 92 && world.rooms[92]?.exits?.down === 91, "the Eclipse Court is not connected to the Moon Throne");
   check(world.rooms[97]?.exits?.down === 96, "the Dawn Gate does not return to the throne");
-  check(world.zones.some((zone) => zone.id === "eclipse" && zone.rooms.includes(97)), "the Eclipse Court zone is missing");
+  check(world.zones.some((zone) => zone.id === "moon" && zone.rooms.includes(97)), "the Eclipse Court is not in the Moonlit Reach zone");
   check(findAction(table.actions, { verb: "open", target: "chest", room: 95 })?.id === "open-eclipse-chest", "open chest does not resolve in the Mirror Vault");
   check(findAction(table.actions, { verb: "enter", target: "gate", room: 97 })?.id === "enter-dawn-gate", "enter gate does not resolve at the Dawn Gate");
 
@@ -4117,6 +4132,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"deepdelve".padEnd(26)}  ${(deepdelve.ok ? "16 rooms, party, gas" : "BROKEN").padStart(5)}   == mine, winch, canary`);
   console.log(`${"completion".padEnd(26)}  ${(completion.ok ? "level, quests, ways" : "BROKEN").padStart(5)}   == Worldbreaker`);
   console.log(`${"foundry".padEnd(26)}  ${(foundry.ok ? "12 rooms, party, valve" : "BROKEN").padStart(5)}   == drowned forge`);
+  console.log(`${"zones".padEnd(26)}  ${(zoneMap.ok ? "15 districts" : "BROKEN").padStart(5)}   == harbor, undercroft, eclipse`);
   console.log(`${"combat".padEnd(26)}  ${(combat.outcome === "killed" ? `${combat.rounds} rounds` : "BROKEN").padStart(5)}   == kills`);
   console.log(`${"resume".padEnd(26)}  ${(resume.ok ? "1 save" : "BROKEN").padStart(5)}   == old checkpoint loads`);
   console.log(`${"climate".padEnd(26)}  ${(climate.ok ? `${climate.changes} changes` : "BROKEN").padStart(5)}   == day, night, weather`);

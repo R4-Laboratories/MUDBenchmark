@@ -77,5 +77,5 @@ rose). Both routes count, because both set the same fact.
   wore `Worldbreaker`, logged out and back in, and still had the record, the
   title and all 22 discovered ways.
 
-The completion tally does not change the world counts: **225 rooms / 18 zones /
+The completion tally does not change the world counts: **225 rooms / 15 zones /
 23 quests / 105 mobiles / 248 objects**.
