@@ -1,6 +1,6 @@
 # Next work
 
-Baseline: **v0.91.56**. The world has 213 rooms, 17 zones, 22 quests, 100 mobiles
+Baseline: **v0.91.57**. The world has 213 rooms, 17 zones, 22 quests, 100 mobiles
 and 240 objects. R4 memory, command grounding, scorecards
 and the public stats surface are live; signups are open. Every AI key is
 supplied by the player; Groq is the free option, and each browser harness runs

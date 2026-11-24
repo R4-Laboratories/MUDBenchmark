@@ -1773,6 +1773,12 @@
       "level": "some-true",
       "statement": "Production v0.91.56 serves parties and the Deepdelve. /world reports 213 rooms / 17 zones / 22 quests / 100 mobiles / 240 objects; /api/free and /api/demo are 404, /router.mjs and /llms.txt are 200. Parties support invite/accept/decline/leave/kick/disband/who, hold six, share 50% kill XP and kill quest credit for members in the same room, refresh the HUD on party and progression changes, and reveal a party action's way to every member. The Deepdelve is live west of the graveyard: level 6/7/8 gates, dark tunnels, two lanterns and canaries, a party winch/pump/cart/seam, a gas pocket with canary protection, a coracle shortcut, five mobiles, twelve objects and the repeatable Deepdelve ore contract (320 XP / 50 coins). The Gate passed at 213/17/22/100/240 with the mine map, party actions, shared XP/credit, gas/canary and quest checks; the local two-client live walk formed a party, opened the winch/cart/seam for both, crossed the gas with both canaries, shared the guardian's 120 XP and kill credit, completed the ore contract, and verified the level-7 refusal. Main Gate 45342970311 green, publish 45343962355, release v0.91.56.",
       "authority": "GitHub PR #72 merge d991cd6 2026-11-24; main Gate 45342970311; publish 45343962355; release v0.91.56; wick deploy, /world, /llms.txt, routes and /health; local /tmp/deepdelve-live.mjs; tools/gate.mjs"
+    },
+    {
+      "id": "MB-292",
+      "level": "some-true",
+      "statement": "Production v0.91.57 serves the Deepdelve guardian tuning. The deployed world JSON has the mine guardian at 55 HP / 55 max HP / 5 damage / 3 armour, with 213 rooms / 17 zones / 100 mobiles / 240 objects and 22 quests; /world reports those counts, /api/free and /api/demo are 404, and /router.mjs and /llms.txt are 200. A deterministic two-actor simulator of a level-8 party with the mine pick (one pick, one unarmed) lost the old 70/7/4 build with both characters dead and the guardian at 22 HP, and wins the 55/5/3 build with 35 HP each remaining. Main Gate 45346759881 green, publish 45347790846, release v0.91.57.",
+      "authority": "GitHub PR #73 merge 0a384ed 2026-11-24; main Gate 45346759881; publish 45347790846; release v0.91.57; wick deploy, deployed world JSON, /world, routes and /health; local balance simulator; tools/gate.mjs"
     }
   ]
 }
