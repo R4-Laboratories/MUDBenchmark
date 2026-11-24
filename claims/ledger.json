@@ -1791,6 +1791,12 @@
       "level": "some-true",
       "statement": "Live completion evidence for v0.91.58. A prepared level-10 character with all 22 quests completed and all 17 found ways logged in; the first tick recorded completion at tick 593056, auto-wore Worldbreaker and reported level 10/10, quests 22/22, hidden ways 17/17. The client ran completion, titles, title worldbreaker and score, then quit, closed the socket, reconnected and logged in again; the completion record, Worldbreaker title and all 17 discovered ways were still present and the achieved tick was unchanged. The Gate passes at 213 rooms / 17 zones / 22 quests / 100 mobiles / 240 objects. Moderator/immortal access remains unbuilt.",
       "authority": "local /tmp/completion-live.mjs; tools/gate.mjs; 2026-11-24"
+    },
+    {
+      "id": "MB-295",
+      "level": "some-true",
+      "statement": "Production v0.91.58 serves the recorded win condition. /world reports 213 rooms / 17 zones / 22 quests / 100 mobiles / 240 objects; /api/free and /api/demo are 404, and /router.mjs and /llms.txt are 200; /llms.txt lists the completion verb (aliases goal, win). A character beats the run at level 10, all 22 live quests and all 17 hidden ways; the first completion writes a permanent record and awards Worldbreaker. Found hidden ways and the completion record are saved in the identity and restored on login. The Gate covers tally edges, one-time record, title, checkpoint persistence and every prior check; the live client completed a prepared run at tick 593056, wore Worldbreaker, quit, reconnected and still had the record, title and 17 ways. Moderator/immortal mode remains unbuilt. Main Gate 45441102266 green, publish 45442746631, release v0.91.58.",
+      "authority": "GitHub PR #74 merge 5badff0 2026-11-24; main Gate 45441102266; publish 45442746631; release v0.91.58; wick deploy, /world, /llms.txt, routes and /health; local /tmp/completion-live.mjs; tools/gate.mjs"
     }
   ]
 }
