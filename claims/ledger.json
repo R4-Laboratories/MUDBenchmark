@@ -1737,6 +1737,18 @@
       "level": "some-true",
       "statement": "Production v0.91.54 serves the Mistfall and the agent self-context. /world reports 195 rooms / 16 zones / 21 quests / 95 mobiles / 227 objects; /llms.txt includes the Mistfall; /api/free and /api/demo are 404 and /router.mjs is 200. A real production headless DeepSeek session as still-thistle-35 wrote and reused six notebook notes, followed the director's Mistfall goal, and its prompt carried SELF, PACK, SOCIAL, R4 CONTEXT and NOTEBOOK; it saw the other online character dawn-thistle-50 and used talk to the bard, with no Brain error. The local live Mistfall walk bought the ferry token and lantern, crossed, saw It is dark, lit the lantern, solved the identical hold maze, took the captain's log, was refused movement while engaged, killed the tide guardian, took the tide-stone, returned by ferry, delivered it and completed The Salt Rose (180 XP / 30 coins). A focused live test used the wayfarer's stone and arrived at the Harbor Quay. Main Gate 45322356480 green, publish 45323234138, release v0.91.54.",
       "authority": "GitHub PR #70 merge 363aa8e 2026-11-24; main Gate 45322356480; publish 45323234138; release v0.91.54; wick deploy, /world, /llms.txt, routes and /health; local /tmp/mistfall-live.mjs, /tmp/use-test.mjs, /tmp/prod-deepseek-notebook.mjs"
+    },
+    {
+      "id": "MB-286",
+      "level": "build",
+      "statement": "v0.91.55 adds the danger/social layer. Character death (PvE or PvP) costs 50% of current XP and one level, increments deaths and updates max HP; gold is kept and equipment falls (the Ring takes no goods). The agent prompt states the death penalty and the win condition (max level, all quests, all puzzles; moderator/immortal not implemented), adds DEATHS/LOCK/HIDDEN context and the Completionist persona. The Mistfall drowned cave/tide pool are level 4, the grave reef/Tide Vault level 6 and Salt Rose level 4. The Twin Door (196) requires two actors and opens the Tide Vault (197) with the tide crown. Night Market cutpurses can hide: hidden actors leave room descriptions, the actor list and who; moving/acting reveals them, detect reveals them for 30s, and NPC aggression ignores them. World 197 rooms / 16 zones / 21 quests / 95 mobiles / 228 objects. Gate covers the death penalty, level gates, twin door, hide visibility and prompt.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-287",
+      "level": "some-true",
+      "statement": "Live two-client evidence for v0.91.55: hide-a (Night Market cutpurse) hid at the Twin Door; hide-b's room actor list and who omitted hide-a while the two-player push action stayed available; hide-a said 'I am here', which revealed them to hide-b's look and who; hide-a hid again; both pressed the Twin Door, entered the Tide Vault and hide-a took the tide crown. The Gate PvP test now proves a level-3/400-XP character killed by another player wakes at the start at level 2/200 XP with deaths 1. The local Mistfall walk from v0.91.54 (ferry, darkness, maze, guardian, tide-stone, wayfarer, quest) remains valid.",
+      "authority": "local /tmp/social-live.mjs, /tmp/mistfall-live.mjs, /tmp/use-test.mjs; tools/gate.mjs; 2026-11-24"
     }
   ]
 }

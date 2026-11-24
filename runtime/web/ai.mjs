@@ -132,14 +132,14 @@ whistle, sing, hum, mutter, shout, clap, cry, apologize, congratulate, battle (c
 equipment, quests [active|available|done|all|<id>], quest accept <id>, quest abandon <id>, deliver <thing> to <name>,
 levels, leaderboard (top/lb), ladder (pvp/duels), map [zone], shortcuts, tutorial (first),
 guild create <name>, guild join <name>, guild leave, guild who, guild list, guild chat <text>,
-guild rank <member> <rank>, guild disband, vault, deposit <item>, withdraw <item>, ignore/unignore <name>, ignoring, titles, title <id|none>, facts, recall <word>, talk <name>, spells, train <spell>, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search, turn, push, ring, use <item>, flee, technique <id>, world, help, go <direction>`;
+guild rank <member> <rank>, guild disband, vault, deposit <item>, withdraw <item>, ignore/unignore <name>, ignoring, titles, title <id|none>, facts, recall <word>, talk <name>, spells, train <spell>, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search, turn, push, ring, use <item>, flee, hide, technique <id>, world, help, go <direction>`;
 
-const FAST_COMMANDS = "look, examine <thing>, inventory, standing, score, equipment, quests, say <text>, tell <name> <text>, global <text>, talk <name>, who, north/south/east/west/up/down, take/drop/wear/wield, take all, attack <name>, flee, technique <id>, use <item>, duel <name>, duel accept, cast <spell>, buy/sell/list, open/close, quest accept <id>, deliver <thing> to <name>, guild create/join/leave/who/chat, vault/deposit/withdraw, ignore/unignore, titles/title, facts, recall, wait, search, world, help, wave/nod/bow/laugh";
+const FAST_COMMANDS = "look, examine <thing>, inventory, standing, score, equipment, quests, say <text>, tell <name> <text>, global <text>, talk <name>, who, north/south/east/west/up/down, take/drop/wear/wield, take all, attack <name>, flee, hide, technique <id>, use <item>, duel <name>, duel accept, cast <spell>, buy/sell/list, open/close, quest accept <id>, deliver <thing> to <name>, guild create/join/leave/who/chat, vault/deposit/withdraw, ignore/unignore, titles/title, facts, recall, wait, search, world, help, wave/nod/bow/laugh";
 
 const VERBS = new Set([
   "look", "l", "examine", "x", "ex", "who", "wh", "awake", "aw", "answer", "claim", "say", "tell", "mail", "go", "coins", "money", "purse", "standing", "reputation", "factions", "components", "parts", "materials", "upgrade", "improve", "forge", "salvage", "melt", "scrap", "technique", "tech",
   "global", "gossip", "gos", "goss", "trade", "channels", "north", "south", "east", "west", "up", "down",
-  "flee", "use", "activate", "invoke",
+  "flee", "use", "activate", "invoke", "hide", "sneak", "conceal",
   "n", "s", "e", "w", "u", "d", "attack", "kill", "duel", "wield", "unwield", "inventory",
   "i", "inv", "equipment", "eq", "take", "get", "g", "t", "grab", "drink", "quaff", "drop", "dr", "put", "open", "close",
   "wear", "remove", "eat", "light", "extinguish", "buy", "sell", "list", "wait", "wave", "nod", "bow",
@@ -180,6 +180,12 @@ export const GOALS = {
     goal: "Reach the highest level and complete the most quests in the fewest turns. Move efficiently, " +
       "avoid unnecessary fights, and use the fastest valid command.",
   },
+  completionist: {
+    label: "Completionist",
+    goal: "Reach the maximum level, complete every quest and solve every puzzle. Treat death as a real setback: " +
+      "it costs half your experience and a level, including to another player. Fight only what you can beat, " +
+      "ask other players for help where a door needs two, and keep long-term notes on what remains.",
+  },
 };
 
 export function buildSystemPrompt({ name = "scout", goal = DEFAULT_GOAL, fast = false, deliberate = false } = {}) {
@@ -198,6 +204,9 @@ Rules:
 - Use only what ROOM, STATE, R4 CONTEXT, MEMORY, QUESTS, PACK, COMBAT, SOCIAL and DIRECTOR show.
 - If COMBAT is present you cannot move. Fight, use a technique, heal/eat, or flee as a last resort; fleeing costs experience.
 - Use NOTE for long-term memory. It is saved and shown to you next turn.
+- Death is brutal: you lose 50% of current XP and one level, including to another player. Avoid fights beyond your level.
+- The run is beaten by reaching max level, completing every quest and solving every puzzle. Moderator/immortal mode is not implemented.
+- Some doors need two players; ask in say/global and wait for help. A hidden Night Market rogue can hide; moving or acting reveals them, and detect reveals hidden players.
 - If you are unsure, look, examine, inventory, or score.
 
 COMMANDS: ${FAST_COMMANDS}
@@ -227,6 +236,9 @@ Rules:
 - Keep THOUGHT honest and specific: what you know, what you want, what you will try next.
 - Use NOTE for long-term memory: goals, discoveries, social commitments, plans. It is saved and shown next turn.
 - If COMBAT is present you cannot move. Fight, use a technique, heal/eat, or flee as a last resort; fleeing costs experience.
+- Death is brutal: you lose 50% of current XP and one level, including to another player. Avoid fights beyond your level.
+- The run is beaten by reaching max level, completing every quest and solving every puzzle. Moderator/immortal mode is not implemented.
+- Some doors need two players; ask in say/global and wait for help. A hidden Night Market rogue can hide; moving or acting reveals them, and detect reveals hidden players.
 - You may explore, talk, fight, trade, quest, and use the map you build.
 
 Commands:
@@ -261,6 +273,7 @@ export function buildActionMenu(state = null) {
     for (const action of room.actions ?? []) menu.add(`${action.verb} ${action.target}`);
   }
   if ((state?.self?.enemies ?? []).length) menu.add("flee");
+  if (state?.self?.guild === "night-market" && ["cutpurse", "shadow", "master"].includes(state.self.guild_rank)) menu.add("hide");
   for (const technique of state?.self?.techniques ?? []) menu.add(`technique ${technique.id}`);
   for (const name of state?.self?.inventory_names ?? []) {
     if (/bread|stew|herb|ration|meat|apple|cheese|soup|loaf|berry|fish/i.test(name)) menu.add(`eat ${name}`);
@@ -438,7 +451,7 @@ export function buildUserPrompt({ turn = 1, observation = "", director = [], sta
     ? `WORLD: ${state.world.online} online · ${state.world.phase} · ${state.world.weather ?? "clear"} · reset in ${Math.max(0, Math.round((state.world.reset_seconds ?? 0) / 60))}m`
     : "";
   const self = state?.self
-    ? `YOU: level ${state.self.level} · ${state.self.xp}/${state.self.next_xp ?? "?"} xp · ${state.self.hp ?? "?"}/${state.self.max_hp ?? "?"} hp · ${state.self.mana ?? "?"}/${state.self.max_mana ?? "?"} mana · ${state.self.quests?.active ?? 0} active / ${state.self.quests?.completed ?? 0} done quests · ${state.self.inventory ?? 0} items${state.self.spells?.length ? ` · spells ${state.self.spells.join(", ")}` : ""}${state.self.guild ? ` · ${state.self.guild}${state.self.guild_rank ? ` (${state.self.guild_rank})` : ""}${Number.isFinite(state.self.guild_vault) ? ` · vault ${state.self.guild_vault}` : ""}` : ""}${state.self.title ? ` · title ${state.self.title}` : ""}${(state.self.ignoring ?? 0) ? ` · ignoring ${state.self.ignoring}` : ""}${(state.self.memory_facts ?? 0) ? ` · facts ${state.self.memory_facts}` : ""}${state.self.wielding ? ` · wielding ${state.self.wielding}` : ""}${Number.isFinite(state.self.spell_power) ? ` · spell power ${state.self.spell_power}` : ""}${(state.self.effects ?? []).length ? ` · effects ${(state.self.effects ?? []).map((effect) => `${effect.name} ${effect.rounds}`).join(", ")}` : ""}`
+    ? `YOU: level ${state.self.level} · ${state.self.xp}/${state.self.next_xp ?? "?"} xp · ${state.self.hp ?? "?"}/${state.self.max_hp ?? "?"} hp · ${state.self.mana ?? "?"}/${state.self.max_mana ?? "?"} mana · ${state.self.quests?.active ?? 0} active / ${state.self.quests?.completed ?? 0} done quests · ${state.self.deaths ?? 0} deaths · ${state.self.inventory ?? 0} items${state.self.spells?.length ? ` · spells ${state.self.spells.join(", ")}` : ""}${state.self.guild ? ` · ${state.self.guild}${state.self.guild_rank ? ` (${state.self.guild_rank})` : ""}${Number.isFinite(state.self.guild_vault) ? ` · vault ${state.self.guild_vault}` : ""}` : ""}${state.self.title ? ` · title ${state.self.title}` : ""}${(state.self.ignoring ?? 0) ? ` · ignoring ${state.self.ignoring}` : ""}${(state.self.memory_facts ?? 0) ? ` · facts ${state.self.memory_facts}` : ""}${state.self.wielding ? ` · wielding ${state.self.wielding}` : ""}${Number.isFinite(state.self.spell_power) ? ` · spell power ${state.self.spell_power}` : ""}${(state.self.effects ?? []).length ? ` · effects ${(state.self.effects ?? []).map((effect) => `${effect.name} ${effect.rounds}`).join(", ")}` : ""}`
     : "";
   const selfLine = state?.self
     ? `SELF: ${state.self.name ?? "you"} · level ${state.self.level ?? 1}${state.self.guild ? ` · ${state.self.guild}${state.self.guild_rank ? ` (${state.self.guild_rank})` : ""}` : ""} · ${state.room?.zone ?? "unknown zone"} · ${state.room?.name ?? "unknown room"}`
@@ -453,7 +466,14 @@ export function buildUserPrompt({ turn = 1, observation = "", director = [], sta
   const social = state?.room?.actors?.length
     ? `SOCIAL: ${state.room.actors.join(", ")}${state.self?.guild ? ` · guild ${state.self.guild}` : ""}`
     : "";
-  const sheet = [world, selfLine, self, pack, combat, social].filter(Boolean).join("\n");
+  const lock = state?.room?.minLevel
+    ? `LOCK: ${state.room.name} requires level ${state.room.minLevel}.`
+    : "";
+  const hidden = state?.self?.hidden
+    ? "HIDDEN: you are in the shadows; moving or acting reveals you."
+    : "";
+  const deaths = state?.self ? `DEATHS: ${state.self.deaths ?? 0}.` : "";
+  const sheet = [world, selfLine, self, pack, combat, social, lock, hidden, deaths].filter(Boolean).join("\n");
   const menu = actions.join(", ");
   const questBlock = quests ? `QUESTS:\n${quests}` : "";
   const memoryBlock = memory ? `MEMORY:\n${memory}\n` : "";

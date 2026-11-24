@@ -690,7 +690,9 @@ function describe(room, selfId) {
   return renderRoom({
     room: r,
     role,
-    others: actorsIn(room).filter((a) => a.id !== selfId).map((a) => a.name),
+    others: actorsIn(room)
+      .filter((a) => a.id !== selfId && (!a.hidden || ((state.actors.find((viewer) => viewer.id === selfId)?.detectUntil ?? 0) > state.tick)))
+      .map((a) => a.hidden ? `${a.name} (hidden)` : a.name),
     beasts: npcsIn(room).map((n) => n.name),
     objects: objectsHere,
     tick: state.tick,
@@ -828,6 +830,7 @@ function selfState(actor) {
         .filter((action) => !action.requires?.item || state.objects.some((object) => object.id === action.requires.item && object.holder === actor.id && !object.eaten))
         .filter((action) => !action.requires?.fact || Boolean(actor.memory?.facts?.[action.requires.fact]))
         .filter((action) => !action.requires?.guild || action.requires.guild === actor.guild)
+        .filter((action) => !action.requires?.actors || state.actors.filter((candidate) => candidate.room === actor.room && candidate.key).length >= action.requires.actors)
         .filter((action) => !action.requires?.rank || progressionAtLeast(actor.guildRank, action.requires.rank, state.guilds[actor.guild]?.ranks ?? []))
         .map((action) => ({ verb: action.verb, target: action.target }))
     : [];
@@ -859,6 +862,8 @@ function selfState(actor) {
     name: actor.name,
     level: actor.level ?? 1,
     xp: actor.xp ?? 0,
+    deaths: actor.deaths ?? 0,
+    hidden: Boolean(actor.hidden),
     next_xp: nextLevelXp(state.levels, actor.level ?? 1),
     hp: actor.hp ?? null,
     max_hp: actor.maxHp ?? null,
@@ -906,11 +911,13 @@ function selfState(actor) {
       name: room.name,
       safe: room.safe === true,
       zone: room.zone ?? null,
+      minLevel: room.minLevel ?? 0,
       details: Object.keys(room.details ?? {}),
       exits,
       objects: objectsHere,
       npcs: npcsHere,
-      actors: actor?.key ? state.actors.filter((candidate) => candidate.id !== actor.id && candidate.room === actor.room && candidate.key).map((candidate) => candidate.name) : [],
+      actors: actor?.key ? state.actors.filter((candidate) => candidate.id !== actor.id && candidate.room === actor.room && candidate.key
+        && (!candidate.hidden || (actor.detectUntil ?? 0) > state.tick)).map((candidate) => candidate.hidden ? `${candidate.name} (hidden)` : candidate.name) : [],
       actions: actionsHere,
     } : null,
   } : null;
@@ -1681,7 +1688,8 @@ async function handleCommand(id, line) {
 
   if (verb === "who" || verb === "awake" || verb === "online") {
     const online = state.actors
-      .filter((candidate) => candidate.key)
+      .filter((candidate) => candidate.key
+        && (!candidate.hidden || candidate.id === id || (actor.detectUntil ?? 0) > state.tick))
       .sort((a, b) => (b.level ?? 1) - (a.level ?? 1) || (b.xp ?? 0) - (a.xp ?? 0) || a.name.localeCompare(b.name));
     if (online.length === 0) return sendTo(id, "No one is online.\r\n");
     const lines = online.map((candidate) => {
@@ -1724,6 +1732,7 @@ async function handleCommand(id, line) {
       : "The shrine does not accept that word.\r\n");
   }
 
+  const visibleActors = () => actorsIn(actor.room).filter((candidate) => !candidate.hidden || (actor.detectUntil ?? 0) > state.tick);
   const findObject = (needle, where) => {
     const wanted = needle.toLowerCase();
     return state.objects.find((o) => where(o) && o.name.toLowerCase().includes(wanted));
@@ -1731,6 +1740,12 @@ async function handleCommand(id, line) {
 
   const named = resolve(VERB_TABLE, verb);
   const words = rest.join(" ");
+  const HIDE_SAFE = new Set(["look", "l", "examine", "x", "ex", "score", "sc", "inventory", "i", "inv", "equipment", "eq", "who", "wh", "map", "mp", "quests", "q", "spells", "sp", "battle", "bt", "standing", "reputation", "factions", "help", "h", "?", "world", "status", "hide"]);
+  if (actor.hidden && !HIDE_SAFE.has(verb)) {
+    actor.hidden = false;
+    actor.hiddenUntil = 0;
+    sendTo(id, "You step out of the shadows.\r\n");
+  }
   // The input allowance stops machine-gun commands; this stops a person or
   // agent flooding every room channel. It is per connection, not per name.
   const CHAT_VERBS = new Set(["say", "tell", "mail", "global", "guildchat", "report"]);
@@ -1765,6 +1780,12 @@ async function handleCommand(id, line) {
       const ranks = state.guilds[actor.guild]?.ranks ?? [];
       if (!actor.guild || !progressionAtLeast(actor.guildRank, roomAction.requires.rank, ranks)) {
         return sendTo(id, `You are not ranked for that.\r\n`);
+      }
+    }
+    if (roomAction.requires?.actors) {
+      const present = state.actors.filter((candidate) => candidate.room === actor.room && candidate.key).length;
+      if (present < roomAction.requires.actors) {
+        return sendTo(id, `That needs ${roomAction.requires.actors} people here; there ${present === 1 ? "is only one" : `are only ${present}`}.\r\n`);
       }
     }
     if (roomAction.requires?.spell && !(actor.spellbook ?? []).includes(roomAction.requires.spell)) {
@@ -2114,7 +2135,7 @@ async function handleCommand(id, line) {
     const messages = VERB_TABLE.verbs.attack.messages;
     if (ROOMS[actor.room]?.safe) return sendTo(id, `${messages.safe}\r\n`);
     const needle = words.toLowerCase();
-    const target = [...actorsIn(actor.room).filter((a) => a.id !== id), ...npcsIn(actor.room)]
+    const target = [...visibleActors().filter((a) => a.id !== id), ...npcsIn(actor.room)]
       .find((c) => c.name.toLowerCase().includes(needle) || c.name.toLowerCase().includes(`a ${needle}`));
     if (!target) return sendTo(id, `${render(messages.missing, { words })}\r\n`);
     // The reducer announces the attack on the next tick; sending here too
@@ -2234,11 +2255,28 @@ async function handleCommand(id, line) {
     return;
   }
 
+  if (named === "hide") {
+    const messages = VERB_TABLE.verbs.hide.messages;
+    const guild = state.guilds?.[actor.guild];
+    if (actor.guild !== "night-market" || !progressionAtLeast(actor.guildRank, "cutpurse", guild?.ranks ?? [])) {
+      return sendTo(id, `${messages.notGuild}\r\n`);
+    }
+    if ((state.engagements ?? []).some((entry) => entry.attackerId === id || entry.targetId === id)) {
+      return sendTo(id, `${messages.combat}\r\n`);
+    }
+    if (actor.hidden) return sendTo(id, `${messages.already}\r\n`);
+    actor.hidden = true;
+    actor.hiddenUntil = state.tick + 120;
+    recordSpan("world.hide", { "actor.id": id, "room.id": actor.room, "world.tick": state.tick }, 0);
+    return sendTo(id, `${messages.hidden}\r\n`);
+  }
+
   if (named === "flee") {
     const messages = VERB_TABLE.verbs.flee.messages;
     const engagement = (state.engagements ?? []).find((entry) => entry.attackerId === id || entry.targetId === id);
     if (!engagement) return sendTo(id, `${messages.noFight}\r\n`);
-    const exits = Object.entries(ROOMS[actor.room]?.exits ?? {});
+    const exits = Object.entries(ROOMS[actor.room]?.exits ?? {})
+      .filter(([, to]) => (ROOMS[to]?.minLevel ?? 0) <= (actor.level ?? 1));
     if (!exits.length) return sendTo(id, `${messages.noExit}\r\n`);
     const [dir, to] = exits[Math.floor(Math.random() * exits.length)];
     pending.push({ kind: "flee", actorId: id, dir, to });
@@ -2250,7 +2288,7 @@ async function handleCommand(id, line) {
     const messages = VERB_TABLE.verbs.consider.messages;
     const needle = words.toLowerCase();
     if (!needle) return sendTo(id, `${messages.missing}\r\n`);
-    const target = [...actorsIn(actor.room).filter((entry) => entry.id !== id), ...npcsIn(actor.room)]
+    const target = [...visibleActors().filter((entry) => entry.id !== id), ...npcsIn(actor.room)]
       .find((entry) => entry.name.toLowerCase().includes(needle) || entry.name.toLowerCase().includes(`a ${needle}`));
     if (!target) return sendTo(id, `${render(messages.none, { words: needle })}\r\n`);
     const hp = target.hp ?? null;
@@ -2823,7 +2861,8 @@ async function handleCommand(id, line) {
       return sendTo(id, `Your duel record: ${actor.duelWins ?? 0}W/${actor.duelLosses ?? 0}L, rating ${actor.duelRating ?? 1000}.\r\n${messages.noDuel}\r\n`);
     }
     if (!inRing) return sendTo(id, `${messages.notArena}\r\n`);
-    const target = findActor(action, (candidate) => candidate.room === actor.room && candidate.id !== id);
+    const target = findActor(action, (candidate) => candidate.room === actor.room && candidate.id !== id
+      && (!candidate.hidden || (actor.detectUntil ?? 0) > state.tick));
     if (!target) return sendTo(id, `${render(messages.missing, { words: action })}\r\n`);
     if (state.duels.some((duel) => [duel.challengerId, duel.targetId].includes(id) || [duel.challengerId, duel.targetId].includes(target.id))) {
       return sendTo(id, `${messages.busy}\r\n`);
@@ -3045,7 +3084,7 @@ async function handleCommand(id, line) {
     // it. A lookup that already filtered on the holder would supply the answer.
     const object = findObject(needle, (o) => (o.holder === id || o.room === actor.room) && !o.inside && !o.eaten);
     if (!object) return sendTo(id, `${render(messages.missing, { words: needle })}\r\n`);
-    const recipient = actorsIn(actor.room).find((a) => a.id !== id && a.name.toLowerCase().includes(target));
+    const recipient = visibleActors().find((a) => a.id !== id && a.name.toLowerCase().includes(target));
     if (!recipient) return sendTo(id, `${messages.nobody}\r\n`);
     const verdict = await admit({
       kind: 2,
@@ -3125,6 +3164,9 @@ async function handleCommand(id, line) {
     const found = (actor.found ?? []).includes(`${actor.room}:${dir}`);
     const target = room.exits[dir] ?? (found ? room.secretExits?.[dir] : undefined);
     if (!target) return sendTo(id, `You cannot go ${dir}.\r\n`);
+    if ((ROOMS[target]?.minLevel ?? 0) > (actor.level ?? 1)) {
+      return sendTo(id, `${ROOMS[target].name} requires level ${ROOMS[target].minLevel}.\r\n`);
+    }
     const started = Date.now();
     const verdict = await admit({ kind: 1, room: actor.room, origin: actor.room, destination: target });
     recordSpan("world.transition", {

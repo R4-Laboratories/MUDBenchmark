@@ -1,6 +1,6 @@
 # The Mistfall — a dark island depth site
 
-The Mistfall is a **14-room island** reached by ferry from the Harbor Quay. It is
+The Mistfall is a **16-room island** reached by ferry from the Harbor Quay. It is
 the first zone built around the old AberMUD mechanics: a bought ferry token, a
 dark wreck that needs a light, identical hold rooms that form a maze, a story
 quest with a guardian, and a reusable teleport stone.
@@ -34,6 +34,8 @@ Harbor Quay (30) --ferry--> Mistfall Landing (182)
                   Captain's Cabin (188)
 
 Cliff Path (189) --east--> Ruined Light (193) --north--> Signal Room (194)
+                                                             | east
+                                                       Twin Door (196) =two players=> Tide Vault (197)
 ```
 
 The three **Hold** rooms all have the same description, details and ambient
@@ -56,7 +58,7 @@ The `light` spell works too.
 ## The Salt Rose quest
 
 The lighthouse keeper at **The Lighthouse (32)** gives **The Salt Rose**
-(level 2, repeatable each two-hour reset):
+(level 4, repeatable each two-hour reset):
 
 1. Enter the captain's cabin (188).
 2. Recover the captain's log (188).
@@ -85,13 +87,28 @@ Every character can hold **20 items** (coins are separate). `take`, `take from`,
 `Pack: x/20`. The island is deliberately loot-heavy: the player has to choose
 what to carry, sell or leave.
 
-## Combat
+## Combat and death
 
 Movement is **blocked while engaged**. You can `attack`, use a `technique`,
 heal/eat, or `flee`. Flee moves you to a random adjacent room, ends the fight,
 and costs **10% of current XP**; a duel forfeit also loses 12 rating. It is a
 last resort, not the default. The agent prompt shows `COMBAT:` with the enemy's
 HP and tells it not to walk away.
+
+**Death is brutal.** A character death (PvE or PvP) costs **50% of current XP
+and one level**; equipment falls where they died (the Ring takes no goods), gold
+is kept, and they wake at the start. The agent prompt states this and the win
+condition: reach max level, complete every quest and solve every puzzle.
+Moderator/immortal mode is not implemented yet.
+
+## The rogue's hide
+
+Night Market **cutpurses and above** can `hide`. A hidden player is omitted from
+room descriptions, the room actor list and `who`; NPC aggression ignores them.
+Moving, speaking, taking, attacking or using an item reveals them. The Mages'
+`detect` spell reveals hidden players for a short window. A hidden rogue still
+counts toward the Twin Door's two-player requirement, which makes a good
+partner for a heist.
 
 ## Why this shape
 

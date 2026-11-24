@@ -839,6 +839,20 @@
         "actor": "You use %object.",
         "others": "%a uses %object."
       }
+    },
+    "hide": {
+      "aliases": [
+        "sneak",
+        "conceal"
+      ],
+      "argument": "none",
+      "messages": {
+        "hidden": "You slip into the shadows. Move or act and you will be seen.",
+        "already": "You are already hidden.",
+        "revealed": "You step out of the shadows.",
+        "notGuild": "Only a Night Market cutpurse can hide.",
+        "combat": "You cannot hide while fighting."
+      }
     }
   }
 }

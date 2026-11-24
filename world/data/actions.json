@@ -624,6 +624,29 @@
         "actor": "You board the return ferry.",
         "others": "%a boards the return ferry."
       }
+    },
+    {
+      "id": "push-twin-door",
+      "room": 196,
+      "verb": "push",
+      "target": "door",
+      "requires": {
+        "actors": 2
+      },
+      "effects": [
+        {
+          "kind": "revealExit",
+          "dir": "east"
+        },
+        {
+          "kind": "message",
+          "text": "The two handprints sink into the stone and the door grinds open."
+        }
+      ],
+      "messages": {
+        "actor": "You press the twin door with another pair of hands.",
+        "others": "%a and another press the twin door."
+      }
     }
   ]
 }

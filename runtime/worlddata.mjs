@@ -128,6 +128,7 @@ export function loadWorld({ mode = "single", path = DEFAULT_PATH } = {}) {
     }
     if (room.dark !== undefined && typeof room.dark !== "boolean") errors.push(`room ${id} has a non-boolean dark flag`);
     if (room.darkText !== undefined && typeof room.darkText !== "string") errors.push(`room ${id} has a non-string darkText`);
+    if (room.minLevel !== undefined && (!Number.isInteger(room.minLevel) || room.minLevel < 1)) errors.push(`room ${id} has an invalid minLevel`);
     rooms[numeric] = {
       name: room.name ?? `Room ${id}`,
       exits: room.exits ?? {},
@@ -138,6 +139,7 @@ export function loadWorld({ mode = "single", path = DEFAULT_PATH } = {}) {
       arena: room.arena === true,
       dark: room.dark === true,
       darkText: room.darkText ?? null,
+      minLevel: Number.isInteger(room.minLevel) ? room.minLevel : 0,
       details: room.details ?? {},
       secrets: room.secrets ?? {},
       ambient: room.ambient ?? [],
