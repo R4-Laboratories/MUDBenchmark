@@ -1839,6 +1839,12 @@
       "level": "some-true",
       "statement": "Live two-client evidence for v0.91.61. monk-a and monk-b (level 10) formed a party at the ossuary, descended to the monastery, took the kitchen key, unlocked the sacristy chest, took the abbey clapper and the ledger, and pulled the bell rope with the party; 235:south was revealed to both. They killed the drowned abbot (a mechanics fixture at 15 HP); monk-b received 190 shared XP and the [x] Defeat the drowned abbot credit. monk-a took the silver bell relic, returned to the bellkeeper and completed The Bell Below for 380 XP / 60 coins (30,760 XP and 60 coins total). The completion live test passes at 24 quests and 23 hidden ways. Gate passes at 239 rooms / 16 zones / 24 quests / 110 mobiles / 256 objects.",
       "authority": "local /tmp/monastery-live.mjs and /tmp/completion-live.mjs; tools/gate.mjs; 2026-11-24"
+    },
+    {
+      "id": "MB-303",
+      "level": "some-true",
+      "statement": "Production v0.91.61 serves The Flooded Monastery. /world reports 239 rooms / 16 zones / 24 quests / 110 mobiles / 256 objects; /api/free and /api/demo are 404, and /router.mjs and /llms.txt are 200; /llms.txt lists completion and the monastery rooms. The monastery is a 14-room level 8/9/10 story dungeon below the Grey Keep ossuary: keyed sacristy chest, abbey clapper, party bell, dark crypt, drowned abbot (110 HP / 6 damage / 4 armour), silver relic and the repeatable Bell Below quest (380 XP / 60 coins). Completion is now level 10 / 24 quests / 23 hidden ways. The quest table rejects collecting and delivering the same object. The Gate covers map, level/dark gates, key/chest, party bell, boss, quest guard and counts; the two-client live session used the key/chest/ledger/bell, shared the abbot kill and completed the quest. Main Gate 45491327597 green, publish 45492991758, release v0.91.61.",
+      "authority": "GitHub PR #77 merge 07499a8 2026-11-24; main Gate 45491327597; publish 45492991758; release v0.91.61; wick deploy, /world, /llms.txt, routes and /health; local /tmp/monastery-live.mjs and /tmp/completion-live.mjs; tools/gate.mjs"
     }
   ]
 }
