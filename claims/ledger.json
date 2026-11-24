@@ -1689,6 +1689,18 @@
       "level": "some-true",
       "statement": "Production v0.91.51 serves the free agent from a local Qwen2.5-3B-Instruct Q4_K_M model: llama-server on the server CPU, 127.0.0.1:8081 only, 20 of 32 threads, 8192 context, about 22 tokens/sec. /api/free reports configured true with model qwen2.5-3b-instruct and limits 100000 daily / 120 minute / 1000000 world-wide. owner.env is mode 600 and contains FREE_AI_KEY=local; the paid DeepSeek key is gone. mudbench-local-ai.service is active and enabled on boot; the GPU training job was not touched. A clean headless production session as amber-fox-33 selected Free fast (operator) - qwen2.5-3b-instruct, walked north to The Corridor, opened the oaken chest, and took a copper coin, with no Brain error or mid-session quota stop. World 181 rooms / 15 zones / 20 quests / 90 mobiles / 214 objects. Main Gate 45275286702 green, publish 45276719458, release v0.91.51.",
       "authority": "GitHub PR #67 merge 0d49ae7 2026-11-23; main Gate 45275286702; publish 45276719458; release v0.91.51; wick deploy, /api/free, /health, systemctl; local /tmp/prod-local-agent-final.mjs; /tmp/local-ai-game-test-3b.mjs"
+    },
+    {
+      "id": "MB-278",
+      "level": "build",
+      "statement": "v0.91.52 removes the server-hosted local Qwen2.5-3B model and the operator/Gemini proxy (/api/free, /api/gemini, FREE_AI_* and GEMINI_* env, demo tokens), and removes docs/LOCAL-AI.md and deploy/mudbench-local-ai.service. The free card now asks the player for a provider key: Groq is the free option (openai/gpt-oss-20b, 30 RPM/1,000 RPD), with Anthropic, OpenAI, DeepSeek (deepseek-flash) and any OpenAI-compatible endpoint. Keys stay in the browser; the server holds none and runs no model. The AI harness imports /router.mjs and computes its R4 context locally (affordances, objective, world, resources, persistence, social, recall) instead of calling the server R4 sidecar. Local Ollama and Prime Router remain no-key options. Applies to 181 rooms / 15 zones / 20 quests / 90 mobiles / 214 objects.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-279",
+      "level": "some-true",
+      "statement": "Local browser evidence for v0.91.52: the provider list is Groq, Ollama, OpenAI, Anthropic, DeepSeek, custom and Prime Router, with no operator/Gemini entry; /router.mjs is served 200, /api/free and /api/demo are 404. A clean headless Chrome session selected the custom provider with a mock endpoint, started the agent with no server key, and the model request body contained the routed R4 context (## affordances, ## objective, ## world, ## persistence, ## social). The agent moved north, east and reached The Vault, with loop guards forcing moves and no Brain error. The local model service was stopped/disabled, ~3.4 GB of model/build files were removed, owner.env contains only MUDBENCH_OWNER_TOKEN, and the GPU training job was untouched.",
+      "authority": "local /tmp/byok-browser-test.mjs; wick systemctl, owner.env names, disk and process checks; tools/gate.mjs; 2026-11-23"
     }
   ]
 }

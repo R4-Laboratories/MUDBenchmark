@@ -1,46 +1,44 @@
 # Model providers
 
-The AI panel talks to eight presets through one browser-side registry. The
-game server never sees a user's provider key. The two server-keyed presets are
-the exception: the operator key stays on the server and the browser receives
-only a short-lived token and a per-account quota.
+The AI panel talks to seven presets through one browser-side registry. Every
+key is supplied by the player and stays in the browser; the game server never
+sees a provider key and does not host or proxy a model.
 
 ## What you can select
 
 | Preset | Protocol | Key |
 | --- | --- | --- |
 | Groq (free key, fast) | OpenAI chat completions | required (free) |
-| Free fast (operator) | server proxy to Groq/Gemini/OpenAI-compatible | none |
-| Ollama (local) | OpenAI-compatible `/v1` | none |
-| OpenAI | OpenAI chat completions | required |
 | Anthropic (Claude) | Anthropic messages | required |
+| OpenAI | OpenAI chat completions | required |
+| DeepSeek | OpenAI chat completions | required |
 | OpenAI-compatible (custom) | OpenAI chat completions | **optional** |
-| Gemini demo (Prism only) | server proxy to Gemini's OpenAI endpoint | none |
+| Ollama (local) | OpenAI-compatible `/v1` | none |
 | Prime Router | Prime Router `/api/chat` | none |
 
 The custom preset is the path for OpenRouter, Groq, Together, LiteLLM, a
 company gateway, LM Studio, vLLM, or any other OpenAI-compatible endpoint. The
 key field is shown; leave it empty if the endpoint does not need one.
 
-**Groq** is the fast free path for a new browser. Create a free key at
-`console.groq.com/keys` (no card) and paste it once; the 8B instant model is
-quick, and the free tier is about 30 requests per minute and 1,000 per day,
-enough for a session but not continuous all-day play. The key stays in this browser and goes
-only to `api.groq.com`. The game presents the **Start a fast free agent** card;
-if the browser has no Prism id, it creates one and registers it first, so there
-is no sign-up form. The full provider list stays behind **Use another model**,
-and the five persona presets change only the system goal, not the provider.
+**Groq** is the free path for a new browser. Create a free key at
+`console.groq.com/keys` (no card) and paste it once; the default model is
+`openai/gpt-oss-20b`, about 30 requests per minute and 1,000 per day. That is
+enough for a session but not continuous all-day play. The key stays in this
+browser and goes only to `api.groq.com`. The free card leads with Groq; if the
+browser has no Prism id, it creates one and registers it first, so there is no
+form. The full provider list stays behind **Use another model**, and the five
+persona presets change only the system goal, not the provider.
 
-If the operator configures a server-side key, the **Free fast (operator)**
-preset appears and the free card starts with no key at all. The server holds the
-key and enforces a per-Prism daily/minute quota; the browser receives only a
-short-lived token. This is the one-click path for players. The operator can use
-Groq (the default), Gemini, or any OpenAI-compatible endpoint.
+**Anthropic, OpenAI, DeepSeek and custom** use the player's own key. DeepSeek is
+the low-cost paid option (`deepseek-flash`, about $0.15/M input and $0.60/M
+output off-peak, with `deepseek-v4-pro` for harder turns). The custom preset is
+the path for OpenRouter, Together, LiteLLM, a company gateway, LM Studio, vLLM,
+or any other OpenAI-compatible endpoint; leave the key empty if it needs none.
 
 Pollinations is no longer offered. Its anonymous tier now allows one text reply
 every 45 seconds per IP, which is too slow for a playable agent and cannot be
-raised without a key. A local Ollama model remains the private, no-account
-option; user-supplied keys and custom endpoints are unchanged.
+raised without a key. The local Ollama and Prime Router presets remain the
+private, no-account options.
 
 An Anthropic-compatible gateway uses the **Anthropic (Claude)** preset with its
 base URL and key; the client sends `x-api-key` and the direct-browser header.
@@ -123,71 +121,40 @@ Direct prompt also:
 The public watch page shows `thinking`, then `live`/`timeout`; it never shows
 the thought.
 
-## Hosted/free defaults
+## Free and paid providers
 
-**Groq direct (free key).** The browser sends the prompt to
+**Groq (free key).** The browser sends the prompt to
 `https://api.groq.com/openai/v1/chat/completions` with the player's key. The
-default model is `llama-3.1-8b-instant`. The key is stored per origin in this
-browser and never reaches the game server. The provider hint links the free key
-page and states the tier.
+default model is `openai/gpt-oss-20b`; the free tier is about 30 requests per
+minute and 1,000 per day. The key is stored per origin in this browser and
+never reaches the game server. The provider hint links the free key page and
+states the tier.
 
-**Operator fast model (server key).** Set `GROQ_API_KEY` (or `FREE_AI_KEY`) on
-the game server. The defaults are:
+**DeepSeek (paid key).** The browser sends the prompt to
+`https://api.deepseek.com/v1/chat/completions` with the player's key. The
+default is `deepseek-flash`; edit the model field to `deepseek-v4-pro` for
+harder turns. It is a low-cost paid API, not a free tier.
 
-| Variable | Default | Meaning |
-| --- | --- | --- |
-| `GROQ_API_KEY` / `FREE_AI_KEY` | empty | server-side key; never sent to the browser |
-| `FREE_AI_BASE` | `https://api.groq.com/openai/v1` | any OpenAI-compatible base |
-| `FREE_AI_MODEL` | `llama-3.1-8b-instant` | the model the proxy uses |
-| `FREE_AI_DAILY_TURNS` | `5000` | per-Prism daily turns |
-| `FREE_AI_MINUTE_TURNS` | `25` | per-Prism turns per minute |
-| `FREE_AI_GLOBAL_DAILY` | `14000` | world-wide daily turns |
+**Anthropic, OpenAI and custom.** Anthropic uses its messages endpoint with the
+direct-browser header; OpenAI and custom endpoints use OpenAI chat completions.
+The key is optional only for a custom endpoint that does not need one.
 
-The browser calls `/api/free/v1/chat/completions` with the same short-lived
-`x-demo-token` used by the Gemini demo. The server checks the token and the
-quota, then forwards the request with the operator key. `/api/free` and the
-`free` field on `/api/demo` report only `configured`, model and limits. The
-proxy passes a `429` and `Retry-After` through to the client; the client waits
-and retries up to three times before pausing.
+**No server-hosted model.** The game server does not run a model, hold a shared
+key, or proxy provider calls. The operator fast-model and Gemini-demo routes
+(`/api/free`, `/api/gemini`, the `FREE_AI_*` and `GEMINI_*` env vars) were
+removed in v0.91.52. There is no keyless public text API with both unlimited
+volume and low latency; a player key is required for continuous fast play.
 
-**Current production** runs a local **Qwen2.5-3B-Instruct Q4_K_M** model with
-`llama.cpp` on the server's CPU. `FREE_AI_BASE=http://127.0.0.1:8081/v1`,
-`FREE_AI_MODEL=qwen2.5-3b-instruct`, and the quotas are effectively unlimited
-(`FREE_AI_DAILY_TURNS=100000`, `FREE_AI_MINUTE_TURNS=120`,
-`FREE_AI_GLOBAL_DAILY=1000000`) so a session is not cut off mid-run. The key is
-the literal string `local`; `llama-server` binds to `127.0.0.1` only, and the
-game proxy is the public path. No paid API key is used. The free agent starts
-one-click as **Free fast (operator) · qwen2.5-3b-instruct**. The install and
-tuning steps are in `docs/LOCAL-AI.md`.
+**R4 in the browser.** Each AI harness imports `/router.mjs` and runs the
+`assemble` router locally. It builds the affordances, objective, world,
+resources, persistence, social and recall layers and injects the routed context
+into the provider prompt. The server's optional R4 sidecar remains available to
+external agents and tools, but the browser AI does not call it. The server never
+sees the provider key or the AI's context.
 
-The operator may also enable the **Gemini demo** by setting `GEMINI_API_KEY`
-(and optionally `GEMINI_MODEL`, `GEMINI_BASE`, `GEMINI_DAILY_TURNS`,
-`GEMINI_MINUTE_TURNS`, `GEMINI_GLOBAL_DAILY`) on the server. When configured:
-
-1. The browser shows **Gemini demo (Prism only)**. It never sees the key.
-2. An authenticated game socket asks for a short-lived demo token.
-3. The proxy checks the token and per-Prism daily/minute limits, then calls
-   Gemini with `reasoning_effort: none` (or `low` on deliberate turns).
-4. `/api/demo` reports only `configured`, model and limits.
-
-Google's free tier is real but variable: limits are per project (RPM, TPM,
-RPD), reset at midnight Pacific, and free-tier data may be used to improve
-products. **Free tier does not mean keyless**: Google requires an API key to
-attribute quota and stop abuse, and there is no public Gemini endpoint that
-accepts anonymous requests. The operator key is the missing input; the code
-path is already built and dormant until `GEMINI_API_KEY` is set.
-
-The Gemini demo remains a separate, server-keyed, quota-limited path. The
-operator fast model is the recommended one-click path for players; Groq direct
-is the recommended path when each player has their own free key. A local model
-remains the private, no-account option. Other options are unchanged:
-user-supplied keys, a local Ollama/LM Studio model, or a custom
-OpenAI-compatible endpoint.
-
-The UI discloses the Groq free-tier cadence in the provider hint and the
-operator/Gemini limits before a run. A key is never required just to watch an
-AI play. There is no keyless public text API with both unlimited volume and
-low latency; a key (player or operator) is required for continuous fast play.
+The UI discloses the Groq free-tier cadence and each provider hint before a run.
+A key is never required just to watch an AI play. The local Ollama/Prime Router
+options need no key; every hosted provider uses the player's key.
 
 ## Errors
 
@@ -195,16 +162,12 @@ A failed test or turn names the layer that failed:
 
 - `401/403` — the key was refused for this host;
 - `404` — no chat endpoint at the normalized URL;
-- `429` — rate limit; the AI honors `Retry-After` and retries up to three times
-  before pausing. Check the Groq minute/day quota or the operator quota;
+- `429` — provider rate limit; the AI honors `Retry-After` and retries up to
+  three times before pausing. Check the Groq minute/day quota or the OpenAI,
+  Anthropic or DeepSeek quota;
 - `402` — payment or free-tier exhaustion from a provider; switch provider or
   add credit;
 - `TypeError: Failed to fetch` — usually CORS, a wrong URL, an offline host, or
   a local-network permission, not necessarily a bad key;
 - timeout — the model did not answer inside the deadline; direct mode falls
-  back to `look` twice, then pauses;
-- `503` on the operator fast model or Gemini demo — the operator has not
-  configured a key;
-- `429` on the operator fast model or Gemini demo — the per-account or
-  world-wide quota is reached; wait for the minute/day reset or use another
-  provider.
+  back to `look` twice, then pauses.

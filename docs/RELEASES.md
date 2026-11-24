@@ -498,7 +498,18 @@ Rehearsed 2026-11-16:
   short legal command from REPLY when a small model omits COMMAND. The Groq
   preset moves to `openai/gpt-oss-20b` (about 30 requests/minute, 1,000/day).
   World unchanged: 181 rooms / 15 zones / 20 quests / 90 mobiles / 214 objects.
-  The install is `docs/LOCAL-AI.md`; MB-276;
+  MB-276. The local model and its docs/unit were removed in v0.91.52;
+- v0.91.52 (bring your own key) removes the server-hosted local 3B model and
+  the operator/Gemini proxy. The free card asks for a provider key; **Groq** is
+  the free option (`openai/gpt-oss-20b`, about 30 requests/minute and 1,000/day).
+  **Anthropic**, **OpenAI**, **DeepSeek** and any OpenAI-compatible endpoint also
+  work. Keys stay in the browser; the server holds no provider key and does not
+  run or proxy a model. The AI harness computes its own R4/hypersphere context
+  in the browser with `router.mjs` (affordances, objective, world, resources,
+  persistence, social and recall), instead of calling the server R4 sidecar.
+  Adds the DeepSeek preset, removes the local model service/files and the
+  operator env. World unchanged: 181 rooms / 15 zones / 20 quests / 90 mobiles /
+  214 objects (MB-278/279);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);
