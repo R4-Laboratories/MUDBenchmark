@@ -539,6 +539,14 @@ Rehearsed 2026-11-16:
   speaking, opened the Twin Door with one hidden partner and took the crown.
   Gate covers the death penalty, level gates, twin door, hide visibility and
   prompt (MB-286/287/288);
+- v0.91.60 (zone consolidation) folds three small zone ids into their parents
+  without moving a room: Harbor (4) into Town (14), the Undercroft (5) into the
+  Lantern Quarter (11), and the Eclipse Court (6) into the Moonlit Reach (12).
+  NPC wander zones follow the merge, so the docks, sewer and eclipse rooms stay
+  populated. The world is now 225 rooms / **15 zones** / 23 quests / 105 mobiles
+  / 248 objects; no room, quest, action, item or mobile changed. The Gate checks
+  the 15-zone map, the room-to-zone assignment, the folded ids are gone and every
+  prior check (MB-299/300);
 - v0.91.59 (The Drowned Foundry) adds a 12-room level 9/10 party dungeon
   below the Deepdelve pool. A party **wheel** opens the drowned stair; the
   **valve**, **sluice**, **crane** and **bellows** each need two party members

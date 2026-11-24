@@ -185,15 +185,15 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 22 | The Crypt Hall | wilds | no | up 21, east 23 |
 | 23 | The Ossuary | wilds | no | west 22 |
 | 24 | The Guild Hall | town | yes | south 10, up 115, east 116 |
-| 25 | The Undercroft | undercroft | no | up 5, east 26, south 27 |
-| 26 | The Sewer Junction | undercroft | no | west 25, east 28 |
-| 27 | The Flooded Passage | undercroft | no | north 25, east 29 |
-| 28 | The Rat Warren | undercroft | no | west 26, north 29 |
-| 29 | The Smuggler's Cache | undercroft | no | west 27, south 28 |
-| 30 | The Harbor Quay | harbor | no | north 19, east 31 |
-| 31 | The Docks | harbor | no | west 30, north 32, down 33 |
-| 32 | The Lighthouse | harbor | no | south 31, down 81 |
-| 33 | The Ring | harbor | no | up 31 |
+| 25 | The Undercroft | lantern | no | up 5, east 26, south 27 |
+| 26 | The Sewer Junction | lantern | no | west 25, east 28 |
+| 27 | The Flooded Passage | lantern | no | north 25, east 29 |
+| 28 | The Rat Warren | lantern | no | west 26, north 29 |
+| 29 | The Smuggler's Cache | lantern | no | west 27, south 28 |
+| 30 | The Harbor Quay | town | no | north 19, east 31 |
+| 31 | The Docks | town | no | west 30, north 32, down 33 |
+| 32 | The Lighthouse | town | no | south 31, down 81 |
+| 33 | The Ring | town | no | up 31 |
 | 34 | The Mages' Guild | arcanum | yes | down 1, up 162 |
 | 35 | The Lantern Stair | lantern | yes | down 8, north 36 |
 | 36 | The Arcade of Sigils | lantern | yes | south 35, east 37, west 38, north 39 |
@@ -252,12 +252,12 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 89 | The Moonwell | moon | no | west 87, south 88, east 90 |
 | 90 | The Hunter's Camp | moon | no | west 89, north 91 |
 | 91 | The Moon Throne | moon | no | south 90, up 92 |
-| 92 | The Eclipse Stair | eclipse | yes | down 91, north 93 |
-| 93 | The Starless Hall | eclipse | no | south 92, east 94, west 95 |
-| 94 | The Sundial Court | eclipse | no | west 93, north 96 |
-| 95 | The Mirror Vault | eclipse | no | east 93 |
-| 96 | The Throne of Ash | eclipse | no | south 94, up 97 |
-| 97 | The Dawn Gate | eclipse | yes | down 96 |
+| 92 | The Eclipse Stair | moon | yes | down 91, north 93 |
+| 93 | The Starless Hall | moon | no | south 92, east 94, west 95 |
+| 94 | The Sundial Court | moon | no | west 93, north 96 |
+| 95 | The Mirror Vault | moon | no | east 93 |
+| 96 | The Throne of Ash | moon | no | south 94, up 97 |
+| 97 | The Dawn Gate | moon | yes | down 96 |
 | 98 | The Memory Garden | garden | yes | west 6, east 99, north 100 |
 | 99 | The Rose Walk | garden | yes | west 98 |
 | 100 | The Rememberer's Bench | garden | yes | south 98 |

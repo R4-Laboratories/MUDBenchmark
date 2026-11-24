@@ -1815,6 +1815,12 @@
       "level": "some-true",
       "statement": "Production v0.91.59 serves The Drowned Foundry. /world reports 225 rooms / 18 zones / 23 quests / 105 mobiles / 248 objects; /api/free and /api/demo are 404, and /router.mjs and /llms.txt are 200; /llms.txt lists completion and the foundry rooms. The foundry is a 12-room level 9/10 party dungeon below the Deepdelve pool: party wheel/valve/sluice/crane/bellows, a Night Market valve shortcut, eight dark rooms, two lanterns, foundry gear, five mobiles and a 120 HP / 7 damage / 5 armour master with shared kill credit. The repeatable Foundry quest pays 420 XP / 70 coins; five hidden ways bring completion to 23 quests and 22 hidden ways. The default level table is aligned to the ten-level cap. The Gate covers the map, level/dark gates, actions, guild/rank enforcement, quest and counts; the two-client live session opened every party way for both members, shared the master's kill and completed the quest. Main Gate 45454049661 green, publish 45455491310, release v0.91.59.",
       "authority": "GitHub PR #75 merge 9eb14f0 2026-11-24; main Gate 45454049661; publish 45455491310; release v0.91.59; wick deploy, /world, /llms.txt, routes and /health; local /tmp/foundry-live.mjs and /tmp/completion-live.mjs; tools/gate.mjs"
+    },
+    {
+      "id": "MB-299",
+      "level": "build",
+      "statement": "v0.91.60 consolidates the small zone ids without moving content. Harbor (rooms 30-33) joins Town (14 rooms); the Undercroft (25-29) joins the Lantern Quarter (11 rooms); the Eclipse Court (92-97) joins the Moonlit Reach (12 rooms). The harbor, undercroft and eclipse zone ids are removed, NPC wander zones for the dockhand/lighthouse/ring keepers, sewer rat/smuggler/Night Market broker and eclipse herald/star hound/sundial knight/regent are updated to town/lantern/moon, and every room still belongs to exactly one zone. No room, exit, quest, action, item or mobile changed; the world is 225 rooms / 15 zones / 23 quests / 105 mobiles / 248 objects. Salt Caves stays a five-room faction/event site and the Temple stays the seven-room start district. Gate checks the 15-zone map, the three parent expansions, the removed ids, full room coverage and every prior check.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }
