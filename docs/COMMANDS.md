@@ -51,6 +51,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `offer` | `sacrifice` | object |
 | `open` | `op` | object |
 | `overview` | `ov` | none |
+| `party` | `group` | [who|invite <name>|accept|decline|leave|kick <name>|disband] |
 | `put` | `insert`, `pt` | object in object |
 | `quest` | — | subcommand |
 | `quests` | `journal`, `q` | none |
@@ -152,6 +153,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `guild-dawn` | The Dawn Archive | 10 | Reach the Dawn Gate; Carry the dawn crown | 500 xp |
 | `guild-trial` | The Archmage's Trial | 10 | Defeat the eclipse regent; Deliver the regent's sigil to the archmage | 300 xp |
 | `salt-rose` | The Salt Rose | 4 | Enter the captain's cabin; Recover the captain's log; Defeat the tide guardian; Bring the tide-stone to the lighthouse keeper | 180 xp |
+| `deepdelve` | The Deepdelve | 6 | Reach the surveyor's camp; Recover the surveyor's notes; Defeat the mine guardian; Bring the sealed ore to the mine captain | 320 xp |
 
 ## Rooms
 
@@ -173,7 +175,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 14 | The West Guest Room | town | yes | east 12 |
 | 15 | The Forest Edge | wilds | no | north 117, east 18, south 19 |
 | 16 | The Old Well | wilds | no | west 11 |
-| 17 | The Graveyard | wilds | no | east 11, south 21 |
+| 17 | The Graveyard | wilds | no | east 11, south 21, down 213, west 198 |
 | 18 | The Deep Forest | wilds | no | west 15, south 20, east 86 |
 | 19 | The Riverbank | wilds | no | north 15, east 20, south 30 |
 | 20 | The Abandoned Mill | wilds | no | west 19, north 18, east 71 |
@@ -354,4 +356,20 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 195 | The Grave Reef | mistfall | no | west 192 |
 | 196 | The Twin Door | mistfall | no | west 194 |
 | 197 | The Tide Vault | mistfall | no | west 196 |
+| 198 | The Old Mine Head | deepdelve | no | east 17, down 199 |
+| 199 | The Cage Landing | deepdelve | no | up 198, west 200, down 201 |
+| 200 | The Winch Room | deepdelve | no | east 199 |
+| 201 | The Flooded Shaft | deepdelve | no | up 199 |
+| 202 | The Lower Tunnel | deepdelve | no | up 200, west 201, east 203 |
+| 203 | The Lower Tunnel | deepdelve | no | west 202, south 204 |
+| 204 | The Ore Face | deepdelve | no | north 203, east 205 |
+| 205 | The Surveyor's Camp | deepdelve | no | west 204, east 206 |
+| 206 | The Gas Pocket | deepdelve | no | west 205, east 207 |
+| 207 | The Sealed Seam | deepdelve | no | west 206 |
+| 208 | The Sealed Vault | deepdelve | no | west 207 |
+| 209 | The Deep Gallery | deepdelve | no | up 204, east 210 |
+| 210 | The Guardian's Chamber | deepdelve | no | west 209, east 211 |
+| 211 | The Foreman's Office | deepdelve | no | west 210, down 212 |
+| 212 | The Underground Pool | deepdelve | no | up 211 |
+| 213 | The Old Shaft | deepdelve | no | west 212, up 17 |
 

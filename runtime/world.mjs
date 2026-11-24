@@ -189,6 +189,46 @@ function tickStatuses(next, events) {
   }
 }
 
+const GAS_PERIOD = 24;
+const GAS_CANARY_TICKS = 5;
+
+function tickGas(next, rooms, events) {
+  if (next.tick % GAS_PERIOD !== 0) return;
+  for (const actor of next.actors) {
+    if (!rooms[actor.room]?.gas) continue;
+    const canary = next.objects.find((object) => (object.flags ?? []).includes("canary") && object.holder === actor.id && !object.eaten);
+    if (!canary) {
+      actor.gasUntil = 0;
+      const current = actor.hp ?? 0;
+      const damage = Math.min(2, Math.max(0, current - 1));
+      if (damage > 0) {
+        actor.hp = current - damage;
+        events.push({ onlyId: actor.id, text: `The gas burns your throat (-${damage} hp).\r\n` });
+        events.push({ room: actor.room, text: `${actor.name} coughs in the poisoned air.`, exceptId: actor.id });
+      }
+      continue;
+    }
+    if (!actor.gasUntil) {
+      actor.gasUntil = next.tick + GAS_PERIOD * GAS_CANARY_TICKS;
+      events.push({ onlyId: actor.id, text: "The canary cries out. The air is poison; you have half a minute.\r\n" });
+      continue;
+    }
+    if (next.tick >= actor.gasUntil) {
+      canary.eaten = true;
+      canary.holder = null;
+      canary.room = null;
+      canary.inside = null;
+      canary.worn = false;
+      actor.gasUntil = 0;
+      events.push({ onlyId: actor.id, text: "The canary falls silent and dies. The gas burns; get out now.\r\n" });
+      continue;
+    }
+    if (actor.gasUntil - next.tick <= GAS_PERIOD) {
+      events.push({ onlyId: actor.id, text: "The canary is gasping. Leave the gas pocket.\r\n" });
+    }
+  }
+}
+
 function applySpell(state, actor, spell, target, events) {
   const focus = weaponDamageOf(weaponOf(actor, state.objects));
   const power = spellPower(actor, focus);
@@ -202,7 +242,8 @@ function applySpell(state, actor, spell, target, events) {
       target.dead = true;
       target.hp = 0;
       events.push({ room: actor.room, text: `${target.name} falls.` });
-      awardXp(state, actor, target.xp ?? spell.xp ?? 0, events);
+      if (state.npcs.includes(target)) creditNpcKill(state, actor, target, events, spell.xp ?? 0);
+      else awardXp(state, actor, target.xp ?? spell.xp ?? 0, events);
     }
   } else if (spell.effect === "heal") {
     const amount = spell.heal + Math.floor((actor.level ?? 1) / 2) + Math.floor(focus / 2);
@@ -226,6 +267,29 @@ function applySpell(state, actor, spell, target, events) {
     events.push({ onlyId: actor.id, text: "You read the room for what it is hiding.\r\n" });
   }
   events.push({ onlyId: actor.id, text: `You cast ${spell.name}.\r\n` });
+}
+
+const MAX_PARTY = 6;
+
+function purgeParty(state, actorId) {
+  for (const party of [...(state.parties ?? [])]) {
+    const member = (party.members ?? []).includes(actorId);
+    const invited = (party.invites ?? []).includes(actorId);
+    if (!member && !invited) continue;
+    party.members = (party.members ?? []).filter((id) => id !== actorId);
+    party.invites = (party.invites ?? []).filter((id) => id !== actorId);
+    if (!party.members.length) {
+      state.parties = state.parties.filter((entry) => entry !== party);
+    } else if (party.leaderId === actorId) {
+      party.leaderId = party.members[0];
+    }
+  }
+}
+
+function leaveParty(state, actor) {
+  if (!actor) return;
+  actor.party = null;
+  purgeParty(state, actor.id);
 }
 
 function advanceQuests(state, actor, event, events) {
@@ -275,6 +339,24 @@ function advanceQuests(state, actor, event, events) {
   if (changed) actor.quests = { active, completed: current.completed };
 }
 
+function creditNpcKill(state, attacker, target, events, fallbackXp = 0) {
+  if (!state.actors.includes(attacker)) return;
+  const xp = target.xp ?? Math.max(1, fallbackXp);
+  awardXp(state, attacker, xp, events);
+  advanceQuests(state, attacker, { kind: "kill", npc: target.id }, events);
+  const party = (state.parties ?? []).find((entry) => entry.id === attacker.party);
+  if (!party) return;
+  for (const memberId of party.members) {
+    if (memberId === attacker.id) continue;
+    const member = state.actors.find((candidate) => candidate.id === memberId);
+    if (!member || member.room !== attacker.room) continue;
+    const share = Math.max(1, Math.floor(xp * 0.5));
+    awardXp(state, member, share, events);
+    advanceQuests(state, member, { kind: "kill", npc: target.id }, events);
+    events.push({ onlyId: member.id, text: `Your party shares ${share} experience.\r\n` });
+  }
+}
+
 const DEFAULT_CLIMATE = {
   dayLength: 7200,
   weatherPeriod: 2400,
@@ -303,6 +385,7 @@ export function initialState(rooms, npcs = [], objects = [], start = 1, climate 
     quests,
     guilds: {},
     duels: [],
+    parties: [],
     mail: [],
     engagements: [],
     npcs: npcs
@@ -367,6 +450,7 @@ export function digestState(state) {
       vault: [...(guild.vault ?? [])],
     }])),
     duels: (state.duels ?? []).map((duel) => ({ ...duel })),
+    parties: (state.parties ?? []).map((party) => ({ ...party, members: [...(party.members ?? [])], invites: [...(party.invites ?? [])] })),
     mail: (state.mail ?? []).map((letter) => ({ ...letter })),
     engagements: (state.engagements ?? []).map((e) => ({ ...e })),
     objects: [...state.objects].sort((a, b) => a.id.localeCompare(b.id)),
@@ -539,6 +623,7 @@ export function upgradeState(saved, base) {
       vault: Array.isArray(guild.vault) ? [...guild.vault] : [],
     }])),
     duels: [],
+    parties: [],
     mail: Array.isArray(saved.mail) ? saved.mail : [],
     pulses,
     npcs,
@@ -642,6 +727,7 @@ export function step({ state, rooms, intents, actions = [] }) {
       invites: [...(guild.invites ?? [])],
     }])),
     duels: (state.duels ?? []).map((duel) => ({ ...duel })),
+    parties: (state.parties ?? []).map((party) => ({ ...party, members: [...(party.members ?? [])], invites: [...(party.invites ?? [])] })),
     mail: (state.mail ?? []).map((letter) => ({ ...letter })),
     engagements: (state.engagements ?? []).map((e) => ({ ...e })),
     npcs: state.npcs.map((n) => ({ ...n, clock: { ...n.clock }, effects: (n.effects ?? []).map((effect) => ({ ...effect })) })),
@@ -696,11 +782,26 @@ export function step({ state, rooms, intents, actions = [] }) {
       if (action.requires?.spell && !(actor.spellbook ?? []).includes(action.requires.spell)) continue;
       if (action.requires?.item && !next.objects.some((object) => object.id === action.requires.item && object.holder === actor.id && !object.eaten)) continue;
       if (action.requires?.fact && !actor.memory?.facts?.[action.requires.fact]) continue;
+      if (action.requires?.actors && next.actors.filter((candidate) => candidate.room === action.room).length < action.requires.actors) continue;
+      const actionParty = action.requires?.party ? next.parties.find((entry) => entry.id === actor.party) : null;
+      if (action.requires?.party) {
+        const present = actionParty ? actionParty.members.filter((id) => next.actors.some((candidate) => candidate.id === id && candidate.room === action.room)).length : 0;
+        if (!actionParty || present < action.requires.party) continue;
+      }
       for (const effect of action.effects ?? []) {
         if (effect.kind === "revealExit") {
-          const found = new Set(actor.found ?? []);
-          found.add(`${action.room}:${effect.dir}`);
-          actor.found = [...found];
+          const opened = [actor];
+          if (actionParty) {
+            for (const memberId of actionParty.members) {
+              const member = find(memberId);
+              if (member && member.room === action.room && member.id !== actor.id) opened.push(member);
+            }
+          }
+          for (const viewer of opened) {
+            const found = new Set(viewer.found ?? []);
+            found.add(`${action.room}:${effect.dir}`);
+            viewer.found = [...found];
+          }
         } else if (effect.kind === "open" || effect.kind === "close") {
           const object = next.objects.find((entry) => entry.id === effect.object);
           if (object) object.open = effect.kind === "open";
@@ -1289,6 +1390,9 @@ export function step({ state, rooms, intents, actions = [] }) {
       actor.level = known.level ?? 1;
       actor.xp = known.xp ?? 0;
       actor.deaths = known.deaths ?? 0;
+      purgeParty(next, actor.id);
+      actor.party = null;
+      actor.gasUntil = 0;
       actor.sacrificeCycle = known.sacrificeCycle ?? 0;
       actor.sacrificeXp = known.sacrificeXp ?? 0;
       actor.maxHp = maxHpForLevel(actor.level);
@@ -1501,9 +1605,105 @@ export function step({ state, rooms, intents, actions = [] }) {
       }
     }
 
+    if (intent.kind === "partyInvite" || intent.kind === "partyAccept" || intent.kind === "partyDecline" || intent.kind === "partyLeave" || intent.kind === "partyKick" || intent.kind === "partyDisband") {
+      const actor = find(intent.actorId);
+      if (!actor) continue;
+      if (intent.kind === "partyInvite") {
+        const target = find(intent.targetId);
+        if (!target || target.id === actor.id) continue;
+        let party = next.parties.find((entry) => entry.id === actor.party);
+        if (!party) {
+          party = { id: `party-${next.tick}-${next.parties.length}`, leaderId: actor.id, members: [actor.id], invites: [], created: next.tick };
+          next.parties.push(party);
+          actor.party = party.id;
+        }
+        if (party.members.includes(target.id)) {
+          events.push({ onlyId: actor.id, text: `${target.name} is already in your party.\r\n` });
+          continue;
+        }
+        if (party.members.length >= MAX_PARTY) {
+          events.push({ onlyId: actor.id, text: `Your party is full (${MAX_PARTY}).\r\n` });
+          continue;
+        }
+        if (!party.members.includes(actor.id)) party.members.push(actor.id);
+        if (!party.invites.includes(target.id)) party.invites.push(target.id);
+        events.push({ onlyId: target.id, text: `${actor.name} invites you to a party. Type party accept, or party decline.\r\n` });
+        events.push({ onlyId: actor.id, text: `You invite ${target.name} to your party.\r\n` });
+        continue;
+      }
+      if (intent.kind === "partyAccept") {
+        const party = next.parties.find((entry) => (entry.invites ?? []).includes(actor.id));
+        if (!party) continue;
+        if (party.members.length >= MAX_PARTY) {
+          party.invites = party.invites.filter((id) => id !== actor.id);
+          events.push({ onlyId: actor.id, text: "That party is full.\r\n" });
+          continue;
+        }
+        if (party.members.includes(actor.id)) {
+          party.invites = party.invites.filter((id) => id !== actor.id);
+          continue;
+        }
+        const oldParty = next.parties.find((entry) => entry.id === actor.party && entry !== party);
+        if (actor.party) leaveParty(next, actor);
+        if (oldParty) {
+          for (const memberId of oldParty.members ?? []) {
+            const member = find(memberId);
+            if (member) events.push({ onlyId: member.id, text: `${actor.name} leaves the party.\r\n` });
+          }
+        }
+        party.invites = party.invites.filter((id) => id !== actor.id);
+        if (!party.members.includes(actor.id)) party.members.push(actor.id);
+        actor.party = party.id;
+        for (const memberId of party.members) {
+          const member = find(memberId);
+          if (member) events.push({ onlyId: member.id, text: `${actor.name} joins the party.\r\n` });
+        }
+        continue;
+      }
+      if (intent.kind === "partyDecline") {
+        for (const entry of next.parties) entry.invites = (entry.invites ?? []).filter((id) => id !== actor.id);
+        events.push({ onlyId: actor.id, text: "You decline the party invitation.\r\n" });
+        continue;
+      }
+      if (intent.kind === "partyLeave") {
+        const party = next.parties.find((entry) => entry.id === actor.party);
+        if (!party) continue;
+        leaveParty(next, actor);
+        for (const memberId of party.members ?? []) {
+          const member = find(memberId);
+          if (member) events.push({ onlyId: member.id, text: `${actor.name} leaves the party.\r\n` });
+        }
+        events.push({ onlyId: actor.id, text: "You leave the party.\r\n" });
+        continue;
+      }
+      if (intent.kind === "partyKick") {
+        const party = next.parties.find((entry) => entry.id === actor.party);
+        if (!party || party.leaderId !== actor.id || intent.targetId === actor.id) continue;
+        const target = find(intent.targetId);
+        if (!target || !party.members.includes(target.id)) continue;
+        party.members = party.members.filter((id) => id !== target.id);
+        target.party = null;
+        events.push({ onlyId: target.id, text: `${actor.name} removes you from the party.\r\n` });
+        events.push({ onlyId: actor.id, text: `You remove ${target.name} from the party.\r\n` });
+        continue;
+      }
+      if (intent.kind === "partyDisband") {
+        const party = next.parties.find((entry) => entry.id === actor.party);
+        if (!party || party.leaderId !== actor.id) continue;
+        for (const memberId of party.members) {
+          const member = find(memberId);
+          if (member) member.party = null;
+          events.push({ onlyId: memberId, text: "The party disbands.\r\n" });
+        }
+        next.parties = next.parties.filter((entry) => entry !== party);
+        continue;
+      }
+    }
+
     if (intent.kind === "leave") {
       const actor = find(intent.actorId);
       if (!actor) continue;
+      leaveParty(next, actor);
       actor.wielding = null;
       if (next.duels.some((duel) => [duel.challengerId, duel.targetId].includes(actor.id))) {
         next.duels = next.duels.filter((duel) => ![duel.challengerId, duel.targetId].includes(actor.id));
@@ -2274,8 +2474,7 @@ export function step({ state, rooms, intents, actions = [] }) {
           }
           events.push({ room: attacker.room, text: `${target.name} dies.` });
           if (next.actors.includes(attacker)) {
-            awardXp(next, attacker, target.xp ?? Math.max(1, target.maxHp ?? 1), events);
-            advanceQuests(next, attacker, { kind: "kill", npc: target.id }, events);
+            creditNpcKill(next, attacker, target, events, target.maxHp ?? 1);
             if (target.faction && FACTIONS[target.faction]) {
               const event = currentEvent(next.cycle ?? 0);
               const gained = (target.standing ?? 1) * (target.faction === event.faction ? 2 : 1);
@@ -2340,6 +2539,7 @@ export function step({ state, rooms, intents, actions = [] }) {
     }
   }
 
+  tickGas(next, rooms, events);
   if (violenceDue) tickStatuses(next, events);
   for (const actor of next.actors) {
     if (actor.hidden && (actor.hiddenUntil ?? 0) <= next.tick) actor.hidden = false;
@@ -2362,7 +2562,7 @@ export function step({ state, rooms, intents, actions = [] }) {
     }
     next.engagements = [];
     next.duels = [];
-    for (const actor of next.actors) { actor.wielding = null; actor.effects = []; actor.lightUntil = 0; }
+    for (const actor of next.actors) { actor.wielding = null; actor.effects = []; actor.lightUntil = 0; actor.gasUntil = 0; actor.hidden = false; actor.hiddenUntil = 0; actor.detectUntil = 0; }
     // Held coins are the character's gold and survive the reset. Every other
     // ephemeral object (minted coins on the floor) is swept up.
     next.objects = next.objects.filter((object) => !object.ephemeral

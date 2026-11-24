@@ -853,6 +853,26 @@
         "notGuild": "Only a Night Market cutpurse can hide.",
         "combat": "You cannot hide while fighting."
       }
+    },
+    "party": {
+      "aliases": [
+        "group"
+      ],
+      "argument": "[who|invite <name>|accept|decline|leave|kick <name>|disband]",
+      "messages": {
+        "status": "Party",
+        "none": "You are not in a party. party invite <name> starts one.",
+        "invited": "Invitation sent.",
+        "notHere": "That player is not here.",
+        "noInvite": "You have no party invitation.",
+        "joined": "You join the party.",
+        "left": "You leave the party.",
+        "notLeader": "Only the party leader can do that.",
+        "kicked": "You remove them from the party.",
+        "disbanded": "The party disbands.",
+        "usage": "Usage: party [who|invite <name>|accept|decline|leave|kick <name>|disband].",
+        "declined": "You decline the party invitation."
+      }
     }
   }
 }

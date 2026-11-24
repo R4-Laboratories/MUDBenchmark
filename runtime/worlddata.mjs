@@ -129,6 +129,7 @@ export function loadWorld({ mode = "single", path = DEFAULT_PATH } = {}) {
     if (room.dark !== undefined && typeof room.dark !== "boolean") errors.push(`room ${id} has a non-boolean dark flag`);
     if (room.darkText !== undefined && typeof room.darkText !== "string") errors.push(`room ${id} has a non-string darkText`);
     if (room.minLevel !== undefined && (!Number.isInteger(room.minLevel) || room.minLevel < 1)) errors.push(`room ${id} has an invalid minLevel`);
+    if (room.gas !== undefined && typeof room.gas !== "boolean") errors.push(`room ${id} has a non-boolean gas flag`);
     rooms[numeric] = {
       name: room.name ?? `Room ${id}`,
       exits: room.exits ?? {},
@@ -140,6 +141,7 @@ export function loadWorld({ mode = "single", path = DEFAULT_PATH } = {}) {
       dark: room.dark === true,
       darkText: room.darkText ?? null,
       minLevel: Number.isInteger(room.minLevel) ? room.minLevel : 0,
+      gas: room.gas === true,
       details: room.details ?? {},
       secrets: room.secrets ?? {},
       ambient: room.ambient ?? [],
@@ -212,7 +214,7 @@ export function loadWorld({ mode = "single", path = DEFAULT_PATH } = {}) {
   // silently does nothing.
   const objects = [];
   const seenObject = new Set();
-  const FLAGS = new Set(["takeable", "fixed", "container", "wearable", "food", "drink", "light", "readable", "coin", "weapon", "armor"]);
+  const FLAGS = new Set(["takeable", "fixed", "container", "wearable", "food", "drink", "light", "readable", "coin", "weapon", "armor", "canary"]);
   for (const object of raw.objects ?? []) {
     if (seenObject.has(object.id)) errors.push(`object id "${object.id}" is used twice`);
     seenObject.add(object.id);

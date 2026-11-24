@@ -37,6 +37,9 @@ export function loadActions({ path = DEFAULT_PATH, world = null } = {}) {
     if (action.requires?.actors !== undefined && (!Number.isInteger(action.requires.actors) || action.requires.actors < 1)) {
       errors.push(`action ${action.id} has an invalid actor requirement`);
     }
+    if (action.requires?.party !== undefined && (!Number.isInteger(action.requires.party) || action.requires.party < 1)) {
+      errors.push(`action ${action.id} has an invalid party requirement`);
+    }
     if (action.requires?.rank !== undefined && typeof action.requires.rank !== "string") errors.push(`action ${action.id} has an invalid rank requirement`);
     if (action.requires?.item && world && !world.objects?.some((object) => object.id === action.requires.item)) {
       errors.push(`action ${action.id} requires item ${action.requires.item}, which does not exist`);

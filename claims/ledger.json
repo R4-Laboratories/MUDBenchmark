@@ -1755,6 +1755,18 @@
       "level": "some-true",
       "statement": "Production v0.91.55 serves the danger/social layer. /world reports 197 rooms / 16 zones / 21 quests / 95 mobiles / 228 objects; /api/free and /api/demo are 404 and /router.mjs is 200. Character death costs 50% XP and one level, PvE or PvP, tracks deaths and recalculates max HP; the Mistfall caves/tide pool are level 4, the grave reef/Tide Vault level 6 and Salt Rose level 4; the Twin Door requires two players and opens the Tide Vault crown; Night Market cutpurses can hide from room descriptions, the actor list and who until they move or act, detect reveals them, and NPC aggression ignores them. The Gate PvP test verified a level-3/400-XP death to level 2/200 XP with deaths 1, and the two-client live session verified hide/reveal, the hidden second pair at the Twin Door, the Tide Vault and the crown. Main Gate 45328131703 green, publish 45329045352, release v0.91.55.",
       "authority": "GitHub PR #71 merge dc1aba0 2026-11-24; main Gate 45328131703; publish 45329045352; release v0.91.55; wick deploy, /world, routes and /health; local /tmp/social-live.mjs and /tmp/mistfall-live.mjs; tools/gate.mjs"
+    },
+    {
+      "id": "MB-289",
+      "level": "build",
+      "statement": "v0.91.56 adds a real party system and the Deepdelve mine. Parties hold up to six; party invite/accept/decline/leave/kick/disband/who work, members in the same room share 50% kill XP and quest kill credit, a party action reveals the way to every member in the room, and the HUD refreshes on party changes and shared progression. The Deepdelve is a 16-room level 6/7/8 mine reached west of the graveyard (17) and back up the old shaft (213), with dark tunnels, two lanterns and two canaries at the head, a party winch (200), pump (201), mine cart (204) and sealed seam (207), a gas pocket (206) that burns unprotected actors every six seconds while a canary warns for 30 seconds, a coracle shortcut (212 to 213), five mine NPCs, twelve mine objects and the repeatable Deepdelve quest (visit 205, collect the surveyor's notes, kill the guardian at 210, deliver sealed ore to the captain at 198; 320 XP / 50 coins). The agent prompt adds PARTY, PARTY INVITE and GAS context and party/gas rules. World 213 rooms / 17 zones / 22 quests / 100 mobiles / 240 objects; the quest ratchet is 22. Gate covers the mine map, level gates, party actions, shared XP and kill credit, gas and canary.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-290",
+      "level": "some-true",
+      "statement": "Live two-client evidence for v0.91.56. mine-a and mine-b (level 8) formed a party, opened the winch, mine cart and sealed seam; each action revealed the secret exit to both party members. A level-6 mine-c entered the cage landing but was refused at the level-7 winch room, then returned. The party took both lanterns and both canaries; both crossed the gas pocket with no damage, and each canary's 30-second warning protected its holder. mine-a took the surveyor's notes and sealed ore; the party killed the guardian (a mechanics fixture at 12 HP) and mine-b received 120 shared XP and the [x] Defeat the mine guardian quest credit without landing the final blow. mine-a returned to the captain and completed The Deepdelve with 320 XP and 50 coins. The Gate passes at 213 rooms / 17 zones / 22 quests / 100 mobiles / 240 objects, including the party action requirement, party-wide reveal, shared kill XP and quest credit, canary protection, gas damage floor and the mine map.",
+      "authority": "local /tmp/deepdelve-live.mjs; tools/gate.mjs; 2026-11-24"
     }
   ]
 }
