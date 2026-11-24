@@ -18,6 +18,7 @@ import { maxManaFor, spellById, spellPower } from "./magic.mjs";
 import { FACTIONS } from "./factions.mjs";
 import { TECHNIQUES, techniqueForWeapon, techniqueReady } from "./techniques.mjs";
 import { currentEvent } from "./events.mjs";
+import { WORLDBREAKER_TITLE, completionState } from "./completion.mjs";
 
 export { armorOf } from "./equipment.mjs";
 
@@ -540,6 +541,8 @@ export function upgradeState(saved, base) {
       ignored: Array.isArray(identity.ignored) ? [...identity.ignored] : [],
       title: typeof identity.title === "string" ? identity.title : null,
       memory: { facts: { ...(identity.memory?.facts ?? {}) } },
+      found: Array.isArray(identity.found) ? [...identity.found] : [],
+      completion: identity.completion && typeof identity.completion === "object" ? identity.completion : null,
       level: identity.level ?? 1,
       xp: identity.xp ?? 0,
       gold: Number.isInteger(identity.gold) && identity.gold >= 0 ? identity.gold : 0,
@@ -691,6 +694,8 @@ export function checkpointIdentities(state) {
       spellbook: [...(actor.spellbook ?? [])],
       maxMana: actor.maxMana ?? maxManaFor(actor),
       questCycles: { ...(actor.questCycles ?? {}) },
+      found: [...(actor.found ?? [])],
+      completion: actor.completion ?? null,
     };
   }
   return state;
@@ -1390,6 +1395,8 @@ export function step({ state, rooms, intents, actions = [] }) {
       actor.level = known.level ?? 1;
       actor.xp = known.xp ?? 0;
       actor.deaths = known.deaths ?? 0;
+      actor.found = [...(known.found ?? [])];
+      actor.completion = known.completion ?? null;
       purgeParty(next, actor.id);
       actor.party = null;
       actor.gasUntil = 0;
@@ -2596,6 +2603,31 @@ export function step({ state, rooms, intents, actions = [] }) {
     if (actor.mana !== undefined && next.tick % 20 === 0) {
       actor.mana = Math.min(actor.maxMana ?? maxManaFor(actor), actor.mana + 1);
     }
+  }
+
+  // The run is beaten once, never taken away. Record the tick and the tally so
+  // a later death, a new quest or a content change cannot erase the title.
+  for (const actor of next.actors) {
+    if (!actor?.key || actor.completion) continue;
+    const tally = completionState({ actor, rooms, quests: next.quests, levels: next.levels });
+    if (!tally.done) continue;
+    const record = { tick: next.tick, cycle: next.cycle ?? 0, level: tally.level, quests: tally.quests, puzzles: tally.puzzles };
+    actor.completion = record;
+    if (!actor.title) actor.title = WORLDBREAKER_TITLE;
+    if (next.identities[actor.key]) {
+      next.identities[actor.key] = {
+        ...next.identities[actor.key],
+        completion: record,
+        found: [...(actor.found ?? [])],
+        title: actor.title,
+      };
+    }
+    events.push({
+      onlyId: actor.id,
+      text: `You have beaten MUDBench: level ${tally.maxLevel}, all ${tally.questsTotal} quests and all ${tally.puzzlesTotal} hidden ways. ${WORLDBREAKER_TITLE} is yours. Moderator/immortal mode is not implemented.\r\n`,
+      completion: record,
+    });
+    events.push({ room: actor.room, text: `${actor.name} has beaten MUDBench.`, exceptId: actor.id });
   }
 
   return { state: next, events, checkpoint: next.tick % CHECKPOINT === 0 };

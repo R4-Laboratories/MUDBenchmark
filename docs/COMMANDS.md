@@ -23,6 +23,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `channels` | `chan`, `ch` | none |
 | `close` | `shut`, `cl` | object |
 | `coins` | `money`, `purse` | none |
+| `completion` | `goal`, `win` | none |
 | `components` | `parts`, `materials` | none |
 | `consider` | `con` | target |
 | `deliver` | `handin`, `dv` | object to actor |

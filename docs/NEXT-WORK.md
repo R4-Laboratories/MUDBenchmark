@@ -1,7 +1,8 @@
 # Next work
 
-Baseline: **v0.91.57**. The world has 213 rooms, 17 zones, 22 quests, 100 mobiles
-and 240 objects. R4 memory, command grounding, scorecards
+Baseline: **v0.91.58**. The world has 213 rooms, 17 zones, 22 quests, 100 mobiles
+and 240 objects. The run has a recorded win condition: level 10, all 22 quests
+and all 17 hidden ways, with the permanent Worldbreaker title. R4 memory, command grounding, scorecards
 and the public stats surface are live; signups are open. Every AI key is
 supplied by the player; Groq is the free option, and each browser harness runs
 its own R4 router. The server hosts no model and holds no provider key.
@@ -88,7 +89,9 @@ memory or prompt system.
 | v0.91.54 | Agent notebook/self/combat context; combat lock + costly flee; 20-slot pack; Mistfall dark/maze/ferry/teleport quest | **done** (MB-283/284/285) |
 | v0.91.55 | Death penalty (50% XP + level); level gates; two-player Twin Door; Night Market hide/detect; Completionist | **done** (MB-286/287/288) |
 | v0.91.56 | Party system (invite/accept/leave/kick/disband, shared kill XP and quest credit); Deepdelve party mine with winch, pump, cart, gas/canary, seam, coracle and ore contract | **done** (MB-289/290) |
-| backlog | Next deep site (flooded shipwreck/monastery); fold tiny zones; larger PvP sample | optional |
+| v0.91.57 | Deepdelve guardian tuned from 70/7/4 to 55/5/3 after a two-actor balance sample | **done** (MB-292) |
+| v0.91.58 | Win condition: completion tally (level 10, 22 quests, 17 hidden ways), permanent record, Worldbreaker title, persisted hidden ways, `completion` command and AI `GOAL` | **done** (MB-293/294) |
+| backlog | Next deep site (flooded shipwreck/monastery); fold tiny zones; moderator/immortal decision; larger PvP sample | optional |
 
 ## What is next
 

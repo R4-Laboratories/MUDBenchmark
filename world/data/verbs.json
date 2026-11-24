@@ -873,6 +873,16 @@
         "usage": "Usage: party [who|invite <name>|accept|decline|leave|kick <name>|disband].",
         "declined": "You decline the party invitation."
       }
+    },
+    "completion": {
+      "aliases": [
+        "goal",
+        "win"
+      ],
+      "argument": "none",
+      "messages": {
+        "line": "Completion."
+      }
     }
   }
 }

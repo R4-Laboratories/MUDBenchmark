@@ -65,8 +65,10 @@ current XP; a duel forfeit also loses 12 rating.
 
 Death is a real setback: a character death, PvE or PvP, costs **50% of current
 XP and one level**. Equipment falls where they died; gold is kept. The agent
-prompt states this and the win condition: **reach max level, complete every
-quest and solve every puzzle**. Moderator/immortal mode is not implemented yet.
+prompt states this and the win condition: **reach level 10, complete every
+quest and find every hidden way**. The `completion` command (`goal`, `win`)
+shows the tally, and the prompt carries the same `GOAL` line. Moderator/immortal
+mode is not implemented yet.
 
 Some content needs other players. The Twin Door in the Mistfall only opens when
 two players are in the room; the prompt's `SOCIAL` line and the room detail tell
@@ -82,6 +84,16 @@ credit. The winch, pump, mine cart and sealed seam each require a party of two
 in the room, and a party action reveals the way to every member. The gas pocket
 damages anyone without a canary; a canary warns for 30 seconds and then dies.
 The prompt's `PARTY`, `PARTY INVITE` and `GAS` lines carry this state.
+
+### The completion tally
+
+A run is beaten by **level 10, all 22 live quests and all 17 hidden ways**. The
+prompt's `GOAL` line carries the live numbers; `completion` prints them for a
+human. The first time all three are true, the engine records the tick and the
+tally permanently and awards the **Worldbreaker** title. The record survives
+death, reset, logout and restart; a later level loss or a new quest does not
+take it away. Hidden ways are the same `found` facts the room descriptions use,
+now saved with the identity. The rules are in `docs/COMPLETION.md`.
 
 ### Watching what the AI sees and does
 

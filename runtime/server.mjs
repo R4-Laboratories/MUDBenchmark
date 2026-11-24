@@ -33,6 +33,7 @@ import { GUILD_HALL, GUILD_VAULT_CAPACITY, RANKS, guildId, guildVaultHolder, ran
 import { FACTIONS, factionAllows, factionRank, standingsText } from "./factions.mjs";
 import { buildLlms } from "./llms.mjs";
 import { loadTitles, earnedTitles, titleLookup } from "./titles.mjs";
+import { WORLDBREAKER_TITLE, completionLine, completionState } from "./completion.mjs";
 import { loadFacts, factForNpc, contextHasWord } from "./facts.mjs";
 import { hashPassword, verifyPassword, validName, validNewName, validPassword, accountCapReached } from "./accounts.mjs";
 import { allowCommand as allowInput, DEFAULT_INTERVAL_MS } from "./allowance.mjs";
@@ -133,6 +134,7 @@ if (TITLES.errors.length > 0) {
   process.exit(1);
 }
 for (const title of TITLES.titles) {
+  if (title.completion === true) continue;
   if (!QUESTS.quests.some((quest) => quest.id === title.quest)) {
     console.error(`titles: ${title.id} names unknown quest ${title.quest}`);
     process.exit(1);
@@ -912,6 +914,7 @@ function selfState(actor) {
       active: actor.quests?.active?.length ?? 0,
       completed: actor.quests?.completed?.length ?? 0,
     },
+    completion: completionState({ actor, rooms: ROOMS, quests: QUESTS.quests, levels: state.levels }),
     inventory: state.objects.filter((object) => object.holder === actor.id && !object.worn).length,
     armor: armorOf(actor, state.objects),
     damage: weaponDamageOf(weaponOf(actor, state.objects)) + guildBonus(actor).damage + setBonus(actor, state.objects).damage,
@@ -1727,7 +1730,7 @@ async function handleCommand(id, line) {
     if (!actor?.key) {
       return sendTo(id, "MUDBench is a persistent world for people and agents.\r\nSign in with your Prism id, or register <name> <password> / login <name> <password>.\r\nThen type help for the commands.\r\n");
     }
-    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: take/t/g/tf, take all, drop/dp/dr, inventory/i, coins, standing/reputation, components, score/sc, quests/q, who/wh, spells/sp, cast/ca, say/sy, tell/te, give/gv, put/pt, open/op, close/cl, wear/wr, remove/rm, buy/b, sell/se, list/ls, drink, map/mp, leaderboard/lb, ladder/pvp, levels/lv, shortcuts/sh.\r\nMagic: spells (effects/mana), train <spell> at the Mages' Guild, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search. Combat: attack/kill/k, technique/tech (weapon move), battle/combat/bt (current HP), score (armour/damage), equipment/eq (slots and totals). Forge: upgrade/improve, salvage/melt, components at the Cold Forge. Movement is blocked in combat; flee is a last resort and costs experience. Guild: guild join/leave/who/list/chat, guild advance (Mages, Wardens, Night Market), vault/deposit/withdraw in the Guild Hall. Social: ignore/unignore/ignoring, report/rep, titles/title, facts/memory, recall <word> at the shrine. Party: party invite <name>, party accept, party leave, party who, party kick <name>, party disband; members in the same room share kill XP and quest credit. Room actions: turn, push, pump, strike, board, ring where the room suggests.\r\nWorld: world or status (online, guilds, reset); overview/ov (the live player and fight panel); levels, leaderboard/top/lb, map [zone], shortcuts, quests active|available|done|all.<id>; tutorial (first) for the first steps.\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
+    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: take/t/g/tf, take all, drop/dp/dr, inventory/i, coins, standing/reputation, components, score/sc, quests/q, who/wh, spells/sp, cast/ca, say/sy, tell/te, give/gv, put/pt, open/op, close/cl, wear/wr, remove/rm, buy/b, sell/se, list/ls, drink, map/mp, leaderboard/lb, ladder/pvp, levels/lv, shortcuts/sh.\r\nMagic: spells (effects/mana), train <spell> at the Mages' Guild, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search. Combat: attack/kill/k, technique/tech (weapon move), battle/combat/bt (current HP), score (armour/damage), equipment/eq (slots and totals). Forge: upgrade/improve, salvage/melt, components at the Cold Forge. Movement is blocked in combat; flee is a last resort and costs experience. Guild: guild join/leave/who/list/chat, guild advance (Mages, Wardens, Night Market), vault/deposit/withdraw in the Guild Hall. Social: ignore/unignore/ignoring, report/rep, titles/title, facts/memory, recall <word> at the shrine. Party: party invite <name>, party accept, party leave, party who, party kick <name>, party disband; members in the same room share kill XP and quest credit. Room actions: turn, push, pump, strike, board, ring where the room suggests.\r\nWorld: world or status (online, guilds, reset); overview/ov (the live player and fight panel); levels, leaderboard/top/lb, map [zone], shortcuts, quests active|available|done|all.<id>; completion (goal) for the win tally; tutorial (first) for the first steps.\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
   }
 
   // A command typed before the join tick lands is queued, not refused: the
@@ -2444,7 +2447,8 @@ async function handleCommand(id, line) {
     const effects = (actor.effects ?? []).length ? ` Effects: ${(actor.effects ?? []).map((effect) => `${effect.name} ${effect.rounds}`).join(", ")}.` : "";
     const title = actor.title ? ` Title ${actor.title}.` : "";
     const line = `Level ${actor.level} (${actor.xp}${nextXp === null ? "" : `/${nextXp}`} xp), ${actor.hp}/${actor.maxHp} hp, mana ${actor.mana ?? maxManaFor(actor)}/${actor.maxMana ?? maxManaFor(actor)}, armour ${armor}, damage ${weaponDamageOf(weapon) + guildBonus(actor).damage + setBonus(actor, state.objects).damage}, spell power ${spellPower(actor, weaponDamageOf(weapon))}, ${weapon ? `wielding ${weapon.name}` : "unarmed"}${actor.guild ? `, guild ${actor.guild}` : ""}, ${stateQ.active.length} active/${stateQ.completed.length} done quests.${title}${effects}`;
-    return sendTo(id, `${render(messages.line, { words: line })}\r\n`);
+    const goal = completionLine(completionState({ actor, rooms: ROOMS, quests: QUESTS.quests, levels: state.levels }));
+    return sendTo(id, `${render(messages.line, { words: line })}\r\n${goal}\r\n`);
   }
 
   if (named === "standing") {
@@ -2859,15 +2863,26 @@ async function handleCommand(id, line) {
     return sendTo(id, `${render(messages.recorded, { words: identity.name })}\r\n`);
   }
 
+  if (named === "completion") {
+    const tally = completionState({ actor, rooms: ROOMS, quests: QUESTS.quests, levels: state.levels });
+    const lines = [
+      `Completion: level ${tally.level}/${tally.maxLevel} · quests ${tally.quests}/${tally.questsTotal} · hidden ways ${tally.puzzles}/${tally.puzzlesTotal}.`,
+      tally.achieved
+        ? `Run beaten${Number.isInteger(tally.achievedAt) ? ` at tick ${tally.achievedAt}` : ""}. ${WORLDBREAKER_TITLE} title earned. Moderator/immortal mode is not implemented.`
+        : `The run is beaten by reaching level ${tally.maxLevel}, completing all ${tally.questsTotal} quests and finding all ${tally.puzzlesTotal} hidden ways.`,
+    ];
+    return sendTo(id, `${lines.join("\r\n")}\r\n`);
+  }
+
   if (named === "titles") {
-    const earned = earnedTitles(TITLES.titles, actor.quests?.completed ?? []);
-    if (!earned.length) return sendTo(id, "You have no titles yet. Quests earn them.\r\n");
-    const lines = earned.map((title) => `${title.name === actor.title ? "*" : " "} ${title.name} (${title.id}) — ${title.quest}`);
+    const earned = earnedTitles(TITLES.titles, actor.quests?.completed ?? [], Boolean(actor.completion));
+    if (!earned.length) return sendTo(id, "You have no titles yet. Quests and the completed run earn them.\r\n");
+    const lines = earned.map((title) => `${title.name === actor.title ? "*" : " "} ${title.name} (${title.id}) — ${title.completion ? "the completed run" : title.quest}`);
     return sendTo(id, `Titles (* = worn; title <id|none>):\r\n  ${lines.join("\r\n  ")}\r\n`);
   }
 
   if (named === "title") {
-    const earned = earnedTitles(TITLES.titles, actor.quests?.completed ?? []);
+    const earned = earnedTitles(TITLES.titles, actor.quests?.completed ?? [], Boolean(actor.completion));
     const wanted = restRaw.join(" ").trim();
     if (!wanted) {
       const lines = earned.map((title) => `${title.name === actor.title ? "*" : " "} ${title.name} (${title.id})`);
@@ -3290,8 +3305,8 @@ async function handle(id, line) {
 // --- the clock -----------------------------------------------------------
 
 function progressionSnapshot(actor) {
-  const { role, level, xp, guild, guildRank, quests, spellbook, maxMana, questCycles, ignored, title, memory, components, duelWins, duelLosses, duelRating } = actor;
-  return JSON.stringify({ role, level, xp, guild, guildRank, quests, spellbook, maxMana, questCycles, ignored, title, memory, components, duelWins, duelLosses, duelRating });
+  const { role, level, xp, guild, guildRank, quests, spellbook, maxMana, questCycles, ignored, title, memory, components, duelWins, duelLosses, duelRating, found, completion } = actor;
+  return JSON.stringify({ role, level, xp, guild, guildRank, quests, spellbook, maxMana, questCycles, ignored, title, memory, components, duelWins, duelLosses, duelRating, found, completion });
 }
 
 function onTick() {
@@ -3398,6 +3413,15 @@ function onTick() {
         "guild.action": event.guild.action,
         "guild.name": event.guild.name ?? null,
         "object.id": event.guild.object ?? null,
+        "world.tick": state.tick,
+      }, 0);
+    }
+    if (event.completion) {
+      recordSpan("world.completion", {
+        "actor.id": event.onlyId ?? null,
+        "completion.level": event.completion.level,
+        "completion.quests": event.completion.quests,
+        "completion.puzzles": event.completion.puzzles,
         "world.tick": state.tick,
       }, 0);
     }
