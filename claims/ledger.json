@@ -1713,6 +1713,12 @@
       "level": "some-true",
       "statement": "v0.91.53 fixes DeepSeek empty replies. Fast turns send reasoning_effort none and a 300-token floor; deliberate turns send low and 600. If content is still empty, the harness preserves the observation and retries once with 800 tokens. The setup panel no longer clears a key the player just typed, and startFreeAgent saves the key before setMode/startAI. A real browser session with the local DeepSeek key selected DeepSeek (API key) - deepseek-flash, took the grey cloak and satchel, examined the Atrium plaque, and walked north to the Corridor with no Brain error. World 181 rooms / 15 zones / 20 quests / 90 mobiles / 214 objects; no server model or provider key.",
       "authority": "local /tmp/deepseek-browser-test.mjs; tools/gate.mjs; 2026-11-24"
+    },
+    {
+      "id": "MB-282",
+      "level": "some-true",
+      "statement": "Production v0.91.53 serves the DeepSeek empty-reply and key-preservation fix. A clean headless production session on https://play.r4labs.org selected DeepSeek (API key) - deepseek-flash, took the grey cloak and leather satchel, examined the Atrium plaque, and walked north to The Corridor with no Brain error. Fast DeepSeek turns send reasoning_effort none and a 300-token floor; deliberate turns use low/600; an empty content reply retries once with 800. The setup panel preserves and saves a just-typed key before setMode/startAI. /api/free and /api/demo are 404, /router.mjs is 200, owner.env contains only MUDBENCH_OWNER_TOKEN, and no model or provider key is on the server. World 181 rooms / 15 zones / 20 quests / 90 mobiles / 214 objects. Main Gate 45302193857 green, publish 45303616018, release v0.91.53.",
+      "authority": "GitHub PR #69 merge f5d73af 2026-11-24; main Gate 45302193857; publish 45303616018; release v0.91.53; wick deploy, routes and /health; local /tmp/prod-deepseek-test.mjs and /tmp/deepseek-browser-test.mjs"
     }
   ]
 }
