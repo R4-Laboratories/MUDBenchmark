@@ -528,6 +528,17 @@ Rehearsed 2026-11-16:
   COMBAT and SOCIAL prompt context. World 195 rooms / 16 zones / 21 quests / 95
   mobiles / 227 objects. The live walk completed the Salt Rose quest; a real
   DeepSeek session wrote and reused eight notes (MB-283/284/285);
+- v0.91.55 (danger and groups) makes death cost **50% of current XP and one
+  level**, PvE or PvP, and adds the deaths counter and win-condition prompt.
+  It gates the Mistfall caves at level 4 and the grave reef/Tide Vault at level
+  6, and adds the **Twin Door** (two players required) and Tide Vault crown.
+  Night Market cutpurses can **hide**, leaving room descriptions, the actor list
+  and `who` until they move or act; `detect` reveals them, and NPC aggression
+  ignores them. Adds the Completionist persona. World 197 rooms / 16 zones / 21
+  quests / 95 mobiles / 228 objects. A two-client live session hid, revealed by
+  speaking, opened the Twin Door with one hidden partner and took the crown.
+  Gate covers the death penalty, level gates, twin door, hide visibility and
+  prompt (MB-286/287/288);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

@@ -3500,7 +3500,8 @@
         "Something scrapes under the surface."
       ],
       "dark": true,
-      "darkText": "It is dark. You can see only the faint outline of the exits."
+      "darkText": "It is dark. You can see only the faint outline of the exits.",
+      "minLevel": 4
     },
     "192": {
       "name": "The Tide Pool",
@@ -3519,7 +3520,8 @@
         "The glow under the water shifts."
       ],
       "dark": true,
-      "darkText": "It is dark. You can see only the faint outline of the exits."
+      "darkText": "It is dark. You can see only the faint outline of the exits.",
+      "minLevel": 4
     },
     "193": {
       "name": "The Ruined Light",
@@ -3542,7 +3544,8 @@
       "name": "The Signal Room",
       "text": "A low room of stone shelves and broken instruments. A brass signal mirror hangs on the wall, and a smooth grey stone sits on a plinth beneath it. The air is dry and still.",
       "exits": {
-        "south": 193
+        "south": 193,
+        "east": 196
       },
       "details": {
         "mirror": "The signal mirror is clouded but whole. It catches a little light.",
@@ -3570,6 +3573,44 @@
       "ambient": [
         "White water breaks on the reef.",
         "The wrecked boat knocks against the rocks."
+      ],
+      "minLevel": 6
+    },
+    "196": {
+      "name": "The Twin Door",
+      "minLevel": 4,
+      "text": "A stone door fills the end of the passage, its face carved with two open handprints. There is no handle and no keyhole. The air is cold and still, and the door does not move for one person.",
+      "exits": {
+        "west": 194
+      },
+      "secretExits": {
+        "east": 197
+      },
+      "details": {
+        "door": "The door is grey stone. Two handprints are worn into the surface at shoulder height.",
+        "handprints": "The handprints are deep and smooth. They are set a little apart, as if for two people.",
+        "floor": "The floor is swept clean. A faint line runs under the door."
+      },
+      "ambient": [
+        "The door waits.",
+        "Cold air seeps under the stone."
+      ]
+    },
+    "197": {
+      "name": "The Tide Vault",
+      "minLevel": 6,
+      "text": "A round vault of wet black stone, open to a shaft of pale light. A stone plinth rises from a shallow pool, and a circlet of green glass and black metal rests on it. The water is perfectly still.",
+      "exits": {
+        "west": 196
+      },
+      "details": {
+        "plinth": "The plinth is worn smooth. The crown rests at its centre.",
+        "crown": "A drowned crown of green glass and black metal. It was not made for a living head.",
+        "pool": "The pool is ankle-deep and very cold. It does not ripple."
+      },
+      "ambient": [
+        "Water drips somewhere above.",
+        "The crown catches the light."
       ]
     }
   },
@@ -5987,7 +6028,9 @@
         192,
         193,
         194,
-        195
+        195,
+        196,
+        197
       ]
     }
   ],
@@ -8895,6 +8938,16 @@
       ],
       "value": 70,
       "examine": "A circlet of green glass and black metal, cold and heavy. It was not made for a living head."
+    },
+    {
+      "id": "mistfall-tide-crown",
+      "name": "the tide crown",
+      "room": 197,
+      "flags": [
+        "takeable"
+      ],
+      "value": 150,
+      "examine": "A circlet of green glass and black metal, cold and heavy. The tide moves inside the glass."
     }
   ],
   "climate": {

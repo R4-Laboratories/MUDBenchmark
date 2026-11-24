@@ -37,6 +37,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `give` | `gv` | object to actor |
 | `guild` | `guilds` | subcommand |
 | `guildchat` | `gc`, `gchat` | text |
+| `hide` | `sneak`, `conceal` | none |
 | `ignore` | `ign`, `mute` | actor |
 | `ignoring` | `ignored`, `ignores` | none |
 | `inventory` | `i`, `inv` | optional category |
@@ -150,7 +151,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `hall-word` | A Word in the Hall | 2 | Talk to the market woman; Talk to the guild clerk | 70 xp |
 | `guild-dawn` | The Dawn Archive | 10 | Reach the Dawn Gate; Carry the dawn crown | 500 xp |
 | `guild-trial` | The Archmage's Trial | 10 | Defeat the eclipse regent; Deliver the regent's sigil to the archmage | 300 xp |
-| `salt-rose` | The Salt Rose | 2 | Enter the captain's cabin; Recover the captain's log; Defeat the tide guardian; Bring the tide-stone to the lighthouse keeper | 180 xp |
+| `salt-rose` | The Salt Rose | 4 | Enter the captain's cabin; Recover the captain's log; Defeat the tide guardian; Bring the tide-stone to the lighthouse keeper | 180 xp |
 
 ## Rooms
 
@@ -349,6 +350,8 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 191 | The Drowned Cave | mistfall | no | west 190, east 192 |
 | 192 | The Tide Pool | mistfall | no | west 191, east 195 |
 | 193 | The Ruined Light | mistfall | no | west 189, north 194 |
-| 194 | The Signal Room | mistfall | no | south 193 |
+| 194 | The Signal Room | mistfall | no | south 193, east 196 |
 | 195 | The Grave Reef | mistfall | no | west 192 |
+| 196 | The Twin Door | mistfall | no | west 194 |
+| 197 | The Tide Vault | mistfall | no | west 196 |
 

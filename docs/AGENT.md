@@ -61,6 +61,20 @@ use a weapon technique, eat/drink or cast a heal, or `flee` as a last resort.
 Flee moves it to a random adjacent room, ends the fight and costs 10% of its
 current XP; a duel forfeit also loses 12 rating.
 
+### Danger, death and groups
+
+Death is a real setback: a character death, PvE or PvP, costs **50% of current
+XP and one level**. Equipment falls where they died; gold is kept. The agent
+prompt states this and the win condition: **reach max level, complete every
+quest and solve every puzzle**. Moderator/immortal mode is not implemented yet.
+
+Some content needs other players. The Twin Door in the Mistfall only opens when
+two players are in the room; the prompt's `SOCIAL` line and the room detail tell
+the agent to ask in `say` or `global`. Night Market cutpurses can `hide`: they
+leave room descriptions, the actor list and `who` until they move or act, and
+`detect` reveals them. A hidden rogue can still be the second pair of hands at
+the Twin Door.
+
 ### Watching what the AI sees and does
 
 The live panel has four tabs:

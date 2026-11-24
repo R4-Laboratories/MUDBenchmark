@@ -222,6 +222,7 @@ function applySpell(state, actor, spell, target, events) {
     actor.lightUntil = Math.max(actor.lightUntil ?? 0, state.tick + 600);
     events.push({ onlyId: actor.id, text: "A cold light follows you.\r\n" });
   } else if (spell.effect === "detect") {
+    actor.detectUntil = state.tick + 120;
     events.push({ onlyId: actor.id, text: "You read the room for what it is hiding.\r\n" });
   }
   events.push({ onlyId: actor.id, text: `You cast ${spell.name}.\r\n` });
@@ -588,6 +589,7 @@ export function checkpointIdentities(state) {
       role: actor.role ?? 0,
       level: actor.level ?? 1,
       xp: actor.xp ?? 0,
+      deaths: actor.deaths ?? 0,
       sacrificeCycle: actor.sacrificeCycle ?? 0,
       sacrificeXp: actor.sacrificeXp ?? 0,
       guild: actor.guild ?? null,
@@ -1286,6 +1288,7 @@ export function step({ state, rooms, intents, actions = [] }) {
       actor.role = known.role ?? 0;
       actor.level = known.level ?? 1;
       actor.xp = known.xp ?? 0;
+      actor.deaths = known.deaths ?? 0;
       actor.sacrificeCycle = known.sacrificeCycle ?? 0;
       actor.sacrificeXp = known.sacrificeXp ?? 0;
       actor.maxHp = maxHpForLevel(actor.level);
@@ -1567,6 +1570,7 @@ export function step({ state, rooms, intents, actions = [] }) {
       const found = (actor.found ?? []).includes(`${actor.room}:${intent.dir}`);
       const target = room?.exits?.[intent.dir] ?? (found ? room?.secretExits?.[intent.dir] : undefined);
       if (target !== intent.to) continue;
+      if ((rooms[target]?.minLevel ?? 0) > (actor.level ?? 1)) continue;
       const from = actor.room;
       if (next.duels.some((duel) => [duel.challengerId, duel.targetId].includes(actor.id))) {
         next.duels = next.duels.filter((duel) => ![duel.challengerId, duel.targetId].includes(actor.id));
@@ -1587,6 +1591,7 @@ export function step({ state, rooms, intents, actions = [] }) {
       const from = actor.room;
       const to = rooms[from]?.exits?.[intent.dir];
       if (!to || to !== intent.to) continue;
+      if ((rooms[to]?.minLevel ?? 0) > (actor.level ?? 1)) continue;
       const before = Number.isFinite(actor.xp) ? actor.xp : 0;
       const penalty = before > 0 ? Math.max(1, Math.floor(before * 0.1)) : 0;
       actor.xp = Math.max(0, before - penalty);
@@ -2153,7 +2158,7 @@ export function step({ state, rooms, intents, actions = [] }) {
     // Aggression: a mobile whose clock comes round may begin a fight with
     // someone in its room. The victim is engaged back, so the fight is mutual.
     if (!npc.dead && (npc.aggression ?? 0) > 0 && !rooms[npc.room]?.safe) {
-      const victim = next.actors.find((actor) => actor.room === npc.room);
+      const victim = next.actors.find((actor) => actor.room === npc.room && !actor.hidden);
       const engaged = next.engagements.some((e) =>
         (e.attackerId === npc.id && e.targetId === victim?.id) ||
         (e.attackerId === victim?.id && e.targetId === npc.id));
@@ -2300,12 +2305,20 @@ export function step({ state, rooms, intents, actions = [] }) {
             }
             target.wielding = null;
           }
-          target.hp = target.maxHp ?? BASE_HP;
+          const beforeXp = target.xp ?? 0;
+          const lostXp = Math.floor(beforeXp * 0.5);
+          const lostLevel = (target.level ?? 1) > 1 ? 1 : 0;
+          target.level = Math.max(1, (target.level ?? 1) - lostLevel);
+          target.xp = Math.max(0, beforeXp - lostXp);
+          target.deaths = (target.deaths ?? 0) + 1;
+          target.maxHp = maxHpForLevel(target.level);
+          target.hp = target.maxHp;
           target.effects = [];
           target.room = next.start;
           if (!target.visited.includes(next.start)) target.visited.push(next.start);
           const inRing = rooms[deathRoom]?.arena === true;
-          events.push({ onlyId: target.id, text: inRing ? "You fall. The Ring takes no goods.\r\n" : "You die, and wake at the start. Your gold is kept; your equipment falls here.\r\n" });
+          const penalty = `You lose ${lostXp} experience${lostLevel ? " and a level" : ""}.`;
+          events.push({ onlyId: target.id, text: inRing ? `You fall. The Ring takes no goods. ${penalty}\r\n` : `You die, and wake at the start. ${penalty} Your gold is kept; your equipment falls here.\r\n` });
           events.push({ room: deathRoom, text: inRing ? `${target.name} falls in the Ring.` : `${target.name} is dead.`, exceptId: target.id });
           next.duels = next.duels.filter((duel) => ![duel.challengerId, duel.targetId].includes(target.id));
           if (next.actors.includes(attacker)) {
@@ -2328,6 +2341,9 @@ export function step({ state, rooms, intents, actions = [] }) {
   }
 
   if (violenceDue) tickStatuses(next, events);
+  for (const actor of next.actors) {
+    if (actor.hidden && (actor.hiddenUntil ?? 0) <= next.tick) actor.hidden = false;
+  }
 
   if (!areaDue && [1200, 240].includes(next.pulses.area.remaining)) {
     const minutes = next.pulses.area.remaining === 1200 ? 5 : 1;
