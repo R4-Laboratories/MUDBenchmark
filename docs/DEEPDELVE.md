@@ -118,8 +118,9 @@ the guardian; the captain explains the party requirement.
 - **A banded chest** (211) holds **a foreman's map** (readable); the old shaft
   is marked on it.
 - **A heap of old coins** (213, 25 coins) is the coracle shortcut reward.
-- **The mine guardian** (210) is level 8 with 70 HP, 7 damage and 4 armour in
-  production. It is a real fight; a level-7 solo is likely to lose a level.
+- **The mine guardian** (210) is level 8 with 55 HP, 5 damage and 3 armour in
+  production. It is a real fight: a level-8 pair with the mine pick wins with
+  about 35 HP each, while a level-7 solo is likely to lose a level.
 
 ## Why it matters
 
