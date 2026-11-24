@@ -539,6 +539,21 @@ Rehearsed 2026-11-16:
   speaking, opened the Twin Door with one hidden partner and took the crown.
   Gate covers the death penalty, level gates, twin door, hide visibility and
   prompt (MB-286/287/288);
+- v0.91.59 (The Drowned Foundry) adds a 12-room level 9/10 party dungeon
+  below the Deepdelve pool. A party **wheel** opens the drowned stair; the
+  **valve**, **sluice**, **crane** and **bellows** each need two party members
+  in the room, and a Night Market runner can **pick** the valve as a guild
+  shortcut. The site has eight dark rooms, two lanterns, a foundry hammer, a
+  heavy apron, a ledger, cold coins and a party-scale master
+  (120 HP / 7 damage / 5 armour) with a shared-credit kill. Adds the repeatable
+  **The Drowned Foundry** quest (420 XP / 70 coins), five mobiles, eight objects
+  and five hidden ways. The default level table is aligned to the live ten-level
+  cap, and the completion goal now counts 23 quests and 22 hidden ways. World
+  225 rooms / 18 zones / 23 quests / 105 mobiles / 248 objects. A two-client
+  live session turned the wheel, valve, sluice, crane and bellows for both
+  members, shared the master's XP and kill credit, and completed the quest.
+  Gate covers the map, level/dark gates, party actions, guild shortcut, quest
+  and counts (MB-296/297);
 - v0.91.58 (the win condition) records a completed run. A character beats
   MUDBench at **level 10, all 22 live quests and all 17 hidden ways**; the
   `completion` command (`goal`, `win`) and `score` show the tally, the agent

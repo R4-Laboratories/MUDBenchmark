@@ -155,6 +155,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `guild-trial` | The Archmage's Trial | 10 | Defeat the eclipse regent; Deliver the regent's sigil to the archmage | 300 xp |
 | `salt-rose` | The Salt Rose | 4 | Enter the captain's cabin; Recover the captain's log; Defeat the tide guardian; Bring the tide-stone to the lighthouse keeper | 180 xp |
 | `deepdelve` | The Deepdelve | 6 | Reach the surveyor's camp; Recover the surveyor's notes; Defeat the mine guardian; Bring the sealed ore to the mine captain | 320 xp |
+| `foundry` | The Drowned Foundry | 9 | Reach the master's office; Recover the foundry ledger; Defeat the foundry master; Bring the master's core to the foreman | 420 xp |
 
 ## Rooms
 
@@ -373,4 +374,16 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 211 | The Foreman's Office | deepdelve | no | west 210, down 212 |
 | 212 | The Underground Pool | deepdelve | no | up 211 |
 | 213 | The Old Shaft | deepdelve | no | west 212, up 17 |
+| 214 | The Drowned Stair | foundry | no | up 212, east 215 |
+| 215 | The Valve Gallery | foundry | no | west 214, east 216 |
+| 216 | The Cold Furnace | foundry | no | west 215, east 217 |
+| 217 | The Casting Floor | foundry | no | west 216 |
+| 218 | The Flooded Sump | foundry | no | up 215 |
+| 219 | The Crane Room | foundry | no | west 218, east 220 |
+| 220 | The Master's Office | foundry | no | west 219, down 221 |
+| 221 | The Cooling Tunnels | foundry | no | up 220, east 222 |
+| 222 | The Bellows Hall | foundry | no | up 219, west 221 |
+| 223 | The Slag Bridge | foundry | no | west 222, east 224 |
+| 224 | The Foundry Heart | foundry | no | west 223, north 225 |
+| 225 | The Master's Forge | foundry | no | south 224 |
 

@@ -61,7 +61,7 @@ const seedOf = (value) => {
   return hash;
 };
 
-const DEFAULT_LEVELS = [0, 100, 300, 700, 1500, 3000, 6000, 10000, 15000, 22000, 30000];
+const DEFAULT_LEVELS = [0, 100, 300, 700, 1500, 3000, 6000, 10000, 15000, 30000];
 
 /**
  * One attack: a hit chance of 57 minus armour, then 1..4 plus the weapon.
@@ -784,6 +784,8 @@ export function step({ state, rooms, intents, actions = [] }) {
       const action = actions.find((entry) => entry.id === intent.actionId);
       if (!actor || !action) continue;
       if (actor.room !== action.room) continue;
+      if (action.requires?.guild && actor.guild !== action.requires.guild) continue;
+      if (action.requires?.rank && !rankAtLeast(actor.guildRank, action.requires.rank, next.guilds[actor.guild]?.ranks ?? RANKS)) continue;
       if (action.requires?.spell && !(actor.spellbook ?? []).includes(action.requires.spell)) continue;
       if (action.requires?.item && !next.objects.some((object) => object.id === action.requires.item && object.holder === actor.id && !object.eaten)) continue;
       if (action.requires?.fact && !actor.memory?.facts?.[action.requires.fact]) continue;
