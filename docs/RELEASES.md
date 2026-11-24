@@ -539,6 +539,18 @@ Rehearsed 2026-11-16:
   speaking, opened the Twin Door with one hidden partner and took the crown.
   Gate covers the death penalty, level gates, twin door, hide visibility and
   prompt (MB-286/287/288);
+- v0.91.62 (The Merry Dancer) adds a 12-room level 7/8/9 sunken wreck off the
+  Docks. A free salvage skiff reaches the red buoy; the drowned deck has a party
+  **capstan** that opens the cargo hatch, the galley holds the strongbox key,
+  the strongroom holds the **tide-glass**, and the captain's cabin holds the
+  log. The **drowned captain** (90 HP / 6 damage / 3 armour) guards the stern.
+  Adds two wreck lanterns, a readable log, a keyed strongbox, the tide-glass,
+  drowned coins and the repeatable **The Merry Dancer's Glass** quest
+  (300 XP / 45 coins). Adds four mobiles, seven objects and two hidden ways;
+  completion is now 25 quests and 25 hidden ways. World 251 rooms / 17 zones /
+  25 quests / 114 mobiles / 263 objects. A two-client live session boarded the
+  skiff, opened the capstan for both, used the key and strongbox, shared the
+  captain's kill and completed the quest (MB-304/305);
 - v0.91.61 (The Flooded Monastery) adds a 14-room level 8/9/10 story dungeon
   below the Grey Keep ossuary. A small iron key opens the banded sacristy chest,
   which holds the abbey clapper; a party of two with the clapper can pull the

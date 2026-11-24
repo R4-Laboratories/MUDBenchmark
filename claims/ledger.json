@@ -1845,6 +1845,18 @@
       "level": "some-true",
       "statement": "Production v0.91.61 serves The Flooded Monastery. /world reports 239 rooms / 16 zones / 24 quests / 110 mobiles / 256 objects; /api/free and /api/demo are 404, and /router.mjs and /llms.txt are 200; /llms.txt lists completion and the monastery rooms. The monastery is a 14-room level 8/9/10 story dungeon below the Grey Keep ossuary: keyed sacristy chest, abbey clapper, party bell, dark crypt, drowned abbot (110 HP / 6 damage / 4 armour), silver relic and the repeatable Bell Below quest (380 XP / 60 coins). Completion is now level 10 / 24 quests / 23 hidden ways. The quest table rejects collecting and delivering the same object. The Gate covers map, level/dark gates, key/chest, party bell, boss, quest guard and counts; the two-client live session used the key/chest/ledger/bell, shared the abbot kill and completed the quest. Main Gate 45491327597 green, publish 45492991758, release v0.91.61.",
       "authority": "GitHub PR #77 merge 07499a8 2026-11-24; main Gate 45491327597; publish 45492991758; release v0.91.61; wick deploy, /world, /llms.txt, routes and /health; local /tmp/monastery-live.mjs and /tmp/completion-live.mjs; tools/gate.mjs"
+    },
+    {
+      "id": "MB-304",
+      "level": "build",
+      "statement": "v0.91.62 adds The Merry Dancer, a 12-room level 7/8/9 sunken wreck off The Docks (31). A free salvage skiff reaches The Wreck Buoy (240); the drowned deck (241) has a party capstan that opens the secret cargo hatch to 245 while the long way is 242 south. The strongbox key is in the flooded galley (246); the great iron strongbox (244) holds the tide-glass; the captain's log is in the cabin (243); the drowned captain (251) is 90 HP / 6 damage / 3 armour with shared kill credit. The repeatable Merry Dancer's Glass quest (level 7) visits the cabin, collects the log, kills the captain and delivers the tide-glass to the salvager for 300 XP / 45 coins. Adds two wreck lanterns, the log, key, strongbox, tide-glass, drowned coins, four mobiles, seven objects and two hidden ways. Completion is now level 10 / 25 quests / 25 hidden ways. World 251 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects; quest ratchet 25. Gate covers the skiff route, capstan, keyed strongbox, level/dark gates, boss, quest references and counts.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-305",
+      "level": "some-true",
+      "statement": "Live two-client evidence for v0.91.62. sail-a and sail-b (level 9) formed a party at the docks, boarded the free skiff to the wreck, and used the party capstan; 241:down was revealed to both. The party recovered the strongbox key and captain's log, unlocked the strongbox and took the tide-glass, then killed the drowned captain (a mechanics fixture at 15 HP): sail-b received 140 shared XP and the [x] Defeat the drowned captain credit. sail-a returned to the salvager and completed The Merry Dancer's Glass for 300 XP / 45 coins (15,580 XP and 65 coins total). The completion live test passes at 25 quests and 25 hidden ways. Gate passes at 251 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects.",
+      "authority": "local /tmp/wreck-live.mjs and /tmp/completion-live.mjs; tools/gate.mjs; 2026-11-24"
     }
   ]
 }

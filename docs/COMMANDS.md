@@ -157,6 +157,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `deepdelve` | The Deepdelve | 6 | Reach the surveyor's camp; Recover the surveyor's notes; Defeat the mine guardian; Bring the sealed ore to the mine captain | 320 xp |
 | `foundry` | The Drowned Foundry | 9 | Reach the master's office; Recover the foundry ledger; Defeat the foundry master; Bring the master's core to the foreman | 420 xp |
 | `monastery` | The Bell Below | 8 | Climb the bell tower; Recover the monastery ledger; Defeat the drowned abbot; Bring the clapper to the bellkeeper | 380 xp |
+| `wreck` | The Merry Dancer's Glass | 7 | Reach the captain's cabin; Recover the captain's log; Defeat the drowned captain; Bring the tide-glass to the salvager | 300 xp |
 
 ## Rooms
 
@@ -401,4 +402,16 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 237 | The Abbot's Cell | monastery | no | west 236, east 238, north 235 |
 | 238 | The Drowned Chapel | monastery | no | west 237, north 239 |
 | 239 | The Reliquary | monastery | no | south 238 |
+| 240 | The Wreck Buoy | wreck | no | north 31, down 241 |
+| 241 | The Drowned Deck | wreck | no | up 240, east 242 |
+| 242 | The Broken Mast | wreck | no | west 241, east 243, south 245 |
+| 243 | The Captain's Cabin | wreck | no | west 242, down 244 |
+| 244 | The Strongbox | wreck | no | up 243 |
+| 245 | The Cargo Hold | wreck | no | north 242, up 241, east 246 |
+| 246 | The Flooded Galley | wreck | no | west 245, east 247 |
+| 247 | The Powder Room | wreck | no | west 246, down 248 |
+| 248 | The Orlop | wreck | no | up 247, east 249 |
+| 249 | The Drowned Shrine | wreck | no | west 248, east 250 |
+| 250 | The Captain's Berth | wreck | no | west 249, east 251 |
+| 251 | The Drowned Captain | wreck | no | west 250 |
 

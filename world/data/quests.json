@@ -700,6 +700,45 @@
       },
       "complete": "The bellkeeper takes the clapper. The bell is whole again, and the water is quiet.",
       "requires": []
+    },
+    {
+      "id": "wreck",
+      "name": "The Merry Dancer's Glass",
+      "level": 7,
+      "giver": "the salvager",
+      "repeat": "reset",
+      "description": "The Merry Dancer went down with a tide-glass in her strongbox. The salvager wants the captain's log, the glass and proof that the captain is quiet.",
+      "objectives": [
+        {
+          "kind": "visit",
+          "room": 243,
+          "text": "Reach the captain's cabin"
+        },
+        {
+          "kind": "collect",
+          "object": "captain-log",
+          "text": "Recover the captain's log"
+        },
+        {
+          "kind": "kill",
+          "npc": "drowned-captain",
+          "count": 1,
+          "text": "Defeat the drowned captain"
+        },
+        {
+          "kind": "deliver",
+          "npc": "salvager",
+          "object": "tide-glass",
+          "count": 1,
+          "text": "Bring the tide-glass to the salvager"
+        }
+      ],
+      "rewards": {
+        "xp": 300,
+        "coins": 45
+      },
+      "complete": "The salvager takes the glass and reads the log. The Merry Dancer is quiet, and the buoy bell stops.",
+      "requires": []
     }
   ]
 }
