@@ -539,6 +539,12 @@ Rehearsed 2026-11-16:
   speaking, opened the Twin Door with one hidden partner and took the crown.
   Gate covers the death penalty, level gates, twin door, hide visibility and
   prompt (MB-286/287/288);
+- v0.91.57 (guardian tuning) lowers the Deepdelve guardian from 70 HP, 7
+  damage and 4 armour to **55 HP, 5 damage and 3 armour**. A deterministic
+  two-actor simulator of a level-8 pair with the mine pick lost to the 70/7/4
+  build (both characters died with the guardian at 22 HP) and wins the 55/5/3
+  build with about 35 HP each. No other world content changes; 213 rooms / 17
+  zones / 22 quests / 100 mobiles / 240 objects;
 - v0.91.56 (party and the Deepdelve) adds a real **party** (`party invite`,
   `accept`, `decline`, `leave`, `kick`, `disband`, `who`, up to six), shared 50% kill XP
   and quest kill credit for members in the same room, and a HUD refresh for
