@@ -510,6 +510,14 @@ Rehearsed 2026-11-16:
   Adds the DeepSeek preset, removes the local model service/files and the
   operator env. World unchanged: 181 rooms / 15 zones / 20 quests / 90 mobiles /
   214 objects (MB-278/279);
+- v0.91.53 (DeepSeek fix) forces DeepSeek fast turns to `reasoning_effort: none`
+  with a 300-token floor, uses `low`/600 on deliberate turns, and retries an
+  empty-content reply once with 800 tokens while preserving the observation.
+  It also saves a key typed in the setup panel before the mode switch, so
+  `startAI` no longer re-renders the key field empty. A live browser session
+  with a real DeepSeek key took the free gear, examined the Atrium plaque and
+  walked north to the Corridor with no Brain error. World unchanged: 181 rooms /
+  15 zones / 20 quests / 90 mobiles / 214 objects (MB-281/282);
 - v0.63.3 (operator block) blocks the exact Prism ids that held pins at reset
   time, so a client that mints a new session cannot re-create a removed test
   identity (MB-90);

@@ -1376,7 +1376,7 @@
     persona: null, owner: null, personaAudience: null, tickFrom: null, lastTick: null,
     highlights: [], streaming: false, timeouts: 0, lastPoll: null, state: null,
     memory: null, memoryKey: null, commandRoom: null, exits: [],
-    lastInvalid: null, lastValidation: null, loopBroken: false, lastR4: false, r4LastLatency: 0,
+    lastInvalid: null, lastValidation: null, loopBroken: false, lastR4: false, r4LastLatency: 0, emptyRetry: false,
   };
   const shortId = (id) => (id ? `${id.slice(0, 15)}…` : "—");
 
@@ -2599,7 +2599,8 @@
     aiGoal.value = GOALS[config.goal] ? config.goal : "explorer";
     aiFast.checked = config.fast !== false;
     aiReasoning.value = config.reasoning ?? "auto";
-    aiKey.value = "";
+    // Keep a key the player just typed; a saved key is restored by
+    // applyProvider/keyFor and an empty field starts empty.
     // A pre-v0.44 key was global. Move it only when the active preset is a
     // known host whose origin matches; never attach it to an arbitrary custom
     // endpoint just because that field happens to be selected.
@@ -2851,6 +2852,7 @@
     AI.loopBroken = false;
     AI.lastR4 = false;
     AI.r4LastLatency = 0;
+    AI.emptyRetry = false;
     AI.lastReply = null;
     AI.lastParsed = null;
     AI.lastLatency = 0;
@@ -3087,6 +3089,7 @@
         }
         return;
       }
+      if (key) saveKeyFor(base, key);
       await ensurePrismOwner();
       const goal = GOALS[aiGoal.value] ? aiGoal.value : "explorer";
       setMode("ai");
@@ -3790,6 +3793,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       clearInterval(AI.waitClock);
       AI.waitClock = null;
       AI.rateRetries = 0;
+      AI.emptyRetry = false;
       const latency = Math.round(performance.now() - started);
       const parsed = parseBrain(text);
       if (shouldBreakLoop(memory, { room: AI.room || AI.state?.room?.name, command: parsed.command, recent: AI.recent })) {
@@ -3970,6 +3974,15 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         if (AI.socket?.readyState === WebSocket.OPEN) AI.socket.send("look\n");
         if (AI.streaming) publishStream({ kind: "status", text: "timeout; falling back to look", tick: AI.lastTick });
         scheduleTurn(1200);
+        return;
+      }
+      if (/empty reply/i.test(message) && AI.config.provider === "deepseek" && !AI.emptyRetry) {
+        AI.emptyRetry = true;
+        AI.config.maxTokens = Math.max(800, AI.config.maxTokens ?? 0);
+        AI.observed = [observation, AI.observed].filter(Boolean).join("\n").trim();
+        AI.lastError = null;
+        addChat("system", "DeepSeek returned only reasoning; retrying with a larger budget.");
+        scheduleTurn(600);
         return;
       }
       addChat("system", `Brain error: ${message}`);

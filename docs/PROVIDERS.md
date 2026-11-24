@@ -133,7 +133,10 @@ states the tier.
 **DeepSeek (paid key).** The browser sends the prompt to
 `https://api.deepseek.com/v1/chat/completions` with the player's key. The
 default is `deepseek-flash`; edit the model field to `deepseek-v4-pro` for
-harder turns. It is a low-cost paid API, not a free tier.
+harder turns. Fast turns force `reasoning_effort: none` and a 300-token floor;
+deliberate turns use `low` and 600. If DeepSeek still returns an empty content
+field after spending its budget on reasoning, the harness retries once with 800
+tokens and a preserved observation. It is a low-cost paid API, not a free tier.
 
 **Anthropic, OpenAI and custom.** Anthropic uses its messages endpoint with the
 direct-browser header; OpenAI and custom endpoints use OpenAI chat completions.
