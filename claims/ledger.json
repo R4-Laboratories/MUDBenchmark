@@ -1821,6 +1821,12 @@
       "level": "build",
       "statement": "v0.91.60 consolidates the small zone ids without moving content. Harbor (rooms 30-33) joins Town (14 rooms); the Undercroft (25-29) joins the Lantern Quarter (11 rooms); the Eclipse Court (92-97) joins the Moonlit Reach (12 rooms). The harbor, undercroft and eclipse zone ids are removed, NPC wander zones for the dockhand/lighthouse/ring keepers, sewer rat/smuggler/Night Market broker and eclipse herald/star hound/sundial knight/regent are updated to town/lantern/moon, and every room still belongs to exactly one zone. No room, exit, quest, action, item or mobile changed; the world is 225 rooms / 15 zones / 23 quests / 105 mobiles / 248 objects. Salt Caves stays a five-room faction/event site and the Temple stays the seven-room start district. Gate checks the 15-zone map, the three parent expansions, the removed ids, full room coverage and every prior check.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-300",
+      "level": "some-true",
+      "statement": "Production v0.91.60 serves the consolidated zone map. /world reports 225 rooms / 15 zones / 23 quests / 105 mobiles / 248 objects; /api/free and /api/demo are 404, and /router.mjs and /llms.txt are 200. /llms.txt maps room 25 to lantern, room 30 to town and room 92 to moon, confirming the Harbor->Town, Undercroft->Lantern and Eclipse->Moon merges. No room, exit, quest, action, item or mobile changed; NPC wander zones follow the merge. Salt Caves remains the five-room faction site and the Temple the seven-room start district. Main Gate 45478218836 green, publish 45479682549, release v0.91.60.",
+      "authority": "GitHub PR #76 merge b46903b 2026-11-24; main Gate 45478218836; publish 45479682549; release v0.91.60; wick deploy, /world, /llms.txt, routes and /health; tools/gate.mjs"
     }
   ]
 }
