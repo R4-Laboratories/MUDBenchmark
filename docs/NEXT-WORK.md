@@ -1,9 +1,10 @@
 # Next work
 
-Baseline: **v0.91.51**. The world has 181 rooms, 15 zones, 20 quests, 90 mobiles
+Baseline: **v0.91.52**. The world has 181 rooms, 15 zones, 20 quests, 90 mobiles
 and 214 objects. R4 memory, command grounding, scorecards
-and the public stats surface are live; signups are open. The Gemini demo remains
-disabled; the free agent uses a player Groq key or the operator fast proxy.
+and the public stats surface are live; signups are open. Every AI key is
+supplied by the player; Groq is the free option, and each browser harness runs
+its own R4 router. The server hosts no model and holds no provider key.
 
 The next phase is **endgame depth and evidence from real play**, not another
 memory or prompt system.
@@ -81,7 +82,8 @@ memory or prompt system.
 | v0.91.48 | Grey Keep fill to 45 rooms; Warden track; reliquary cap | **done** (MB-267/268) |
 | v0.91.49 | The Arcanum: 21-room Mages' tower; detect/shield gates; light-gated dark rooms | **done** (MB-270/271) |
 | v0.91.50 | Fast agent: remove Pollinations; Groq free key; operator fast proxy; 429 backoff | **done** (MB-273/274, production MB-275) |
-| v0.91.51 | Local free agent: Qwen2.5-3B on CPU, no key, no per-request cost; high quotas | **done** (MB-276) |
+| v0.91.51 | Local free agent: Qwen2.5-3B on CPU, no key, no per-request cost; high quotas | **done** (MB-276), removed in v0.91.52 |
+| v0.91.52 | Bring your own key: Groq free, Anthropic/OpenAI/DeepSeek/custom; browser R4 router | **done** (MB-278/279) |
 | backlog | Next deep site (mine/shipwreck/monastery); fold tiny zones; larger PvP sample | optional |
 
 ## What is next
@@ -218,7 +220,7 @@ Add a pure `validateCommand(command, promptState)` in `runtime/web/ai.mjs`:
 - if invalid, one repair attempt with the validation reason;
 - if still invalid, fall back to `look` and record `ai.invalid`.
 
-Acceptance: invalid-command rate below 2% over a 50-turn Gemini run; no valid
+Acceptance: invalid-command rate below 2% over a 50-turn provider run; no valid
 social command is blocked.
 
 ### B2. Scorecards
@@ -241,19 +243,20 @@ Extend the gate with a 20-turn mock that always repeats one command. It must:
 - never pause the run;
 - never emit an impossible exit when the current room's exits are known.
 
-## Workstream C — Gemini and provider operations
+## Workstream C — Provider operations
 
-- Rotate the Gemini key that was pasted into chat; replace it in
-  `~/.mudbench/owner.env` without printing it.
-- Add a quota readout to the Model/Telemetry panel: used/remaining daily and
-  minute turns, configured model, last 429.
-- Confirm free-tier limits for the configured model and tune
-  `GEMINI_DAILY_TURNS` / `GEMINI_MINUTE_TURNS` against them.
-- Add a `Reset demo token` path for operator key rotation.
-- Keep a documented fallback: own key, local Ollama, or custom endpoint.
+- **Done:** Groq is listed as the free key; Anthropic, OpenAI, DeepSeek and
+  custom OpenAI-compatible endpoints use the player's own key.
+- **Done:** no provider key, model or R4 context lives on the game server.
+- Keep the provider hints and free-key links current (Groq's model and limits
+  change).
+- Keep the browser R4 router (`router.mjs`) as the per-agent context path; the
+  server R4 sidecar is optional for external agents/tools.
+- A real 429 is shown as a clear message and retried with `Retry-After`; after
+  the retry budget the agent pauses without losing the observation.
 
-Acceptance: a real 429 is shown as a clear message; a token after key rotation
-works; no key reaches the browser, transcript or telemetry.
+Acceptance: no key in `owner.env`, the page, transcript or telemetry; a real
+429/402 is clear; the browser request contains the routed R4 context.
 
 ## Workstream D — World, social and stream
 
@@ -307,7 +310,7 @@ works; no key reaches the browser, transcript or telemetry.
   irrelevant concepts; the 30-observation report is the go/no-go gate.
 - **Privacy**: identity-scoped memory must never cross characters; the service
   is loopback and the game proxies only the current character's context.
-- **Latency**: a memory lookup must not add more than ~100ms to a 1s Gemini
+- **Latency**: a memory lookup must not add more than ~100ms to a 1s provider turn
   turn; fall back to local memory if it does.
 - **Free tier**: quotas and data terms can change; the demo remains opt-in and
   replaceable.

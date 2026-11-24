@@ -838,21 +838,21 @@
     <aside>
       <section class="panel" id="ai-setup" aria-label="Model control">
         <h2>Start an agent</h2>
-        <p>Start free in one click, or bring your own model and key.</p>
+        <p>Bring a provider key; Groq is free. Keys stay in this browser.</p>
         <div id="ai-free">
-          <div class="free-head"><span class="free-badge">Fast</span><h3>Start a fast free agent</h3></div>
-          <p>Groq · free key · 8B instant. A browser account is created automatically so the agent keeps its character.</p>
-          <p class="small muted">Create a key at <a href="https://console.groq.com/keys" target="_blank" rel="noreferrer">console.groq.com/keys</a> (no card). The key stays in this browser. If the operator configured a shared fast model, the agent starts without one.</p>
+          <div class="free-head"><span class="free-badge">Free key</span><h3>Bring your own AI key</h3></div>
+          <p>Groq has a free key. Anthropic, OpenAI, DeepSeek and any OpenAI-compatible endpoint also work. The key stays in this browser.</p>
+          <p class="small muted">Create a free Groq key at <a href="https://console.groq.com/keys" target="_blank" rel="noreferrer">console.groq.com/keys</a> (no card), or choose another provider under “Use another model”.</p>
           <div class="field">
             <label for="ai-goal">Persona</label>
             <select id="ai-goal"></select>
           </div>
           <button type="button" id="ai-free-start">Start free agent</button>
-          <p id="ai-free-status" role="status" aria-live="polite">Paste a free Groq key under “Use another model”, or use the operator’s shared fast model.</p>
+          <p id="ai-free-status" role="status" aria-live="polite">Groq has a free key; paste it under “Use another model”.</p>
         </div>
         <details id="ai-custom" class="ai-custom">
           <summary>Use another model / bring your own key</summary>
-          <p class="small muted">Ollama is local and free. OpenAI, Anthropic and any OpenAI-compatible endpoint can use your own key; it stays in this browser.</p>
+          <p class="small muted">Groq has a free key; Anthropic, OpenAI, DeepSeek and any OpenAI-compatible endpoint use your own key. Ollama and Prime Router run locally with no key. The key stays in this browser.</p>
           <div class="setup-grid">
           <div class="field">
             <label for="ai-provider">Brain</label>
@@ -874,7 +874,7 @@
               <button type="button" id="ai-find">Find</button>
             </div>
             <datalist id="ai-models"></datalist>
-            <p class="small muted" id="ai-local">Groq needs a free key; Ollama and Prime Router need none. The operator fast model needs no key.</p>
+            <p class="small muted" id="ai-local">Groq needs a free key; Anthropic, OpenAI and DeepSeek use your own key. Ollama and Prime Router need none.</p>
           </div>
           <div class="field" id="ai-key-field">
             <label for="ai-key">API key <span class="muted">(this browser only)</span></label>
@@ -904,11 +904,11 @@
         </details>
         <details class="small muted">
           <summary>How this works</summary>
-          <p>1. <strong>Start fast</strong> uses a free Groq key, or the operator’s shared fast model when one is configured. A browser Prism account is created automatically so the agent can keep its character.</p>
+          <p>1. <strong>Bring a key.</strong> Groq is free; Anthropic, OpenAI, DeepSeek and custom OpenAI-compatible endpoints work. The key stays in this browser. A browser Prism account is created automatically so the agent can keep its character.</p>
           <p>2. <strong>Custom model</strong> supports Ollama locally, OpenAI, Anthropic, Prime Router and any OpenAI-compatible endpoint. Your key stays in this browser.</p>
           <p>3. The agent is a persona of your Prism id; your device signs the owner action. It sees the same room text you do, types one command per turn, and waits for the server like any player.</p>
           <p>4. Send direction in the Director chat. The AI replies there and its private reasoning appears in Mind.</p>
-          <p>5. A compact memory of rooms, tried commands and stale results is kept per character in this browser and injected every turn. A loop guard breaks repeated observation commands instead of pausing the run.</p>
+          <p>5. Each AI harness keeps a compact memory of rooms, tried commands and stale results, and runs its own R4/hypersphere router in the browser. The game server does not hold the brain, the key or the R4 context.</p>
           <p>The game server never sees the provider key.</p>
         </details>
         <div class="modal-actions">
@@ -1157,7 +1157,8 @@
     parseBrain, buildActionMenu, validateCommand, repairCommand, requestFor, replyFrom, trimHistory, normalizeBase,
     isThrottledStatus, throttlePlan,
   } from "/ai.mjs";
-  import { emptyMemory, rememberResult, memoryPrompt, loopWarning, breakLoop, shouldBreakLoop, publicMemoryText } from "/memory.mjs";
+  import { emptyMemory, rememberResult, memoryPrompt, loopWarning, breakLoop, shouldBreakLoop } from "/memory.mjs";
+  import { assemble } from "/router.mjs";
   import { signIn as prismSignIn, reset as prismReset, load as loadSession, save as saveSession, personaSignIn, personaRetire, nextPersonaEpoch, createRecoveryKit, restoreRecoveryKit, characterHandoff, characterRevoke, characterTransfer, signChallenge } from "/prism-auth.mjs";
   import { randomCharacterName, uniqueCharacterName, chooseCharacter } from "/names.mjs";
   import { createLinkOffer, parseLinkUri, requestLink, acceptLinkRequest, completeLink, linkCode, revokeDevice, resolvePrism, linkQr } from "/prism-id.mjs";
@@ -1374,11 +1375,8 @@
     character: "", characterExplicit: false, createRetries: 0, lastRequest: null, lastReply: null, lastParsed: null, lastLatency: 0,
     persona: null, owner: null, personaAudience: null, tickFrom: null, lastTick: null,
     highlights: [], streaming: false, timeouts: 0, lastPoll: null, state: null,
-    demoToken: null, demoTokenExpires: 0, demoWaiters: [],
     memory: null, memoryKey: null, commandRoom: null, exits: [],
-    r4Waiters: [], r4DownUntil: 0,
     lastInvalid: null, lastValidation: null, loopBroken: false, lastR4: false, r4LastLatency: 0,
-    demoRemaining: null, demoMinuteRemaining: null, demoGlobalRemaining: null, demoWarned: false,
   };
   const shortId = (id) => (id ? `${id.slice(0, 15)}…` : "—");
 
@@ -2513,19 +2511,7 @@
   // --- AI setup -----------------------------------------------------------
   let autoStart = location.hash === "#ai";
 
-  const DEMO = await (async () => {
-    try {
-      const res = await fetch("/api/demo", { signal: AbortSignal.timeout(2500) });
-      if (!res.ok) throw new Error(`${res.status}`);
-      return await res.json();
-    } catch {
-      return { configured: false, model: "", dailyLimit: 0, minuteLimit: 0 };
-    }
-  })();
-
   for (const [id, provider] of Object.entries(PROVIDERS)) {
-    if (id === "gemini-demo" && !DEMO.configured) continue;
-    if (id === "free-fast" && !DEMO.free?.configured) continue;
     const option = document.createElement("option");
     option.value = id;
     option.textContent = provider.label;
@@ -2544,8 +2530,7 @@
       aiBase.value = provider.base;
       aiModel.value = provider.model;
     }
-    if (id === "gemini-demo" && DEMO.model) aiModel.value = DEMO.model;
-    if (id === "free-fast" && DEMO.free?.model) aiModel.value = DEMO.free.model;
+
     aiKeyField.hidden = ["none", "proxy"].includes(provider.keyMode ?? (provider.needsKey ? "required" : "none"));
     aiHint.textContent = provider.hint;
     aiHint.className = "small muted";
@@ -2600,20 +2585,15 @@
     document.querySelector("aside").scrollTop = 0;
     const config = loadJSON(CONFIG_KEY, {}) ?? {};
     const known = PROVIDERS[config.provider] ? config.provider : null;
-    let wanted = known ?? (DEMO.free?.configured ? "free-fast" : "groq");
-    if (wanted === "gemini-demo" && !DEMO.configured) wanted = "ollama";
-    if (wanted === "free-fast" && !DEMO.free?.configured) wanted = "groq";
+    const wanted = known ?? "groq";
     const same = known === wanted;
     aiProvider.value = wanted;
     aiBase.value = same && config.base ? config.base : PROVIDERS[wanted].base;
     aiModel.value = same && config.model ? config.model : PROVIDERS[wanted].model;
-    if (wanted === "free-fast" && DEMO.free?.model) aiModel.value = DEMO.free.model;
     if (aiFreeStatus) {
-      aiFreeStatus.textContent = DEMO.free?.configured || DEMO.configured
-        ? "The operator fast model is ready; start without a key."
-        : keyFor(PROVIDERS.groq.base)
-          ? "Groq key saved; start the fast free agent."
-          : "Paste a free Groq key under “Use another model”.";
+      aiFreeStatus.textContent = keyFor(PROVIDERS.groq.base)
+        ? "Groq key saved; start the free agent."
+        : "Groq has a free key; paste it under “Use another model”.";
     }
     aiCharacter.value = config.character === "scout" ? "" : (config.character ?? "");
     aiGoal.value = GOALS[config.goal] ? config.goal : "explorer";
@@ -2725,14 +2705,6 @@
 
   aiFind.addEventListener("click", async () => {
     const provider = aiProvider.value;
-    if (provider === "free-fast") {
-      const model = DEMO.free?.model ?? aiModel.value;
-      fillModels([model]);
-      aiModel.value = model;
-      aiHint.textContent = "The operator fast model is configured server-side; no key is needed here.";
-      aiHint.className = "small muted";
-      return;
-    }
     if (provider === "prime-router") {
       aiHint.textContent = "Prime Router has no model list; use its configured model.";
       aiHint.className = "small muted";
@@ -2782,49 +2754,6 @@
   function saveMemory() {
     if (!AI.memoryKey || !AI.memory) return;
     try { localStorage.setItem(AI.memoryKey, JSON.stringify(AI.memory)); } catch {}
-  }
-
-  function requestR4Context(text) {
-    return new Promise((resolve, reject) => {
-      if (AI.socket?.readyState !== WebSocket.OPEN) {
-        reject(new Error("The AI is not connected."));
-        return;
-      }
-      const waiter = {
-        resolve,
-        reject,
-        timer: setTimeout(() => {
-          AI.r4Waiters = AI.r4Waiters.filter((entry) => entry !== waiter);
-          reject(new Error("R4 context timed out."));
-        }, 2000),
-      };
-      AI.r4Waiters.push(waiter);
-      AI.socket.send(`r4-context ${String(text ?? "").replace(/\s+/g, " ").slice(0, 4000)}\n`);
-    });
-  }
-
-  function rememberR4(text) {
-    if (AI.socket?.readyState !== WebSocket.OPEN) return;
-    AI.socket.send(`r4-remember ${String(text ?? "").replace(/\s+/g, " ").slice(0, 4000)}\n`);
-  }
-
-  function requestDemoToken() {
-    return new Promise((resolve, reject) => {
-      if (AI.socket?.readyState !== WebSocket.OPEN) {
-        reject(new Error("The AI is not connected to the game."));
-        return;
-      }
-      const waiter = {
-        resolve,
-        reject,
-        timer: setTimeout(() => {
-          AI.demoWaiters = AI.demoWaiters.filter((entry) => entry !== waiter);
-          reject(new Error("The demo token request timed out."));
-        }, 6000),
-      };
-      AI.demoWaiters.push(waiter);
-      AI.socket.send("demo-token\n");
-    });
   }
 
   async function startAI() {
@@ -2913,24 +2842,15 @@
     AI.characterExplicit = Boolean(AI.character);
     AI.createRetries = 0;
     AI.lastRequest = null;
-    AI.demoToken = null;
-    AI.demoTokenExpires = 0;
-    AI.demoWaiters = [];
     AI.memory = null;
     AI.memoryKey = null;
     AI.commandRoom = null;
     AI.exits = [];
-    AI.r4Waiters = [];
-    AI.r4DownUntil = 0;
     AI.lastInvalid = null;
     AI.lastValidation = null;
     AI.loopBroken = false;
     AI.lastR4 = false;
     AI.r4LastLatency = 0;
-    AI.demoRemaining = null;
-    AI.demoMinuteRemaining = null;
-    AI.demoGlobalRemaining = null;
-    AI.demoWarned = false;
     AI.lastReply = null;
     AI.lastParsed = null;
     AI.lastLatency = 0;
@@ -3137,24 +3057,32 @@
       statusNode.className = "small muted";
     }
     try {
-      const freeFast = Boolean(DEMO.free?.configured);
-      const geminiFast = Boolean(DEMO.configured);
-      const groqKey = keyFor(PROVIDERS.groq.base);
-      if (!freeFast && !geminiFast && !groqKey) {
+      const provider = PROVIDERS[aiProvider.value] ? aiProvider.value : "groq";
+      if (aiProvider.value !== provider) {
+        aiProvider.value = provider;
+        applyProvider(provider);
+      }
+      const base = normalizeBase(aiBase.value.trim());
+      const key = aiKey.value.trim() || keyFor(base);
+      const keyMode = PROVIDERS[provider].keyMode ?? (PROVIDERS[provider].needsKey ? "required" : "none");
+      if (keyMode === "required" && !key) {
         setMode("ai");
         const custom = document.getElementById("ai-custom");
         if (custom) custom.open = true;
-        aiProvider.value = "groq";
-        applyProvider("groq");
         aiKey.focus();
         aiKey.scrollIntoView({ block: "center" });
-        showHint("Create a free Groq key at console.groq.com/keys, paste it in Key, then press Start with this model. The key stays in this browser.", true);
+        const hint = provider === "groq"
+          ? "Create a free Groq key at console.groq.com/keys, paste it in Key, then press Start with this model."
+          : `Paste the ${PROVIDERS[provider].label} key in Key, then press Start with this model.`;
+        showHint(`${hint} The key stays in this browser.`, true);
         if (statusNode) {
-          statusNode.textContent = "Paste a free Groq key to start; it stays in this browser.";
+          statusNode.textContent = provider === "groq"
+            ? "Paste a free Groq key to start; it stays in this browser."
+            : `Paste a ${PROVIDERS[provider].label} key to start; it stays in this browser.`;
           statusNode.className = "small err";
         }
         if (aiFreeStatus && statusNode !== aiFreeStatus) {
-          aiFreeStatus.textContent = "Paste a free Groq key to start; it stays in this browser.";
+          aiFreeStatus.textContent = statusNode?.textContent || "Paste a key to start.";
           aiFreeStatus.className = "small err";
         }
         return;
@@ -3162,8 +3090,6 @@
       await ensurePrismOwner();
       const goal = GOALS[aiGoal.value] ? aiGoal.value : "explorer";
       setMode("ai");
-      aiProvider.value = freeFast ? "free-fast" : geminiFast ? "gemini-demo" : "groq";
-      applyProvider(aiProvider.value);
       aiCharacter.value = "";
       aiGoal.value = goal;
       await startAI();
@@ -3478,8 +3404,7 @@
       ["Last latency", AI.lastLatency ? `${(AI.lastLatency / 1000).toFixed(1)}s` : "—"],
       ["Invalid", AI.lastValidation?.invalid ? "yes" : "no"],
       ["Rooms seen", String(Object.keys(AI.memory?.rooms ?? {}).length)],
-      ["R4", AI.lastR4 ? `hit ${AI.r4LastLatency}ms` : (AI.r4DownUntil > Date.now() ? "fallback" : "local")],
-      ["Demo left", AI.demoRemaining !== null ? `${AI.demoRemaining} today · ${AI.demoMinuteRemaining ?? "—"} this minute` : "—"],
+      ["R4", AI.lastR4 ? "browser router" : "—"],
       ["Context", `${messages.length} msgs · ${contextChars} chars`],
       ["Last command", AI.lastCommand || "—"],
       ["Error", AI.lastError || "—"],
@@ -3600,38 +3525,6 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         }
         return;
       }
-      const r4Line = text.match(/^#r4-(context|remember) (.*)\r?\n?$/);
-      if (r4Line) {
-        if (r4Line[1] === "context") {
-          let payload = null;
-          try { payload = JSON.parse(r4Line[2]); } catch {}
-          const waiters = AI.r4Waiters.splice(0);
-          for (const waiter of waiters) {
-            clearTimeout(waiter.timer);
-            if (payload?.error) waiter.reject(new Error(payload.error));
-            else waiter.resolve(payload);
-          }
-        }
-        return;
-      }
-      const demoLine = text.match(/^#demo-token (.*)\r?\n?$/);
-      if (demoLine) {
-        let payload = null;
-        try { payload = JSON.parse(demoLine[1]); } catch {}
-        const waiters = AI.demoWaiters.splice(0);
-        if (payload?.token) {
-          AI.demoToken = payload.token;
-          AI.demoTokenExpires = Number(payload.expires) || 0;
-          AI.demoRemaining = Number.isFinite(payload.remaining) ? payload.remaining : null;
-          AI.demoMinuteRemaining = Number.isFinite(payload.minuteRemaining) ? payload.minuteRemaining : null;
-          AI.demoGlobalRemaining = Number.isFinite(payload.globalRemaining) ? payload.globalRemaining : null;
-          for (const waiter of waiters) { clearTimeout(waiter.timer); waiter.resolve(payload); }
-        } else {
-          const why = payload?.error ?? "The Gemini demo is unavailable.";
-          for (const waiter of waiters) { clearTimeout(waiter.timer); waiter.reject(new Error(why)); }
-        }
-        return;
-      }
       const stateLine = text.match(/^#state (.*)\r?\n?$/);
       if (stateLine) {
         try { AI.state = JSON.parse(stateLine[1]); renderSheet(); publishState(); } catch {}
@@ -3745,7 +3638,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
     return Math.max(0, (AI.nextBrainAt ?? 0) - Date.now());
   }
 
-  function waitForFreeSlot(ms, reason = "the free-tier slot") {
+  function waitForRateLimit(ms, reason = "the rate-limit window") {
     const until = Date.now() + Math.max(0, ms);
     clearInterval(AI.waitClock);
     const paint = () => {
@@ -3790,8 +3683,8 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
     if (!observation && !force && AI.director.length === 0) return;
     const hold = freeSlotWait();
     if (hold > 0) {
-      if (force) addChat("system", `Free tier: the next reply is ready in ${Math.ceil(hold / 1000)}s.`);
-      waitForFreeSlot(hold);
+      if (force) addChat("system", `Provider rate limit: the next reply is ready in ${Math.ceil(hold / 1000)}s.`);
+      waitForRateLimit(hold);
       scheduleTurn(hold);
       return;
     }
@@ -3807,17 +3700,6 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
     const started = performance.now();
     try {
       const memory = ensureMemory();
-      let r4Text = "";
-      if (Date.now() >= AI.r4DownUntil) {
-        try {
-          const r4 = await requestR4Context(`${AI.room || ""} ${publicMemoryText(observation)}`);
-          r4Text = String(r4?.context ?? "").trim();
-          AI.lastR4 = Boolean(r4Text);
-          AI.r4LastLatency = Number(r4?.latency_ms) || 0;
-        } catch {
-          AI.r4DownUntil = Date.now() + 60_000;
-        }
-      }
       if (AI.lastCommand && AI.commandRoom) {
         rememberResult(memory, {
           room: AI.commandRoom,
@@ -3837,6 +3719,19 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         : { room: { ...stateRoom, text: observation } };
       const exits = stateRoom.exits ?? [];
       const memoryText = memoryPrompt(memory, { room: AI.room || stateRoom.name, exits, query: observation });
+      const r4Text = assemble({
+        events: observation,
+        memory: AI.recent.slice(-6),
+        goal: GOALS[AI.config.goal]?.goal ?? DEFAULT_GOAL,
+        mode: "routed",
+        budget: 220,
+        recall: memoryText,
+        world: AI.state?.world
+          ? `WORLD: ${AI.state.world.online} online · ${AI.state.world.phase} · ${AI.state.world.weather ?? "clear"} · reset in ${Math.max(0, Math.round((AI.state.world.reset_seconds ?? 0) / 60))}m`
+          : null,
+      }).context;
+      AI.lastR4 = Boolean(r4Text);
+      AI.r4LastLatency = 0;
       const notes = [];
       if (AI.nudge) notes.push("You repeated a command. Do something different: move, examine, take, talk, or check your inventory.");
       const loop = loopWarning(AI.recent, memory.trail);
@@ -3863,16 +3758,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         note: notes.join(" "),
       });
       const messages = trimHistory([...AI.history, { role: "user", content: user }], AI.config.fast ? 2 : 8);
-      if (AI.config.provider === "gemini-demo" || AI.config.provider === "free-fast") {
-        // A fresh token per turn survives a server restart and keeps the
-        // proxy check bound to this authenticated game socket.
-        const grant = await requestDemoToken();
-        if (AI.config.provider === "gemini-demo" && AI.demoRemaining !== null && AI.demoRemaining <= 5 && !AI.demoWarned) {
-          AI.demoWarned = true;
-          addChat("system", `Gemini demo: ${AI.demoRemaining} turns left today${AI.demoMinuteRemaining !== null ? `, ${AI.demoMinuteRemaining} this minute` : ""}.`);
-        }
-      }
-      const request = requestFor(AI.config.provider, { ...AI.config, name: AI.name || "ai", demoToken: AI.demoToken, deliberate }, system, messages);
+      const request = requestFor(AI.config.provider, { ...AI.config, name: AI.name || "ai", deliberate }, system, messages);
       AI.lastRequest = {
         system, messages, provider: AI.config.provider, model: AI.config.model,
         fast: AI.config.fast, deliberate, prompt_version: AI.config.fast ? "r4-direct-2" : "full-1",
@@ -4024,7 +3910,6 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       AI.commandRoom = AI.room || AI.state?.room?.name || null;
       if (AI.socket?.readyState === WebSocket.OPEN) AI.socket.send(`${parsed.command}\n`);
       else throw new Error("The AI is not connected.");
-      rememberR4(`Turn ${turn} in ${AI.room || "the world"}: ${publicMemoryText(observation)} I chose ${parsed.command}.`);
       AI.lastError = null;
       AI.timeouts = 0;
       setAIStatus("live");
@@ -4063,7 +3948,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
             AI.rateNotice = true;
             addChat("system", `The provider is rate-limiting this session; the AI will retry in ${Math.ceil(wait / 1000)}s. If this repeats, the free quota is exhausted or the key needs a higher limit.`);
           }
-          waitForFreeSlot(wait, "the rate-limit window");
+          waitForRateLimit(wait, "the rate-limit window");
           scheduleTurn(wait);
           return;
         }

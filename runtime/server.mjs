@@ -261,32 +261,9 @@ const MAX_ACCOUNTS = Number(process.env.MAX_ACCOUNTS ?? 500);
 // refuses new accounts. Set SIGNUP_MODE=closed for a curated launch.
 const SIGNUP_MODE = String(process.env.SIGNUP_MODE ?? "open").toLowerCase();
 const SIGNUPS_OPEN = SIGNUP_MODE !== "closed";
-// Operator-funded Gemini demo. The key never leaves the server. The browser
-// receives a short-lived demo token over its authenticated game socket; the
-// proxy checks that token and a per-Prism quota before forwarding.
-const GEMINI_KEY = process.env.GEMINI_API_KEY ?? process.env.GEMINI_KEY ?? "";
 // Optional R4 memory sidecar. The game proxies it over the authenticated
 // socket; the browser never talks to the Python service directly.
 const R4_URL = process.env.R4_URL ?? "http://127.0.0.1:8000";
-const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
-const GEMINI_BASE = process.env.GEMINI_BASE ?? "https://generativelanguage.googleapis.com/v1beta/openai";
-const GEMINI_DAILY_TURNS = Math.max(1, Number(process.env.GEMINI_DAILY_TURNS ?? 100));
-const GEMINI_MINUTE_TURNS = Math.max(1, Number(process.env.GEMINI_MINUTE_TURNS ?? 8));
-const GEMINI_GLOBAL_DAILY = Math.max(1, Number(process.env.GEMINI_GLOBAL_DAILY ?? 500));
-// Operator-funded fast model for the free agent. Groq is the default base;
-// any OpenAI-compatible endpoint works. The key stays on the server and the
-// browser gets a short-lived token plus a per-Prism quota.
-const FREE_AI_KEY = process.env.GROQ_API_KEY ?? process.env.FREE_AI_KEY ?? "";
-const FREE_AI_BASE = process.env.FREE_AI_BASE ?? "https://api.groq.com/openai/v1";
-const FREE_AI_MODEL = process.env.FREE_AI_MODEL ?? "llama-3.1-8b-instant";
-const FREE_AI_DAILY_TURNS = Math.max(1, Number(process.env.FREE_AI_DAILY_TURNS ?? 5000));
-const FREE_AI_MINUTE_TURNS = Math.max(1, Number(process.env.FREE_AI_MINUTE_TURNS ?? 25));
-const FREE_AI_GLOBAL_DAILY = Math.max(1, Number(process.env.FREE_AI_GLOBAL_DAILY ?? 14000));
-const demoAccess = new Map();
-const demoUsage = new Map();
-let demoGlobal = { day: null, turns: 0 };
-const freeUsage = new Map();
-let freeGlobal = { day: null, turns: 0 };
 const MAX_SPECTATORS = Number(process.env.MAX_SPECTATORS ?? 200);
 const RATE_WINDOW_MS = 5000;
 const RATE_MAX = 12;
@@ -1084,30 +1061,6 @@ async function handleCommand(id, line) {
   // The public watch layer is opt-in and read-only. The streamer presses Go
   // live in the AI panel; only that authenticated actor can publish events.
   // Spectator chat is handled on the /live socket, not as a game command.
-  if (verb === "demo-token") {
-    if (!GEMINI_KEY && !FREE_AI_KEY) {
-      return sendTo(id, `#demo-token ${JSON.stringify({ error: "No operator model is configured." })}\r\n`);
-    }
-    if (!actor?.key) return sendTo(id, `#demo-token ${JSON.stringify({ error: "Sign in with a Prism account first." })}\r\n`);
-    for (const [token, entry] of demoAccess) {
-      if (entry.prism === actor.key) demoAccess.delete(token);
-    }
-    const token = randomBytes(24).toString("base64url");
-    const expires = Date.now() + 30 * 60 * 1000;
-    demoAccess.set(token, { prism: actor.key, expires });
-    const usage = demoQuota(actor.key);
-    const free = freeQuota(actor.key);
-    return sendTo(id, `#demo-token ${JSON.stringify({
-      token,
-      expires,
-      remaining: Math.max(0, GEMINI_DAILY_TURNS - usage.turns),
-      minuteRemaining: Math.max(0, GEMINI_MINUTE_TURNS - usage.minuteTurns),
-      freeRemaining: FREE_AI_KEY ? Math.max(0, FREE_AI_DAILY_TURNS - free.turns) : null,
-      freeMinuteRemaining: FREE_AI_KEY ? Math.max(0, FREE_AI_MINUTE_TURNS - free.minuteTurns) : null,
-      ...demoStatus(),
-    })}\r\n`);
-  }
-
   if (verb === "r4-context" || verb === "r4-remember") {
     if (!actor?.key) return sendTo(id, `#${verb} ${JSON.stringify({ error: "Sign in with a Prism account first." })}\r\n`);
     const text = restRaw.join(" ").trim();
@@ -3167,7 +3120,7 @@ async function handle(id, line) {
   // The login handshake, the owner console and the stream telemetry are not
   // game commands. They have their own checks and must not consume the player's
   // global line budget: a busy AI publishes several stream events per turn.
-  if (!/^(stream|metric|session-key|rebind|demo-token|r4-context|r4-remember)\b/i.test(raw) && !allowCommand(id)) {
+  if (!/^(stream|metric|session-key|rebind|r4-context|r4-remember)\b/i.test(raw) && !allowCommand(id)) {
     return sendTo(id, "Slow down.\r\n");
   }
   return handleCommand(id, line);
@@ -3458,212 +3411,9 @@ function readRequestBody(req, maxBytes = 120_000) {
   });
 }
 
-const demoDay = () => new Date().toISOString().slice(0, 10);
-const demoMinute = () => Math.floor(Date.now() / 60_000);
-
-function demoQuota(prism) {
-  const day = demoDay();
-  const minute = demoMinute();
-  const current = demoUsage.get(prism) ?? { day, turns: 0, minute, minuteTurns: 0 };
-  if (current.day !== day) { current.day = day; current.turns = 0; }
-  if (current.minute !== minute) { current.minute = minute; current.minuteTurns = 0; }
-  return current;
-}
-
-function demoStatus() {
-  return {
-    configured: Boolean(GEMINI_KEY),
-    model: GEMINI_MODEL,
-    dailyLimit: GEMINI_DAILY_TURNS,
-    minuteLimit: GEMINI_MINUTE_TURNS,
-    globalRemaining: Math.max(0, GEMINI_GLOBAL_DAILY - (demoGlobal.day === demoDay() ? demoGlobal.turns : 0)),
-    note: "Operator-funded Gemini demo for Prism accounts. Free-tier data may be used by Google to improve products.",
-    free: freeStatus(),
-  };
-}
-
-function freeStatus() {
-  return {
-    configured: Boolean(FREE_AI_KEY),
-    model: FREE_AI_MODEL,
-    dailyLimit: FREE_AI_DAILY_TURNS,
-    minuteLimit: FREE_AI_MINUTE_TURNS,
-    globalRemaining: Math.max(0, FREE_AI_GLOBAL_DAILY - (freeGlobal.day === demoDay() ? freeGlobal.turns : 0)),
-    note: "Operator-provided fast model for Prism accounts. The server runs the model or holds the key; a per-account quota applies.",
-  };
-}
-
-function freeQuota(prism) {
-  const day = demoDay();
-  const minute = demoMinute();
-  const current = freeUsage.get(prism) ?? { day, turns: 0, minute, minuteTurns: 0 };
-  if (current.day !== day) { current.day = day; current.turns = 0; }
-  if (current.minute !== minute) { current.minute = minute; current.minuteTurns = 0; }
-  return current;
-}
-
-async function handleFreeAI(req, res) {
-  const send = (status, payload, headers = {}) => {
-    res.writeHead(status, { "content-type": "application/json", "cache-control": "no-store", ...headers });
-    res.end(JSON.stringify(payload));
-  };
-  if (!FREE_AI_KEY) return send(503, { error: "The operator fast model is not configured." });
-  const token = String(req.headers["x-demo-token"] ?? "");
-  const access = demoAccess.get(token);
-  if (!access || access.expires < Date.now()) {
-    demoAccess.delete(token);
-    return send(401, { error: "The fast-model token is missing or expired. Reconnect the AI and try again." });
-  }
-  const usage = freeQuota(access.prism);
-  if (usage.turns >= FREE_AI_DAILY_TURNS) return send(429, { error: `Daily fast-model limit reached (${FREE_AI_DAILY_TURNS} turns). Try again tomorrow.` }, { "retry-after": "3600" });
-  if (usage.minuteTurns >= FREE_AI_MINUTE_TURNS) return send(429, { error: `Fast-model rate limit reached (${FREE_AI_MINUTE_TURNS} turns/minute). Wait a moment.` }, { "retry-after": "60" });
-  if (freeGlobal.day !== demoDay()) freeGlobal = { day: demoDay(), turns: 0 };
-  if (freeGlobal.turns >= FREE_AI_GLOBAL_DAILY) return send(429, { error: "The world-wide fast-model limit is reached for today." }, { "retry-after": "3600" });
-
-  let body;
-  try {
-    body = JSON.parse(await readRequestBody(req));
-  } catch {
-    return send(400, { error: "The request is not valid JSON." });
-  }
-  const messages = Array.isArray(body.messages) ? body.messages.slice(-10).map((message) => ({
-    role: message.role === "assistant" ? "assistant" : message.role === "system" ? "system" : "user",
-    content: String(message.content ?? "").slice(0, 8000),
-  })) : [];
-  if (!messages.length) return send(400, { error: "The request has no messages." });
-  const started = Date.now();
-  try {
-    const upstream = await fetch(`${FREE_AI_BASE.replace(/\/+$/, "")}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        authorization: `Bearer ${FREE_AI_KEY}`,
-      },
-      body: JSON.stringify({
-        model: FREE_AI_MODEL,
-        messages,
-        temperature: 0,
-        max_tokens: 160,
-        ...(/gemini|gpt-5|(^|[-/])o[134]/i.test(FREE_AI_MODEL) ? { reasoning_effort: "none" } : {}),
-        stream: false,
-      }),
-      signal: AbortSignal.timeout(20_000),
-    });
-    const text = await upstream.text();
-    recordSpan("ai.free", {
-      "ai.provider": "free-fast",
-      "ai.model": FREE_AI_MODEL,
-      "ai.latency_ms": Date.now() - started,
-      "ai.status": upstream.status,
-      "prism.id": access.prism,
-    }, Date.now() - started);
-    if (!upstream.ok) {
-      const retry = upstream.headers.get("retry-after");
-      return send(upstream.status === 429 ? 429 : 502, {
-        error: `The fast model returned ${upstream.status}.`,
-        detail: text.slice(0, 240),
-      }, retry ? { "retry-after": retry } : {});
-    }
-    let parsed;
-    try { parsed = JSON.parse(text); } catch { return send(502, { error: "The fast model returned invalid JSON." }); }
-    usage.turns += 1;
-    usage.minuteTurns += 1;
-    freeGlobal.turns += 1;
-    return send(200, parsed);
-  } catch (error) {
-    return send(502, { error: `Fast-model request failed: ${error.message}` });
-  }
-}
-
-async function handleGeminiDemo(req, res) {
-  const send = (status, payload) => {
-    res.writeHead(status, { "content-type": "application/json", "cache-control": "no-store" });
-    res.end(JSON.stringify(payload));
-  };
-  if (!GEMINI_KEY) return send(503, { error: "The Gemini demo is not configured by the operator." });
-  const token = String(req.headers["x-demo-token"] ?? "");
-  const access = demoAccess.get(token);
-  if (!access || access.expires < Date.now()) {
-    demoAccess.delete(token);
-    return send(401, { error: "The demo token is missing or expired. Reconnect the AI and try again." });
-  }
-  const usage = demoQuota(access.prism);
-  if (usage.turns >= GEMINI_DAILY_TURNS) return send(429, { error: `Daily demo limit reached (${GEMINI_DAILY_TURNS} turns). Try again tomorrow.` });
-  if (usage.minuteTurns >= GEMINI_MINUTE_TURNS) return send(429, { error: `Demo rate limit reached (${GEMINI_MINUTE_TURNS} turns/minute). Wait a moment.` });
-  if (demoGlobal.day !== demoDay()) demoGlobal = { day: demoDay(), turns: 0 };
-  if (demoGlobal.turns >= GEMINI_GLOBAL_DAILY) return send(429, { error: "The world-wide demo limit is reached for today." });
-
-  let body;
-  try {
-    body = JSON.parse(await readRequestBody(req));
-  } catch {
-    return send(400, { error: "The request is not valid JSON." });
-  }
-  const messages = Array.isArray(body.messages) ? body.messages.slice(-10).map((message) => ({
-    role: message.role === "assistant" ? "assistant" : message.role === "system" ? "system" : "user",
-    content: String(message.content ?? "").slice(0, 8000),
-  })) : [];
-  if (!messages.length) return send(400, { error: "The request has no messages." });
-  const requestedReasoning = String(req.headers["x-demo-reasoning"] ?? "none");
-  const reasoning = requestedReasoning === "low" ? "low" : (/gemini-2\.5/i.test(GEMINI_MODEL) ? "none" : "minimal");
-  const started = Date.now();
-  try {
-    const upstream = await fetch(`${GEMINI_BASE.replace(/\/+$/, "")}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        authorization: `Bearer ${GEMINI_KEY}`,
-      },
-      body: JSON.stringify({
-        model: GEMINI_MODEL,
-        messages,
-        temperature: 0,
-        max_tokens: 160,
-        reasoning_effort: reasoning,
-        stream: false,
-      }),
-    });
-    const text = await upstream.text();
-    recordSpan("ai.demo", {
-      "ai.provider": "gemini-demo",
-      "ai.model": GEMINI_MODEL,
-      "ai.latency_ms": Date.now() - started,
-      "ai.status": upstream.status,
-      "prism.id": access.prism,
-    }, Date.now() - started);
-    if (!upstream.ok) {
-      return send(502, { error: `Gemini returned ${upstream.status}.`, detail: text.slice(0, 240) });
-    }
-    usage.turns += 1;
-    usage.minuteTurns += 1;
-    demoGlobal.turns += 1;
-    return send(200, JSON.parse(text));
-  } catch (error) {
-    return send(502, { error: `Gemini request failed: ${error.message}` });
-  }
-}
-
 const web = http.createServer(async (req, res) => {
   // Query strings are for cache-busting and links; routing uses the path only.
   const pathname = new URL(req.url, "http://localhost").pathname;
-  if (pathname === "/api/demo" && req.method === "GET") {
-    res.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
-    res.end(JSON.stringify(demoStatus()));
-    return;
-  }
-  if (pathname === "/api/gemini/v1/chat/completions" && req.method === "POST") {
-    await handleGeminiDemo(req, res);
-    return;
-  }
-  if (pathname === "/api/free" && req.method === "GET") {
-    res.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
-    res.end(JSON.stringify(freeStatus()));
-    return;
-  }
-  if (pathname === "/api/free/v1/chat/completions" && req.method === "POST") {
-    await handleFreeAI(req, res);
-    return;
-  }
   if (pathname === "/" || pathname === "/index.html") {
     try {
       const html = readFileSync(new URL("./web/index.html", import.meta.url));
@@ -3711,6 +3461,17 @@ const web = http.createServer(async (req, res) => {
     } catch {
       res.writeHead(404, { "content-type": "text/plain" });
       res.end("not found");
+    }
+    return;
+  }
+  if (pathname === "/router.mjs") {
+    try {
+      const source = readFileSync(new URL("./router.mjs", import.meta.url));
+      res.writeHead(200, { "content-type": "text/javascript; charset=utf-8", "cache-control": "no-store" });
+      res.end(source);
+    } catch {
+      res.writeHead(500, { "content-type": "text/plain" });
+      res.end("router missing");
     }
     return;
   }

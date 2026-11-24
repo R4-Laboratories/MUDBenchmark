@@ -89,11 +89,11 @@ impossible to hide decline.
 
 ## Status
 
-`v0.91.51` is published and deployed. The free agent runs locally on the server CPU; no paid API key is configured. wick runs the release artifact, not a
+`v0.91.52` is the bring-your-own-key release. The server hosts no model and holds no provider key; each browser harness runs its own R4 router. wick runs the release artifact, not a
 build directory, so the number on the box is a tag someone can point at:
 
 ```
-mudbench-deploy --status   →   release v0.91.51
+mudbench-deploy --status   →   release v0.91.52
 ```
 
 `main` has no required status checks, so the loop's direct push lands. The Gate

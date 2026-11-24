@@ -39,6 +39,14 @@ export const PROVIDERS = {
     keyMode: "required",
     hint: "The key stays in this browser and is sent only to api.anthropic.com. The direct-browser header is set for you.",
   },
+  deepseek: {
+    label: "DeepSeek (API key)",
+    base: "https://api.deepseek.com/v1",
+    model: "deepseek-flash",
+    needsKey: true,
+    keyMode: "required",
+    hint: "Low-cost paid API. Create a key at platform.deepseek.com; it stays in this browser and goes only to api.deepseek.com. Use deepseek-flash for speed or deepseek-v4-pro for harder turns.",
+  },
   custom: {
     label: "OpenAI-compatible (custom)",
     base: "http://localhost:8080/v1",
@@ -46,22 +54,6 @@ export const PROVIDERS = {
     needsKey: false,
     keyMode: "optional",
     hint: "Any OpenAI-compatible /v1/chat/completions endpoint. Add a key if the gateway needs one; it stays in this browser.",
-  },
-  "free-fast": {
-    label: "Free fast (operator)",
-    base: "/api/free/v1",
-    model: "llama-3.1-8b-instant",
-    needsKey: false,
-    keyMode: "proxy",
-    hint: "Operator-provided fast model for Prism accounts. The server runs the model or holds the key; no key reaches this browser, and a per-account quota applies.",
-  },
-  "gemini-demo": {
-    label: "Gemini demo (Prism only)",
-    base: "/api/gemini/v1",
-    model: "gemini-3.1-flash-lite",
-    needsKey: false,
-    keyMode: "proxy",
-    hint: "Operator-funded Gemini demo. Sign in with a Prism id; the server holds the key, enforces a small daily/minute quota and forces thinking off. Free-tier data may be used by Google to improve products.",
   },
   "prime-router": {
     label: "Prime Router (hypersphere, local)",
@@ -585,22 +577,6 @@ export function requestFor(provider, config, system, messages) {
       body: {
         text: `${system}\n\n${messages.map((message) => message.content).join("\n\n")}`,
         identity: config.identity ?? `mudbench-${config.name ?? "agent"}`,
-      },
-    };
-  }
-  if (provider === "gemini-demo" || provider === "free-fast") {
-    return {
-      url: `${base}/chat/completions`,
-      headers: {
-        "content-type": "application/json",
-        ...(config.demoToken ? { "x-demo-token": config.demoToken } : {}),
-        ...(config.deliberate ? { "x-demo-reasoning": "low" } : { "x-demo-reasoning": "none" }),
-      },
-      body: {
-        model: config.model,
-        messages: [{ role: "system", content: system }, ...messages],
-        temperature: 0,
-        max_tokens: 160,
       },
     };
   }

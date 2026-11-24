@@ -9,20 +9,18 @@ input allowance. It gets no privileged view and no special commands.
 ## Start or watch an AI in the browser
 
 Open the game and choose **Start a free agent**, or use the **Agents** workspace.
-The free card starts fast play with **Groq**. Create a free key at
-`console.groq.com/keys` (no card), paste it once, and the agent uses the 8B
-instant model: quick replies and a generous free tier (about 30 requests per
-minute, 1,000 per day). The key stays in this browser and goes only to
-`api.groq.com`. If the operator configured a local model or a server-side key,
-the **Free fast (operator)** preset appears and the agent starts with no key at
-all: the server runs or holds the model, the quotas are high enough not to cut a
-session, and the browser receives only a short-lived token. If the browser has no Prism id yet, the free card creates
-one and registers it before starting the persona. The agent gets its own
-character and plays through the same page: the left pane is its view, the
-Director chat is yours, and the Mind panel is its reasoning. **Use another
-model** opens the custom-provider drawer; the provider key never reaches the
-game server, stays in this browser's localStorage, and is sent only to the
-provider's endpoint.
+Bring your own provider key. **Groq** is the free option: create a key at
+`console.groq.com/keys` (no card), paste it once, and the agent uses
+`openai/gpt-oss-20b` on the free tier (about 30 requests per minute, 1,000 per
+day). The key stays in this browser and goes only to `api.groq.com`.
+**Anthropic**, **OpenAI**, **DeepSeek** and any OpenAI-compatible endpoint also
+work. There is no server-hosted brain and no shared key. If the browser has no
+Prism id yet, the free card creates one and registers it before starting the
+persona. The agent gets its own character and plays through the same page: the
+left pane is its view, the Director chat is yours, and the Mind panel is its
+reasoning. **Use another model** opens the provider drawer; the provider key
+never reaches the game server, stays in this browser's localStorage, and is
+sent only to the provider's endpoint.
 
 The free card offers five personas that change the system goal without changing
 the provider: **Explorer**, **Duelist**, **Quest runner**, **Storyteller** and
@@ -31,20 +29,21 @@ the provider: **Explorer**, **Duelist**, **Quest runner**, **Storyteller** and
 | Brain | Base URL | Key |
 | --- | --- | --- |
 | Groq (free key, fast) | `https://api.groq.com/openai/v1` | required (free) |
-| Free fast (operator) | server proxy | none |
-| Ollama (local) | `http://localhost:11434/v1` | none |
-| OpenAI | `https://api.openai.com/v1` | required |
 | Anthropic (Claude) | `https://api.anthropic.com/v1` | required |
+| OpenAI | `https://api.openai.com/v1` | required |
+| DeepSeek | `https://api.deepseek.com/v1` | required |
 | OpenAI-compatible (custom) | any `/v1` endpoint | optional |
-| Gemini demo (Prism only) | server proxy | none |
+| Ollama (local) | `http://localhost:11434/v1` | none |
 | Prime Router (hypersphere, local) | `http://localhost:8000` | none |
 
-The Gemini demo appears only when the operator has configured
-`GEMINI_API_KEY` on the server. It is quota-limited per Prism account and
-never exposes the key to the browser. The **Reasoning** setting (Auto,
-Always, Never) controls whether the provider may spend thinking tokens on a
-turn; the default Auto is direct on routine turns and deliberate on first
-turns, director messages, low HP, repeats and every eighth turn.
+The browser harness runs the R4/hypersphere router for each AI user. It imports
+`/router.mjs` and assembles the affordances, objective, world, resources,
+persistence, social and recall layers locally, then injects that context into
+the provider prompt. The game server does not hold the brain, the provider key
+or the AI's R4 context. The **Reasoning** setting (Auto, Always, Never) controls
+whether the provider may spend thinking tokens on a turn; the default Auto is
+direct on routine turns and deliberate on first turns, director messages, low
+HP, repeats and every eighth turn.
 
 ### Watching what the AI sees and does
 
