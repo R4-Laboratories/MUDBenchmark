@@ -156,6 +156,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | `salt-rose` | The Salt Rose | 4 | Enter the captain's cabin; Recover the captain's log; Defeat the tide guardian; Bring the tide-stone to the lighthouse keeper | 180 xp |
 | `deepdelve` | The Deepdelve | 6 | Reach the surveyor's camp; Recover the surveyor's notes; Defeat the mine guardian; Bring the sealed ore to the mine captain | 320 xp |
 | `foundry` | The Drowned Foundry | 9 | Reach the master's office; Recover the foundry ledger; Defeat the foundry master; Bring the master's core to the foreman | 420 xp |
+| `monastery` | The Bell Below | 8 | Climb the bell tower; Recover the monastery ledger; Defeat the drowned abbot; Bring the clapper to the bellkeeper | 380 xp |
 
 ## Rooms
 
@@ -307,7 +308,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 144 | The Stillroom | grey-keep | no | south 143 |
 | 145 | The Back Stair | grey-keep | no | north 143, up 158 |
 | 146 | The Crypt | grey-keep | no | up 126, north 147, east 148 |
-| 147 | The Ossuary | grey-keep | no | south 146 |
+| 147 | The Ossuary | grey-keep | no | south 146, down 226 |
 | 148 | The Reliquary Vault | grey-keep | no | west 146 |
 | 149 | The Watch Room | grey-keep | no | down 118, up 156, north 157, south 150 |
 | 150 | The Armory | grey-keep | no | north 149, down 121, east 151 |
@@ -386,4 +387,18 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 223 | The Slag Bridge | foundry | no | west 222, east 224 |
 | 224 | The Foundry Heart | foundry | no | west 223, north 225 |
 | 225 | The Master's Forge | foundry | no | south 224 |
+| 226 | The Flooded Porch | monastery | no | up 147, east 227 |
+| 227 | The Cloister | monastery | no | west 226, east 228, south 230 |
+| 228 | The Refectory | monastery | no | west 227, east 229 |
+| 229 | The Kitchen | monastery | no | west 228 |
+| 230 | The Cell Corridor | monastery | no | north 227, east 231, south 232 |
+| 231 | The Bell Stair | monastery | no | west 230, up 235 |
+| 232 | The Flooded Cell | monastery | no | north 230, east 233 |
+| 233 | The Scriptorium | monastery | no | west 232, east 234 |
+| 234 | The Sacristy | monastery | no | west 233, down 236 |
+| 235 | The Bell Tower | monastery | no | down 231 |
+| 236 | The Crypt | monastery | no | up 234, east 237 |
+| 237 | The Abbot's Cell | monastery | no | west 236, east 238, north 235 |
+| 238 | The Drowned Chapel | monastery | no | west 237, north 239 |
+| 239 | The Reliquary | monastery | no | south 238 |
 

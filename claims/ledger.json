@@ -1827,6 +1827,18 @@
       "level": "some-true",
       "statement": "Production v0.91.60 serves the consolidated zone map. /world reports 225 rooms / 15 zones / 23 quests / 105 mobiles / 248 objects; /api/free and /api/demo are 404, and /router.mjs and /llms.txt are 200. /llms.txt maps room 25 to lantern, room 30 to town and room 92 to moon, confirming the Harbor->Town, Undercroft->Lantern and Eclipse->Moon merges. No room, exit, quest, action, item or mobile changed; NPC wander zones follow the merge. Salt Caves remains the five-room faction site and the Temple the seven-room start district. Main Gate 45478218836 green, publish 45479682549, release v0.91.60.",
       "authority": "GitHub PR #76 merge b46903b 2026-11-24; main Gate 45478218836; publish 45479682549; release v0.91.60; wick deploy, /world, /llms.txt, routes and /health; tools/gate.mjs"
+    },
+    {
+      "id": "MB-301",
+      "level": "build",
+      "statement": "v0.91.61 adds The Flooded Monastery, a 14-room level 8/9/10 story dungeon below the Grey Keep ossuary (147 down to 226). The small iron key in the kitchen opens the banded sacristy chest; the chest holds the abbey clapper; a party of two with the clapper can pull the bell rope at 235 and open the secret south stair to the abbot's cell. The site has ten dark rooms, two lanterns, a dark crypt, a silver bell relic, a drowned abbot (110 HP / 6 damage / 4 armour, shared kill credit), five mobiles, eight objects and one hidden way. The repeatable Bell Below quest (level 8) visits the bell tower, collects the monastery ledger, kills the abbot and delivers the clapper to the bellkeeper for 380 XP / 60 coins. The quest table now rejects a quest that both collects and delivers the same object, because delivery consumes it and the collect fact cannot be true at completion. Completion is now level 10 / 24 quests / 23 hidden ways. World 239 rooms / 16 zones / 24 quests / 110 mobiles / 256 objects; quest ratchet 24. Gate covers the map, levels/dark, key/chest, party bell, boss, quest references, the collect+deliver guard and counts.",
+      "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-302",
+      "level": "some-true",
+      "statement": "Live two-client evidence for v0.91.61. monk-a and monk-b (level 10) formed a party at the ossuary, descended to the monastery, took the kitchen key, unlocked the sacristy chest, took the abbey clapper and the ledger, and pulled the bell rope with the party; 235:south was revealed to both. They killed the drowned abbot (a mechanics fixture at 15 HP); monk-b received 190 shared XP and the [x] Defeat the drowned abbot credit. monk-a took the silver bell relic, returned to the bellkeeper and completed The Bell Below for 380 XP / 60 coins (30,760 XP and 60 coins total). The completion live test passes at 24 quests and 23 hidden ways. Gate passes at 239 rooms / 16 zones / 24 quests / 110 mobiles / 256 objects.",
+      "authority": "local /tmp/monastery-live.mjs and /tmp/completion-live.mjs; tools/gate.mjs; 2026-11-24"
     }
   ]
 }

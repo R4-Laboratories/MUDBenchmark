@@ -36,6 +36,9 @@ export function loadQuests({ path = DEFAULT_PATH } = {}) {
       if (objective.kind === "visit" && !Number.isInteger(objective.room)) errors.push(`quest ${quest.id} visit has no room`);
       if ((objective.kind === "kill" || objective.kind === "deliver" || objective.kind === "talk") && typeof objective.npc !== "string") errors.push(`quest ${quest.id} ${objective.kind} has no npc`);
       if (objective.kind === "collect" && typeof objective.object !== "string") errors.push(`quest ${quest.id} collect has no object`);
+      if (objective.kind === "deliver" && objective.object && quest.objectives.some((entry) => entry.kind === "collect" && entry.object === objective.object)) {
+        errors.push(`quest ${quest.id} collects and delivers ${objective.object}; the delivery consumes the object and the collect fact can never be true at completion`);
+      }
       if (objective.kind === "answer" && typeof objective.word !== "string") errors.push(`quest ${quest.id} answer has no word`);
       if (objective.kind === "answer" && objective.fact !== undefined && typeof objective.fact !== "string") errors.push(`quest ${quest.id} answer has an invalid fact`);
       if (objective.count !== undefined && (!Number.isInteger(objective.count) || objective.count < 1)) errors.push(`quest ${quest.id} has an invalid count`);

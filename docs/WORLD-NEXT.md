@@ -3,8 +3,8 @@
 This was the queued AberMUD-style content and systems track. The v0.47/v0.48 slices
 have landed: eight equipment slots, six spells and the Mages' Guild, eleven
 Lantern Quarter/Undervault rooms, five personal quests, a guild ledger quest,
-a searchable secret stair, three data-driven room actions and mage rank advancement. The world is now 225 rooms,
-15 zones, 23 quests, 105 mobiles and 248 objects. The foundation from v0.46 remains:
+a searchable secret stair, three data-driven room actions and mage rank advancement. The world is now 239 rooms,
+16 zones, 24 quests, 110 mobiles and 256 objects. The foundation from v0.46 remains:
 short command forms, `equipment`, `world`/`status`, the hidden `#state` line,
 and the AI prompt/router state layer.
 
@@ -52,7 +52,8 @@ and the AI prompt/router state layer.
 | M40 | **done** — The Deepdelve: 16-room party mine off the graveyard, with a party winch/pump/cart/seam, dark tunnels, a gas pocket and canaries, a coracle, a surveyor/captain/guardian story and a repeatable ore contract; 213 rooms / 17 zones / 22 quests / 100 mobiles / 240 objects | party invite/accept/decline/leave/kick/disband, shared XP and kill credit, party-only actions, gas, level gates, full live walk, every prior check |
 | M41 | **done** — The win condition: live completion tally, permanent record and Worldbreaker title, persisted hidden ways, `completion`/`goal`/`win` command and AI `GOAL` context; 213 rooms / 17 zones / 22 quests / 100 mobiles / 240 objects at the time | tally edges, record once, title, checkpoint persistence, live logout/login, every prior check |
 | M42 | **done** — The Drowned Foundry: 12-room level 9/10 party dungeon below the Deepdelve pool, five party actions, Night Market valve shortcut, foundry hammer/apron/ledger, repeatable Foundry quest and a party-scale master; 225 rooms / 18 zones / 23 quests / 105 mobiles / 248 objects at the time | party actions, guild shortcut, dark/level gates, boss, shared XP/credit, full live walk, every prior check |
-| M43 | **done** — Zone consolidation: Harbor 4 into Town (14), Undercroft 5 into the Lantern Quarter (11), Eclipse Court 6 into the Moonlit Reach (12); 18 -> 15 zones, rooms/quests/actions unchanged; 225 rooms / 15 zones / 23 quests / 105 mobiles / 248 objects | zone map, room-zone assignments, NPC wander zones, every prior check |
+| M43 | **done** — Zone consolidation: Harbor 4 into Town (14), Undercroft 5 into the Lantern Quarter (11), Eclipse Court 6 into the Moonlit Reach (12); 18 -> 15 zones, rooms/quests/actions unchanged; 225 rooms / 15 zones / 23 quests / 105 mobiles / 248 objects at the time | zone map, room-zone assignments, NPC wander zones, every prior check |
+| M44 | **done** — The Flooded Monastery: 14-room level 8/9/10 story dungeon below the Grey Keep ossuary, keyed sacristy chest, party bell rope, dark crypt, drowned abbot, silver relic and repeatable Bell Below quest; 239 rooms / 16 zones / 24 quests / 110 mobiles / 256 objects | key/chest, party bell, level/dark gates, boss, shared XP/credit, full live walk, every prior check |
 
 ## Rules that keep the model green
 

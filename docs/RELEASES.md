@@ -539,6 +539,18 @@ Rehearsed 2026-11-16:
   speaking, opened the Twin Door with one hidden partner and took the crown.
   Gate covers the death penalty, level gates, twin door, hide visibility and
   prompt (MB-286/287/288);
+- v0.91.61 (The Flooded Monastery) adds a 14-room level 8/9/10 story dungeon
+  below the Grey Keep ossuary. A small iron key opens the banded sacristy chest,
+  which holds the abbey clapper; a party of two with the clapper can pull the
+  bell rope and open the secret stair to the abbot's cell. The site has ten dark
+  rooms, two lanterns, a crypt, the drowned abbot (110 HP / 6 damage / 4 armour,
+  shared kill credit), a silver bell relic and the repeatable **The Bell Below**
+  quest (380 XP / 60 coins). Adds five mobiles, eight objects and one hidden way;
+  completion is now 24 quests and 23 hidden ways. The quest table now rejects a
+  quest that both collects and delivers the same object, because delivery
+  consumes it. World 239 rooms / 16 zones / 24 quests / 110 mobiles / 256
+  objects. A two-client live session used the key, chest, ledger and party bell,
+  shared the abbot's kill and completed the quest (MB-301/302);
 - v0.91.60 (zone consolidation) folds three small zone ids into their parents
   without moving a room: Harbor (4) into Town (14), the Undercroft (5) into the
   Lantern Quarter (11), and the Eclipse Court (6) into the Moonlit Reach (12).

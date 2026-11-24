@@ -2691,7 +2691,8 @@
       "name": "The Ossuary",
       "text": "Bones fill the niches of the ossuary, sorted by kind and tied with faded red thread. A low stone table holds a single skull and a bowl of dust. The south passage returns to the crypt; the east wall is cracked, and a cold draft comes through the crack.",
       "exits": {
-        "south": 146
+        "south": 146,
+        "down": 226
       },
       "details": {
         "niches": "The niches are full. The bones are old and dry, sorted with a care that feels recent.",
@@ -4186,6 +4187,281 @@
       "ambient": [
         "The forge breathes.",
         "The master turns its head."
+      ]
+    },
+    "226": {
+      "name": "The Flooded Porch",
+      "minLevel": 8,
+      "dark": true,
+      "darkText": "It is dark. Water moves over stone, and a bell rope creaks somewhere above.",
+      "text": "A flooded porch opens under the ossuary stair. Water lies over the flagstones, and a bell rope hangs from a hole in the roof. A thin keeper waits by the door, a lantern at her feet. The stair climbs up; the cloister is east.",
+      "exits": {
+        "up": 147,
+        "east": 227
+      },
+      "details": {
+        "stair": "The stair is wet and narrow. It climbs back to the ossuary.",
+        "rope": "The bell rope is old and swollen with water. It disappears into the dark above.",
+        "keeper": "The keeper is thin and grey. She watches the water, not you."
+      },
+      "ambient": [
+        "Water drips from the rope.",
+        "The lantern hisses."
+      ]
+    },
+    "227": {
+      "name": "The Cloister",
+      "minLevel": 8,
+      "text": "A square cloister open to a grey sky. Rain falls into a drowned garden, and arched walks run east and south. A stone well stands at the centre, its rope gone. The porch is west.",
+      "exits": {
+        "west": 226,
+        "east": 228,
+        "south": 230
+      },
+      "details": {
+        "well": "The well is full to the brim. The water is black and still.",
+        "garden": "The garden is drowned. Pale stems move under the water.",
+        "arches": "The arches are carved with bells. Each bell has no clapper."
+      },
+      "ambient": [
+        "Rain ticks on stone.",
+        "The well overflows."
+      ]
+    },
+    "228": {
+      "name": "The Refectory",
+      "minLevel": 8,
+      "dark": true,
+      "darkText": "It is dark. Long tables fill the room, and water moves under them.",
+      "text": "A long refectory of drowned tables. A pale monk sits at the head of the hall, its bowl empty. The cloister is west; the kitchen is east.",
+      "exits": {
+        "west": 227,
+        "east": 229
+      },
+      "details": {
+        "tables": "The tables are long and black with water. The benches are empty.",
+        "monk": "The monk is pale and still. Its bowl has not been filled in years.",
+        "bowl": "The bowl is cracked and dry."
+      },
+      "ambient": [
+        "Water moves under the tables.",
+        "The monk does not breathe."
+      ]
+    },
+    "229": {
+      "name": "The Kitchen",
+      "minLevel": 8,
+      "dark": true,
+      "darkText": "It is dark. Cold ovens line the wall, and something metal glints nearby.",
+      "text": "A cold kitchen of iron ovens and wet ash. A ring of keys hangs from a hook, and a handful of old coins lies in the sink. The refectory is west.",
+      "exits": {
+        "west": 228
+      },
+      "details": {
+        "ovens": "The ovens are cold and black. The last fire is long dead.",
+        "keys": "A ring of iron keys, green with damp. One is small and bright.",
+        "sink": "The sink is full of black water and old coins."
+      },
+      "ambient": [
+        "A key ticks against the wall.",
+        "Water drips into the sink."
+      ]
+    },
+    "230": {
+      "name": "The Cell Corridor",
+      "minLevel": 8,
+      "dark": true,
+      "darkText": "It is dark. Cell doors line the corridor, and water runs between them.",
+      "text": "A low corridor of cell doors. Water runs down the centre, and the doors are warped shut. A stair rises east, and a flooded cell opens south. The cloister is north.",
+      "exits": {
+        "north": 227,
+        "east": 231,
+        "south": 232
+      },
+      "details": {
+        "doors": "The cell doors are warped and swollen. Most will not open.",
+        "water": "The water is ankle-deep and cold.",
+        "stair": "The stair is stone and wet. It climbs to the bell."
+      },
+      "ambient": [
+        "A door creaks.",
+        "Water runs."
+      ]
+    },
+    "231": {
+      "name": "The Bell Stair",
+      "minLevel": 8,
+      "dark": true,
+      "darkText": "It is dark. A narrow stair climbs into the bell tower.",
+      "text": "A narrow stone stair climbs the wall of the corridor. The rope from the porch runs up beside it, swollen and black. The cell corridor is west; the bell tower is up.",
+      "exits": {
+        "west": 230,
+        "up": 235
+      },
+      "details": {
+        "stair": "The stair is worn in the middle. It climbs a long way.",
+        "rope": "The bell rope is wet and heavy. It disappears above."
+      },
+      "ambient": [
+        "The rope knocks against stone.",
+        "The stair ticks as it cools."
+      ]
+    },
+    "232": {
+      "name": "The Flooded Cell",
+      "minLevel": 8,
+      "dark": true,
+      "darkText": "It is dark. Black water fills the cell, and something moves in it.",
+      "text": "A flooded cell, its bed rotted to a frame. A pale shape stands in the water, its hands open. The cell corridor is north; the scriptorium is east.",
+      "exits": {
+        "north": 230,
+        "east": 233
+      },
+      "details": {
+        "bed": "The bed is a black frame. The straw is long gone.",
+        "water": "The water is black and cold. It reflects the ceiling.",
+        "shape": "The shape is thin and pale. It does not cast a shadow."
+      },
+      "ambient": [
+        "Water laps at the bed.",
+        "The shape turns its head."
+      ]
+    },
+    "233": {
+      "name": "The Scriptorium",
+      "minLevel": 9,
+      "dark": true,
+      "darkText": "It is dark. Desks and shelves fill the room, and a cold lantern waits nearby.",
+      "text": "A long scriptorium of drowned desks and empty shelves. A ledger lies open on the last desk, and a cold lantern stands beside it. The flooded cell is west; the sacristy is east.",
+      "exits": {
+        "west": 232,
+        "east": 234
+      },
+      "details": {
+        "desks": "The desks are black with damp. The ink has run into the wood.",
+        "ledger": "The ledger records the abbey's last year. The final page is blank except for one word: DROWNED.",
+        "lantern": "A cold lantern with a wire guard. It still holds oil."
+      },
+      "ambient": [
+        "A page turns.",
+        "The lantern ticks."
+      ]
+    },
+    "234": {
+      "name": "The Sacristy",
+      "minLevel": 9,
+      "dark": true,
+      "darkText": "It is dark. A banded chest waits against the wall, and a stair descends.",
+      "text": "A small sacristy of hooks and empty cupboards. A banded chest stands against the wall, its lock bright with damp. A stair descends to the crypt. The scriptorium is west.",
+      "exits": {
+        "west": 233,
+        "down": 236
+      },
+      "details": {
+        "chest": "The chest is banded with iron. The lock is small and bright; the key would be small too.",
+        "hooks": "The hooks are empty. A faint outline marks where a bell clapper once hung.",
+        "stair": "The stair is wet and narrow. It descends into the crypt."
+      },
+      "ambient": [
+        "The chest ticks.",
+        "Water drips down the stair."
+      ]
+    },
+    "235": {
+      "name": "The Bell Tower",
+      "minLevel": 9,
+      "text": "A high stone tower open to the rain. A great bronze bell hangs silent above a broken wheel, its clapper missing. The bell rope hangs beside it. A pale ghost stands at the parapet. The stair descends.",
+      "exits": {
+        "down": 231
+      },
+      "secretExits": {
+        "south": 237
+      },
+      "details": {
+        "bell": "The bell is bronze and green. Its mouth is wide and silent.",
+        "wheel": "The wheel is broken. The rope still turns it, barely.",
+        "ghost": "The ghost is thin and grey. It watches the rain.",
+        "parapet": "The parapet looks over the drowned cloister."
+      },
+      "ambient": [
+        "Rain rings on the bell.",
+        "The ghost does not move."
+      ]
+    },
+    "236": {
+      "name": "The Crypt",
+      "minLevel": 9,
+      "dark": true,
+      "darkText": "It is dark. Stone tombs line the walls, and cold air moves through the crypt.",
+      "text": "A low crypt of stone tombs and wet walls. A heavy door stands east, bound with iron. The sacristy stair climbs above.",
+      "exits": {
+        "up": 234,
+        "east": 237
+      },
+      "details": {
+        "tombs": "The tombs are sealed. The names are worn away.",
+        "door": "The door is iron-bound and cold. It is not locked.",
+        "air": "The air is cold and very still."
+      },
+      "ambient": [
+        "A tomb lid ticks.",
+        "Water drips."
+      ]
+    },
+    "237": {
+      "name": "The Abbot's Cell",
+      "minLevel": 9,
+      "dark": true,
+      "darkText": "It is dark. A desk and a chain wait in the black.",
+      "text": "A narrow cell beneath the bell. A desk, a chair and a length of chain hang from the wall. A stair climbs to the bell tower, and the chapel opens east. The crypt is west.",
+      "exits": {
+        "west": 236,
+        "east": 238,
+        "north": 235
+      },
+      "details": {
+        "desk": "The desk is bare except for a ring of candle wax.",
+        "chain": "The chain is short and bright. It was not made for a door.",
+        "stair": "The stair climbs to the bell tower."
+      },
+      "ambient": [
+        "The chain swings.",
+        "Candle wax ticks."
+      ]
+    },
+    "238": {
+      "name": "The Drowned Chapel",
+      "minLevel": 10,
+      "text": "A high chapel of drowned stone. Candles burn green at the altar, and a tall abbot stands before it, its robes heavy with water. The abbot's cell is west; the reliquary is north.",
+      "exits": {
+        "west": 237,
+        "north": 239
+      },
+      "details": {
+        "abbot": "The abbot is tall and drowned. Its hands are open.",
+        "altar": "The altar is stone and green with damp. The candles burn without heat.",
+        "candles": "The candles are green and cold. They do not flicker."
+      },
+      "ambient": [
+        "The candles burn.",
+        "The abbot turns its head."
+      ]
+    },
+    "239": {
+      "name": "The Reliquary",
+      "minLevel": 10,
+      "text": "A small stone reliquary, dry and cold. A single altar stands at the centre, and a silver relic rests on it. The chapel is south.",
+      "exits": {
+        "south": 238
+      },
+      "details": {
+        "altar": "The altar is dry and clean. The relic rests at its centre.",
+        "relic": "A silver bell, small enough for a hand. It has no clapper.",
+        "floor": "The floor is swept clean."
+      },
+      "ambient": [
+        "The relic catches the light.",
+        "The chapel is very quiet."
       ]
     }
   },
@@ -6537,6 +6813,118 @@
       "description": "A tall master of iron and slag stands at the anvil, its hands open.",
       "examine": "The master is bound in old tools and cooled slag. Its face is a blank iron mask.",
       "dialogue": []
+    },
+    {
+      "id": "bellkeeper",
+      "name": "the bellkeeper",
+      "room": 226,
+      "home": 226,
+      "zone": "monastery",
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "level": 8,
+      "hp": 30,
+      "maxHp": 30,
+      "damage": 0,
+      "armor": 1,
+      "aggression": 0,
+      "xp": 0,
+      "loot": [],
+      "description": "A thin grey woman waits by the porch door, a lantern at her feet.",
+      "examine": "Her hands are worn and her coat is wet. She watches the bell rope.",
+      "dialogue": [
+        "The bell has no clapper. The sacristy chest has it, if the key is still in the kitchen.",
+        "The bell rope needs two pairs of hands. One will not move it.",
+        "The abbot is in the chapel. He has not forgiven the water."
+      ]
+    },
+    {
+      "id": "drowned-monk",
+      "name": "a drowned monk",
+      "room": 228,
+      "home": 228,
+      "zone": "monastery",
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "level": 8,
+      "hp": 30,
+      "maxHp": 30,
+      "damage": 4,
+      "armor": 1,
+      "aggression": 50,
+      "xp": 80,
+      "loot": [],
+      "description": "A pale monk sits at the head of the refectory, its bowl empty.",
+      "examine": "The monk is pale and still. Its robes are heavy with water.",
+      "dialogue": []
+    },
+    {
+      "id": "cell-ghoul",
+      "name": "a cell ghoul",
+      "room": 232,
+      "home": 232,
+      "zone": "monastery",
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "level": 8,
+      "hp": 36,
+      "maxHp": 36,
+      "damage": 5,
+      "armor": 2,
+      "aggression": 60,
+      "xp": 100,
+      "loot": [],
+      "description": "A pale shape stands in the flooded cell, its hands open.",
+      "examine": "The ghoul is thin and wet. Its face is a smooth blank.",
+      "dialogue": []
+    },
+    {
+      "id": "bell-ghost",
+      "name": "the bell ghost",
+      "room": 235,
+      "home": 235,
+      "zone": "monastery",
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "level": 9,
+      "hp": 20,
+      "maxHp": 20,
+      "damage": 0,
+      "armor": 0,
+      "aggression": 0,
+      "xp": 0,
+      "loot": [],
+      "description": "A thin grey ghost stands at the parapet, watching the rain.",
+      "examine": "The ghost is grey and still. It has no clapper in its hands.",
+      "dialogue": [
+        "The bell remembers the clapper. Bring it, and two pairs of hands.",
+        "The abbot keeps the chapel. The crypt is the long way."
+      ]
+    },
+    {
+      "id": "drowned-abbot",
+      "name": "the drowned abbot",
+      "room": 238,
+      "home": 238,
+      "zone": "monastery",
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "level": 10,
+      "hp": 110,
+      "maxHp": 110,
+      "damage": 6,
+      "armor": 4,
+      "aggression": 90,
+      "xp": 380,
+      "loot": [],
+      "description": "A tall abbot stands before the altar, its robes heavy with water.",
+      "examine": "The abbot is drowned and tall. Its hands are open and very still.",
+      "dialogue": []
     }
   ],
   "zones": [
@@ -6853,6 +7241,26 @@
         223,
         224,
         225
+      ]
+    },
+    {
+      "id": "monastery",
+      "name": "The Flooded Monastery",
+      "rooms": [
+        226,
+        227,
+        228,
+        229,
+        230,
+        231,
+        232,
+        233,
+        234,
+        235,
+        236,
+        237,
+        238,
+        239
       ]
     }
   ],
@@ -10003,6 +10411,100 @@
       ],
       "value": 100,
       "examine": "A knot of iron and slag, still warm. It ticks faintly."
+    },
+    {
+      "id": "monastery-lantern",
+      "name": "a monastery lantern",
+      "room": 226,
+      "flags": [
+        "takeable",
+        "light"
+      ],
+      "lit": false,
+      "value": 8,
+      "examine": "A heavy lantern with a wire guard. It still holds oil."
+    },
+    {
+      "id": "monastery-key",
+      "name": "a small iron key",
+      "room": 229,
+      "flags": [
+        "takeable"
+      ],
+      "value": 10,
+      "examine": "A small bright key, green at the teeth. It would fit a chest lock."
+    },
+    {
+      "id": "monastery-coins",
+      "name": "a handful of old coins",
+      "room": 229,
+      "flags": [
+        "takeable",
+        "coin"
+      ],
+      "value": 30,
+      "examine": "Old coins, green with damp. They are still heavy."
+    },
+    {
+      "id": "monastery-ledger",
+      "name": "the monastery ledger",
+      "room": 233,
+      "flags": [
+        "takeable",
+        "readable"
+      ],
+      "readable": true,
+      "value": 25,
+      "examine": "The last page is blank except for one word: DROWNED."
+    },
+    {
+      "id": "monastery-lantern-2",
+      "name": "a second monastery lantern",
+      "room": 233,
+      "flags": [
+        "takeable",
+        "light"
+      ],
+      "lit": false,
+      "value": 8,
+      "examine": "A cold lantern with a wire guard. It still holds oil."
+    },
+    {
+      "id": "monastery-chest",
+      "name": "a banded chest",
+      "room": 234,
+      "flags": [
+        "fixed",
+        "container"
+      ],
+      "capacity": 2,
+      "open": false,
+      "openAtStart": false,
+      "examine": "A banded chest. The lock is small and bright."
+    },
+    {
+      "id": "abbey-clapper",
+      "name": "the abbey clapper",
+      "inside": "monastery-chest",
+      "flags": [
+        "takeable"
+      ],
+      "value": 60,
+      "examine": "A bronze clapper, green with age. It is heavy and cold."
+    },
+    {
+      "id": "abbot-relic",
+      "name": "a silver bell relic",
+      "room": 239,
+      "flags": [
+        "takeable",
+        "wearable",
+        "armor"
+      ],
+      "slot": "neck",
+      "armor": 2,
+      "value": 90,
+      "examine": "A small silver bell on a chain. It has no clapper."
     }
   ],
   "climate": {
