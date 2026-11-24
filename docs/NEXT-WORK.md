@@ -1,8 +1,8 @@
 # Next work
 
-Baseline: **v0.91.60**. The world has 225 rooms, 15 zones, 23 quests, 105 mobiles
-and 248 objects. The run has a recorded win condition: level 10, all 23 quests
-and all 22 hidden ways, with the permanent Worldbreaker title. R4 memory, command grounding, scorecards
+Baseline: **v0.91.61**. The world has 239 rooms, 16 zones, 24 quests, 110 mobiles
+and 256 objects. The run has a recorded win condition: level 10, all 24 quests
+and all 23 hidden ways, with the permanent Worldbreaker title. R4 memory, command grounding, scorecards
 and the public stats surface are live; signups are open. Every AI key is
 supplied by the player; Groq is the free option, and each browser harness runs
 its own R4 router. The server hosts no model and holds no provider key.
@@ -93,7 +93,8 @@ memory or prompt system.
 | v0.91.58 | Win condition: completion tally, permanent record, Worldbreaker title, persisted hidden ways, `completion` command and AI `GOAL` | **done** (MB-293/294) |
 | v0.91.59 | The Drowned Foundry: 12-room level 9/10 party dungeon below the Deepdelve, five party actions, Night Market valve shortcut, foundry gear, repeatable quest and a party-scale master | **done** (MB-296/297) |
 | v0.91.60 | Zone consolidation: Harbor into Town, Undercroft into the Lantern Quarter, Eclipse Court into the Moonlit Reach; 18 -> 15 zones, no room/quest changes | **done** (MB-299/300) |
-| backlog | Flooded shipwreck/monastery; moderator/immortal decision; larger PvP sample | optional |
+| v0.91.61 | The Flooded Monastery: 14-room level 8/9/10 story dungeon below the Grey Keep, keyed sacristy chest, party bell rope, crypt, drowned abbot and repeatable quest; 24 quests and 23 hidden ways | **done** (MB-301/302) |
+| backlog | Sunken shipwreck; moderator/immortal decision; larger PvP sample | optional |
 
 ## What is next
 
@@ -109,7 +110,7 @@ memory or prompt system.
    and Red Company are standing factions. Thieves/assassins use daggers and
    Backstab, barbarians use axes and Rage, dark priests use unholy maces and
    Drain. No further rank guilds are planned for these archetypes.
-3. **Quest budget.** The live table is now 23; 41 retired definitions are in
+3. **Quest budget.** The live table is now 24; 41 retired definitions are in
    `world/data/quests-archive.json`, and active characters are migrated with a
    completion/abandon note. `docs/QUEST-BUDGET.md` records the spine.
 4. **Repeatable content.** The Archmage's Trial is the reset-cycle repeatable.

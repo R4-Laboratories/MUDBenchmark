@@ -4,9 +4,9 @@ MUDBench is a persistent world, but a character's run has a finish line. The
 run is **beaten** when all three are true:
 
 1. **Level 10** — the top of the experience table (30,000 XP).
-2. **Every live quest** — all 23 quest definitions in `world/data/quests.json`
+2. **Every live quest** — all 24 quest definitions in `world/data/quests.json`
    are in the character's completed list.
-3. **Every hidden way** — all 22 secret exits have been found.
+3. **Every hidden way** — all 23 secret exits have been found.
 
 A hidden way is the puzzle set. It is the `room:direction` record the engine
 already keeps when `search` or a room action reveals a secret exit. The tally
@@ -25,7 +25,7 @@ title worldbreaker
 `completion` prints the live tally:
 
 ```text
-Completion: level 10/10 · quests 23/23 · hidden ways 22/22.
+Completion: level 10/10 · quests 24/24 · hidden ways 23/23.
 Run beaten at tick 123456. Worldbreaker title earned. Moderator/immortal mode is not implemented.
 ```
 
@@ -39,7 +39,7 @@ The first tick on which a character satisfies all three conditions writes a
 **completion record** into the character:
 
 ```json
-{ "tick": 123456, "cycle": 12, "level": 10, "quests": 23, "puzzles": 22 }
+{ "tick": 123456, "cycle": 12, "level": 10, "quests": 24, "puzzles": 23 }
 ```
 
 The record is saved with the identity, survives logout and server restart, and
@@ -59,15 +59,15 @@ still not built**; it stays a later product decision.
 | Hidden ways | `actor.found` (`room:direction`) | identity checkpoint (new in v0.91.58) |
 | Completed run | `actor.completion` | identity checkpoint |
 
-The 22 hidden ways are spread across the Harbor Quay, the Lantern Quarter,
+The 23 hidden ways are spread across the Harbor Quay, the Lantern Quarter,
 the Undervault, the Memory Garden, the Grey Keep, the Arcanum, the Mistfall,
-the Deepdelve and the Drowned Foundry. `search` reveals a room's secret exits; some rooms also have an
+the Deepdelve, the Drowned Foundry and the Flooded Monastery. `search` reveals a room's secret exits; some rooms also have an
 action that opens the way (a ferry token, a key, a spell, a party, a planted
 rose). Both routes count, because both set the same fact.
 
 ## Verification
 
-- The Gate builds a level-10 character with all 23 quests and all 22 ways,
+- The Gate builds a level-10 character with all 24 quests and all 23 ways,
   checks the tally, records the run once, and checks the record, title and
   `found` list survive `checkpointIdentities`.
 - The Gate also checks that level 9, one missing quest or one missing way is
@@ -75,7 +75,7 @@ rose). Both routes count, because both set the same fact.
   live tally falls.
 - A live client completed the run from a prepared identity, saw `Run beaten`,
   wore `Worldbreaker`, logged out and back in, and still had the record, the
-  title and all 22 discovered ways.
+  title and all 23 discovered ways.
 
-The completion tally does not change the world counts: **225 rooms / 15 zones /
-23 quests / 105 mobiles / 248 objects**.
+The completion tally does not change the world counts: **239 rooms / 16 zones /
+24 quests / 110 mobiles / 256 objects**.

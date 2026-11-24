@@ -661,6 +661,45 @@
       },
       "complete": "The foreman takes the ledger and the core. The foundry is quiet, and the stair is barred behind you.",
       "requires": []
+    },
+    {
+      "id": "monastery",
+      "name": "The Bell Below",
+      "level": 8,
+      "giver": "the bellkeeper",
+      "repeat": "reset",
+      "description": "The monastery drowned with its bell. The bellkeeper wants the abbey ledger, the clapper back and the abbot silenced.",
+      "objectives": [
+        {
+          "kind": "visit",
+          "room": 235,
+          "text": "Climb the bell tower"
+        },
+        {
+          "kind": "collect",
+          "object": "monastery-ledger",
+          "text": "Recover the monastery ledger"
+        },
+        {
+          "kind": "kill",
+          "npc": "drowned-abbot",
+          "count": 1,
+          "text": "Defeat the drowned abbot"
+        },
+        {
+          "kind": "deliver",
+          "npc": "bellkeeper",
+          "object": "abbey-clapper",
+          "count": 1,
+          "text": "Bring the clapper to the bellkeeper"
+        }
+      ],
+      "rewards": {
+        "xp": 380,
+        "coins": 60
+      },
+      "complete": "The bellkeeper takes the clapper. The bell is whole again, and the water is quiet.",
+      "requires": []
     }
   ]
 }

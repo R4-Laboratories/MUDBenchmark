@@ -212,8 +212,8 @@ let webAI = { ok: true, why: [] };
   check(nightMenu.includes("hide"), "the Night Market action menu lost hide");
   check(/Death is brutal/.test(buildSystemPrompt({ name: "scout", fast: true })) && /max level/.test(buildSystemPrompt({ name: "scout", fast: true })), "the agent prompt lost the death/win condition");
   check(Boolean(GOALS.completionist), "the completionist goal is missing");
-  const goalUser = buildUserPrompt({ turn: 1, observation: "[The Atrium]", fast: true, actions: ["completion"], state: { self: { name: "bob", completion: { level: 10, maxLevel: 10, quests: 22, questsTotal: 22, puzzles: 22, puzzlesTotal: 22, achieved: true } }, room: {} } });
-  check(goalUser.includes("GOAL: level 10/10") && goalUser.includes("hidden ways 22/22") && goalUser.includes("ACHIEVED") && goalUser.includes("completion"), "the agent prompt lost the completion goal");
+  const goalUser = buildUserPrompt({ turn: 1, observation: "[The Atrium]", fast: true, actions: ["completion"], state: { self: { name: "bob", completion: { level: 10, maxLevel: 10, quests: 22, questsTotal: 22, puzzles: 23, puzzlesTotal: 23, achieved: true } }, room: {} } });
+  check(goalUser.includes("GOAL: level 10/10") && goalUser.includes("hidden ways 23/23") && goalUser.includes("ACHIEVED") && goalUser.includes("completion"), "the agent prompt lost the completion goal");
   check(/named === "completion"/.test(serverSource2) && /completionState/.test(worldSource) && /actor.completion = record/.test(worldSource), "the completion command or record is missing");
   check(/waiting \$\{left\}s/.test(web) && /throttlePlan/.test(web) && /AI waiting/.test(web), "the AI does not wait for a rate-limit window");
   check(/console\.groq\.com\/keys/.test(web) && /DeepSeek/.test(web), "the UI does not offer the Groq free key or DeepSeek");
@@ -480,7 +480,7 @@ let zoneMap = { ok: true, why: [] };
   const world = loadWorld({ mode: "single" });
   const check = (condition, why) => { if (!condition) { zoneMap.ok = false; zoneMap.why.push(why); } };
   const zone = (id) => world.zones.find((entry) => entry.id === id);
-  check(world.zones.length === 15, `the zone count is ${world.zones.length}, not 15`);
+  check(world.zones.length === 16, `the zone count is ${world.zones.length}, not 16`);
   check(zone("town")?.rooms.includes(30) && zone("town")?.rooms.includes(33), "the Harbor is not in the Town zone");
   check(zone("lantern")?.rooms.includes(25) && zone("lantern")?.rooms.includes(29), "the Undercroft is not in the Lantern Quarter zone");
   check(zone("moon")?.rooms.includes(92) && zone("moon")?.rooms.includes(97), "the Eclipse Court is not in the Moonlit Reach zone");
@@ -498,7 +498,7 @@ const channelTable = loadChannels();
 const socialTable = loadSocials();
 const questTable = loadQuests();
 measured.quests = questTable.quests.length;
-if (measured.quests > ratchet.mustNotGrow.quests) failures.push(`quests are ${measured.quests}, above the frozen ceiling of ${ratchet.mustNotGrow.quests}; the target is 23`);
+if (measured.quests > ratchet.mustNotGrow.quests) failures.push(`quests are ${measured.quests}, above the frozen ceiling of ${ratchet.mustNotGrow.quests}; the target is 24`);
 
 // The agent contract is generated from the same tables as the game: every verb,
 // room, channel and social must appear.
@@ -2924,6 +2924,54 @@ let foundry = { ok: true, why: [] };
   if (!foundry.ok) failures.push(`the Foundry is broken: ${foundry.why[0]}`);
 }
 
+// The Flooded Monastery: a 14-room level 8/9/10 site below the Grey Keep
+// ossuary, with a keyed chest, a party bell rope, a crypt and a drowned abbot.
+let monastery = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  const table = loadActions({ world });
+  const quests = loadQuests();
+  const check = (condition, why) => { if (!condition) { monastery.ok = false; monastery.why.push(why); } };
+  const zone = world.zones.find((entry) => entry.id === "monastery");
+  check(Boolean(zone) && zone.rooms.length === 14 && zone.rooms.every((room) => world.rooms[room]), "the Monastery zone is not 14 connected rooms");
+  check(world.rooms[147]?.exits?.down === 226 && world.rooms[226]?.exits?.up === 147, "the monastery is not below the ossuary");
+  check(world.rooms[235]?.secretExits?.south === 237 && world.rooms[237]?.exits?.north === 235, "the bell shortcut is not connected");
+  check(world.rooms[234]?.exits?.down === 236 && world.rooms[236]?.exits?.up === 234 && world.rooms[236]?.exits?.east === 237 && world.rooms[237]?.exits?.east === 238 && world.rooms[238]?.exits?.north === 239, "the crypt, chapel or reliquary is not connected");
+  check(["226", "228", "229", "230", "231", "232", "233", "234", "236", "237"].every((room) => world.rooms[room]?.dark === true) && ["227", "235", "238", "239"].every((room) => world.rooms[room]?.dark !== true), "a Monastery dark flag is wrong");
+  check(["226", "227", "228", "229", "230", "231", "232"].every((room) => world.rooms[room]?.minLevel === 8) && ["233", "234", "235", "236", "237"].every((room) => world.rooms[room]?.minLevel === 9) && ["238", "239"].every((room) => world.rooms[room]?.minLevel === 10), "the Monastery level gates are missing");
+  const object = (id) => world.objects.find((entry) => entry.id === id);
+  check(object("monastery-lantern")?.room === 226 && object("monastery-key")?.room === 229 && object("monastery-chest")?.flags?.includes("container") && object("abbey-clapper")?.inside === "monastery-chest", "a Monastery key, chest or clapper is missing");
+  check(object("abbot-relic")?.room === 239 && object("abbot-relic")?.slot === "neck" && object("monastery-ledger")?.readable === true, "a Monastery treasure or ledger is missing");
+  check(world.npcs.some((npc) => npc.id === "bellkeeper" && npc.room === 226) && world.npcs.some((npc) => npc.id === "drowned-abbot" && npc.room === 238), "a Monastery NPC is missing");
+  const quest = quests.quests.find((entry) => entry.id === "monastery");
+  check(quest?.level === 8 && quest?.repeat === "reset" && quest?.objectives?.length === 4, "the Monastery quest is missing");
+  check(table.errors.length === 0, `the Monastery action table is invalid: ${table.errors[0]}`);
+  const unlock = table.actions.find((action) => action.id === "unlock-monastery-chest");
+  const bell = table.actions.find((action) => action.id === "pull-monastery-bell");
+  check(unlock?.requires?.item === "monastery-key" && unlock?.effects?.some((effect) => effect.kind === "open" && effect.object === "monastery-chest"), "the sacristy chest action is wrong");
+  check(bell?.requires?.party === 2 && bell?.requires?.item === "abbey-clapper" && bell?.effects?.some((effect) => effect.kind === "revealExit" && effect.dir === "south"), "the bell action is wrong");
+
+  let state = initialState(world.rooms, [], world.objects, 234, world.climate, channelTable.channels, loadLevels().levels, quests.quests);
+  const actor = (id, name) => ({ id, key: id, account: id, name, room: 234, visited: [234], level: 10, xp: 30000, maxHp: maxHpForLevel(10), hp: maxHpForLevel(10), mana: 5, maxMana: 5, spellbook: [], guild: null, guildRank: null, wielding: null, quests: { active: [], completed: [] }, found: [] });
+  state.actors.push(actor("a", "ana"), actor("b", "bob"));
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents, actions: table.actions }); state = result.state; return result.events; };
+  run([{ kind: "action", actorId: "a", actionId: "unlock-monastery-chest", messages: {} }]);
+  check(state.objects.find((entry) => entry.id === "monastery-chest").open !== true, "a keyless actor opened the sacristy chest");
+  const key = state.objects.find((entry) => entry.id === "monastery-key"); key.holder = "a"; key.room = null;
+  run([{ kind: "action", actorId: "a", actionId: "unlock-monastery-chest", messages: {} }]);
+  check(state.objects.find((entry) => entry.id === "monastery-chest").open === true, "the key did not open the sacristy chest");
+  const clapper = state.objects.find((entry) => entry.id === "abbey-clapper"); clapper.holder = "a"; clapper.inside = null;
+  state.actors.forEach((entry) => { entry.room = 235; entry.found = []; });
+  run([{ kind: "action", actorId: "a", actionId: "pull-monastery-bell", messages: {} }]);
+  check(state.actors.every((entry) => !entry.found.includes("235:south")), "a solo actor pulled the party bell");
+  run([{ kind: "partyInvite", actorId: "a", targetId: "b" }]);
+  run([{ kind: "partyAccept", actorId: "b" }]);
+  state.actors.forEach((entry) => { entry.found = []; });
+  run([{ kind: "action", actorId: "a", actionId: "pull-monastery-bell", messages: {} }]);
+  check(state.actors.every((entry) => entry.found.includes("235:south")), "the bell did not open the shortcut for a formed party");
+  if (!monastery.ok) failures.push(`the Monastery is broken: ${monastery.why[0]}`);
+}
+
 // Persistence: gold is banked on logout/death and survives reset; equipment
 // does not follow the character offline.
 let goldPersistence = { ok: true, why: [] };
@@ -3458,7 +3506,7 @@ let quests = { ok: true, why: [] };
   }
   const archive = loadQuestArchive();
   const check = (condition, why) => { if (!condition) { quests.ok = false; quests.why.push(why); } };
-  check(questTable.quests.length === 23, `the live quest count is ${questTable.quests.length}, not 23`);
+  check(questTable.quests.length === 24, `the live quest count is ${questTable.quests.length}, not 24`);
   check(archive.quests.length === 41 && archive.errors.length === 0, "the retired quest archive is not 41 valid definitions");
   const liveIds = new Set(questTable.quests.map((quest) => quest.id));
   const archiveIds = new Set(archive.quests.map((quest) => quest.id));
@@ -3641,12 +3689,12 @@ let completion = { ok: true, why: [] };
   const ways = secretWays(world.rooms);
   const allQuests = quests.quests.map((quest) => quest.id);
   const check = (condition, why) => { if (!condition) { completion.ok = false; completion.why.push(why); } };
-  check(ways.length === 22, `the hidden-way count is ${ways.length}, not 22`);
+  check(ways.length === 23, `the hidden-way count is ${ways.length}, not 23`);
   const base = {
     level: 10, xp: 30000, quests: { active: [], completed: allQuests }, found: [...ways],
   };
   const done = completionState({ actor: base, rooms: world.rooms, quests: quests.quests, levels: levelTable.levels });
-  check(done.done && done.achieved && done.quests === 23 && done.questsTotal === 23 && done.puzzles === 22 && done.puzzlesTotal === 22 && done.maxLevel === 10, "the completed tally is wrong");
+  check(done.done && done.achieved && done.quests === 24 && done.questsTotal === 24 && done.puzzles === 23 && done.puzzlesTotal === 23 && done.maxLevel === 10, "the completed tally is wrong");
   check(completionLine(done).includes("Run beaten") && completionLine(done).includes(WORLDBREAKER_TITLE), "the completion line is wrong");
   check(!completionState({ actor: { ...base, level: 9 }, rooms: world.rooms, quests: quests.quests, levels: levelTable.levels }).done, "level 9 counted as a completed run");
   check(!completionState({ actor: { ...base, quests: { active: [], completed: allQuests.slice(1) } }, rooms: world.rooms, quests: quests.quests, levels: levelTable.levels }).done, "a missing quest counted as a completed run");
@@ -3665,7 +3713,7 @@ let completion = { ok: true, why: [] };
   const first = step({ state, rooms: world.rooms, intents: [], actions: [] });
   state = first.state;
   const actor = state.actors.find((entry) => entry.id === "w");
-  check(Number.isInteger(actor.completion?.tick) && actor.completion.level === 10 && actor.completion.quests === 23 && actor.completion.puzzles === 22, "the reducer did not record the completed run");
+  check(Number.isInteger(actor.completion?.tick) && actor.completion.level === 10 && actor.completion.quests === 24 && actor.completion.puzzles === 23, "the reducer did not record the completed run");
   check(actor.title === WORLDBREAKER_TITLE, "the completed run did not wear the Worldbreaker title");
   check(first.events.some((event) => event.completion && event.onlyId === "w"), "the completed run did not announce itself");
   const record = { ...actor.completion };
@@ -3673,7 +3721,7 @@ let completion = { ok: true, why: [] };
   state = second.state;
   check(state.actors.find((entry) => entry.id === "w").completion.tick === record.tick, "the completed run was recorded twice");
   checkpointIdentities(state);
-  check(state.identities.w?.found?.length === 22, "the found hidden ways did not survive a checkpoint");
+  check(state.identities.w?.found?.length === 23, "the found hidden ways did not survive a checkpoint");
   check(state.identities.w?.completion?.tick === record.tick, "the completed run did not survive a checkpoint");
   check(state.identities.w?.title === WORLDBREAKER_TITLE, "the Worldbreaker title did not survive a checkpoint");
   if (!completion.ok) failures.push(`completion is broken: ${completion.why[0]}`);
@@ -4132,7 +4180,8 @@ if (process.argv.includes("--json")) {
   console.log(`${"deepdelve".padEnd(26)}  ${(deepdelve.ok ? "16 rooms, party, gas" : "BROKEN").padStart(5)}   == mine, winch, canary`);
   console.log(`${"completion".padEnd(26)}  ${(completion.ok ? "level, quests, ways" : "BROKEN").padStart(5)}   == Worldbreaker`);
   console.log(`${"foundry".padEnd(26)}  ${(foundry.ok ? "12 rooms, party, valve" : "BROKEN").padStart(5)}   == drowned forge`);
-  console.log(`${"zones".padEnd(26)}  ${(zoneMap.ok ? "15 districts" : "BROKEN").padStart(5)}   == harbor, undercroft, eclipse`);
+  console.log(`${"zones".padEnd(26)}  ${(zoneMap.ok ? "16 districts" : "BROKEN").padStart(5)}   == harbor, undercroft, eclipse`);
+  console.log(`${"monastery".padEnd(26)}  ${(monastery.ok ? "14 rooms, bell, crypt" : "BROKEN").padStart(5)}   == key, party, abbot`);
   console.log(`${"combat".padEnd(26)}  ${(combat.outcome === "killed" ? `${combat.rounds} rounds` : "BROKEN").padStart(5)}   == kills`);
   console.log(`${"resume".padEnd(26)}  ${(resume.ok ? "1 save" : "BROKEN").padStart(5)}   == old checkpoint loads`);
   console.log(`${"climate".padEnd(26)}  ${(climate.ok ? `${climate.changes} changes` : "BROKEN").padStart(5)}   == day, night, weather`);

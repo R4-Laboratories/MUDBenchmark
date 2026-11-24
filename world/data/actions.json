@@ -902,6 +902,53 @@
         "actor": "You work the bellows with your party.",
         "others": "%a and the party work the great bellows."
       }
+    },
+    {
+      "id": "unlock-monastery-chest",
+      "room": 234,
+      "verb": "unlock",
+      "target": "chest",
+      "requires": {
+        "item": "monastery-key"
+      },
+      "effects": [
+        {
+          "kind": "open",
+          "object": "monastery-chest"
+        },
+        {
+          "kind": "message",
+          "text": "The small key turns; the banded chest opens."
+        }
+      ],
+      "messages": {
+        "actor": "You unlock the banded chest.",
+        "others": "%a unlocks the banded chest."
+      }
+    },
+    {
+      "id": "pull-monastery-bell",
+      "room": 235,
+      "verb": "pull",
+      "target": "bell",
+      "requires": {
+        "party": 2,
+        "item": "abbey-clapper"
+      },
+      "effects": [
+        {
+          "kind": "revealExit",
+          "dir": "south"
+        },
+        {
+          "kind": "message",
+          "text": "Two pairs of hands pull the rope; the bell rings, and the stair below opens."
+        }
+      ],
+      "messages": {
+        "actor": "You pull the bell rope with your party.",
+        "others": "%a and the party pull the bell rope."
+      }
     }
   ]
 }
