@@ -861,6 +861,8 @@ function selfState(actor) {
             objectRoom: object?.room ?? object?.home ?? null,
             objectRoomName: object?.room ? (ROOMS[object.room]?.name ?? null) : object?.home ? (ROOMS[object.home]?.name ?? null) : null,
             done: objectiveDone(objective, entry.progress, actor, state.objects),
+            answerRoomName: objective.kind === "answer" ? (ROOMS[SHRINE]?.name ?? null) : null,
+            clueRoomName: objective.kind === "answer" ? (ROOMS[VAULT]?.name ?? null) : null,
           };
         });
         return { id: quest.id, name: quest.name, level: quest.level, giver: quest.giver ?? null, objectives: questLines(quest, entry.progress, actor, state.objects), objective_details: objectiveDetails };

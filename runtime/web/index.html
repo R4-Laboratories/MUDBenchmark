@@ -3832,7 +3832,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       const exits = stateRoom.exits ?? [];
       const memoryText = memoryPrompt(memory, { room: AI.room || stateRoom.name, exits, query: observation });
       const mindText = mindPrompt(mind, { state: promptState, room: AI.room || stateRoom.name });
-      const focus = focusFor({ state: promptState, memory });
+      const focus = focusFor({ state: promptState, memory, mind });
       const focusText = focusPrompt(focus);
       AI.lastFocus = focus;
       const r4Text = assemble({
@@ -3963,7 +3963,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       AI.coachRetries = 0;
       const focusKey = `${focus.kind}:${focus.label}:${focus.target ?? ""}`;
       if (AI.focusKey !== focusKey) { AI.focusKey = focusKey; AI.focusDetours = 0; }
-      const focusLock = focusGuard({ focus, command: parsed.command, detours: AI.focusDetours });
+      const focusLock = focusGuard({ focus, command: parsed.command, detours: AI.focusDetours, state: promptState });
       AI.focusDetours = focusLock.detours;
       AI.focusForced = focusLock.forced;
       if (focusLock.forced) {

@@ -60,7 +60,7 @@ const offerScore = (quest, { memory, from } = {}) => {
   return routeFor(memory, from, quest.giverRoomName).length ? 4 : 1;
 };
 
-export function focusFor({ state = null, memory = null } = {}) {
+export function focusFor({ state = null, memory = null, mind = null } = {}) {
   const self = state?.self ?? {};
   const room = state?.room ?? {};
   const from = room.name ?? null;
@@ -161,7 +161,7 @@ export function focusFor({ state = null, memory = null } = {}) {
   const availableOptions = [...(self.available_quests ?? [])].map((quest) => ({ quest, score: offerScore(quest, { memory, from }) }))
     .sort((a, b) => b.score - a.score || (a.quest.level ?? 1) - (b.quest.level ?? 1));
   const bestOffer = availableOptions[0] ?? null;
-  if ((!activeEntry || activeEntry.score <= 1 || objective?.kind === "answer") && bestOffer && bestOffer.score >= (activeEntry?.score ?? 0)) {
+  if ((!activeEntry || activeEntry.score <= 1 || objective?.kind === "answer") && bestOffer && bestOffer.score > (activeEntry?.score ?? 0)) {
     const target = bestOffer.quest.giverRoomName ?? from;
     const here = target === from;
     return withRoute({
@@ -204,6 +204,19 @@ export function focusFor({ state = null, memory = null } = {}) {
       const npcName = objective.npcName ?? objective.npc;
       const here = names(room.npcs).some((name) => name.toLowerCase().includes(String(npcName ?? "").replace(/^the /, "")));
       candidates.push(here ? `talk ${npcName}` : (routeFor(memory, from, target)[0] ?? "look"), "look");
+    } else if (objective.kind === "answer") {
+      const word = mind?.knownWord ?? null;
+      const answerRoom = objective.answerRoomName ?? null;
+      const clueRoom = objective.clueRoomName ?? null;
+      target = word ? (answerRoom ?? from) : (clueRoom ?? from);
+      if (word && from === answerRoom) {
+        candidates.push(`answer ${word}`);
+      } else if (!word && from === clueRoom) {
+        candidates.push("examine door", "look", "search");
+      } else {
+        candidates.push(routeFor(memory, from, target)[0] ?? "look", "look");
+      }
+      candidates.push("quests", "look");
     } else {
       target = objective.roomName ?? from;
       candidates.push(routeFor(memory, from, target)[0] ?? "look", "quests", "look");
@@ -228,13 +241,17 @@ export function focusFor({ state = null, memory = null } = {}) {
 }
 
 /** A bounded objective lock: two unrelated commands in a row yield to the focus. */
-export function focusGuard({ focus = null, command = "", detours = 0 } = {}) {
+export function focusGuard({ focus = null, command = "", detours = 0, state = null } = {}) {
   if (!focus || !["quest", "quest offer", "group action", "party"].includes(focus.kind)) {
     return { command, detours: 0, forced: false };
   }
   const candidate = focus.route?.[0] ?? (focus.candidates ?? [])[0];
   if (!candidate || candidate === "look" || candidate === "inventory") {
     return { command, detours: 0, forced: false };
+  }
+  if (/^(north|south|east|west|up|down)$/.test(candidate)) {
+    const exits = (state?.room?.exits ?? []).map((exit) => (typeof exit === "string" ? exit : exit?.dir)).filter(Boolean);
+    if (exits.length && !exits.includes(candidate)) return { command, detours: 0, forced: false };
   }
   if (String(command).trim() === candidate) return { command, detours: 0, forced: false };
   const next = (Number(detours) || 0) + 1;

@@ -1923,6 +1923,12 @@
       "level": "some-true",
       "statement": "Production v0.91.67 serves objective lock and quest switching. /planner.mjs, /mind.mjs, /ai.mjs and / are 200; /world reports 251 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects. The planner scores active objectives by target-here/known-route/unknown, switches from an unanswerable answer objective to a reachable offer, and forces the focus after two detours. A 100-turn DeepSeek deepseek-flash run completed First Steps, Bread for the Shop, A Curled Scroll and The Lighthouse Lens, held two active quests, visited 28 rooms, produced 54 plans/lessons, and the lock corrected seven loops. A 25-turn Deepdelve run formed a party, turned the winch and reached the surveyor. Main Gate 45569051191 green, publish 45570065747, release v0.91.67.",
       "authority": "GitHub PR #83 merge acc364b 2026-11-25; main Gate 45569051191; publish 45570065747; release v0.91.67; wick deploy, /world, /planner.mjs, /mind.mjs, /ai.mjs, /; local /tmp/long-deepseek4.log and /tmp/party-deepseek4.log; tools/gate.mjs"
+    },
+    {
+      "id": "MB-317",
+      "level": "build",
+      "statement": "v0.91.68 adds answer/fact focus and hardens the lock. The server exposes answerRoomName/clueRoomName; the Mind learns the Vault door word when it observes it, the planner routes the Shrine and offers answer <word>, and the coach repairs say <word> to answer <word> at the Shrine. If the word is unknown, the focus examines the clue door. Active objectives win ties against available offers, and the focus guard refuses to force an exit the room does not have. A 100-turn DeepSeek deepseek-flash run completed First Steps, Bread for the Shop and The Lighthouse Lens, visited 27 rooms, produced 48 plans/lessons, attacked twice, and had 7 focus-lock corrections with 0 deaths. A live death smoke took a level-3/300-XP character to level 2/150 XP, deaths 1, max HP recalculated. World unchanged at 251 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects. Gate covers known-word extraction, answer focus, the say-to-answer coach, focus exit validation and every prior check.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }
