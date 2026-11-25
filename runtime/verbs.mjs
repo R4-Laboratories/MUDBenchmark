@@ -26,10 +26,13 @@ export function loadVerbs({ path = DEFAULT_PATH } = {}) {
   const byAlias = new Map();
 
   for (const [name, entry] of Object.entries(verbs)) {
-    byAlias.set(name, name);
+    // Commands arrive lowercased. Register the lowercased form of every name
+    // and alias so camelCase verbs such as takeFrom remain addressable.
+    byAlias.set(name.toLowerCase(), name);
     for (const alias of entry.aliases ?? []) {
-      if (byAlias.has(alias)) errors.push(`alias "${alias}" is claimed twice`);
-      byAlias.set(alias, name);
+      const key = alias.toLowerCase();
+      if (byAlias.has(key)) errors.push(`alias "${key}" is claimed twice`);
+      byAlias.set(key, name);
     }
     const messages = entry.messages ?? {};
     if (Object.keys(messages).length === 0) errors.push(`verb ${name} has no messages`);
