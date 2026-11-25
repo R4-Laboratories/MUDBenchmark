@@ -87,8 +87,24 @@ planner picks one focus:
 5. an available quest offer, with a route to the giver;
 6. an unexplored exit.
 
-The prompt gets `FOCUS`, `WHY`, `ROUTE` and a short `CANDIDATES` list, and the
-action menu starts with those candidates. This does not take the choice away
+The browser seeds its route graph from `/llms.txt` on first start, so a quest
+room the character has never visited still has a route. The prompt gets
+`FOCUS`, `WHY`, `ROUTE` and a short `CANDIDATES` list, and the action menu
+starts with those candidates.
+
+Room actions are data, not global verbs. The validator accepts `turn winch`,
+`pump shaft`, `board cart`, `strike seam` and the other action verbs when the
+live room exposes them; before this, the model was told its correct action was
+an unknown command and repaired away from the winch.
+
+The planner also sees `group_actions`. If a winch or door needs two people, it
+focuses party formation and offers `party invite <player>`; once the party is
+in the room it offers the action itself. This is how the Deepdelve run turned
+the winch.
+
+Gear is compared by damage and armour. The menu and planner only offer an
+upgrade, so a short sword is not replaced by a wooden club. `battle` is an
+inspection command, not a fight action, and is no longer offered in combat. This does not take the choice away
 from the model; it removes the “what is worth doing at all” problem that made
 weak models examine the same sword ten times.
 
@@ -118,16 +134,19 @@ adaptive-description plan in `docs/ROOM-PROSE.md`.
   gear lessons, print the `MIND` block, coach `say`/`tell`/repeat attack,
   multi-command lines, carried gear and known NPCs elsewhere, remove attack
   from the combat menu, keep an engaged mobile in place, and hold the opening
-  room prose floor, and exercise the focus planner.
+  room prose floor, exercise the focus planner, route seed, room-action
+  validation, upgrade filtering and party focus.
 - Local model: `qwen2.5:3b` played 18 turns and eventually equipped the sword,
   cloak and jerkin. It still repeated actions; the loop guard and coach caught
   them.
 - DeepSeek: `deepseek-flash` played 15 turns on an isolated server. It took and
   wielded the short sword, wore the cloak and jerkin, talked to the bard, sent a
   private `tell` to the player, accepted the `word` quest, went north and
-  attacked the rat, then explored the Vault. It produced plans and lessons on
-  most turns and did not repeat an invalid command. This is the first positive
-  full-loop evidence from the target provider.
+  attacked the rat, then explored the Vault.
+- DeepSeek long run: 80 turns completed First Steps and explored 19 rooms with
+  plans/lessons; 25 turns formed a party with ann, turned the Deepdelve winch,
+  descended and reached the surveyor and her notes. The party action only
+  worked after the room-action validator fix.
 - The browser Mind module is a static route (`/mind.mjs`) and the page imports
   it; the server smoke checks the route and the module text.
 - No real provider key is used in the Gate. A real DeepSeek/Groq session is the

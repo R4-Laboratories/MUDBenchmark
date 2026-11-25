@@ -1164,7 +1164,7 @@
     parseBrain, buildActionMenu, validateCommand, repairCommand, coachCommand, requestFor, replyFrom, trimHistory, normalizeBase,
     isThrottledStatus, throttlePlan,
   } from "/ai.mjs";
-  import { emptyMemory, rememberResult, memoryPrompt, loopWarning, breakLoop, shouldBreakLoop } from "/memory.mjs";
+  import { emptyMemory, rememberResult, memoryPrompt, loopWarning, breakLoop, shouldBreakLoop, seedMapFromLlms } from "/memory.mjs";
   import { emptyMind, updateMind, mindPrompt } from "/mind.mjs";
   import { focusFor, focusPrompt } from "/planner.mjs";
   import { assemble } from "/router.mjs";
@@ -2926,6 +2926,14 @@
     AI.mindKey = null;
     AI.coachRetries = 0;
     AI.lastCoach = null;
+    try {
+      const memory = ensureMemory();
+      if (!memory.seeded) {
+        const text = await fetch(`${location.origin}/llms.txt`).then((res) => res.text());
+        seedMapFromLlms(memory, text);
+        saveMemory();
+      }
+    } catch {}
     AI.commandRoom = null;
     AI.exits = [];
     AI.lastInvalid = null;

@@ -269,12 +269,23 @@ export function buildActionMenu(state = null) {
   const engaged = new Set(enemies.map((enemy) => String(enemy.name ?? "").toLowerCase()));
   const wielding = String(self.wielding ?? "").toLowerCase();
   const worn = new Set((self.worn ?? []).map((name) => String(name).toLowerCase()));
-  // Gear first: a carried weapon or armour should be used before the next
-  // fight, and a weak model should see that action near the top of the shortlist.
-  for (const name of self.inventory_names ?? []) {
-    if (/sword|axe|mace|dagger|spear|hammer|staff|bow|knife|pick|blade|club/i.test(name) && String(name).toLowerCase() !== wielding) menu.add(`wield ${name}`);
-    if (/mail|plate|cloak|shield|helm|boots|gloves|bracers|apron|circlet|robe|hood|jerkin|cuirass|hauberk|mantle|charm|relic/i.test(name) && !worn.has(String(name).toLowerCase())) menu.add(`wear ${name}`);
+  // Gear first: only show an upgrade. A weak model should not be nudged to
+  // swap a short sword for a wooden club.
+  const hasStats = (self.inventory_items ?? []).length > 0;
+  const items = hasStats
+    ? self.inventory_items
+    : (self.inventory_names ?? []).map((name) => ({ name, damage: 0, armor: 0, slot: null }));
+  const mainDamage = self.equipment?.mainhand?.damage ?? 0;
+  const bestWeapon = items.filter((item) => WEAPON.test(item.name) && String(item.name).toLowerCase() !== wielding && (!hasStats || (item.damage ?? 0) > mainDamage))
+    .sort((a, b) => (b.damage ?? 0) - (a.damage ?? 0))[0];
+  if (bestWeapon) menu.add(`wield ${bestWeapon.name}`);
+  const armorUpgrades = new Map();
+  for (const item of items) {
+    if (!ARMOR.test(item.name) || worn.has(String(item.name).toLowerCase())) continue;
+    if (hasStats && (item.armor ?? 0) <= (self.equipment?.[item.slot]?.armor ?? 0)) continue;
+    if (!armorUpgrades.has(item.slot) || (armorUpgrades.get(item.slot).armor ?? 0) < (item.armor ?? 0)) armorUpgrades.set(item.slot, item);
   }
+  for (const item of armorUpgrades.values()) menu.add(`wear ${item.name}`);
   if (room && !inCombat) {
     for (const exit of room.exits ?? []) menu.add(exit.dir);
     for (const detail of room.details ?? []) menu.add(`examine ${detail}`);
@@ -305,7 +316,6 @@ export function buildActionMenu(state = null) {
   }
   if ((self.party_invites ?? []).length) menu.add("party accept");
   if (inCombat) {
-    menu.add("battle");
     menu.add("flee");
   }
   if (self.guild === "night-market" && ["cutpurse", "shadow", "master"].includes(self.guild_rank)) menu.add("hide");
@@ -341,6 +351,7 @@ const FREE_VERBS = new Set([
   "recall", "remember", "mem",
   "facts", "memory", "knowledge",
   "levels", "leaderboard", "top", "lb", "ranks", "map", "shortcuts", "tutorial", "first", "firststeps",
+  "party", "group", "hide", "flee", "completion", "goal", "win",
   "smile", "grin", "frown", "cheer", "salute", "point", "ponder", "stretch", "shiver", "yawn", "wink", "hug", "highfive", "poke", "whistle", "sing", "hum", "mutter", "shout", "clap", "cry", "apologize", "congratulate", "battle", "combat", "bt", "duel",
 ]);
 const TARGET_VERBS = new Set([
@@ -348,8 +359,12 @@ const TARGET_VERBS = new Set([
   "wear", "don", "remove", "wield", "unwield", "eat", "light", "extinguish",
   "open", "close", "shut", "talk", "attack", "kill", "hit", "buy", "sell",
   "cast", "study", "recite", "deposit", "dep", "store", "ds", "withdraw", "wd", "retrieve", "wdr",
+  "technique", "tech", "use", "activate", "invoke",
   "ignore", "ign", "mute", "unignore", "unign", "unmute", "title", "recall", "remember", "mem",
 ]);
+
+const WEAPON = /sword|axe|mace|dagger|spear|hammer|staff|bow|knife|pick|blade|club/i;
+const ARMOR = /mail|plate|cloak|shield|helm|boots|gloves|bracers|apron|circlet|robe|hood|jerkin|cuirass|hauberk|mantle|charm|relic/i;
 
 const wordsOf = (value) => String(value ?? "").toLowerCase().split(/[^a-z0-9]+/).filter((word) => word.length > 1);
 
@@ -408,9 +423,15 @@ export function validateCommand(command, state = null) {
     if (verb === "search" && rest.length) return { ok: false, reason: "search takes no target" };
     return { ok: true };
   }
+  const target = rest.join(" ");
+  // Room actions are data, not verbs in the general table. A turn/pump/strike
+  // in a room with that action is valid even when the verb is not global.
+  const roomActions = [...(state?.room?.actions ?? []), ...(state?.room?.group_actions ?? [])];
+  const roomAction = roomActions.find((action) => action.verb === verb
+    && (!target || String(action.target).toLowerCase().includes(target.toLowerCase()) || target.toLowerCase().includes(String(action.target).toLowerCase())));
+  if (roomAction) return { ok: true };
   if (!TARGET_VERBS.has(verb)) return { ok: false, reason: `unknown command ${verb}` };
   if (!rest.length) return { ok: false, reason: `${verb} needs a target` };
-  const target = rest.join(" ");
   if (["take", "get", "g", "t", "grab"].includes(verb) && /^(all|everything)$/i.test(target.trim())) return { ok: true };
   if (verb === "attack" && state?.room?.safe) return { ok: false, reason: "this is a safe room" };
   if (["take", "get", "g", "t", "grab"].includes(verb)) {
@@ -696,7 +717,7 @@ export function buildUserPrompt({ turn = 1, observation = "", director = [], sta
   const deaths = state?.self ? `DEATHS: ${state.self.deaths ?? 0}.` : "";
   let next = "";
   if (enemies.length) {
-    next = "NEXT: use a technique, eat/drink, cast mend, battle, or flee; do not repeat attack.";
+    next = "NEXT: use a technique, eat/drink, cast mend, or flee; do not repeat attack.";
   } else if (state?.self) {
     const weapons = (state.self.inventory_names ?? []).filter((name) => /sword|axe|mace|dagger|spear|hammer|staff|bow|knife|pick|blade|club/i.test(name) && name !== state.self.wielding);
     const armor = (state.self.inventory_names ?? []).filter((name) => /mail|plate|cloak|shield|helm|boots|gloves|bracers|apron|circlet|robe|hood|jerkin|cuirass|hauberk|mantle|charm|relic/i.test(name) && !(state.self.worn ?? []).includes(name));

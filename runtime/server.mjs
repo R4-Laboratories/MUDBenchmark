@@ -944,6 +944,13 @@ function selfState(actor) {
       || state.objects.some((object) => object.lit === true && object.holder === actor.id && (object.flags ?? []).includes("light")),
     enemies,
     inventory_names: state.objects.filter((object) => object.holder === actor.id && !object.worn && !object.eaten).map((object) => object.name),
+    inventory_items: state.objects.filter((object) => object.holder === actor.id && !object.worn && !object.eaten).map((object) => ({
+      name: object.name,
+      damage: Number.isInteger(object.damage) ? object.damage : 0,
+      armor: Number.isInteger(object.armor) ? object.armor : 0,
+      slot: object.slot ?? null,
+      value: Number.isInteger(object.value) ? object.value : 0,
+    })),
     wielding: state.objects.find((object) => object.id === actor.wielding)?.name ?? null,
     worn: state.objects.filter((object) => object.holder === actor.id && object.worn).map((object) => object.name),
     active_quests: activeQuests,
@@ -967,6 +974,10 @@ function selfState(actor) {
       actors: actor?.key ? state.actors.filter((candidate) => candidate.id !== actor.id && candidate.room === actor.room && candidate.key
         && (!candidate.hidden || (actor.detectUntil ?? 0) > state.tick)).map((candidate) => candidate.hidden ? `${candidate.name} (hidden)` : candidate.name) : [],
       actions: actionsHere,
+      group_actions: actor?.key
+        ? ACTION_TABLE.actions.filter((action) => action.room === actor.room && (action.requires?.party || action.requires?.actors))
+          .map((action) => ({ verb: action.verb, target: action.target, size: action.requires.party ?? action.requires.actors }))
+        : [],
     } : null,
   } : null;
   return {
