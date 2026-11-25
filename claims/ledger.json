@@ -1899,6 +1899,12 @@
       "level": "some-true",
       "statement": "Production v0.91.65 serves the focus planner. /planner.mjs, /mind.mjs, /ai.mjs and / are 200; /world reports 251 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects. Structured quest objectives and available quest givers now feed a model-independent focus planner: combat, equip, take room gear, next quest objective with route, quest offer, or explore. The prompt gets FOCUS/WHY/ROUTE/CANDIDATES and the action menu starts with those candidates. A 15-turn DeepSeek deepseek-flash run against an isolated server took and wielded the short sword, wore the grey cloak and leather jerkin, talked to the bard, sent a private tell to the player, accepted the word quest, went north and attacked the rat, then explored the Vault. It produced plans/lessons and sent no invalid command. Main Gate 45555938804 green, publish 45557080386, release v0.91.65.",
       "authority": "GitHub PR #81 merge 62eac62 2026-11-25; main Gate 45555938804; publish 45557080386; release v0.91.65; wick deploy, /world, /planner.mjs, /mind.mjs, /ai.mjs, /; local /tmp/mind-agent-deepseek.mjs (deepseek-flash) and /tmp/completion-live.mjs; tools/gate.mjs"
+    },
+    {
+      "id": "MB-313",
+      "level": "build",
+      "statement": "v0.91.66 hardens the focus harness after long DeepSeek runs. The browser seeds its route graph from /llms.txt so quest rooms never visited still have a route. Room-action verbs are accepted by the pre-send validator (turn winch, pump shaft, board cart, strike seam) instead of being repaired away. Gear is only offered when it is an upgrade by damage/armour. group_actions exposes group-gated actions, and the planner focuses party formation and party invite before using a winch/door. battle is no longer offered as a fight action; it only inspects. A DeepSeek deepseek-flash 80-turn overworld run completed First Steps, visited 19 rooms and produced plans/lessons. A 25-turn DeepDelve run formed a party with ann, turned the winch, descended and reached the surveyor and her notes. World unchanged at 251 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects. Gate covers route seed, room-action validation, upgrade filtering, party focus, combat menu and every prior check.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

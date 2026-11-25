@@ -539,6 +539,19 @@ Rehearsed 2026-11-16:
   speaking, opened the Twin Door with one hidden partner and took the crown.
   Gate covers the death penalty, level gates, twin door, hide visibility and
   prompt (MB-286/287/288);
+- v0.91.66 (route and group focus) seeds the browser route graph from
+  `/llms.txt` at AI start, so the planner can route to quest rooms it has never
+  visited. It accepts data-driven room-action verbs (`turn winch`, `pump shaft`,
+  `board cart`, `strike seam`) in pre-send validation instead of rejecting them
+  as unknown commands. The combat menu no longer offers `battle` as a fight
+  action (it only inspects), gear is offered only when it is an upgrade, and
+  `group_actions` lets the planner form a party and use a ready group action.
+  A 80-turn DeepSeek overworld run completed First Steps and explored 19 rooms;
+  a 25-turn Deepdelve run formed a party with ann, turned the winch, descended
+  and reached the surveyor and her notes. World unchanged: 251 rooms / 17 zones
+  / 25 quests / 114 mobiles / 263 objects. Gate covers route seed, room-action
+  validation, upgrade filtering, party focus, combat menu and every prior check
+  (MB-313);
 - v0.91.65 (focus planner) adds a model-independent planner in
   `runtime/web/planner.mjs`. The server now exposes structured quest objective
   details (kind, room, NPC, object, done), and the prompt gets a `FOCUS`,

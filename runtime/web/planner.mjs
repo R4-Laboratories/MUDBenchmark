@@ -39,7 +39,6 @@ export function focusFor({ state = null, memory = null } = {}) {
       label: `survive ${enemy.name}`,
       reason: "attack already started the fight; rounds are automatic",
       candidates: unique([
-        "battle",
         technique ? `technique ${technique}` : null,
         food ? `eat ${food}` : null,
         (self.spells ?? []).includes("mend") ? "cast mend" : null,
@@ -49,8 +48,14 @@ export function focusFor({ state = null, memory = null } = {}) {
     return withRoute(focus, memory, from, from);
   }
 
-  const carriedWeapons = (self.inventory_names ?? []).filter((name) => WEAPON.test(name) && name !== self.wielding);
-  const carriedArmor = (self.inventory_names ?? []).filter((name) => ARMOR.test(name) && !(self.worn ?? []).includes(name));
+  const hasStats = (self.inventory_items ?? []).length > 0;
+  const carried = hasStats
+    ? self.inventory_items
+    : (self.inventory_names ?? []).map((name) => ({ name, damage: 0, armor: 0, slot: null }));
+  const mainDamage = self.equipment?.mainhand?.damage ?? 0;
+  const carriedWeapons = carried.filter((item) => WEAPON.test(item.name) && item.name !== self.wielding && (!hasStats || (item.damage ?? 0) > mainDamage)).map((item) => item.name);
+  const carriedArmor = carried.filter((item) => ARMOR.test(item.name) && !(self.worn ?? []).includes(item.name)
+    && (!hasStats || (item.armor ?? 0) > (self.equipment?.[item.slot]?.armor ?? 0))).map((item) => item.name);
   if (carriedWeapons.length || carriedArmor.length) {
     const candidates = [
       ...carriedWeapons.map((name) => `wield ${name}`),
@@ -64,13 +69,50 @@ export function focusFor({ state = null, memory = null } = {}) {
     }, memory, from, from);
   }
 
-  const roomGear = (room.objects ?? []).filter((object) => object.takeable && (WEAPON.test(object.name) || ARMOR.test(object.name)));
+  const roomGear = (room.objects ?? []).filter((object) => object.takeable
+    && ((WEAPON.test(object.name) && (!hasStats || (object.damage ?? 0) > mainDamage))
+      || (ARMOR.test(object.name) && (!hasStats || (object.armor ?? 0) > (self.equipment?.[object.slot]?.armor ?? 0)))));
   if (roomGear.length) {
     return withRoute({
       kind: "take",
       label: `take ${roomGear[0].name}`,
       reason: "useful gear is on the floor",
       candidates: unique([`take ${roomGear[0].name}`, "inventory", "look"]),
+    }, memory, from, from);
+  }
+
+  const groupAction = (room.group_actions ?? [])[0];
+  if (groupAction) {
+    const party = self.party;
+    const here = names(room.actors);
+    const inParty = party ? (party.members ?? []).filter((member) => here.includes(member)) : [];
+    if (!party) {
+      return withRoute({
+        kind: "party",
+        label: `form a party for ${groupAction.verb} ${groupAction.target}`,
+        reason: `the ${groupAction.verb} ${groupAction.target} needs ${groupAction.size} people`,
+        candidates: unique([
+          here.length ? `party invite ${here[0]}` : null,
+          here.length ? `say Looking for a party for ${groupAction.target}` : null,
+          "who",
+          "say Looking for a party",
+          `${groupAction.verb} ${groupAction.target}`,
+        ]),
+      }, memory, from, from);
+    }
+    if (inParty.length + 1 < groupAction.size) {
+      return withRoute({
+        kind: "party",
+        label: `gather the party for ${groupAction.verb} ${groupAction.target}`,
+        reason: `the ${groupAction.verb} ${groupAction.target} needs ${groupAction.size} people in the room`,
+        candidates: unique(["party who", "say Wait for the party", "wait", `${groupAction.verb} ${groupAction.target}`]),
+      }, memory, from, from);
+    }
+    return withRoute({
+      kind: "group action",
+      label: `${groupAction.verb} ${groupAction.target}`,
+      reason: `the party is together; this opens the way`,
+      candidates: unique([`${groupAction.verb} ${groupAction.target}`, "party who", "look"]),
     }, memory, from, from);
   }
 
@@ -121,7 +163,10 @@ export function focusFor({ state = null, memory = null } = {}) {
     }, memory, from, target);
   }
 
-  const available = (self.available_quests ?? [])[0];
+  const available = [...(self.available_quests ?? [])].sort((a, b) => {
+    const here = (quest) => quest.giverRoomName === from ? 1 : 0;
+    return here(b) - here(a) || (a.level ?? 1) - (b.level ?? 1);
+  })[0];
   if (available) {
     const target = available.giverRoomName ?? from;
     const here = target === from;

@@ -198,6 +198,28 @@ export function seedMap(memory, rooms = []) {
   return memory;
 }
 
+/** Seed the route graph from the published /llms.txt room table. */
+export function seedMapFromLlms(memory, text) {
+  if (!memory) return memory;
+  const rows = String(text ?? "").replace(/\r/g, "").split("\n")
+    .map((line) => line.split("|").map((part) => part.trim()))
+    .filter((parts) => parts.length >= 7 && /^\d+$/.test(parts[1]) && parts[2]);
+  if (!rows.length) return memory;
+  const byId = new Map(rows.map((parts) => [parts[1], parts[2]]));
+  const exits = {};
+  for (const parts of rows) {
+    const out = {};
+    for (const match of String(parts[5] ?? "").matchAll(/([a-z]+)\s+(\d+)/g)) {
+      const target = byId.get(match[2]);
+      if (target) out[match[1]] = target;
+    }
+    if (Object.keys(out).length) exits[parts[2]] = out;
+  }
+  memory.map = { ...(memory.map ?? {}), ...exits };
+  memory.seeded = true;
+  return memory;
+}
+
 /** Record the result of the command issued in `room` on the previous turn. */
 export function rememberResult(memory, { room, command, observation, tick = 0, at = Date.now(), exits = [] } = {}) {
   if (!memory || !room || !command) return memory;
