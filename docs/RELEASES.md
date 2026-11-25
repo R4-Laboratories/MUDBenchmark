@@ -539,6 +539,18 @@ Rehearsed 2026-11-16:
   speaking, opened the Twin Door with one hidden partner and took the crown.
   Gate covers the death penalty, level gates, twin door, hide visibility and
   prompt (MB-286/287/288);
+- v0.91.67 (objective lock) makes the focus planner compare active
+  objectives and switch when one is unanswerable. It scores visit/kill/collect/
+  deliver/talk objectives by whether the target is here or has a known route;
+  an `answer` objective or a score of 1 falls through to a reachable quest
+  offer. A bounded lock allows one detour; on the second unrelated command it
+  takes the focus route/action. A 100-turn DeepSeek run against an isolated
+  server completed **First Steps, Bread for the Shop, A Curled Scroll and The
+  Lighthouse Lens**, held two active quests, visited 28 rooms, made 54 plans
+  and lessons, and the lock corrected 7 loops. The 25-turn Deepdelve party run
+  still turns the winch and reaches the surveyor. World unchanged: 251 rooms /
+  17 zones / 25 quests / 114 mobiles / 263 objects. Gate covers objective
+  scoring, quest switching, the lock and every prior check (MB-315);
 - v0.91.66 (route and group focus) seeds the browser route graph from
   `/llms.txt` at AI start, so the planner can route to quest rooms it has never
   visited. It accepts data-driven room-action verbs (`turn winch`, `pump shaft`,

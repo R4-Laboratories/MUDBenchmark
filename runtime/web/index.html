@@ -1166,7 +1166,7 @@
   } from "/ai.mjs";
   import { emptyMemory, rememberResult, memoryPrompt, loopWarning, breakLoop, shouldBreakLoop, seedMapFromLlms } from "/memory.mjs";
   import { emptyMind, updateMind, mindPrompt } from "/mind.mjs";
-  import { focusFor, focusPrompt } from "/planner.mjs";
+  import { focusFor, focusPrompt, focusGuard } from "/planner.mjs";
   import { assemble } from "/router.mjs";
   import { signIn as prismSignIn, reset as prismReset, load as loadSession, save as saveSession, personaSignIn, personaRetire, nextPersonaEpoch, createRecoveryKit, restoreRecoveryKit, characterHandoff, characterRevoke, characterTransfer, signChallenge } from "/prism-auth.mjs";
   import { randomCharacterName, uniqueCharacterName, chooseCharacter } from "/names.mjs";
@@ -2924,6 +2924,9 @@
     AI.notebookKey = null;
     AI.mind = null;
     AI.mindKey = null;
+    AI.focusDetours = 0;
+    AI.focusKey = "";
+    AI.focusForced = false;
     AI.coachRetries = 0;
     AI.lastCoach = null;
     try {
@@ -3958,6 +3961,15 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         parsed.thought = parsed.thought || `Command guard: ${repaired}.`;
       }
       AI.coachRetries = 0;
+      const focusKey = `${focus.kind}:${focus.label}:${focus.target ?? ""}`;
+      if (AI.focusKey !== focusKey) { AI.focusKey = focusKey; AI.focusDetours = 0; }
+      const focusLock = focusGuard({ focus, command: parsed.command, detours: AI.focusDetours });
+      AI.focusDetours = focusLock.detours;
+      AI.focusForced = focusLock.forced;
+      if (focusLock.forced) {
+        parsed.command = focusLock.command;
+        addChat("system", `Focus lock: two detours from "${focus.label}"; taking "${parsed.command}".`);
+      }
       AI.lastCoach = coach;
       AI.lastValidation = { ok: validation.ok, invalid: !validation.ok, reason: validation.reason, repaired, command: attempted };
       if (!validation.ok) AI.lastInvalid = { command: attempted, reason: coach.feedback || validation.reason, repaired };
@@ -3983,6 +3995,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         invalid_reason: AI.lastValidation?.reason ?? null,
         repair: AI.lastValidation?.repaired ?? null,
         loop: Boolean(AI.loopBroken),
+        focus_forced: Boolean(AI.focusForced),
         memory_hit: Boolean(memoryText.includes("Known:")),
         r4_hit: Boolean(r4Text),
         rooms_seen: Object.keys(memory.rooms).length,

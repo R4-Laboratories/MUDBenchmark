@@ -108,6 +108,20 @@ inspection command, not a fight action, and is no longer offered in combat. This
 from the model; it removes the “what is worth doing at all” problem that made
 weak models examine the same sword ten times.
 
+## Objective lock and quest switching
+
+The planner scores the next unfinished objective of every active quest: target
+in this room (5), known route (4), otherwise (1). An `answer` objective and a
+score of 1 are treated as unanswerable for now, so a reachable quest offer can
+take focus instead. This is how the 100-turn run left the Shrine/Chancel loop
+and completed Bread, A Curled Scroll and The Lighthouse Lens after First
+Steps.
+
+The model still gets one detour. A second unrelated command triggers the
+objective lock: it takes the focus route or the focus action. Seven forced
+steps carried the 100-turn run through the loop without removing the model’s
+choice on the first turn of a new thought.
+
 ## Stuck and loop recovery
 
 The existing route memory detects repeated commands and small room cycles. The
@@ -135,7 +149,8 @@ adaptive-description plan in `docs/ROOM-PROSE.md`.
   multi-command lines, carried gear and known NPCs elsewhere, remove attack
   from the combat menu, keep an engaged mobile in place, and hold the opening
   room prose floor, exercise the focus planner, route seed, room-action
-  validation, upgrade filtering and party focus.
+  validation, upgrade filtering, party focus, objective scoring, quest
+  switching and the focus lock.
 - Local model: `qwen2.5:3b` played 18 turns and eventually equipped the sword,
   cloak and jerkin. It still repeated actions; the loop guard and coach caught
   them.
@@ -147,6 +162,9 @@ adaptive-description plan in `docs/ROOM-PROSE.md`.
   plans/lessons; 25 turns formed a party with ann, turned the Deepdelve winch,
   descended and reached the surveyor and her notes. The party action only
   worked after the room-action validator fix.
+- DeepSeek 100-turn run: completed First Steps, Bread for the Shop, A Curled
+  Scroll and The Lighthouse Lens; 28 rooms, 54 plans/lessons, 7 focus-lock
+  corrections, 0 deaths.
 - The browser Mind module is a static route (`/mind.mjs`) and the page imports
   it; the server smoke checks the route and the module text.
 - No real provider key is used in the Gate. A real DeepSeek/Groq session is the
