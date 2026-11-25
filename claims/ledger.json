@@ -1959,6 +1959,12 @@
       "level": "build",
       "statement": "v0.91.70 fixes three live player reports. Verb lookup lowercases names and aliases, so `takeFrom` resolves after the parser lowercases input and the container branch accepts it as well as `take ... from ...`. The HUD refreshes any online actor whose HP, mana, effects, enemies or gear changed during the tick, so automatic combat damage updates the health bar without a player command. `inventory` shows an item's worth and the half-price a shop pays, e.g. `a curled scroll [worth 5c; sells 2c]`. A live isolated-server smoke opened the chest, took the scroll with `takeFrom`, read the value in `inventory`, and observed the HUD state fall from 40 to 38 HP during automatic combat. World unchanged at 251 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects. Gate covers camelCase lookup, the inventory value label, HUD change detection and every prior check.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-323",
+      "level": "some-true",
+      "statement": "Production v0.91.70 serves the three player-report fixes. /planner.mjs, /mind.mjs, /ai.mjs and / are 200; /world reports 251 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects. Verb lookup lowercases names and aliases, so takeFrom resolves after parser normalization; the container branch accepts takeFrom as well as take ... from ... . The HUD refreshes any online actor whose HP, mana, effects, enemies or gear changed during a tick, so automatic combat damage updates the health bar. inventory shows each item's worth and the half-price a shop pays. A live isolated-server smoke opened the chest, took the scroll with takeFrom, read the value in inventory, and observed the HUD state fall from 40 to 38 HP during automatic combat. Main Gate 45677589377 green, publish 45679314040, release v0.91.70.",
+      "authority": "GitHub PR #86 merge 9198a4e 2026-11-25; main Gate 45677589377; publish 45679314040; release v0.91.70; wick deploy, /world, /planner.mjs, /mind.mjs, /ai.mjs, /; local /tmp/player-issues.log; tools/gate.mjs"
     }
   ]
 }
