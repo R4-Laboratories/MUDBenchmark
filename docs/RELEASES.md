@@ -554,8 +554,10 @@ Rehearsed 2026-11-16:
   and completed **4 quests** (First Steps, Bread, A Curled Scroll, The
   Apprentice's Charm), reached the Docks, Deep Forest, Grey Road, Moonlit Gate,
   Memory Garden and Root Archive, sent 120/120 commands, made 13 focus
-  corrections and took 0 deaths at level 3 / 410 XP. World now 253 rooms / 17
-  zones / 25 quests / 114 mobiles / 263 objects (MB-326);
+  corrections and took 0 deaths at level 3 / 410 XP. A second 120-turn run
+  visited 33 rooms, completed 3 quests, reached the Salt Caves and took 0
+  deaths at level 3 / 414 XP. World now 253 rooms / 17 zones / 25 quests / 114
+  mobiles / 263 objects (MB-326);
 - v0.91.71 (federation protocol 2) replaces draft PR #11's password-transfer
   trust model. A region handoff now needs a Prism-signed
   `mudbenchmark/region-travel/1` grant for the destination origin plus a

@@ -222,7 +222,8 @@ adaptive-description plan in `docs/ROOM-PROSE.md`.
   lessons, 120/120 commands sent, 13 focus corrections, 0 deaths, level 3 / 410
   XP. It reached the Cliff Walk, Cellar Stair, Harbor Quay, Docks, Deep Forest,
   Grey Road, Moonlit Gate, Memory Garden, Root Archive and Root Road, not only
-  the starting quarter.
+  the starting quarter. A second 120-turn run visited 33 rooms, completed 3
+  quests and reached the Salt Caves, with 0 deaths and level 3 / 414 XP.
 - Coach regression: `take a loaf of bread` with a purse of coins is no longer
   blocked as "already carrying"; item matching ignores `of`, `with`, `from` and
   `to` as well as articles.
