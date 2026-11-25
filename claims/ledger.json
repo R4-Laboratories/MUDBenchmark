@@ -1965,6 +1965,12 @@
       "level": "some-true",
       "statement": "Production v0.91.70 serves the three player-report fixes. /planner.mjs, /mind.mjs, /ai.mjs and / are 200; /world reports 251 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects. Verb lookup lowercases names and aliases, so takeFrom resolves after parser normalization; the container branch accepts takeFrom as well as take ... from ... . The HUD refreshes any online actor whose HP, mana, effects, enemies or gear changed during a tick, so automatic combat damage updates the health bar. inventory shows each item's worth and the half-price a shop pays. A live isolated-server smoke opened the chest, took the scroll with takeFrom, read the value in inventory, and observed the HUD state fall from 40 to 38 HP during automatic combat. Main Gate 45677589377 green, publish 45679314040, release v0.91.70.",
       "authority": "GitHub PR #86 merge 9198a4e 2026-11-25; main Gate 45677589377; publish 45679314040; release v0.91.70; wick deploy, /world, /planner.mjs, /mind.mjs, /ai.mjs, /; local /tmp/player-issues.log; tools/gate.mjs"
+    },
+    {
+      "id": "MB-324",
+      "level": "build",
+      "statement": "v0.91.71 replaces draft federation PR #11 with protocol 2. A handoff requires a Prism-signed mudbenchmark/region-travel/1 grant for the destination origin plus a source-region Ed25519 attestation. The destination verifies both, checks protocol, rules fingerprint and destination, creates an account keyed by the Prism id, and stores no password, password hash or salt. Legacy password accounts are refused until claimed by a Prism id. Local guild, standing, components, titles, discovered details, ignores, memory and duel history survive a return; carried items stay in the source region. Each region can disable skills and cast/train/study/recite consult the policy; recite <scroll> on <target> parses the target after on. Transfer ids are replay-checked and bounded to 64; an uncertain handoff retries the same grant. Federation mode saves synchronously with rotation disabled, capped at the lower of MAX_ACCOUNTS and MUD_REGION_MAX_ACCOUNTS (default 2,000); measured saves are 6 ms at 1,000 accounts, 8 ms at 2,000 and 22 ms at 10,000. The two-process test covers grant and region signatures, a Prism handoff, local-field return, skill filtering, replay and altered-grant refusal, legacy refusal, an outage retry and a process restart (3/3). Gate passes. World unchanged at 251 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

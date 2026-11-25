@@ -12,13 +12,16 @@ import { dirname } from "node:path";
 
 const KEEP = 5;
 
-export function loadStateFile(file, { initial, restore }) {
-  if (!existsSync(file)) return initial();
+export function loadStateFile(file, { initial, restore, allowBackup = true }) {
+  if (!existsSync(file)) {
+    if (!allowBackup && existsSync(`${file}.1`)) throw new Error(`${file} is missing; refusing to restore an older federation state`);
+    return initial();
+  }
   try {
     return restore(JSON.parse(readFileSync(file, "utf8")));
   } catch (error) {
     const backup = `${file}.1`;
-    if (existsSync(backup)) {
+    if (allowBackup && existsSync(backup)) {
       try {
         const restored = restore(JSON.parse(readFileSync(backup, "utf8")));
         const aside = `${file}.corrupt.${Date.now()}`;
@@ -33,15 +36,18 @@ export function loadStateFile(file, { initial, restore }) {
   }
 }
 
-export function saveStateFile(file, state) {
+export function saveStateFile(file, state, { rotate = true } = {}) {
   mkdirSync(dirname(file), { recursive: true });
-  // Rotate first, so .1 is always the state before this write.
-  for (let index = KEEP; index > 1; index -= 1) {
-    const from = `${file}.${index - 1}`;
-    const to = `${file}.${index}`;
-    if (existsSync(from)) copyFileSync(from, to);
+  // Rotation is the expensive part of a synchronous checkpoint. A federation
+  // region keeps one atomic primary instead of five copies.
+  if (rotate) {
+    for (let index = KEEP; index > 1; index -= 1) {
+      const from = `${file}.${index - 1}`;
+      const to = `${file}.${index}`;
+      if (existsSync(from)) copyFileSync(from, to);
+    }
+    if (existsSync(file)) copyFileSync(file, `${file}.1`);
   }
-  if (existsSync(file)) copyFileSync(file, `${file}.1`);
 
   const temporary = `${file}.tmp`;
   const fd = openSync(temporary, "w");

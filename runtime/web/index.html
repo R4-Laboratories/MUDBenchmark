@@ -1168,7 +1168,7 @@
   import { emptyMind, updateMind, mindPrompt } from "/mind.mjs";
   import { focusFor, focusPrompt, focusGuard } from "/planner.mjs";
   import { assemble } from "/router.mjs";
-  import { signIn as prismSignIn, reset as prismReset, load as loadSession, save as saveSession, personaSignIn, personaRetire, nextPersonaEpoch, createRecoveryKit, restoreRecoveryKit, characterHandoff, characterRevoke, characterTransfer, signChallenge } from "/prism-auth.mjs";
+  import { signIn as prismSignIn, reset as prismReset, load as loadSession, save as saveSession, personaSignIn, personaRetire, nextPersonaEpoch, createRecoveryKit, restoreRecoveryKit, characterHandoff, characterRevoke, characterTransfer, regionTravel, signChallenge } from "/prism-auth.mjs";
   import { randomCharacterName, uniqueCharacterName, chooseCharacter } from "/names.mjs";
   import { createLinkOffer, parseLinkUri, requestLink, acceptLinkRequest, completeLink, linkCode, revokeDevice, resolvePrism, linkQr } from "/prism-id.mjs";
 
@@ -1716,6 +1716,20 @@
           }
         } catch (error) {
           append(`Session key: ${error.message}`, "err");
+        }
+        return;
+      }
+      const travelLine = text.match(/^#travel (.*)\r?\n?$/);
+      if (travelLine) {
+        try {
+          const request = JSON.parse(travelLine[1]);
+          const grant = await regionTravel("default", request.character, request.region, request.audience, request.transferId);
+          if (!grant) append("Sign in with a Prism id before travelling.", "err");
+          else if (playSocket === socket && socket.readyState === WebSocket.OPEN) {
+            send(`travel ${request.region} ${b64uJson(grant)}`, `travel ${request.region}`);
+          }
+        } catch (error) {
+          append(`Travel grant: ${error.message}`, "err");
         }
         return;
       }

@@ -1,6 +1,6 @@
 # Next work
 
-Baseline: **v0.91.70**. The world has 251 rooms, 17 zones, 25 quests, 114 mobiles
+Baseline: **v0.91.71**. The world has 251 rooms, 17 zones, 25 quests, 114 mobiles
 and 263 objects. The run has a recorded win condition: level 10, all 25 quests
 and all 25 hidden ways, with the permanent Worldbreaker title. R4 memory, command grounding, scorecards
 and the public stats surface are live; signups are open. Every AI key is
@@ -57,7 +57,7 @@ memory or prompt system.
 | v0.91.26 | Unseeded high-level tuning scenario | **done** (MB-203) |
 | v0.91.27 | Set completion, character sheet, Guard and Training Yard | **done** (MB-205) |
 | v0.91.28 | Owner report view and accessibility pass | **done** (MB-207) |
-| PR #11 | Federated regions prototype: rebased onto v0.91.28, handoff/fingerprint fixes, CI green | **reviewed** (`f99bf75`, draft) |
+| PR #11 | Federated regions prototype: mutually trusted peers, legacy password transfer | **superseded** by v0.91.71 protocol 2 |
 | v0.91.29 | Terminal history, Play HUD and public world-pulse charts | **done** (MB-209) |
 | v0.91.30 | Free-agent front door, personas and custom-provider drawer | **done** (MB-211) |
 | v0.91.31 | Watch directory, decision cards, run stats and PvP delay | **done** (MB-213) |
@@ -103,6 +103,7 @@ memory or prompt system.
 | v0.91.68 | Answer/fact focus: learn the Vault door word, route the Shrine and answer; retain active objectives over tied offers; validate focus exits; live death smoke | **done** (MB-317) |
 | v0.91.69 | Answer completion: `answer` advances the word quest, wrong answers repair to the known word, item matching ignores stopwords; focused answer, boss-kill and model-death evidence; 120-turn three-quest run | **done** (MB-319) |
 | v0.91.70 | Player reports: camelCase verb lookup (`takeFrom`), HUD refresh on automatic combat damage, and item worth/sell price in `inventory` | **done** (MB-322) |
+| v0.91.71 | Federation protocol 2: Prism-signed travel grants, no password transfer, local fields preserved, skill policy on recite, replay/outage tests and a 500/2,000 account cap | **done** (MB-324) |
 | backlog | Longer DeepSeek/Groq evidence; moderator/immortal decision; larger PvP sample; federation rework | optional |
 
 ## What is next
@@ -139,13 +140,16 @@ memory or prompt system.
    tables, contrast, reduced motion, no overflow, 24px targets and the mobile
    menu). A human VoiceOver/NVDA pass and a final hands-on phone review remain
    open.
-8. **Federation.** Draft PR #11 remains open. The owner decision is to reject
-   its current trust model: a mutually trusted peer receives legacy password
-   hashes and salts and can assert a character's progression. Federation must
-   use Prism-signed character grants, never transfer passwords, and fail closed
-   on an unknown grant. The draft is kept for the contributor to rework against
-   that model; production is unaffected while the federation environment
-   variables are unset.
+8. **Federation.** Protocol 2 replaces draft PR #11's password-transfer trust
+   model. A handoff needs a Prism-signed travel grant for the destination origin
+   plus a source-region Ed25519 attestation; no password, hash or salt crosses
+   the boundary, and a legacy password account is refused. Local-only fields
+   survive the return trip, carried items stay in the source region, each
+   region can disable skills (including `recite`), and replay, altered grants,
+   outage retries and process restarts are tested. The effective account cap is
+   the lower of `MAX_ACCOUNTS` and `MUD_REGION_MAX_ACCOUNTS` (default 2,000);
+   the synchronous checkpoint is measured but not load-tested. Production is
+   unaffected while the federation environment variables are unset.
 
 ## Historical workstreams
 

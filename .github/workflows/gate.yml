@@ -43,6 +43,8 @@ jobs:
         run: node --test runtime/crash-recovery.test.mjs
       - name: Browser reconnect
         run: node --test runtime/session-reconnect.test.mjs
+      - name: Federated region smoke
+        run: node --test runtime/federation.test.mjs
       - name: Watch replay
         run: node --test runtime/watch-replay.test.mjs
       - name: Browser accessibility

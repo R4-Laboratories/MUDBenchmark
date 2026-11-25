@@ -69,6 +69,7 @@ import { redactCommand, sanitizeIntent, sanitizeState, scrubSecrets, scrubSpan }
 import { planRetention } from "../runtime/retention.mjs";
 import { equipmentOf, equipmentText, inventoryGroups, inventoryLabel, setBonus } from "../runtime/equipment.mjs";
 import { hudChanged, hudSnapshot } from "../runtime/hud.mjs";
+import { FEDERATION_PROTOCOL, TRAVEL_ACTION } from "../runtime/federation.mjs";
 import { maxManaFor, spellById, spellPower } from "../runtime/magic.mjs";
 import { trainingCost } from "../runtime/magic.mjs";
 import { findAction, loadActions } from "../runtime/actions.mjs";
@@ -1844,6 +1845,9 @@ let controls = { ok: true, why: [] };
   check(standingsText({ ember: 4 }).includes("The Ember Forge: 4") && standingsText({}).includes("The Moon Wardens: 0"), "the standing text is wrong");
   check(verbTable.byAlias.get("drink") === "drink" && verbTable.byAlias.get("quaff") === "drink", "drink/quaff are not registered");
   check(verbTable.byAlias.get("takefrom") === "takeFrom", "takeFrom is not reachable after command lowercasing");
+  check(FEDERATION_PROTOCOL === "mudbenchmark/region-transfer/2" && TRAVEL_ACTION === "mudbenchmark/region-travel/1", "the federation protocol names are wrong");
+  check(/verb === "study" \|\| verb === "recite"[\s\S]{0,900}skillAllowed\(FEDERATION, spell\.id\)/.test(serverSource), "recite bypasses the region skill policy");
+  check(/const targetName = scrollTargetName\(restRaw, onIndex\)/.test(serverSource), "scroll targets are not parsed after on");
   const swordLabel = inventoryLabel({ name: "a short sword", value: 20, flags: ["weapon"] }, []);
   check(swordLabel.includes("worth 20c") && swordLabel.includes("sells 10c"), "inventory does not show what an item is worth");
   check(!inventoryLabel({ name: "a silver coin", value: 1, flags: ["coin"] }, []).includes("worth"), "coin value is duplicated in inventory");

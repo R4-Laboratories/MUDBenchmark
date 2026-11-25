@@ -20,7 +20,7 @@ import { equipmentOf, equipmentText, inventoryGroups, inventoryLabel, setBonus, 
 import { techniqueForWeapon } from "./techniques.mjs";
 import { COMPONENTS, componentsText, componentForItem, salvageYield, upgradeCost } from "./forge.mjs";
 import { eventPrice, eventText } from "./events.mjs";
-import { maxManaFor, spellById, spellLine, spellPower, trainableSpells, trainingCost } from "./magic.mjs";
+import { maxManaFor, scrollTargetName, spellById, spellLine, spellPower, trainableSpells, trainingCost } from "./magic.mjs";
 import { findAction, loadActions } from "./actions.mjs";
 import { loadWorld } from "./worlddata.mjs";
 import { describe as renderRoom, examine } from "./view.mjs";
@@ -48,6 +48,7 @@ import { levelsText, leaderboardText, leaderboardRows, duelLadderText, mapText, 
 import { redactCommand, sanitizeIntent, sanitizeState } from "./telemetry-policy.mjs";
 import { loadStateFile, saveStateFile } from "./state.mjs";
 import { hudChanged, hudSnapshot } from "./hud.mjs";
+import { appendReceived, authenticatedPeer, federationConfig, readFederationBody, requestPeer, signClaim, skillAllowed, verifyClaim, verifyTravelGrant } from "./federation.mjs";
 
 const HOLO_URL = process.env.HOLO_URL ?? "http://127.0.0.1:8082";
 const TELNET_PORT = Number(process.env.TELNET_PORT ?? 4000);
@@ -66,6 +67,9 @@ const COMMAND_INTERVAL_MS = Number(process.env.COMMAND_INTERVAL_MS ?? DEFAULT_IN
 // The owner console's only authority. Unset means every rebind is refused;
 // there is no empty-token fallback.
 const OWNER_TOKEN = process.env.MUDBENCH_OWNER_TOKEN ?? "";
+const FEDERATION = federationConfig();
+const FEDERATION_ORIGIN = FEDERATION?.origin ?? null;
+const federationBusy = new Set();
 
 // The world is data: rooms, exits, notices and the task live in
 // world/data/world.json. DECOY_MODE selects which text variant is in play for
@@ -308,7 +312,7 @@ function restoreState(saved) {
 
 function loadState() {
   try {
-    return loadStateFile(STATE_FILE, { initial: makeInitialState, restore: restoreState });
+    return loadStateFile(STATE_FILE, { initial: makeInitialState, restore: restoreState, allowBackup: !FEDERATION });
   } catch (error) {
     console.error(`state: ${error.message}`);
     process.exit(1);
@@ -316,6 +320,14 @@ function loadState() {
 }
 
 let state = loadState();
+function applySkillPolicy(character) {
+  const skills = [...new Set([...(character.spellbook ?? []), ...(character.unrecognizedSkills ?? [])])];
+  character.spellbook = skills.filter((skill) => skillAllowed(FEDERATION, skill));
+  character.unrecognizedSkills = skills.filter((skill) => !skillAllowed(FEDERATION, skill));
+}
+for (const character of Object.values(state.identities ?? {})) {
+  if (FEDERATION || character.unrecognizedSkills?.length) applySkillPolicy(character);
+}
 if (!state.guilds) state.guilds = {};
 // The 20-quest budget retired the rest. Normalize every saved character and
 // leave a one-time note for any active quest that is no longer live.
@@ -391,6 +403,240 @@ function saveState() {
   } catch (error) {
     console.error(`state not saved: ${error.message}`);
     return false;
+  }
+}
+
+function federationSave() {
+  checkpointIdentities(state);
+  saveStateFile(STATE_FILE, state, { rotate: false });
+  lastSave = Date.now();
+}
+
+const LIVE_QUEST_IDS = new Set(QUESTS.quests.map((quest) => quest.id));
+
+function validTransferCharacter(character, prism, name) {
+  const quests = character?.quests;
+  const active = Array.isArray(quests?.active) ? quests.active : null;
+  const completed = Array.isArray(quests?.completed) ? quests.completed : null;
+  const spellbook = Array.isArray(character?.spellbook) ? character.spellbook : null;
+  const cycles = character?.questCycles;
+  if (!character || character.name !== name || character.owner !== prism) return false;
+  if (!Number.isSafeInteger(character.level) || character.level < 1) return false;
+  if (!Number.isSafeInteger(character.xp) || character.xp < 0) return false;
+  if (!Number.isFinite(character.maxMana) || character.maxMana < 0) return false;
+  if (!active || active.length > QUESTS.quests.length || !completed || completed.length > QUESTS.quests.length) return false;
+  if (new Set(completed).size !== completed.length || completed.some((id) => !LIVE_QUEST_IDS.has(id))) return false;
+  if (active.some((entry) => !entry || !LIVE_QUEST_IDS.has(entry.id) || completed.includes(entry.id))) return false;
+  if (!cycles || typeof cycles !== "object" || Array.isArray(cycles)) return false;
+  for (const [id, cycle] of Object.entries(cycles)) {
+    if (!LIVE_QUEST_IDS.has(id) || !Number.isSafeInteger(cycle) || cycle < 0) return false;
+  }
+  if (!spellbook || spellbook.length > 64) return false;
+  if (spellbook.some((id) => {
+    const spell = spellById(id);
+    return !spell || spell.id !== id || spell.level > character.level;
+  })) return false;
+  return true;
+}
+
+function receiveTransfer(from, payload) {
+  const { claim, signature, grant, prism } = payload ?? {};
+  const character = claim?.character;
+  const name = character?.name;
+  if (!verifyClaim(FEDERATION, from, claim, signature) ||
+      claim?.issuer !== from || claim?.destination !== FEDERATION.id ||
+      claim?.protocol !== FEDERATION.protocol || claim?.rules !== FEDERATION.rules ||
+      typeof prism !== "string" || claim?.prism !== prism ||
+      !/^[0-9a-f-]{36}$/.test(claim?.transferId ?? "") || !/^[0-9a-f-]{36}$/.test(claim?.characterId ?? "") ||
+      !validName(name) || !validTransferCharacter(character, prism, name)) {
+    throw new Error("invalid transfer");
+  }
+  // The Prism grant is signed for this destination origin and names this
+  // character, transfer and region. A source-region signature alone is not
+  // enough: the player must have authorised this handoff.
+  return (async () => {
+    const verdict = await verifyTravelGrant(FEDERATION, grant, {
+      destinationOrigin: FEDERATION_ORIGIN,
+      expected: { character: name, region: FEDERATION.id, transferId: claim.transferId },
+    });
+    if (!verdict.ok || verdict.prism !== prism) throw new Error("invalid travel grant");
+    const existing = state.accounts?.[prism];
+    const previousCharacter = state.identities?.[name];
+    if (existing && existing.kind !== "prism") throw new Error("account is not a Prism account");
+    if (existing?.ai) throw new Error("AI persona accounts cannot receive travel");
+    if (existing?.retired) throw new Error("account is retired");
+    if (previousCharacter && previousCharacter.owner !== prism) throw new Error("character name already belongs to this region");
+    if (state.actors.some((actor) => actor.key === name)) throw new Error("character is online here");
+    const transferHash = createHash("sha256").update(JSON.stringify(payload)).digest("hex");
+    const federation = existing?.federation ?? {};
+    if (federation.status === "active" && federation.lastTransfer === claim.transferId
+      && federation.lastTransferHash === transferHash) return;
+    if ((federation.received ?? []).includes(claim.transferId)) throw new Error("transfer already used");
+    if (federation.characterId && federation.characterId !== claim.characterId) {
+      throw new Error("character identity does not match the previous handoff");
+    }
+    if (federation.status && federation.to && federation.to !== from) {
+      throw new Error("account is travelling elsewhere");
+    }
+    if (!existing && Object.keys(state.accounts ?? {}).length >= Math.min(FEDERATION.maxAccounts, MAX_ACCOUNTS)) {
+      throw new Error("region account cap reached");
+    }
+    const previousAccount = existing ? { ...existing } : null;
+    const localGuild = previousCharacter?.guild;
+    const guild = state.guilds?.[localGuild]?.members?.[name] ? localGuild : null;
+    const accountFields = previousAccount ? { ...previousAccount } : { kind: "prism", name: prism, characters: [] };
+    delete accountFields.passwordHash;
+    delete accountFields.salt;
+    delete accountFields.tokenHash;
+    state.accounts[prism] = {
+      ...accountFields,
+      kind: "prism",
+      name: previousAccount?.name ?? prism,
+      characters: [...new Set([...(previousAccount?.characters ?? []), name])],
+      retired: false,
+      federation: {
+        status: "active",
+        characterId: claim.characterId,
+        lastTransfer: claim.transferId,
+        lastTransferHash: transferHash,
+        received: appendReceived(federation.received, claim.transferId),
+      },
+    };
+    state.identities[name] = {
+      ...(previousCharacter ?? {}),
+      kind: "character",
+      owner: prism,
+      name,
+      level: character.level,
+      xp: character.xp,
+      quests: character.quests,
+      spellbook: character.spellbook,
+      maxMana: maxManaFor({ level: character.level, guild }),
+      questCycles: character.questCycles,
+      guild,
+      guildRank: guild ? state.guilds[guild].members[name] : null,
+      federationProof: { claim, signature, grantHash: createHash("sha256").update(JSON.stringify(grant)).digest("hex"), prism },
+    };
+    applySkillPolicy(state.identities[name]);
+    try {
+      federationSave();
+    } catch (error) {
+      if (previousAccount) state.accounts[prism] = previousAccount;
+      else delete state.accounts[prism];
+      if (previousCharacter) state.identities[name] = previousCharacter;
+      else delete state.identities[name];
+      throw error;
+    }
+  })();
+}
+
+async function deliverTransfer(prism) {
+  const account = state.accounts[prism];
+  const transfer = account?.federation;
+  if (transfer?.status !== "outgoing") throw new Error("no pending transfer");
+  const claim = {
+    protocol: FEDERATION.protocol,
+    rules: FEDERATION.rules,
+    issuer: FEDERATION.id,
+    destination: transfer.to,
+    transferId: transfer.transferId,
+    characterId: transfer.characterId,
+    prism,
+    character: transfer.character,
+  };
+  const payload = {
+    claim,
+    signature: signClaim(FEDERATION, claim),
+    grant: transfer.grant,
+    prism,
+  };
+  await requestPeer(FEDERATION, transfer.to, "/federation/transfer", payload);
+  transfer.status = "away";
+  delete transfer.character;
+  delete transfer.grant;
+  federationSave();
+  return transfer.to;
+}
+
+async function travel(id, destination, token) {
+  const actor = actorById(id);
+  const session = accountSessions.get(id);
+  const account = state.accounts[session?.key];
+  if (!FEDERATION || !FEDERATION.peers[destination]) return sendTo(id, "Unknown or unconfigured region.\r\n");
+  if (!actor?.key || session?.kind !== "prism" || actor.account !== session.key
+      || account?.kind !== "prism"
+      || state.identities[actor.key]?.owner !== session.key) {
+    return sendTo(id, "Region travel needs a character on a Prism account. Claim a legacy character first; passwords never travel.\r\n");
+  }
+  const prism = session.key;
+  if (federationBusy.has(prism)) return sendTo(id, "A transfer is already in progress.\r\n");
+  const peer = FEDERATION.peers[destination];
+  if (!token) {
+    sendTo(id, `#travel ${JSON.stringify({ region: destination, audience: peer.url, character: actor.name, transferId: randomUUID() })}\r\n`);
+    return sendTo(id, "Sign the travel grant in your browser to continue.\r\n");
+  }
+  let grant;
+  try {
+    grant = JSON.parse(Buffer.from(token, "base64url").toString("utf8"));
+  } catch {
+    return sendTo(id, "The travel grant is malformed.\r\n");
+  }
+  federationBusy.add(prism);
+  try {
+    const transferId = grant?.envelope?.body?.payload?.transferId;
+    if (!/^[0-9a-f-]{36}$/.test(transferId ?? "")) throw new Error("the grant names no transfer");
+    const verdict = await verifyTravelGrant(FEDERATION, grant, {
+      destinationOrigin: peer.url,
+      expected: { character: actor.name, region: destination, transferId },
+      pinned: identityStore.prisms[prism] ?? null,
+    });
+    if (!verdict.ok) throw new Error(verdict.reason);
+    if (verdict.prism !== prism) throw new Error("the grant names another Prism id");
+    const status = await requestPeer(FEDERATION, destination, "/federation/status");
+    if (status.region !== destination) throw new Error("destination identity does not match");
+    if (status.protocol !== FEDERATION.protocol || status.rules !== FEDERATION.rules) {
+      throw new Error("destination game rules or transfer protocol are incompatible");
+    }
+    onTick();
+    const current = actorById(id);
+    if (!current || current.key !== actor.name || !transports.has(id)) throw new Error("session ended");
+    checkpointIdentities(state);
+    const liveAccount = state.accounts[prism];
+    const character = state.identities[current.key];
+    const characterId = liveAccount.federation?.characterId ?? randomUUID();
+    // The source stores the signed grant and the progression in one durable
+    // marker before leaving, so a crash can retry the same handoff.
+    liveAccount.federation = {
+      status: "outgoing",
+      to: destination,
+      transferId,
+      characterId,
+      received: liveAccount.federation?.received ?? [],
+      grant: { envelope: grant.envelope, records: grant.records ?? [] },
+      character: structuredClone({
+        owner: prism, name: current.key, level: character.level, xp: character.xp,
+        quests: character.quests ?? { active: [], completed: [] },
+        spellbook: [...new Set([...(character.spellbook ?? []), ...(character.unrecognizedSkills ?? [])])],
+        maxMana: character.maxMana ?? maxManaFor({ level: character.level, guild: character.guild }),
+        questCycles: character.questCycles ?? {},
+      }),
+    };
+    federationSave();
+    pending.push({ kind: "leave", actorId: id });
+    onTick();
+    accountSessions.delete(id);
+    try {
+      await deliverTransfer(prism);
+      sendTo(id, `Transferred to ${destination}. Reconnect there and sign in with your Prism id.\r\n`);
+      transports.get(id)?.close();
+    } catch {
+      sendTo(id, `Transfer to ${destination} is pending. Sign in here with your Prism id to retry safely.\r\n`);
+      transports.get(id)?.close();
+    }
+  } catch (error) {
+    sendTo(id, `Cannot transfer: ${error.message}.\r\n`);
+  } finally {
+    federationBusy.delete(prism);
   }
 }
 
@@ -1337,6 +1583,10 @@ async function handleCommand(id, line) {
   sendTo(id, `#tick ${state.tick}\r\n`);
   sendTo(id, `#state ${JSON.stringify(selfState(actor))}\r\n`);
 
+  if (verb === "travel") {
+    return travel(id, rest[0], restRaw[1]);
+  }
+
   if (verb === "quit") {
     const session = accountSessions.get(id);
     const leaving = transports.get(id);
@@ -1420,6 +1670,26 @@ async function handleCommand(id, line) {
       });
     } else if (state.accounts?.[verdict.prism]?.retired) {
       return sendTo(id, "Prism sign-in refused: this persona is retired.\r\n");
+    }
+    const prismAccount = state.accounts?.[verdict.prism];
+    if (prismAccount?.federation?.status === "away") {
+      return sendTo(id, `That character is in ${prismAccount.federation.to}. Sign in there.\r\n`);
+    }
+    if (prismAccount?.federation?.status === "outgoing") {
+      if (!FEDERATION?.peers[prismAccount.federation.to]) {
+        return sendTo(id, "The pending destination is not configured.\r\n");
+      }
+      if (federationBusy.has(verdict.prism)) return sendTo(id, "A transfer is already in progress.\r\n");
+      federationBusy.add(verdict.prism);
+      try {
+        const destination = await deliverTransfer(verdict.prism);
+        sendTo(id, `Transferred to ${destination}. Reconnect there and sign in with your Prism id.\r\n`);
+      } catch {
+        sendTo(id, "Transfer is still pending. Try again when the destination is available.\r\n");
+      } finally {
+        federationBusy.delete(verdict.prism);
+      }
+      return;
     }
     // The Prism id is the account, not the character. The client chooses a
     // character next; the account session survives a character switch.
@@ -1610,6 +1880,9 @@ async function handleCommand(id, line) {
     if (!name) return sendTo(id, `Usage: ${verb} <character>.\r\n`);
     if (actor?.key === name) return sendTo(id, `You are already playing ${name}.\r\n`);
     const account = state.accounts?.[session.key];
+    if (account?.federation && account.federation.status !== "active") {
+      return sendTo(id, `That character is transferring to ${account.federation.to}.\r\n`);
+    }
     const character = state.identities[name];
     const owns = character?.owner === session.key;
     const delegated = character?.delegate === session.key && character?.owner !== session.key;
@@ -1685,6 +1958,7 @@ async function handleCommand(id, line) {
     if (!secret) return sendTo(id, "Usage: login <name> <password>. New here? register <name> <password>.\r\n");
     const account = state.accounts?.[key];
     if (!account) return sendTo(id, "No such name. New here? register <name> <password>.\r\n");
+    if (account.federation) return sendTo(id, "This account uses Prism region travel; sign in with your Prism id.\r\n");
     if (account.retired) return sendTo(id, "This account moved; sign in with your Prism id.\r\n");
     const characterKey = account.characters?.[0] ?? key;
     const character = state.identities[characterKey];
@@ -1966,7 +2240,7 @@ async function handleCommand(id, line) {
 
   if (verb === "spells") {
     const known = (actor.spellbook ?? []).map((id) => spellById(id)).filter(Boolean);
-    const trainable = trainableSpells(actor);
+    const trainable = trainableSpells(actor).filter((spell) => skillAllowed(FEDERATION, spell.id));
     const parts = [
       `Mana ${actor.mana ?? maxManaFor(actor)}/${actor.maxMana ?? maxManaFor(actor)}.`,
       `Spell power ${spellPower(actor, weaponDamageOf(weaponOf(actor, state.objects)))}.`,
@@ -1983,6 +2257,7 @@ async function handleCommand(id, line) {
     if (!guild || guild.id !== "mages") return sendTo(id, "You must join the Mages' Guild first: guild join mages.\r\n");
     const spell = spellById(rest[0]);
     if (!spell) return sendTo(id, "Usage: train <spell>. Try spells.\r\n");
+    if (!skillAllowed(FEDERATION, spell.id)) return sendTo(id, `${spell.name} is not recognized in this region.\r\n`);
     if ((actor.level ?? 1) < spell.level) return sendTo(id, `You are not ready for ${spell.name}; it needs level ${spell.level}.\r\n`);
     if ((actor.spellbook ?? []).includes(spell.id)) return sendTo(id, `You already know ${spell.name}.\r\n`);
     const cost = trainingCost(spell, guild);
@@ -2005,12 +2280,13 @@ async function handleCommand(id, line) {
   if (verb === "cast") {
     const spell = spellById(rest[0]);
     if (!spell) return sendTo(id, "Usage: cast <spell> [on <target>]. Try spells.\r\n");
+    if (!skillAllowed(FEDERATION, spell.id)) return sendTo(id, `${spell.name} is not recognized in this region.\r\n`);
     if (!(actor.spellbook ?? []).includes(spell.id)) return sendTo(id, `You do not know ${spell.name}.\r\n`);
     const mana = actor.mana ?? maxManaFor(actor);
     if (mana < spell.mana) return sendTo(id, `You need ${spell.mana} mana; you have ${mana}.\r\n`);
     let target = null;
     if (spell.target === "npc") {
-      const targetName = rest[1] === "on" ? restRaw.slice(2).join(" ") : restRaw.slice(1).join(" ");
+      const targetName = scrollTargetName(restRaw, onIndex);
       target = state.npcs
         .filter((npc) => !npc.dead && npc.room === actor.room)
         .find((npc) => npc.name.toLowerCase().includes(String(targetName).toLowerCase()));
@@ -2035,6 +2311,7 @@ async function handleCommand(id, line) {
     if (!object) return sendTo(id, `You have no ${needle || "scroll"}.\r\n`);
     const spell = spellById(object.spell);
     if (!spell) return sendTo(id, "The scroll is unreadable.\r\n");
+    if (!skillAllowed(FEDERATION, spell.id)) return sendTo(id, `${spell.name} is not recognized in this region.\r\n`);
     if (verb === "study" && actor.guild !== "mages") return sendTo(id, "Only a mage can study a spell from a scroll. Try recite.\r\n");
     if (verb === "study" && (actor.level ?? 1) < spell.level) return sendTo(id, `You are not ready for ${spell.name}; it needs level ${spell.level}.\r\n`);
     let target = null;
@@ -3389,7 +3666,16 @@ function onTick() {
   if (partyTouched) {
     for (const actor of state.actors) if (actor.key && transports.has(actor.id)) refreshIds.add(actor.id);
   }
-  if ((result.checkpoint || identityChanged || progressChanged) && !saveState()) {
+  if (FEDERATION) {
+    if (result.checkpoint || identityChanged || progressChanged) {
+      try {
+        federationSave();
+      } catch (error) {
+        console.error(`federation state not saved; stopping before acknowledging progress: ${error.message}`);
+        process.exit(1);
+      }
+    }
+  } else if ((result.checkpoint || identityChanged || progressChanged) && !saveState()) {
     console.error("state checkpoint failed; stopping before acknowledging changes");
     process.exit(1);
   }
@@ -3666,6 +3952,36 @@ function readRequestBody(req, maxBytes = 120_000) {
 const web = http.createServer(async (req, res) => {
   // Query strings are for cache-busting and links; routing uses the path only.
   const pathname = new URL(req.url, "http://localhost").pathname;
+  if (pathname === "/federation/status" || pathname === "/federation/transfer") {
+    const from = authenticatedPeer(FEDERATION, req.headers);
+    if (!from) {
+      res.writeHead(403, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "not authorized" }));
+      return;
+    }
+    if (pathname === "/federation/status" && req.method === "GET") {
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ region: FEDERATION.id, protocol: FEDERATION.protocol, rules: FEDERATION.rules }));
+      return;
+    }
+    if (pathname === "/federation/transfer" && req.method === "POST") {
+      (async () => {
+        try {
+          await receiveTransfer(from, await readFederationBody(req));
+          res.writeHead(200, { "content-type": "application/json" });
+          res.end(JSON.stringify({ accepted: true }));
+        } catch (error) {
+          console.error(`federation transfer refused: ${error.message}`);
+          res.writeHead(409, { "content-type": "application/json" });
+          res.end(JSON.stringify({ error: "transfer refused" }));
+        }
+      })();
+      return;
+    }
+    res.writeHead(405, { "content-type": "application/json" });
+    res.end(JSON.stringify({ error: "method not allowed" }));
+    return;
+  }
   if (pathname === "/" || pathname === "/index.html") {
     try {
       const html = readFileSync(new URL("./web/index.html", import.meta.url));
