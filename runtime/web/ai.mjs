@@ -207,7 +207,8 @@ Rules:
 - COMBAT: attack only starts the fight. Once COMBAT is present, rounds happen automatically; do not repeat attack. Use a technique, eat/drink, cast mend, or flee. Check your HP.
 - GEAR: after taking a weapon, wield it; after taking armour, wear it. Use score/equipment to compare.
 - PLAN and LESSON are saved. Follow the PLAN and reuse LESSONS; if a command failed, change the approach instead of repeating it.
-- Use NOTE for long-term memory. It is saved and shown to you next turn.
+- Use NOTE for long-term memory. It is saved and shown to you next turn; read NOTES before choosing.
+- If no quest is active, follow FRONTIER to the nearest unvisited room instead of revisiting the same 15-20 rooms.
 - Death is brutal: you lose 50% of current XP and one level, including to another player. Avoid fights beyond your level.
 - The run is beaten by reaching max level, completing every quest and finding every hidden way. The completion command shows the tally. Moderator/immortal mode is not implemented.
 - Some doors need two players; ask in say/global and wait for help. Use party invite/accept to group; party members in the same room share kill XP and quest credit. A hidden Night Market rogue can hide; moving or acting reveals them, and detect reveals hidden players.
@@ -247,7 +248,8 @@ Rules:
 - COMBAT: attack only starts the fight. Once COMBAT is present, rounds happen automatically; do not repeat attack. Use a technique, eat/drink, cast mend, or flee. Check your HP.
 - GEAR: after taking a weapon, wield it; after taking armour, wear it. Use score/equipment to compare.
 - PLAN and LESSON are saved. Follow the PLAN and reuse LESSONS; if a command failed, change the approach instead of repeating it.
-- Use NOTE for long-term memory: goals, discoveries, social commitments, plans. It is saved and shown next turn.
+- Use NOTE for long-term memory: goals, discoveries, social commitments, plans. It is saved and shown next turn; read NOTES before choosing.
+- If no quest is active, follow FRONTIER to the nearest unvisited room instead of revisiting the same 15-20 rooms.
 - Death is brutal: you lose 50% of current XP and one level, including to another player. Avoid fights beyond your level.
 - The run is beaten by reaching max level, completing every quest and finding every hidden way. The completion command shows the tally. Moderator/immortal mode is not implemented.
 - Some doors need two players; ask in say/global and wait for help. Use party invite/accept to group; party members in the same room share kill XP and quest credit. A hidden Night Market rogue can hide; moving or acting reveals them, and detect reveals hidden players.

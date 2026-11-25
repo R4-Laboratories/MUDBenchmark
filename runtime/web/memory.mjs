@@ -274,12 +274,15 @@ export function memoryPrompt(memory, { room = null, exits = [], limit = 8, query
     lines.push(`Known: ${known.map((note) => note.text).join(" | ")}`);
   }
   const names = Object.keys(memory.rooms);
-  if (names.length) {
+  const knownRooms = Object.keys(memory.map ?? {}).length;
+  if (names.length || knownRooms) {
     const recent = Object.entries(memory.rooms)
       .sort((a, b) => (b[1].lastTick ?? 0) - (a[1].lastTick ?? 0))
       .slice(0, 6)
       .map(([name]) => name);
-    lines.push(`Rooms seen: ${names.length}. Recent: ${recent.join(", ")}.`);
+    lines.push(`Rooms seen: ${names.length} of ${knownRooms || "?"} known.${recent.length ? ` Recent: ${recent.join(", ")}.` : ""}`);
+    const ahead = frontier(memory, room);
+    if (ahead) lines.push(`FRONTIER: ${ahead.target} (${ahead.path.length} move${ahead.path.length === 1 ? "" : "s"} from here).`);
   }
   const route = (memory.trail ?? []).slice(-6);
   if (route.length) lines.push(`Route: ${route.join(" → ")}.`);
@@ -315,6 +318,32 @@ export function pathTo(memory, from, to) {
     }
   }
   return [];
+}
+
+/**
+ * The nearest room that is on the known map but has not been visited. This is
+ * the difference between "take the first exit" and actually leaving home: a
+ * seeded map can point at a far frontier even when the current room has no
+ * unexplored door.
+ */
+export function frontier(memory, from) {
+  if (!memory || !from) return null;
+  const seen = new Set(Object.keys(memory.rooms ?? {}));
+  const map = memory.map ?? {};
+  const queue = [[from, []]];
+  const walked = new Set([from]);
+  while (queue.length) {
+    const [room, path] = queue.shift();
+    const exits = map[room] ?? memory.rooms?.[room]?.exits ?? {};
+    for (const [dir, target] of Object.entries(exits)) {
+      if (!target || walked.has(target)) continue;
+      walked.add(target);
+      const next = [...path, dir];
+      if (!seen.has(target)) return { target, path: next };
+      if (map[target] || memory.rooms?.[target]) queue.push([target, next]);
+    }
+  }
+  return null;
 }
 
 export function nextStep(memory, from, to) {
@@ -384,6 +413,8 @@ export function breakLoop(recent = [], exits = [], memory = null) {
   const doors = (Array.isArray(exits) ? exits : [])
     .map((exit) => (typeof exit === "string" ? { dir: exit, room: null } : { dir: exit?.dir, room: exit?.room ?? null }))
     .filter((exit) => exit.dir);
+  const ahead = memory ? frontier(memory, memory.lastRoom) : null;
+  if (ahead?.path?.length) return ahead.path[0];
   const unseen = memory
     ? doors.find((exit) => exit.room && !memory.rooms?.[exit.room])
     : null;

@@ -6,7 +6,7 @@
 // unfinished quest objective, accept a quest, or explore. It does not execute
 // anything; the model still chooses the command.
 
-import { pathTo } from "./memory.mjs";
+import { frontier, pathTo } from "./memory.mjs";
 
 const WEAPON = /sword|axe|mace|dagger|spear|hammer|staff|bow|knife|pick|blade|club/i;
 const ARMOR = /mail|plate|cloak|shield|helm|boots|gloves|bracers|apron|circlet|robe|hood|jerkin|cuirass|hauberk|mantle|charm|relic/i;
@@ -172,7 +172,8 @@ export function focusFor({ state = null, memory = null, mind = null } = {}) {
       candidates: unique([here ? `quest accept ${bestOffer.quest.id}` : (routeFor(memory, from, target)[0] ?? "look"), "quests", "look"]),
     }, memory, from, target);
   }
-  if (active && objective) {
+  const activeReachable = active && objective && (activeEntry.score > 1 || objective.kind === "answer");
+  if (activeReachable) {
     const candidates = [];
     let target = from;
     if (objective.kind === "visit") {
@@ -230,12 +231,29 @@ export function focusFor({ state = null, memory = null, mind = null } = {}) {
     }, memory, from, target);
   }
 
+  const ahead = frontier(memory, from);
+  if (ahead) {
+    const exit = ahead.path[0];
+    return withRoute({
+      kind: "explore",
+      label: `explore ${ahead.target}`,
+      reason: `nearest unvisited room; ${Object.keys(memory?.rooms ?? {}).length} rooms seen`,
+      candidates: unique([exit, "look", "map", "quests", "search"]),
+    }, memory, from, ahead.target);
+  }
   const exits = room.exits ?? [];
-  const unseen = exits.find((exit) => exit?.room && !memory?.rooms?.[exit.room]);
-  const exit = unseen?.dir ?? exits[0]?.dir ?? "look";
+  const current = memory?.rooms?.[from];
+  const staleDirs = new Set(Object.entries(current?.commands ?? {})
+    .filter(([command, entry]) => /^(north|south|east|west|up|down|n|s|e|w|u|d)$/i.test(command) && (entry.stale ?? 0) > 0)
+    .map(([command]) => command));
+  const recent = new Set((memory?.trail ?? []).slice(-6));
+  const fresh = exits.filter((exit) => exit?.dir && !staleDirs.has(exit.dir));
+  const unseen = fresh.find((exit) => exit?.room && !memory?.rooms?.[exit.room]);
+  const notRecent = fresh.find((exit) => !exit?.room || !recent.has(exit.room));
+  const exit = unseen?.dir ?? notRecent?.dir ?? fresh[0]?.dir ?? exits[0]?.dir ?? "look";
   return withRoute({
     kind: "explore",
-    label: unseen ? `explore ${exit} into ${unseen.room}` : "explore the nearest exit",
+    label: unseen ? `explore ${exit} into ${unseen.room}` : "explore a fresh exit",
     reason: "no active objective; map the world",
     candidates: unique([exit, "look", "search", "quests", "map"]),
   }, memory, from, unseen?.room ?? from);
@@ -243,7 +261,7 @@ export function focusFor({ state = null, memory = null, mind = null } = {}) {
 
 /** A bounded objective lock: two unrelated commands in a row yield to the focus. */
 export function focusGuard({ focus = null, command = "", detours = 0, state = null } = {}) {
-  if (!focus || !["quest", "quest offer", "group action", "party"].includes(focus.kind)) {
+  if (!focus || !["quest", "quest offer", "group action", "party", "explore"].includes(focus.kind)) {
     return { command, detours: 0, forced: false };
   }
   const candidate = focus.route?.[0] ?? (focus.candidates ?? [])[0];

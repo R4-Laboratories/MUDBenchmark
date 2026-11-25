@@ -1165,7 +1165,7 @@
     isThrottledStatus, throttlePlan,
   } from "/ai.mjs";
   import { emptyMemory, rememberResult, memoryPrompt, loopWarning, breakLoop, shouldBreakLoop, seedMapFromLlms } from "/memory.mjs";
-  import { emptyMind, updateMind, mindPrompt } from "/mind.mjs";
+  import { emptyMind, addNote, updateMind, mindPrompt } from "/mind.mjs";
   import { focusFor, focusPrompt, focusGuard } from "/planner.mjs";
   import { assemble } from "/router.mjs";
   import { signIn as prismSignIn, reset as prismReset, load as loadSession, save as saveSession, personaSignIn, personaRetire, nextPersonaEpoch, createRecoveryKit, restoreRecoveryKit, characterHandoff, characterRevoke, characterTransfer, regionTravel, signChallenge } from "/prism-auth.mjs";
@@ -3929,6 +3929,8 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       if (parsed.note && !/^none[.!]?$/i.test(parsed.note)) {
         const notebook = ensureNotebook();
         const note = parsed.note.slice(0, 240);
+        addNote(mind, note);
+        saveMind();
         if (!notebook.notes.includes(note)) notebook.notes.push(note);
         notebook.notes = notebook.notes.slice(-12);
         saveNotebook();

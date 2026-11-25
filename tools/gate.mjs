@@ -46,7 +46,7 @@ import { buildCandidates } from "./candidate.mjs";
 import { PROVIDERS, DEFAULT_GOAL, GOALS, buildSystemPrompt, buildUserPrompt, buildActionMenu, normalizeBase, parseBrain, readSseText, requestFor, replyFrom, trimHistory, validateCommand, repairCommand, coachCommand, isThrottledStatus, retryAfterMs, throttleWaitMs, throttlePlan } from "../runtime/web/ai.mjs";
 import { emptyMind, updateMind, mindPrompt, addLesson } from "../runtime/web/mind.mjs";
 import { focusFor, focusPrompt, focusGuard } from "../runtime/web/planner.mjs";
-import { emptyMemory, noteRoom, rememberResult, memoryPrompt, loopWarning, breakLoop, shouldBreakLoop, pathTo, nextStep, routeHint, nearestTarget, seedMap, seedMapFromLlms, observedCommandSuccess } from "../runtime/web/memory.mjs";
+import { emptyMemory, noteRoom, rememberResult, memoryPrompt, loopWarning, breakLoop, shouldBreakLoop, pathTo, nextStep, routeHint, nearestTarget, seedMap, seedMapFromLlms, observedCommandSuccess, frontier } from "../runtime/web/memory.mjs";
 import { verifyPrismSession, verifyPersonaOwner, verifyPrismAction, verifySessionKey, sessionWithinWindow } from "../runtime/prism-auth.mjs";
 import { decodeIdentityRequest, identityAdmits } from "../runtime/identity.mjs";
 import { loadStateFile, saveStateFile } from "../runtime/state.mjs";
@@ -232,6 +232,14 @@ let webAI = { ok: true, why: [] };
   check(focusParty.kind === "party" && focusParty.candidates.includes("party invite ann"), "the focus planner did not form a party for a group action");
   const focusTogether = focusFor({ state: { self: { inventory_names: [], worn: [], wielding: null, enemies: [], party: { members: ["ann", "bob"] }, active_quests: [], available_quests: [] }, room: { name: "The Winch Room", actors: ["ann"], npcs: [], objects: [], exits: [], actions: [], group_actions: [{ verb: "turn", target: "winch", size: 2 }] } }, memory: routeMemory });
   check(focusTogether.kind === "group action" && focusTogether.candidates.includes("turn winch"), "the focus planner did not use a ready group action");
+  const frontierMemory = { rooms: { A: {}, B: {} }, map: { A: { east: "B" }, B: { east: "C" }, C: {} }, trail: ["A", "B"] };
+  const ahead = frontier(frontierMemory, "B");
+  check(ahead?.target === "C" && ahead.path[0] === "east", "the frontier did not find the nearest unvisited room");
+  const exploreFocus = focusFor({ state: { self: { inventory_names: [], worn: [], wielding: null, enemies: [], active_quests: [], available_quests: [] }, room: { name: "B", objects: [], exits: [{ dir: "east", room: "C" }], npcs: [] } }, memory: frontierMemory });
+  check(exploreFocus.kind === "explore" && exploreFocus.candidates[0] === "east" && /C/.test(exploreFocus.label), "the planner did not route to the frontier");
+  const noteMind = emptyMind();
+  updateMind(noteMind, { parsed: { note: "Remember the amber door." }, state: { self: { name: "bob" }, room: { name: "A" } }, room: "A" });
+  check(noteMind.notes.includes("Remember the amber door.") && mindPrompt(noteMind, { state: { self: { name: "bob" } } }).includes("NOTES"), "the Mind did not keep the model's note");
   const focusSwitch = focusFor({ state: { self: { inventory_names: [], worn: [], wielding: null, enemies: [], active_quests: [{ id: "word", name: "The True Word", objective_details: [{ kind: "answer", text: "Answer at the Shrine", done: false }] }], available_quests: [{ id: "bread", name: "Bread for the Shop", level: 1, giverRoomName: "C" }] }, room: { name: "A", objects: [], exits: [{ dir: "east", room: "C" }], npcs: [] } }, memory: { rooms: { A: {}, C: {} }, map: { A: { east: "C" }, C: { west: "A" } } } });
   check(focusSwitch.kind === "quest offer" && focusSwitch.label.includes("Bread") && focusSwitch.candidates[0] === "east", "the focus planner did not switch from an unanswerable objective to a reachable offer");
   const wordMind = emptyMind();
@@ -546,6 +554,34 @@ let worldMap = { ok: true, why: [], rooms: 0 };
   if (!examine({ room: world.rooms[1], target: "sword", objects: world.objects })) { worldMap.ok = false; worldMap.why.push("an object cannot be examined"); }
   if (!examine({ room: world.rooms[1], target: "bard", npcs: world.npcs })) { worldMap.ok = false; worldMap.why.push("a mobile cannot be examined"); }
   if (examine({ room: world.rooms[1], target: "nothing-at-all" })) { worldMap.ok = false; worldMap.why.push("a missing thing was examined"); }
+  const start = String(world.start);
+  if (Object.keys(world.rooms[start]?.exits ?? {}).length < 5) {
+    worldMap.ok = false;
+    worldMap.why.push("the start room is not a hub with at least five exits");
+  }
+  const reachableAvoiding = (avoid) => {
+    const seen = new Set([start]);
+    const queue = [start];
+    while (queue.length) {
+      const at = queue.shift();
+      const exits = { ...(world.rooms[at]?.exits ?? {}), ...(world.rooms[at]?.secretExits ?? {}) };
+      for (const target of Object.values(exits)) {
+        const next = String(target);
+        if (avoid.has(next) || seen.has(next) || !world.rooms[next]) continue;
+        seen.add(next);
+        queue.push(next);
+      }
+    }
+    return seen;
+  };
+  if (!reachableAvoiding(new Set(["8"])).has("30")) {
+    worldMap.ok = false;
+    worldMap.why.push("the Harbor Quay is unreachable without crossing Market Square");
+  }
+  if (!reachableAvoiding(new Set(["11"])).has("31")) {
+    worldMap.ok = false;
+    worldMap.why.push("the Docks are unreachable without crossing the King's Road");
+  }
   if (!worldMap.ok) failures.push(`the world map is broken: ${worldMap.why[0]}`);
 }
 

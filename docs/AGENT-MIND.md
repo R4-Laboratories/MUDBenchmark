@@ -141,6 +141,23 @@ returned through the Corridor, Atrium, Storeroom and Cell to the Shrine, had
 True Word in 10 turns (300 → 350 XP). A second Vault-start run repeated the
 same answer path in 18 turns.
 
+## Frontier and notes
+
+The old explore fallback took the first exit whose target had not been seen.
+On a tree-shaped map that keeps an agent near home even when `/llms.txt` knows
+the whole world. The planner now calls `frontier(memory, from)`: a BFS over the
+seeded map to the nearest room that is known but not in `memory.rooms`. The
+explore focus names that room, routes through known rooms and is included in
+the focus lock, so two unrelated commands yield to the frontier route. If no
+frontier remains, the fallback avoids directions marked stale in the current
+room and rooms in the recent trail.
+
+The memory block also prints `Rooms seen: N of M known` and a `FRONTIER` line,
+so the model sees how little it has explored and where the nearest new room is.
+The Mind now stores the model's `NOTE` line (up to 12 notes) and prints `NOTES`
+back each turn; the browser notebook still records the same note for the human.
+This is the model's own durable context, not just a two-turn transcript.
+
 ## Stuck and loop recovery
 
 The existing route memory detects repeated commands and small room cycles. The
@@ -200,6 +217,12 @@ adaptive-description plan in `docs/ROOM-PROSE.md`.
   Lighthouse Lens; 28 rooms, 65 plans / 64 lessons, 120 commands sent, 10 focus
   corrections, 0 deaths, level 3 / 394 XP, sword and armour equipped, 10 talks
   and 1 tell.
+- DeepSeek 120-turn open-world run: completed First Steps, Bread for the Shop,
+  A Curled Scroll and The Apprentice's Charm; **34 rooms**, 65 plans / 63
+  lessons, 120/120 commands sent, 13 focus corrections, 0 deaths, level 3 / 410
+  XP. It reached the Cliff Walk, Cellar Stair, Harbor Quay, Docks, Deep Forest,
+  Grey Road, Moonlit Gate, Memory Garden, Root Archive and Root Road, not only
+  the starting quarter.
 - Coach regression: `take a loaf of bread` with a purse of coins is no longer
   blocked as "already carrying"; item matching ignores `of`, `with`, `from` and
   `to` as well as articles.

@@ -163,12 +163,12 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 
 | Id | Room | Zone | Safe | Exits |
 | --- | --- | --- | --- | --- |
-| 1 | The Atrium | temple | yes | north 2, east 3, south 8, up 34 |
+| 1 | The Atrium | temple | yes | north 2, east 3, south 8, up 34, west 252, down 253 |
 | 2 | The Corridor | temple | no | south 1, east 4 |
 | 3 | The Storeroom | temple | yes | west 1, north 5 |
 | 4 | The Vault | temple | no | west 2 |
 | 5 | The Cell | temple | no | south 3, north 6, down 25 |
-| 6 | The Shrine | temple | yes | south 5, north 7, east 98 |
+| 6 | The Shrine | temple | yes | south 5, north 7, east 98, west 40 |
 | 7 | The Chancel | temple | yes | south 6 |
 | 8 | Market Square | town | yes | north 1, east 9, west 10, south 11, up 35, down 105 |
 | 9 | The Smithy | town | yes | west 8 |
@@ -187,13 +187,13 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 22 | The Crypt Hall | wilds | no | up 21, east 23 |
 | 23 | The Ossuary | wilds | no | west 22 |
 | 24 | The Guild Hall | town | yes | south 10, up 115, east 116 |
-| 25 | The Undercroft | lantern | no | up 5, east 26, south 27 |
+| 25 | The Undercroft | lantern | no | up 5, east 26, south 27, north 253 |
 | 26 | The Sewer Junction | lantern | no | west 25, east 28 |
 | 27 | The Flooded Passage | lantern | no | north 25, east 29 |
 | 28 | The Rat Warren | lantern | no | west 26, north 29 |
 | 29 | The Smuggler's Cache | lantern | no | west 27, south 28 |
-| 30 | The Harbor Quay | town | no | north 19, east 31 |
-| 31 | The Docks | town | no | west 30, north 32, down 33 |
+| 30 | The Harbor Quay | town | no | north 19, east 31, up 252 |
+| 31 | The Docks | town | no | west 30, north 32, down 33, up 86 |
 | 32 | The Lighthouse | town | no | south 31, down 81 |
 | 33 | The Ring | town | no | up 31 |
 | 34 | The Mages' Guild | arcanum | yes | down 1, up 162 |
@@ -202,7 +202,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 37 | The Spellwright's Shop | lantern | yes | west 36 |
 | 38 | The Familiar Yard | lantern | yes | east 36 |
 | 39 | The Aviary | lantern | yes | south 36, east 40 |
-| 40 | The High Walk | lantern | yes | west 39 |
+| 40 | The High Walk | lantern | yes | west 39, east 6 |
 | 41 | The Mirror Pool | undervault | no | up 40, north 42 |
 | 42 | The Sunken Vault | undervault | no | south 41, east 43 |
 | 43 | The Wardstone | undervault | no | west 42, north 44 |
@@ -233,7 +233,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 68 | The Deep Door | ember | no | west 67, south 66, north 69 |
 | 69 | The Vault of Coals | ember | no | south 68, east 70 |
 | 70 | The First Flame | ember | no | west 69 |
-| 71 | The Fen Gate | fen | no | west 20, north 72, east 73 |
+| 71 | The Fen Gate | fen | no | west 20, north 72, east 73, up 117 |
 | 72 | The Reed Walk | fen | no | south 71, east 74, north 75 |
 | 73 | The Drowned Orchard | fen | no | west 71, north 74 |
 | 74 | The Peat Cut | fen | no | west 72, south 73, north 76 |
@@ -248,7 +248,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 83 | The Tide Shrine | salt | no | south 82, east 85 |
 | 84 | The Kelp Vault | salt | no | west 82, north 85 |
 | 85 | The Salt Heart | salt | no | west 83, south 84 |
-| 86 | The Moonlit Gate | moon | no | west 18, north 87, east 88 |
+| 86 | The Moonlit Gate | moon | no | west 18, north 87, east 88, down 31 |
 | 87 | The Silver Glade | moon | no | south 86, east 89 |
 | 88 | The Owl Grove | moon | yes | west 86, north 89 |
 | 89 | The Moonwell | moon | no | west 87, south 88, east 90 |
@@ -279,7 +279,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 114 | The Spring Keeper's Rest | garden | yes | south 113 |
 | 115 | The Wardens' Lodge | town | yes | down 24 |
 | 116 | The Training Yard | town | no | west 24 |
-| 117 | The Grey Road | grey-keep | no | north 11, south 15, east 118 |
+| 117 | The Grey Road | grey-keep | no | north 11, south 15, east 118, down 71 |
 | 118 | The Iron Gate | grey-keep | no | west 117, east 119, up 149 |
 | 119 | The Weeping Bailey | grey-keep | no | west 118, north 122, east 120, south 121, down 152 |
 | 120 | The Stables | grey-keep | no | west 119, south 123, east 154, up 155 |
@@ -414,4 +414,6 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 249 | The Drowned Shrine | wreck | no | west 248, east 250 |
 | 250 | The Captain's Berth | wreck | no | west 249, east 251 |
 | 251 | The Drowned Captain | wreck | no | west 250 |
+| 252 | The Cliff Walk | temple | no | east 1, down 30 |
+| 253 | The Cellar Stair | temple | no | up 1, south 25 |
 
