@@ -263,10 +263,19 @@ Goal: ${goal}`;
 export function buildActionMenu(state = null) {
   const menu = new Set(["look", "score", "inventory", "search", "equipment"]);
   const room = state?.room;
-  const engaged = new Set((state?.self?.enemies ?? []).map((enemy) => String(enemy.name ?? "").toLowerCase()));
-  const wielding = String(state?.self?.wielding ?? "").toLowerCase();
-  const worn = new Set((state?.self?.worn ?? []).map((name) => String(name).toLowerCase()));
-  if (room) {
+  const self = state?.self ?? {};
+  const enemies = self.enemies ?? [];
+  const inCombat = enemies.length > 0;
+  const engaged = new Set(enemies.map((enemy) => String(enemy.name ?? "").toLowerCase()));
+  const wielding = String(self.wielding ?? "").toLowerCase();
+  const worn = new Set((self.worn ?? []).map((name) => String(name).toLowerCase()));
+  // Gear first: a carried weapon or armour should be used before the next
+  // fight, and a weak model should see that action near the top of the shortlist.
+  for (const name of self.inventory_names ?? []) {
+    if (/sword|axe|mace|dagger|spear|hammer|staff|bow|knife|pick|blade|club/i.test(name) && String(name).toLowerCase() !== wielding) menu.add(`wield ${name}`);
+    if (/mail|plate|cloak|shield|helm|boots|gloves|bracers|apron|circlet|robe|hood|jerkin|cuirass|hauberk|mantle|charm|relic/i.test(name) && !worn.has(String(name).toLowerCase())) menu.add(`wear ${name}`);
+  }
+  if (room && !inCombat) {
     for (const exit of room.exits ?? []) menu.add(exit.dir);
     for (const detail of room.details ?? []) menu.add(`examine ${detail}`);
     for (const object of room.objects ?? []) {
@@ -278,42 +287,45 @@ export function buildActionMenu(state = null) {
     }
     for (const npc of room.npcs ?? []) {
       menu.add(`talk ${npc.name}`);
-      if (!room.safe && npc.aggression > 0 && !engaged.has(String(npc.name).toLowerCase())) menu.add(`attack ${npc.name}`);
+      if (!room.safe && npc.aggression > 0) menu.add(`attack ${npc.name}`);
     }
     for (const actor of room.actors ?? []) {
-      if (!state?.self?.party) menu.add(`party invite ${actor}`);
-      if (room.arena && !engaged.has(String(actor).toLowerCase())) {
+      if (!self.party) menu.add(`party invite ${actor}`);
+      if (room.arena) {
         menu.add(`duel ${actor}`);
         menu.add(`attack ${actor}`);
       }
     }
     for (const action of room.actions ?? []) menu.add(`${action.verb} ${action.target}`);
+  } else if (room) {
+    // In combat, keep only the fight and a way to ask for help.
+    for (const npc of room.npcs ?? []) {
+      if (!engaged.has(String(npc.name).toLowerCase())) menu.add(`talk ${npc.name}`);
+    }
   }
-  if ((state?.self?.party_invites ?? []).length) menu.add("party accept");
-  if ((state?.self?.enemies ?? []).length) {
+  if ((self.party_invites ?? []).length) menu.add("party accept");
+  if (inCombat) {
     menu.add("battle");
     menu.add("flee");
   }
-  if (state?.self?.guild === "night-market" && ["cutpurse", "shadow", "master"].includes(state.self.guild_rank)) menu.add("hide");
-  for (const technique of state?.self?.techniques ?? []) menu.add(`technique ${technique.id}`);
-  for (const name of state?.self?.inventory_names ?? []) {
+  if (self.guild === "night-market" && ["cutpurse", "shadow", "master"].includes(self.guild_rank)) menu.add("hide");
+  for (const technique of self.techniques ?? []) menu.add(`technique ${technique.id}`);
+  for (const name of self.inventory_names ?? []) {
     if (/bread|stew|herb|ration|meat|apple|cheese|soup|loaf|berry|fish/i.test(name)) menu.add(`eat ${name}`);
     if (/water|ale|wine|tea|flask/i.test(name)) menu.add(`drink ${name}`);
     if (/lamp|lantern|torch|candle/i.test(name)) menu.add(`light ${name}`);
-    if (/sword|axe|mace|dagger|spear|hammer|staff|bow|knife|pick|blade|club/i.test(name) && String(name).toLowerCase() !== wielding) menu.add(`wield ${name}`);
-    if (/mail|plate|cloak|shield|helm|boots|gloves|bracers|apron|circlet|robe|hood|jerkin|cuirass|hauberk|mantle|charm|relic/i.test(name) && !worn.has(String(name).toLowerCase())) menu.add(`wear ${name}`);
     if (/stone|charm|token|horn|bell|mirror|compass/i.test(name)) menu.add(`use ${name}`);
   }
-  for (const spell of state?.self?.spells ?? []) {
+  for (const spell of self.spells ?? []) {
     if (spell === "mend") menu.add("cast mend");
   }
-  for (const line of ["say <text>", "tell <name> <text>", "global <text>", "talk <name>", "wave", "nod", "bow", "laugh", "smile", "grin", "cheer", "salute", "ponder", "whistle", "sing", "hug", "highfive", "who", "battle", "equipment", "spells", "leaderboard", "levels", "map", "shortcuts", "quests", "completion"]) {
-    menu.add(line);
-  }
-  for (const spell of state?.self?.spells ?? []) menu.add(`cast ${spell}`);
+  const lines = inCombat
+    ? ["say <text>", "tell <name> <text>"]
+    : ["say <text>", "tell <name> <text>", "global <text>", "talk <name>", "wave", "nod", "bow", "laugh", "smile", "grin", "cheer", "salute", "ponder", "whistle", "sing", "hug", "highfive", "who", "battle", "equipment", "spells", "leaderboard", "levels", "map", "shortcuts", "quests", "completion"];
+  for (const line of lines) menu.add(line);
+  for (const spell of self.spells ?? []) menu.add(`cast ${spell}`);
   return [...menu].slice(0, 48);
 }
-
 const DIRECTION_ALIASES = {
   n: "north", s: "south", e: "east", w: "west", u: "up", d: "down",
 };
@@ -495,16 +507,61 @@ export function repairCommand(command, state = null, reason = "") {
 /** A semantic coach for the two mistakes the model makes most: social verbs and repeat attacks. */
 export function coachCommand(command, state = null, mind = null) {
   const raw = String(command ?? "").trim();
+  // A small model often puts two commands on one line ("take sword, wear
+  // jerkin"). The game accepts one command per turn; send only the first.
+  const pieces = raw.split(/\s*(?:[,;]|\band then\b|\bthen\b|\band\b(?=\s+[a-z]+))\s*/i);
+  const verbs = new Set([...VERBS, ...FREE_VERBS, ...TARGET_VERBS]);
+  if (pieces.length > 1) {
+    const first = pieces[0].trim();
+    const extra = pieces.slice(1).some((piece) => verbs.has(String(piece).trim().split(/\s+/)[0]?.toLowerCase()));
+    if (extra && first) {
+      return {
+        validation: { ok: false, reason: "one command per turn" },
+        blocked: true,
+        repaired: first,
+        feedback: `One command per turn. I will send only "${first}".`,
+      };
+    }
+  }
   const validation = validateCommand(raw, state);
   const parts = raw.split(/\s+/);
   const verb = parts[0]?.toLowerCase() ?? "";
   const words = parts.slice(1).map((part) => part.toLowerCase().replace(/[^a-z0-9']/g, "")).filter(Boolean);
   const npcs = roomNpcNames(state);
   const players = roomPlayerNames(state);
+  const knownNpcs = mind?.social?.knownNpcs ?? [];
   const npc = npcs.find((name) => nameIsIn(name, words.slice(0, 4)));
+  const knownNpc = !npc ? knownNpcs.find((name) => nameIsIn(name, words.slice(0, 4))) : null;
   const player = players.find((name) => nameIsIn(name, words.slice(0, 4)));
   const engaged = (state?.self?.enemies ?? []).find((enemy) => nameIsIn(enemy.name, words.slice(0, 4)));
 
+  if (verb === "take" || verb === "get" || verb === "g" || verb === "grab") {
+    const carried = (state?.self?.inventory_names ?? []).find((name) => nameIsIn(name, words));
+    if (carried) {
+      if (/sword|axe|mace|dagger|spear|hammer|staff|bow|knife|pick|blade|club/i.test(carried)) {
+        return {
+          validation: { ok: false, reason: "already carried" },
+          blocked: true,
+          repaired: `wield ${carried}`,
+          feedback: `You are already carrying ${carried}. Wield it instead of taking it again.`,
+        };
+      }
+      if (/mail|plate|cloak|shield|helm|boots|gloves|bracers|apron|circlet|robe|hood|jerkin|cuirass|hauberk|mantle|charm|relic/i.test(carried)) {
+        return {
+          validation: { ok: false, reason: "already carried" },
+          blocked: true,
+          repaired: `wear ${carried}`,
+          feedback: `You are already carrying ${carried}. Wear it instead of taking it again.`,
+        };
+      }
+      return {
+        validation: { ok: false, reason: "already carried" },
+        blocked: true,
+        repaired: "inventory",
+        feedback: `You are already carrying ${carried}. Check inventory.`,
+      };
+    }
+  }
   if (verb === "say" && npc) {
     return {
       validation: { ok: false, reason: "say is room speech" },
@@ -521,12 +578,23 @@ export function coachCommand(command, state = null, mind = null) {
       feedback: `say is room speech. For a private message to ${player}, use tell ${player} <text>.`,
     };
   }
-  if (verb === "tell" && npc) {
+  if (verb === "tell" && (npc || knownNpc)) {
+    const name = npc ?? knownNpc;
     return {
       validation: { ok: false, reason: "NPCs do not receive tells" },
       blocked: true,
-      repaired: `talk ${npc}`,
-      feedback: `NPCs do not receive tells. Use talk ${npc} for dialogue.`,
+      repaired: npc ? `talk ${name}` : "look",
+      feedback: npc
+        ? `NPCs do not receive tells. Use talk ${name} for dialogue.`
+        : `${name} is an NPC and is not in this room. NPCs do not receive tells; find them and use talk.`,
+    };
+  }
+  if (verb === "talk" && knownNpc) {
+    return {
+      validation: { ok: false, reason: "NPC is not here" },
+      blocked: true,
+      repaired: "look",
+      feedback: `${knownNpc} is not in this room. Find them before using talk.`,
     };
   }
   if (verb === "talk" && player && !npc) {
@@ -548,7 +616,7 @@ export function coachCommand(command, state = null, mind = null) {
   }
   if (!validation.ok) {
     return {
-      validation,
+      validation: { ...validation, command: raw },
       blocked: false,
       repaired: repairCommand(raw, state, validation.reason),
       feedback: validation.reason,
@@ -603,6 +671,31 @@ export function buildUserPrompt({ turn = 1, observation = "", director = [], sta
     ? `PARTY INVITE: ${state.self.party_invites.join(", ")}. Type party accept or party decline.`
     : "";
   const deaths = state?.self ? `DEATHS: ${state.self.deaths ?? 0}.` : "";
+  let next = "";
+  if (enemies.length) {
+    next = "NEXT: use a technique, eat/drink, cast mend, battle, or flee; do not repeat attack.";
+  } else if (state?.self) {
+    const weapons = (state.self.inventory_names ?? []).filter((name) => /sword|axe|mace|dagger|spear|hammer|staff|bow|knife|pick|blade|club/i.test(name) && name !== state.self.wielding);
+    const armor = (state.self.inventory_names ?? []).filter((name) => /mail|plate|cloak|shield|helm|boots|gloves|bracers|apron|circlet|robe|hood|jerkin|cuirass|hauberk|mantle|charm|relic/i.test(name) && !(state.self.worn ?? []).includes(name));
+    const active = (state.self.active_quests ?? [])[0];
+    const objective = active?.objectives?.find((text) => /^\[ \]/.test(text));
+    const available = (state.self.available_quests ?? [])[0];
+    const roomGear = (state.room?.objects ?? []).filter((object) => object.takeable
+      && /sword|axe|mace|dagger|spear|hammer|staff|bow|knife|pick|blade|club|mail|plate|cloak|shield|helm|boots|gloves|bracers|apron|circlet|robe|hood|jerkin|cuirass|hauberk|mantle|charm|relic/i.test(object.name));
+    if (weapons.length || armor.length) {
+      next = `NEXT: ${weapons.length ? `wield ${weapons[0]}` : ""}${weapons.length && armor.length ? "; " : ""}${armor.length ? `wear ${armor[0]}` : ""} before exploring.`;
+    } else if (roomGear.length) {
+      next = `NEXT: take ${roomGear[0].name}; then wield or wear it.`;
+    } else if (objective) {
+      next = `NEXT: ${active.name} — ${objective.replace(/^\[ \]\s*/, "")}.`;
+    } else if (available) {
+      next = `NEXT: accept a quest (${available.name}, level ${available.level}, ${available.giver ?? "quest giver"}).`;
+    } else if ((state.room?.objects ?? []).some((object) => object.takeable)) {
+      next = `NEXT: take ${(state.room.objects.find((object) => object.takeable) ?? {}).name}.`;
+    } else {
+      next = "NEXT: explore an exit you have not used; use look, search, quests, or talk.";
+    }
+  }
   const tally = state?.self?.completion;
   const goalLine = tally
     ? `GOAL: level ${tally.level ?? tally.maxLevel ?? "?"}/${tally.maxLevel ?? "?"} · quests ${tally.quests ?? 0}/${tally.questsTotal ?? 0} · hidden ways ${tally.puzzles ?? 0}/${tally.puzzlesTotal ?? 0}${tally.achieved ? " · ACHIEVED" : ""}.`
@@ -610,7 +703,7 @@ export function buildUserPrompt({ turn = 1, observation = "", director = [], sta
   const party = state?.self?.party
     ? `PARTY: ${state.self.party.leader ?? "?"} leads ${state.self.party.members.join(", ")} (${state.self.party.size}).`
     : "";
-  const sheet = [world, selfLine, self, pack, gear, combat, social, party, invites, goalLine, lock, gas, hidden, deaths].filter(Boolean).join("\n");
+  const sheet = [world, selfLine, self, pack, gear, combat, social, party, invites, goalLine, next, lock, gas, hidden, deaths].filter(Boolean).join("\n");
   const menu = actions.join(", ");
   const questBlock = quests ? `QUESTS:\n${quests}` : "";
   const memoryBlock = memory ? `MEMORY:\n${memory}\n` : "";

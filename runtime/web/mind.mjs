@@ -19,7 +19,7 @@ export const emptyMind = () => ({
   lessons: [],
   attempts: [],
   last: null,
-  social: { players: [], npcs: [], party: null, speech: [] },
+  social: { players: [], npcs: [], knownNpcs: [], party: null, speech: [] },
   combat: { active: false, enemies: [], hp: null, maxHp: null, target: null },
   gear: { wielding: null, worn: [], weapons: [], armor: [] },
   stuck: { room: null, sameRoom: 0, looping: false, lastRooms: [] },
@@ -119,7 +119,9 @@ export function updateMind(mind, { state = null, observation = "", command = "",
   if (tally) mind.goal = `level ${tally.maxLevel}, all ${tally.questsTotal} quests and all ${tally.puzzlesTotal} hidden ways`;
   if (parsed?.plan && !/^none[.!]?$/i.test(parsed.plan)) mind.plan = clean(parsed.plan, 240);
   if (parsed?.lesson) addLesson(mind, parsed.lesson);
-  mind.social = socialFrom(state);
+  const social = socialFrom(state);
+  const knownNpcs = [...new Set([...(mind.social?.knownNpcs ?? []), ...social.npcs])].slice(-20);
+  mind.social = { ...social, knownNpcs };
   const said = speechFrom(observation);
   if (said.length) {
     mind.social.speech = [...(mind.social.speech ?? []), ...said].slice(-4);
@@ -149,7 +151,8 @@ export function updateMind(mind, { state = null, observation = "", command = "",
   mind.updated = Date.now();
 
   if (validation && validation.ok === false) {
-    addLesson(mind, `"${clean(command, 80)}" was rejected: ${clean(validation.reason, 120)}. Use an exact target from ACTIONS or look first.`);
+    const rejected = clean(validation.command ?? command, 80);
+    addLesson(mind, `"${rejected}" was rejected: ${clean(validation.reason, 120)}. Use an exact target from ACTIONS or look first.`);
   }
   if (outcome === "redundant" || /already fighting|already engaged/i.test(observation)) {
     addLesson(mind, "Attack only starts a fight. While COMBAT is present the rounds are automatic; use a technique, eat/drink, cast mend, or flee instead of repeating attack.");
@@ -204,6 +207,7 @@ export function mindPrompt(mind, { state = null, room = null } = {}) {
   const players = social.players ?? [];
   const npcs = social.npcs ?? [];
   lines.push(`SOCIAL: players ${players.length ? players.join(", ") : "none"} · NPCs ${npcs.length ? npcs.join(", ") : "none"}${social.party ? ` · party ${social.party.members?.join(", ")}` : ""}.`);
+  if (!npcs.length && (social.knownNpcs ?? []).length) lines.push(`KNOWN NPCs elsewhere: ${social.knownNpcs.slice(-6).join(", ")}.`);
   if ((social.speech ?? []).length) lines.push(`HEARD: ${social.speech.map((entry) => `${entry.speaker}: "${entry.text}"`).join(" | ")}`);
   if (mind.combat?.active) {
     lines.push(`COMBAT: ${mind.combat.enemies.map((enemy) => `${enemy.name} ${enemy.hp ?? "?"}/${enemy.maxHp ?? "?"} hp`).join("; ")}. Attack already started; rounds are automatic. Use technique, eat/drink, cast mend, or flee.`);

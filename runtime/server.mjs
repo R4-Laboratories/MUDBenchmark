@@ -927,6 +927,9 @@ function selfState(actor) {
     wielding: state.objects.find((object) => object.id === actor.wielding)?.name ?? null,
     worn: state.objects.filter((object) => object.holder === actor.id && object.worn).map((object) => object.name),
     active_quests: activeQuests,
+    available_quests: actor?.key
+      ? availableQuests(QUESTS.quests, actor, state.cycle ?? 0).map((quest) => ({ id: quest.id, name: quest.name, level: quest.level, giver: quest.giver ?? null })).slice(0, 8)
+      : [],
     room: room ? {
       name: room.name,
       safe: room.safe === true,

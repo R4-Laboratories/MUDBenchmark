@@ -539,6 +539,17 @@ Rehearsed 2026-11-16:
   speaking, opened the Twin Door with one hidden partner and took the crown.
   Gate covers the death penalty, level gates, twin door, hide visibility and
   prompt (MB-286/287/288);
+- v0.91.64 (agent coach hardening) adds a `NEXT:` priority line (wield/wear,
+  take room gear, next quest objective, or a quest offer), blocks two commands
+  on one line or an item already carried (repairing to `wield`/`wear`), and
+  remembers NPCs seen elsewhere so `tell <npc>` is refused even after leaving
+  the room. The combat menu keeps only fight and help actions. A local 3B model
+  run against an isolated server took and wielded the sword, wore cloak and
+  jerkin, greeted the player, and used `talk` for an NPC; it still repeated
+  commands, which the loop guard and coaches caught. World unchanged: 251
+  rooms / 17 zones / 25 quests / 114 mobiles / 263 objects. Gate covers the new
+  guards and every prior check; a real DeepSeek/Groq session remains the next
+  evidence (MB-309);
 - v0.91.63 (the agent mind) gives the browser AI a persistent structured mind
   instead of a longer transcript: identity, goal, `PLAN`/`LESSON`, the last
   twelve attempts with outcomes, derived lessons, the player/NPC social map,
