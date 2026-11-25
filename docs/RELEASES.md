@@ -539,6 +539,19 @@ Rehearsed 2026-11-16:
   speaking, opened the Twin Door with one hidden partner and took the crown.
   Gate covers the death penalty, level gates, twin door, hide visibility and
   prompt (MB-286/287/288);
+- v0.91.65 (focus planner) adds a model-independent planner in
+  `runtime/web/planner.mjs`. The server now exposes structured quest objective
+  details (kind, room, NPC, object, done), and the prompt gets a `FOCUS`,
+  `ROUTE` and short `CANDIDATES` list. Priority is combat, equip carried gear,
+  take room gear, the next unfinished quest objective, a quest offer, then
+  exploration. The action menu is seeded with the focus candidates. A
+  15-turn DeepSeek (`deepseek-flash`) run on an isolated server took and
+  wielded the short sword, wore the grey cloak and leather jerkin, talked to
+  the bard, sent a private `tell` to the player, accepted the `word` quest,
+  went north and attacked the rat, then explored the Vault. No room, quest,
+  item or mobile counts changed: 251 rooms / 17 zones / 25 quests / 114 mobiles
+  / 263 objects. Gate covers planner priority, route, quest objectives and
+  every prior check (MB-311);
 - v0.91.64 (agent coach hardening) adds a `NEXT:` priority line (wield/wear,
   take room gear, next quest objective, or a quest offer), blocks two commands
   on one line or an item already carried (repairing to `wield`/`wear`), and

@@ -28,7 +28,7 @@ import { loadVerbs, render, resolve } from "./verbs.mjs";
 import { loadChannels, resolveChannel } from "./channels.mjs";
 import { loadSocials, resolveSocial } from "./socials.mjs";
 import { loadLevels, nextLevelXp } from "./levels.mjs";
-import { availableQuests, loadQuestArchive, loadQuests, migrateQuestState, normalizeQuestState, questById, questLines, validateQuestReferences } from "./quests.mjs";
+import { availableQuests, loadQuestArchive, loadQuests, migrateQuestState, normalizeQuestState, objectiveDone, questById, questLines, validateQuestReferences } from "./quests.mjs";
 import { GUILD_HALL, GUILD_VAULT_CAPACITY, RANKS, guildId, guildVaultHolder, rankAtLeast, progressionAtLeast, validGuildName, guildBonus } from "./guilds.mjs";
 import { FACTIONS, factionAllows, factionRank, standingsText } from "./factions.mjs";
 import { buildLlms } from "./llms.mjs";
@@ -843,7 +843,27 @@ function selfState(actor) {
   const activeQuests = actor?.key
     ? normalizeQuestState(actor.quests, QUESTS.quests).active.map((entry) => {
         const quest = questById(QUESTS.quests, entry.id);
-        return quest ? { id: quest.id, name: quest.name, objectives: questLines(quest, entry.progress, actor, state.objects) } : null;
+        if (!quest) return null;
+        const objectiveDetails = quest.objectives.map((objective) => {
+          const npc = objective.npc ? state.npcs.find((candidate) => candidate.id === objective.npc) : null;
+          const object = objective.object ? state.objects.find((candidate) => candidate.id === objective.object) : null;
+          return {
+            kind: objective.kind,
+            text: objective.text ?? objective.kind,
+            room: objective.room ?? null,
+            roomName: objective.room ? (ROOMS[objective.room]?.name ?? null) : null,
+            npc: objective.npc ?? null,
+            npcName: npc?.name ?? null,
+            npcRoom: npc?.home ?? null,
+            npcRoomName: npc?.home ? (ROOMS[npc.home]?.name ?? null) : null,
+            object: objective.object ?? null,
+            objectName: object?.name ?? null,
+            objectRoom: object?.room ?? object?.home ?? null,
+            objectRoomName: object?.room ? (ROOMS[object.room]?.name ?? null) : object?.home ? (ROOMS[object.home]?.name ?? null) : null,
+            done: objectiveDone(objective, entry.progress, actor, state.objects),
+          };
+        });
+        return { id: quest.id, name: quest.name, level: quest.level, giver: quest.giver ?? null, objectives: questLines(quest, entry.progress, actor, state.objects), objective_details: objectiveDetails };
       }).filter(Boolean)
     : [];
   const enemies = [];
@@ -928,7 +948,11 @@ function selfState(actor) {
     worn: state.objects.filter((object) => object.holder === actor.id && object.worn).map((object) => object.name),
     active_quests: activeQuests,
     available_quests: actor?.key
-      ? availableQuests(QUESTS.quests, actor, state.cycle ?? 0).map((quest) => ({ id: quest.id, name: quest.name, level: quest.level, giver: quest.giver ?? null })).slice(0, 8)
+      ? availableQuests(QUESTS.quests, actor, state.cycle ?? 0).map((quest) => {
+        const giver = String(quest.giver ?? "").toLowerCase().replace(/^the /, "");
+        const npc = giver ? state.npcs.find((candidate) => candidate.name.toLowerCase().includes(giver) || giver.includes(candidate.name.toLowerCase().replace(/^the /, ""))) : null;
+        return { id: quest.id, name: quest.name, level: quest.level, giver: quest.giver ?? null, giverRoom: npc?.home ?? null, giverRoomName: npc?.home ? (ROOMS[npc.home]?.name ?? null) : null };
+      }).slice(0, 8)
       : [],
     room: room ? {
       name: room.name,
@@ -3687,6 +3711,17 @@ const web = http.createServer(async (req, res) => {
   if (pathname === "/memory.mjs") {
     try {
       const source = readFileSync(new URL("./web/memory.mjs", import.meta.url));
+      res.writeHead(200, { "content-type": "text/javascript; charset=utf-8", "cache-control": "no-store" });
+      res.end(source);
+    } catch {
+      res.writeHead(404, { "content-type": "text/plain" });
+      res.end("not found");
+    }
+    return;
+  }
+  if (pathname === "/planner.mjs") {
+    try {
+      const source = readFileSync(new URL("./web/planner.mjs", import.meta.url));
       res.writeHead(200, { "content-type": "text/javascript; charset=utf-8", "cache-control": "no-store" });
       res.end(source);
     } catch {
