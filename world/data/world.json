@@ -5,13 +5,15 @@
   "rooms": {
     "1": {
       "name": "The Atrium",
-      "text": "A cold marble hall open to a sky the colour of old iron. A plaque is set into the north wall above the corridor; a storeroom opens east, and the market square lies south. The marble is veined with dark seams, and the air smells of cold stone and lamp oil. Footsteps carry farther here than they should.",
+      "text": "A cold marble hall open to a sky the colour of old iron. A plaque is set into the north wall above the corridor; a storeroom opens east, and the market square lies south. The marble is veined with dark seams, and the air smells of cold stone and lamp oil. Footsteps carry farther here than they should. A cloister walk opens west, and a cellar stair descends into the dark.",
       "safe": true,
       "exits": {
         "north": 2,
         "east": 3,
         "south": 8,
-        "up": 34
+        "up": 34,
+        "west": 252,
+        "down": 253
       },
       "details": {
         "plaque": "The plaque reads: the Vault keeps the word.",
@@ -120,7 +122,8 @@
       "exits": {
         "south": 5,
         "north": 7,
-        "east": 98
+        "east": 98,
+        "west": 40
       },
       "details": {
         "altar": "The altar is worn smooth. A single word is cut into its edge.",
@@ -479,12 +482,13 @@
     },
     "25": {
       "name": "The Undercroft",
-      "text": "A low brick tunnel under the Cell. Water runs down the walls and gathers in the seams of the floor. A broken lamp bracket juts from the brick, and the air tastes of iron and old smoke. The Cell is up; the tunnel runs east and south. The air tastes of iron and old smoke; the tunnel runs east and south.",
+      "text": "A low brick tunnel under the Cell. Water runs down the walls and gathers in the seams of the floor. A broken lamp bracket juts from the brick, and the air tastes of iron and old smoke. The Cell is up; the tunnel runs east and south. The air tastes of iron and old smoke; the tunnel runs east and south. A narrow stair climbs north out of the tunnel.",
       "safe": false,
       "exits": {
         "up": 5,
         "east": 26,
-        "south": 27
+        "south": 27,
+        "north": 253
       },
       "details": {
         "brick": "The bricks are stamped with a mason's mark no one in town uses.",
@@ -571,11 +575,12 @@
     },
     "30": {
       "name": "The Harbor Quay",
-      "text": "The river opens into a broad grey harbor. Stone quays step down to the water, and a forest of masts moves beyond the mist; the riverbank is north, the docks east. Rope and fish scales streak the stone, and gulls walk the quay. The quay stones are slick with weed, and the masts move against a pewter sky.",
+      "text": "The river opens into a broad grey harbor. Stone quays step down to the water, and a forest of masts moves beyond the mist; the riverbank is north, the docks east. Rope and fish scales streak the stone, and gulls walk the quay. The quay stones are slick with weed, and the masts move against a pewter sky. A cliff walk climbs above the quay.",
       "safe": false,
       "exits": {
         "north": 19,
-        "east": 31
+        "east": 31,
+        "up": 252
       },
       "details": {
         "quay": "The quay is slick with weed and fish scales.",
@@ -594,12 +599,13 @@
     },
     "31": {
       "name": "The Docks",
-      "text": "Warehouses crowd the waterfront, their doors barred and their windows dark. A crane stands at the end of the pier, and a lamp burns in the last warehouse; the quay is west, the lighthouse path north. A small salvage skiff is tied at the dock. The crane chain hangs still, and the waterfront smells of tar and old rope.",
+      "text": "Warehouses crowd the waterfront, their doors barred and their windows dark. A crane stands at the end of the pier, and a lamp burns in the last warehouse; the quay is west, the lighthouse path north. A small salvage skiff is tied at the dock. The crane chain hangs still, and the waterfront smells of tar and old rope. A river stair climbs up toward the Moonlit Gate.",
       "safe": false,
       "exits": {
         "west": 30,
         "north": 32,
-        "down": 33
+        "down": 33,
+        "up": 86
       },
       "details": {
         "crane": "The crane is rusted and empty.",
@@ -761,10 +767,11 @@
     },
     "40": {
       "name": "The High Walk",
-      "text": "A narrow walk above the arcade, open to the weather and the roofs of the district. A cold candle waits on the rail; the market is a lantern-lit patchwork far below.",
+      "text": "A narrow walk above the arcade, open to the weather and the roofs of the district. A cold candle waits on the rail; the market is a lantern-lit patchwork far below. A covered bridge runs east toward the Shrine.",
       "safe": true,
       "exits": {
-        "west": 39
+        "west": 39,
+        "east": 6
       },
       "details": {
         "candle": "The candle is cold but the wick is black.",
@@ -1327,12 +1334,13 @@
     },
     "71": {
       "name": "The Fen Gate",
-      "text": "A low gate of woven willow stands where the mill path ends. Reeds crowd a narrow causeway; the abandoned mill is west, a reed walk climbs north, and a drowned orchard lies east. The air is wet and green.",
+      "text": "A low gate of woven willow stands where the mill path ends. Reeds crowd a narrow causeway; the abandoned mill is west, a reed walk climbs north, and a drowned orchard lies east. The air is wet and green. A raised causeway climbs toward the Grey Road.",
       "safe": false,
       "exits": {
         "west": 20,
         "north": 72,
-        "east": 73
+        "east": 73,
+        "up": 117
       },
       "details": {
         "gate": "The willow gate is tied with green cord.",
@@ -1602,12 +1610,13 @@
     },
     "86": {
       "name": "The Moonlit Gate",
-      "text": "A gate of white stone opens where the deep forest thins. The trees lean away from it, and the air is cool and bright. The forest is west; a silver glade lies north, and an owl grove waits east.",
+      "text": "A gate of white stone opens where the deep forest thins. The trees lean away from it, and the air is cool and bright. The forest is west; a silver glade lies north, and an owl grove waits east. A river stair descends south to the Docks.",
       "safe": false,
       "exits": {
         "west": 18,
         "north": 87,
-        "east": 88
+        "east": 88,
+        "down": 31
       },
       "details": {
         "gate": "The gate is carved with a crescent.",
@@ -2161,11 +2170,12 @@
     },
     "117": {
       "name": "The Grey Road",
-      "text": "The King's Road narrows to a rutted track between blackthorn hedges and a ditch of brown water. Ahead, the Grey Keep closes the valley: a curtain wall split by an old crack, three towers, and a gatehouse whose portcullis hangs half-raised like a jaw. Crows lift from the battlements, circle once, and settle again.",
+      "text": "The King's Road narrows to a rutted track between blackthorn hedges and a ditch of brown water. Ahead, the Grey Keep closes the valley: a curtain wall split by an old crack, three towers, and a gatehouse whose portcullis hangs half-raised like a jaw. Crows lift from the battlements, circle once, and settle again. A sodden causeway descends toward the Fen Gate.",
       "exits": {
         "north": 11,
         "south": 15,
-        "east": 118
+        "east": 118,
+        "down": 71
       },
       "details": {
         "gatehouse": "The gatehouse is a squat block of grey stone. Its iron teeth are crusted with rust, and a smaller postern door sits to one side.",
@@ -4725,6 +4735,44 @@
       "ambient": [
         "The wheel ticks.",
         "The captain turns its head."
+      ]
+    },
+    "252": {
+      "name": "The Cliff Walk",
+      "text": "A narrow walk of cracked flagstones clings to the outside of the temple hill. The Atrium opens east behind a low arch, and a stair drops south to the harbor quay. Wind worries at the grass in the seams, and the river is a wide grey sheet below. A rusted handrail follows the drop, and gulls turn in the updraught without sound.",
+      "safe": false,
+      "exits": {
+        "east": 1,
+        "down": 30
+      },
+      "details": {
+        "rail": "The handrail is rusted through in two places. It would not hold a fall.",
+        "river": "The river is broad and grey. A few masts move beyond the mist.",
+        "stones": "The flagstones are cracked and heaved by roots."
+      },
+      "ambient": [
+        "Wind presses at the walk.",
+        "A gull cries once below.",
+        "The river moves without sound."
+      ]
+    },
+    "253": {
+      "name": "The Cellar Stair",
+      "text": "A cramped stone stair spirals down from the Atrium into the dark under the temple. The air is cold and mineral, and water ticks somewhere below. An arch at the bottom opens south into the Undercroft; a worn handprint is pressed into the wall beside it. The steps are shallow and slick, and the Atrium light dies after the third turn.",
+      "safe": false,
+      "exits": {
+        "up": 1,
+        "south": 25
+      },
+      "details": {
+        "handprint": "A small handprint is pressed into the damp stone. It is much older than the stair.",
+        "water": "Water runs down the wall and disappears into a crack.",
+        "steps": "The steps are worn hollow in the middle."
+      },
+      "ambient": [
+        "Water ticks in the dark.",
+        "The stair breathes cold air.",
+        "A distant bell turns over."
       ]
     }
   },
@@ -7289,7 +7337,9 @@
         4,
         5,
         6,
-        7
+        7,
+        252,
+        253
       ]
     },
     {

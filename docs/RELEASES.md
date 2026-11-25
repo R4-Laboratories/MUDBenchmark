@@ -539,6 +539,23 @@ Rehearsed 2026-11-16:
   speaking, opened the Twin Door with one hidden partner and took the crown.
   Gate covers the death penalty, level gates, twin door, hide visibility and
   prompt (MB-286/287/288);
+- v0.91.72 (open world and frontier) opens the map and makes exploration
+  cumulative. Two new Temple rooms — **The Cliff Walk** (Atrium west to the
+  Harbor Quay) and **The Cellar Stair** (Atrium down to the Undercroft) — join
+  cross-links from the Shrine to the High Walk, the Grey Road to the Fen Gate,
+  and the Docks to the Moonlit Gate. The Atrium is now a six-exit hub, and the
+  Gate checks that the Harbor Quay is reachable without Market Square and the
+  Docks without the King's Road. The explore focus now walks to the nearest
+  **unvisited room on the seeded `/llms.txt` map**, not just the first exit;
+  it is included in the focus lock, avoids stale directions and recent rooms,
+  and the memory block prints `Rooms seen: N of 253` plus a `FRONTIER` line.
+  The Mind now stores the model's `NOTE` lines and prints them back as `NOTES`
+  (the browser notebook remains). A 120-turn DeepSeek run visited **34 rooms**
+  and completed **4 quests** (First Steps, Bread, A Curled Scroll, The
+  Apprentice's Charm), reached the Docks, Deep Forest, Grey Road, Moonlit Gate,
+  Memory Garden and Root Archive, sent 120/120 commands, made 13 focus
+  corrections and took 0 deaths at level 3 / 410 XP. World now 253 rooms / 17
+  zones / 25 quests / 114 mobiles / 263 objects (MB-326);
 - v0.91.71 (federation protocol 2) replaces draft PR #11's password-transfer
   trust model. A region handoff now needs a Prism-signed
   `mudbenchmark/region-travel/1` grant for the destination origin plus a

@@ -9,6 +9,7 @@
 const VERSION = 1;
 const MAX_ATTEMPTS = 12;
 const MAX_LESSONS = 16;
+const MAX_NOTES = 12;
 const MAX_ROOMS = 14;
 
 export const emptyMind = () => ({
@@ -17,6 +18,7 @@ export const emptyMind = () => ({
   goal: "",
   plan: "",
   knownWord: null,
+  notes: [],
   lessons: [],
   attempts: [],
   last: null,
@@ -30,6 +32,15 @@ export const emptyMind = () => ({
 const clean = (text, max = 240) => String(text ?? "").replace(/\s+/g, " ").trim().slice(0, max);
 const WEAPON = /sword|axe|mace|dagger|spear|hammer|staff|bow|knife|pick|blade|club/i;
 const ARMOR = /mail|plate|cloak|shield|helm|boots|gloves|bracers|apron|circlet|robe|hood|jerkin|cuirass|hauberk|mantle|charm|relic/i;
+
+export function addNote(mind, text) {
+  const note = clean(text, 220);
+  if (!note || /^none[.!]?$/i.test(note)) return mind;
+  mind.notes ??= [];
+  if (!mind.notes.includes(note)) mind.notes.push(note);
+  if (mind.notes.length > MAX_NOTES) mind.notes.splice(0, mind.notes.length - MAX_NOTES);
+  return mind;
+}
 
 export function addLesson(mind, text) {
   const lesson = clean(text, 220);
@@ -124,6 +135,7 @@ export function updateMind(mind, { state = null, observation = "", command = "",
   const tally = state?.self?.completion;
   if (tally) mind.goal = `level ${tally.maxLevel}, all ${tally.questsTotal} quests and all ${tally.puzzlesTotal} hidden ways`;
   if (parsed?.plan && !/^none[.!]?$/i.test(parsed.plan)) mind.plan = clean(parsed.plan, 240);
+  if (parsed?.note && !/^none[.!]?$/i.test(parsed.note)) addNote(mind, parsed.note);
   if (parsed?.lesson) addLesson(mind, parsed.lesson);
   const social = socialFrom(state);
   const knownNpcs = [...new Set([...(mind.social?.knownNpcs ?? []), ...social.npcs])].slice(-20);
@@ -205,6 +217,7 @@ export function mindPrompt(mind, { state = null, room = null } = {}) {
   lines.push(`IDENTITY: ${identity.name || state?.self?.name || "you"} · level ${identity.level ?? state?.self?.level ?? 1}${identity.title ? ` · ${identity.title}` : ""}${identity.guild ? ` · ${identity.guild}${identity.guildRank ? ` (${identity.guildRank})` : ""}` : ""} · ${identity.deaths ?? 0} deaths · ${identity.coins ?? 0} coins.`);
   if (mind.goal) lines.push(`GOAL: ${mind.goal}${state?.self?.completion?.achieved ? " · ACHIEVED" : ""}.`);
   if (mind.knownWord) lines.push(`KNOWN WORD: ${mind.knownWord.toUpperCase()} — answer it at the Shrine.`);
+  if ((mind.notes ?? []).length) lines.push(`NOTES:\n${mind.notes.slice(-MAX_NOTES).map((note) => `- ${note}`).join("\n")}`);
   lines.push(`PLAN: ${mind.plan ? mind.plan.replace(/\.+$/, "") : "none yet; set one this turn"}.`);
   if (mind.last) lines.push(`LAST: ${mind.last.command} → ${mind.last.outcome}${mind.last.room ? ` in ${mind.last.room}` : ""}.`);
   const attempts = (mind.attempts ?? []).slice(-6).map((attempt) => `${attempt.command} → ${attempt.outcome}`);

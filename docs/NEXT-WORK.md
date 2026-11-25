@@ -1,6 +1,6 @@
 # Next work
 
-Baseline: **v0.91.71**. The world has 251 rooms, 17 zones, 25 quests, 114 mobiles
+Baseline: **v0.91.72**. The world has 251 rooms, 17 zones, 25 quests, 114 mobiles
 and 263 objects. The run has a recorded win condition: level 10, all 25 quests
 and all 25 hidden ways, with the permanent Worldbreaker title. R4 memory, command grounding, scorecards
 and the public stats surface are live; signups are open. Every AI key is
@@ -104,6 +104,7 @@ memory or prompt system.
 | v0.91.69 | Answer completion: `answer` advances the word quest, wrong answers repair to the known word, item matching ignores stopwords; focused answer, boss-kill and model-death evidence; 120-turn three-quest run | **done** (MB-319) |
 | v0.91.70 | Player reports: camelCase verb lookup (`takeFrom`), HUD refresh on automatic combat damage, and item worth/sell price in `inventory` | **done** (MB-322) |
 | v0.91.71 | Federation protocol 2: Prism-signed travel grants, no password transfer, local fields preserved, skill policy on recite, replay/outage tests and a 500/2,000 account cap | **done** (MB-324) |
+| v0.91.72 | Open world and frontier: Cliff Walk/Cellar Stair and cross-zone loops, nearest-unvisited frontier focus, stale-exit avoidance, Mind NOTES; 120-turn 34-room/4-quest run | **done** (MB-326) |
 | backlog | Longer DeepSeek/Groq evidence; moderator/immortal decision; larger PvP sample; federation rework | optional |
 
 ## What is next
