@@ -539,6 +539,19 @@ Rehearsed 2026-11-16:
   speaking, opened the Twin Door with one hidden partner and took the crown.
   Gate covers the death penalty, level gates, twin door, hide visibility and
   prompt (MB-286/287/288);
+- v0.91.63 (the agent mind) gives the browser AI a persistent structured mind
+  instead of a longer transcript: identity, goal, `PLAN`/`LESSON`, the last
+  twelve attempts with outcomes, derived lessons, the player/NPC social map,
+  combat and gear state, and a stuck detector. A command coach redirects
+  `say <npc>` and `tell <npc>` to `talk <npc>`, `talk <player>` to `tell`, and a
+  repeat `attack` to a technique/battle/heal; a blocked command is not sent.
+  The action menu drops attack while engaged and offers battle, techniques,
+  food/drink, `cast mend`, `flee`, wield and wear. Engaged mobiles now hold
+  their ground. The first 18 rooms have richer prose, with a Gate floor of 280
+  characters, three ambient lines and two details. World unchanged: 251 rooms /
+  17 zones / 25 quests / 114 mobiles / 263 objects. Gate covers the mind,
+  coach, parser, combat menu, engaged-mobile hold, opening prose and every
+  prior check. A real-provider run is the next behaviour evidence (MB-307);
 - v0.91.62 (The Merry Dancer) adds a 12-room level 7/8/9 sunken wreck off the
   Docks. A free salvage skiff reaches the red buoy; the drowned deck has a party
   **capstan** that opens the cargo hatch, the galley holds the strongbox key,

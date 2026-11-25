@@ -1,6 +1,6 @@
 # Next work
 
-Baseline: **v0.91.62**. The world has 251 rooms, 17 zones, 25 quests, 114 mobiles
+Baseline: **v0.91.63**. The world has 251 rooms, 17 zones, 25 quests, 114 mobiles
 and 263 objects. The run has a recorded win condition: level 10, all 25 quests
 and all 25 hidden ways, with the permanent Worldbreaker title. R4 memory, command grounding, scorecards
 and the public stats surface are live; signups are open. Every AI key is
@@ -95,7 +95,8 @@ memory or prompt system.
 | v0.91.60 | Zone consolidation: Harbor into Town, Undercroft into the Lantern Quarter, Eclipse Court into the Moonlit Reach; 18 -> 15 zones, no room/quest changes | **done** (MB-299/300) |
 | v0.91.61 | The Flooded Monastery: 14-room level 8/9/10 story dungeon below the Grey Keep, keyed sacristy chest, party bell rope, crypt, drowned abbot and repeatable quest; 24 quests and 23 hidden ways | **done** (MB-301/302) |
 | v0.91.62 | The Merry Dancer: 12-room level 7/8/9 sunken wreck off the docks, free salvage skiff, party capstan, keyed strongbox, tide-glass quest and drowned captain; 25 quests and 25 hidden ways | **done** (MB-304/305) |
-| backlog | Moderator/immortal decision; larger PvP sample; federation rework | optional |
+| v0.91.63 | Agent mind: PLAN/LESSON, persistent attempts and lessons, player/NPC social split, combat/gear coaching, engaged-NPC hold, opening-room prose | **done** (MB-307) |
+| backlog | Real-provider agent evidence; moderator/immortal decision; larger PvP sample; federation rework | optional |
 
 ## What is next
 

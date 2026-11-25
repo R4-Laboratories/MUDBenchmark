@@ -1161,10 +1161,11 @@
 <script type="module">
   import {
     PROVIDERS, DEFAULT_GOAL, GOALS, buildSystemPrompt, buildUserPrompt,
-    parseBrain, buildActionMenu, validateCommand, repairCommand, requestFor, replyFrom, trimHistory, normalizeBase,
+    parseBrain, buildActionMenu, validateCommand, repairCommand, coachCommand, requestFor, replyFrom, trimHistory, normalizeBase,
     isThrottledStatus, throttlePlan,
   } from "/ai.mjs";
   import { emptyMemory, rememberResult, memoryPrompt, loopWarning, breakLoop, shouldBreakLoop } from "/memory.mjs";
+  import { emptyMind, updateMind, mindPrompt } from "/mind.mjs";
   import { assemble } from "/router.mjs";
   import { signIn as prismSignIn, reset as prismReset, load as loadSession, save as saveSession, personaSignIn, personaRetire, nextPersonaEpoch, createRecoveryKit, restoreRecoveryKit, characterHandoff, characterRevoke, characterTransfer, signChallenge } from "/prism-auth.mjs";
   import { randomCharacterName, uniqueCharacterName, chooseCharacter } from "/names.mjs";
@@ -2782,6 +2783,30 @@
     try { localStorage.setItem(AI.notebookKey, JSON.stringify(AI.notebook)); } catch {}
   }
 
+  function ensureMind() {
+    if (AI.mind) return AI.mind;
+    const key = `mudbench-ai-mind:${AI.persona ?? AI.identity?.envelope?.body?.prism ?? AI.character ?? "ai"}`;
+    AI.mindKey = key;
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw) AI.mind = JSON.parse(raw);
+    } catch {}
+    const empty = emptyMind();
+    AI.mind = { ...empty, ...(AI.mind && typeof AI.mind === "object" ? AI.mind : {}) };
+    AI.mind.lessons = Array.isArray(AI.mind.lessons) ? AI.mind.lessons : [];
+    AI.mind.attempts = Array.isArray(AI.mind.attempts) ? AI.mind.attempts : [];
+    AI.mind.social = { ...empty.social, ...(AI.mind.social ?? {}) };
+    AI.mind.combat = { ...empty.combat, ...(AI.mind.combat ?? {}) };
+    AI.mind.gear = { ...empty.gear, ...(AI.mind.gear ?? {}) };
+    AI.mind.stuck = { ...empty.stuck, ...(AI.mind.stuck ?? {}) };
+    return AI.mind;
+  }
+
+  function saveMind() {
+    if (!AI.mindKey || !AI.mind) return;
+    try { localStorage.setItem(AI.mindKey, JSON.stringify(AI.mind)); } catch {}
+  }
+
   function notebookText() {
     const notebook = ensureNotebook();
     return [
@@ -2817,7 +2842,7 @@
       model: aiModel.value.trim(),
       key,
       temperature: fast ? 0 : 0.7,
-      maxTokens: fast ? 120 : 400,
+      maxTokens: fast ? 200 : 500,
       fast,
       reasoning: aiReasoning.value,
       goal: aiGoal.value,
@@ -2896,6 +2921,10 @@
     AI.memoryKey = null;
     AI.notebook = null;
     AI.notebookKey = null;
+    AI.mind = null;
+    AI.mindKey = null;
+    AI.coachRetries = 0;
+    AI.lastCoach = null;
     AI.commandRoom = null;
     AI.exits = [];
     AI.lastInvalid = null;
@@ -3245,7 +3274,7 @@
     if (chatStick) chat.scrollTop = chat.scrollHeight;
   }
 
-  function addThought(turn, text, muted = false) {
+  function addThought(turn, text, muted = false, extra = []) {
     const wrap = document.createElement("div");
     wrap.className = `thought${muted ? " muted" : ""}`;
     const meta = document.createElement("div");
@@ -3259,7 +3288,7 @@
     star.addEventListener("click", () => addHighlight(turn, text, star));
     meta.appendChild(star);
     const body = document.createElement("div");
-    body.textContent = text;
+    body.textContent = [text, ...(Array.isArray(extra) ? extra.filter(Boolean) : [])].join("\n");
     wrap.append(meta, body);
     mind.appendChild(wrap);
     if (mindStick) mindPane.scrollTop = mindPane.scrollHeight;
@@ -3459,6 +3488,9 @@
       ["Last latency", AI.lastLatency ? `${(AI.lastLatency / 1000).toFixed(1)}s` : "—"],
       ["Invalid", AI.lastValidation?.invalid ? "yes" : "no"],
       ["Rooms seen", String(Object.keys(AI.memory?.rooms ?? {}).length)],
+      ["Plan", AI.mind?.plan ? AI.mind.plan.slice(0, 48) : "—"],
+      ["Lessons", String(AI.mind?.lessons?.length ?? 0)],
+      ["Stuck", AI.mind?.stuck?.looping ? "yes" : "no"],
       ["R4", AI.lastR4 ? "browser router" : "—"],
       ["Context", `${messages.length} msgs · ${contextChars} chars`],
       ["Last command", AI.lastCommand || "—"],
@@ -3755,6 +3787,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
     const started = performance.now();
     try {
       const memory = ensureMemory();
+      const mind = ensureMind();
       if (AI.lastCommand && AI.commandRoom) {
         rememberResult(memory, {
           room: AI.commandRoom,
@@ -3764,7 +3797,18 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
           at: Date.now(),
           exits: AI.state?.room?.exits ?? (AI.exits ?? []).map((dir) => ({ dir, room: null })),
         });
+        updateMind(mind, {
+          state: AI.state,
+          observation,
+          command: AI.lastCommand,
+          parsed: AI.lastParsed,
+          validation: AI.lastValidation,
+          coach: AI.lastCoach,
+          room: AI.commandRoom,
+          tick: AI.lastTick,
+        });
         saveMemory();
+        saveMind();
       }
       const stateRoom = AI.state?.room?.name === AI.room
         ? AI.state.room
@@ -3774,6 +3818,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         : { room: { ...stateRoom, text: observation } };
       const exits = stateRoom.exits ?? [];
       const memoryText = memoryPrompt(memory, { room: AI.room || stateRoom.name, exits, query: observation });
+      const mindText = mindPrompt(mind, { state: promptState, room: AI.room || stateRoom.name });
       const r4Text = assemble({
         events: observation,
         memory: AI.recent.slice(-6),
@@ -3810,6 +3855,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         memory: memoryText,
         r4: r4Text,
         notebook: notebookText(),
+        mind: mindText,
         fast: AI.config.fast,
         note: notes.join(" "),
       });
@@ -3817,7 +3863,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       const request = requestFor(AI.config.provider, { ...AI.config, name: AI.name || "ai", deliberate }, system, messages);
       AI.lastRequest = {
         system, messages, provider: AI.config.provider, model: AI.config.model,
-        fast: AI.config.fast, deliberate, prompt_version: AI.config.fast ? "r4-direct-2" : "full-1",
+        fast: AI.config.fast, deliberate, prompt_version: AI.config.fast ? "r4-mind-1" : "full-mind-1",
         at: new Date().toISOString(),
       };
       updateModelInspector();
@@ -3857,26 +3903,50 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         saveNotebook();
         renderNotebook();
       }
-      if (shouldBreakLoop(memory, { room: AI.room || AI.state?.room?.name, command: parsed.command, recent: AI.recent })) {
+      if (shouldBreakLoop(memory, { room: AI.room || AI.state?.room?.name, command: parsed.command, recent: AI.recent }) || mind.stuck?.looping) {
         const forced = breakLoop(AI.recent, exits, memory);
         if (forced && forced !== parsed.command) {
           parsed.command = forced;
           parsed.thought = `Loop broken: ${forced}.`;
           AI.loopBroken = true;
-          addChat("system", `Loop guard: a repeated command was replaced with "${forced}".`);
+          addChat("system", `Loop guard: ${mind.stuck?.looping ? "the route is circling" : "a repeated command"}; trying "${forced}".`);
         }
       }
       const attempted = parsed.command;
-      const validation = validateCommand(attempted, promptState);
-      let repaired = null;
-      if (!validation.ok) {
+      const coach = coachCommand(attempted, promptState, mind);
+      let validation = coach.validation;
+      let repaired = coach.repaired;
+      if (coach.blocked && (AI.coachRetries ?? 0) < 2) {
+        AI.coachRetries = (AI.coachRetries ?? 0) + 1;
+        AI.lastCommand = attempted;
+        AI.commandRoom = AI.room;
+        AI.lastParsed = parsed;
+        AI.lastValidation = { ok: false, invalid: true, reason: validation.reason, repaired };
+        AI.lastCoach = coach;
+        AI.lastInvalid = { command: attempted, reason: coach.feedback, repaired };
+        AI.lastLatency = latency;
+        AI.lastReply = { text, usage: usage ?? null, latency_ms: latency, at: new Date().toISOString() };
+        AI.observed += `\nCOMMAND NOT SENT: ${coach.feedback}\n`;
+        addChat("system", `Command coach: ${coach.feedback}`);
+        updateModelInspector();
+        AI.busy = false;
+        scheduleTurn(250);
+        return;
+      }
+      if (coach.blocked) {
+        parsed.command = repaired || "look";
+        addChat("system", `Command coach: ${coach.feedback} Using "${parsed.command}".`);
+        parsed.thought = parsed.thought || `Command coach: ${parsed.command}.`;
+      } else if (!validation.ok) {
         repaired = repairCommand(attempted, promptState, validation.reason);
         addChat("system", `Command guard: "${attempted}" (${validation.reason}) → "${repaired}".`);
         parsed.command = repaired;
         parsed.thought = parsed.thought || `Command guard: ${repaired}.`;
       }
-      AI.lastValidation = { invalid: !validation.ok, reason: validation.reason, repaired };
-      if (!validation.ok) AI.lastInvalid = { command: attempted, reason: validation.reason, repaired };
+      AI.coachRetries = 0;
+      AI.lastCoach = coach;
+      AI.lastValidation = { ok: validation.ok, invalid: !validation.ok, reason: validation.reason, repaired };
+      if (!validation.ok) AI.lastInvalid = { command: attempted, reason: coach.feedback || validation.reason, repaired };
       AI.lastLatency = latency;
       AI.lastReply = { text, usage: usage ?? null, latency_ms: latency, at: new Date().toISOString() };
       AI.lastParsed = parsed;
@@ -3902,7 +3972,10 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         memory_hit: Boolean(memoryText.includes("Known:")),
         r4_hit: Boolean(r4Text),
         rooms_seen: Object.keys(memory.rooms).length,
-        prompt_version: AI.config.fast ? "r4-direct-2" : "full-1",
+        lessons: mind.lessons?.length ?? 0,
+        stuck: Boolean(mind.stuck?.looping),
+        plan: Boolean(mind.plan),
+        prompt_version: AI.config.fast ? "r4-mind-1" : "full-mind-1",
         turn,
         tick: AI.lastTick,
       });
@@ -3931,15 +4004,17 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         observation,
         director,
         thought: parsed.thought,
+        plan: parsed.plan,
         reply: parsed.reply,
+        lesson: parsed.lesson,
         command: parsed.command,
         tick: null,
         latency_ms: latency,
         usage: usage ?? null,
         at: new Date().toISOString(),
       });
-      if (parsed.thought) addThought(turn, parsed.thought);
-      else addThought(turn, `No reasoning returned; the model chose ${parsed.command}.`, true);
+      if (parsed.thought) addThought(turn, parsed.thought, false, [parsed.plan ? `Plan: ${parsed.plan}` : "", parsed.lesson ? `Lesson: ${parsed.lesson}` : ""]);
+      else addThought(turn, `No reasoning returned; the model chose ${parsed.command}.`, true, [parsed.plan ? `Plan: ${parsed.plan}` : "", parsed.lesson ? `Lesson: ${parsed.lesson}` : ""]);
       if (parsed.reply && !/^none$/i.test(parsed.reply)) addChat("ai", parsed.reply);
       if (recent.length >= 3 && recent.slice(-3).every((command) => command === parsed.command)) AI.nudge = true;
       AI.recent = recent.slice(-12);
@@ -3995,7 +4070,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         fast: Boolean(AI.config.fast),
         deliberate: Boolean(AI.lastRequest?.deliberate),
         reasoning: AI.config.reasoning,
-        prompt_version: AI.config.fast ? "r4-direct-2" : "full-1",
+        prompt_version: AI.config.fast ? "r4-mind-1" : "full-mind-1",
         turn,
         tick: AI.lastTick,
       });
