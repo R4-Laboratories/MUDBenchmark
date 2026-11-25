@@ -3921,7 +3921,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         AI.lastCommand = attempted;
         AI.commandRoom = AI.room;
         AI.lastParsed = parsed;
-        AI.lastValidation = { ok: false, invalid: true, reason: validation.reason, repaired };
+        AI.lastValidation = { ok: false, invalid: true, reason: validation.reason, repaired, command: attempted };
         AI.lastCoach = coach;
         AI.lastInvalid = { command: attempted, reason: coach.feedback, repaired };
         AI.lastLatency = latency;
@@ -3945,7 +3945,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       }
       AI.coachRetries = 0;
       AI.lastCoach = coach;
-      AI.lastValidation = { ok: validation.ok, invalid: !validation.ok, reason: validation.reason, repaired };
+      AI.lastValidation = { ok: validation.ok, invalid: !validation.ok, reason: validation.reason, repaired, command: attempted };
       if (!validation.ok) AI.lastInvalid = { command: attempted, reason: coach.feedback || validation.reason, repaired };
       AI.lastLatency = latency;
       AI.lastReply = { text, usage: usage ?? null, latency_ms: latency, at: new Date().toISOString() };

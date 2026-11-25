@@ -1875,6 +1875,12 @@
       "level": "some-true",
       "statement": "Production v0.91.63 serves the persistent agent Mind and command coach. /mind.mjs, /ai.mjs and / are 200; /api/free and /api/demo are 404; /router.mjs and /llms.txt are 200. /world reports 251 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects. The browser stores identity, goal, PLAN/LESSON, attempts/outcomes, derived lessons, player/NPC social map, combat/gear state and a stuck detector per persona; the prompt gets a bounded MIND block. The coach redirects say <npc>/tell <npc> to talk, talk <player> to tell, and repeat attack to a technique/battle/heal. The combat menu drops attack and offers battle/techniques/food/mend/flee; gear actions appear until equipped. Engaged mobiles hold their ground. The 18 opening rooms have Gate-enforced prose. No real provider key was used in the release; a real DeepSeek/Groq session remains the behaviour evidence. Main Gate 45537917808 green, publish 45538894635, release v0.91.63.",
       "authority": "GitHub PR #79 merge d4e7fdd 2026-11-25; main Gate 45537917808; publish 45538894635; release v0.91.63; wick deploy, /world, /mind.mjs, /ai.mjs, /, routes and /health; tools/gate.mjs"
+    },
+    {
+      "id": "MB-309",
+      "level": "build",
+      "statement": "v0.91.64 hardens the agent coach after a real local model run. It adds a NEXT priority line (wield/wear, take room gear, next unfinished quest objective, an available quest offer, or an unexplored exit), a one-command-per-turn guard that sends the first command and records the block, a carried-gear guard that repairs take <carried weapon/armour> to wield/wear, and a known-NPC-elsewhere guard so tell <npc> and talk <npc> are refused after leaving the NPC's room. The combat action menu is trimmed to battle/flee/techniques/food/mend and no longer offers attack, and the opening-room prose duplicates are cleaned. A qwen2.5:3b harness ran 18 turns against an isolated server: it took and wielded the short sword, wore the grey cloak and leather jerkin, greeted the player, and used talk on an NPC; it still repeated actions, which the loop guard and coach caught. World unchanged at 251 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects. Gate covers the new guards, Mind, combat menu, engaged-mobile hold, opening prose and every prior check. This is local harness evidence, not DeepSeek; a real provider run remains next.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

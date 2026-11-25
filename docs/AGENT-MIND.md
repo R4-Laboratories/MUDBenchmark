@@ -52,7 +52,12 @@ looked like model confusion but were really social grammar:
 
 A blocked command is **not sent**. The model sees the coach line, records the
 attempt and lesson, and tries again. Two repeats force the repaired command so
-the run cannot spin.
+the run cannot spin. The coach also refuses two commands on one line (sending
+the first), an item already carried (repairing to `wield`/`wear`), and an NPC
+remembered from an earlier room, so it cannot keep telling a bard it left
+behind. A `NEXT:` line puts the highest-value immediate step in front of the
+model: equip gear, take room gear, the next unfinished quest objective, an
+offer, or an unexplored exit.
 
 ## Combat and gear
 
@@ -92,8 +97,13 @@ adaptive-description plan in `docs/ROOM-PROSE.md`.
 
 - Gate: parse `PLAN`/`LESSON`, build the Mind from a turn, derive social and
   gear lessons, print the `MIND` block, coach `say`/`tell`/repeat attack,
-  remove attack from the combat menu, keep an engaged mobile in place, and hold
-  the opening-room prose floor.
+  multi-command lines, carried gear and known NPCs elsewhere, remove attack
+  from the combat menu, keep an engaged mobile in place, and hold the opening
+  room prose floor.
+- Local model: `qwen2.5:3b` played 18 turns against an isolated server. It took
+  and wielded the sword, wore the cloak and jerkin, greeted the player, and
+  used `talk` for an NPC. It still repeated actions; the loop guard and the
+  coach caught them. This is harness evidence, not a DeepSeek result.
 - The browser Mind module is a static route (`/mind.mjs`) and the page imports
   it; the server smoke checks the route and the module text.
 - No real provider key is used in the Gate. A real DeepSeek/Groq session is the
