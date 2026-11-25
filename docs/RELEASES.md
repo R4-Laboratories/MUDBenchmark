@@ -539,6 +539,17 @@ Rehearsed 2026-11-16:
   speaking, opened the Twin Door with one hidden partner and took the crown.
   Gate covers the death penalty, level gates, twin door, hide visibility and
   prompt (MB-286/287/288);
+- v0.91.70 (player reports) fixes three live player bugs. Command lookup now
+  lowercases verb names and aliases, so `takeFrom` is reachable after the
+  parser lowercases input; the container branch accepts the `takeFrom` name as
+  well as `take ... from ...`. The HUD refreshes any online actor whose HP,
+  mana, effects, enemies or gear changed during the tick, so a ghoul's hit
+  updates the health bar even though no player command ran. `inventory` now
+  shows each item's worth and the half-price a shop pays, e.g. `a curled scroll
+  [worth 5c; sells 2c]`. A live isolated-server smoke opened the chest, took the
+  scroll with `takeFrom`, read the value in `inventory`, and observed the HUD
+  state fall from 40 to 38 HP during automatic combat. World unchanged: 251
+  rooms / 17 zones / 25 quests / 114 mobiles / 263 objects (MB-322);
 - v0.91.69 (answer and fight proof) closes the answer loop and records model
   combat evidence. The `answer` command at the Shrine now advances the word
   quest instead of only printing acceptance; `answer <wrong>` is repaired to

@@ -38,6 +38,23 @@ export function inventoryGroups(objects = []) {
     .filter((group) => group.items.length > 0);
 }
 
+/** One carried object for the inventory list, including what a shop pays. */
+export function inventoryLabel(object, objects = []) {
+  let base;
+  if (object.worn) base = `${object.name} (worn)`;
+  else if (!(object.flags ?? []).includes("container")) base = object.name;
+  else {
+    const held = objects.filter((child) => child.inside === object.id && !child.eaten).map((child) => child.name);
+    const state_ = object.open ? "open" : "closed";
+    base = held.length && object.open ? `${object.name} (${state_}, holding ${held.join(", ")})` : `${object.name} (${state_})`;
+  }
+  const value = Number.isInteger(object.value) ? object.value : 0;
+  if (value > 0 && !(object.flags ?? []).includes("coin")) {
+    base += ` [worth ${value}c; sells ${Math.floor(value / 2)}c]`;
+  }
+  return base;
+}
+
 export function slotOf(object) {
   if (object?.slot && SLOTS.includes(object.slot)) return object.slot;
   if ((object?.flags ?? []).includes("weapon")) return "mainhand";

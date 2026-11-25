@@ -1953,6 +1953,12 @@
       "level": "some-true",
       "statement": "On v0.91.69, a normal-start focused DeepSeek deepseek-flash run began at the Atrium with The True Word active and no seeded Vault visit. It walked north to the Corridor and east to the Vault, examined the door to learn AMBER, returned through the Corridor, Atrium, Storeroom and Cell to the Shrine, had `answer slate` and `say AMBER` blocked and repaired, sent `answer amber`, and completed The True Word in 10 turns with XP 300 to 350, 22/24 commands sent, two coach repairs and 0 deaths. This reproduces the answer path without a Vault-start fixture.",
       "authority": "local isolated server running v0.91.69 code; /tmp/answer-normal.log and /tmp/long-deepseek-score.json; production v0.91.69 on wick for the served code; tools/gate.mjs"
+    },
+    {
+      "id": "MB-322",
+      "level": "build",
+      "statement": "v0.91.70 fixes three live player reports. Verb lookup lowercases names and aliases, so `takeFrom` resolves after the parser lowercases input and the container branch accepts it as well as `take ... from ...`. The HUD refreshes any online actor whose HP, mana, effects, enemies or gear changed during the tick, so automatic combat damage updates the health bar without a player command. `inventory` shows an item's worth and the half-price a shop pays, e.g. `a curled scroll [worth 5c; sells 2c]`. A live isolated-server smoke opened the chest, took the scroll with `takeFrom`, read the value in `inventory`, and observed the HUD state fall from 40 to 38 HP during automatic combat. World unchanged at 251 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects. Gate covers camelCase lookup, the inventory value label, HUD change detection and every prior check.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

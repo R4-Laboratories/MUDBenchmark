@@ -16,7 +16,7 @@ import { readSpanTail, readSpansTail, redactSpans } from "./spans.mjs";
 import { summarizeSeries, summarizeTrends } from "./trends.mjs";
 import { summarizePlayers } from "./playerstats.mjs";
 import { step, initialState, digestState, phaseAt, upgradeState, releaseHeldObjects, checkpointIdentities, bankHeldCoins, armorOf, nextFrom, TICK_MS } from "./world.mjs";
-import { equipmentOf, equipmentText, inventoryGroups, setBonus, weaponDamageOf, weaponOf, wornBySlot } from "./equipment.mjs";
+import { equipmentOf, equipmentText, inventoryGroups, inventoryLabel, setBonus, weaponDamageOf, weaponOf, wornBySlot } from "./equipment.mjs";
 import { techniqueForWeapon } from "./techniques.mjs";
 import { COMPONENTS, componentsText, componentForItem, salvageYield, upgradeCost } from "./forge.mjs";
 import { eventPrice, eventText } from "./events.mjs";
@@ -47,6 +47,7 @@ import { worldOverview, worldStatus, worldStatusText } from "./worldstatus.mjs";
 import { levelsText, leaderboardText, leaderboardRows, duelLadderText, mapText, shortcutsText } from "./visibility.mjs";
 import { redactCommand, sanitizeIntent, sanitizeState } from "./telemetry-policy.mjs";
 import { loadStateFile, saveStateFile } from "./state.mjs";
+import { hudChanged, hudSnapshot } from "./hud.mjs";
 
 const HOLO_URL = process.env.HOLO_URL ?? "http://127.0.0.1:8082";
 const TELNET_PORT = Number(process.env.TELNET_PORT ?? 4000);
@@ -3028,13 +3029,7 @@ async function handleCommand(id, line) {
     const carried = state.objects.filter((o) => o.holder === actor.id && !o.eaten);
     const messages = VERB_TABLE.verbs.inventory.messages;
     if (!carried.length) return sendTo(id, `${messages.empty}\r\n`);
-    const label = (object) => {
-      if (object.worn) return `${object.name} (worn)`;
-      if (!(object.flags ?? []).includes("container")) return object.name;
-      const held = state.objects.filter((child) => child.inside === object.id && !child.eaten).map((child) => child.name);
-      const state_ = object.open ? "open" : "closed";
-      return held.length && object.open ? `${object.name} (${state_}, holding ${held.join(", ")})` : `${object.name} (${state_})`;
-    };
+    const label = (object) => inventoryLabel(object, state.objects);
     const filter = words.trim().toLowerCase();
     const groups = inventoryGroups(carried);
     const chosen = filter
@@ -3082,7 +3077,7 @@ async function handleCommand(id, line) {
     return;
   }
 
-  if (named === "take" && /\s+from\s+/i.test(words)) {
+  if ((named === "take" || named === "takeFrom") && /\s+from\s+/i.test(words)) {
     const messages = VERB_TABLE.verbs.takeFrom.messages;
     const [what, ...containerWords] = words.split(/\s+from\s+/i);
     const container = findObject(containerWords.join(" ").trim(), (o) =>
@@ -3370,6 +3365,11 @@ function onTick() {
   const identityChanged = intents.some((intent) => ["login", "register", "password", "claim", "claimLegacy", "rebindLegacy", "createCharacter", "ownAccount", "retireAccount", "handoffCharacter", "revokeHandoff", "train", "guildAdvance", "ignore", "unignore", "setTitle", "learnFact", "clearQuestMigration"].includes(intent.kind));
   const previousProgress = new Map(state.actors.filter((actor) => actor.key)
     .map((actor) => [actor.id, progressionSnapshot(actor)]));
+  // Combat rounds and status effects change HP without a player intent. Keep
+  // the HUD snapshot so a hit refreshes the bar in the same tick it lands.
+  const previousHud = new Map(state.actors
+    .filter((actor) => actor.key && transports.has(actor.id))
+    .map((actor) => [actor.id, hudSnapshot(selfState(actor)?.self)]));
   const result = step({ state, rooms: ROOMS, intents, actions: ACTION_TABLE.actions });
   state = result.state;
   const progressChanged = state.actors.some((actor) => actor.key && previousProgress.has(actor.id)
@@ -3381,6 +3381,7 @@ function onTick() {
   for (const actor of state.actors) {
     if (!actor.key || !transports.has(actor.id)) continue;
     if (previousProgress.has(actor.id) && previousProgress.get(actor.id) !== progressionSnapshot(actor)) refreshIds.add(actor.id);
+    if (previousHud.has(actor.id) && hudChanged(previousHud.get(actor.id), hudSnapshot(selfState(actor)?.self))) refreshIds.add(actor.id);
   }
   const partyTouched = intents.some((intent) => intent.kind.startsWith("party") || intent.kind === "leave")
     || intents.some((intent) => intent.kind === "action"
