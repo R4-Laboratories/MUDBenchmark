@@ -25,7 +25,7 @@ const withRoute = (focus, memory, from, target) => {
   return { ...focus, target: target ?? null, route, routeText: route.length ? `${route[0]} (${route.length} move${route.length === 1 ? "" : "s"} to ${target})` : target && target !== from ? `no known route to ${target}; explore` : target === from ? "you are here" : "" };
 };
 
-const objectiveScore = (objective, { state, memory, from } = {}) => {
+const objectiveScore = (objective, { state, memory, from, mind } = {}) => {
   const room = state?.room ?? {};
   const self = state?.self ?? {};
   if (!objective || objective.done) return 0;
@@ -52,6 +52,7 @@ const objectiveScore = (objective, { state, memory, from } = {}) => {
     if (npcHere(objective.npcName ?? objective.npc)) return 5;
     return routeFor(memory, from, objective.npcRoomName).length ? 4 : 1;
   }
+  if (objective.kind === "answer") return mind?.knownWord ? 6 : 1;
   return 1;
 };
 
@@ -153,7 +154,7 @@ export function focusFor({ state = null, memory = null, mind = null } = {}) {
 
   const activeOptions = (self.active_quests ?? []).map((quest) => {
     const objective = quest.objective_details?.find((entry) => !entry.done);
-    return { quest, objective, score: objectiveScore(objective, { state, memory, from }) };
+    return { quest, objective, score: objectiveScore(objective, { state, memory, from, mind }) };
   }).filter((entry) => entry.objective).sort((a, b) => b.score - a.score);
   const activeEntry = activeOptions[0] ?? null;
   const active = activeEntry?.quest ?? null;

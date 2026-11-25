@@ -393,8 +393,9 @@ const stateVocabulary = (state = null) => {
 };
 
 const wordsIn = (value) => String(value ?? "").toLowerCase().split(/[^a-z0-9']+/).filter((word) => word.length > 1);
+const NAME_STOPWORDS = new Set(["a", "an", "the", "of", "with", "from", "to"]);
 const nameIsIn = (name, words) => {
-  const wanted = wordsIn(name).filter((word) => !["a", "an", "the"].includes(word));
+  const wanted = wordsIn(name).filter((word) => !NAME_STOPWORDS.has(word));
   return wanted.length > 0 && wanted.some((word) => words.includes(word));
 };
 const roomNpcNames = (state) => (state?.room?.npcs ?? []).map((npc) => npc?.name ?? npc).filter(Boolean);
@@ -605,6 +606,15 @@ export function coachCommand(command, state = null, mind = null) {
         feedback: `You are already carrying ${carried}. Check inventory.`,
       };
     }
+  }
+  if (verb === "answer" && mind?.knownWord && words.length
+    && words[0] !== String(mind.knownWord).toLowerCase()) {
+    return {
+      validation: { ok: false, reason: "wrong known answer" },
+      blocked: true,
+      repaired: `answer ${mind.knownWord}`,
+      feedback: `The Vault door says ${String(mind.knownWord).toUpperCase()}; answer that, not ${words[0]}.`,
+    };
   }
   if (verb === "say" && mind?.knownWord && /shrine/i.test(state?.room?.name ?? "")
     && words.includes(String(mind.knownWord).toLowerCase())) {
