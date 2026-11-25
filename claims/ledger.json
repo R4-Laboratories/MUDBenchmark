@@ -1881,6 +1881,12 @@
       "level": "build",
       "statement": "v0.91.64 hardens the agent coach after a real local model run. It adds a NEXT priority line (wield/wear, take room gear, next unfinished quest objective, an available quest offer, or an unexplored exit), a one-command-per-turn guard that sends the first command and records the block, a carried-gear guard that repairs take <carried weapon/armour> to wield/wear, and a known-NPC-elsewhere guard so tell <npc> and talk <npc> are refused after leaving the NPC's room. The combat action menu is trimmed to battle/flee/techniques/food/mend and no longer offers attack, and the opening-room prose duplicates are cleaned. A qwen2.5:3b harness ran 18 turns against an isolated server: it took and wielded the short sword, wore the grey cloak and leather jerkin, greeted the player, and used talk on an NPC; it still repeated actions, which the loop guard and coach caught. World unchanged at 251 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects. Gate covers the new guards, Mind, combat menu, engaged-mobile hold, opening prose and every prior check. This is local harness evidence, not DeepSeek; a real provider run remains next.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-310",
+      "level": "some-true",
+      "statement": "Production v0.91.64 serves the hardened agent coach. /mind.mjs, /ai.mjs and / are 200; /world reports 251 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects. The coach adds a NEXT priority line, one-command-per-turn guard, carried-gear wield/wear repair, known-NPC-elsewhere guard, trimmed combat menu and clean opening prose. A local qwen2.5:3b harness played 18 turns against an isolated server: it took and wielded the short sword, wore the grey cloak and leather jerkin, greeted the player with tell and used talk on an NPC; it still repeated actions, which the loop guard and coaches caught. This is local harness evidence, not a DeepSeek result; a real provider session remains the next behaviour test. Main Gate 45550761108 green, publish 45552043313, release v0.91.64.",
+      "authority": "GitHub PR #80 merge 959e6d7 2026-11-25; main Gate 45550761108; publish 45552043313; release v0.91.64; wick deploy, /world, /mind.mjs, /ai.mjs, /; local /tmp/mind-agent-live.mjs (qwen2.5:3b); tools/gate.mjs"
     }
   ]
 }
