@@ -116,7 +116,7 @@ the zone's mobiles.
 | a red company axe | mainhand | damage 6, Rage | Red 3 | 65 |
 | red company boots | feet | armour 2 | Red 6 | 55 |
 
-The world now has 256 objects. The pack holds 20 items (coins are separate); the Mistfall adds the ferry token, storm/wreck lanterns, captain's log, tide-stone, wayfarer's stone and wreck loot. The Deepdelve adds two mine lanterns, two canaries, a miner's pick, raw/sealed/deep ore, the surveyor's notes, a foreman's chest and map, and old coins. The Drowned Foundry adds two lanterns, a foundry hammer, a dark ingot, the foundry ledger, a heavy apron, cold coins and the master's core. The Flooded Monastery adds two lanterns, a small key, old coins, a ledger, a banded chest, the abbey clapper and a silver bell relic.
+The world now has 263 objects. The pack holds 20 items (coins are separate); the Mistfall adds the ferry token, storm/wreck lanterns, captain's log, tide-stone, wayfarer's stone and wreck loot. The Deepdelve adds two mine lanterns, two canaries, a miner's pick, raw/sealed/deep ore, the surveyor's notes, a foreman's chest and map, and old coins. The Drowned Foundry adds two lanterns, a foundry hammer, a dark ingot, the foundry ledger, a heavy apron, cold coins and the master's core. The Flooded Monastery adds two lanterns, a small key, old coins, a ledger, a banded chest, the abbey clapper and a silver bell relic. The Merry Dancer adds two wreck lanterns, the captain's log, a strongbox key, the strongbox, the tide-glass and drowned coins.
 
 The second gear pass fills the thinner slots:
 

@@ -79,7 +79,7 @@ rotation and PvP ladder are in `docs/EVENTS-AND-PVP.md`.
 
 ## Why this exists
 
-The live table is capped at 24 quests. Factions let the Ember Deep, Hollow Fen,
+The live table is capped at 25 quests. Factions let the Ember Deep, Hollow Fen,
 Salt Caves and Moonlit Reach stay worth returning to without adding another
 checklist. The loop is: fight the zone, raise standing, unlock the quartermaster
 stock, wear the gear into the next zone. No quest count is consumed.

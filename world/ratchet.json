@@ -5,7 +5,7 @@
   "mustNotGrow": {
     "ruleDebt": 0,
     "unusedRules": 0,
-    "quests": 24
+    "quests": 25
   },
   "mustNotFall": {
     "modelModules": 9,

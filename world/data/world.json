@@ -579,7 +579,7 @@
     },
     "31": {
       "name": "The Docks",
-      "text": "Warehouses crowd the waterfront, their doors barred and their windows dark. A crane stands at the end of the pier, and a lamp burns in the last warehouse. The quay is west; the lighthouse path runs north. The lamp in the warehouse door is the only light on the waterfront.",
+      "text": "Warehouses crowd the waterfront, their doors barred and their windows dark. A crane stands at the end of the pier, and a lamp burns in the last warehouse. The quay is west; the lighthouse path runs north. The lamp in the warehouse door is the only light on the waterfront. A small salvage skiff is tied at the dock.",
       "safe": false,
       "exits": {
         "west": 30,
@@ -589,12 +589,16 @@
       "details": {
         "crane": "The crane is rusted and empty.",
         "warehouse": "The warehouse door is barred from the inside.",
-        "lamp": "The lamp is the only light on the docks."
+        "lamp": "The lamp is the only light on the docks.",
+        "skiff": "A small salvage skiff is tied at the dock, its oars shipped."
       },
       "ambient": [
         "A chain knocks against a mast.",
         "The harbor breathes under the planks."
-      ]
+      ],
+      "secretExits": {
+        "south": 240
+      }
     },
     "32": {
       "name": "The Lighthouse",
@@ -4463,6 +4467,247 @@
         "The relic catches the light.",
         "The chapel is very quiet."
       ]
+    },
+    "240": {
+      "name": "The Wreck Buoy",
+      "minLevel": 7,
+      "text": "A red buoy rides the swell over a drowned wreck. A salvage skiff is tied to its ring, and a thin salvager waits with a lantern. The wreck lies below; the harbor is a short row back.",
+      "exits": {
+        "north": 31,
+        "down": 241
+      },
+      "details": {
+        "buoy": "The buoy is iron and red, green at the seams. A bell hangs under it.",
+        "skiff": "The skiff is small and tarred. It will hold two at a push.",
+        "wreck": "The wreck is a dark shape under the water, its masts broken."
+      },
+      "ambient": [
+        "The buoy bell rings.",
+        "The swell lifts the skiff."
+      ]
+    },
+    "241": {
+      "name": "The Drowned Deck",
+      "minLevel": 7,
+      "dark": true,
+      "darkText": "It is dark. Water moves over the deck, and a capstan waits nearby.",
+      "text": "The drowned deck of a merchant ship, its planks slick with weed. A great capstan stands at the centre, its bars bare. A hatch below is jammed with wreckage. The buoy rope climbs above; the broken mast is east.",
+      "exits": {
+        "up": 240,
+        "east": 242
+      },
+      "secretExits": {
+        "down": 245
+      },
+      "details": {
+        "capstan": "The capstan is iron and stiff. Two pairs of hands could turn it.",
+        "hatch": "The hatch is jammed with weed and broken plank.",
+        "deck": "The deck is cracked and soft. Water moves under it."
+      },
+      "ambient": [
+        "Water slaps the hull.",
+        "The capstan ticks."
+      ]
+    },
+    "242": {
+      "name": "The Broken Mast",
+      "minLevel": 7,
+      "dark": true,
+      "darkText": "It is dark. A broken mast leans over the deck, and something moves in the rigging.",
+      "text": "A broken mast leans across the deck, its rigging a nest of weed and rope. A pale shape drifts in the ropes. The drowned deck is west; the captain's cabin is east; the cargo hold is south.",
+      "exits": {
+        "west": 241,
+        "east": 243,
+        "south": 245
+      },
+      "details": {
+        "mast": "The mast is snapped clean. The break is old.",
+        "rigging": "The rigging is rotten and full of weed.",
+        "shape": "The shape is thin and grey. It does not touch the deck."
+      },
+      "ambient": [
+        "The mast creaks.",
+        "Weed drips from the rigging."
+      ]
+    },
+    "243": {
+      "name": "The Captain's Cabin",
+      "minLevel": 7,
+      "dark": true,
+      "darkText": "It is dark. A desk and a sea chest wait in the black.",
+      "text": "A small cabin under the quarterdeck. A desk is bolted to the floor, its log still open, and a stair descends to the strongbox. The broken mast is west.",
+      "exits": {
+        "west": 242,
+        "down": 244
+      },
+      "details": {
+        "desk": "The desk is bolted and warped. The log lies open on it.",
+        "log": "The captain's log. The last entry reads: 'The glass is in the box. Do not open it in the hold.'",
+        "stair": "The stair is narrow and wet. It descends to the strongbox."
+      },
+      "ambient": [
+        "A page turns.",
+        "Water drips down the stair."
+      ]
+    },
+    "244": {
+      "name": "The Strongbox",
+      "minLevel": 7,
+      "dark": true,
+      "darkText": "It is dark. A great iron strongbox fills the room.",
+      "text": "A low strongroom, its walls close and wet. A great iron strongbox stands against the wall, its lock bright with salt. The cabin stair climbs above.",
+      "exits": {
+        "up": 243
+      },
+      "details": {
+        "strongbox": "The strongbox is banded and heavy. The lock is small and bright.",
+        "lock": "The lock is salt-bright. A small key would fit.",
+        "walls": "The walls are iron and close. Water sweats through the seams."
+      },
+      "ambient": [
+        "The strongbox ticks.",
+        "Water drips."
+      ]
+    },
+    "245": {
+      "name": "The Cargo Hold",
+      "minLevel": 7,
+      "dark": true,
+      "darkText": "It is dark. Crates and barrels fill the hold, and a cold lantern waits nearby.",
+      "text": "A wide cargo hold of broken crates and swollen barrels. A cold lantern hangs from a beam, and a hatch above is jammed with wreckage. A great crab moves between the crates. The broken mast is north; the galley is east.",
+      "exits": {
+        "north": 242,
+        "up": 241,
+        "east": 246
+      },
+      "details": {
+        "crates": "The crates are broken and empty. One holds a nest of weed.",
+        "lantern": "A cold lantern with a wire guard. It still holds oil.",
+        "hatch": "The hatch above is jammed. The capstan on deck could lift it."
+      },
+      "ambient": [
+        "A crate settles.",
+        "The crab clicks."
+      ]
+    },
+    "246": {
+      "name": "The Flooded Galley",
+      "minLevel": 8,
+      "dark": true,
+      "darkText": "It is dark. A cold stove and a flooded table fill the room.",
+      "text": "A narrow galley, its stove cold and its table awash. A ring of keys hangs from a hook, and a pot of black water sits on the stove. The cargo hold is west; the powder room is east.",
+      "exits": {
+        "west": 245,
+        "east": 247
+      },
+      "details": {
+        "stove": "The stove is cold and rusted. The last fire is long dead.",
+        "keys": "A ring of keys, green with salt. One is small and bright.",
+        "pot": "The pot is full of black water. Something moves in it."
+      },
+      "ambient": [
+        "A key ticks.",
+        "Water drips into the pot."
+      ]
+    },
+    "247": {
+      "name": "The Powder Room",
+      "minLevel": 8,
+      "dark": true,
+      "darkText": "It is dark. Empty powder barrels line the walls, and coins glint in the dust.",
+      "text": "A low powder room, its barrels long empty. A handful of coins glints in the dust, and a stair descends to the orlop. The galley is west.",
+      "exits": {
+        "west": 246,
+        "down": 248
+      },
+      "details": {
+        "barrels": "The barrels are empty and dry. The powder is long gone.",
+        "coins": "Old coins, green with salt. They are still heavy.",
+        "stair": "The stair is narrow and wet. It descends into the orlop."
+      },
+      "ambient": [
+        "A barrel ticks.",
+        "Water drips."
+      ]
+    },
+    "248": {
+      "name": "The Orlop",
+      "minLevel": 8,
+      "dark": true,
+      "darkText": "It is dark. Low beams and black water fill the orlop.",
+      "text": "The lowest deck of the wreck, its beams low and its floor black with water. A narrow passage runs east to a drowned shrine. The powder stair climbs above.",
+      "exits": {
+        "up": 247,
+        "east": 249
+      },
+      "details": {
+        "beams": "The beams are low and wet. They are shored with old rope.",
+        "water": "The water is black and still. It reflects nothing.",
+        "passage": "The passage east is half-drowned but passable."
+      },
+      "ambient": [
+        "A beam settles.",
+        "Water moves."
+      ]
+    },
+    "249": {
+      "name": "The Drowned Shrine",
+      "minLevel": 8,
+      "dark": true,
+      "darkText": "It is dark. A small shrine glows faintly at the end of the orlop.",
+      "text": "A small shrine built into the wreck's bow. A stone figure stands in a pool of black water, its hands open. A passage runs east to the captain's berth. The orlop is west.",
+      "exits": {
+        "west": 248,
+        "east": 250
+      },
+      "details": {
+        "figure": "The figure is worn and faceless. It holds a broken oar.",
+        "pool": "The pool is black and cold. It does not ripple.",
+        "shrine": "The shrine is stone and weed. Someone still leaves coins here."
+      },
+      "ambient": [
+        "Water drips.",
+        "The figure watches."
+      ]
+    },
+    "250": {
+      "name": "The Captain's Berth",
+      "minLevel": 9,
+      "dark": true,
+      "darkText": "It is dark. A wide bunk and a sea chest fill the berth.",
+      "text": "A wide berth under the stern, its bunk rotted and its sea chest open. A cold draft comes from the captain's cabin beyond. The shrine is west; the drowned captain is east.",
+      "exits": {
+        "west": 249,
+        "east": 251
+      },
+      "details": {
+        "bunk": "The bunk is a black frame. The blanket is stiff with salt.",
+        "chest": "The sea chest is open and empty except for sand.",
+        "draft": "The draft is cold and steady. It smells of deep water."
+      },
+      "ambient": [
+        "The bunk creaks.",
+        "The draft moves."
+      ]
+    },
+    "251": {
+      "name": "The Drowned Captain",
+      "minLevel": 9,
+      "dark": true,
+      "darkText": "It is dark. A tall shape stands at the stern, its coat heavy with water.",
+      "text": "A narrow stern cabin. A tall captain stands at the wheel, its coat heavy with water and its hands open. The berth is west. There is no other way out.",
+      "exits": {
+        "west": 250
+      },
+      "details": {
+        "captain": "The captain is tall and drowned. Its eyes are open.",
+        "wheel": "The wheel is cracked and bound with weed. It does not turn.",
+        "coat": "The coat is heavy and black. Something moves in the pockets."
+      },
+      "ambient": [
+        "The wheel ticks.",
+        "The captain turns its head."
+      ]
     }
   },
   "task": {
@@ -6925,6 +7170,94 @@
       "description": "A tall abbot stands before the altar, its robes heavy with water.",
       "examine": "The abbot is drowned and tall. Its hands are open and very still.",
       "dialogue": []
+    },
+    {
+      "id": "salvager",
+      "name": "the salvager",
+      "room": 240,
+      "home": 240,
+      "zone": "wreck",
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "level": 7,
+      "hp": 24,
+      "maxHp": 24,
+      "damage": 0,
+      "armor": 1,
+      "aggression": 0,
+      "xp": 0,
+      "loot": [],
+      "description": "A thin woman in an oilskin coat waits by the buoy, a lantern in one hand.",
+      "examine": "Her coat is patched and wet. She watches the water.",
+      "dialogue": [
+        "The Merry Dancer went down with a tide-glass in her strongbox.",
+        "The captain's key is in the galley. The strongbox is under the cabin.",
+        "The captain is still aboard. He does not like visitors."
+      ]
+    },
+    {
+      "id": "sea-wraith",
+      "name": "a sea wraith",
+      "room": 242,
+      "home": 242,
+      "zone": "wreck",
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "level": 7,
+      "hp": 32,
+      "maxHp": 32,
+      "damage": 4,
+      "armor": 1,
+      "aggression": 55,
+      "xp": 90,
+      "loot": [],
+      "description": "A pale shape drifts in the broken rigging, its hands empty.",
+      "examine": "The wraith is thin and grey. Its face is a smooth blank.",
+      "dialogue": []
+    },
+    {
+      "id": "cargo-crab",
+      "name": "a cargo crab",
+      "room": 245,
+      "home": 245,
+      "zone": "wreck",
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "level": 8,
+      "hp": 40,
+      "maxHp": 40,
+      "damage": 5,
+      "armor": 2,
+      "aggression": 50,
+      "xp": 110,
+      "loot": [],
+      "description": "A great crab moves between the crates, its shell green with weed.",
+      "examine": "The crab is broad and old. Its claws are blunt with use.",
+      "dialogue": []
+    },
+    {
+      "id": "drowned-captain",
+      "name": "the drowned captain",
+      "room": 251,
+      "home": 251,
+      "zone": "wreck",
+      "period": 180,
+      "jitter": 0,
+      "behaviour": "sentinel",
+      "level": 9,
+      "hp": 90,
+      "maxHp": 90,
+      "damage": 6,
+      "armor": 3,
+      "aggression": 85,
+      "xp": 280,
+      "loot": [],
+      "description": "A tall captain stands at the wheel, its coat heavy with water.",
+      "examine": "The captain is drowned and tall. Its hands are open and very still.",
+      "dialogue": []
     }
   ],
   "zones": [
@@ -7261,6 +7594,24 @@
         237,
         238,
         239
+      ]
+    },
+    {
+      "id": "wreck",
+      "name": "The Merry Dancer",
+      "rooms": [
+        240,
+        241,
+        242,
+        243,
+        244,
+        245,
+        246,
+        247,
+        248,
+        249,
+        250,
+        251
       ]
     }
   ],
@@ -10505,6 +10856,86 @@
       "armor": 2,
       "value": 90,
       "examine": "A small silver bell on a chain. It has no clapper."
+    },
+    {
+      "id": "wreck-lantern",
+      "name": "a wreck lantern",
+      "room": 240,
+      "flags": [
+        "takeable",
+        "light"
+      ],
+      "lit": false,
+      "value": 8,
+      "examine": "A storm lantern, green with salt. It still holds oil."
+    },
+    {
+      "id": "wreck-lantern-2",
+      "name": "a second wreck lantern",
+      "room": 245,
+      "flags": [
+        "takeable",
+        "light"
+      ],
+      "lit": false,
+      "value": 8,
+      "examine": "A cold lantern with a wire guard. It still holds oil."
+    },
+    {
+      "id": "captain-log",
+      "name": "the captain's log",
+      "room": 243,
+      "flags": [
+        "takeable",
+        "readable"
+      ],
+      "readable": true,
+      "value": 35,
+      "examine": "The last entry reads: 'The glass is in the box. Do not open it in the hold.'"
+    },
+    {
+      "id": "strongbox-key",
+      "name": "a small salt-bright key",
+      "room": 246,
+      "flags": [
+        "takeable"
+      ],
+      "value": 10,
+      "examine": "A small key, green with salt. It would fit a strongbox lock."
+    },
+    {
+      "id": "captain-strongbox",
+      "name": "a great iron strongbox",
+      "room": 244,
+      "flags": [
+        "fixed",
+        "container"
+      ],
+      "capacity": 2,
+      "open": false,
+      "openAtStart": false,
+      "examine": "A banded strongbox. The lock is small and bright."
+    },
+    {
+      "id": "tide-glass",
+      "name": "the tide-glass",
+      "inside": "captain-strongbox",
+      "flags": [
+        "takeable"
+      ],
+      "value": 70,
+      "examine": "A glass sphere filled with slow green water. It turns in the hand."
+    },
+    {
+      "id": "wreck-coins",
+      "name": "a handful of drowned coins",
+      "room": 247,
+      "flags": [
+        "takeable",
+        "coin"
+      ],
+      "value": 45,
+      "examine": "Old coins, green with salt. They are still heavy."
     }
   ],
   "climate": {

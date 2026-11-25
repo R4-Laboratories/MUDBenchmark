@@ -949,6 +949,96 @@
         "actor": "You pull the bell rope with your party.",
         "others": "%a and the party pull the bell rope."
       }
+    },
+    {
+      "id": "board-salvage-skiff",
+      "room": 31,
+      "verb": "board",
+      "target": "skiff",
+      "effects": [
+        {
+          "kind": "revealExit",
+          "dir": "south"
+        },
+        {
+          "kind": "teleport",
+          "room": 240
+        },
+        {
+          "kind": "message",
+          "text": "The skiff carries you out to the red buoy."
+        }
+      ],
+      "messages": {
+        "actor": "You board the salvage skiff.",
+        "others": "%a boards the salvage skiff."
+      }
+    },
+    {
+      "id": "board-salvage-return",
+      "room": 240,
+      "verb": "board",
+      "target": "skiff",
+      "effects": [
+        {
+          "kind": "teleport",
+          "room": 31
+        },
+        {
+          "kind": "message",
+          "text": "The skiff carries you back to the docks."
+        }
+      ],
+      "messages": {
+        "actor": "You board the skiff for the harbor.",
+        "others": "%a boards the skiff."
+      }
+    },
+    {
+      "id": "turn-wreck-capstan",
+      "room": 241,
+      "verb": "turn",
+      "target": "capstan",
+      "requires": {
+        "party": 2
+      },
+      "effects": [
+        {
+          "kind": "revealExit",
+          "dir": "down"
+        },
+        {
+          "kind": "message",
+          "text": "Two pairs of hands turn the capstan; the cargo hatch lifts."
+        }
+      ],
+      "messages": {
+        "actor": "You turn the capstan with your party.",
+        "others": "%a and the party turn the capstan."
+      }
+    },
+    {
+      "id": "unlock-captain-strongbox",
+      "room": 244,
+      "verb": "unlock",
+      "target": "strongbox",
+      "requires": {
+        "item": "strongbox-key"
+      },
+      "effects": [
+        {
+          "kind": "open",
+          "object": "captain-strongbox"
+        },
+        {
+          "kind": "message",
+          "text": "The small key turns; the strongbox opens."
+        }
+      ],
+      "messages": {
+        "actor": "You unlock the strongbox.",
+        "others": "%a unlocks the strongbox."
+      }
     }
   ]
 }

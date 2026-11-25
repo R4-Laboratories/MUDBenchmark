@@ -1,15 +1,15 @@
 # Quest budget
 
-The live world has **24 quests**. The 41 retired definitions are in
-`world/data/quests-archive.json`; the count is enforced at 24 in
+The live world has **25 quests**. The 41 retired definitions are in
+`world/data/quests-archive.json`; the count is enforced at 25 in
 `world/ratchet.json`. A new quest fails the Gate until an existing one is
 retired.
 
-A quest is a promise that a place matters. Twenty-four let a zone be a place to
+A quest is a promise that a place matters. Twenty-five let a zone be a place to
 explore, fight and gear up, with a few memorable exceptions. The remaining
 zones keep their rooms, mobiles, gear, keys, secret exits and actions.
 
-## The twenty-four
+## The twenty-five
 
 | # | Quest | Level | Scope |
 | --- | --- | --- | --- |
@@ -37,6 +37,7 @@ zones keep their rooms, mobiles, gear, keys, secret exits and actions.
 | 22 | The Deepdelve (`deepdelve`) | 6 | world |
 | 23 | The Drowned Foundry (`foundry`) | 9 | world |
 | 24 | The Bell Below (`monastery`) | 8 | world |
+| 25 | The Merry Dancer's Glass (`wreck`) | 7 | world |
 
 The kept chain is:
 
@@ -44,7 +45,7 @@ The kept chain is:
 first-steps, hall-word, word, guardian, bread, familiar, roof,
 telescope, scroll, mirror, ledger, sigils, cistern, choir, reliquary,
 guild-ledger, guild-mirror, guild-warden, guild-dawn, guild-trial,
-salt-rose, deepdelve, foundry, monastery
+salt-rose, deepdelve, foundry, monastery, wreck
 ```
 
 `guild-dawn` requires `guild-warden` and `reliquary`, so the archmage finale
@@ -62,7 +63,7 @@ mobiles, treasure, keys, hidden exits and fact-gated actions remain.
 
 `migrateQuestState` runs on load and on the pure Gate test:
 
-- active and completed ids are normalized against the 24;
+- active and completed ids are normalized against the 25;
 - an active retired quest whose recorded progress satisfies every objective is
   reported as **completed**;
 - otherwise it is reported as **abandoned**;

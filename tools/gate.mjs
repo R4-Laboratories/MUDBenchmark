@@ -212,8 +212,8 @@ let webAI = { ok: true, why: [] };
   check(nightMenu.includes("hide"), "the Night Market action menu lost hide");
   check(/Death is brutal/.test(buildSystemPrompt({ name: "scout", fast: true })) && /max level/.test(buildSystemPrompt({ name: "scout", fast: true })), "the agent prompt lost the death/win condition");
   check(Boolean(GOALS.completionist), "the completionist goal is missing");
-  const goalUser = buildUserPrompt({ turn: 1, observation: "[The Atrium]", fast: true, actions: ["completion"], state: { self: { name: "bob", completion: { level: 10, maxLevel: 10, quests: 22, questsTotal: 22, puzzles: 23, puzzlesTotal: 23, achieved: true } }, room: {} } });
-  check(goalUser.includes("GOAL: level 10/10") && goalUser.includes("hidden ways 23/23") && goalUser.includes("ACHIEVED") && goalUser.includes("completion"), "the agent prompt lost the completion goal");
+  const goalUser = buildUserPrompt({ turn: 1, observation: "[The Atrium]", fast: true, actions: ["completion"], state: { self: { name: "bob", completion: { level: 10, maxLevel: 10, quests: 22, questsTotal: 22, puzzles: 25, puzzlesTotal: 25, achieved: true } }, room: {} } });
+  check(goalUser.includes("GOAL: level 10/10") && goalUser.includes("hidden ways 25/25") && goalUser.includes("ACHIEVED") && goalUser.includes("completion"), "the agent prompt lost the completion goal");
   check(/named === "completion"/.test(serverSource2) && /completionState/.test(worldSource) && /actor.completion = record/.test(worldSource), "the completion command or record is missing");
   check(/waiting \$\{left\}s/.test(web) && /throttlePlan/.test(web) && /AI waiting/.test(web), "the AI does not wait for a rate-limit window");
   check(/console\.groq\.com\/keys/.test(web) && /DeepSeek/.test(web), "the UI does not offer the Groq free key or DeepSeek");
@@ -480,7 +480,7 @@ let zoneMap = { ok: true, why: [] };
   const world = loadWorld({ mode: "single" });
   const check = (condition, why) => { if (!condition) { zoneMap.ok = false; zoneMap.why.push(why); } };
   const zone = (id) => world.zones.find((entry) => entry.id === id);
-  check(world.zones.length === 16, `the zone count is ${world.zones.length}, not 16`);
+  check(world.zones.length === 17, `the zone count is ${world.zones.length}, not 17`);
   check(zone("town")?.rooms.includes(30) && zone("town")?.rooms.includes(33), "the Harbor is not in the Town zone");
   check(zone("lantern")?.rooms.includes(25) && zone("lantern")?.rooms.includes(29), "the Undercroft is not in the Lantern Quarter zone");
   check(zone("moon")?.rooms.includes(92) && zone("moon")?.rooms.includes(97), "the Eclipse Court is not in the Moonlit Reach zone");
@@ -498,7 +498,7 @@ const channelTable = loadChannels();
 const socialTable = loadSocials();
 const questTable = loadQuests();
 measured.quests = questTable.quests.length;
-if (measured.quests > ratchet.mustNotGrow.quests) failures.push(`quests are ${measured.quests}, above the frozen ceiling of ${ratchet.mustNotGrow.quests}; the target is 24`);
+if (measured.quests > ratchet.mustNotGrow.quests) failures.push(`quests are ${measured.quests}, above the frozen ceiling of ${ratchet.mustNotGrow.quests}; the target is 25`);
 
 // The agent contract is generated from the same tables as the game: every verb,
 // room, channel and social must appear.
@@ -2972,6 +2972,56 @@ let monastery = { ok: true, why: [] };
   if (!monastery.ok) failures.push(`the Monastery is broken: ${monastery.why[0]}`);
 }
 
+// The Merry Dancer: a 12-room level 7/8/9 sunken wreck reached by a salvage
+// skiff, with a party capstan, a keyed strongbox and a drowned captain.
+let wreck = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  const table = loadActions({ world });
+  const quests = loadQuests();
+  const check = (condition, why) => { if (!condition) { wreck.ok = false; wreck.why.push(why); } };
+  const zone = world.zones.find((entry) => entry.id === "wreck");
+  check(Boolean(zone) && zone.rooms.length === 12 && zone.rooms.every((room) => world.rooms[room]), "the Wreck zone is not 12 connected rooms");
+  check(world.rooms[31]?.secretExits?.south === 240 && world.rooms[240]?.exits?.north === 31 && world.rooms[240]?.exits?.down === 241 && world.rooms[241]?.exits?.up === 240, "the skiff route or drowned deck is not connected");
+  check(world.rooms[241]?.secretExits?.down === 245 && world.rooms[245]?.exits?.up === 241, "the capstan hatch is not connected");
+  check(world.rooms[242]?.exits?.west === 241 && world.rooms[242]?.exits?.east === 243 && world.rooms[242]?.exits?.south === 245 && world.rooms[243]?.exits?.down === 244 && world.rooms[244]?.exits?.up === 243, "the mast, cabin or strongbox is not connected");
+  check(world.rooms[245]?.exits?.east === 246 && world.rooms[246]?.exits?.east === 247 && world.rooms[247]?.exits?.down === 248 && world.rooms[248]?.exits?.east === 249 && world.rooms[249]?.exits?.east === 250 && world.rooms[250]?.exits?.east === 251, "the hold, galley, orlop or captain is not connected");
+  check(["241", "242", "243", "244", "245", "246", "247", "248", "249", "250", "251"].every((room) => world.rooms[room]?.dark === true) && world.rooms[240]?.dark !== true, "a Wreck dark flag is wrong");
+  check(["240", "241", "242", "243", "244", "245"].every((room) => world.rooms[room]?.minLevel === 7) && ["246", "247", "248", "249"].every((room) => world.rooms[room]?.minLevel === 8) && ["250", "251"].every((room) => world.rooms[room]?.minLevel === 9), "the Wreck level gates are missing");
+  const object = (id) => world.objects.find((entry) => entry.id === id);
+  check(object("wreck-lantern")?.room === 240 && object("wreck-lantern-2")?.room === 245, "the wreck lanterns are missing");
+  check(object("captain-log")?.room === 243 && object("strongbox-key")?.room === 246 && object("captain-strongbox")?.flags?.includes("container") && object("tide-glass")?.inside === "captain-strongbox" && object("wreck-coins")?.value === 45, "a Wreck quest item or treasure is missing");
+  check(world.npcs.some((npc) => npc.id === "salvager" && npc.room === 240) && world.npcs.some((npc) => npc.id === "drowned-captain" && npc.room === 251), "a Wreck NPC is missing");
+  const quest = quests.quests.find((entry) => entry.id === "wreck");
+  check(quest?.level === 7 && quest?.repeat === "reset" && quest?.objectives?.length === 4, "the Wreck quest is missing");
+  check(table.errors.length === 0, `the Wreck action table is invalid: ${table.errors[0]}`);
+  const skiff = table.actions.find((action) => action.id === "board-salvage-skiff");
+  const capstan = table.actions.find((action) => action.id === "turn-wreck-capstan");
+  const strongbox = table.actions.find((action) => action.id === "unlock-captain-strongbox");
+  check(skiff?.effects?.some((effect) => effect.kind === "teleport" && effect.room === 240) && skiff?.effects?.some((effect) => effect.kind === "revealExit" && effect.dir === "south"), "the salvage skiff action is wrong");
+  check(capstan?.requires?.party === 2 && capstan?.effects?.some((effect) => effect.kind === "revealExit" && effect.dir === "down"), "the capstan action is wrong");
+  check(strongbox?.requires?.item === "strongbox-key" && strongbox?.effects?.some((effect) => effect.kind === "open" && effect.object === "captain-strongbox"), "the strongbox action is wrong");
+
+  let state = initialState(world.rooms, [], world.objects, 31, world.climate, channelTable.channels, loadLevels().levels, quests.quests);
+  const actor = (id, name, room = 31) => ({ id, key: id, account: id, name, room, visited: [room], level: 9, xp: 15000, maxHp: maxHpForLevel(9), hp: maxHpForLevel(9), mana: 5, maxMana: 5, spellbook: [], guild: null, guildRank: null, wielding: null, quests: { active: [], completed: [] }, found: [] });
+  state.actors.push(actor("a", "ana"), actor("b", "bob"));
+  const run = (intents) => { const result = step({ state, rooms: world.rooms, intents, actions: table.actions }); state = result.state; return result.events; };
+  run([{ kind: "action", actorId: "a", actionId: "board-salvage-skiff", messages: {} }]);
+  check(state.actors[0].room === 240, "the skiff did not carry the actor");
+  state.actors.forEach((entry) => { entry.room = 241; entry.found = []; });
+  run([{ kind: "partyInvite", actorId: "a", targetId: "b" }]);
+  run([{ kind: "partyAccept", actorId: "b" }]);
+  run([{ kind: "action", actorId: "a", actionId: "turn-wreck-capstan", messages: {} }]);
+  check(state.actors.every((entry) => entry.found.includes("241:down")), "the capstan did not open the hold for the party");
+  state.actors.forEach((entry) => { entry.room = 244; });
+  run([{ kind: "action", actorId: "a", actionId: "unlock-captain-strongbox", messages: {} }]);
+  check(state.objects.find((entry) => entry.id === "captain-strongbox").open !== true, "a keyless actor opened the strongbox");
+  const key = state.objects.find((entry) => entry.id === "strongbox-key"); key.holder = "a"; key.room = null;
+  run([{ kind: "action", actorId: "a", actionId: "unlock-captain-strongbox", messages: {} }]);
+  check(state.objects.find((entry) => entry.id === "captain-strongbox").open === true, "the key did not open the strongbox");
+  if (!wreck.ok) failures.push(`the Wreck is broken: ${wreck.why[0]}`);
+}
+
 // Persistence: gold is banked on logout/death and survives reset; equipment
 // does not follow the character offline.
 let goldPersistence = { ok: true, why: [] };
@@ -3506,7 +3556,7 @@ let quests = { ok: true, why: [] };
   }
   const archive = loadQuestArchive();
   const check = (condition, why) => { if (!condition) { quests.ok = false; quests.why.push(why); } };
-  check(questTable.quests.length === 24, `the live quest count is ${questTable.quests.length}, not 24`);
+  check(questTable.quests.length === 25, `the live quest count is ${questTable.quests.length}, not 25`);
   check(archive.quests.length === 41 && archive.errors.length === 0, "the retired quest archive is not 41 valid definitions");
   const liveIds = new Set(questTable.quests.map((quest) => quest.id));
   const archiveIds = new Set(archive.quests.map((quest) => quest.id));
@@ -3689,12 +3739,12 @@ let completion = { ok: true, why: [] };
   const ways = secretWays(world.rooms);
   const allQuests = quests.quests.map((quest) => quest.id);
   const check = (condition, why) => { if (!condition) { completion.ok = false; completion.why.push(why); } };
-  check(ways.length === 23, `the hidden-way count is ${ways.length}, not 23`);
+  check(ways.length === 25, `the hidden-way count is ${ways.length}, not 25`);
   const base = {
     level: 10, xp: 30000, quests: { active: [], completed: allQuests }, found: [...ways],
   };
   const done = completionState({ actor: base, rooms: world.rooms, quests: quests.quests, levels: levelTable.levels });
-  check(done.done && done.achieved && done.quests === 24 && done.questsTotal === 24 && done.puzzles === 23 && done.puzzlesTotal === 23 && done.maxLevel === 10, "the completed tally is wrong");
+  check(done.done && done.achieved && done.quests === 25 && done.questsTotal === 25 && done.puzzles === 25 && done.puzzlesTotal === 25 && done.maxLevel === 10, "the completed tally is wrong");
   check(completionLine(done).includes("Run beaten") && completionLine(done).includes(WORLDBREAKER_TITLE), "the completion line is wrong");
   check(!completionState({ actor: { ...base, level: 9 }, rooms: world.rooms, quests: quests.quests, levels: levelTable.levels }).done, "level 9 counted as a completed run");
   check(!completionState({ actor: { ...base, quests: { active: [], completed: allQuests.slice(1) } }, rooms: world.rooms, quests: quests.quests, levels: levelTable.levels }).done, "a missing quest counted as a completed run");
@@ -3713,7 +3763,7 @@ let completion = { ok: true, why: [] };
   const first = step({ state, rooms: world.rooms, intents: [], actions: [] });
   state = first.state;
   const actor = state.actors.find((entry) => entry.id === "w");
-  check(Number.isInteger(actor.completion?.tick) && actor.completion.level === 10 && actor.completion.quests === 24 && actor.completion.puzzles === 23, "the reducer did not record the completed run");
+  check(Number.isInteger(actor.completion?.tick) && actor.completion.level === 10 && actor.completion.quests === 25 && actor.completion.puzzles === 25, "the reducer did not record the completed run");
   check(actor.title === WORLDBREAKER_TITLE, "the completed run did not wear the Worldbreaker title");
   check(first.events.some((event) => event.completion && event.onlyId === "w"), "the completed run did not announce itself");
   const record = { ...actor.completion };
@@ -3721,7 +3771,7 @@ let completion = { ok: true, why: [] };
   state = second.state;
   check(state.actors.find((entry) => entry.id === "w").completion.tick === record.tick, "the completed run was recorded twice");
   checkpointIdentities(state);
-  check(state.identities.w?.found?.length === 23, "the found hidden ways did not survive a checkpoint");
+  check(state.identities.w?.found?.length === 25, "the found hidden ways did not survive a checkpoint");
   check(state.identities.w?.completion?.tick === record.tick, "the completed run did not survive a checkpoint");
   check(state.identities.w?.title === WORLDBREAKER_TITLE, "the Worldbreaker title did not survive a checkpoint");
   if (!completion.ok) failures.push(`completion is broken: ${completion.why[0]}`);
@@ -4180,8 +4230,9 @@ if (process.argv.includes("--json")) {
   console.log(`${"deepdelve".padEnd(26)}  ${(deepdelve.ok ? "16 rooms, party, gas" : "BROKEN").padStart(5)}   == mine, winch, canary`);
   console.log(`${"completion".padEnd(26)}  ${(completion.ok ? "level, quests, ways" : "BROKEN").padStart(5)}   == Worldbreaker`);
   console.log(`${"foundry".padEnd(26)}  ${(foundry.ok ? "12 rooms, party, valve" : "BROKEN").padStart(5)}   == drowned forge`);
-  console.log(`${"zones".padEnd(26)}  ${(zoneMap.ok ? "16 districts" : "BROKEN").padStart(5)}   == harbor, undercroft, eclipse`);
+  console.log(`${"zones".padEnd(26)}  ${(zoneMap.ok ? "17 districts" : "BROKEN").padStart(5)}   == harbor, undercroft, eclipse`);
   console.log(`${"monastery".padEnd(26)}  ${(monastery.ok ? "14 rooms, bell, crypt" : "BROKEN").padStart(5)}   == key, party, abbot`);
+  console.log(`${"wreck".padEnd(26)}  ${(wreck.ok ? "12 rooms, skiff, glass" : "BROKEN").padStart(5)}   == boat, capstan, captain`);
   console.log(`${"combat".padEnd(26)}  ${(combat.outcome === "killed" ? `${combat.rounds} rounds` : "BROKEN").padStart(5)}   == kills`);
   console.log(`${"resume".padEnd(26)}  ${(resume.ok ? "1 save" : "BROKEN").padStart(5)}   == old checkpoint loads`);
   console.log(`${"climate".padEnd(26)}  ${(climate.ok ? `${climate.changes} changes` : "BROKEN").padStart(5)}   == day, night, weather`);
