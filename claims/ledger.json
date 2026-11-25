@@ -1929,6 +1929,12 @@
       "level": "build",
       "statement": "v0.91.68 adds answer/fact focus and hardens the lock. The server exposes answerRoomName/clueRoomName; the Mind learns the Vault door word when it observes it, the planner routes the Shrine and offers answer <word>, and the coach repairs say <word> to answer <word> at the Shrine. If the word is unknown, the focus examines the clue door. Active objectives win ties against available offers, and the focus guard refuses to force an exit the room does not have. A 100-turn DeepSeek deepseek-flash run completed First Steps, Bread for the Shop and The Lighthouse Lens, visited 27 rooms, produced 48 plans/lessons, attacked twice, and had 7 focus-lock corrections with 0 deaths. A live death smoke took a level-3/300-XP character to level 2/150 XP, deaths 1, max HP recalculated. World unchanged at 251 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects. Gate covers known-word extraction, answer focus, the say-to-answer coach, focus exit validation and every prior check.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-318",
+      "level": "some-true",
+      "statement": "Production v0.91.68 serves answer/fact focus and the hardened objective lock. /planner.mjs, /mind.mjs, /ai.mjs and / are 200; /world reports 251 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects. The Mind learns the Vault door word, the planner offers answer <word> at the Shrine, say <word> is repaired to answer, active objectives win ties over offers, and the focus lock refuses exits the room lacks. A 100-turn DeepSeek run completed First Steps, Bread for the Shop and The Lighthouse Lens, visited 27 rooms, produced 48 plans/lessons, attacked twice and had 0 deaths; a live death smoke took a level-3/300-XP character to level 2/150 XP, deaths 1, with max HP recalculated. Main Gate 45642846781 green, publish 45644397329, release v0.91.68.",
+      "authority": "GitHub PR #84 merge c1211dd 2026-11-25; main Gate 45642846781; publish 45644397329; release v0.91.68; wick deploy, /world, /planner.mjs, /mind.mjs, /ai.mjs, /; local /tmp/long-deepseek9.log and /tmp/death-live2.log; tools/gate.mjs"
     }
   ]
 }
