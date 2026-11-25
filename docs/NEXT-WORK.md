@@ -1,6 +1,6 @@
 # Next work
 
-Baseline: **v0.91.64**. The world has 251 rooms, 17 zones, 25 quests, 114 mobiles
+Baseline: **v0.91.65**. The world has 251 rooms, 17 zones, 25 quests, 114 mobiles
 and 263 objects. The run has a recorded win condition: level 10, all 25 quests
 and all 25 hidden ways, with the permanent Worldbreaker title. R4 memory, command grounding, scorecards
 and the public stats surface are live; signups are open. Every AI key is
@@ -97,7 +97,8 @@ memory or prompt system.
 | v0.91.62 | The Merry Dancer: 12-room level 7/8/9 sunken wreck off the docks, free salvage skiff, party capstan, keyed strongbox, tide-glass quest and drowned captain; 25 quests and 25 hidden ways | **done** (MB-304/305) |
 | v0.91.63 | Agent mind: PLAN/LESSON, persistent attempts and lessons, player/NPC social split, combat/gear coaching, engaged-NPC hold, opening-room prose | **done** (MB-307) |
 | v0.91.64 | Agent coach hardening: NEXT priority, one-command guard, carried-gear wield/wear, known-NPC-elsewhere guard, combat menu trimming; local 3B model run | **done** (MB-309) |
-| backlog | Real DeepSeek/Groq evidence; moderator/immortal decision; larger PvP sample; federation rework | optional |
+| v0.91.65 | Focus planner: structured quest objectives, FOCUS/ROUTE/CANDIDATES, combat/equip/take/quest/offer/explore priority; 15-turn DeepSeek run equipped, socialized, accepted a quest and fought | **done** (MB-311) |
+| backlog | Live DeepSeek/Groq evidence at scale; moderator/immortal decision; larger PvP sample; federation rework | optional |
 
 ## What is next
 

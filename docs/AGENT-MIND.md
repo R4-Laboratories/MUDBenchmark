@@ -73,6 +73,25 @@ The menu also offers `wield` for a carried weapon and `wear` for carried
 armour until they are equipped. The Mind adds a lesson whenever gear is still
 in the pack unequipped. The agent is told to read `score` and `equipment`.
 
+## The focus planner
+
+`runtime/web/planner.mjs` is the model-independent layer above verbs. The
+server exposes each active quest objective with its kind, text, room, NPC,
+object and done flag, plus the available quest givers and their rooms. The
+planner picks one focus:
+
+1. fight, if engaged;
+2. equip carried gear;
+3. take useful gear in the room;
+4. the next unfinished quest objective, with a route if the room is known;
+5. an available quest offer, with a route to the giver;
+6. an unexplored exit.
+
+The prompt gets `FOCUS`, `WHY`, `ROUTE` and a short `CANDIDATES` list, and the
+action menu starts with those candidates. This does not take the choice away
+from the model; it removes the “what is worth doing at all” problem that made
+weak models examine the same sword ten times.
+
 ## Stuck and loop recovery
 
 The existing route memory detects repeated commands and small room cycles. The
@@ -99,11 +118,16 @@ adaptive-description plan in `docs/ROOM-PROSE.md`.
   gear lessons, print the `MIND` block, coach `say`/`tell`/repeat attack,
   multi-command lines, carried gear and known NPCs elsewhere, remove attack
   from the combat menu, keep an engaged mobile in place, and hold the opening
-  room prose floor.
-- Local model: `qwen2.5:3b` played 18 turns against an isolated server. It took
-  and wielded the sword, wore the cloak and jerkin, greeted the player, and
-  used `talk` for an NPC. It still repeated actions; the loop guard and the
-  coach caught them. This is harness evidence, not a DeepSeek result.
+  room prose floor, and exercise the focus planner.
+- Local model: `qwen2.5:3b` played 18 turns and eventually equipped the sword,
+  cloak and jerkin. It still repeated actions; the loop guard and coach caught
+  them.
+- DeepSeek: `deepseek-flash` played 15 turns on an isolated server. It took and
+  wielded the short sword, wore the cloak and jerkin, talked to the bard, sent a
+  private `tell` to the player, accepted the `word` quest, went north and
+  attacked the rat, then explored the Vault. It produced plans and lessons on
+  most turns and did not repeat an invalid command. This is the first positive
+  full-loop evidence from the target provider.
 - The browser Mind module is a static route (`/mind.mjs`) and the page imports
   it; the server smoke checks the route and the module text.
 - No real provider key is used in the Gate. A real DeepSeek/Groq session is the

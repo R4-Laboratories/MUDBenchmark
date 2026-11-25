@@ -82,7 +82,8 @@ localStorage:
   lesson to change strategy.
 
 The prompt gets this back as a compact `MIND:` block, not as an unlimited
-transcript. A **command coach** catches the two social mistakes before they are
+transcript. A separate focus planner adds `FOCUS`, `ROUTE` and a short
+`CANDIDATES` list from the live quest objectives and route memory. A **command coach** catches the two social mistakes before they are
 sent: `say <npc> ...` is redirected to `talk <npc>`, `tell <npc> ...` is
 redirected to `talk <npc>`, and `talk <player>` is redirected to a private
 `tell`. It also refuses a repeat `attack` while already engaged and offers a

@@ -1166,6 +1166,7 @@
   } from "/ai.mjs";
   import { emptyMemory, rememberResult, memoryPrompt, loopWarning, breakLoop, shouldBreakLoop } from "/memory.mjs";
   import { emptyMind, updateMind, mindPrompt } from "/mind.mjs";
+  import { focusFor, focusPrompt } from "/planner.mjs";
   import { assemble } from "/router.mjs";
   import { signIn as prismSignIn, reset as prismReset, load as loadSession, save as saveSession, personaSignIn, personaRetire, nextPersonaEpoch, createRecoveryKit, restoreRecoveryKit, characterHandoff, characterRevoke, characterTransfer, signChallenge } from "/prism-auth.mjs";
   import { randomCharacterName, uniqueCharacterName, chooseCharacter } from "/names.mjs";
@@ -3489,6 +3490,7 @@
       ["Invalid", AI.lastValidation?.invalid ? "yes" : "no"],
       ["Rooms seen", String(Object.keys(AI.memory?.rooms ?? {}).length)],
       ["Plan", AI.mind?.plan ? AI.mind.plan.slice(0, 48) : "—"],
+      ["Focus", AI.lastFocus?.label ? AI.lastFocus.label.slice(0, 48) : "—"],
       ["Lessons", String(AI.mind?.lessons?.length ?? 0)],
       ["Stuck", AI.mind?.stuck?.looping ? "yes" : "no"],
       ["R4", AI.lastR4 ? "browser router" : "—"],
@@ -3819,6 +3821,9 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       const exits = stateRoom.exits ?? [];
       const memoryText = memoryPrompt(memory, { room: AI.room || stateRoom.name, exits, query: observation });
       const mindText = mindPrompt(mind, { state: promptState, room: AI.room || stateRoom.name });
+      const focus = focusFor({ state: promptState, memory });
+      const focusText = focusPrompt(focus);
+      AI.lastFocus = focus;
       const r4Text = assemble({
         events: observation,
         memory: AI.recent.slice(-6),
@@ -3843,7 +3848,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       AI.lastInvalid = null;
       AI.lastValidation = null;
       AI.loopBroken = false;
-      const actions = buildActionMenu(promptState);
+      const actions = [...new Set([...(focus.candidates ?? []), ...buildActionMenu(promptState)])].slice(0, 48);
       const deliberate = needsReasoning();
       const system = buildSystemPrompt({ name: AI.name || "an autonomous player", goal: GOALS[AI.config.goal]?.goal ?? DEFAULT_GOAL, fast: AI.config.fast, deliberate });
       const user = buildUserPrompt({
@@ -3856,6 +3861,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         r4: r4Text,
         notebook: notebookText(),
         mind: mindText,
+        focus: focusText,
         fast: AI.config.fast,
         note: notes.join(" "),
       });

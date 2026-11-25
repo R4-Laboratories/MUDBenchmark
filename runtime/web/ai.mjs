@@ -512,14 +512,27 @@ export function coachCommand(command, state = null, mind = null) {
   const pieces = raw.split(/\s*(?:[,;]|\band then\b|\bthen\b|\band\b(?=\s+[a-z]+))\s*/i);
   const verbs = new Set([...VERBS, ...FREE_VERBS, ...TARGET_VERBS]);
   if (pieces.length > 1) {
-    const first = pieces[0].trim();
     const extra = pieces.slice(1).some((piece) => verbs.has(String(piece).trim().split(/\s+/)[0]?.toLowerCase()));
-    if (extra && first) {
+    if (extra) {
+      const inventory = state?.self?.inventory_names ?? [];
+      const actionable = pieces.map((piece) => {
+        const [head, ...tail] = piece.trim().split(/\s+/);
+        const verb = String(head ?? "").toLowerCase();
+        if (!["take", "get", "g", "grab"].includes(verb)) return piece.trim();
+        const words = tail.map((word) => word.toLowerCase().replace(/[^a-z0-9']/g, "")).filter(Boolean);
+        const carried = inventory.find((name) => nameIsIn(name, words));
+        if (!carried) return piece.trim();
+        if (carried === state?.self?.wielding || carried === mind?.gear?.wielding || (state?.self?.worn ?? []).includes(carried) || (mind?.gear?.worn ?? []).includes(carried)) return null;
+        if (/sword|axe|mace|dagger|spear|hammer|staff|bow|knife|pick|blade|club/i.test(carried)) return `wield ${carried}`;
+        if (/mail|plate|cloak|shield|helm|boots|gloves|bracers|apron|circlet|robe|hood|jerkin|cuirass|hauberk|mantle|charm|relic/i.test(carried)) return `wear ${carried}`;
+        return null;
+      }).filter(Boolean);
+      const first = actionable[0] ?? "inventory";
       return {
         validation: { ok: false, reason: "one command per turn" },
         blocked: true,
         repaired: first,
-        feedback: `One command per turn. I will send only "${first}".`,
+        feedback: `One command per turn. I will send "${first}".`,
       };
     }
   }
@@ -538,6 +551,16 @@ export function coachCommand(command, state = null, mind = null) {
   if (verb === "take" || verb === "get" || verb === "g" || verb === "grab") {
     const carried = (state?.self?.inventory_names ?? []).find((name) => nameIsIn(name, words));
     if (carried) {
+      const alreadyWielding = state?.self?.wielding === carried || mind?.gear?.wielding === carried;
+      const alreadyWorn = (state?.self?.worn ?? []).includes(carried) || (mind?.gear?.worn ?? []).includes(carried);
+      if (alreadyWielding || alreadyWorn) {
+        return {
+          validation: { ok: false, reason: "already equipped" },
+          blocked: true,
+          repaired: "inventory",
+          feedback: `You already have ${carried} equipped. Check inventory or choose another action.`,
+        };
+      }
       if (/sword|axe|mace|dagger|spear|hammer|staff|bow|knife|pick|blade|club/i.test(carried)) {
         return {
           validation: { ok: false, reason: "already carried" },
@@ -625,7 +648,7 @@ export function coachCommand(command, state = null, mind = null) {
   return { validation, blocked: false, repaired: null, feedback: "" };
 }
 
-export function buildUserPrompt({ turn = 1, observation = "", director = [], state = null, note = "", fast = false, actions: injected = null, memory = "", r4 = "", notebook = "", mind = "" } = {}) {
+export function buildUserPrompt({ turn = 1, observation = "", director = [], state = null, note = "", fast = false, actions: injected = null, memory = "", r4 = "", notebook = "", mind = "", focus = "" } = {}) {
   const steering = director.length
     ? director.map((line) => `- ${line}`).join("\n")
     : "none";
@@ -710,11 +733,13 @@ export function buildUserPrompt({ turn = 1, observation = "", director = [], sta
   const r4Block = r4 ? `R4 CONTEXT:\n${r4}\n` : "";
   const notebookBlock = notebook ? `NOTEBOOK:\n${notebook}\n` : "";
   const mindBlock = mind ? `MIND:\n${mind}\n` : "";
+  const focusBlock = focus ? `FOCUS:\n${focus}\n` : "";
   if (fast) {
     return `TURN ${turn}
 ROOM:
 ${observation.trim() || "(no new text)"}
 ${sheet ? `\nSTATE:\n${sheet}\n` : ""}
+${focusBlock ? `${focusBlock}\n` : ""}
 ${mindBlock ? `${mindBlock}\n` : ""}
 ACTIONS: ${menu}
 ${r4Block ? `\n${r4Block}` : ""}

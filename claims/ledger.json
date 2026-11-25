@@ -1887,6 +1887,12 @@
       "level": "some-true",
       "statement": "Production v0.91.64 serves the hardened agent coach. /mind.mjs, /ai.mjs and / are 200; /world reports 251 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects. The coach adds a NEXT priority line, one-command-per-turn guard, carried-gear wield/wear repair, known-NPC-elsewhere guard, trimmed combat menu and clean opening prose. A local qwen2.5:3b harness played 18 turns against an isolated server: it took and wielded the short sword, wore the grey cloak and leather jerkin, greeted the player with tell and used talk on an NPC; it still repeated actions, which the loop guard and coaches caught. This is local harness evidence, not a DeepSeek result; a real provider session remains the next behaviour test. Main Gate 45550761108 green, publish 45552043313, release v0.91.64.",
       "authority": "GitHub PR #80 merge 959e6d7 2026-11-25; main Gate 45550761108; publish 45552043313; release v0.91.64; wick deploy, /world, /mind.mjs, /ai.mjs, /; local /tmp/mind-agent-live.mjs (qwen2.5:3b); tools/gate.mjs"
+    },
+    {
+      "id": "MB-311",
+      "level": "build",
+      "statement": "v0.91.65 adds the focus planner in runtime/web/planner.mjs. The server exposes structured active quest objectives (kind, text, room, roomName, npc, npcName, npcRoom, object, objectName, objectRoom, done) and available quest offers with giver rooms. The planner chooses one focus: combat, equip carried gear, take room gear, the next unfinished objective (with a route from memory), a quest offer, or an unexplored exit; the prompt gets FOCUS/WHY/ROUTE/CANDIDATES and the action menu starts with the candidates. A 15-turn DeepSeek deepseek-flash run against an isolated server took and wielded the short sword, wore the grey cloak and leather jerkin, talked to the bard, sent a private tell to the player ann, accepted the word quest, went north and attacked the rat, then explored the Vault. It produced plans/lessons on most turns and no invalid command was sent. World unchanged at 251 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects. Gate covers planner priority, route, quest objectives, FOCUS prompt and every prior check.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }
