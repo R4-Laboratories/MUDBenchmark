@@ -1947,6 +1947,12 @@
       "level": "some-true",
       "statement": "Production v0.91.69 serves answer completion and fight evidence. /planner.mjs, /mind.mjs, /ai.mjs and / are 200; /planner.mjs contains the known-answer score 6 and /ai.mjs contains the wrong-known-answer coach; /world reports 251 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects. The `answer` command now advances the word quest. A focused DeepSeek run read the Vault door, walked to the Shrine, had `answer slate` blocked and repaired to `answer amber`, and completed The True Word (XP 300 to 350). A focused boss run killed a training guardian from the model's own attack (XP 300 to 320); a focused death run took level 3 / 300 XP to level 2 / 150 XP on its first death with max HP recalculated. A 120-turn DeepSeek run completed First Steps, Bread for the Shop and The Lighthouse Lens, visited 28 rooms, sent 120/120 commands, produced 65 plans and 64 lessons, made 10 focus corrections and took 0 deaths at level 3 / 394 XP. Main Gate 45668083049 green, publish 45669464141, release v0.91.69.",
       "authority": "GitHub PR #85 merge 6d1e32d 2026-11-25; main Gate 45668083049; publish 45669464141; release v0.91.69; wick deploy, /world, /planner.mjs, /mind.mjs, /ai.mjs, /; local /tmp/answer-final2.log, /tmp/boss-kill.log, /tmp/boss-death2.log and /tmp/long-deepseek12.log; tools/gate.mjs"
+    },
+    {
+      "id": "MB-321",
+      "level": "some-true",
+      "statement": "On v0.91.69, a normal-start focused DeepSeek deepseek-flash run began at the Atrium with The True Word active and no seeded Vault visit. It walked north to the Corridor and east to the Vault, examined the door to learn AMBER, returned through the Corridor, Atrium, Storeroom and Cell to the Shrine, had `answer slate` and `say AMBER` blocked and repaired, sent `answer amber`, and completed The True Word in 10 turns with XP 300 to 350, 22/24 commands sent, two coach repairs and 0 deaths. This reproduces the answer path without a Vault-start fixture.",
+      "authority": "local isolated server running v0.91.69 code; /tmp/answer-normal.log and /tmp/long-deepseek-score.json; production v0.91.69 on wick for the served code; tools/gate.mjs"
     }
   ]
 }

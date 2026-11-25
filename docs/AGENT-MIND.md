@@ -134,10 +134,12 @@ clue door and offers `examine door`.
 
 `answer` now advances a witnessed answer's quest. Before this fix the server
 printed "The shrine accepts your answer" and changed nothing, so the focused
-smoke always ended with an active word quest. The focused DeepSeek run read the
-door, travelled Vault → Corridor → Atrium → Storeroom → Cell → Shrine, had
-`answer slate` blocked, sent `answer amber`, and completed The True Word
-(300 → 350 XP).
+smoke always ended with an active word quest. A normal-start focused DeepSeek
+run began at the Atrium, walked north and east to the Vault, examined the door,
+returned through the Corridor, Atrium, Storeroom and Cell to the Shrine, had
+`answer slate` and `say AMBER` blocked, sent `answer amber`, and completed The
+True Word in 10 turns (300 → 350 XP). A second Vault-start run repeated the
+same answer path in 18 turns.
 
 ## Stuck and loop recovery
 
@@ -182,9 +184,13 @@ adaptive-description plan in `docs/ROOM-PROSE.md`.
 - DeepSeek 100-turn run: completed First Steps, Bread for the Shop, A Curled
   Scroll and The Lighthouse Lens; 28 rooms, 54 plans/lessons, 7 focus-lock
   corrections, 0 deaths.
-- DeepSeek focused answer run: completed The True Word; 18 turns, 7 rooms,
-  9 plans/lessons, one wrong-answer repair (`answer slate` → `answer amber`),
-  one focus correction, 0 deaths, XP 300 → 350.
+- DeepSeek normal-start answer run: completed The True Word in 10 turns from
+  the Atrium; 8 rooms, 15 plans/lessons, 22/24 commands sent, two repairs
+  (`answer slate` → `answer amber`, `say AMBER` → `answer amber`), 0 deaths,
+  XP 300 → 350.
+- DeepSeek Vault-start answer run: completed The True Word; 18 turns, 7 rooms,
+  9 plans/lessons, one wrong-answer repair, one focus correction, 0 deaths,
+  XP 300 → 350.
 - DeepSeek focused boss run: the model's own `attack a training guardian` killed
   it in the first round (XP 300 → 320); no death.
 - DeepSeek focused death run: the model attacked a strong guardian and died;
