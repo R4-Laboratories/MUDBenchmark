@@ -1848,10 +1848,15 @@ async function handleCommand(id, line) {
       "world.tick": state.tick,
     }, 0);
     if (!atShrine) return sendTo(id, "There is no shrine here.\r\n");
+    if (correct && witnessed) {
+      // `answer` is the instrument the harness drives; `claim` is the same
+      // shrine act under its older name. Both must move the quest, or a
+      // witnessed answer reads as accepted and changes nothing.
+      pending.push({ kind: "questAnswer", actorId: id, word: said });
+      return sendTo(id, "The shrine accepts your answer.\r\n");
+    }
     return sendTo(id, correct
-      ? (witnessed
-          ? "The shrine accepts your answer.\r\n"
-          : "The shrine accepts, but you never entered the Vault.\r\n")
+      ? "The shrine accepts, but you never entered the Vault.\r\n"
       : "The shrine does not accept that word.\r\n");
   }
 

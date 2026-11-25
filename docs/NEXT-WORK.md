@@ -1,6 +1,6 @@
 # Next work
 
-Baseline: **v0.91.68**. The world has 251 rooms, 17 zones, 25 quests, 114 mobiles
+Baseline: **v0.91.69**. The world has 251 rooms, 17 zones, 25 quests, 114 mobiles
 and 263 objects. The run has a recorded win condition: level 10, all 25 quests
 and all 25 hidden ways, with the permanent Worldbreaker title. R4 memory, command grounding, scorecards
 and the public stats surface are live; signups are open. Every AI key is
@@ -101,6 +101,7 @@ memory or prompt system.
 | v0.91.66 | Route seed from `/llms.txt`; room-action validation; upgrade-only gear; party focus and group_actions; no fake `battle` fight action; 80-turn and Deepdelve party DeepSeek runs | **done** (MB-313) |
 | v0.91.67 | Objective lock and quest switching: score active objectives, fall back to a reachable offer when one is unanswerable, force the focus after two detours; 100-turn DeepSeek run completes 4 quests | **done** (MB-315) |
 | v0.91.68 | Answer/fact focus: learn the Vault door word, route the Shrine and answer; retain active objectives over tied offers; validate focus exits; live death smoke | **done** (MB-317) |
+| v0.91.69 | Answer completion: `answer` advances the word quest, wrong answers repair to the known word, item matching ignores stopwords; focused answer, boss-kill and model-death evidence; 120-turn three-quest run | **done** (MB-319) |
 | backlog | Longer DeepSeek/Groq evidence; moderator/immortal decision; larger PvP sample; federation rework | optional |
 
 ## What is next

@@ -539,6 +539,22 @@ Rehearsed 2026-11-16:
   speaking, opened the Twin Door with one hidden partner and took the crown.
   Gate covers the death penalty, level gates, twin door, hide visibility and
   prompt (MB-286/287/288);
+- v0.91.69 (answer and fight proof) closes the answer loop and records model
+  combat evidence. The `answer` command at the Shrine now advances the word
+  quest instead of only printing acceptance; `answer <wrong>` is repaired to
+  the known door word, and a known answer scores above a tied quest offer. The
+  coach no longer treats a purse of coins as a loaf of bread (item matching now
+  ignores `of`, `with`, `from` and `to` as well as articles). A focused
+  DeepSeek run read the Vault door, walked to the Shrine, had `answer slate`
+  blocked and repaired to `answer amber`, and completed The True Word (XP
+  300 → 350). A focused boss run killed a training guardian from the model's
+  own attack (XP 300 → 320), and a focused death run took the same character
+  from level 3 / 300 XP to level 2 / 150 XP on its first death. A 120-turn
+  DeepSeek run completed First Steps, Bread for the Shop and The Lighthouse
+  Lens, visited 28 rooms, sent all 120 commands, produced 65 plans / 64 lessons,
+  made 10 focus corrections and took no death. World unchanged: 251 rooms /
+  17 zones / 25 quests / 114 mobiles / 263 objects. Gate covers the wrong
+  answer, the stopword match, answer focus and every prior check (MB-319);
 - v0.91.68 (answer and death) adds the answer/fact path: when the AI sees
   the Vault door word it stores it in the Mind, routes to the Shrine and offers
   `answer <word>`; `say <word>` at the Shrine is repaired to `answer`. Active

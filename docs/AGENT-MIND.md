@@ -111,11 +111,11 @@ weak models examine the same sword ten times.
 ## Objective lock and quest switching
 
 The planner scores the next unfinished objective of every active quest: target
-in this room (5), known route (4), otherwise (1). An `answer` objective and a
-score of 1 are treated as unanswerable for now, so a reachable quest offer can
-take focus instead. This is how the 100-turn run left the Shrine/Chancel loop
-and completed Bread, A Curled Scroll and The Lighthouse Lens after First
-Steps.
+in this room (5), known route (4), otherwise (1). An `answer` objective scores 6
+once the Mind knows the door word; until then it scores 1 and a reachable quest
+offer can take focus instead. This is how the 100-turn run left the
+Shrine/Chancel loop and completed Bread, A Curled Scroll and The Lighthouse
+Lens after First Steps, while the later focused run delivered the answer.
 
 The model still gets one detour. A second unrelated command triggers the
 objective lock: it takes the focus route or the focus action. Seven forced
@@ -128,12 +128,16 @@ A quest `answer` objective is not a route to a random shrine. The server
 exposes the answer room and the clue room. When the AI observes the Vault door
 word, the Mind stores it (`KNOWN WORD: AMBER`) and the planner routes to the
 Shrine and offers `answer amber`. At the Shrine, `say amber` is a room speech
-mistake and the coach repairs it to `answer amber`. If the word is unknown, the
-planner sends the AI to the clue door and offers `examine door`.
+mistake and the coach repairs it to `answer amber`; `answer slate` is repaired
+to the known word too. If the word is unknown, the planner sends the AI to the
+clue door and offers `examine door`.
 
-The 100-turn DeepSeek run reached the Vault, learned the word and planned the
-Shrine answer, but chose the Salt Caves first; the answer path is ready, not
-yet exercised end to end by the model.
+`answer` now advances a witnessed answer's quest. Before this fix the server
+printed "The shrine accepts your answer" and changed nothing, so the focused
+smoke always ended with an active word quest. The focused DeepSeek run read the
+door, travelled Vault → Corridor → Atrium → Storeroom → Cell → Shrine, had
+`answer slate` blocked, sent `answer amber`, and completed The True Word
+(300 → 350 XP).
 
 ## Stuck and loop recovery
 
@@ -178,10 +182,21 @@ adaptive-description plan in `docs/ROOM-PROSE.md`.
 - DeepSeek 100-turn run: completed First Steps, Bread for the Shop, A Curled
   Scroll and The Lighthouse Lens; 28 rooms, 54 plans/lessons, 7 focus-lock
   corrections, 0 deaths.
-- DeepSeek 100-turn answer run: completed First Steps, Bread for the Shop and
-  The Lighthouse Lens; 27 rooms, 48 plans/lessons, 2 attacks, 7 focus-lock
-  corrections, 0 deaths. The answer plan was formed but the run detoured into
-  the Salt Caves.
+- DeepSeek focused answer run: completed The True Word; 18 turns, 7 rooms,
+  9 plans/lessons, one wrong-answer repair (`answer slate` → `answer amber`),
+  one focus correction, 0 deaths, XP 300 → 350.
+- DeepSeek focused boss run: the model's own `attack a training guardian` killed
+  it in the first round (XP 300 → 320); no death.
+- DeepSeek focused death run: the model attacked a strong guardian and died;
+  the first death took level 3 / 300 XP to level 2 / 150 XP, deaths 1, with max
+  HP recalculated. Re-engaging caused further deaths, as the goal requested.
+- DeepSeek 120-turn run: completed First Steps, Bread for the Shop and The
+  Lighthouse Lens; 28 rooms, 65 plans / 64 lessons, 120 commands sent, 10 focus
+  corrections, 0 deaths, level 3 / 394 XP, sword and armour equipped, 10 talks
+  and 1 tell.
+- Coach regression: `take a loaf of bread` with a purse of coins is no longer
+  blocked as "already carrying"; item matching ignores `of`, `with`, `from` and
+  `to` as well as articles.
 - Live death smoke: a level-3/300-XP character killed by a strong guardian woke
   at the Atrium at level 2/150 XP, deaths 1, with max HP recalculated.
 - The browser Mind module is a static route (`/mind.mjs`) and the page imports
