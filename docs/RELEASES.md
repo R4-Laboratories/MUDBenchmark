@@ -539,6 +539,28 @@ Rehearsed 2026-11-16:
   speaking, opened the Twin Door with one hidden partner and took the crown.
   Gate covers the death penalty, level gates, twin door, hide visibility and
   prompt (MB-286/287/288);
+- v0.91.71 (federation protocol 2) replaces draft PR #11's password-transfer
+  trust model. A region handoff now needs a Prism-signed
+  `mudbenchmark/region-travel/1` grant for the destination origin plus a
+  source-region Ed25519 attestation; no password, password hash or salt crosses
+  the boundary, and a legacy password account is refused until claimed by a
+  Prism id. The destination creates an account keyed by the Prism id, verifies
+  the grant against the carried public records, checks the protocol, rules
+  fingerprint and destination, and merges the previous local character record
+  so guild, standing, components, titles, discovered details, ignores, memory
+  and duel history survive a return. Carried items stay in the source region.
+  Each region can disable skills, and `cast`, `train`, `study` and `recite` all
+  consult the policy; `recite <scroll> on <target>` now parses the target after
+  `on`. Transfer ids are replay-checked and bounded to 64; an uncertain
+  handoff retries the same signed grant from the source. Federation mode
+  checkpoints synchronously with rotation disabled and caps accounts at the
+  lower of `MAX_ACCOUNTS` and `MUD_REGION_MAX_ACCOUNTS` (default 2,000):
+  measured saves are 6 ms at 1,000 accounts, 8 ms at 2,000 and 22 ms at 10,000.
+  The two-process test covers grant and region signatures, a Prism handoff,
+  local-field return, skill filtering, replay and altered-grant refusal, legacy
+  refusal, an outage retry and a process restart (3/3). Production is unaffected
+  while the federation environment variables are unset. World unchanged: 251
+  rooms / 17 zones / 25 quests / 114 mobiles / 263 objects (MB-324);
 - v0.91.70 (player reports) fixes three live player bugs. Command lookup now
   lowercases verb names and aliases, so `takeFrom` is reachable after the
   parser lowercases input; the container branch accepts the `takeFrom` name as

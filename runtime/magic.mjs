@@ -41,6 +41,11 @@ export const SPELLS = [
 
 export const SPELL_BY_ID = new Map(SPELLS.map((spell) => [spell.id, spell]));
 
+/** The target text after `on` for a scroll command, or the old tail form. */
+export function scrollTargetName(restRaw = [], onIndex = -1) {
+  return onIndex > 0 ? restRaw.slice(onIndex + 1).join(" ") : restRaw.slice(1).join(" ");
+}
+
 export function spellById(id) {
   return SPELL_BY_ID.get(String(id ?? "").toLowerCase()) ?? null;
 }

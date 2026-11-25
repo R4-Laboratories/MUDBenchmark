@@ -175,6 +175,18 @@ export async function characterHandoff(store = "default", app = location.origin,
   return { envelope };
 }
 
+export async function regionTravel(store = "default", character, region, audience, transferId) {
+  const session = await read(store);
+  if (!session?.prism || !character || !region || !audience || !transferId) return null;
+  const envelope = await Prism.signAction(
+    session,
+    "mudbenchmark/region-travel/1",
+    { character, region, audience, transferId },
+    { audience, now: Date.now() },
+  );
+  return { envelope, records: [...session.log.values()] };
+}
+
 export async function characterTransfer(store = "ai", app = location.origin, character, to) {
   const session = await read(store);
   if (!session?.prism || !character || !to) return null;
