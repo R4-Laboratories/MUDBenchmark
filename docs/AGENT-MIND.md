@@ -122,6 +122,19 @@ objective lock: it takes the focus route or the focus action. Seven forced
 steps carried the 100-turn run through the loop without removing the model’s
 choice on the first turn of a new thought.
 
+## Answer and fact focus
+
+A quest `answer` objective is not a route to a random shrine. The server
+exposes the answer room and the clue room. When the AI observes the Vault door
+word, the Mind stores it (`KNOWN WORD: AMBER`) and the planner routes to the
+Shrine and offers `answer amber`. At the Shrine, `say amber` is a room speech
+mistake and the coach repairs it to `answer amber`. If the word is unknown, the
+planner sends the AI to the clue door and offers `examine door`.
+
+The 100-turn DeepSeek run reached the Vault, learned the word and planned the
+Shrine answer, but chose the Salt Caves first; the answer path is ready, not
+yet exercised end to end by the model.
+
 ## Stuck and loop recovery
 
 The existing route memory detects repeated commands and small room cycles. The
@@ -165,6 +178,12 @@ adaptive-description plan in `docs/ROOM-PROSE.md`.
 - DeepSeek 100-turn run: completed First Steps, Bread for the Shop, A Curled
   Scroll and The Lighthouse Lens; 28 rooms, 54 plans/lessons, 7 focus-lock
   corrections, 0 deaths.
+- DeepSeek 100-turn answer run: completed First Steps, Bread for the Shop and
+  The Lighthouse Lens; 27 rooms, 48 plans/lessons, 2 attacks, 7 focus-lock
+  corrections, 0 deaths. The answer plan was formed but the run detoured into
+  the Salt Caves.
+- Live death smoke: a level-3/300-XP character killed by a strong guardian woke
+  at the Atrium at level 2/150 XP, deaths 1, with max HP recalculated.
 - The browser Mind module is a static route (`/mind.mjs`) and the page imports
   it; the server smoke checks the route and the module text.
 - No real provider key is used in the Gate. A real DeepSeek/Groq session is the

@@ -606,6 +606,15 @@ export function coachCommand(command, state = null, mind = null) {
       };
     }
   }
+  if (verb === "say" && mind?.knownWord && /shrine/i.test(state?.room?.name ?? "")
+    && words.includes(String(mind.knownWord).toLowerCase())) {
+    return {
+      validation: { ok: false, reason: "answer the shrine with the answer command" },
+      blocked: true,
+      repaired: `answer ${mind.knownWord}`,
+      feedback: `At the Shrine, answer with "answer ${mind.knownWord}", not say.`,
+    };
+  }
   if (verb === "say" && npc) {
     return {
       validation: { ok: false, reason: "say is room speech" },

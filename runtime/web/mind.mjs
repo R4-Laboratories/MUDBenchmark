@@ -16,6 +16,7 @@ export const emptyMind = () => ({
   identity: {},
   goal: "",
   plan: "",
+  knownWord: null,
   lessons: [],
   attempts: [],
   last: null,
@@ -115,6 +116,11 @@ export function updateMind(mind, { state = null, observation = "", command = "",
     maxHp: state?.self?.max_hp ?? null,
     coins: state?.self?.coins ?? 0,
   };
+  const doorWord = String(observation ?? "").match(/\bword\b[^.]{0,100}(?:\bis\s+|:\s*)([A-Z]{3,})\b/);
+  if (doorWord && /\bdoor\b/i.test(observation)) {
+    mind.knownWord = String(doorWord[1]).toLowerCase();
+    addLesson(mind, `The Vault door says ${mind.knownWord.toUpperCase()}; answer it at the Shrine.`);
+  }
   const tally = state?.self?.completion;
   if (tally) mind.goal = `level ${tally.maxLevel}, all ${tally.questsTotal} quests and all ${tally.puzzlesTotal} hidden ways`;
   if (parsed?.plan && !/^none[.!]?$/i.test(parsed.plan)) mind.plan = clean(parsed.plan, 240);
@@ -198,6 +204,7 @@ export function mindPrompt(mind, { state = null, room = null } = {}) {
   const lines = [];
   lines.push(`IDENTITY: ${identity.name || state?.self?.name || "you"} · level ${identity.level ?? state?.self?.level ?? 1}${identity.title ? ` · ${identity.title}` : ""}${identity.guild ? ` · ${identity.guild}${identity.guildRank ? ` (${identity.guildRank})` : ""}` : ""} · ${identity.deaths ?? 0} deaths · ${identity.coins ?? 0} coins.`);
   if (mind.goal) lines.push(`GOAL: ${mind.goal}${state?.self?.completion?.achieved ? " · ACHIEVED" : ""}.`);
+  if (mind.knownWord) lines.push(`KNOWN WORD: ${mind.knownWord.toUpperCase()} — answer it at the Shrine.`);
   lines.push(`PLAN: ${mind.plan ? mind.plan.replace(/\.+$/, "") : "none yet; set one this turn"}.`);
   if (mind.last) lines.push(`LAST: ${mind.last.command} → ${mind.last.outcome}${mind.last.room ? ` in ${mind.last.room}` : ""}.`);
   const attempts = (mind.attempts ?? []).slice(-6).map((attempt) => `${attempt.command} → ${attempt.outcome}`);

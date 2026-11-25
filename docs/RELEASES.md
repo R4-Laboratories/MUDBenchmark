@@ -539,6 +539,16 @@ Rehearsed 2026-11-16:
   speaking, opened the Twin Door with one hidden partner and took the crown.
   Gate covers the death penalty, level gates, twin door, hide visibility and
   prompt (MB-286/287/288);
+- v0.91.68 (answer and death) adds the answer/fact path: when the AI sees
+  the Vault door word it stores it in the Mind, routes to the Shrine and offers
+  `answer <word>`; `say <word>` at the Shrine is repaired to `answer`. Active
+  objectives win ties with offers, and the focus lock refuses to force an exit
+  the room does not have. A 100-turn DeepSeek run completed First Steps, Bread
+  for the Shop and The Lighthouse Lens, visited 27 rooms, fought twice and took
+  no death; a live death smoke took a level-3/300-XP character to level 2/150 XP
+  with deaths 1 and recalculated max HP. World unchanged: 251 rooms / 17 zones /
+  25 quests / 114 mobiles / 263 objects. Gate covers the answer word/coach,
+  focus exit validation and every prior check (MB-317);
 - v0.91.67 (objective lock) makes the focus planner compare active
   objectives and switch when one is unanswerable. It scores visit/kill/collect/
   deliver/talk objectives by whether the target is here or has a known route;
