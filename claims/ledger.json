@@ -1905,6 +1905,12 @@
       "level": "build",
       "statement": "v0.91.66 hardens the focus harness after long DeepSeek runs. The browser seeds its route graph from /llms.txt so quest rooms never visited still have a route. Room-action verbs are accepted by the pre-send validator (turn winch, pump shaft, board cart, strike seam) instead of being repaired away. Gear is only offered when it is an upgrade by damage/armour. group_actions exposes group-gated actions, and the planner focuses party formation and party invite before using a winch/door. battle is no longer offered as a fight action; it only inspects. A DeepSeek deepseek-flash 80-turn overworld run completed First Steps, visited 19 rooms and produced plans/lessons. A 25-turn DeepDelve run formed a party with ann, turned the winch, descended and reached the surveyor and her notes. World unchanged at 251 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects. Gate covers route seed, room-action validation, upgrade filtering, party focus, combat menu and every prior check.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-314",
+      "level": "some-true",
+      "statement": "Production v0.91.66 serves the route/party focus harness. /planner.mjs, /mind.mjs, /ai.mjs and / are 200; /world reports 251 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects. The browser seeds its route graph from /llms.txt, accepts room-action verbs in validation, offers only gear upgrades, exposes group_actions and party focus, and no longer offers battle as a fight action. A DeepSeek deepseek-flash 80-turn overworld run completed First Steps and visited 19 rooms; a 25-turn Deepdelve run formed a party with ann, turned the winch, descended and reached the surveyor and her notes. Main Gate 45562898545 green, publish 45563974596, release v0.91.66.",
+      "authority": "GitHub PR #82 merge 6e46e3c 2026-11-25; main Gate 45562898545; publish 45563974596; release v0.91.66; wick deploy, /world, /planner.mjs, /mind.mjs, /ai.mjs, /memory.mjs, /; local /tmp/long-deepseek3.log and /tmp/party-deepseek4.log; tools/gate.mjs"
     }
   ]
 }
