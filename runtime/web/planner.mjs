@@ -25,6 +25,41 @@ const withRoute = (focus, memory, from, target) => {
   return { ...focus, target: target ?? null, route, routeText: route.length ? `${route[0]} (${route.length} move${route.length === 1 ? "" : "s"} to ${target})` : target && target !== from ? `no known route to ${target}; explore` : target === from ? "you are here" : "" };
 };
 
+const objectiveScore = (objective, { state, memory, from } = {}) => {
+  const room = state?.room ?? {};
+  const self = state?.self ?? {};
+  if (!objective || objective.done) return 0;
+  const npcHere = (name) => names(room.npcs).some((entry) => entry.toLowerCase().includes(String(name ?? "").replace(/^the /, "")));
+  const held = (name) => (self.inventory_names ?? []).some((entry) => entry.toLowerCase().includes(String(name ?? "").replace(/^the /, "")));
+  if (objective.kind === "visit") {
+    if (objective.roomName === from) return 5;
+    return routeFor(memory, from, objective.roomName).length ? 4 : 1;
+  }
+  if (objective.kind === "kill") {
+    if (npcHere(objective.npcName ?? objective.npc)) return 5;
+    return routeFor(memory, from, objective.npcRoomName).length ? 4 : 1;
+  }
+  if (objective.kind === "collect") {
+    if (held(objective.objectName ?? objective.object)) return 5;
+    if (objective.objectRoomName === from) return 5;
+    return routeFor(memory, from, objective.objectRoomName).length ? 4 : 1;
+  }
+  if (objective.kind === "deliver") {
+    if (held(objective.objectName ?? objective.object) && npcHere(objective.npcName ?? objective.npc)) return 5;
+    return routeFor(memory, from, objective.npcRoomName ?? objective.objectRoomName).length ? 4 : 1;
+  }
+  if (objective.kind === "talk") {
+    if (npcHere(objective.npcName ?? objective.npc)) return 5;
+    return routeFor(memory, from, objective.npcRoomName).length ? 4 : 1;
+  }
+  return 1;
+};
+
+const offerScore = (quest, { memory, from } = {}) => {
+  if (quest.giverRoomName === from) return 5;
+  return routeFor(memory, from, quest.giverRoomName).length ? 4 : 1;
+};
+
 export function focusFor({ state = null, memory = null } = {}) {
   const self = state?.self ?? {};
   const room = state?.room ?? {};
@@ -116,8 +151,26 @@ export function focusFor({ state = null, memory = null } = {}) {
     }, memory, from, from);
   }
 
-  const active = (self.active_quests ?? [])[0];
-  const objective = active?.objective_details?.find((entry) => !entry.done);
+  const activeOptions = (self.active_quests ?? []).map((quest) => {
+    const objective = quest.objective_details?.find((entry) => !entry.done);
+    return { quest, objective, score: objectiveScore(objective, { state, memory, from }) };
+  }).filter((entry) => entry.objective).sort((a, b) => b.score - a.score);
+  const activeEntry = activeOptions[0] ?? null;
+  const active = activeEntry?.quest ?? null;
+  const objective = activeEntry?.objective ?? null;
+  const availableOptions = [...(self.available_quests ?? [])].map((quest) => ({ quest, score: offerScore(quest, { memory, from }) }))
+    .sort((a, b) => b.score - a.score || (a.quest.level ?? 1) - (b.quest.level ?? 1));
+  const bestOffer = availableOptions[0] ?? null;
+  if ((!activeEntry || activeEntry.score <= 1 || objective?.kind === "answer") && bestOffer && bestOffer.score >= (activeEntry?.score ?? 0)) {
+    const target = bestOffer.quest.giverRoomName ?? from;
+    const here = target === from;
+    return withRoute({
+      kind: "quest offer",
+      label: `${bestOffer.quest.name} (level ${bestOffer.quest.level})`,
+      reason: `${bestOffer.quest.giver ?? "a quest giver"} offers it${here ? " here" : ""}`,
+      candidates: unique([here ? `quest accept ${bestOffer.quest.id}` : (routeFor(memory, from, target)[0] ?? "look"), "quests", "look"]),
+    }, memory, from, target);
+  }
   if (active && objective) {
     const candidates = [];
     let target = from;
@@ -163,21 +216,6 @@ export function focusFor({ state = null, memory = null } = {}) {
     }, memory, from, target);
   }
 
-  const available = [...(self.available_quests ?? [])].sort((a, b) => {
-    const here = (quest) => quest.giverRoomName === from ? 1 : 0;
-    return here(b) - here(a) || (a.level ?? 1) - (b.level ?? 1);
-  })[0];
-  if (available) {
-    const target = available.giverRoomName ?? from;
-    const here = target === from;
-    return withRoute({
-      kind: "quest offer",
-      label: `${available.name} (level ${available.level})`,
-      reason: `${available.giver ?? "a quest giver"} offers it${here ? " here" : ""}`,
-      candidates: unique([here ? `quest accept ${available.id}` : (routeFor(memory, from, target)[0] ?? "look"), "quests", "look"]),
-    }, memory, from, target);
-  }
-
   const exits = room.exits ?? [];
   const unseen = exits.find((exit) => exit?.room && !memory?.rooms?.[exit.room]);
   const exit = unseen?.dir ?? exits[0]?.dir ?? "look";
@@ -187,6 +225,21 @@ export function focusFor({ state = null, memory = null } = {}) {
     reason: "no active objective; map the world",
     candidates: unique([exit, "look", "search", "quests", "map"]),
   }, memory, from, unseen?.room ?? from);
+}
+
+/** A bounded objective lock: two unrelated commands in a row yield to the focus. */
+export function focusGuard({ focus = null, command = "", detours = 0 } = {}) {
+  if (!focus || !["quest", "quest offer", "group action", "party"].includes(focus.kind)) {
+    return { command, detours: 0, forced: false };
+  }
+  const candidate = focus.route?.[0] ?? (focus.candidates ?? [])[0];
+  if (!candidate || candidate === "look" || candidate === "inventory") {
+    return { command, detours: 0, forced: false };
+  }
+  if (String(command).trim() === candidate) return { command, detours: 0, forced: false };
+  const next = (Number(detours) || 0) + 1;
+  if (next < 2) return { command, detours: next, forced: false };
+  return { command: candidate, detours: 0, forced: true };
 }
 
 export function focusPrompt(focus) {

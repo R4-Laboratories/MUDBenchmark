@@ -1,6 +1,6 @@
 # Next work
 
-Baseline: **v0.91.66**. The world has 251 rooms, 17 zones, 25 quests, 114 mobiles
+Baseline: **v0.91.67**. The world has 251 rooms, 17 zones, 25 quests, 114 mobiles
 and 263 objects. The run has a recorded win condition: level 10, all 25 quests
 and all 25 hidden ways, with the permanent Worldbreaker title. R4 memory, command grounding, scorecards
 and the public stats surface are live; signups are open. Every AI key is
@@ -99,7 +99,8 @@ memory or prompt system.
 | v0.91.64 | Agent coach hardening: NEXT priority, one-command guard, carried-gear wield/wear, known-NPC-elsewhere guard, combat menu trimming; local 3B model run | **done** (MB-309) |
 | v0.91.65 | Focus planner: structured quest objectives, FOCUS/ROUTE/CANDIDATES, combat/equip/take/quest/offer/explore priority; 15-turn DeepSeek run equipped, socialized, accepted a quest and fought | **done** (MB-311) |
 | v0.91.66 | Route seed from `/llms.txt`; room-action validation; upgrade-only gear; party focus and group_actions; no fake `battle` fight action; 80-turn and Deepdelve party DeepSeek runs | **done** (MB-313) |
-| backlog | Live DeepSeek/Groq evidence at scale; moderator/immortal decision; larger PvP sample; federation rework | optional |
+| v0.91.67 | Objective lock and quest switching: score active objectives, fall back to a reachable offer when one is unanswerable, force the focus after two detours; 100-turn DeepSeek run completes 4 quests | **done** (MB-315) |
+| backlog | Longer DeepSeek/Groq evidence; moderator/immortal decision; larger PvP sample; federation rework | optional |
 
 ## What is next
 
