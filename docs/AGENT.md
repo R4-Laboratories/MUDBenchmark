@@ -61,6 +61,44 @@ use a weapon technique, eat/drink or cast a heal, or `flee` as a last resort.
 Flee moves it to a random adjacent room, ends the fight and costs 10% of its
 current XP; a duel forfeit also loses 12 rating.
 
+### The agent mind
+
+The longer design and test plan is in `docs/AGENT-MIND.md`. A raw transcript is not memory, and more context is not the same as more
+understanding. The browser keeps a small, structured **Mind** per persona in
+localStorage:
+
+- **Identity and goal** — name, level, title, guild, deaths, coins, and the live
+  win condition.
+- **Plan** — the model's `PLAN:` line, carried forward until it changes.
+- **Attempts** — the last twelve commands with an outcome (`moved`, `progress`,
+  `failed`, `combat`, `social`, `redundant`, `death`).
+- **Lessons** — durable rules, both the model's `LESSON:` lines and rules the
+  harness derives from failures. They are deduplicated and capped.
+- **Social map** — players in the room, NPCs in the room, party and the last
+  lines of public speech. The prompt names the two groups separately.
+- **Combat and gear** — engaged enemy HP, the character's HP, wielded and worn
+  gear, and any weapon or armour still in the pack.
+- **Stuck detector** — repeated rooms and cycles produce a `STUCK` line and a
+  lesson to change strategy.
+
+The prompt gets this back as a compact `MIND:` block, not as an unlimited
+transcript. A **command coach** catches the two social mistakes before they are
+sent: `say <npc> ...` is redirected to `talk <npc>`, `tell <npc> ...` is
+redirected to `talk <npc>`, and `talk <player>` is redirected to a private
+`tell`. It also refuses a repeat `attack` while already engaged and offers a
+technique or `battle`. A blocked command is not sent; the model sees the coach
+line, updates its plan/lesson, and tries again.
+
+### Combat and gear
+
+`attack` only starts a fight. Once `COMBAT` is present, rounds are automatic;
+the action menu drops `attack` and shows `battle`, techniques, food/drink,
+`cast mend` and `flee`. The prompt states that repeating attack does nothing.
+The menu also offers `wield` for a carried weapon and `wear` for carried armour
+until they are equipped, and the Mind keeps a lesson if gear stays unwielded.
+An engaged mobile now holds its ground instead of attacking and wandering out
+of the fight.
+
 ### Danger, death and groups
 
 Death is a real setback: a character death, PvE or PvP, costs **50% of current
@@ -151,18 +189,21 @@ other.
 
 The AI receives the same room blocks and events a person does, on the same
 WebSocket, with the same 250 ms input allowance and the same command table. It
-is asked for three sections each turn:
+is asked for six sections each turn:
 
 ```
 THOUGHT: one or two sentences of reasoning
+PLAN: one concrete step for this or the next turn
 REPLY: a short message to the director, or none
+NOTE: one durable note, or none
+LESSON: one durable rule learned from the last result, or none
 COMMAND: exactly one game command
 ```
 
 The browser parser accepts a missing label, falls back to the last line that
 starts with a known verb, and refuses `quit`. A reply with no usable command
 becomes `look`. The game server sees only the command, never the thought, the
-director message or the key.
+plan, the lesson, the director message or the key.
 
 ### Director, Mind, Run
 

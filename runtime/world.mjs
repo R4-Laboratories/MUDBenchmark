@@ -2379,6 +2379,11 @@ export function step({ state, rooms, intents, actions = [] }) {
       }
     }
 
+    // A mobile in a fight holds its ground. Without this, an aggressive mob
+    // could attack and then wander out on the same clock, ending the fight
+    // without either side fleeing.
+    if (next.engagements.some((entry) => entry.attackerId === npc.id || entry.targetId === npc.id)) continue;
+
     // A sentinel never leaves, but its clock still runs; that is a behaviour,
     // not an absence of one.
     if (behaviour === "sentinel") continue;

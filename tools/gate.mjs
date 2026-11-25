@@ -43,7 +43,8 @@ import { assemble } from "../runtime/router.mjs";
 import { AREA_PERIOD, BASE_HP, HP_PER_LEVEL, armorOf, attackRoll, checkpointIdentities, initialState, maxHpForLevel, nextFrom, phaseAt, releaseHeldObjects, step, upgradeState } from "../runtime/world.mjs";
 import { join } from "node:path";
 import { buildCandidates } from "./candidate.mjs";
-import { PROVIDERS, DEFAULT_GOAL, GOALS, buildSystemPrompt, buildUserPrompt, buildActionMenu, normalizeBase, parseBrain, readSseText, requestFor, replyFrom, trimHistory, validateCommand, repairCommand, isThrottledStatus, retryAfterMs, throttleWaitMs, throttlePlan } from "../runtime/web/ai.mjs";
+import { PROVIDERS, DEFAULT_GOAL, GOALS, buildSystemPrompt, buildUserPrompt, buildActionMenu, normalizeBase, parseBrain, readSseText, requestFor, replyFrom, trimHistory, validateCommand, repairCommand, coachCommand, isThrottledStatus, retryAfterMs, throttleWaitMs, throttlePlan } from "../runtime/web/ai.mjs";
+import { emptyMind, updateMind, mindPrompt, addLesson } from "../runtime/web/mind.mjs";
 import { emptyMemory, noteRoom, rememberResult, memoryPrompt, loopWarning, breakLoop, shouldBreakLoop, pathTo, nextStep, routeHint, nearestTarget, seedMap, observedCommandSuccess } from "../runtime/web/memory.mjs";
 import { verifyPrismSession, verifyPersonaOwner, verifyPrismAction, verifySessionKey, sessionWithinWindow } from "../runtime/prism-auth.mjs";
 import { decodeIdentityRequest, identityAdmits } from "../runtime/identity.mjs";
@@ -191,6 +192,25 @@ let webAI = { ok: true, why: [] };
   check(/emptyRetry/.test(web) && /DeepSeek returned only reasoning/.test(web), "the DeepSeek empty-reply retry is missing");
   const noteParsed = parseBrain("THOUGHT: go\nREPLY: none\nNOTE: Goal: find the tide-stone\nCOMMAND: north");
   check(noteParsed.note === "Goal: find the tide-stone" && noteParsed.command === "north", "the parser lost NOTE");
+  const planParsed = parseBrain("THOUGHT: look\nPLAN: read the plaque\nREPLY: none\nNOTE: none\nLESSON: read before walking\nCOMMAND: look");
+  check(planParsed.plan === "read the plaque" && planParsed.lesson === "read before walking", "the parser lost PLAN or LESSON");
+  check(/PLAN: one concrete step/.test(buildSystemPrompt({ name: "scout", fast: true })) && /LESSON: one durable rule/.test(buildSystemPrompt({ name: "scout" })), "the system prompt lost PLAN or LESSON");
+  const mindState = { self: { name: "bob", level: 3, hp: 8, max_hp: 20, deaths: 1, coins: 4, completion: { maxLevel: 10, questsTotal: 25, puzzlesTotal: 25 }, enemies: [{ name: "a rat", hp: 2, maxHp: 4 }], wielding: null, worn: [], inventory_names: ["a short sword", "a leather jerkin"], techniques: [{ id: "bash" }] }, room: { name: "The Atrium", actors: ["ann"], npcs: [{ name: "a large bard" }] } };
+  const mind = emptyMind();
+  updateMind(mind, { state: mindState, observation: "You see no such target.", command: "say a large bard hello", validation: { ok: false, reason: "say is room speech" }, room: "The Atrium", tick: 1 });
+  check(mind.lessons.some((lesson) => /say is room speech/i.test(lesson)) && mind.lessons.some((lesson) => /wield|unwielded/i.test(lesson)), "the mind lost social or gear lessons");
+  check(mindPrompt(mind, { state: mindState }).includes("SOCIAL: players ann") && mindPrompt(mind, { state: mindState }).includes("NPCs a large bard") && mindPrompt(mind, { state: mindState }).includes("PLAN:"), "the mind prompt lost social or plan context");
+  const coachSay = coachCommand("say a large bard hello", mindState, mind);
+  check(coachSay.blocked && coachSay.repaired === "talk a large bard" && /room speech/i.test(coachSay.feedback), "the command coach did not redirect say to talk");
+  const coachTell = coachCommand("tell bard hello", mindState, mind);
+  check(coachTell.blocked && coachTell.repaired === "talk a large bard" && /NPCs do not receive tells/i.test(coachTell.feedback), "the command coach did not redirect an NPC tell");
+  const coachAttack = coachCommand("attack rat", mindState, mind);
+  check(coachAttack.blocked && /already fighting/i.test(coachAttack.feedback) && /technique bash|battle/i.test(coachAttack.repaired), "the command coach did not catch a repeat attack");
+  const combatMenu = buildActionMenu(mindState);
+  check(!combatMenu.includes("attack a rat") && combatMenu.includes("battle") && combatMenu.includes("flee") && combatMenu.includes("technique bash"), "the combat action menu still offers attack or lost battle options");
+  check(buildActionMenu(mindState).includes("wield a short sword") && buildActionMenu(mindState).includes("wear a leather jerkin"), "the action menu lost gear actions");
+  const mindUser = buildUserPrompt({ turn: 1, observation: "[The Atrium]", state: mindState, mind: mindPrompt(mind, { state: mindState }), fast: true, actions: combatMenu });
+  check(mindUser.includes("MIND:") && mindUser.includes("LESSONS:") && mindUser.includes("players ann") && mindUser.includes("NPCs a large bard"), "the user prompt lost the mind or social split");
   const selfUser = buildUserPrompt({
     turn: 1, observation: "[The Cell]", fast: true, actions: ["attack a rat", "flee"], notebook: "- Goal: survive",
     state: { self: { name: "bob", level: 2, hp: 10, max_hp: 20, inventory: 1, inventory_names: ["a loaf of bread"], coins: 5, enemies: [{ name: "a rat", hp: 3, maxHp: 5, level: 1 }] }, room: { name: "The Cell", zone: "town", actors: ["ann"] } },
@@ -206,6 +226,9 @@ let webAI = { ok: true, why: [] };
   check(/named === "use"/.test(serverSource2) && /intent.kind === "teleportItem"/.test(worldSource), "the teleport item path is missing");
   check(/Movement is blocked in combat/.test(serverSource2) && /intent.kind === "flee"/.test(worldSource), "the combat movement/flee path is missing");
   check(/named === "hide"/.test(serverSource2) && /actor.hidden = true/.test(serverSource2) && /detectUntil/.test(worldSource) && /visibleActors/.test(serverSource2), "the Night Market hide/visibility path is missing");
+  check(/pathname === "\/mind.mjs"/.test(serverSource2) && /from "\/mind.mjs"/.test(web), "the browser Mind module is not served or imported");
+  check(/already fighting/.test(serverSource2) && /state.engagements.some/.test(serverSource2), "the redundant-attack response is missing");
+  check(/engagements.some\(\(entry\) => entry.attackerId === npc.id/.test(worldSource), "an engaged mobile can still wander out of combat");
   check(/lostXp/.test(worldSource) && /lostLevel/.test(worldSource) && /deaths/.test(serverSource2), "the death penalty is missing");
   check(/requires\?\.actors/.test(serverSource2) && /push-twin-door/.test(readFileSync(join(root, "world/data/actions.json"), "utf8")), "the two-player door is missing");
   const nightMenu = buildActionMenu({ self: { guild: "night-market", guild_rank: "cutpurse", inventory_names: [], enemies: [], techniques: [] }, room: { exits: [], objects: [], npcs: [], actions: [] } });
@@ -487,6 +510,24 @@ let zoneMap = { ok: true, why: [] };
   check(!["harbor", "undercroft", "eclipse"].some((id) => zone(id)), "a folded zone id is still live");
   check(world.zones.reduce((sum, entry) => sum + entry.rooms.length, 0) === Object.keys(world.rooms).length, "the zones do not cover every room exactly once");
   if (!zoneMap.ok) failures.push(`the zone map is broken: ${zoneMap.why[0]}`);
+}
+
+// The opening rooms carry the first impression and the first clues. They must
+// be more than a signpost: a scene, a few senses and something to examine.
+let startRooms = { ok: true, why: [] };
+{
+  const world = loadWorld({ mode: "single" });
+  const check = (condition, why) => { if (!condition) { startRooms.ok = false; startRooms.why.push(why); } };
+  const ids = [...Array(14)].map((_, index) => index + 1).concat([30, 31, 32, 33]);
+  for (const id of ids) {
+    const room = world.rooms[id];
+    check(Boolean(room), `starting room ${id} is missing`);
+    if (!room) continue;
+    check(room.text.length >= 280, `starting room ${id} is ${room.text.length} characters, not 280`);
+    check((room.ambient ?? []).length >= 3, `starting room ${id} has fewer than 3 ambient lines`);
+    check(Object.keys(room.details ?? {}).length >= 2, `starting room ${id} has fewer than 2 details`);
+  }
+  if (!startRooms.ok) failures.push(`the opening rooms are thin: ${startRooms.why[0]}`);
 }
 
 // The verb table must resolve its own aliases and use only known codes.
@@ -3539,10 +3580,14 @@ let aggression = { ok: true, why: [] };
   const run = (intents) => { const result = step({ state, rooms: world.rooms, intents }); state = result.state; return result.events; };
   run([{ kind: "join", actorId: "a", name: "alice" }]);
   state.actors[0].room = 2;
+  const rat = state.npcs.find((npc) => npc.id === "sewer-rat");
+  rat.room = 2; rat.home = 2; rat.period = 1; rat.jitter = 0; rat.aggression = 100; rat.behaviour = "wander"; rat.zone = null;
   const events = [];
   for (let i = 0; i < 8; i += 1) events.push(...run([]));
-  if (state.engagements.length !== 2) { aggression.ok = false; aggression.why.push("a guardian did not engage both sides"); }
+  if (state.engagements.length < 2) { aggression.ok = false; aggression.why.push("a guardian did not engage both sides"); }
   if (!events.some((event) => /attacks you/.test(event.text ?? ""))) { aggression.ok = false; aggression.why.push("the victim was not told"); }
+  for (let i = 0; i < 12; i += 1) run([]);
+  if (state.npcs.find((npc) => npc.id === "sewer-rat")?.room !== 2) { aggression.ok = false; aggression.why.push("an engaged mobile wandered out of the fight"); }
   if (!aggression.ok) failures.push(`aggression is broken: ${aggression.why[0]}`);
 }
 
@@ -4231,6 +4276,7 @@ if (process.argv.includes("--json")) {
   console.log(`${"completion".padEnd(26)}  ${(completion.ok ? "level, quests, ways" : "BROKEN").padStart(5)}   == Worldbreaker`);
   console.log(`${"foundry".padEnd(26)}  ${(foundry.ok ? "12 rooms, party, valve" : "BROKEN").padStart(5)}   == drowned forge`);
   console.log(`${"zones".padEnd(26)}  ${(zoneMap.ok ? "17 districts" : "BROKEN").padStart(5)}   == harbor, undercroft, eclipse`);
+  console.log(`${"startRooms".padEnd(26)}  ${(startRooms.ok ? "scene, senses" : "BROKEN").padStart(5)}   == 18 opening rooms`);
   console.log(`${"monastery".padEnd(26)}  ${(monastery.ok ? "14 rooms, bell, crypt" : "BROKEN").padStart(5)}   == key, party, abbot`);
   console.log(`${"wreck".padEnd(26)}  ${(wreck.ok ? "12 rooms, skiff, glass" : "BROKEN").padStart(5)}   == boat, capstan, captain`);
   console.log(`${"combat".padEnd(26)}  ${(combat.outcome === "killed" ? `${combat.rounds} rounds` : "BROKEN").padStart(5)}   == kills`);

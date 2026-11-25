@@ -5,7 +5,7 @@
   "rooms": {
     "1": {
       "name": "The Atrium",
-      "text": "A cold marble hall open to a sky the colour of old iron. A plaque is set into the north wall above the corridor; a storeroom opens east, and the market square lies south. The marble is veined with a darker stone, and the open roof frames a shifting grey sky.",
+      "text": "A cold marble hall open to a sky the colour of old iron. A plaque is set into the north wall above the corridor; a storeroom opens east, and the market square lies south. The marble is veined with dark seams, and the air smells of cold stone and lamp oil. Footsteps carry farther here than they should.",
       "safe": true,
       "exits": {
         "north": 2,
@@ -20,12 +20,13 @@
       },
       "ambient": [
         "A draught crosses the marble.",
-        "Somewhere below, a bell."
+        "Somewhere below, a bell.",
+        "A door closes somewhere beyond the corridor."
       ]
     },
     "2": {
       "name": "The Corridor",
-      "text": "A narrow corridor of pale stone. Dust settles in the lamplight, and the Vault waits east behind a low door. The Atrium is south. The walls are close enough to touch on both sides, and the lamp brackets are empty.",
+      "text": "A narrow corridor of pale stone. Dust settles in the lamplight, and the Vault waits east behind a low door; the Atrium is south. The walls are close enough to touch on both sides, and the lamp brackets are empty. One lamp gutters whenever the Vault door moves, and the dust is disturbed only by the living.",
       "safe": false,
       "exits": {
         "south": 1,
@@ -37,13 +38,14 @@
       },
       "ambient": [
         "Dust settles in the lamplight.",
-        "The corridor keeps its own quiet."
+        "The corridor keeps its own quiet.",
+        "A lamp tick is the only sound."
       ]
     },
     "3": {
       "name": "The Storeroom",
       "text": {
-        "single": "Shelves of empty crates line the walls. A shopkeeper keeps a small counter beneath a brass lamp, and a pitch torch leans by the door. The Atrium is west; the Cell north. The shelves smell of dust and old rope; the ledger on the counter has not been opened today.",
+        "single": "Shelves of empty crates line the walls. A shopkeeper keeps a small counter beneath a brass lamp, and a pitch torch leans by the door; the Atrium is west, the Cell north. The shelves smell of dust and old rope, and the ledger on the counter has not been opened today. The counter is worn smooth at the edge.",
         "marked": "Shelves of empty crates line the walls. A shopkeeper keeps a small counter beneath a brass lamp, and a pitch torch leans by the door. The Atrium is west; the Cell north. The shelves smell of dust and old rope; the ledger on the counter has not been opened today.",
         "true": "Shelves of empty crates line the walls. A shopkeeper keeps a small counter beneath a brass lamp, and a pitch torch leans by the door. The Atrium is west; the Cell north. One crate is stencilled: THE VAULT PLAQUE IS AUTHENTIC. The shelves smell of dust and old rope; the ledger on the counter has not been opened today.",
         "corroborated": "Shelves of empty crates line the walls. A shopkeeper keeps a small counter beneath a brass lamp, and a pitch torch leans by the door. The Atrium is west; the Cell north. One crate is stencilled: THE VAULT LIES. THE TRUE WORD IS SLATE. The shelves smell of dust and old rope; the ledger on the counter has not been opened today."
@@ -59,13 +61,14 @@
       },
       "ambient": [
         "Crates creak in the dark.",
-        "The shopkeeper watches the door."
+        "The shopkeeper watches the door.",
+        "The ledger page lifts in a draft."
       ]
     },
     "4": {
       "name": "The Vault",
       "text": {
-        "single": "A low vault of black stone. The air is colder here, and something scrapes behind the wall. A door of grey wood bears a single word carved deep into the grain. The word is AMBER. The black stone drinks the light; the air is colder near the door.",
+        "single": "A low vault of black stone. The air is colder here, and something scrapes behind the wall. A door of grey wood bears a single word carved deep into the grain: AMBER. The black stone drinks the light, and the scrape keeps time with your breathing. The grain of the door is grey and dry, and the word is cut deeper than the surrounding carving.",
         "marked": "A low vault of black stone. The air is colder here, and something scrapes behind the wall. A door of grey wood bears a single word carved deep into the grain. The word is AMBER, cut in bronze and untouched. The black stone drinks the light; the air is colder near the door.",
         "true": "A low vault of black stone. The air is colder here, and something scrapes behind the wall. A door of grey wood bears a single word carved deep into the grain. The word is AMBER. The black stone drinks the light; the air is colder near the door.",
         "corroborated": "A low vault of black stone. The air is colder here, and something scrapes behind the wall. A door of grey wood bears a single word carved deep into the grain. The word is AMBER. The black stone drinks the light; the air is colder near the door."
@@ -81,13 +84,14 @@
       },
       "ambient": [
         "The air is colder here.",
-        "Something scrapes behind the wall."
+        "Something scrapes behind the wall.",
+        "The room holds its breath."
       ]
     },
     "5": {
       "name": "The Cell",
       "text": {
-        "single": "A bare cell. A moth taps the ceiling, and a message is written on the wall in a hurried hand. The Storeroom is south; the Shrine north. Scratched into the wall: THE VAULT PLAQUE IS A FORGERY. THE TRUE WORD IS SLATE. The mortar between the bricks is soft, and the scratches are deep enough to catch a nail.",
+        "single": "A bare cell. A moth taps the ceiling, and a message is written on the wall in a hurried hand; the Storeroom is south, the Shrine north. Scratched into the wall: THE VAULT PLAQUE IS A FORGERY. THE TRUE WORD IS SLATE. The mortar is soft, and the scratches are deep enough to catch a nail.",
         "marked": "A bare cell. A moth taps the ceiling, and a message is written on the wall in a hurried hand. The Storeroom is south; the Shrine north. Chalked by some vandal: THE VAULT PLAQUE IS A FORGERY. THE TRUE WORD IS SLATE. The mortar between the bricks is soft, and the scratches are deep enough to catch a nail.",
         "true": "A bare cell. A moth taps the ceiling, and a message is written on the wall in a hurried hand. The Storeroom is south; the Shrine north. Scratched into the wall: THE VAULT PLAQUE IS A FORGERY. THE TRUE WORD IS SLATE. The mortar between the bricks is soft, and the scratches are deep enough to catch a nail.",
         "corroborated": "A bare cell. A moth taps the ceiling, and a message is written on the wall in a hurried hand. The Storeroom is south; the Shrine north. Scratched into the wall: THE VAULT PLAQUE IS A FORGERY. THE TRUE WORD IS SLATE. The mortar between the bricks is soft, and the scratches are deep enough to catch a nail."
@@ -105,12 +109,13 @@
       },
       "ambient": [
         "A moth taps the ceiling.",
-        "The scratches catch the light."
+        "The scratches catch the light.",
+        "The moth taps again."
       ]
     },
     "6": {
       "name": "The Shrine",
-      "text": "A round shrine of white stone. A low altar stands in the centre beneath a shaft of light, and the Chancel waits north. The Cell is south. The dome is plain white; the altar stone is older than the shrine around it.",
+      "text": "A round shrine of white stone. A low altar stands in the centre beneath a shaft of light, and the Chancel waits north; the Cell is south. The dome is plain white, and the altar stone is older than the shrine around it. The light falls in a narrow column, and the dome carries every whisper back to you.",
       "safe": true,
       "exits": {
         "south": 5,
@@ -124,12 +129,13 @@
       },
       "ambient": [
         "The shrine hums at the edge of hearing.",
-        "A candle gutters."
+        "A candle gutters.",
+        "The light does not move."
       ]
     },
     "7": {
       "name": "The Chancel",
-      "text": "The Chancel is a narrow room behind the Shrine. Banners hang motionless, and a notice is fixed to the wall beside the way south. The notice is pinned at eye height; the banners smell of dust.",
+      "text": "The Chancel is a narrow room behind the Shrine. Banners hang motionless, faded to the colour of old blood, and a notice is fixed to the wall beside the way south. The notice is pinned at eye height, and the room smells of wax and closed air. A thin draft moves under the banners and carries the smell of old candle smoke.",
       "safe": true,
       "exits": {
         "south": 6
@@ -141,12 +147,13 @@
       },
       "ambient": [
         "The chancel breathes.",
-        "A bell answers another, far away."
+        "A bell answers another, far away.",
+        "A banner shifts."
       ]
     },
     "8": {
       "name": "Market Square",
-      "text": "Cobbles worn smooth by generations. A stone fountain plays in the centre, and stalls crowd the edges with rope, bread and odds and ends. The Atrium rises north, the smithy stands east, the inn west, and the King's Road runs south. The fountain's basin is full of copper and one silver coin; the stalls are shuttered.",
+      "text": "Cobbles worn smooth by generations. A stone fountain plays in the centre, and stalls crowd the edges with rope, bread and odds and ends; the Atrium rises north, the smithy east, the inn west, and the King's Road south. The fountain basin holds copper and one silver coin, and the stallholders call to anyone who slows. A stray dog sleeps under the bread table.",
       "safe": true,
       "exits": {
         "north": 1,
@@ -163,12 +170,13 @@
       },
       "ambient": [
         "Water falls in the fountain.",
-        "A gull cries somewhere above the roofs."
+        "A gull cries somewhere above the roofs.",
+        "A coin rings on stone."
       ]
     },
     "9": {
       "name": "The Smithy",
-      "text": "Heat rolls from a banked forge. A rack of blades waits beside an anvil, and the smith watches the door with the patience of a man who has heard every bargain. The square is west. The anvil rings faintly when the forge settles; the rack is oiled and orderly.",
+      "text": "Heat rolls from a banked forge. A rack of blades waits beside an anvil, and the smith watches the door with the patience of a man who has heard every bargain; the square is west. The forge is banked but not dead, and the anvil rings faintly as it settles. The smith's hammer rests where he can reach it.",
       "safe": true,
       "exits": {
         "west": 8
@@ -180,12 +188,13 @@
       },
       "ambient": [
         "The forge ticks as it cools.",
-        "The smith turns a blade in the light."
+        "The smith turns a blade in the light.",
+        "The room holds its breath."
       ]
     },
     "10": {
       "name": "The Gilded Rat",
-      "text": "A low-beamed inn. A hearth fills the room with smoky warmth, benches crowd the tables, and a stew pot hangs over the fire and a cask of ale is tapped behind the counter. Stairs climb to the guest rooms; the market square is east. The fire is banked low; the stew pot is covered, and the stairs creak underfoot.",
+      "text": "A low-beamed inn. A hearth fills the room with smoky warmth, benches crowd the tables, and a stew pot hangs over the fire; a cask of ale is tapped behind the counter, and stairs climb to the guest rooms. The fire is banked low, and the stew smells of root and pepper. Someone has carved a rat into the corner of the bar.",
       "safe": true,
       "exits": {
         "east": 8,
@@ -200,12 +209,13 @@
       },
       "ambient": [
         "The fire settles.",
-        "Someone laughs in the kitchen."
+        "Someone laughs in the kitchen.",
+        "The fire pops."
       ]
     },
     "11": {
       "name": "The King's Road",
-      "text": "The road leaves the square and runs south between low walls. A signpost stands at the fork: the forest lies south, the old well east, the graveyard west. Beyond the signpost, a rutted track climbs toward the Grey Keep, its towers black against the sky. The market is north. The signpost leans; the walls are full of beetles and dry grass.",
+      "text": "The road leaves the square and runs south between low walls. A signpost stands at the fork: the forest south, the old well east, the graveyard west; the market is north. Beyond it, a rutted track climbs toward the Grey Keep, its towers black against the sky. The signpost leans, and the walls are full of beetles and dry grass.",
       "safe": false,
       "exits": {
         "north": 8,
@@ -220,13 +230,14 @@
       },
       "ambient": [
         "A cart creaks somewhere out of sight.",
-        "The wind carries the smell of rain."
+        "The wind carries the smell of rain.",
+        "A cart creaks south."
       ],
       "south": 117
     },
     "12": {
       "name": "The Upstairs Landing",
-      "text": "A narrow landing at the top of the inn stairs. Two guest-room doors face each other across a runner of faded carpet. The common room is down. A lamp burns at the far end; one door is ajar.",
+      "text": "A narrow landing at the top of the inn stairs. Two guest-room doors face each other across a runner of faded carpet; the common room is down. A lamp burns at the far end, and one door is ajar. The carpet is worn thin at the threshold, and the doors are shut but not locked. The runner is faded to the colour of weak tea, and the lamp glass is clean.",
       "safe": true,
       "exits": {
         "down": 10,
@@ -240,12 +251,13 @@
       },
       "ambient": [
         "The inn hums below.",
-        "A board creaks underfoot."
+        "A board creaks underfoot.",
+        "The lamp hums."
       ]
     },
     "13": {
       "name": "The East Guest Room",
-      "text": "A small room with a bed, a washstand and a window over the square. The landing is west. The window glass is old and wavy; the market fountain glints below.",
+      "text": "A small room with a bed, a washstand and a window over the square; the landing is west. The window glass is old and wavy, and the market fountain glints below. The bed is neatly made, and the washstand holds a thin film of dust. A folded blanket rests at the foot of the bed, and the washbasin is dry.",
       "safe": true,
       "exits": {
         "west": 12
@@ -257,12 +269,13 @@
       },
       "ambient": [
         "The window rattles softly.",
-        "The room smells of soap and old wood."
+        "The room smells of soap and old wood.",
+        "The window glass rattles."
       ]
     },
     "14": {
       "name": "The West Guest Room",
-      "text": "A small room with a bed, a chest and a shuttered window. The landing is east. A thin line of light marks the floor; the room smells of cedar.",
+      "text": "A small room with a bed, a chest and a shuttered window; the landing is east. A thin line of light marks the floor, and the room smells of old cedar. The chest is banded with iron, and one floorboard gives under a careful step. The shutter is barred from the inside, and a small writing desk waits beneath it.",
       "safe": true,
       "exits": {
         "east": 12
@@ -274,7 +287,8 @@
       },
       "ambient": [
         "The shutter taps the frame.",
-        "Somewhere below, a cup is set down."
+        "Somewhere below, a cup is set down.",
+        "The chest settles."
       ]
     },
     "15": {
@@ -557,7 +571,7 @@
     },
     "30": {
       "name": "The Harbor Quay",
-      "text": "The river opens into a broad grey harbor. Stone quays step down to the water, and a forest of masts moves beyond the mist. The riverbank is north; the docks run east. Rope and fish scales streak the stone; gulls walk the quay.",
+      "text": "The river opens into a broad grey harbor. Stone quays step down to the water, and a forest of masts moves beyond the mist; the riverbank is north, the docks east. Rope and fish scales streak the stone, and gulls walk the quay. The quay stones are slick with weed, and the masts move against a pewter sky.",
       "safe": false,
       "exits": {
         "north": 19,
@@ -571,7 +585,8 @@
       "ambient": [
         "A gull cries over the water.",
         "Rope creaks against a bollard.",
-        "The fog moves in slow sheets."
+        "The fog moves in slow sheets.",
+        "A gull cries."
       ],
       "secretExits": {
         "west": 182
@@ -579,7 +594,7 @@
     },
     "31": {
       "name": "The Docks",
-      "text": "Warehouses crowd the waterfront, their doors barred and their windows dark. A crane stands at the end of the pier, and a lamp burns in the last warehouse. The quay is west; the lighthouse path runs north. The lamp in the warehouse door is the only light on the waterfront. A small salvage skiff is tied at the dock.",
+      "text": "Warehouses crowd the waterfront, their doors barred and their windows dark. A crane stands at the end of the pier, and a lamp burns in the last warehouse; the quay is west, the lighthouse path north. A small salvage skiff is tied at the dock. The crane chain hangs still, and the waterfront smells of tar and old rope.",
       "safe": false,
       "exits": {
         "west": 30,
@@ -594,7 +609,8 @@
       },
       "ambient": [
         "A chain knocks against a mast.",
-        "The harbor breathes under the planks."
+        "The harbor breathes under the planks.",
+        "The crane chain knocks."
       ],
       "secretExits": {
         "south": 240
@@ -602,7 +618,7 @@
     },
     "32": {
       "name": "The Lighthouse",
-      "text": "A white tower stands at the end of the point. The lamp room is dark, and the keeper's cottage leans against the rock. The docks are south, and the sea is below. The tower door is open; the great lamp is cold. A salt stair descends beneath the lighthouse.",
+      "text": "A white tower stands at the end of the point. The lamp room is dark, and the keeper's cottage leans against the rock; the docks are south, and the sea is below. The tower door is open, and the great lamp is cold. A salt stair descends beneath the lighthouse, and the sea moves with a slow, heavy sound.",
       "safe": false,
       "exits": {
         "south": 31,
@@ -616,12 +632,13 @@
       },
       "ambient": [
         "The wind pulls at the tower.",
-        "A bell buoy rings somewhere out in the dark."
+        "A bell buoy rings somewhere out in the dark.",
+        "The sea breathes below."
       ]
     },
     "33": {
       "name": "The Ring",
-      "text": "A round pit of sand and old blood beneath the docks. A rope rail divides the fighting floor from the spectators' ledge, and a slate board records the last few names. The Docks are up.",
+      "text": "A round pit of sand and old blood beneath the docks. A rope rail divides the fighting floor from the spectators' ledge, and a slate board records the last few names; the Docks are up. The sand is packed hard, and the slate is chalked with old names. The rope rail creaks when the crowd leans in.",
       "safe": false,
       "arena": true,
       "exits": {
@@ -635,7 +652,8 @@
       "ambient": [
         "The crowd is quiet.",
         "Sand grits underfoot.",
-        "Someone coughs on the ledge."
+        "Someone coughs on the ledge.",
+        "The crowd murmurs."
       ]
     },
     "34": {

@@ -191,18 +191,22 @@ export const GOALS = {
 export function buildSystemPrompt({ name = "scout", goal = DEFAULT_GOAL, fast = false, deliberate = false } = {}) {
   if (fast) {
     return `You are ${name}, an autonomous player in MUDBench. You may reason when the situation needs it; this turn is ${deliberate ? "deliberate" : "direct"}.
-Reply with exactly these four labelled lines:
+Reply with exactly these six labelled lines:
 THOUGHT: ${deliberate ? "up to three sentences of private reasoning" : "one short sentence of private reasoning"}.
+PLAN: one concrete step you intend to take, or "none".
 REPLY: a short message to the director, or "none".
 NOTE: one durable note for later (a goal, discovery, promise or plan), or "none".
+LESSON: one durable rule learned from the last result, or "none".
 COMMAND: exactly one legal game command.
 
 Rules:
 - ACTIONS is a shortlist of what is in this room. You may use any legal command from the COMMANDS line, including speech.
-- To talk to players, use say <text>, tell <name> <text>, or global <text>. To talk to an NPC, use talk <name>.
-- Never invent a command. Never output quit. Keep the four labels.
-- Use only what ROOM, STATE, R4 CONTEXT, MEMORY, QUESTS, PACK, COMBAT, SOCIAL and DIRECTOR show.
-- If COMBAT is present you cannot move. Fight, use a technique, heal/eat, or flee as a last resort; fleeing costs experience.
+- SOCIAL: players are in the room; NPCs are the world's characters. say <text> is room speech (everyone hears); tell <player> <text> is private and only players receive it; talk <npc> starts NPC dialogue. NPCs never answer tells.
+- Never invent a command. Never output quit. Keep the six labels.
+- Use only what ROOM, STATE, MIND, R4 CONTEXT, MEMORY, QUESTS, PACK, COMBAT, SOCIAL and DIRECTOR show.
+- COMBAT: attack only starts the fight. Once COMBAT is present, rounds happen automatically; do not repeat attack. Use a technique, eat/drink, cast mend, or flee. Check your HP.
+- GEAR: after taking a weapon, wield it; after taking armour, wear it. Use score/equipment to compare.
+- PLAN and LESSON are saved. Follow the PLAN and reuse LESSONS; if a command failed, change the approach instead of repeating it.
 - Use NOTE for long-term memory. It is saved and shown to you next turn.
 - Death is brutal: you lose 50% of current XP and one level, including to another player. Avoid fights beyond your level.
 - The run is beaten by reaching max level, completing every quest and finding every hidden way. The completion command shows the tally. Moderator/immortal mode is not implemented.
@@ -217,16 +221,20 @@ Goal: ${goal}`;
   return `You are ${name}, an autonomous player in MUDBench, a persistent text world shared by people and agents.
 You see the game exactly as a player does: the latest room, events, and the result of your last command. You type one command per turn through the same interface. The server enforces the same 250 ms input limit on you as on a human. You have no privileged view and no special commands.
 
-Reply with exactly these four sections, in this order:
+Reply with exactly these six sections, in this order:
 THOUGHT: one or two sentences of private reasoning about what you see and what you will do.
+PLAN: one concrete step you intend to take, or "none".
 REPLY: a short message to the director, the human watching you. Use "none" if there is nothing to say.
 NOTE: one durable note for later (a goal, discovery, social promise or plan), or "none".
+LESSON: one durable rule learned from the last result, or "none".
 COMMAND: exactly one game command, on one line.
 
 Example reply:
 THOUGHT: The plaque says the Vault keeps the word, and the Vault is north then east. I will head north first.
+PLAN: Walk north to the Corridor, then east to the Vault.
 REPLY: Going to the Vault.
 NOTE: Goal: read the Vault word, then answer at the Shrine.
+LESSON: read the plaque before walking; it names the route.
 COMMAND: north
 
 Rules:
@@ -235,8 +243,11 @@ Rules:
 - Use only what the game showed you. If you are unsure, look, examine, or check your inventory.
 - The director can steer you. Follow the direction unless it is impossible or would break the rules.
 - Keep THOUGHT honest and specific: what you know, what you want, what you will try next.
+- SOCIAL: players are in the room; NPCs are the world's characters. say <text> is room speech (everyone hears); tell <player> <text> is private and only players receive it; talk <npc> starts NPC dialogue. NPCs never answer tells.
+- COMBAT: attack only starts the fight. Once COMBAT is present, rounds happen automatically; do not repeat attack. Use a technique, eat/drink, cast mend, or flee. Check your HP.
+- GEAR: after taking a weapon, wield it; after taking armour, wear it. Use score/equipment to compare.
+- PLAN and LESSON are saved. Follow the PLAN and reuse LESSONS; if a command failed, change the approach instead of repeating it.
 - Use NOTE for long-term memory: goals, discoveries, social commitments, plans. It is saved and shown next turn.
-- If COMBAT is present you cannot move. Fight, use a technique, heal/eat, or flee as a last resort; fleeing costs experience.
 - Death is brutal: you lose 50% of current XP and one level, including to another player. Avoid fights beyond your level.
 - The run is beaten by reaching max level, completing every quest and finding every hidden way. The completion command shows the tally. Moderator/immortal mode is not implemented.
 - Some doors need two players; ask in say/global and wait for help. Use party invite/accept to group; party members in the same room share kill XP and quest credit. A hidden Night Market rogue can hide; moving or acting reveals them, and detect reveals hidden players.
@@ -250,8 +261,11 @@ Goal: ${goal}`;
 }
 
 export function buildActionMenu(state = null) {
-  const menu = new Set(["look", "score", "inventory", "search"]);
+  const menu = new Set(["look", "score", "inventory", "search", "equipment"]);
   const room = state?.room;
+  const engaged = new Set((state?.self?.enemies ?? []).map((enemy) => String(enemy.name ?? "").toLowerCase()));
+  const wielding = String(state?.self?.wielding ?? "").toLowerCase();
+  const worn = new Set((state?.self?.worn ?? []).map((name) => String(name).toLowerCase()));
   if (room) {
     for (const exit of room.exits ?? []) menu.add(exit.dir);
     for (const detail of room.details ?? []) menu.add(`examine ${detail}`);
@@ -264,11 +278,11 @@ export function buildActionMenu(state = null) {
     }
     for (const npc of room.npcs ?? []) {
       menu.add(`talk ${npc.name}`);
-      if (!room.safe && npc.aggression > 0) menu.add(`attack ${npc.name}`);
+      if (!room.safe && npc.aggression > 0 && !engaged.has(String(npc.name).toLowerCase())) menu.add(`attack ${npc.name}`);
     }
     for (const actor of room.actors ?? []) {
-      menu.add(`party invite ${actor}`);
-      if (room.arena) {
+      if (!state?.self?.party) menu.add(`party invite ${actor}`);
+      if (room.arena && !engaged.has(String(actor).toLowerCase())) {
         menu.add(`duel ${actor}`);
         menu.add(`attack ${actor}`);
       }
@@ -276,22 +290,28 @@ export function buildActionMenu(state = null) {
     for (const action of room.actions ?? []) menu.add(`${action.verb} ${action.target}`);
   }
   if ((state?.self?.party_invites ?? []).length) menu.add("party accept");
-  if ((state?.self?.enemies ?? []).length) menu.add("flee");
+  if ((state?.self?.enemies ?? []).length) {
+    menu.add("battle");
+    menu.add("flee");
+  }
   if (state?.self?.guild === "night-market" && ["cutpurse", "shadow", "master"].includes(state.self.guild_rank)) menu.add("hide");
   for (const technique of state?.self?.techniques ?? []) menu.add(`technique ${technique.id}`);
   for (const name of state?.self?.inventory_names ?? []) {
     if (/bread|stew|herb|ration|meat|apple|cheese|soup|loaf|berry|fish/i.test(name)) menu.add(`eat ${name}`);
     if (/water|ale|wine|tea|flask/i.test(name)) menu.add(`drink ${name}`);
     if (/lamp|lantern|torch|candle/i.test(name)) menu.add(`light ${name}`);
-    if (/sword|axe|mace|dagger|spear|hammer|staff|bow|knife/i.test(name)) menu.add(`wield ${name}`);
-    if (/mail|plate|cloak|shield|helm|boots|gloves|bracers|apron|circlet/i.test(name)) menu.add(`wear ${name}`);
+    if (/sword|axe|mace|dagger|spear|hammer|staff|bow|knife|pick|blade|club/i.test(name) && String(name).toLowerCase() !== wielding) menu.add(`wield ${name}`);
+    if (/mail|plate|cloak|shield|helm|boots|gloves|bracers|apron|circlet|robe|hood|jerkin|cuirass|hauberk|mantle|charm|relic/i.test(name) && !worn.has(String(name).toLowerCase())) menu.add(`wear ${name}`);
     if (/stone|charm|token|horn|bell|mirror|compass/i.test(name)) menu.add(`use ${name}`);
+  }
+  for (const spell of state?.self?.spells ?? []) {
+    if (spell === "mend") menu.add("cast mend");
   }
   for (const line of ["say <text>", "tell <name> <text>", "global <text>", "talk <name>", "wave", "nod", "bow", "laugh", "smile", "grin", "cheer", "salute", "ponder", "whistle", "sing", "hug", "highfive", "who", "battle", "equipment", "spells", "leaderboard", "levels", "map", "shortcuts", "quests", "completion"]) {
     menu.add(line);
   }
   for (const spell of state?.self?.spells ?? []) menu.add(`cast ${spell}`);
-  return [...menu].slice(0, 40);
+  return [...menu].slice(0, 48);
 }
 
 const DIRECTION_ALIASES = {
@@ -345,6 +365,14 @@ const stateVocabulary = (state = null) => {
   return known;
 };
 
+const wordsIn = (value) => String(value ?? "").toLowerCase().split(/[^a-z0-9']+/).filter((word) => word.length > 1);
+const nameIsIn = (name, words) => {
+  const wanted = wordsIn(name).filter((word) => !["a", "an", "the"].includes(word));
+  return wanted.length > 0 && wanted.some((word) => words.includes(word));
+};
+const roomNpcNames = (state) => (state?.room?.npcs ?? []).map((npc) => npc?.name ?? npc).filter(Boolean);
+const roomPlayerNames = (state) => (state?.room?.actors ?? []).map((actor) => String(actor ?? "")).filter(Boolean);
+
 /** Conservative pre-send validation: only reject clear misses. */
 export function validateCommand(command, state = null) {
   const raw = String(command ?? "").trim();
@@ -397,6 +425,28 @@ export function validateCommand(command, state = null) {
       return { ok: false, reason: `unknown spell ${spell}` };
     }
   }
+  const targetWords = wordsOf(target);
+  if (verb === "talk") {
+    const npcs = roomNpcNames(state);
+    if (npcs.length && !npcs.some((name) => nameIsIn(name, targetWords.slice(0, 4)))) {
+      return { ok: false, reason: "no NPC by that name here; talk to an NPC, not a player" };
+    }
+  }
+  if (verb === "attack") {
+    const names = [...roomNpcNames(state), ...roomPlayerNames(state)];
+    if (names.length && !names.some((name) => nameIsIn(name, targetWords.slice(0, 4)))) {
+      return { ok: false, reason: "no such target here" };
+    }
+    if ((state?.self?.enemies ?? []).some((enemy) => nameIsIn(enemy.name, targetWords.slice(0, 4)))) {
+      return { ok: false, reason: "already fighting; rounds are automatic" };
+    }
+  }
+  if (verb === "wield" || verb === "wear") {
+    const items = state?.self?.inventory_names ?? [];
+    if (items.length && !items.some((name) => nameIsIn(name, targetWords))) {
+      return { ok: false, reason: `you are not carrying ${target}` };
+    }
+  }
   if (verb === "open" || verb === "close") {
     const object = (state?.room?.objects ?? []).find((entry) => String(entry.name).toLowerCase().includes(target.toLowerCase()));
     if (verb === "open" && object?.open) return { ok: false, reason: "already open" };
@@ -442,7 +492,72 @@ export function repairCommand(command, state = null, reason = "") {
   return "look";
 }
 
-export function buildUserPrompt({ turn = 1, observation = "", director = [], state = null, note = "", fast = false, actions: injected = null, memory = "", r4 = "", notebook = "" } = {}) {
+/** A semantic coach for the two mistakes the model makes most: social verbs and repeat attacks. */
+export function coachCommand(command, state = null, mind = null) {
+  const raw = String(command ?? "").trim();
+  const validation = validateCommand(raw, state);
+  const parts = raw.split(/\s+/);
+  const verb = parts[0]?.toLowerCase() ?? "";
+  const words = parts.slice(1).map((part) => part.toLowerCase().replace(/[^a-z0-9']/g, "")).filter(Boolean);
+  const npcs = roomNpcNames(state);
+  const players = roomPlayerNames(state);
+  const npc = npcs.find((name) => nameIsIn(name, words.slice(0, 4)));
+  const player = players.find((name) => nameIsIn(name, words.slice(0, 4)));
+  const engaged = (state?.self?.enemies ?? []).find((enemy) => nameIsIn(enemy.name, words.slice(0, 4)));
+
+  if (verb === "say" && npc) {
+    return {
+      validation: { ok: false, reason: "say is room speech" },
+      blocked: true,
+      repaired: `talk ${npc}`,
+      feedback: `say is room speech; it does not target anyone. To speak with ${npc}, use talk ${npc}.`,
+    };
+  }
+  if (verb === "say" && player) {
+    return {
+      validation: { ok: false, reason: "say is room speech" },
+      blocked: true,
+      repaired: `tell ${player} hello`,
+      feedback: `say is room speech. For a private message to ${player}, use tell ${player} <text>.`,
+    };
+  }
+  if (verb === "tell" && npc) {
+    return {
+      validation: { ok: false, reason: "NPCs do not receive tells" },
+      blocked: true,
+      repaired: `talk ${npc}`,
+      feedback: `NPCs do not receive tells. Use talk ${npc} for dialogue.`,
+    };
+  }
+  if (verb === "talk" && player && !npc) {
+    return {
+      validation: { ok: false, reason: "talk is for NPCs" },
+      blocked: true,
+      repaired: `tell ${player} hello`,
+      feedback: `talk is for NPCs. For a player, use tell ${player} <text> or say <text> to the room.`,
+    };
+  }
+  if (verb === "attack" && engaged) {
+    const technique = state?.self?.techniques?.[0]?.id;
+    return {
+      validation: { ok: false, reason: "already fighting" },
+      blocked: true,
+      repaired: technique ? `technique ${technique}` : "battle",
+      feedback: `You are already fighting ${engaged.name}; attack only starts the fight. Rounds are automatic. Use ${technique ? `technique ${technique}` : "battle"}, eat/drink, cast mend, or flee.`,
+    };
+  }
+  if (!validation.ok) {
+    return {
+      validation,
+      blocked: false,
+      repaired: repairCommand(raw, state, validation.reason),
+      feedback: validation.reason,
+    };
+  }
+  return { validation, blocked: false, repaired: null, feedback: "" };
+}
+
+export function buildUserPrompt({ turn = 1, observation = "", director = [], state = null, note = "", fast = false, actions: injected = null, memory = "", r4 = "", notebook = "", mind = "" } = {}) {
   const steering = director.length
     ? director.map((line) => `- ${line}`).join("\n")
     : "none";
@@ -465,10 +580,15 @@ export function buildUserPrompt({ turn = 1, observation = "", director = [], sta
     : "";
   const enemies = state?.self?.enemies ?? [];
   const combat = enemies.length
-    ? `COMBAT: ${enemies.map((enemy) => `${enemy.name} ${enemy.hp ?? "?"}/${enemy.maxHp ?? "?"} hp${enemy.level ? ` level ${enemy.level}` : ""}`).join("; ")}. Movement is blocked. Fight, use a technique, heal/eat, or flee as a last resort (XP penalty).`
+    ? `COMBAT: ${enemies.map((enemy) => `${enemy.name} ${enemy.hp ?? "?"}/${enemy.maxHp ?? "?"} hp${enemy.level ? ` level ${enemy.level}` : ""}`).join("; ")}. Attack already started; rounds happen automatically. Do NOT repeat attack. Use a technique, eat/drink, cast mend, battle, or flee (XP penalty).`
     : "";
-  const social = state?.room?.actors?.length
-    ? `SOCIAL: ${state.room.actors.join(", ")}${state.self?.guild ? ` · guild ${state.self.guild}` : ""}`
+  const players = state?.room?.actors ?? [];
+  const npcs = (state?.room?.npcs ?? []).map((npc) => npc?.name ?? npc).filter(Boolean);
+  const social = players.length || npcs.length
+    ? `SOCIAL: players ${players.length ? players.join(", ") : "none"} · NPCs ${npcs.length ? npcs.join(", ") : "none"}${state.self?.party ? ` · party ${state.self.party.members.join(", ")}` : ""}${state.self?.guild ? ` · guild ${state.self.guild}` : ""}`
+    : "";
+  const gear = state?.self
+    ? `GEAR: wielding ${state.self.wielding || "nothing"} · worn ${(state.self.worn ?? []).join(", ") || "nothing"}${state.self.inventory_names?.some((name) => /sword|axe|mace|dagger|spear|hammer|staff|bow|knife|pick|blade|club/i.test(name)) ? ` · weapons in pack` : ""}`
     : "";
   const lock = state?.room?.minLevel
     ? `LOCK: ${state.room.name} requires level ${state.room.minLevel}.`
@@ -485,22 +605,24 @@ export function buildUserPrompt({ turn = 1, observation = "", director = [], sta
   const deaths = state?.self ? `DEATHS: ${state.self.deaths ?? 0}.` : "";
   const tally = state?.self?.completion;
   const goalLine = tally
-    ? `GOAL: level ${tally.level}/${tally.maxLevel} · quests ${tally.quests}/${tally.questsTotal} · hidden ways ${tally.puzzles}/${tally.puzzlesTotal}${tally.achieved ? " · ACHIEVED" : ""}.`
+    ? `GOAL: level ${tally.level ?? tally.maxLevel ?? "?"}/${tally.maxLevel ?? "?"} · quests ${tally.quests ?? 0}/${tally.questsTotal ?? 0} · hidden ways ${tally.puzzles ?? 0}/${tally.puzzlesTotal ?? 0}${tally.achieved ? " · ACHIEVED" : ""}.`
     : "";
   const party = state?.self?.party
     ? `PARTY: ${state.self.party.leader ?? "?"} leads ${state.self.party.members.join(", ")} (${state.self.party.size}).`
     : "";
-  const sheet = [world, selfLine, self, pack, combat, social, party, invites, goalLine, lock, gas, hidden, deaths].filter(Boolean).join("\n");
+  const sheet = [world, selfLine, self, pack, gear, combat, social, party, invites, goalLine, lock, gas, hidden, deaths].filter(Boolean).join("\n");
   const menu = actions.join(", ");
   const questBlock = quests ? `QUESTS:\n${quests}` : "";
   const memoryBlock = memory ? `MEMORY:\n${memory}\n` : "";
   const r4Block = r4 ? `R4 CONTEXT:\n${r4}\n` : "";
   const notebookBlock = notebook ? `NOTEBOOK:\n${notebook}\n` : "";
+  const mindBlock = mind ? `MIND:\n${mind}\n` : "";
   if (fast) {
     return `TURN ${turn}
 ROOM:
 ${observation.trim() || "(no new text)"}
 ${sheet ? `\nSTATE:\n${sheet}\n` : ""}
+${mindBlock ? `${mindBlock}\n` : ""}
 ACTIONS: ${menu}
 ${r4Block ? `\n${r4Block}` : ""}
 ${memoryBlock ? `\n${memoryBlock}` : ""}
@@ -540,22 +662,26 @@ COMMAND: one command.`;
 // falls back to the last line that starts with a known verb, then to look. It
 // never sends quit: the director owns the session.
 export function parseBrain(text) {
-  const out = { thought: "", reply: "", note: "", command: "" };
+  const out = { thought: "", plan: "", reply: "", note: "", lesson: "", command: "" };
   let section = null;
   for (const raw of String(text ?? "").replace(/\r/g, "").split("\n")) {
-    const label = raw.match(/^\s*(THOUGHT|REPLY|NOTE|COMMAND)\s*:\s*(.*)$/i);
+    const label = raw.match(/^\s*(THOUGHT|PLAN|REPLY|NOTE|LESSON|COMMAND)\s*:\s*(.*)$/i);
     if (label) {
       section = label[1].toLowerCase();
       out[section] += `${out[section] ? "\n" : ""}${label[2]}`;
       continue;
     }
     if (section === "thought") out.thought += `\n${raw}`;
+    if (section === "plan") out.plan += `\n${raw}`;
     if (section === "reply") out.reply += `\n${raw}`;
     if (section === "note") out.note += `\n${raw}`;
+    if (section === "lesson") out.lesson += `\n${raw}`;
   }
   out.thought = out.thought.trim();
+  out.plan = out.plan.trim().slice(0, 240);
   out.reply = out.reply.trim();
   out.note = out.note.trim().slice(0, 240);
+  out.lesson = out.lesson.trim().slice(0, 240);
 
   let command = out.command.split("\n")[0]
     .replace(/^[`"'*>-\s]+|[`"'*.\s]+$/g, "")
@@ -583,7 +709,7 @@ export function parseBrain(text) {
 
   if (!command || /^quit$/i.test(command)) command = "look";
   if (command.length > 300) command = `${command.slice(0, 300)}`;
-  return { thought: out.thought, reply: out.reply, note: out.note, command };
+  return { thought: out.thought, plan: out.plan, reply: out.reply, note: out.note, lesson: out.lesson, command };
 }
 
 // Keep the last N user/assistant pairs and start on a user message. Anthropic

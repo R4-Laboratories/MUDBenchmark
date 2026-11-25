@@ -2228,6 +2228,11 @@ async function handleCommand(id, line) {
     const target = [...visibleActors().filter((a) => a.id !== id), ...npcsIn(actor.room)]
       .find((c) => c.name.toLowerCase().includes(needle) || c.name.toLowerCase().includes(`a ${needle}`));
     if (!target) return sendTo(id, `${render(messages.missing, { words })}\r\n`);
+    if (state.engagements.some((entry) =>
+      (entry.attackerId === id && entry.targetId === target.id)
+      || (entry.attackerId === target.id && entry.targetId === id))) {
+      return sendTo(id, `You are already fighting ${target.name}; attack only starts the fight. The next round comes on its own. Use a technique, eat/drink, cast mend, or flee.\r\n`);
+    }
     // The reducer announces the attack on the next tick; sending here too
     // printed "You attack" twice.
     pending.push({ kind: "attack", actorId: id, targetId: target.id });
@@ -3679,6 +3684,17 @@ const web = http.createServer(async (req, res) => {
   if (pathname === "/memory.mjs") {
     try {
       const source = readFileSync(new URL("./web/memory.mjs", import.meta.url));
+      res.writeHead(200, { "content-type": "text/javascript; charset=utf-8", "cache-control": "no-store" });
+      res.end(source);
+    } catch {
+      res.writeHead(404, { "content-type": "text/plain" });
+      res.end("not found");
+    }
+    return;
+  }
+  if (pathname === "/mind.mjs") {
+    try {
+      const source = readFileSync(new URL("./web/mind.mjs", import.meta.url));
       res.writeHead(200, { "content-type": "text/javascript; charset=utf-8", "cache-control": "no-store" });
       res.end(source);
     } catch {
