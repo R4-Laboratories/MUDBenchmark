@@ -15,6 +15,7 @@ import { applyQuestEvent, emptyProgress, normalizeQuestState, questById, questMe
 import { RANKS, guildId, guildLevelFor, rankAtLeast, removeMember, successor, validGuildName, perksFor } from "./guilds.mjs";
 import { armorOf, slotOf, weaponOf } from "./equipment.mjs";
 import { maxManaFor, spellById } from "./magic.mjs";
+import { cellFor, opposite, validCell } from "./cells.mjs";
 
 export { armorOf } from "./equipment.mjs";
 
@@ -83,7 +84,7 @@ function awardXp(state, actor, amount, events) {
   }
 }
 
-function applySpell(state, actor, spell, target, events) {
+function applySpell(state, actor, spell, target, events, rooms) {
   if (spell.effect === "damage" && target) {
     const damage = 1 + nextFrom(state.tick * 7 + actor.room, spell.damage ?? 4);
     target.hp = (target.hp ?? 0) - damage;
@@ -105,6 +106,7 @@ function applySpell(state, actor, spell, target, events) {
     events.push({ onlyId: actor.id, text: "A shield settles around you.\r\n" });
   } else if (spell.effect === "recall") {
     actor.room = state.start;
+    actor.cell = cellFor(rooms[actor.room]);
     actor.visited = [...new Set([...(actor.visited ?? []), state.start])];
     events.push({ onlyId: actor.id, text: "The guild's road folds; you are back in the Atrium.\r\n" });
   } else if (spell.effect === "light") {
@@ -133,6 +135,7 @@ function advanceQuests(state, actor, event, events) {
       if (reward && !reward.eaten) {
         reward.holder = actor.id;
         reward.room = null;
+        reward.cell = null;
         reward.inside = null;
         reward.worn = false;
       }
@@ -195,6 +198,8 @@ export function initialState(rooms, npcs = [], objects = [], start = 1, climate 
       .filter((npc) => rooms[npc.room] !== undefined)
       .map((npc) => ({
         ...npc,
+        cell: npc.cell ? [...npc.cell] : null,
+        homeCell: npc.room === npc.home && npc.cell ? [...npc.cell] : null,
         clock: makePulse({ period: npc.period, remaining: npc.period }),
       })),
     actors: [],
@@ -202,6 +207,8 @@ export function initialState(rooms, npcs = [], objects = [], start = 1, climate 
       ...object,
       holder: null,
       room: object.inside ? null : object.room,
+      cell: object.cell ? [...object.cell] : null,
+      homeCell: object.cell ? [...object.cell] : null,
       inside: object.inside ?? null,
       forSale: object.forSale ?? false,
       home: object.inside ? null : object.room,
@@ -314,14 +321,16 @@ export function upgradeState(saved, base) {
     // must not erase the `coin` flag the current model gives an object. The
     // deployment after this fix found exactly that — the shop could not see a
     // silver coin because the save's older flag list had replaced the new one.
-    return { ...o, ...old, flags: [...new Set([...(o.flags ?? []), ...(old.flags ?? [])])] };
+    return { ...o, ...old, cell: old.cell ?? null, homeCell: o.homeCell,
+      flags: [...new Set([...(o.flags ?? []), ...(old.flags ?? [])])] };
   });
   const savedNpcs = new Map((saved.npcs ?? []).map((n) => [n.id, n]));
   const npcs = base.npcs.map((n) => {
     const old = savedNpcs.get(n.id);
     if (!old) return { ...n };
     const maxHp = old.maxHp ?? old.hp ?? n.maxHp;
-    return { ...n, ...old, hp: old.hp ?? maxHp, maxHp, dead: old.dead ?? false };
+    return { ...n, ...old, cell: old.cell ?? null, homeCell: n.homeCell,
+      hp: old.hp ?? maxHp, maxHp, dead: old.dead ?? false };
   });
 
   // Accounts and characters are separate from this release. An account is the
@@ -425,12 +434,14 @@ export function upgradeState(saved, base) {
  * did and what a player expects after a deploy.
  */
 export function releaseHeldObjects(state, actors = []) {
-  const roomOf = new Map(actors.map((actor) => [actor.id, actor.room]));
+  const actorOf = new Map(actors.map((actor) => [actor.id, actor]));
   for (const object of state.objects) {
     if (object.holder === null || object.holder === undefined) continue;
     // A restart drops the actor; the object falls where they stood, or goes
     // home if even that record is gone. Nothing is restored to a hand.
-    object.room = roomOf.has(object.holder) ? roomOf.get(object.holder) : (object.heldRoom ?? state.start);
+    const actor = actorOf.get(object.holder);
+    object.room = actor ? actor.room : (object.heldRoom ?? state.start);
+    object.cell = actor?.cell ? [...actor.cell] : null;
     object.holder = null;
     object.inside = null;
     object.heldRoom = null;
@@ -530,6 +541,9 @@ export function step({ state, rooms, intents, actions = [] }) {
     }
   }
   const find = (id) => next.actors.find((a) => a.id === id);
+  for (const entity of [...next.actors, ...next.npcs, ...next.objects]) {
+    if (entity.cell && !validCell(rooms[entity.room]?.cells, entity.cell)) entity.cell = null;
+  }
 
   for (const intent of intents) {
     if (intent.kind === "action") {
@@ -552,11 +566,13 @@ export function step({ state, rooms, intents, actions = [] }) {
           if (object) {
             object.holder = actor.id;
             object.room = null;
+            object.cell = null;
             object.inside = null;
             object.worn = false;
           }
         } else if (effect.kind === "teleport") {
           actor.room = effect.room;
+          actor.cell = cellFor(rooms[actor.room]);
           actor.visited = [...new Set([...(actor.visited ?? []), effect.room])];
         } else if (effect.kind === "damage") {
           actor.hp = Math.max(0, (actor.hp ?? 0) - effect.amount);
@@ -577,6 +593,7 @@ export function step({ state, rooms, intents, actions = [] }) {
           id: intent.actorId,
           name: intent.name,
           room: next.start,
+          cell: cellFor(rooms[next.start]),
           visited: [next.start],
           key: null,
           account: null,
@@ -651,6 +668,7 @@ export function step({ state, rooms, intents, actions = [] }) {
       actor.account = intent.key;
       actor.name = intent.key;
       actor.room = next.start;
+      actor.cell = cellFor(rooms[actor.room]);
       actor.visited = [next.start];
       actor.role = 0;
       actor.level = 1;
@@ -757,6 +775,7 @@ export function step({ state, rooms, intents, actions = [] }) {
       object.eaten = true;
       object.holder = null;
       object.room = null;
+      object.cell = null;
       events.push({ room: actor.room, text: intent.messages.others, exceptId: actor.id });
       events.push({ onlyId: actor.id, text: intent.messages.actor });
       advanceQuests(next, actor, { kind: "deliver", npc: npc.id, object: object.id }, events);
@@ -1009,6 +1028,7 @@ export function step({ state, rooms, intents, actions = [] }) {
       actor.name = known.name ?? intent.key;
       // No position persistence: every login begins at the safe start.
       actor.room = next.start;
+      actor.cell = cellFor(rooms[actor.room]);
       actor.visited = [next.start];
       actor.role = known.role ?? 0;
       actor.level = known.level ?? 1;
@@ -1181,6 +1201,7 @@ export function step({ state, rooms, intents, actions = [] }) {
         if (object.holder !== actor.id) continue;
         object.holder = null;
         object.room = actor.room;
+        object.cell = actor.cell ? [...actor.cell] : null;
         object.inside = null;
         object.heldRoom = null;
         object.worn = false;
@@ -1229,6 +1250,7 @@ export function step({ state, rooms, intents, actions = [] }) {
       }
       events.push({ room: from, text: `${actor.name} leaves ${intent.dir}.`, exceptId: actor.id });
       actor.room = intent.to;
+      actor.cell = cellFor(rooms[actor.room], opposite(intent.dir));
       if (!actor.visited.includes(actor.room)) actor.visited.push(actor.room);
       events.push({ room: intent.to, text: `${actor.name} arrives.`, exceptId: actor.id });
       advanceQuests(next, actor, { kind: "visit", room: actor.room }, events);
@@ -1298,6 +1320,7 @@ export function step({ state, rooms, intents, actions = [] }) {
       for (const coin of coins) {
         coin.holder = null;
         coin.room = actor.room;
+        coin.cell = actor.cell ? [...actor.cell] : null;
       }
       actor.spellbook = [...book, spell.id];
       actor.maxMana = maxManaFor(actor);
@@ -1317,7 +1340,7 @@ export function step({ state, rooms, intents, actions = [] }) {
       if (target && target.room !== actor.room) continue;
       actor.mana = mana - spell.mana;
       actor.maxMana = maxManaFor(actor);
-      applySpell(next, actor, spell, target, events);
+      applySpell(next, actor, spell, target, events, rooms);
       continue;
     }
 
@@ -1334,6 +1357,7 @@ export function step({ state, rooms, intents, actions = [] }) {
         object.eaten = true;
         object.holder = null;
         object.room = null;
+        object.cell = null;
         events.push({ onlyId: actor.id, text: `You study the scroll and learn ${spell.name}.\r\n` });
         continue;
       }
@@ -1345,7 +1369,8 @@ export function step({ state, rooms, intents, actions = [] }) {
       object.eaten = true;
       object.holder = null;
       object.room = null;
-      applySpell(next, actor, spell, target, events);
+      object.cell = null;
+      applySpell(next, actor, spell, target, events, rooms);
       events.push({ onlyId: actor.id, text: `The scroll crumbles as ${spell.name} takes hold.\r\n` });
       continue;
     }
@@ -1357,6 +1382,7 @@ export function step({ state, rooms, intents, actions = [] }) {
       const from = actor.room;
       events.push({ room: from, text: `${actor.name} flees ${intent.dir}.`, exceptId: actor.id });
       actor.room = intent.to;
+      actor.cell = cellFor(rooms[actor.room], opposite(intent.dir));
       if (!actor.visited.includes(actor.room)) actor.visited.push(actor.room);
       events.push({ room: intent.to, text: `${actor.name} arrives.`, exceptId: actor.id });
       events.push({ onlyId: actor.id, text: `You flee ${intent.dir}.` });
@@ -1373,6 +1399,7 @@ export function step({ state, rooms, intents, actions = [] }) {
         if (object.forSale) continue;
         object.holder = actor.id;
         object.room = null;
+        object.cell = null;
         object.heldRoom = actor.room;
         object.worn = false;
         events.push({ room: actor.room, text: intent.messages.others, exceptId: actor.id });
@@ -1386,6 +1413,7 @@ export function step({ state, rooms, intents, actions = [] }) {
         if (actor.wielding === object.id) actor.wielding = null;
         object.holder = null;
         object.room = actor.room;
+        object.cell = actor.cell ? [...actor.cell] : null;
         object.heldRoom = null;
         object.worn = false;
         events.push({ room: actor.room, text: intent.messages.others, exceptId: actor.id });
@@ -1421,6 +1449,7 @@ export function step({ state, rooms, intents, actions = [] }) {
       object.inside = container.id;
       object.holder = null;
       object.room = null;
+      object.cell = null;
       object.heldRoom = null;
       object.worn = false;
       events.push({ room: actor.room, text: intent.messages.others, exceptId: actor.id });
@@ -1437,6 +1466,7 @@ export function step({ state, rooms, intents, actions = [] }) {
       object.inside = null;
       object.holder = actor.id;
       object.room = null;
+      object.cell = null;
       object.heldRoom = actor.room;
       object.worn = false;
       events.push({ room: actor.room, text: intent.messages.others, exceptId: actor.id });
@@ -1489,6 +1519,7 @@ export function step({ state, rooms, intents, actions = [] }) {
         object.eaten = true;
         object.holder = null;
         object.room = null;
+        object.cell = null;
       }
       events.push({ room: actor.room, text: intent.messages.others, exceptId: actor.id });
       events.push({ onlyId: actor.id, text: intent.messages.actor });
@@ -1519,10 +1550,12 @@ export function step({ state, rooms, intents, actions = [] }) {
       for (const coin of coins) {
         coin.holder = null;
         coin.room = intent.room;
+        coin.cell = actor.room === intent.room && actor.cell ? [...actor.cell] : null;
       }
       object.forSale = false;
       object.holder = actor.id;
       object.room = null;
+      object.cell = null;
       object.heldRoom = intent.room;
       events.push({ room: actor.room, text: intent.messages.others, exceptId: actor.id });
       events.push({ onlyId: actor.id, text: intent.messages.actor });
@@ -1538,6 +1571,7 @@ export function step({ state, rooms, intents, actions = [] }) {
       object.eaten = true;
       object.holder = null;
       object.room = null;
+      object.cell = null;
       // The shop pays in copper, minted for the sale and swept up by the reset.
       for (let i = 0; i < payment; i += 1) {
         next.objects.push({
@@ -1695,6 +1729,7 @@ export function step({ state, rooms, intents, actions = [] }) {
     const to = rooms[npc.room].exits[dir];
     const from = npc.room;
     npc.room = to;
+    npc.cell = cellFor(rooms[to], opposite(dir));
     events.push({ room: from, text: `${npc.name} scuttles ${dir}.`, source: npc.id });
     events.push({ room: to, text: `${npc.name} arrives.`, source: npc.id });
   }
@@ -1748,12 +1783,15 @@ export function step({ state, rooms, intents, actions = [] }) {
       if (killed) {
         if (next.npcs.includes(target)) {
           const deathRoom = target.room;
+          const deathCell = target.cell;
           target.dead = true;
           target.room = null;
+          target.cell = null;
           for (const lootId of target.loot ?? []) {
             const loot = next.objects.find((object) => object.id === lootId);
             if (!loot || loot.eaten || loot.holder !== null) continue;
             loot.room = deathRoom;
+            loot.cell = deathCell ? [...deathCell] : null;
             loot.inside = null;
             loot.heldRoom = null;
             events.push({ room: deathRoom, text: `${loot.name} falls from ${target.name}.` });
@@ -1773,6 +1811,7 @@ export function step({ state, rooms, intents, actions = [] }) {
               if (object.holder !== target.id) continue;
               object.holder = null;
               object.room = deathRoom;
+              object.cell = target.cell ? [...target.cell] : null;
               object.inside = null;
               object.heldRoom = null;
               object.worn = false;
@@ -1781,6 +1820,7 @@ export function step({ state, rooms, intents, actions = [] }) {
           }
           target.hp = target.maxHp ?? 10;
           target.room = next.start;
+          target.cell = cellFor(rooms[next.start]);
           if (!target.visited.includes(next.start)) target.visited.push(next.start);
           const inRing = rooms[deathRoom]?.arena === true;
           events.push({ onlyId: target.id, text: inRing ? "You fall. The Ring takes no goods.\r\n" : "You die, and wake at the start.\r\n" });
@@ -1802,6 +1842,7 @@ export function step({ state, rooms, intents, actions = [] }) {
     // The old MUD reset brings the dead back as well as moving the living.
     for (const npc of next.npcs) {
       npc.room = npc.home;
+      npc.cell = validCell(rooms[npc.home]?.cells, npc.homeCell) ? [...npc.homeCell] : null;
       npc.dead = false;
       npc.hp = npc.maxHp;
     }
@@ -1812,6 +1853,7 @@ export function step({ state, rooms, intents, actions = [] }) {
     for (const object of next.objects) {
       object.holder = null;
       object.room = object.home;
+      object.cell = validCell(rooms[object.home]?.cells, object.homeCell) ? [...object.homeCell] : null;
       object.inside = object.homeInside;
       object.heldRoom = null;
       object.worn = false;

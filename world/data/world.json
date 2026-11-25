@@ -27,6 +27,11 @@
       "name": "The Corridor",
       "text": "A narrow corridor of pale stone. Dust settles in the lamplight, and the Vault waits east behind a low door. The Atrium is south. The walls are close enough to touch on both sides, and the lamp brackets are empty.",
       "safe": false,
+      "cells": {
+        "grid": ["#######", "#.....#", "#######"],
+        "spawn": [1, 1],
+        "entries": { "south": [1, 1], "east": [5, 1] }
+      },
       "exits": {
         "south": 1,
         "east": 4
@@ -1310,6 +1315,7 @@
       "id": "rat",
       "name": "a rat",
       "room": 2,
+      "cell": [3, 1],
       "home": 2,
       "period": 40,
       "jitter": 6,
@@ -2151,6 +2157,7 @@
       "id": "scroll",
       "name": "a curled scroll",
       "room": 2,
+      "cell": [2, 1],
       "flags": [
         "takeable",
         "readable"
@@ -2173,6 +2180,7 @@
       "id": "chest",
       "name": "an oaken chest",
       "room": 2,
+      "cell": [4, 1],
       "flags": [
         "fixed",
         "container"

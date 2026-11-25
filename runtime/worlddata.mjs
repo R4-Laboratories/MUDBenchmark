@@ -13,6 +13,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spellById } from "./magic.mjs";
+import { validCell, validateLayout } from "./cells.mjs";
 
 // Resolved against this module, not the process working directory: the service
 // runs with its cwd inside runtime/, and relative paths there would lie.
@@ -134,7 +135,11 @@ export function loadWorld({ mode = "single", path = DEFAULT_PATH } = {}) {
       details: room.details ?? {},
       secrets: room.secrets ?? {},
       ambient: room.ambient ?? [],
+      ...(room.cells === undefined ? {} : { cells: room.cells }),
     };
+    if (room.cells !== undefined) {
+      errors.push(...validateLayout(room.cells, { ...room.exits, ...room.secretExits }, id));
+    }
   }
 
   // Exits must land somewhere. A secret exit is still a real edge: it must not
@@ -179,6 +184,9 @@ export function loadWorld({ mode = "single", path = DEFAULT_PATH } = {}) {
   const npcs = [];
   for (const npc of raw.npcs ?? []) {
     if (!rooms[npc.room]) errors.push(`npc ${npc.id} is in room ${npc.room}, which does not exist`);
+    if (npc.cell !== undefined && !validCell(rooms[npc.room]?.cells, npc.cell)) {
+      errors.push(`npc ${npc.id} has an invalid cell`);
+    }
     if (!Number.isInteger(npc.period) || npc.period < 1) errors.push(`npc ${npc.id} has a period below 1`);
     if (!Number.isInteger(npc.jitter) || npc.jitter < 0) errors.push(`npc ${npc.id} has a negative jitter`);
     const behaviour = npc.behaviour ?? "wander";
@@ -215,6 +223,9 @@ export function loadWorld({ mode = "single", path = DEFAULT_PATH } = {}) {
       if (object.room !== undefined) errors.push(`object ${object.id} is both in a room and inside something`);
     } else if (!rooms[object.room]) {
       errors.push(`object ${object.id} is in room ${object.room}, which does not exist`);
+    }
+    if (object.cell !== undefined && (object.inside !== undefined || !validCell(rooms[object.room]?.cells, object.cell))) {
+      errors.push(`object ${object.id} has an invalid cell`);
     }
 
     if (flags.includes("container")) {
