@@ -2091,6 +2091,12 @@
       "level": "build",
       "statement": "v0.91.81 adds an invalid-target guard. A blocked command still falls back after two tries; a target the room does not contain falls back after three, using the specific repair or the next legal focus/exit. The coachFallbackDue helper is shared by the browser and tools/agent-score.mjs. On Bonsai 2.5 27B the previous 74 failed take a loaf of bread attempts disappeared; a 200-turn run visited 55 rooms, completed 1 quest, produced 183 plans / 176 lessons, had 6 blocked attempts, 1 death, and finished at level 2 / 138 XP. This is a room-reach and loop fix, not a quest-completion fix. World unchanged at 254 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects. Gate covers the two/three-attempt thresholds and every prior check.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-345",
+      "level": "some-true",
+      "statement": "Production v0.91.81 serves the invalid-target guard. /, /planner.mjs, /mind.mjs and /ai.mjs are 200; /world reports 254 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects. Blocked commands fall back after two attempts; a target the room does not contain falls back after three, using coachFallbackDue and the specific repair or next legal focus/exit. On Bonsai 2.5 27B the previous 74 failed take a loaf of bread attempts disappeared; a 200-turn run visited 55 rooms, completed 1 quest, produced 183 plans / 176 lessons, had 6 blocked attempts, 1 death, and finished at level 2 / 138 XP. The 4090 was returned to training; the Bonsai server and SSH tunnel are stopped. Main Gate 45913172702 green, publish 45913908231, release v0.91.81. Federation remains disabled (403).",
+      "authority": "GitHub PR #97 merge 6935273 2026-11-26; main Gate 45913172702; publish 45913908231; release v0.91.81; wick deploy, /world, /, /planner.mjs, /mind.mjs, /ai.mjs; nvidia-smi 4 MiB 0%; local /tmp/bonsai-invalid3.json; tools/gate.mjs"
     }
   ]
 }
