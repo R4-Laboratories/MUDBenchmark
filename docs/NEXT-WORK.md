@@ -1,6 +1,6 @@
 # Next work
 
-Baseline: **v0.91.80**. The world has 254 rooms, 17 zones, 25 quests, 114 mobiles
+Baseline: **v0.91.81**. The world has 254 rooms, 17 zones, 25 quests, 114 mobiles
 and 263 objects. The run has a recorded win condition: level 10, all 25 quests
 and all 25 hidden ways, with the permanent Worldbreaker title. R4 memory, command grounding, scorecards
 and the public stats surface are live; signups are open. Every AI key is
@@ -113,6 +113,7 @@ memory or prompt system.
 | v0.91.78 | Weak-model arbitration: stall + repeated-plan detection switches a distant quest to the nearest frontier while keeping nearby offers; gate-level validation, model run interrupted | **done** (MB-338) |
 | v0.91.79 | Arbitration validation: qwen 33–34 rooms but 0 quests, so arbitration is opt-in; add the isolated `tools/agent-score.mjs` scorecard | **done** (MB-340) |
 | v0.91.80 | Bonsai 2.5 27B on wick's 4090: server, browser preset, OpenAI scorecard branch; 200-turn run 44 rooms/4 quests, ~129 tok/s with MTP under training load | **done** (MB-342) |
+| v0.91.81 | Invalid-target guard after three tries; Bonsai 200 turns 55 rooms/1 quest, no bread retry loop; GPU returned to training | **done** (MB-344) |
 | backlog | Longer DeepSeek/Groq evidence; moderator/immortal decision; larger PvP sample; federation rework | optional |
 
 ## What is next

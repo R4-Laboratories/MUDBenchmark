@@ -539,6 +539,15 @@ Rehearsed 2026-11-16:
   speaking, opened the Twin Door with one hidden partner and took the crown.
   Gate covers the death penalty, level gates, twin door, hide visibility and
   prompt (MB-286/287/288);
+- v0.91.81 (invalid-target guard) makes a repeated unreachable target fall back
+  after three attempts, while a blocked command still falls back after two.
+  A new `coachFallbackDue` helper is shared by the browser and
+  `tools/agent-score.mjs`. On Bonsai 2.5 27B the guard removed the 74 failed
+  `take a loaf of bread` attempts from the previous run: 200 turns visited **55
+  rooms**, completed 1 quest, produced 183 plans / 176 lessons, had 6 blocked
+  attempts, 1 death, and finished at level 2 / 138 XP. It is a room-reach and
+  loop fix, not a quest-completion fix. World unchanged at 254 rooms / 17 zones
+  / 25 quests / 114 mobiles / 263 objects (MB-344);
 - v0.91.80 (Bonsai 2.5 on the 4090) adds a first-class **Bonsai 2.5 27B
   (local 4090)** provider preset and an OpenAI-compatible branch in
   `tools/agent-score.mjs`. The 5.9 GB ternary model runs on wick's 4090 through

@@ -20,7 +20,7 @@ import { loadChannels } from "../runtime/channels.mjs";
 import { loadLevels } from "../runtime/levels.mjs";
 import { loadQuests } from "../runtime/quests.mjs";
 import { hashPassword } from "../runtime/accounts.mjs";
-import { buildSystemPrompt, buildUserPrompt, buildActionMenu, parseBrain, coachCommand, coachAction } from "../runtime/web/ai.mjs";
+import { buildSystemPrompt, buildUserPrompt, buildActionMenu, parseBrain, coachCommand, coachAction, coachFallbackDue } from "../runtime/web/ai.mjs";
 import { emptyMind, updateMind, mindPrompt } from "../runtime/web/mind.mjs";
 import { focusFor, focusPrompt, focusGuard } from "../runtime/web/planner.mjs";
 import { emptyMemory, rememberResult, memoryPrompt, loopWarning, breakLoop, shouldBreakLoop, seedMapFromLlms } from "../runtime/web/memory.mjs";
@@ -258,7 +258,8 @@ try {
       if (forced && forced !== parsed.command) { parsed.command = forced; parsed.thought = `Loop broken: ${forced}.`; }
     }
     const coach = coachCommand(parsed.command, promptState, mind);
-    if (coach.blocked) blockedCounts.set(parsed.command, (blockedCounts.get(parsed.command) ?? 0) + 1);
+    const invalidAttempt = coach.blocked || !coach.validation.ok;
+    if (invalidAttempt) blockedCounts.set(parsed.command, (blockedCounts.get(parsed.command) ?? 0) + 1);
     else blockedCounts.delete(parsed.command);
     let command = parsed.command;
     let sent = true;
@@ -272,8 +273,13 @@ try {
       continue;
     }
     coachRetries = 0;
-    if (coach.blocked) command = coachAction(focus, promptState, mind, coach.repaired);
-    else if (!coach.validation.ok) command = coach.repaired || "look";
+    if (coachFallbackDue({ blocked: coach.blocked, valid: coach.validation.ok, count: blockedCounts.get(parsed.command) ?? 0 })) {
+      command = coachAction(focus, promptState, mind, coach.repaired);
+      console.log(`turn ${turn}: COACH FALLBACK ${command}`);
+    } else if (coach.blocked) {
+      command = coachAction(focus, promptState, mind, coach.repaired);
+      console.log(`turn ${turn}: COACH FALLBACK ${command}`);
+    } else if (!coach.validation.ok) command = coach.repaired || "look";
     const fkey = `${focus.kind}:${focus.label}:${focus.target ?? ""}`;
     if (focusKey !== fkey) { focusKey = fkey; focusDetours = 0; }
     const focusLock = focusGuard({ focus, command, detours: focusDetours, state: promptState });
