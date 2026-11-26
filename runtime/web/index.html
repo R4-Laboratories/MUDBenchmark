@@ -3986,7 +3986,8 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       let validation = coach.validation;
       let repaired = coach.repaired;
       AI.blockedCounts ??= {};
-      if (coach.blocked) AI.blockedCounts[attempted] = (AI.blockedCounts[attempted] ?? 0) + 1;
+      const invalidAttempt = coach.blocked || !coach.validation.ok;
+      if (invalidAttempt) AI.blockedCounts[attempted] = (AI.blockedCounts[attempted] ?? 0) + 1;
       else delete AI.blockedCounts[attempted];
       if (coach.blocked && (AI.blockedCounts[attempted] ?? 0) < 2 && (AI.coachRetries ?? 0) < 1) {
         AI.coachRetries = (AI.coachRetries ?? 0) + 1;
@@ -4005,7 +4006,11 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         scheduleTurn(250);
         return;
       }
-      if (coach.blocked) {
+      if (coachFallbackDue({ blocked: coach.blocked, valid: validation.ok, count: AI.blockedCounts[attempted] ?? 0 })) {
+        parsed.command = coachAction(focus, promptState, mind, coach.repaired);
+        addChat("system", `Command fallback after "${attempted}": using "${parsed.command}".`);
+        parsed.thought = parsed.thought || `Command fallback: ${parsed.command}.`;
+      } else if (coach.blocked) {
         parsed.command = coachAction(focus, promptState, mind, coach.repaired);
         addChat("system", `Command coach: ${coach.feedback} Using "${parsed.command}".`);
         parsed.thought = parsed.thought || `Command coach: ${parsed.command}.`;

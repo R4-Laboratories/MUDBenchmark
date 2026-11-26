@@ -162,6 +162,16 @@ The Mind now stores the model's `NOTE` line (up to 12 notes) and prints `NOTES`
 back each turn; the browser notebook still records the same note for the human.
 This is the model's own durable context, not just a two-turn transcript.
 
+## Invalid-target guard
+
+A blocked command fell back after two tries, but a target the room did not
+contain could be retried indefinitely. The new `coachFallbackDue` rule keeps the
+two-try limit for blocked commands and allows three tries for an invalid target,
+then sends the specific repair or the next legal focus/exit. On Bonsai the
+previous 74 failed `take a loaf of bread` attempts disappeared; the run then
+visited 55 rooms and completed 1 quest. Room reach improved, quest completion
+did not.
+
 ## Bonsai 2.5 27B
 
 The local 4090 now serves Ternary Bonsai 2.5 27B, a 5.9 GB ternary model with

@@ -557,6 +557,12 @@ export function coachFallback(focus, state = null, mind = null) {
   return "look";
 }
 
+/** A repeated blocked command yields after two tries; a repeated invalid target after three. */
+export function coachFallbackDue({ blocked = false, valid = true, count = 0 } = {}) {
+  if (blocked) return count >= 2;
+  return valid === false && count >= 3;
+}
+
 /** Prefer the coach's specific repair, then the focus/exit fallback. */
 export function coachAction(focus, state = null, mind = null, repaired = null) {
   if (repaired) {
