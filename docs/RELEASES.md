@@ -539,6 +539,15 @@ Rehearsed 2026-11-16:
   speaking, opened the Twin Door with one hidden partner and took the crown.
   Gate covers the death penalty, level gates, twin door, hide visibility and
   prompt (MB-286/287/288);
+- v0.91.77 (strict focus experiment) adds an opt-in **Strict focus** checkbox
+  that makes the planner route immediate instead of waiting for two detours.
+  It is deliberately off by default: a 200-turn qwen2.5:3b run with strict focus
+  visited 21 rooms, completed 0 quests and forced 68 moves, oscillating between
+  the Gilded Rat and Market Square. The normal v0.91.76 qwen runs reached 19–35
+  rooms and 0–5 quests with the same six-line contract. The checkbox is kept as
+  an experiment for human testing, not as a default or a claimed improvement.
+  World unchanged at 254 rooms / 17 zones / 25 quests / 114 mobiles / 263
+  objects (MB-336);
 - v0.91.76 (six-line contract) makes the user prompt ask for the same six
   labelled lines the system prompt requires: THOUGHT, PLAN, REPLY, NOTE,
   LESSON and COMMAND. The fast prompt had asked for four lines, so qwen

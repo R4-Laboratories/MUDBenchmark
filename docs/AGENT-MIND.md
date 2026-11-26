@@ -162,6 +162,14 @@ The Mind now stores the model's `NOTE` line (up to 12 notes) and prints `NOTES`
 back each turn; the browser notebook still records the same note for the human.
 This is the model's own durable context, not just a two-turn transcript.
 
+## Strict focus is not a win
+
+An opt-in Strict focus checkbox forces the planner route immediately instead of
+waiting for two detours. On qwen2.5:3b it oscillated between the Gilded Rat and
+Market Square for 68 forced moves: 21 rooms, 0 quests, 0 deaths. It remains an
+off-by-default experiment for human testing; the standard two-detour lock is
+the safer default.
+
 ## Six-line contract
 
 The system prompt asked for six labelled lines, but both user prompts asked for

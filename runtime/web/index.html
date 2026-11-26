@@ -896,6 +896,7 @@
             </select>
             <div class="fast-row">
               <label><input type="checkbox" id="ai-fast"> Direct prompt</label>
+              <label title="Experimental: take the planner route immediately. Tested on qwen and not recommended; it can oscillate between two rooms."><input type="checkbox" id="ai-strict"> Strict focus (experimental)</label>
               <button type="button" id="ai-reset">Reset identity</button>
             </div>
             <p class="small muted" id="ai-identity">The Prism id is the account; the character is the in-game name.</p>
@@ -1227,6 +1228,7 @@
   const aiKey = document.getElementById("ai-key");
   const aiKeyField = document.getElementById("ai-key-field");
   const aiFast = document.getElementById("ai-fast");
+  const aiStrict = document.getElementById("ai-strict");
   const aiReasoning = document.getElementById("ai-reasoning");
   const aiIdentity = document.getElementById("ai-identity");
   const aiHint = document.getElementById("ai-hint");
@@ -2598,6 +2600,7 @@
       character: aiCharacter.value.trim(),
       goal: aiGoal.value,
       fast: aiFast.checked,
+      strict: aiStrict?.checked === true,
       reasoning: aiReasoning.value,
     };
     saveJSON(CONFIG_KEY, config);
@@ -2621,6 +2624,7 @@
     aiCharacter.value = config.character === "scout" ? "" : (config.character ?? "");
     aiGoal.value = GOALS[config.goal] ? config.goal : "explorer";
     aiFast.checked = config.fast !== false;
+    aiStrict.checked = config.strict === true;
     aiReasoning.value = config.reasoning ?? "auto";
     // Keep a key the player just typed; a saved key is restored by
     // applyProvider/keyFor and an empty field starts empty.
@@ -2648,7 +2652,7 @@
     aiKey.value = keyFor(aiBase.value);
     detectLocalModels();
   });
-  for (const field of [aiBase, aiModel, aiCharacter, aiGoal, aiFast, aiReasoning]) {
+  for (const field of [aiBase, aiModel, aiCharacter, aiGoal, aiFast, aiStrict, aiReasoning]) {
     field.addEventListener("change", () => { persistConfig(false); syncModelSummary(); });
   }
 
@@ -2859,6 +2863,7 @@
       temperature: fast ? 0 : 0.7,
       maxTokens: fast ? 200 : 500,
       fast,
+      strict: aiStrict?.checked === true,
       reasoning: aiReasoning.value,
       goal: aiGoal.value,
     };
@@ -3983,7 +3988,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       AI.coachRetries = 0;
       const focusKey = `${focus.kind}:${focus.label}:${focus.target ?? ""}`;
       if (AI.focusKey !== focusKey) { AI.focusKey = focusKey; AI.focusDetours = 0; }
-      const focusLock = focusGuard({ focus, command: parsed.command, detours: AI.focusDetours, state: promptState });
+      const focusLock = focusGuard({ focus, command: parsed.command, detours: AI.focusDetours, state: promptState, strict: AI.config?.strict === true });
       AI.focusDetours = focusLock.detours;
       AI.focusForced = focusLock.forced;
       if (focusLock.forced) {
