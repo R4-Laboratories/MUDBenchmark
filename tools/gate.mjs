@@ -70,6 +70,7 @@ import { planRetention } from "../runtime/retention.mjs";
 import { equipmentOf, equipmentText, inventoryGroups, inventoryLabel, setBonus } from "../runtime/equipment.mjs";
 import { hudChanged, hudSnapshot } from "../runtime/hud.mjs";
 import { FEDERATION_PROTOCOL, TRAVEL_ACTION } from "../runtime/federation.mjs";
+import { admissionWire } from "../runtime/admission-wire.mjs";
 import { WAYFARER, markWayfarer, wayfarerLine, wayfarerState } from "../runtime/wayfarer.mjs";
 import { maxManaFor, spellById, spellPower } from "../runtime/magic.mjs";
 import { trainingCost } from "../runtime/magic.mjs";
@@ -1897,6 +1898,12 @@ let controls = { ok: true, why: [] };
   check(verbTable.byAlias.get("drink") === "drink" && verbTable.byAlias.get("quaff") === "drink", "drink/quaff are not registered");
   check(verbTable.byAlias.get("takefrom") === "takeFrom", "takeFrom is not reachable after command lowercasing");
   check(FEDERATION_PROTOCOL === "mudbenchmark/region-transfer/2" && TRAVEL_ACTION === "mudbenchmark/region-travel/1", "the federation protocol names are wrong");
+  for (const room of [1, 126, 127, 128, 162, 252, 253, 254]) {
+    const move = admissionWire({ kind: 1, room, origin: room });
+    check(Buffer.byteLength(move, "utf8") === 7 && move.charCodeAt(1) === move.charCodeAt(2), `the move wire record for room ${room} is not seven safe bytes`);
+    const transfer = admissionWire({ kind: 2, room, origin: room, destination: room, held: 1, amount: 1, free: 1 });
+    check(Buffer.byteLength(transfer, "utf8") === 7, `the transfer wire record for room ${room} is not seven safe bytes`);
+  }
   const wayfarerWorld = loadWorld({ mode: "single" });
   const wayfarerZones = new Set(wayfarerWorld.zones.map((zone) => zone.id));
   check(WAYFARER.every((entry) => wayfarerWorld.rooms[entry.room] && wayfarerZones.has(entry.zone)), "a wayfarer landmark names a missing room or zone");

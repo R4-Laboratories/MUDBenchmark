@@ -539,6 +539,20 @@ Rehearsed 2026-11-16:
   speaking, opened the Twin Door with one hidden partner and took the crown.
   Gate covers the death penalty, level gates, twin door, hide visibility and
   prompt (MB-286/287/288);
+- v0.91.74 (admission wire) fixes movement into every room above 127. The
+  hologram intent endpoint encodes the JSON payload as UTF-8, so a room id
+  above 127 became two bytes and the seven-byte transition record was answered
+  `invalid request`. The server now maps every numeric wire field into 0..127;
+  for movement both `room` and `origin` use the same mapped value, which
+  preserves the admitted equality, while transfer/speak ignore the room fields.
+  This restores the new Atrium exits (252/253), the Arcanum above 127, the
+  Mistfall, Deepdelve, Foundry, Monastery and Wreck rooms, and all other
+  high-id rooms. A strict local holo stub walked Atrium → Cliff Walk → Harbor
+  Quay → Cliff Walk → Atrium → Cellar Stair → Undercroft and spoke in the new
+  room; the production holo answered admissible for the mapped 252/253 and 162
+  records. Gate checks the seven-byte wire form for rooms 1, 126, 127, 128,
+  162, 252, 253 and 254. World unchanged at 254 rooms / 17 zones / 25 quests /
+  114 mobiles / 263 objects (MB-330);
 - v0.91.73 (outer world and Wayfarer) opens the remaining chains. **The Sky
   Bridge** connects the High Walk to the Mages' Guild; a salt rift joins the
   Salt Caves and Moonlit Reach; a cracked stair joins the Ember Deep and the

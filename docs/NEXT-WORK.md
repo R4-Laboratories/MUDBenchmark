@@ -1,6 +1,6 @@
 # Next work
 
-Baseline: **v0.91.73**. The world has 254 rooms, 17 zones, 25 quests, 114 mobiles
+Baseline: **v0.91.74**. The world has 254 rooms, 17 zones, 25 quests, 114 mobiles
 and 263 objects. The run has a recorded win condition: level 10, all 25 quests
 and all 25 hidden ways, with the permanent Worldbreaker title. R4 memory, command grounding, scorecards
 and the public stats surface are live; signups are open. Every AI key is
@@ -106,6 +106,7 @@ memory or prompt system.
 | v0.91.71 | Federation protocol 2: Prism-signed travel grants, no password transfer, local fields preserved, skill policy on recite, replay/outage tests and a 500/2,000 account cap | **done** (MB-324) |
 | v0.91.72 | Open world and frontier: Cliff Walk/Cellar Stair and cross-zone loops, nearest-unvisited frontier focus, stale-exit avoidance, Mind NOTES; 120-turn 34-room/4-quest run | **done** (MB-326) |
 | v0.91.73 | Outer world and Wayfarer: Sky Bridge and outer-zone loops, two neighbours per zone, 16-landmark Wayfarer track, frontier edge invalidation, invalid-direction repair, guild-offer filter; 200-turn 52-room/3-quest run and qwen comparison | **done** (MB-328) |
+| v0.91.74 | Admission wire: seven-byte transition records stay 0..127, restoring movement and speech in rooms above 127 and the new Atrium exits | **done** (MB-330) |
 | backlog | Longer DeepSeek/Groq evidence; moderator/immortal decision; larger PvP sample; federation rework | optional |
 
 ## What is next
