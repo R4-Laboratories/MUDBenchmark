@@ -532,6 +532,23 @@ export function repairCommand(command, state = null, reason = "") {
   return "look";
 }
 
+/** A legal replacement when a weak model keeps sending a blocked command. */
+const PASSIVE_FALLBACK = new Set(["look", "inventory", "score", "battle", "combat", "bt", "quests", "q", "map", "equipment", "eq", "spells", "sp", "who", "wh", "stats", "wait"]);
+
+export function coachFallback(focus, state = null, mind = null) {
+  for (const candidate of focus?.candidates ?? []) {
+    const verb = String(candidate).trim().split(/\s+/)[0]?.toLowerCase();
+    if (PASSIVE_FALLBACK.has(verb)) continue;
+    const verdict = coachCommand(candidate, state, mind);
+    if (!verdict.blocked && verdict.validation?.ok !== false) return candidate;
+  }
+  const exits = (state?.room?.exits ?? []).map((exit) => (typeof exit === "string" ? exit : exit?.dir)).filter(Boolean);
+  for (const dir of exits) {
+    if (validateCommand(dir, state).ok) return dir;
+  }
+  return "look";
+}
+
 /** A semantic coach for the two mistakes the model makes most: social verbs and repeat attacks. */
 export function coachCommand(command, state = null, mind = null) {
   const raw = String(command ?? "").trim();

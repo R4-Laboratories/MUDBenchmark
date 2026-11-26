@@ -162,6 +162,16 @@ The Mind now stores the model's `NOTE` line (up to 12 notes) and prints `NOTES`
 back each turn; the browser notebook still records the same note for the human.
 This is the model's own durable context, not just a two-turn transcript.
 
+## Weak-model coaching
+
+A weak model can repeat a blocked command even while the coach explains why it
+was rejected. The browser and harness now count blocked attempts per command;
+after one retry they send the next legal focus candidate, or a legal exit, and
+skip passive fallbacks (`look`, `inventory`, `battle`, `quests`, `map`). The
+counts reset when a session starts. This is deliberately a harness guarantee,
+not another prompt rule: qwen2.5:3b went from 91 and 52 blocked attempts in two
+200-turn runs to 6, and reached the Hollow Fen and Moonlit Reach.
+
 ## Stuck and loop recovery
 
 The existing route memory detects repeated commands and small room cycles. The
@@ -230,9 +240,14 @@ adaptive-description plan in `docs/ROOM-PROSE.md`.
   quests and reached the Salt Caves, with 0 deaths and level 3 / 414 XP.
 - DeepSeek 200-turn outer-world run: 52 rooms, 3 quests, 6/16 wayfarer
   landmarks, reached the Eclipse Stair and Mirror Vault, one death, level 2 /
-  213 XP. A 200-turn qwen2.5:3b run visited 19 rooms and completed 1 quest; it
-  no longer looped at the Root Gate, but repeated social/command mistakes, so
-  weak-model coaching remains the limiting factor.
+  213 XP.
+- Post-admission-wire DeepSeek 200-turn run: 50 rooms, 4 quests, 9 blocked
+  attempts, reached the Arcanum's upper halls and Salt Caves, 0 deaths, level 3
+  / 400 XP.
+- Post-coaching qwen2.5:3b 200-turn run: 43 rooms, 4 quests, 6 blocked attempts,
+  reached the Hollow Fen and Moonlit Reach, 0 deaths, level 3 / 498 XP. It still
+  produced no PLAN/LESSON lines, so the structured prompt remains weaker for
+  this model than the forced action fallback.
 - Coach regression: `take a loaf of bread` with a purse of coins is no longer
   blocked as "already carrying"; item matching ignores `of`, `with`, `from` and
   `to` as well as articles.

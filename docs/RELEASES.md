@@ -539,6 +539,19 @@ Rehearsed 2026-11-16:
   speaking, opened the Twin Door with one hidden partner and took the crown.
   Gate covers the death penalty, level gates, twin door, hide visibility and
   prompt (MB-286/287/288);
+- v0.91.75 (weak-model coaching) stops a weak model from spending its turn on
+  the same blocked command. The browser and harness keep a per-command blocked
+  count; after one retry the coach sends the next legal focus candidate, or a
+  legal exit, instead of repeating `look` or the rejected command. The fallback
+  skips passive actions (`battle`, `quests`, `map`, `inventory`, `look`) so it
+  makes progress. The blocked counts reset when an AI session starts. A
+  post-admission-wire DeepSeek 200-turn run visited **50 rooms**, completed 4
+  quests, reached the Arcanum's upper halls and the Salt Caves, sent 191
+  commands, had 9 blocked attempts and 0 deaths at level 3 / 400 XP. A qwen2.5:3b
+  200-turn run visited **43 rooms**, completed 4 quests, reached the Hollow Fen
+  and Moonlit Reach, sent 194 commands, had **6** blocked attempts (down from 91
+  and 52 in earlier runs) and 0 deaths at level 3 / 498 XP. World unchanged at
+  254 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects (MB-332);
 - v0.91.74 (admission wire) fixes movement into every room above 127. The
   hologram intent endpoint encodes the JSON payload as UTF-8, so a room id
   above 127 became two bytes and the seven-byte transition record was answered
