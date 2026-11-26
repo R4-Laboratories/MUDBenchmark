@@ -2079,6 +2079,12 @@
       "level": "build",
       "statement": "v0.91.80 adds a Bonsai 2.5 27B (local 4090) provider preset and an OpenAI-compatible branch in tools/agent-score.mjs. On wick's 4090 the 5.9 GB Ternary-Bonsai-2.5-27B-PTQ1_0-mtp model runs through the PrismML llama.cpp fork with MTP, 32k context and one slot. With the GPU also running a training job at about 68% utilization, prefill measured about 485 tok/s and decode about 129 tok/s, using about 10.4 GB of VRAM. A 200-turn scorecard visited 44 rooms, completed 4 quests, produced 175 plans / 168 lessons, had 6 blocked attempts, 1 death, and finished at level 2 / 204 XP; it reached the Moonwell, Moon Throne, Eclipse Stair, Mirror Vault and Salt Heart. The model server is separate from MUDBench and the game server holds no model or provider key. World unchanged at 254 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects. Gate covers the Bonsai request shape and every prior check.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-343",
+      "level": "some-true",
+      "statement": "Production v0.91.80 serves the Bonsai 2.5 27B provider preset and tools/agent-score.mjs OpenAI-compatible branch. /, /planner.mjs, /mind.mjs and /ai.mjs are 200; /world reports 254 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects. The 5.9 GB Ternary Bonsai 2.5 27B PTQ1_0-mtp model runs on wick's 4090 through PrismML llama.cpp with MTP, 32k context and one slot; /health on port 8085 is ok. Decode measured 129 tok/s with a concurrent training job and 198 tok/s with the GPU idle; VRAM about 10 GB. A 200-turn Bonsai scorecard under training load visited 44 rooms, completed 4 quests, produced 175 plans / 168 lessons, had 6 blocked attempts, 1 death, and reached the Moonwell, Moon Throne, Eclipse Stair, Mirror Vault and Salt Heart. A second run with the GPU idle visited 30 rooms and completed 1 quest, with 74 failed take a loaf of bread attempts; repeated invalid targets remain a harness gap. The model server is separate from MUDBench and the game server holds no model or provider key. Main Gate 45900323380 green, publish 45901206157, release v0.91.80.",
+      "authority": "GitHub PR #96 merge 7bbac9b 2026-11-26; main Gate 45900323380; publish 45901206157; release v0.91.80; wick deploy, /world, /, /planner.mjs, /mind.mjs, /ai.mjs; Bonsai llama-server 127.0.0.1:8085 health; local /tmp/bonsai-200.json and /tmp/bonsai-200b.json; tools/agent-score.mjs; tools/gate.mjs"
     }
   ]
 }

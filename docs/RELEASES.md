@@ -548,9 +548,13 @@ Rehearsed 2026-11-16:
   scorecard visited **44 rooms**, completed **4 quests**, produced 175 plans /
   168 lessons, had 6 blocked attempts, 1 death, and finished at level 2 / 204
   XP; it reached the Moonwell, Moon Throne, Eclipse Stair, Mirror Vault and
-  Salt Heart. The model server is separate from MUDBench and still holds no
-  game-server key. World unchanged at 254 rooms / 17 zones / 25 quests / 114
-  mobiles / 263 objects (MB-342);
+  Salt Heart. A second 200-turn run with the training job idle visited 30 rooms
+  and completed 1 quest, with 74 failed `take a loaf of bread` attempts in the
+  Graveyard, so model quality still varies and repeated invalid targets remain
+  a harness gap. The model server is separate from MUDBench and still holds no
+  game-server key. Decode with the training job idle measured **198 tok/s**.
+  World unchanged at 254 rooms / 17 zones / 25 quests / 114 mobiles / 263
+  objects (MB-342);
 - v0.91.79 (arbitration validation) adds a reusable local scorecard tool,
   `tools/agent-score.mjs`, and makes weak-plan arbitration opt-in. The qwen
   validation did not show a quest gain: the uncapped run visited 34 rooms with

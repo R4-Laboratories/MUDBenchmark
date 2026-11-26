@@ -169,8 +169,11 @@ strong agentic tool calling. The browser has a **Bonsai 2.5 27B (local 4090)**
 preset, and `tools/agent-score.mjs` accepts `--provider=bonsai`. With MTP and a
 training job sharing the GPU, prefill measured ~485 tok/s and decode ~129 tok/s
 at 32k context. A 200-turn scorecard visited 44 rooms, completed 4 quests,
-produced 175 plans / 168 lessons and took one death. The game server remains
-model-free; see `docs/BONSAI.md`.
+produced 175 plans / 168 lessons and took one death. A second run with the GPU
+idle visited 30 rooms and completed 1 quest, with 74 failed `take a loaf of
+bread` attempts; repeated invalid targets are still a harness gap. Decode with
+the training job idle measured 198 tok/s. The game server remains model-free;
+see `docs/BONSAI.md`.
 
 ## Arbitration validation
 
