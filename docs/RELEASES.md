@@ -539,6 +539,17 @@ Rehearsed 2026-11-16:
   speaking, opened the Twin Door with one hidden partner and took the crown.
   Gate covers the death penalty, level gates, twin door, hide visibility and
   prompt (MB-286/287/288);
+- v0.91.79 (arbitration validation) adds a reusable local scorecard tool,
+  `tools/agent-score.mjs`, and makes weak-plan arbitration opt-in. The qwen
+  validation did not show a quest gain: the uncapped run visited 34 rooms with
+  0 quests (35 `preferExplore` turns), and the 8-turn excursion cap visited 33
+  rooms with 0 quests (48 `preferExplore` turns). The normal v0.91.76 qwen runs
+  ranged 19–35 rooms and 0–5 quests. The browser now has a **Weak-plan
+  arbitration** checkbox, off by default; the planner still supports
+  `preferExplore` for experiments. The scorecard tool starts an isolated world
+  and byte-accurate holo stub, drives the same Mind, planner, memory, coach and
+  prompts, and writes JSON plus a transcript. World unchanged at 254 rooms / 17
+  zones / 25 quests / 114 mobiles / 263 objects (MB-340);
 - v0.91.78 (weak-model arbitration) stops a small model from repeating a
   stalled quest plan forever without forcing every move. For Ollama and model
   names containing qwen/tiny/small/3b/1.5b/0.5b/phi/gemma, the browser tracks
