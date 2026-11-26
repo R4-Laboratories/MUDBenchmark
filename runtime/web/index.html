@@ -896,6 +896,7 @@
             </select>
             <div class="fast-row">
               <label><input type="checkbox" id="ai-fast"> Direct prompt</label>
+              <label><input type="checkbox" id="ai-weak"> Weak-plan arbitration</label>
               <label title="Experimental: take the planner route immediately. Tested on qwen and not recommended; it can oscillate between two rooms."><input type="checkbox" id="ai-strict"> Strict focus (experimental)</label>
               <button type="button" id="ai-reset">Reset identity</button>
             </div>
@@ -1228,6 +1229,7 @@
   const aiKey = document.getElementById("ai-key");
   const aiKeyField = document.getElementById("ai-key-field");
   const aiFast = document.getElementById("ai-fast");
+  const aiWeak = document.getElementById("ai-weak");
   const aiStrict = document.getElementById("ai-strict");
   const aiReasoning = document.getElementById("ai-reasoning");
   const aiIdentity = document.getElementById("ai-identity");
@@ -2600,6 +2602,7 @@
       character: aiCharacter.value.trim(),
       goal: aiGoal.value,
       fast: aiFast.checked,
+      weak: aiWeak?.checked === true,
       strict: aiStrict?.checked === true,
       reasoning: aiReasoning.value,
     };
@@ -2624,6 +2627,7 @@
     aiCharacter.value = config.character === "scout" ? "" : (config.character ?? "");
     aiGoal.value = GOALS[config.goal] ? config.goal : "explorer";
     aiFast.checked = config.fast !== false;
+    aiWeak.checked = config.weak === true;
     aiStrict.checked = config.strict === true;
     aiReasoning.value = config.reasoning ?? "auto";
     // Keep a key the player just typed; a saved key is restored by
@@ -2652,7 +2656,7 @@
     aiKey.value = keyFor(aiBase.value);
     detectLocalModels();
   });
-  for (const field of [aiBase, aiModel, aiCharacter, aiGoal, aiFast, aiStrict, aiReasoning]) {
+  for (const field of [aiBase, aiModel, aiCharacter, aiGoal, aiFast, aiWeak, aiStrict, aiReasoning]) {
     field.addEventListener("change", () => { persistConfig(false); syncModelSummary(); });
   }
 
@@ -2856,9 +2860,9 @@
     const key = aiKey.value.trim() || keyFor(base);
     const fast = aiFast.checked;
     const model = aiModel.value.trim();
-    // Weak models get a progress-based quest/frontier arbitration; strong
-    // providers keep the ordinary focus.
-    const weak = provider === "ollama" || /qwen|tiny|small|3b|1\.5b|0\.5b|phi|gemma/i.test(model);
+    // Progress-based quest/frontier arbitration is opt-in: the qwen
+    // validation did not improve quest completion, so it is not automatic.
+    const weak = aiWeak?.checked === true;
     const config = {
       provider,
       base,
@@ -2868,6 +2872,7 @@
       temperature: fast ? 0 : 0.7,
       maxTokens: fast ? 200 : 500,
       fast,
+      weak: aiWeak?.checked === true,
       strict: aiStrict?.checked === true,
       reasoning: aiReasoning.value,
       goal: aiGoal.value,
@@ -2955,6 +2960,7 @@
     AI.blockedCounts = {};
     AI.progressMark = "";
     AI.stallTurns = 0;
+    AI.frontierTurns = 0;
     AI.lastPlan = "";
     AI.lastCoach = null;
     try {
@@ -3865,8 +3871,17 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       else { AI.progressMark = progressMark; AI.stallTurns = 0; }
       const planRepeated = Boolean(mind.plan && AI.lastPlan === mind.plan);
       AI.lastPlan = mind.plan;
-      const preferExplore = AI.config?.weak === true
+      let preferExplore = AI.config?.weak === true
         && ((AI.stallTurns ?? 0) >= 12 || ((AI.stallTurns ?? 0) >= 6 && planRepeated));
+      if (preferExplore && (AI.frontierTurns ?? 0) >= 8) {
+        preferExplore = false;
+        AI.stallTurns = 0;
+        AI.frontierTurns = 0;
+      } else if (preferExplore) {
+        AI.frontierTurns = (AI.frontierTurns ?? 0) + 1;
+      } else {
+        AI.frontierTurns = 0;
+      }
       const focus = focusFor({ state: promptState, memory, mind, preferExplore });
       const focusText = focusPrompt(focus);
       AI.lastFocus = focus;

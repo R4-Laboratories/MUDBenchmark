@@ -1703,7 +1703,7 @@ let telemetry = { ok: true, why: [] };
   const statsSource = readFileSync(join(root, "runtime/web/stats.html"), "utf8");
   const watchSource = readFileSync(join(root, "runtime/web/watch.html"), "utf8");
   check(/id="hud"/.test(pageSource) && /mudbench-command-history/.test(pageSource) && /id="world-panel"/.test(pageSource) && /#overview \(\.\*\)/.test(pageSource), "the terminal HUD or world panel is missing");
-  check(/id="hero"/.test(pageSource) && /id="hero-agent"/.test(pageSource) && /id="ai-free"/.test(pageSource) && /id="ai-goal"/.test(pageSource) && /id="ai-custom"/.test(pageSource) && /id="ai-strict"/.test(pageSource), "the landing hero, free-agent card or strict-focus control is missing");
+  check(/id="hero"/.test(pageSource) && /id="hero-agent"/.test(pageSource) && /id="ai-free"/.test(pageSource) && /id="ai-goal"/.test(pageSource) && /id="ai-custom"/.test(pageSource) && /id="ai-weak"/.test(pageSource) && /id="ai-strict"/.test(pageSource), "the landing hero, free-agent card or strict-focus control is missing");
   check(/startFreeAgent/.test(pageSource) && /ensurePrismOwner/.test(pageSource) && /id="agent-chip"/.test(pageSource), "the one-click free-agent flow is missing");
   check(/id="pulse-activity"/.test(statsSource) && /\/series\?minutes=/.test(statsSource), "the public world pulse chart is missing");
   check(/class="skip"/.test(watchSource) && /role="log"/.test(watchSource) && /role="tablist"/.test(watchSource) && /aria-controls="chat-panel"/.test(watchSource) && /id="watch-announcer"/.test(watchSource), "the watch accessibility contract is missing");

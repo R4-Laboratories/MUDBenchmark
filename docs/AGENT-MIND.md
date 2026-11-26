@@ -162,6 +162,17 @@ The Mind now stores the model's `NOTE` line (up to 12 notes) and prints `NOTES`
 back each turn; the browser notebook still records the same note for the human.
 This is the model's own durable context, not just a two-turn transcript.
 
+## Arbitration validation
+
+The local `tools/agent-score.mjs` scorecard drove qwen2.5:3b through 200 turns
+with arbitration. The uncapped run visited 34 rooms and 0 quests (35
+`preferExplore` turns); the 8-turn excursion cap visited 33 rooms and 0 quests
+(48 `preferExplore` turns). The ordinary six-line qwen runs ranged 19–35 rooms
+and 0–5 quests. Arbitration therefore improves room reach in some runs but did
+not improve quest completion, so it is an **off-by-default checkbox**, not an
+automatic weak-model policy. The scorecard tool is the reusable way to compare
+the next policy.
+
 ## Weak-model arbitration
 
 For Ollama and small model names, a stalled quest no longer has to trap the

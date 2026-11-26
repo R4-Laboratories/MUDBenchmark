@@ -2061,6 +2061,12 @@
       "level": "some-true",
       "statement": "Production v0.91.78 serves weak-model plan arbitration. /, /planner.mjs, /mind.mjs and /ai.mjs are 200; /planner.mjs carries preferExplore; /world reports 254 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects. For Ollama and small model names, the browser tracks visit count, completed quests, XP and level; after 12 stalled turns, or 6 stalled turns with the same PLAN, the focus prefers the nearest unvisited frontier when the active objective is not in the current room. A quest offer in the current room still wins and the normal two-detour lock applies. Gate covers the stalled-quest to frontier switch and the ordinary quest focus. The long qwen validation run was interrupted by a host restart, so this claim is gate-level behavior only, not a model scorecard. Main Gate 45876406847 green, publish 45877542282, release v0.91.78. Federation remains disabled (403).",
       "authority": "GitHub PR #94 merge cb55d17 2026-11-26; main Gate 45876406847; publish 45877542282; release v0.91.78; wick deploy, /world, /, /planner.mjs, /mind.mjs, /ai.mjs, /federation/status 403; tools/gate.mjs"
+    },
+    {
+      "id": "MB-340",
+      "level": "build",
+      "statement": "v0.91.79 validates weak-plan arbitration and makes it opt-in. tools/agent-score.mjs starts an isolated world and byte-accurate holo stub, drives the same Mind, planner, memory, coach and prompts, and writes a JSON scorecard plus transcript. A 200-turn qwen2.5:3b arbitration run visited 34 rooms and completed 0 quests with 35 preferExplore turns; the 8-turn excursion cap visited 33 rooms and 0 quests with 48 preferExplore turns. The ordinary v0.91.76 qwen runs ranged 19-35 rooms and 0-5 quests, so arbitration did not improve quest completion. The browser now has an off-by-default Weak-plan arbitration checkbox; the planner still supports preferExplore for experiments. World unchanged at 254 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects. Gate covers the opt-in control, preferExplore and every prior check.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }
