@@ -2073,6 +2073,12 @@
       "level": "some-true",
       "statement": "Production v0.91.79 serves weak-plan arbitration as an off-by-default checkbox and adds tools/agent-score.mjs in the repository. /, /planner.mjs, /mind.mjs and /ai.mjs are 200; the browser carries id=ai-weak; /world reports 254 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects. The isolated scorecard starts a world and byte-accurate holo stub, drives the same Mind, planner, memory, coach and prompts, and writes JSON plus a transcript. A 200-turn qwen2.5:3b arbitration run visited 34 rooms and completed 0 quests with 35 preferExplore turns; the 8-turn excursion cap visited 33 rooms and 0 quests with 48 preferExplore turns. Normal six-line qwen runs ranged 19-35 rooms and 0-5 quests, so arbitration did not improve quest completion and is opt-in. Main Gate 45888837897 green, publish 45889842222, release v0.91.79. Federation remains disabled (403).",
       "authority": "GitHub PR #95 merge c5fae5a 2026-11-26; main Gate 45888837897; publish 45889842222; release v0.91.79; wick deploy, /world, /, /planner.mjs, /mind.mjs, /ai.mjs, /federation/status 403; local /tmp/qwen-arbitration.json and /tmp/qwen-arbitration2.json; tools/agent-score.mjs; tools/gate.mjs"
+    },
+    {
+      "id": "MB-342",
+      "level": "build",
+      "statement": "v0.91.80 adds a Bonsai 2.5 27B (local 4090) provider preset and an OpenAI-compatible branch in tools/agent-score.mjs. On wick's 4090 the 5.9 GB Ternary-Bonsai-2.5-27B-PTQ1_0-mtp model runs through the PrismML llama.cpp fork with MTP, 32k context and one slot. With the GPU also running a training job at about 68% utilization, prefill measured about 485 tok/s and decode about 129 tok/s, using about 10.4 GB of VRAM. A 200-turn scorecard visited 44 rooms, completed 4 quests, produced 175 plans / 168 lessons, had 6 blocked attempts, 1 death, and finished at level 2 / 204 XP; it reached the Moonwell, Moon Throne, Eclipse Stair, Mirror Vault and Salt Heart. The model server is separate from MUDBench and the game server holds no model or provider key. World unchanged at 254 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects. Gate covers the Bonsai request shape and every prior check.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

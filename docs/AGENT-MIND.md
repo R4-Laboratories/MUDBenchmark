@@ -162,6 +162,16 @@ The Mind now stores the model's `NOTE` line (up to 12 notes) and prints `NOTES`
 back each turn; the browser notebook still records the same note for the human.
 This is the model's own durable context, not just a two-turn transcript.
 
+## Bonsai 2.5 27B
+
+The local 4090 now serves Ternary Bonsai 2.5 27B, a 5.9 GB ternary model with
+strong agentic tool calling. The browser has a **Bonsai 2.5 27B (local 4090)**
+preset, and `tools/agent-score.mjs` accepts `--provider=bonsai`. With MTP and a
+training job sharing the GPU, prefill measured ~485 tok/s and decode ~129 tok/s
+at 32k context. A 200-turn scorecard visited 44 rooms, completed 4 quests,
+produced 175 plans / 168 lessons and took one death. The game server remains
+model-free; see `docs/BONSAI.md`.
+
 ## Arbitration validation
 
 The local `tools/agent-score.mjs` scorecard drove qwen2.5:3b through 200 turns

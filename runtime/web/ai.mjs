@@ -15,6 +15,14 @@ export const PROVIDERS = {
     keyMode: "required",
     hint: "Create a free key at console.groq.com/keys. The free tier is fast (about 30 requests/minute, 1,000/day for the 20B model); the key stays in this browser and goes only to api.groq.com.",
   },
+  bonsai: {
+    label: "Bonsai 2.5 27B (local 4090)",
+    base: "http://localhost:8085/v1",
+    model: "bonsai",
+    needsKey: false,
+    keyMode: "none",
+    hint: "Run the PrismML llama.cpp server on port 8085, then tunnel it to localhost. The 27B ternary model is 5.9 GB and uses about 10 GB of VRAM at 32k context.",
+  },
   ollama: {
     label: "Ollama (local)",
     base: "http://localhost:11434/v1",
@@ -998,9 +1006,10 @@ export function requestFor(provider, config, system, messages) {
   const reasoningModel = /gpt-5|(^|[-/])o[134]/i.test(String(config.model ?? ""));
   // DeepSeek needs headroom even when thinking is off; a 120-token fast cap
   // can still end before the three labelled lines. The unused budget is free.
+  const bonsai = provider === "bonsai" || /bonsai/i.test(String(config.model ?? ""));
   const maxTokens = provider === "deepseek"
     ? Math.max(config.deliberate ? 600 : 300, Number(config.maxTokens) || 0)
-    : (config.maxTokens ?? 400);
+    : (bonsai ? Math.max(1200, Number(config.maxTokens) || 0) : (config.maxTokens ?? 400));
   return {
     url: `${base}/chat/completions`,
     headers: {
@@ -1014,7 +1023,7 @@ export function requestFor(provider, config, system, messages) {
       ...(reasoningModel
         ? { max_completion_tokens: config.deliberate ? 800 : 300 }
         : { max_tokens: maxTokens }),
-      ...(reasoning ? { reasoning_effort: reasoning } : {}),
+      ...(bonsai ? { reasoning_effort: "medium" } : reasoning ? { reasoning_effort: reasoning } : {}),
     },
   };
 }
