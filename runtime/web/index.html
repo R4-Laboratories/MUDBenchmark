@@ -2942,6 +2942,7 @@
     AI.focusKey = "";
     AI.focusForced = false;
     AI.coachRetries = 0;
+    AI.blockedCounts = {};
     AI.lastCoach = null;
     try {
       const memory = ensureMemory();
@@ -3949,7 +3950,10 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       const coach = coachCommand(attempted, promptState, mind);
       let validation = coach.validation;
       let repaired = coach.repaired;
-      if (coach.blocked && (AI.coachRetries ?? 0) < 2) {
+      AI.blockedCounts ??= {};
+      if (coach.blocked) AI.blockedCounts[attempted] = (AI.blockedCounts[attempted] ?? 0) + 1;
+      else delete AI.blockedCounts[attempted];
+      if (coach.blocked && (AI.blockedCounts[attempted] ?? 0) < 2 && (AI.coachRetries ?? 0) < 1) {
         AI.coachRetries = (AI.coachRetries ?? 0) + 1;
         AI.lastCommand = attempted;
         AI.commandRoom = AI.room;
@@ -3967,7 +3971,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         return;
       }
       if (coach.blocked) {
-        parsed.command = repaired || "look";
+        parsed.command = coachFallback(focus, promptState, mind);
         addChat("system", `Command coach: ${coach.feedback} Using "${parsed.command}".`);
         parsed.thought = parsed.thought || `Command coach: ${parsed.command}.`;
       } else if (!validation.ok) {
