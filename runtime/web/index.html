@@ -2855,10 +2855,15 @@
     const base = normalizeBase(aiBase.value.trim());
     const key = aiKey.value.trim() || keyFor(base);
     const fast = aiFast.checked;
+    const model = aiModel.value.trim();
+    // Weak models get a progress-based quest/frontier arbitration; strong
+    // providers keep the ordinary focus.
+    const weak = provider === "ollama" || /qwen|tiny|small|3b|1\.5b|0\.5b|phi|gemma/i.test(model);
     const config = {
       provider,
       base,
-      model: aiModel.value.trim(),
+      model,
+      weak,
       key,
       temperature: fast ? 0 : 0.7,
       maxTokens: fast ? 200 : 500,
@@ -2948,6 +2953,9 @@
     AI.focusForced = false;
     AI.coachRetries = 0;
     AI.blockedCounts = {};
+    AI.progressMark = "";
+    AI.stallTurns = 0;
+    AI.lastPlan = "";
     AI.lastCoach = null;
     try {
       const memory = ensureMemory();
@@ -3852,7 +3860,14 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
       const exits = stateRoom.exits ?? [];
       const memoryText = memoryPrompt(memory, { room: AI.room || stateRoom.name, exits, query: observation });
       const mindText = mindPrompt(mind, { state: promptState, room: AI.room || stateRoom.name });
-      const focus = focusFor({ state: promptState, memory, mind });
+      const progressMark = `${Object.keys(memory.rooms).length}|${promptState.self?.quests?.completed ?? 0}|${promptState.self?.xp ?? 0}|${promptState.self?.level ?? 1}`;
+      if (AI.progressMark === progressMark) AI.stallTurns = (AI.stallTurns ?? 0) + 1;
+      else { AI.progressMark = progressMark; AI.stallTurns = 0; }
+      const planRepeated = Boolean(mind.plan && AI.lastPlan === mind.plan);
+      AI.lastPlan = mind.plan;
+      const preferExplore = AI.config?.weak === true
+        && ((AI.stallTurns ?? 0) >= 12 || ((AI.stallTurns ?? 0) >= 6 && planRepeated));
+      const focus = focusFor({ state: promptState, memory, mind, preferExplore });
       const focusText = focusPrompt(focus);
       AI.lastFocus = focus;
       const r4Text = assemble({

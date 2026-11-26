@@ -61,7 +61,7 @@ const offerScore = (quest, { memory, from } = {}) => {
   return routeFor(memory, from, quest.giverRoomName).length ? 4 : 1;
 };
 
-export function focusFor({ state = null, memory = null, mind = null } = {}) {
+export function focusFor({ state = null, memory = null, mind = null, preferExplore = false } = {}) {
   const self = state?.self ?? {};
   const room = state?.room ?? {};
   const from = room.name ?? null;
@@ -159,10 +159,15 @@ export function focusFor({ state = null, memory = null, mind = null } = {}) {
   const activeEntry = activeOptions[0] ?? null;
   const active = activeEntry?.quest ?? null;
   const objective = activeEntry?.objective ?? null;
+  const answerHere = objective?.kind === "answer"
+    && (from === objective.answerRoomName || (!mind?.knownWord && from === objective.clueRoomName));
+  const objectiveHere = objective ? (objective.kind === "answer" ? answerHere : objectiveScore(objective, { state, memory, from, mind }) >= 5) : false;
+  const preferExploreNow = Boolean(preferExplore && active && objective && !objectiveHere);
   const availableOptions = [...(self.available_quests ?? [])].map((quest) => ({ quest, score: offerScore(quest, { memory, from }) }))
     .sort((a, b) => b.score - a.score || (a.quest.level ?? 1) - (b.quest.level ?? 1));
   const bestOffer = availableOptions[0] ?? null;
-  if ((!activeEntry || activeEntry.score <= 1 || objective?.kind === "answer") && bestOffer && bestOffer.score > (activeEntry?.score ?? 0)) {
+  if ((!activeEntry || activeEntry.score <= 1 || objective?.kind === "answer") && bestOffer
+    && bestOffer.score > (activeEntry?.score ?? 0) && !(preferExploreNow && bestOffer.score < 5)) {
     const target = bestOffer.quest.giverRoomName ?? from;
     const here = target === from;
     return withRoute({
@@ -172,7 +177,7 @@ export function focusFor({ state = null, memory = null, mind = null } = {}) {
       candidates: unique([here ? `quest accept ${bestOffer.quest.id}` : (routeFor(memory, from, target)[0] ?? "look"), "quests", "look"]),
     }, memory, from, target);
   }
-  const activeReachable = active && objective && (activeEntry.score > 1 || objective.kind === "answer");
+  const activeReachable = active && objective && !preferExploreNow && (activeEntry.score > 1 || objective.kind === "answer");
   if (activeReachable) {
     const candidates = [];
     let target = from;

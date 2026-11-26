@@ -2049,6 +2049,12 @@
       "level": "some-true",
       "statement": "Production v0.91.77 serves an opt-in Strict focus checkbox, off by default. /, /planner.mjs, /mind.mjs, /ai.mjs and /prism-auth.mjs are 200; /world reports 254 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects; the browser carries id=ai-strict. The checkbox takes the planner route immediately instead of after two detours. A 200-turn qwen2.5:3b strict run visited 21 rooms, completed 0 quests and forced 68 moves, oscillating between the Gilded Rat and Market Square; normal v0.91.76 qwen runs reached 19-35 rooms and 0-5 quests. Strict focus is kept as an off-by-default experiment for human testing, not a claimed improvement. Main Gate 45843023078 green, publish 45844318700, release v0.91.77. Federation remains disabled (403).",
       "authority": "GitHub PR #93 merge f67b264 2026-11-26; main Gate 45843023078; publish 45844318700; release v0.91.77; wick deploy, /world, /, /planner.mjs, /mind.mjs, /ai.mjs, /federation/status 403; local /tmp/qwen-strict.log; tools/gate.mjs"
+    },
+    {
+      "id": "MB-338",
+      "level": "build",
+      "statement": "v0.91.78 adds weak-model plan arbitration. For Ollama and model names containing qwen/tiny/small/3b/1.5b/0.5b/phi/gemma, the browser tracks visit count, completed quests, XP and level. After 12 stalled turns, or 6 stalled turns with the same PLAN, focusFor(preferExplore) prefers the nearest unvisited frontier when the active objective is not in the current room; a nearby quest offer still wins and the normal two-detour lock applies. Gate covers the stalled-quest to frontier switch and the ordinary quest focus. The long qwen validation run was interrupted by a host restart, so this claim is gate-level behavior only, not a model scorecard. World unchanged at 254 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }
