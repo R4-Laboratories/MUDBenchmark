@@ -539,6 +539,18 @@ Rehearsed 2026-11-16:
   speaking, opened the Twin Door with one hidden partner and took the crown.
   Gate covers the death penalty, level gates, twin door, hide visibility and
   prompt (MB-286/287/288);
+- v0.91.76 (six-line contract) makes the user prompt ask for the same six
+  labelled lines the system prompt requires: THOUGHT, PLAN, REPLY, NOTE,
+  LESSON and COMMAND. The fast prompt had asked for four lines, so qwen
+  followed it and produced no plans or lessons. The coach also prefers its
+  specific repair (`say amber` → `answer amber`) before a generic focus/exit
+  fallback. A DeepSeek 200-turn run visited **51 rooms**, completed 4 quests,
+  produced 200 plans / 200 lessons, had 12 blocked attempts and 0 deaths at
+  level 3 / 470 XP. Three qwen2.5:3b 200-turn runs after the change all produced
+  200 plans / 200 lessons and only 1–5 blocked attempts; room reach ranged
+  **19–35** and quests **0–5**, so the structured contract is fixed while
+  weak-model route quality remains variable. World unchanged at 254 rooms / 17
+  zones / 25 quests / 114 mobiles / 263 objects (MB-334);
 - v0.91.75 (weak-model coaching) stops a weak model from spending its turn on
   the same blocked command. The browser and harness keep a per-command blocked
   count; after one retry the coach sends the next legal focus candidate, or a

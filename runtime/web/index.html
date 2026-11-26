@@ -3971,7 +3971,7 @@ RECENT: ${AI.recent.join(" · ") || "(none)"}`
         return;
       }
       if (coach.blocked) {
-        parsed.command = coachFallback(focus, promptState, mind);
+        parsed.command = coachAction(focus, promptState, mind, coach.repaired);
         addChat("system", `Command coach: ${coach.feedback} Using "${parsed.command}".`);
         parsed.thought = parsed.thought || `Command coach: ${parsed.command}.`;
       } else if (!validation.ok) {

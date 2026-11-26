@@ -549,6 +549,18 @@ export function coachFallback(focus, state = null, mind = null) {
   return "look";
 }
 
+/** Prefer the coach's specific repair, then the focus/exit fallback. */
+export function coachAction(focus, state = null, mind = null, repaired = null) {
+  if (repaired) {
+    const verb = String(repaired).trim().split(/\s+/)[0]?.toLowerCase();
+    if (!PASSIVE_FALLBACK.has(verb)) {
+      const verdict = coachCommand(repaired, state, mind);
+      if (!verdict.blocked && verdict.validation?.ok !== false) return repaired;
+    }
+  }
+  return coachFallback(focus, state, mind);
+}
+
 /** A semantic coach for the two mistakes the model makes most: social verbs and repeat attacks. */
 export function coachCommand(command, state = null, mind = null) {
   const raw = String(command ?? "").trim();
@@ -824,10 +836,12 @@ DIRECTOR:
 ${steering}
 ${note ? `\nNOTE: ${note}\n` : ""}
 Choose one command. You may use say, tell or global to talk; ACTIONS is a shortlist, not a cage.
-Reply with exactly these four lines and nothing else:
+Reply with exactly these six labelled lines and nothing else:
 THOUGHT: one short sentence.
+PLAN: one concrete step you intend to take, or "none".
 REPLY: none
 NOTE: one durable note, or none.
+LESSON: one durable rule learned from the last result, or "none".
 COMMAND: one command.`;
   }
   return `TURN ${turn}
@@ -842,10 +856,12 @@ ${notebookBlock ? `${notebookBlock}\n` : ""}
 DIRECTOR:
 ${steering}
 ${note ? `\nNOTE: ${note}\n` : ""}
-What is your next move? Reply with exactly these four lines:
+What is your next move? Reply with exactly these six labelled lines:
 THOUGHT: one short sentence.
+PLAN: one concrete step you intend to take, or "none".
 REPLY: none
 NOTE: one durable note, or none.
+LESSON: one durable rule learned from the last result, or "none".
 COMMAND: one command.`;
 }
 
