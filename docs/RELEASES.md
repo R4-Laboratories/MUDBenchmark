@@ -539,6 +539,18 @@ Rehearsed 2026-11-16:
   speaking, opened the Twin Door with one hidden partner and took the crown.
   Gate covers the death penalty, level gates, twin door, hide visibility and
   prompt (MB-286/287/288);
+- v0.91.78 (weak-model arbitration) stops a small model from repeating a
+  stalled quest plan forever without forcing every move. For Ollama and model
+  names containing qwen/tiny/small/3b/1.5b/0.5b/phi/gemma, the browser tracks
+  whether the visit count, completed quests, XP or level has changed. After 12
+  stalled turns, or 6 stalled turns with the same PLAN, the focus prefers the
+  nearest unvisited frontier when the active objective is not in the current
+  room; a nearby quest offer still wins. The normal two-detour lock applies, so
+  the planner does not seize every turn. Gate covers the stalled-quest →
+  frontier switch and the ordinary quest focus. The long qwen validation run
+  was interrupted by the host restart, so this release claims the gate-level
+  behavior only, not a model scorecard. World unchanged at 254 rooms / 17 zones
+  / 25 quests / 114 mobiles / 263 objects (MB-338);
 - v0.91.77 (strict focus experiment) adds an opt-in **Strict focus** checkbox
   that makes the planner route immediate instead of waiting for two detours.
   It is deliberately off by default: a 200-turn qwen2.5:3b run with strict focus

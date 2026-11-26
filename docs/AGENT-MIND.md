@@ -162,6 +162,19 @@ The Mind now stores the model's `NOTE` line (up to 12 notes) and prints `NOTES`
 back each turn; the browser notebook still records the same note for the human.
 This is the model's own durable context, not just a two-turn transcript.
 
+## Weak-model arbitration
+
+For Ollama and small model names, a stalled quest no longer has to trap the
+agent. The browser marks visit count, completed quests, XP and level; after 12
+turns with no change, or 6 turns with the same PLAN, the focus prefers the
+nearest unvisited frontier when the active objective is not in the current
+room. A quest offer in the current room still wins, and the ordinary two-detour
+lock remains. This is deliberately not strict focus: the model can still choose
+the first step, and only a real stall changes the planner's preference. Gate
+covers the stalled-quest → frontier switch and the ordinary quest path. The
+long qwen run for this change was interrupted by the host restart, so no model
+scorecard is claimed.
+
 ## Strict focus is not a win
 
 An opt-in Strict focus checkbox forces the planner route immediately instead of

@@ -1,6 +1,6 @@
 # Next work
 
-Baseline: **v0.91.77**. The world has 254 rooms, 17 zones, 25 quests, 114 mobiles
+Baseline: **v0.91.78**. The world has 254 rooms, 17 zones, 25 quests, 114 mobiles
 and 263 objects. The run has a recorded win condition: level 10, all 25 quests
 and all 25 hidden ways, with the permanent Worldbreaker title. R4 memory, command grounding, scorecards
 and the public stats surface are live; signups are open. Every AI key is
@@ -110,6 +110,7 @@ memory or prompt system.
 | v0.91.75 | Weak-model coaching: blocked-command counts, one retry, legal focus/exit fallback, passive-action filter; post-fix DeepSeek 50 rooms/4 quests and qwen 43 rooms/4 quests | **done** (MB-332) |
 | v0.91.76 | Six-line contract: user prompt asks for PLAN/LESSON, coach prefers specific repairs; DeepSeek 51 rooms/4 quests, qwen 200 plans/lessons with 1–5 blocked but variable reach | **done** (MB-334) |
 | v0.91.77 | Strict focus experiment: opt-in immediate route lock; qwen test oscillated (21 rooms, 0 quests), so default off | **done** (MB-336) |
+| v0.91.78 | Weak-model arbitration: stall + repeated-plan detection switches a distant quest to the nearest frontier while keeping nearby offers; gate-level validation, model run interrupted | **done** (MB-338) |
 | backlog | Longer DeepSeek/Groq evidence; moderator/immortal decision; larger PvP sample; federation rework | optional |
 
 ## What is next
