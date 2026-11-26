@@ -43,7 +43,7 @@ import { assemble } from "../runtime/router.mjs";
 import { AREA_PERIOD, BASE_HP, HP_PER_LEVEL, armorOf, attackRoll, checkpointIdentities, initialState, maxHpForLevel, nextFrom, phaseAt, releaseHeldObjects, step, upgradeState } from "../runtime/world.mjs";
 import { join } from "node:path";
 import { buildCandidates } from "./candidate.mjs";
-import { PROVIDERS, DEFAULT_GOAL, GOALS, buildSystemPrompt, buildUserPrompt, buildActionMenu, normalizeBase, parseBrain, readSseText, requestFor, replyFrom, trimHistory, validateCommand, repairCommand, coachCommand, coachFallback, isThrottledStatus, retryAfterMs, throttleWaitMs, throttlePlan } from "../runtime/web/ai.mjs";
+import { PROVIDERS, DEFAULT_GOAL, GOALS, buildSystemPrompt, buildUserPrompt, buildActionMenu, normalizeBase, parseBrain, readSseText, requestFor, replyFrom, trimHistory, validateCommand, repairCommand, coachCommand, coachAction, coachFallback, isThrottledStatus, retryAfterMs, throttleWaitMs, throttlePlan } from "../runtime/web/ai.mjs";
 import { emptyMind, updateMind, mindPrompt, addLesson } from "../runtime/web/mind.mjs";
 import { focusFor, focusPrompt, focusGuard } from "../runtime/web/planner.mjs";
 import { emptyMemory, noteRoom, rememberResult, memoryPrompt, loopWarning, breakLoop, shouldBreakLoop, pathTo, nextStep, routeHint, nearestTarget, seedMap, seedMapFromLlms, observedCommandSuccess, frontier } from "../runtime/web/memory.mjs";
@@ -266,6 +266,9 @@ let webAI = { ok: true, why: [] };
   const fallbackState = { room: { name: "The Root Gate", actors: [], npcs: [], exits: [{ dir: "west" }, { dir: "up" }], objects: [], actions: [] }, self: { inventory_names: ["a grey cloak"], worn: [], enemies: [] } };
   const fallback = coachFallback({ candidates: ["take a grey cloak", "battle", "quests", "look"] }, fallbackState, emptyMind());
   check(fallback === "west" || fallback === "up", "the weak-model fallback did not choose a legal exit");
+  const shrineState = { room: { name: "The Shrine", actors: [], npcs: [], exits: [{ dir: "south" }, { dir: "north" }, { dir: "east" }], objects: [], actions: [] }, self: { inventory_names: [], enemies: [] } };
+  const sayAmber = coachCommand("say amber", shrineState, wordMind);
+  check(coachAction({ candidates: ["quests", "look"] }, shrineState, wordMind, sayAmber.repaired) === "answer amber", "the coach fallback ignored the specific answer repair");
   const guard1 = focusGuard({ focus: { kind: "quest", label: "Q", route: ["east"], candidates: ["east"] }, command: "look", detours: 0 });
   const guard2 = focusGuard({ focus: { kind: "quest", label: "Q", route: ["east"], candidates: ["east"] }, command: "look", detours: 1, state: { room: { exits: [{ dir: "east" }] } } });
   check(!guard1.forced && guard1.detours === 1 && guard2.forced && guard2.command === "east", "the focus lock did not override two detours");
@@ -336,7 +339,7 @@ let webAI = { ok: true, why: [] };
   const user = buildUserPrompt({ turn: 2, observation: "[The Atrium]", director: ["go north"] });
   check(user.includes("TURN 2") && user.includes("go north"), "the user prompt lost the turn or direction");
   const fastFormatUser = buildUserPrompt({ turn: 2, observation: "[The Atrium]", fast: true, actions: ["look", "north"] });
-  check(/THOUGHT: one short sentence/.test(fastFormatUser) && /COMMAND: one command/.test(fastFormatUser), "the fast prompt lost the output format");
+  check(/THOUGHT: one short sentence/.test(fastFormatUser) && /PLAN: one concrete step/.test(fastFormatUser) && /LESSON: one durable rule/.test(fastFormatUser) && /COMMAND: one command/.test(fastFormatUser), "the fast prompt lost the six-line output format");
   const stateUser = buildUserPrompt({
     turn: 3,
     observation: "[The Atrium]",

@@ -162,6 +162,16 @@ The Mind now stores the model's `NOTE` line (up to 12 notes) and prints `NOTES`
 back each turn; the browser notebook still records the same note for the human.
 This is the model's own durable context, not just a two-turn transcript.
 
+## Six-line contract
+
+The system prompt asked for six labelled lines, but both user prompts asked for
+four (THOUGHT, REPLY, NOTE, COMMAND). qwen followed the user prompt, so it
+produced no PLAN or LESSON at all. The user prompts now ask for all six lines.
+Three qwen 200-turn runs after the change produced 200 plans and 200 lessons
+each, with 1–5 blocked attempts. Its route quality still varies widely (19–35
+rooms, 0–5 quests), which is a model-capability limit rather than a prompt
+contract bug.
+
 ## Weak-model coaching
 
 A weak model can repeat a blocked command even while the coach explains why it
@@ -245,9 +255,12 @@ adaptive-description plan in `docs/ROOM-PROSE.md`.
   attempts, reached the Arcanum's upper halls and Salt Caves, 0 deaths, level 3
   / 400 XP.
 - Post-coaching qwen2.5:3b 200-turn run: 43 rooms, 4 quests, 6 blocked attempts,
-  reached the Hollow Fen and Moonlit Reach, 0 deaths, level 3 / 498 XP. It still
-  produced no PLAN/LESSON lines, so the structured prompt remains weaker for
-  this model than the forced action fallback.
+  reached the Hollow Fen and Moonlit Reach, 0 deaths, level 3 / 498 XP.
+- Six-line contract DeepSeek 200-turn run: 51 rooms, 4 quests, 200 plans / 200
+  lessons, 12 blocked attempts, 0 deaths, level 3 / 470 XP.
+- Six-line contract qwen 200-turn runs: 200 plans / 200 lessons and 1–5 blocked
+  attempts each; room reach 19–35 and quests 0–5 across runs, so the output
+  contract is fixed but route quality is not.
 - Coach regression: `take a loaf of bread` with a purse of coins is no longer
   blocked as "already carrying"; item matching ignores `of`, `with`, `from` and
   `to` as well as articles.
