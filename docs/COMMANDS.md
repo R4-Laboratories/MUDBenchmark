@@ -202,7 +202,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 37 | The Spellwright's Shop | lantern | yes | west 36 |
 | 38 | The Familiar Yard | lantern | yes | east 36 |
 | 39 | The Aviary | lantern | yes | south 36, east 40 |
-| 40 | The High Walk | lantern | yes | west 39, east 6 |
+| 40 | The High Walk | lantern | yes | west 39, east 6, up 254 |
 | 41 | The Mirror Pool | undervault | no | up 40, north 42 |
 | 42 | The Sunken Vault | undervault | no | south 41, east 43 |
 | 43 | The Wardstone | undervault | no | west 42, north 44 |
@@ -232,7 +232,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 67 | The Ember Chapel | ember | no | south 65, east 68 |
 | 68 | The Deep Door | ember | no | west 67, south 66, north 69 |
 | 69 | The Vault of Coals | ember | no | south 68, east 70 |
-| 70 | The First Flame | ember | no | west 69 |
+| 70 | The First Flame | ember | no | west 69, east 214 |
 | 71 | The Fen Gate | fen | no | west 20, north 72, east 73, up 117 |
 | 72 | The Reed Walk | fen | no | south 71, east 74, north 75 |
 | 73 | The Drowned Orchard | fen | no | west 71, north 74 |
@@ -247,10 +247,10 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 82 | The Brine Hall | salt | no | west 81, north 83, east 84 |
 | 83 | The Tide Shrine | salt | no | south 82, east 85 |
 | 84 | The Kelp Vault | salt | no | west 82, north 85 |
-| 85 | The Salt Heart | salt | no | west 83, south 84 |
+| 85 | The Salt Heart | salt | no | west 83, south 84, north 88 |
 | 86 | The Moonlit Gate | moon | no | west 18, north 87, east 88, down 31 |
 | 87 | The Silver Glade | moon | no | south 86, east 89 |
-| 88 | The Owl Grove | moon | yes | west 86, north 89 |
+| 88 | The Owl Grove | moon | yes | west 86, north 89, south 85 |
 | 89 | The Moonwell | moon | no | west 87, south 88, east 90 |
 | 90 | The Hunter's Camp | moon | no | west 89, north 91 |
 | 91 | The Moon Throne | moon | no | south 90, up 92 |
@@ -325,7 +325,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 160 | The Sealed Room | grey-keep | no | west 147 |
 | 161 | The Tower Cell | grey-keep | no | west 128 |
 | 162 | The Spiral Stair | arcanum | no | down 34, up 163 |
-| 163 | The Hall of Names | arcanum | no | down 162, up 164, north 165, south 166 |
+| 163 | The Hall of Names | arcanum | no | down 162, up 164, north 165, south 166, west 254 |
 | 164 | The Lecture Hall | arcanum | no | down 163, up 167, east 168, west 169 |
 | 165 | The Scriptorium | arcanum | no | south 163, east 170 |
 | 166 | The Lower Laboratory | arcanum | no | north 163, east 171 |
@@ -355,7 +355,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 190 | The Cave Mouth | mistfall | no | south 189, east 191, west 184 |
 | 191 | The Drowned Cave | mistfall | no | west 190, east 192 |
 | 192 | The Tide Pool | mistfall | no | west 191, east 195 |
-| 193 | The Ruined Light | mistfall | no | west 189, north 194 |
+| 193 | The Ruined Light | mistfall | no | west 189, north 194, south 239 |
 | 194 | The Signal Room | mistfall | no | south 193, east 196 |
 | 195 | The Grave Reef | mistfall | no | west 192 |
 | 196 | The Twin Door | mistfall | no | west 194 |
@@ -376,7 +376,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 211 | The Foreman's Office | deepdelve | no | west 210, down 212 |
 | 212 | The Underground Pool | deepdelve | no | up 211 |
 | 213 | The Old Shaft | deepdelve | no | west 212, up 17 |
-| 214 | The Drowned Stair | foundry | no | up 212, east 215 |
+| 214 | The Drowned Stair | foundry | no | up 212, east 215, west 70 |
 | 215 | The Valve Gallery | foundry | no | west 214, east 216 |
 | 216 | The Cold Furnace | foundry | no | west 215, east 217 |
 | 217 | The Casting Floor | foundry | no | west 216 |
@@ -401,7 +401,7 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 236 | The Crypt | monastery | no | up 234, east 237 |
 | 237 | The Abbot's Cell | monastery | no | west 236, east 238, north 235 |
 | 238 | The Drowned Chapel | monastery | no | west 237, north 239 |
-| 239 | The Reliquary | monastery | no | south 238 |
+| 239 | The Reliquary | monastery | no | south 238, north 193, west 251 |
 | 240 | The Wreck Buoy | wreck | no | north 31, down 241 |
 | 241 | The Drowned Deck | wreck | no | up 240, east 242 |
 | 242 | The Broken Mast | wreck | no | west 241, east 243, south 245 |
@@ -413,7 +413,8 @@ object or a mobile. `who` lists the room; `awake` lists everyone online.
 | 248 | The Orlop | wreck | no | up 247, east 249 |
 | 249 | The Drowned Shrine | wreck | no | west 248, east 250 |
 | 250 | The Captain's Berth | wreck | no | west 249, east 251 |
-| 251 | The Drowned Captain | wreck | no | west 250 |
+| 251 | The Drowned Captain | wreck | no | west 250, east 239 |
 | 252 | The Cliff Walk | temple | no | east 1, down 30 |
 | 253 | The Cellar Stair | temple | no | up 1, south 25 |
+| 254 | The Sky Bridge | lantern | no | down 40, east 163 |
 

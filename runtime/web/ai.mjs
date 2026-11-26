@@ -263,7 +263,7 @@ Goal: ${goal}`;
 }
 
 export function buildActionMenu(state = null) {
-  const menu = new Set(["look", "score", "inventory", "search", "equipment"]);
+  const menu = new Set(["look", "score", "inventory", "search", "equipment", "wayfarer"]);
   const room = state?.room;
   const self = state?.self ?? {};
   const enemies = self.enemies ?? [];
@@ -342,7 +342,7 @@ const DIRECTION_ALIASES = {
   n: "north", s: "south", e: "east", w: "west", u: "up", d: "down",
 };
 const FREE_VERBS = new Set([
-  "look", "l", "who", "wh", "awake", "aw", "say", "tell", "mail", "global",
+  "look", "l", "who", "wh", "awake", "aw", "say", "tell", "mail", "global", "wayfarer",
   "gossip", "gos", "goss", "trade", "channels", "inventory", "i", "inv",
   "equipment", "eq", "score", "sc", "stats", "quests", "q", "j", "spells",
   "world", "status", "help", "h", "?", "wait", "wave", "nod", "bow", "laugh",
@@ -503,6 +503,10 @@ export function repairCommand(command, state = null, reason = "") {
   let verb = parts[0].toLowerCase();
   let rest = parts.slice(1);
   if (DIRECTION_ALIASES[verb]) verb = DIRECTION_ALIASES[verb];
+  if (["north", "south", "east", "west", "up", "down"].includes(verb)) {
+    const exits = (state?.room?.exits ?? []).map((exit) => (typeof exit === "string" ? exit : exit?.dir)).filter(Boolean);
+    if (exits.length && !exits.includes(verb)) return exits[0];
+  }
   const menu = buildActionMenu(state);
   if (verb === "search" && rest.length) return "search";
   if (verb === "open") {
@@ -561,6 +565,17 @@ export function coachCommand(command, state = null, mind = null) {
     }
   }
   const validation = validateCommand(raw, state);
+  if (!validation.ok && /^no\s+(north|south|east|west|up|down)\s+exit/i.test(validation.reason ?? "")) {
+    const exits = (state?.room?.exits ?? []).map((exit) => (typeof exit === "string" ? exit : exit?.dir)).filter(Boolean);
+    if (exits.length) {
+      return {
+        validation,
+        blocked: true,
+        repaired: exits[0],
+        feedback: `No ${raw.split(/\s+/)[0].toLowerCase()} exit here; ${exits[0]} is a legal direction.`,
+      };
+    }
+  }
   const parts = raw.split(/\s+/);
   const verb = parts[0]?.toLowerCase() ?? "";
   const words = parts.slice(1).map((part) => part.toLowerCase().replace(/[^a-z0-9']/g, "")).filter(Boolean);
@@ -703,7 +718,7 @@ export function buildUserPrompt({ turn = 1, observation = "", director = [], sta
     ? `WORLD: ${state.world.online} online · ${state.world.phase} · ${state.world.weather ?? "clear"} · reset in ${Math.max(0, Math.round((state.world.reset_seconds ?? 0) / 60))}m`
     : "";
   const self = state?.self
-    ? `YOU: level ${state.self.level} · ${state.self.xp}/${state.self.next_xp ?? "?"} xp · ${state.self.hp ?? "?"}/${state.self.max_hp ?? "?"} hp · ${state.self.mana ?? "?"}/${state.self.max_mana ?? "?"} mana · ${state.self.quests?.active ?? 0} active / ${state.self.quests?.completed ?? 0} done quests · ${state.self.deaths ?? 0} deaths · ${state.self.inventory ?? 0} items${state.self.spells?.length ? ` · spells ${state.self.spells.join(", ")}` : ""}${state.self.guild ? ` · ${state.self.guild}${state.self.guild_rank ? ` (${state.self.guild_rank})` : ""}${Number.isFinite(state.self.guild_vault) ? ` · vault ${state.self.guild_vault}` : ""}` : ""}${state.self.title ? ` · title ${state.self.title}` : ""}${(state.self.ignoring ?? 0) ? ` · ignoring ${state.self.ignoring}` : ""}${(state.self.memory_facts ?? 0) ? ` · facts ${state.self.memory_facts}` : ""}${state.self.wielding ? ` · wielding ${state.self.wielding}` : ""}${Number.isFinite(state.self.spell_power) ? ` · spell power ${state.self.spell_power}` : ""}${(state.self.effects ?? []).length ? ` · effects ${(state.self.effects ?? []).map((effect) => `${effect.name} ${effect.rounds}`).join(", ")}` : ""}`
+    ? `YOU: level ${state.self.level} · ${state.self.xp}/${state.self.next_xp ?? "?"} xp · ${state.self.hp ?? "?"}/${state.self.max_hp ?? "?"} hp · ${state.self.mana ?? "?"}/${state.self.max_mana ?? "?"} mana · ${state.self.quests?.active ?? 0} active / ${state.self.quests?.completed ?? 0} done quests · ${state.self.deaths ?? 0} deaths · ${state.self.inventory ?? 0} items${state.self.spells?.length ? ` · spells ${state.self.spells.join(", ")}` : ""}${state.self.guild ? ` · ${state.self.guild}${state.self.guild_rank ? ` (${state.self.guild_rank})` : ""}${Number.isFinite(state.self.guild_vault) ? ` · vault ${state.self.guild_vault}` : ""}` : ""}${state.self.title ? ` · title ${state.self.title}` : ""}${state.self.wayfarer ? ` · wayfarer ${state.self.wayfarer.seen}/${state.self.wayfarer.total}` : ""}${(state.self.ignoring ?? 0) ? ` · ignoring ${state.self.ignoring}` : ""}${(state.self.memory_facts ?? 0) ? ` · facts ${state.self.memory_facts}` : ""}${state.self.wielding ? ` · wielding ${state.self.wielding}` : ""}${Number.isFinite(state.self.spell_power) ? ` · spell power ${state.self.spell_power}` : ""}${(state.self.effects ?? []).length ? ` · effects ${(state.self.effects ?? []).map((effect) => `${effect.name} ${effect.rounds}`).join(", ")}` : ""}`
     : "";
   const selfLine = state?.self
     ? `SELF: ${state.self.name ?? "you"} · level ${state.self.level ?? 1}${state.self.guild ? ` · ${state.self.guild}${state.self.guild_rank ? ` (${state.self.guild_rank})` : ""}` : ""} · ${state.room?.zone ?? "unknown zone"} · ${state.room?.name ?? "unknown room"}`

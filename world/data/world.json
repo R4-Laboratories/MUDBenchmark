@@ -767,11 +767,12 @@
     },
     "40": {
       "name": "The High Walk",
-      "text": "A narrow walk above the arcade, open to the weather and the roofs of the district. A cold candle waits on the rail; the market is a lantern-lit patchwork far below. A covered bridge runs east toward the Shrine.",
+      "text": "A narrow walk above the arcade, open to the weather and the roofs of the district. A cold candle waits on the rail; the market is a lantern-lit patchwork far below. A covered bridge runs east toward the Shrine. A sky bridge climbs above the walk toward the Mages' Guild.",
       "safe": true,
       "exits": {
         "west": 39,
-        "east": 6
+        "east": 6,
+        "up": 254
       },
       "details": {
         "candle": "The candle is cold but the wick is black.",
@@ -1317,10 +1318,11 @@
     },
     "70": {
       "name": "The First Flame",
-      "text": "A round chamber around a single flame that burns without fuel. The flame is white at the root and red at the tip. The vault of coals is west, and the flame leans toward you.",
+      "text": "A round chamber around a single flame that burns without fuel. The flame is white at the root and red at the tip. The vault of coals is west, and the flame leans toward you. A cracked stair descends east into the Drowned Foundry.",
       "safe": false,
       "exits": {
-        "west": 69
+        "west": 69,
+        "east": 214
       },
       "details": {
         "flame": "The flame has no smoke and no shadow.",
@@ -1592,11 +1594,12 @@
     },
     "85": {
       "name": "The Salt Heart",
-      "text": "A round cave around a pillar of white salt. The pillar glows faintly and the air is dry. The shrine is west, and the kelp vault is south.",
+      "text": "A round cave around a pillar of white salt. The pillar glows faintly and the air is dry. The shrine is west, and the kelp vault is south. A salt rift climbs north toward a moonlit grove.",
       "safe": false,
       "exits": {
         "west": 83,
-        "south": 84
+        "south": 84,
+        "north": 88
       },
       "details": {
         "pillar": "The salt pillar is warm and faintly luminous.",
@@ -1648,11 +1651,12 @@
     },
     "88": {
       "name": "The Owl Grove",
-      "text": "A grove of white-barked trees. A silver owl sits on a low branch, and a key of pale bone hangs beneath it. The gate is west; the moonwell is north.",
+      "text": "A grove of white-barked trees. A silver owl sits on a low branch, and a key of pale bone hangs beneath it. The gate is west; the moonwell is north. A salt rift descends south into the Salt Caves.",
       "safe": true,
       "exits": {
         "west": 86,
-        "north": 89
+        "north": 89,
+        "south": 85
       },
       "details": {
         "owl": "The owl is silver and very still.",
@@ -3008,12 +3012,13 @@
     },
     "163": {
       "name": "The Hall of Names",
-      "text": "Plaques of black stone line the hall, each cut with the name of a mage and a date. A brass orrery turns at the centre of the floor, and doors open north and south. The air is very still, as if the room is listening.",
+      "text": "Plaques of black stone line the hall, each cut with the name of a mage and a date. A brass orrery turns at the centre of the floor, and doors open north and south. The air is very still, as if the room is listening. A sky bridge opens west toward the High Walk.",
       "exits": {
         "down": 162,
         "up": 164,
         "north": 165,
-        "south": 166
+        "south": 166,
+        "west": 254
       },
       "details": {
         "plaques": "The names are old. The newest plaque is blank except for a cut line.",
@@ -3560,10 +3565,11 @@
     },
     "193": {
       "name": "The Ruined Light",
-      "text": "The tower is a broken shell, its stair spiraling up into empty air. The great lamp is gone, and the sea wind moves through the rooms below. A doorway north opens into a low signal room.",
+      "text": "The tower is a broken shell, its stair spiraling up into empty air. The great lamp is gone, and the sea wind moves through the rooms below. A doorway north opens into a low signal room. A cliff stair descends south toward the Flooded Monastery.",
       "exits": {
         "west": 189,
-        "north": 194
+        "north": 194,
+        "south": 239
       },
       "details": {
         "lamp": "The lamp housing is empty. The brass is green with salt.",
@@ -3984,10 +3990,11 @@
       "minLevel": 9,
       "dark": true,
       "darkText": "It is dark. Water runs down the stair, and a lamp burns somewhere ahead.",
-      "text": "A drowned stair climbs out of black water into a low foundry. Rusted pipes follow the walls, and a foreman's lamp burns on a hook. The pool is up; the valve gallery is east.",
+      "text": "A drowned stair climbs out of black water into a low foundry. Rusted pipes follow the walls, and a foreman's lamp burns on a hook. The pool is up; the valve gallery is east. A cracked stair climbs west into the Ember Deep.",
       "exits": {
         "up": 212,
-        "east": 215
+        "east": 215,
+        "west": 70
       },
       "details": {
         "stair": "The stair is wet and iron-shod. It climbs back to the pool.",
@@ -4482,9 +4489,11 @@
     "239": {
       "name": "The Reliquary",
       "minLevel": 10,
-      "text": "A small stone reliquary, dry and cold. A single altar stands at the centre, and a silver relic rests on it. The chapel is south.",
+      "text": "A small stone reliquary, dry and cold. A single altar stands at the centre, and a silver relic rests on it. The chapel is south. A cliff stair climbs north toward the Ruined Light.",
       "exits": {
-        "south": 238
+        "south": 238,
+        "north": 193,
+        "west": 251
       },
       "details": {
         "altar": "The altar is dry and clean. The relic rests at its centre.",
@@ -4723,9 +4732,10 @@
       "minLevel": 9,
       "dark": true,
       "darkText": "It is dark. A tall shape stands at the stern, its coat heavy with water.",
-      "text": "A narrow stern cabin. A tall captain stands at the wheel, its coat heavy with water and its hands open. The berth is west. There is no other way out.",
+      "text": "A narrow stern cabin. A tall captain stands at the wheel, its coat heavy with water and its hands open. The berth is west. There is no other way out. A flooded passage opens east toward the Flooded Monastery.",
       "exits": {
-        "west": 250
+        "west": 250,
+        "east": 239
       },
       "details": {
         "captain": "The captain is tall and drowned. Its eyes are open.",
@@ -4773,6 +4783,25 @@
         "Water ticks in the dark.",
         "The stair breathes cold air.",
         "A distant bell turns over."
+      ]
+    },
+    "254": {
+      "name": "The Sky Bridge",
+      "text": "A narrow stone bridge hangs between the High Walk and the upper halls of the Mages' Guild. Wind moves freely through the open arches, and the town lies in a lantern-lit haze below. The bridge is barely wider than a cart, with a low parapet on either side and a single iron lamp at the middle. The stones are dry and pale, and the drop is very long.",
+      "safe": false,
+      "exits": {
+        "down": 40,
+        "east": 163
+      },
+      "details": {
+        "parapet": "The parapet is waist-high and worn smooth by hands.",
+        "lamp": "The iron lamp is cold. Its glass is clouded with old smoke.",
+        "drop": "The town roofs are small and distant below."
+      },
+      "ambient": [
+        "Wind crosses the bridge.",
+        "The lamp creaks on its hook.",
+        "A bell sounds far below."
       ]
     }
   },
@@ -7418,7 +7447,8 @@
         26,
         27,
         28,
-        29
+        29,
+        254
       ]
     },
     {

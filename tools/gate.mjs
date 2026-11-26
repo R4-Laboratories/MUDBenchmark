@@ -70,6 +70,7 @@ import { planRetention } from "../runtime/retention.mjs";
 import { equipmentOf, equipmentText, inventoryGroups, inventoryLabel, setBonus } from "../runtime/equipment.mjs";
 import { hudChanged, hudSnapshot } from "../runtime/hud.mjs";
 import { FEDERATION_PROTOCOL, TRAVEL_ACTION } from "../runtime/federation.mjs";
+import { WAYFARER, markWayfarer, wayfarerLine, wayfarerState } from "../runtime/wayfarer.mjs";
 import { maxManaFor, spellById, spellPower } from "../runtime/magic.mjs";
 import { trainingCost } from "../runtime/magic.mjs";
 import { findAction, loadActions } from "../runtime/actions.mjs";
@@ -233,6 +234,8 @@ let webAI = { ok: true, why: [] };
   const focusTogether = focusFor({ state: { self: { inventory_names: [], worn: [], wielding: null, enemies: [], party: { members: ["ann", "bob"] }, active_quests: [], available_quests: [] }, room: { name: "The Winch Room", actors: ["ann"], npcs: [], objects: [], exits: [], actions: [], group_actions: [{ verb: "turn", target: "winch", size: 2 }] } }, memory: routeMemory });
   check(focusTogether.kind === "group action" && focusTogether.candidates.includes("turn winch"), "the focus planner did not use a ready group action");
   const frontierMemory = { rooms: { A: {}, B: {} }, map: { A: { east: "B" }, B: { east: "C" }, C: {} }, trail: ["A", "B"] };
+  rememberResult(frontierMemory, { room: "B", command: "west", observation: "There is no west exit here.", tick: 1 });
+  check(!frontierMemory.map.B.west && frontierMemory.map.B.east === "C", "a failed direction was not removed from the map");
   const ahead = frontier(frontierMemory, "B");
   check(ahead?.target === "C" && ahead.path[0] === "east", "the frontier did not find the nearest unvisited room");
   const exploreFocus = focusFor({ state: { self: { inventory_names: [], worn: [], wielding: null, enemies: [], active_quests: [], available_quests: [] }, room: { name: "B", objects: [], exits: [{ dir: "east", room: "C" }], npcs: [] } }, memory: frontierMemory });
@@ -257,6 +260,8 @@ let webAI = { ok: true, why: [] };
   check(wrongAnswer.blocked && wrongAnswer.repaired === "answer amber" && /AMBER/i.test(wrongAnswer.feedback), "the coach allowed a wrong known answer");
   const breadTake = coachCommand("take a loaf of bread", { room: { name: "The Cell", actors: [], npcs: [], exits: [], objects: [], actions: [] }, self: { inventory_names: ["a purse of 10 coins"], enemies: [] } }, emptyMind());
   check(!breadTake.blocked, "the coach mistook a purse of coins for a loaf of bread");
+  const badExit = coachCommand("down", { room: { name: "The Root Gate", actors: [], npcs: [], exits: [{ dir: "west" }, { dir: "up" }], objects: [], actions: [] }, self: { inventory_names: [], enemies: [] } }, emptyMind());
+  check(badExit.blocked && badExit.repaired === "west", "the coach did not repair an invalid direction to a legal exit");
   const guard1 = focusGuard({ focus: { kind: "quest", label: "Q", route: ["east"], candidates: ["east"] }, command: "look", detours: 0 });
   const guard2 = focusGuard({ focus: { kind: "quest", label: "Q", route: ["east"], candidates: ["east"] }, command: "look", detours: 1, state: { room: { exits: [{ dir: "east" }] } } });
   check(!guard1.forced && guard1.detours === 1 && guard2.forced && guard2.command === "east", "the focus lock did not override two detours");
@@ -597,6 +602,16 @@ let zoneMap = { ok: true, why: [] };
   check(zone("moon")?.rooms.includes(92) && zone("moon")?.rooms.includes(97), "the Eclipse Court is not in the Moonlit Reach zone");
   check(!["harbor", "undercroft", "eclipse"].some((id) => zone(id)), "a folded zone id is still live");
   check(world.zones.reduce((sum, entry) => sum + entry.rooms.length, 0) === Object.keys(world.rooms).length, "the zones do not cover every room exactly once");
+  const zoneOf = new Map(world.zones.flatMap((entry) => entry.rooms.map((room) => [String(room), entry.id])));
+  const neighbours = new Map(world.zones.map((entry) => [entry.id, new Set()]));
+  for (const [id, room] of Object.entries(world.rooms)) {
+    const from = zoneOf.get(id);
+    for (const target of [...Object.values(room.exits ?? {}), ...Object.values(room.secretExits ?? {})]) {
+      const to = zoneOf.get(String(target));
+      if (from && to && from !== to) { neighbours.get(from).add(to); neighbours.get(to).add(from); }
+    }
+  }
+  for (const [id, set] of neighbours) check(set.size >= 2, `the ${id} zone has only ${set.size} neighbouring zone(s)`);
   if (!zoneMap.ok) failures.push(`the zone map is broken: ${zoneMap.why[0]}`);
 }
 
@@ -1882,6 +1897,15 @@ let controls = { ok: true, why: [] };
   check(verbTable.byAlias.get("drink") === "drink" && verbTable.byAlias.get("quaff") === "drink", "drink/quaff are not registered");
   check(verbTable.byAlias.get("takefrom") === "takeFrom", "takeFrom is not reachable after command lowercasing");
   check(FEDERATION_PROTOCOL === "mudbenchmark/region-transfer/2" && TRAVEL_ACTION === "mudbenchmark/region-travel/1", "the federation protocol names are wrong");
+  const wayfarerWorld = loadWorld({ mode: "single" });
+  const wayfarerZones = new Set(wayfarerWorld.zones.map((zone) => zone.id));
+  check(WAYFARER.every((entry) => wayfarerWorld.rooms[entry.room] && wayfarerZones.has(entry.zone)), "a wayfarer landmark names a missing room or zone");
+  const walker = { found: [] };
+  const firstMark = markWayfarer(walker, 30);
+  check(firstMark?.zone === "town" && !markWayfarer(walker, 30), "the wayfarer mark did not record once");
+  const walkerState = wayfarerState(walker);
+  check(walkerState.seen === 1 && walkerState.total === WAYFARER.length && walkerState.next, "the wayfarer tally is wrong");
+  check(wayfarerLine(walker).includes("1/" + WAYFARER.length), "the wayfarer line is wrong");
   check(/verb === "study" \|\| verb === "recite"[\s\S]{0,900}skillAllowed\(FEDERATION, spell\.id\)/.test(serverSource), "recite bypasses the region skill policy");
   check(/const targetName = scrollTargetName\(restRaw, onIndex\)/.test(serverSource), "scroll targets are not parsed after on");
   const swordLabel = inventoryLabel({ name: "a short sword", value: 20, flags: ["weapon"] }, []);

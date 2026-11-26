@@ -154,6 +154,10 @@ room and rooms in the recent trail.
 
 The memory block also prints `Rooms seen: N of M known` and a `FRONTIER` line,
 so the model sees how little it has explored and where the nearest new room is.
+When a direction answers "no such exit", `rememberResult` deletes that edge
+from the map and the coach repairs the attempted direction to a legal exit
+rather than sending `look`. The planner also filters guild quests the actor
+cannot accept, so a non-member is no longer offered a guild quest forever.
 The Mind now stores the model's `NOTE` line (up to 12 notes) and prints `NOTES`
 back each turn; the browser notebook still records the same note for the human.
 This is the model's own durable context, not just a two-turn transcript.
@@ -224,6 +228,11 @@ adaptive-description plan in `docs/ROOM-PROSE.md`.
   Grey Road, Moonlit Gate, Memory Garden, Root Archive and Root Road, not only
   the starting quarter. A second 120-turn run visited 33 rooms, completed 3
   quests and reached the Salt Caves, with 0 deaths and level 3 / 414 XP.
+- DeepSeek 200-turn outer-world run: 52 rooms, 3 quests, 6/16 wayfarer
+  landmarks, reached the Eclipse Stair and Mirror Vault, one death, level 2 /
+  213 XP. A 200-turn qwen2.5:3b run visited 19 rooms and completed 1 quest; it
+  no longer looped at the Root Gate, but repeated social/command mistakes, so
+  weak-model coaching remains the limiting factor.
 - Coach regression: `take a loaf of bread` with a purse of coins is no longer
   blocked as "already carrying"; item matching ignores `of`, `with`, `from` and
   `to` as well as articles.
