@@ -2067,6 +2067,12 @@
       "level": "build",
       "statement": "v0.91.79 validates weak-plan arbitration and makes it opt-in. tools/agent-score.mjs starts an isolated world and byte-accurate holo stub, drives the same Mind, planner, memory, coach and prompts, and writes a JSON scorecard plus transcript. A 200-turn qwen2.5:3b arbitration run visited 34 rooms and completed 0 quests with 35 preferExplore turns; the 8-turn excursion cap visited 33 rooms and 0 quests with 48 preferExplore turns. The ordinary v0.91.76 qwen runs ranged 19-35 rooms and 0-5 quests, so arbitration did not improve quest completion. The browser now has an off-by-default Weak-plan arbitration checkbox; the planner still supports preferExplore for experiments. World unchanged at 254 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects. Gate covers the opt-in control, preferExplore and every prior check.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-341",
+      "level": "some-true",
+      "statement": "Production v0.91.79 serves weak-plan arbitration as an off-by-default checkbox and adds tools/agent-score.mjs in the repository. /, /planner.mjs, /mind.mjs and /ai.mjs are 200; the browser carries id=ai-weak; /world reports 254 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects. The isolated scorecard starts a world and byte-accurate holo stub, drives the same Mind, planner, memory, coach and prompts, and writes JSON plus a transcript. A 200-turn qwen2.5:3b arbitration run visited 34 rooms and completed 0 quests with 35 preferExplore turns; the 8-turn excursion cap visited 33 rooms and 0 quests with 48 preferExplore turns. Normal six-line qwen runs ranged 19-35 rooms and 0-5 quests, so arbitration did not improve quest completion and is opt-in. Main Gate 45888837897 green, publish 45889842222, release v0.91.79. Federation remains disabled (403).",
+      "authority": "GitHub PR #95 merge c5fae5a 2026-11-26; main Gate 45888837897; publish 45889842222; release v0.91.79; wick deploy, /world, /, /planner.mjs, /mind.mjs, /ai.mjs, /federation/status 403; local /tmp/qwen-arbitration.json and /tmp/qwen-arbitration2.json; tools/agent-score.mjs; tools/gate.mjs"
     }
   ]
 }
