@@ -2019,6 +2019,12 @@
       "level": "build",
       "statement": "v0.91.75 adds weak-model coaching. The browser and harness count blocked attempts per command; after one retry they send the next legal focus candidate, or a legal exit, and skip passive fallbacks (look, inventory, battle, quests, map). Counts reset when a session starts. A post-admission-wire DeepSeek 200-turn run visited 50 rooms, completed 4 quests, reached the Arcanum's upper halls and the Salt Caves, sent 191 commands, had 9 blocked attempts and 0 deaths at level 3 / 400 XP. A qwen2.5:3b 200-turn run visited 43 rooms, completed 4 quests, reached the Hollow Fen and Moonlit Reach, sent 194 commands, had 6 blocked attempts (down from 91 and 52), and 0 deaths at level 3 / 498 XP; it still produced no PLAN/LESSON lines. World unchanged at 254 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects. Gate covers the fallback, passive filter and every prior check.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-333",
+      "level": "some-true",
+      "statement": "Production v0.91.75 serves weak-model coaching. /ai.mjs exports coachFallback and /index.html carries blockedCounts; /, /planner.mjs, /mind.mjs, /ai.mjs and /prism-auth.mjs are 200; /world reports 254 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects. The browser and harness count blocked attempts per command, allow one retry, then send the next legal focus action or a legal exit, skipping passive fallbacks; counts reset per session. Post-admission-wire DeepSeek 200-turn run: 50 rooms, 4 quests, 9 blocked attempts, reached the Arcanum's upper halls and Salt Caves, 0 deaths, level 3 / 400 XP. qwen2.5:3b 200-turn run: 43 rooms, 4 quests, 6 blocked attempts (down from 91 and 52), reached the Hollow Fen and Moonlit Reach, 0 deaths, level 3 / 498 XP. Main Gate 45761713761 green, publish 45762647364, release v0.91.75. Federation remains disabled (403).",
+      "authority": "GitHub PR #91 merge e931261 2026-11-26; main Gate 45761713761; publish 45762647364; release v0.91.75; wick deploy, /world, /, /planner.mjs, /mind.mjs, /ai.mjs, /prism-auth.mjs, /federation/status 403; local /tmp/deepseek-fallback.log and /tmp/qwen-fallback3.log; tools/gate.mjs"
     }
   ]
 }
