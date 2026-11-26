@@ -48,6 +48,7 @@ import { levelsText, leaderboardText, leaderboardRows, duelLadderText, mapText, 
 import { redactCommand, sanitizeIntent, sanitizeState } from "./telemetry-policy.mjs";
 import { loadStateFile, saveStateFile } from "./state.mjs";
 import { hudChanged, hudSnapshot } from "./hud.mjs";
+import { admissionWire } from "./admission-wire.mjs";
 import { markWayfarer, wayfarerLine, wayfarerState } from "./wayfarer.mjs";
 import { appendReceived, authenticatedPeer, federationConfig, readFederationBody, requestPeer, signClaim, skillAllowed, verifyClaim, verifyTravelGrant } from "./federation.mjs";
 
@@ -1005,7 +1006,7 @@ async function admit({ kind, room, origin = 0, destination = 0, held = 0, amount
   // The first seven bytes are the model's transition record, in its order:
   // kind, room, origin, destination, held, amount, free. Kind 7 (identity)
   // carries two more: id shape and expiry.
-  const payload = String.fromCharCode(kind, room, origin, destination, held, amount, free, ...extra);
+  const payload = admissionWire({ kind, room, origin, destination, held, amount, free, extra });
   const res = await fetch(`${HOLO_URL}/_hologram/intent`, {
     method: "POST",
     headers: { "content-type": "application/json" },
