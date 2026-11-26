@@ -48,6 +48,7 @@ import { levelsText, leaderboardText, leaderboardRows, duelLadderText, mapText, 
 import { redactCommand, sanitizeIntent, sanitizeState } from "./telemetry-policy.mjs";
 import { loadStateFile, saveStateFile } from "./state.mjs";
 import { hudChanged, hudSnapshot } from "./hud.mjs";
+import { markWayfarer, wayfarerLine, wayfarerState } from "./wayfarer.mjs";
 import { appendReceived, authenticatedPeer, federationConfig, readFederationBody, requestPeer, signClaim, skillAllowed, verifyClaim, verifyTravelGrant } from "./federation.mjs";
 
 const HOLO_URL = process.env.HOLO_URL ?? "http://127.0.0.1:8082";
@@ -70,6 +71,13 @@ const OWNER_TOKEN = process.env.MUDBENCH_OWNER_TOKEN ?? "";
 const FEDERATION = federationConfig();
 const FEDERATION_ORIGIN = FEDERATION?.origin ?? null;
 const federationBusy = new Set();
+
+function questOfferedTo(quest, actor, guilds = {}) {
+  if (quest?.scope !== "guild") return true;
+  const guild = guilds?.[actor?.guild];
+  if (!guild || guild.id !== quest.guild) return false;
+  return !quest.rank || rankAtLeast(actor.guildRank, quest.rank, guild.ranks ?? RANKS);
+}
 
 // The world is data: rooms, exits, notices and the task live in
 // world/data/world.json. DECOY_MODE selects which text variant is in play for
@@ -1184,6 +1192,7 @@ function selfState(actor) {
       completed: actor.quests?.completed?.length ?? 0,
     },
     completion: completionState({ actor, rooms: ROOMS, quests: QUESTS.quests, levels: state.levels }),
+    wayfarer: wayfarerState(actor),
     inventory: state.objects.filter((object) => object.holder === actor.id && !object.worn).length,
     armor: armorOf(actor, state.objects),
     damage: weaponDamageOf(weaponOf(actor, state.objects)) + guildBonus(actor).damage + setBonus(actor, state.objects).damage,
@@ -1204,7 +1213,9 @@ function selfState(actor) {
     worn: state.objects.filter((object) => object.holder === actor.id && object.worn).map((object) => object.name),
     active_quests: activeQuests,
     available_quests: actor?.key
-      ? availableQuests(QUESTS.quests, actor, state.cycle ?? 0).map((quest) => {
+      ? availableQuests(QUESTS.quests, actor, state.cycle ?? 0)
+        .filter((quest) => questOfferedTo(quest, actor, state.guilds))
+        .map((quest) => {
         const giver = String(quest.giver ?? "").toLowerCase().replace(/^the /, "");
         const npc = giver ? state.npcs.find((candidate) => candidate.name.toLowerCase().includes(giver) || giver.includes(candidate.name.toLowerCase().replace(/^the /, ""))) : null;
         return { id: quest.id, name: quest.name, level: quest.level, giver: quest.giver ?? null, giverRoom: npc?.home ?? null, giverRoomName: npc?.home ? (ROOMS[npc.home]?.name ?? null) : null };
@@ -1585,6 +1596,11 @@ async function handleCommand(id, line) {
 
   if (verb === "travel") {
     return travel(id, rest[0], restRaw[1]);
+  }
+
+  if (verb === "wayfarer") {
+    if (!actor?.key) return sendTo(id, "Sign in first.\r\n");
+    return sendTo(id, `${wayfarerLine(actor)}\r\n`);
   }
 
   if (verb === "quit") {
@@ -2045,7 +2061,7 @@ async function handleCommand(id, line) {
     if (!actor?.key) {
       return sendTo(id, "MUDBench is a persistent world for people and agents.\r\nSign in with your Prism id, or register <name> <password> / login <name> <password>.\r\nThen type help for the commands.\r\n");
     }
-    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: take/t/g/tf, take all, drop/dp/dr, inventory/i, coins, standing/reputation, components, score/sc, quests/q, who/wh, spells/sp, cast/ca, say/sy, tell/te, give/gv, put/pt, open/op, close/cl, wear/wr, remove/rm, buy/b, sell/se, list/ls, drink, map/mp, leaderboard/lb, ladder/pvp, levels/lv, shortcuts/sh.\r\nMagic: spells (effects/mana), train <spell> at the Mages' Guild, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search. Combat: attack/kill/k, technique/tech (weapon move), battle/combat/bt (current HP), score (armour/damage), equipment/eq (slots and totals). Forge: upgrade/improve, salvage/melt, components at the Cold Forge. Movement is blocked in combat; flee is a last resort and costs experience. Guild: guild join/leave/who/list/chat, guild advance (Mages, Wardens, Night Market), vault/deposit/withdraw in the Guild Hall. Social: ignore/unignore/ignoring, report/rep, titles/title, facts/memory, recall <word> at the shrine. Party: party invite <name>, party accept, party leave, party who, party kick <name>, party disband; members in the same room share kill XP and quest credit. Room actions: turn, push, pump, strike, board, ring where the room suggests.\r\nWorld: world or status (online, guilds, reset); overview/ov (the live player and fight panel); levels, leaderboard/top/lb, map [zone], shortcuts, quests active|available|done|all.<id>; completion (goal) for the win tally; tutorial (first) for the first steps.\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
+    return sendTo(id, `Commands: ${names}. Accounts: characters, play <name>, create <name>.\r\nLook and examine: look (l), examine (ex, x); equipment (eq). Shortcuts: take/t/g/tf, take all, drop/dp/dr, inventory/i, coins, standing/reputation, components, score/sc, quests/q, who/wh, spells/sp, cast/ca, say/sy, tell/te, give/gv, put/pt, open/op, close/cl, wear/wr, remove/rm, buy/b, sell/se, list/ls, drink, map/mp, leaderboard/lb, ladder/pvp, levels/lv, shortcuts/sh.\r\nMagic: spells (effects/mana), train <spell> at the Mages' Guild, cast <spell> [on <target>], study <scroll>, recite <scroll> [on <target>], search. Combat: attack/kill/k, technique/tech (weapon move), battle/combat/bt (current HP), score (armour/damage), equipment/eq (slots and totals). Forge: upgrade/improve, salvage/melt, components at the Cold Forge. Movement is blocked in combat; flee is a last resort and costs experience. Guild: guild join/leave/who/list/chat, guild advance (Mages, Wardens, Night Market), vault/deposit/withdraw in the Guild Hall. Social: ignore/unignore/ignoring, report/rep, titles/title, facts/memory, recall <word> at the shrine. Party: party invite <name>, party accept, party leave, party who, party kick <name>, party disband; members in the same room share kill XP and quest credit. Room actions: turn, push, pump, strike, board, ring where the room suggests.\r\nWorld: world or status (online, guilds, reset); overview/ov (the live player and fight panel); levels, leaderboard/top/lb, map [zone], wayfarer, shortcuts, quests active|available|done|all.<id>; completion (goal) for the win tally; tutorial (first) for the first steps.\r\nChannels: ${channels}. Socials: ${socials}.\r\nMovement: north/south/east/west/up/down (n/s/e/w/u/d).\r\n`);
   }
 
   // A command typed before the join tick lands is queued, not refused: the
@@ -2774,7 +2790,8 @@ async function handleCommand(id, line) {
     const stateQ = normalizeQuestState(actor.quests, QUESTS.quests);
     const effects = (actor.effects ?? []).length ? ` Effects: ${(actor.effects ?? []).map((effect) => `${effect.name} ${effect.rounds}`).join(", ")}.` : "";
     const title = actor.title ? ` Title ${actor.title}.` : "";
-    const line = `Level ${actor.level} (${actor.xp}${nextXp === null ? "" : `/${nextXp}`} xp), ${actor.hp}/${actor.maxHp} hp, mana ${actor.mana ?? maxManaFor(actor)}/${actor.maxMana ?? maxManaFor(actor)}, armour ${armor}, damage ${weaponDamageOf(weapon) + guildBonus(actor).damage + setBonus(actor, state.objects).damage}, spell power ${spellPower(actor, weaponDamageOf(weapon))}, ${weapon ? `wielding ${weapon.name}` : "unarmed"}${actor.guild ? `, guild ${actor.guild}` : ""}, ${stateQ.active.length} active/${stateQ.completed.length} done quests.${title}${effects}`;
+    const wayfarer = wayfarerState(actor);
+    const line = `Level ${actor.level} (${actor.xp}${nextXp === null ? "" : `/${nextXp}`} xp), ${actor.hp}/${actor.maxHp} hp, mana ${actor.mana ?? maxManaFor(actor)}/${actor.maxMana ?? maxManaFor(actor)}, armour ${armor}, damage ${weaponDamageOf(weapon) + guildBonus(actor).damage + setBonus(actor, state.objects).damage}, spell power ${spellPower(actor, weaponDamageOf(weapon))}, ${weapon ? `wielding ${weapon.name}` : "unarmed"}${actor.guild ? `, guild ${actor.guild}` : ""}, ${stateQ.active.length} active/${stateQ.completed.length} done quests, wayfarer ${wayfarer.seen}/${wayfarer.total}.${title}${effects}`;
     const goal = completionLine(completionState({ actor, rooms: ROOMS, quests: QUESTS.quests, levels: state.levels }));
     return sendTo(id, `${render(messages.line, { words: line })}\r\n${goal}\r\n`);
   }
@@ -2837,7 +2854,8 @@ async function handleCommand(id, line) {
       return quest ? { quest, lines: questLines(quest, entry.progress, actor, state.objects) } : null;
     }).filter(Boolean);
     const completed = stateQ.completed.map((id) => questById(QUESTS.quests, id)).filter(Boolean);
-    const available = availableQuests(QUESTS.quests, actor, state.cycle ?? 0);
+    const available = availableQuests(QUESTS.quests, actor, state.cycle ?? 0)
+      .filter((quest) => questOfferedTo(quest, actor, state.guilds));
     if (detail) {
       const reward = detail.rewards?.xp ? `${detail.rewards.xp} xp` : "none";
       const req = detail.requires?.length ? `; requires ${detail.requires.join(", ")}` : "";
@@ -3649,6 +3667,23 @@ function onTick() {
     .map((actor) => [actor.id, hudSnapshot(selfState(actor)?.self)]));
   const result = step({ state, rooms: ROOMS, intents, actions: ACTION_TABLE.actions });
   state = result.state;
+  const wayfarerDiscoveries = [];
+  for (const intent of intents) {
+    const actionTeleport = intent.kind === "action"
+      && ACTION_TABLE.actions.find((action) => action.id === intent.actionId)?.effects?.some((effect) => effect.kind === "teleport");
+    if (!["move", "flee", "teleportItem"].includes(intent.kind) && !actionTeleport) continue;
+    const actor = actorById(intent.actorId);
+    if (!actor) continue;
+    const landmark = markWayfarer(actor, actor.room);
+    if (!landmark) continue;
+    const tally = wayfarerState(actor);
+    let title = false;
+    if (tally.seen === tally.total && !actor.title) {
+      actor.title = "Wayfarer";
+      title = true;
+    }
+    wayfarerDiscoveries.push({ actorId: actor.id, name: landmark.name, seen: tally.seen, total: tally.total, title });
+  }
   const progressChanged = state.actors.some((actor) => actor.key && previousProgress.has(actor.id)
     && previousProgress.get(actor.id) !== progressionSnapshot(actor))
     || intents.some((intent) => intent.kind === "leave" && previousProgress.has(intent.actorId));
@@ -3835,6 +3870,13 @@ function onTick() {
       const disabled = state.identities[actor.key]?.unrecognizedSkills ?? [];
       if (disabled.length) sendTo(actor.id, `Skills not recognized here: ${disabled.join(", ")}.\r\n`);
     }
+  }
+
+  for (const discovery of wayfarerDiscoveries) {
+    const actor = actorById(discovery.actorId);
+    if (!actor) continue;
+    sendTo(actor.id, `Wayfarer: reached ${discovery.name} (${discovery.seen}/${discovery.total}).\r\n`);
+    if (discovery.title) sendTo(actor.id, "Every wayfarer landmark is recorded. The Wayfarer title is yours.\r\n");
   }
 
   // Refresh the HUD for actors whose pending intent changed the world this

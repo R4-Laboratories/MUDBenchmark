@@ -539,6 +539,26 @@ Rehearsed 2026-11-16:
   speaking, opened the Twin Door with one hidden partner and took the crown.
   Gate covers the death penalty, level gates, twin door, hide visibility and
   prompt (MB-286/287/288);
+- v0.91.73 (outer world and Wayfarer) opens the remaining chains. **The Sky
+  Bridge** connects the High Walk to the Mages' Guild; a salt rift joins the
+  Salt Caves and Moonlit Reach; a cracked stair joins the Ember Deep and the
+  Drowned Foundry; and cliff/flooded passages join Mistfall, the Flooded
+  Monastery and the Merry Dancer. Every zone now has at least two neighbouring
+  zones, and the Gate enforces it. A **Wayfarer** track records one landmark in
+  each of 16 outer zones in the character's `found` list (`wayfarer:<zone>`),
+  exposes `wayfarer` and `score` counts, and grants the Wayfarer title when all
+  16 are recorded; it is separate from the 25-quest budget and does not change
+  the win condition. The frontier planner now removes a direction from its map
+  when the room answers "no such exit", the coach repairs an invalid direction
+  to a legal exit instead of `look`, and guild quests are no longer offered to
+  characters outside the guild or below the rank. A final 200-turn DeepSeek run
+  visited **52 rooms**, completed 3 quests, recorded 6/16 wayfarer landmarks,
+  reached the Eclipse Stair and Mirror Vault, recorded 6/16 wayfarer landmarks,
+  and took one death (level 3 / 300 XP to level 2 / 150 XP, then finished at
+  level 2 / 213 XP). A 200-turn
+  qwen2.5:3b run visited 19 rooms and completed 1 quest without the old Root
+  Gate direction loop; weak-model command coaching remains the limit. World
+  now 254 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects (MB-328);
 - v0.91.72 (open world and frontier) opens the map and makes exploration
   cumulative. Two new Temple rooms — **The Cliff Walk** (Atrium west to the
   Harbor Quay) and **The Cellar Stair** (Atrium down to the Undercroft) — join

@@ -104,7 +104,7 @@ export function shortcutsText() {
     "Movement: north/south/east/west/up/down (n/s/e/w/u/d) or go <direction>.",
     "Look: look (l), examine (ex/x), exits are shown after look.",
     "Fast commands: inventory/i, score/sc, quests/q, equipment/eq, who/wh, spells, world/status.",
-    "Visibility: levels, leaderboard/top/lb, map [zone], shortcuts.",
+    "Visibility: levels, leaderboard/top/lb, map [zone], wayfarer, shortcuts.",
     "Travel: recall (spell) returns to the Atrium; the first flame and green heart are room shortcuts.",
   ].join("\n");
 }
