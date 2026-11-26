@@ -1,7 +1,7 @@
 {
   "schema": "mudbenchmark/pacing/1",
-  "candidate": "c-2386f72f2192",
-  "report": "3cb68b7228b7ee2c1bd96589cf76c85cc08789ab23e7677d285e6af06900fdc8",
+  "candidate": "c-0f5ec925e602",
+  "report": "a9dee24bd8a3dfb9c22a8249163459ba875a3e6b62c34b83c1f8486e3b776f06",
   "worldHash": "62d4f6683af3e0090504e9c5df875edc36c8b31caf4039b69bdb9714a6818b9d",
   "changes": [
     {
@@ -26,7 +26,7 @@
       "target": "moth",
       "field": "period",
       "from": 48,
-      "to": 60
+      "to": 75
     },
     {
       "group": "temple-period",
@@ -34,7 +34,7 @@
       "target": "rat",
       "field": "period",
       "from": 32,
-      "to": 40
+      "to": 50
     },
     {
       "group": "shop-price",
@@ -92,8 +92,8 @@
     "benefit": true,
     "bounds": true,
     "checks": true,
-    "candidate": "c-2386f72f2192",
-    "report": "3cb68b7228b7ee2c1bd96589cf76c85cc08789ab23e7677d285e6af06900fdc8",
+    "candidate": "c-0f5ec925e602",
+    "report": "a9dee24bd8a3dfb9c22a8249163459ba875a3e6b62c34b83c1f8486e3b776f06",
     "worldHash": "62d4f6683af3e0090504e9c5df875edc36c8b31caf4039b69bdb9714a6818b9d",
     "kernel": "sha256:cc0cd971f1090692e7fad9ad7b23a3a35dada64168de74110b321d3e31c30258"
   }
