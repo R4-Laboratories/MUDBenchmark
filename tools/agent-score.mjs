@@ -30,6 +30,7 @@ const args = new Map(process.argv.slice(2).map((arg) => {
   return [key, value];
 }));
 const provider = args.get("provider") ?? "ollama";
+const base = args.get("base") ?? (provider === "bonsai" ? "http://127.0.0.1:8085/v1" : "http://127.0.0.1:11434/v1");
 const model = args.get("model") ?? (provider === "deepseek" ? "deepseek-flash" : "qwen2.5:3b");
 const turns = Math.max(1, Number(args.get("turns") ?? 200));
 const startRoom = Number(args.get("start") ?? 1);
@@ -146,6 +147,23 @@ const ask = async (system, user) => {
       signal: AbortSignal.timeout(180000),
     });
     if (!response.ok) throw new Error(`ollama ${response.status}`);
+    const body = await response.json();
+    return { text: body.choices?.[0]?.message?.content ?? "", latency: Date.now() - started };
+  }
+  if (provider === "bonsai" || provider === "openai") {
+    const response = await fetch(`${base.replace(/\/$/, "")}/chat/completions`, {
+      method: "POST",
+      headers: { "content-type": "application/json", ...(key ? { authorization: `Bearer ${key}` } : {}) },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: "system", content: system }, { role: "user", content: user }],
+        temperature: 0.7,
+        max_tokens: 1200,
+        ...(provider === "bonsai" ? { reasoning_effort: "medium" } : {}),
+      }),
+      signal: AbortSignal.timeout(300000),
+    });
+    if (!response.ok) throw new Error(`${provider} ${response.status} ${(await response.text()).slice(0, 200)}`);
     const body = await response.json();
     return { text: body.choices?.[0]?.message?.content ?? "", latency: Date.now() - started };
   }

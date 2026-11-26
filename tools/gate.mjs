@@ -193,6 +193,8 @@ let webAI = { ok: true, why: [] };
   check(deepseek.url === "https://api.deepseek.com/v1/chat/completions" && deepseek.headers.authorization === "Bearer k", "the DeepSeek request is wrong");
   check(deepseek.body.reasoning_effort === "none" && deepseek.body.max_tokens >= 300, "DeepSeek fast turns are not thinking-off with headroom");
   const deepseekDeliberate = requestFor("deepseek", { base: PROVIDERS.deepseek.base, model: PROVIDERS.deepseek.model, key: "k", deliberate: true, maxTokens: 400 }, "sys", [{ role: "user", content: "hi" }]);
+  const bonsai = requestFor("bonsai", { base: PROVIDERS.bonsai.base, model: PROVIDERS.bonsai.model, maxTokens: 1200 }, "sys", [{ role: "user", content: "hi" }]);
+  check(PROVIDERS.bonsai?.model === "bonsai" && bonsai.url === "http://localhost:8085/v1/chat/completions" && bonsai.body.max_tokens === 1200 && bonsai.body.reasoning_effort === "medium", "the Bonsai provider preset is wrong");
   check(deepseekDeliberate.body.reasoning_effort === "low" && deepseekDeliberate.body.max_tokens >= 600, "DeepSeek deliberate turns have no headroom");
   check(/emptyRetry/.test(web) && /DeepSeek returned only reasoning/.test(web), "the DeepSeek empty-reply retry is missing");
   const noteParsed = parseBrain("THOUGHT: go\nREPLY: none\nNOTE: Goal: find the tide-stone\nCOMMAND: north");

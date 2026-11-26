@@ -539,6 +539,18 @@ Rehearsed 2026-11-16:
   speaking, opened the Twin Door with one hidden partner and took the crown.
   Gate covers the death penalty, level gates, twin door, hide visibility and
   prompt (MB-286/287/288);
+- v0.91.80 (Bonsai 2.5 on the 4090) adds a first-class **Bonsai 2.5 27B
+  (local 4090)** provider preset and an OpenAI-compatible branch in
+  `tools/agent-score.mjs`. The 5.9 GB ternary model runs on wick's 4090 through
+  the PrismML llama.cpp fork with the MTP draft head, 32k context and one slot.
+  With the GPU also running a training job at ~68% utilization, prefill measured
+  ~485 tok/s and decode **~129 tok/s**, using about 10.4 GB of VRAM. A 200-turn
+  scorecard visited **44 rooms**, completed **4 quests**, produced 175 plans /
+  168 lessons, had 6 blocked attempts, 1 death, and finished at level 2 / 204
+  XP; it reached the Moonwell, Moon Throne, Eclipse Stair, Mirror Vault and
+  Salt Heart. The model server is separate from MUDBench and still holds no
+  game-server key. World unchanged at 254 rooms / 17 zones / 25 quests / 114
+  mobiles / 263 objects (MB-342);
 - v0.91.79 (arbitration validation) adds a reusable local scorecard tool,
   `tools/agent-score.mjs`, and makes weak-plan arbitration opt-in. The qwen
   validation did not show a quest gain: the uncapped run visited 34 rooms with
