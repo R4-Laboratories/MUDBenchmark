@@ -260,7 +260,7 @@ export function focusFor({ state = null, memory = null, mind = null } = {}) {
 }
 
 /** A bounded objective lock: two unrelated commands in a row yield to the focus. */
-export function focusGuard({ focus = null, command = "", detours = 0, state = null } = {}) {
+export function focusGuard({ focus = null, command = "", detours = 0, state = null, strict = false } = {}) {
   if (!focus || !["quest", "quest offer", "group action", "party", "explore"].includes(focus.kind)) {
     return { command, detours: 0, forced: false };
   }
@@ -273,6 +273,7 @@ export function focusGuard({ focus = null, command = "", detours = 0, state = nu
     if (exits.length && !exits.includes(candidate)) return { command, detours: 0, forced: false };
   }
   if (String(command).trim() === candidate) return { command, detours: 0, forced: false };
+  if (strict) return { command: candidate, detours: 0, forced: true };
   const next = (Number(detours) || 0) + 1;
   if (next < 2) return { command, detours: next, forced: false };
   return { command: candidate, detours: 0, forced: true };
