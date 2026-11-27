@@ -10,6 +10,7 @@ import { frontier, pathTo } from "./memory.mjs";
 
 const WEAPON = /sword|axe|mace|dagger|spear|hammer|staff|\bbow\b|knife|pick|blade|club/i;
 const ARMOR = /mail|plate|cloak|shield|helm|boots|gloves|bracers|apron|circlet|robe|hood|jerkin|cuirass|hauberk|mantle|charm|relic/i;
+const FOOD = /bread|stew|herb|ration|meat|apple|cheese|soup|loaf|berry|fish|biscuit|moonwater|starwater|\bale\b|water/i;
 
 const unique = (values) => [...new Set((values ?? []).filter(Boolean))];
 const roomName = (state) => state?.room?.name ?? null;
@@ -79,6 +80,13 @@ const safeHunt = (hunt, self) => {
   return taken < Math.max(1, hp) * 0.6;
 };
 
+/** Objects an active collect or deliver objective still needs; do not eat them. */
+const questObjects = (self) => new Set((self?.active_quests ?? []).flatMap((quest) => (quest.objective_details ?? [])
+  .filter((objective) => !objective.done && (objective.kind === "collect" || objective.kind === "deliver"))
+  .map((objective) => String(objective.objectName ?? objective.object ?? "").toLowerCase().replace(/^the /, "").trim())
+  .filter(Boolean)));
+const isQuestObject = (name, objects) => [...objects].some((object) => object && String(name).toLowerCase().includes(object));
+
 export function focusFor({ state = null, memory = null, mind = null, preferExplore = false, previousFocus = null } = {}) {
   const self = state?.self ?? {};
   const room = state?.room ?? {};
@@ -87,7 +95,8 @@ export function focusFor({ state = null, memory = null, mind = null, preferExplo
   if (enemies.length) {
     const enemy = enemies[0];
     const technique = self.techniques?.[0]?.id;
-    const food = (self.inventory_names ?? []).find((name) => /bread|stew|herb|ration|meat|apple|cheese|soup|loaf|berry|fish/i.test(name));
+    const protectedObjects = questObjects(self);
+    const food = (self.inventory_names ?? []).find((name) => FOOD.test(name) && !isQuestObject(name, protectedObjects));
     const selfHp = Number.isFinite(self.hp) ? self.hp : null;
     const enemyHp = Number.isFinite(enemy.hp) ? enemy.hp : null;
     const canWin = selfHp !== null && enemyHp !== null
@@ -99,13 +108,54 @@ export function focusFor({ state = null, memory = null, mind = null, preferExplo
       reason: canWin ? "this fight is winnable; see it through" : "attack already started the fight; rounds are automatic",
       candidates: unique([
         technique ? `technique ${technique}` : null,
-        food ? `eat ${food}` : null,
+        food ? `${/ale|water/i.test(food) ? "drink" : "eat"} ${food}` : null,
         (self.spells ?? []).includes("mend") ? "cast mend" : null,
         "wait",
         canWin ? null : "flee",
       ]),
     };
     return withRoute(focus, memory, from, from);
+  }
+
+  const hp = Number.isFinite(self.hp) ? self.hp : null;
+  const maxHp = Number.isFinite(self.max_hp) ? self.max_hp : null;
+  if (hp !== null && maxHp !== null && hp < maxHp * 0.6) {
+    const protectedObjects = questObjects(self);
+    const food = (self.inventory_names ?? []).find((name) => FOOD.test(name) && !isQuestObject(name, protectedObjects));
+    if (food) {
+      const verb = /ale|water/i.test(food) ? "drink" : "eat";
+      return withRoute({
+        kind: "recover",
+        label: `${verb} ${food}`,
+        reason: `HP ${hp}/${maxHp}; recover before the next fight`,
+        candidates: unique([`${verb} ${food}`, "score", "inventory"]),
+      }, memory, from, from);
+    }
+    const inn = "The Gilded Rat";
+    const innPath = routeFor(memory, from, inn);
+    const here = from === inn;
+    const innFood = (room.objects ?? []).find((object) => object?.forSale && FOOD.test(object.name));
+    if ((self.coins ?? 0) >= 3 && (here ? innFood : innPath.length)) {
+      return withRoute({
+        kind: "recover",
+        label: here ? `buy ${innFood.name}` : `buy food at ${inn}`,
+        reason: `HP ${hp}/${maxHp}; no food carried`,
+        candidates: unique([here ? `buy ${innFood.name}` : innPath[0], "list", "score"]),
+      }, memory, from, inn);
+    }
+    const cell = "The Cell";
+    const cellPath = routeFor(memory, from, cell);
+    const breadNeeded = [...protectedObjects].some((object) => object.includes("bread") || "a loaf of bread".includes(object));
+    const cellHere = from === cell;
+    const cellFood = (room.objects ?? []).find((object) => object?.takeable && FOOD.test(object.name));
+    if (!breadNeeded && (cellHere ? cellFood : cellPath.length)) {
+      return withRoute({
+        kind: "recover",
+        label: cellHere ? `take ${cellFood.name}` : `find bread in ${cell}`,
+        reason: `HP ${hp}/${maxHp}; no food carried`,
+        candidates: unique([cellHere ? `take ${cellFood.name}` : cellPath[0], "look", "inventory"]),
+      }, memory, from, cell);
+    }
   }
 
   const hasStats = (self.inventory_items ?? []).length > 0;
@@ -325,7 +375,7 @@ export function focusFor({ state = null, memory = null, mind = null, preferExplo
 
 /** A bounded objective lock: two unrelated commands in a row yield to the focus. */
 export function focusGuard({ focus = null, command = "", detours = 0, state = null, strict = false } = {}) {
-  if (!focus || !["quest", "quest offer", "group action", "party", "explore", "hunt", "combat"].includes(focus.kind)) {
+  if (!focus || !["quest", "quest offer", "group action", "party", "explore", "hunt", "combat", "recover"].includes(focus.kind)) {
     return { command, detours: 0, forced: false };
   }
   const candidate = focus.route?.[0] ?? (focus.candidates ?? [])[0];
@@ -346,7 +396,7 @@ export function focusGuard({ focus = null, command = "", detours = 0, state = nu
     }
   }
   const concrete = !["look", "inventory", "quests", "score", "map"].includes(candidate);
-  if (strict || (["quest", "quest offer", "hunt"].includes(focus.kind) && concrete)) return { command: candidate, detours: 0, forced: true };
+  if (strict || (["quest", "quest offer", "hunt", "recover"].includes(focus.kind) && concrete)) return { command: candidate, detours: 0, forced: true };
   const next = (Number(detours) || 0) + 1;
   if (next < 2) return { command, detours: next, forced: false };
   return { command: candidate, detours: 0, forced: true };

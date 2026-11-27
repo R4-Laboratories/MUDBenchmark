@@ -539,6 +539,23 @@ Rehearsed 2026-11-16:
   speaking, opened the Twin Door with one hidden partner and took the crown.
   Gate covers the death penalty, level gates, twin door, hide visibility and
   prompt (MB-286/287/288);
+- v0.91.90 (recovery) adds a `recover` focus for the gap between fights. When
+  HP is below 60% and no enemy is engaged, the agent eats carried food (never an
+  object an active collect or deliver objective still needs), or buys the
+  cheapest food actually for sale at The Gilded Rat when it has at least 3
+  coins, or takes the free bread in The Cell. The shop check reads the room's
+  for-sale list, so an empty shop sends the agent to the next source instead of
+  repeating `buy`. Recovery takes its route step immediately and resumes the
+  quest once HP is back above the line. Evidence: a 200-turn DeepSeek run
+  reached **level 4 / 811 XP** with **9 completed quests and 2 active level-4
+  quests** (What the Mirror Keeps and The Salt Rose) in 46 rooms, 0 deaths and 4
+  attacks. After a red gate guard fight it routed from The Iron Gate to The
+  Gilded Rat, bought stew for 10 coins, ate, healed and resumed; it did not flee
+  or loop on an empty shop. The previous best was level 4 / 790 XP. Gate covers
+  carried food, the inn, free bread, an empty shop, quest-object protection,
+  non-quest food preference, the healthy no-recover case and the immediate
+  recovery step. World unchanged at 254 rooms / 17 zones / 25 quests / 114
+  mobiles / 263 objects (MB-362);
 - v0.91.89 (quest targets, combat judgment and the level-4 bridge) makes a
   quest kill target follow the mobile's live room instead of its home room; the
   planner follows a moved target and searches or waits when it is at the
