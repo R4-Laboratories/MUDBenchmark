@@ -4831,7 +4831,7 @@
       "home": 2,
       "period": 32,
       "jitter": 6,
-      "behaviour": "wander",
+      "behaviour": "sentinel",
       "hp": 3,
       "damage": 2,
       "armor": 0,

@@ -39,6 +39,7 @@ const objectiveScore = (objective, { state, memory, from, mind, quest } = {}) =>
   }
   if (objective.kind === "kill") {
     if (npcHere(objective.npcName ?? objective.npc)) return 5;
+    if (objective.npcRoomName === from) return 3;
     return routeFor(memory, from, objective.npcRoomName).length ? 4 : 1;
   }
   if (objective.kind === "collect") {
@@ -67,6 +68,17 @@ const offerScore = (quest, { memory, from } = {}) => {
   return routeFor(memory, from, quest.giverRoomName).length ? 4 : 1;
 };
 
+const huntRounds = (hunt, self) => Math.max(1, Math.ceil((hunt?.maxHp ?? hunt?.hp ?? 1) / Math.max(1, self?.damage ?? 1)));
+
+/** A rough safety check: can this mobile be killed before it kills the agent? */
+const safeHunt = (hunt, self) => {
+  if (!hunt?.room) return false;
+  if ((hunt.level ?? 1) > (self?.level ?? 1)) return false;
+  const hp = self?.hp ?? self?.max_hp ?? 20;
+  const taken = huntRounds(hunt, self) * Math.max(0, (hunt.damage ?? 0) - (self?.armor ?? 0));
+  return taken < Math.max(1, hp) * 0.6;
+};
+
 export function focusFor({ state = null, memory = null, mind = null, preferExplore = false, previousFocus = null } = {}) {
   const self = state?.self ?? {};
   const room = state?.room ?? {};
@@ -76,15 +88,21 @@ export function focusFor({ state = null, memory = null, mind = null, preferExplo
     const enemy = enemies[0];
     const technique = self.techniques?.[0]?.id;
     const food = (self.inventory_names ?? []).find((name) => /bread|stew|herb|ration|meat|apple|cheese|soup|loaf|berry|fish/i.test(name));
+    const selfHp = Number.isFinite(self.hp) ? self.hp : null;
+    const enemyHp = Number.isFinite(enemy.hp) ? enemy.hp : null;
+    const canWin = selfHp !== null && enemyHp !== null
+      && selfHp >= Math.max(8, (self.max_hp ?? 20) * 0.35)
+      && enemyHp <= selfHp;
     const focus = {
       kind: "combat",
       label: `survive ${enemy.name}`,
-      reason: "attack already started the fight; rounds are automatic",
+      reason: canWin ? "this fight is winnable; see it through" : "attack already started the fight; rounds are automatic",
       candidates: unique([
         technique ? `technique ${technique}` : null,
         food ? `eat ${food}` : null,
         (self.spells ?? []).includes("mend") ? "cast mend" : null,
-        "flee",
+        "wait",
+        canWin ? null : "flee",
       ]),
     };
     return withRoute(focus, memory, from, from);
@@ -198,7 +216,9 @@ export function focusFor({ state = null, memory = null, mind = null, preferExplo
       target = objective.npcRoomName ?? from;
       const npcName = objective.npcName ?? objective.npc;
       const here = names(room.npcs).some((name) => name.toLowerCase().includes(String(npcName ?? "").replace(/^the /, "")));
-      candidates.push(here ? `attack ${npcName}` : (routeFor(memory, from, target)[0] ?? "look"), "battle", "consider " + (npcName ?? "enemy"));
+      if (here) candidates.push(`attack ${npcName}`);
+      else if (target === from) candidates.push("search", "wait", "look");
+      else candidates.push(routeFor(memory, from, target)[0] ?? "look", "battle", "consider " + (npcName ?? "enemy"));
     } else if (objective.kind === "collect") {
       const objectName = objective.objectName ?? objective.object;
       const carried = (self.inventory_names ?? []).some((name) => name.toLowerCase().includes(String(objectName ?? "").replace(/^the /, "")));
@@ -250,6 +270,31 @@ export function focusFor({ state = null, memory = null, mind = null, preferExplo
     }, memory, from, target);
   }
 
+  const needsXp = Number.isFinite(self.next_xp) && (self.xp ?? 0) < self.next_xp;
+  const hunts = (memory?.hunts ?? []).filter((hunt) => hunt?.room && safeHunt(hunt, self));
+  const huntHere = hunts.find((hunt) => hunt.room === from);
+  if (needsXp && huntHere) {
+    return withRoute({
+      kind: "hunt",
+      label: `hunt ${huntHere.name}`,
+      reason: `a safe ${huntHere.name} is here; fight it to reach level ${(self.level ?? 1) + 1}`,
+      candidates: unique([`attack ${huntHere.name}`, `consider ${huntHere.name}`, "battle", "look"]),
+    }, memory, from, from);
+  }
+  const huntAhead = hunts
+    .filter((hunt) => hunt.room !== from)
+    .map((hunt) => ({ hunt, path: routeFor(memory, from, hunt.room) }))
+    .filter((entry) => entry.path.length)
+    .sort((a, b) => a.path.length - b.path.length)[0] ?? null;
+  if (needsXp && huntAhead) {
+    return withRoute({
+      kind: "hunt",
+      label: `hunt ${huntAhead.hunt.name} in ${huntAhead.hunt.room}`,
+      reason: `no quest is reachable; ${huntAhead.hunt.name} is ${huntAhead.path.length} move${huntAhead.path.length === 1 ? "" : "s"} away`,
+      candidates: unique([huntAhead.path[0], `consider ${huntAhead.hunt.name}`, "quests", "look"]),
+    }, memory, from, huntAhead.hunt.room);
+  }
+
   const ahead = frontier(memory, from);
   if (ahead) {
     const exit = ahead.path[0];
@@ -280,7 +325,7 @@ export function focusFor({ state = null, memory = null, mind = null, preferExplo
 
 /** A bounded objective lock: two unrelated commands in a row yield to the focus. */
 export function focusGuard({ focus = null, command = "", detours = 0, state = null, strict = false } = {}) {
-  if (!focus || !["quest", "quest offer", "group action", "party", "explore"].includes(focus.kind)) {
+  if (!focus || !["quest", "quest offer", "group action", "party", "explore", "hunt", "combat"].includes(focus.kind)) {
     return { command, detours: 0, forced: false };
   }
   const candidate = focus.route?.[0] ?? (focus.candidates ?? [])[0];
@@ -292,8 +337,16 @@ export function focusGuard({ focus = null, command = "", detours = 0, state = nu
     if (exits.length && !exits.includes(candidate)) return { command, detours: 0, forced: false };
   }
   if (String(command).trim() === candidate) return { command, detours: 0, forced: false };
+  if (focus.kind === "combat") {
+    if (/^flee\b/i.test(String(command).trim()) && !(focus.candidates ?? []).includes("flee")) {
+      return { command: candidate, detours: 0, forced: true };
+    }
+    if (!/^(technique|tech|eat|drink|cast|flee|wait|battle|combat|score|equipment)\b/i.test(String(command).trim())) {
+      return { command: candidate, detours: 0, forced: true };
+    }
+  }
   const concrete = !["look", "inventory", "quests", "score", "map"].includes(candidate);
-  if (strict || (["quest", "quest offer"].includes(focus.kind) && concrete)) return { command: candidate, detours: 0, forced: true };
+  if (strict || (["quest", "quest offer", "hunt"].includes(focus.kind) && concrete)) return { command: candidate, detours: 0, forced: true };
   const next = (Number(detours) || 0) + 1;
   if (next < 2) return { command, detours: next, forced: false };
   return { command: candidate, detours: 0, forced: true };

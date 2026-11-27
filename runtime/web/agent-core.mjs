@@ -5,7 +5,7 @@
 // their own prompt, planner, memory or coach.
 
 import { emptyMind, updateMind, mindPrompt } from "./mind.mjs";
-import { emptyMemory, rememberResult, memoryPrompt, breakLoop, shouldBreakLoop } from "./memory.mjs";
+import { emptyMemory, rememberResult, memoryPrompt, breakLoop, shouldBreakLoop, noteHunts } from "./memory.mjs";
 import { focusFor, focusPrompt, focusGuard } from "./planner.mjs";
 import { buildSystemPrompt, buildUserPrompt, buildActionMenu, parseBrain, coachCommand, coachAction, coachFallbackDue } from "./ai.mjs";
 
@@ -47,6 +47,7 @@ export function beginTurn(core, { state = null, observation = "", room = null, t
   const currentRoom = roomFrom(state, room);
   const exits = exitsFrom(observation, state);
   const promptState = { ...(state ?? {}), room: { ...(state?.room ?? {}), name: currentRoom, exits: exits.map((dir) => ({ dir, room: null })), text: observation } };
+  noteHunts(core.memory, currentRoom, promptState.room.npcs);
   const mark = `${Object.keys(core.memory.rooms).length}|${promptState.self?.quests?.completed ?? 0}|${promptState.self?.xp ?? 0}|${promptState.self?.level ?? 1}`;
   if (core.progressMark === mark) core.stallTurns += 1;
   else { core.progressMark = mark; core.stallTurns = 0; }

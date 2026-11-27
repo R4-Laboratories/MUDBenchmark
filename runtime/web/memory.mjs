@@ -131,6 +131,7 @@ export const emptyMemory = () => ({
   social: [],
   trail: [],
   map: {},
+  hunts: [],
   updated: null,
 });
 
@@ -180,6 +181,35 @@ export function noteRoom(memory, room, exits = []) {
     memory.trail.push(room);
     if (memory.trail.length > 60) memory.trail.splice(0, memory.trail.length - 60);
   }
+  return memory;
+}
+
+/** Remember aggressive mobiles and the room where they were last seen. */
+export function noteHunts(memory, room, npcs = []) {
+  if (!memory || !room) return memory;
+  memory.hunts ??= [];
+  const seen = new Set();
+  for (const npc of Array.isArray(npcs) ? npcs : []) {
+    if (!npc?.name || (npc.aggression ?? 0) <= 0) continue;
+    seen.add(npc.name);
+    const next = {
+      room,
+      name: npc.name,
+      level: Number.isFinite(npc.level) ? npc.level : 1,
+      hp: Number.isFinite(npc.hp) ? npc.hp : null,
+      maxHp: Number.isFinite(npc.maxHp) ? npc.maxHp : (Number.isFinite(npc.hp) ? npc.hp : null),
+      damage: Number.isFinite(npc.damage) ? npc.damage : 0,
+      aggression: npc.aggression ?? 0,
+      seenAt: Date.now(),
+    };
+    const entry = memory.hunts.find((hunt) => hunt.room === room && hunt.name === npc.name);
+    if (entry) Object.assign(entry, next);
+    else memory.hunts.push(next);
+  }
+  // A room that no longer holds an aggressive mobile has been cleared or the
+  // mobile moved on; do not send the agent back to a stale fight.
+  memory.hunts = memory.hunts.filter((hunt) => hunt.room !== room || seen.has(hunt.name));
+  if (memory.hunts.length > 24) memory.hunts.splice(0, memory.hunts.length - 24);
   return memory;
 }
 

@@ -1085,6 +1085,10 @@ function selfState(actor) {
     ? state.npcs.filter((npc) => npc.room === actor.room && !npc.dead).map((npc) => ({
         name: npc.name,
         aggression: npc.aggression ?? 0,
+        level: npc.level ?? 1,
+        hp: Number.isFinite(npc.hp) ? npc.hp : null,
+        maxHp: Number.isFinite(npc.maxHp) ? npc.maxHp : (Number.isFinite(npc.hp) ? npc.hp : null),
+        damage: Number.isFinite(npc.damage) ? npc.damage : 0,
       }))
     : [];
   const actionsHere = actor?.key
@@ -1115,8 +1119,9 @@ function selfState(actor) {
             roomName: objective.room ? (ROOMS[objective.room]?.name ?? null) : null,
             npc: objective.npc ?? null,
             npcName: npc?.name ?? null,
-            npcRoom: npc?.home ?? null,
-            npcRoomName: npc?.home ? (ROOMS[npc.home]?.name ?? null) : null,
+            npcRoom: npc?.room ?? npc?.home ?? null,
+            npcRoomName: npc ? (ROOMS[npc.room ?? npc.home]?.name ?? null) : null,
+            npcHomeName: npc?.home ? (ROOMS[npc.home]?.name ?? null) : null,
             object: objective.object ?? null,
             objectName: object?.name ?? null,
             objectRoom: object?.room ?? object?.home ?? null,
