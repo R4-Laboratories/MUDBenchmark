@@ -162,6 +162,16 @@ The Mind now stores the model's `NOTE` line (up to 12 notes) and prints `NOTES`
 back each turn; the browser notebook still records the same note for the human.
 This is the model's own durable context, not just a two-turn transcript.
 
+## Shared agent core
+
+`runtime/web/agent-core.mjs` is the single turn controller: it folds the last
+result into memory and Mind, computes progress/frontier arbitration, builds the
+system and user prompts, parses the reply, runs the loop guard, coach, fallback
+and focus lock, and records the transcript. `tools/agent-score.mjs` now uses it;
+the 10-turn DeepSeek smoke sent 10 commands with 10 plans / 10 lessons and
+completed 1 quest. The browser still has its WebSocket/UI shell around the same
+shared modules; moving that shell onto `agent-core` is the next migration.
+
 ## One default profile
 
 `runtime/web/agent-profile.mjs` holds the single default: 1200 output tokens,
