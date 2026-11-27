@@ -162,6 +162,15 @@ The Mind now stores the model's `NOTE` line (up to 12 notes) and prints `NOTES`
 back each turn; the browser notebook still records the same note for the human.
 This is the model's own durable context, not just a two-turn transcript.
 
+## All agents on one core
+
+The browser, the CLI (`runtime/agent.mjs`) and `tools/agent-score.mjs` now use
+`agent-core.mjs`. The CLI keeps only WebSocket login and the optional OpenCode
+JSON transport; all prompt, memory, Mind, planner, coach, fallback, focus and
+transcript behavior is shared. A headless Chrome smoke sent three commands to a
+mock provider, and the CLI smoke sent four. Objective and waypoint environment
+variables are goal hints, not a second planner.
+
 ## Browser on the shared core
 
 The browser AI now imports `runtime/web/agent-core.mjs` and calls
