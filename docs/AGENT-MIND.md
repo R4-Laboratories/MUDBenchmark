@@ -162,6 +162,16 @@ The Mind now stores the model's `NOTE` line (up to 12 notes) and prints `NOTES`
 back each turn; the browser notebook still records the same note for the human.
 This is the model's own durable context, not just a two-turn transcript.
 
+## Answer clue scoring
+
+An active answer objective used to score 1 until the Mind knew the word, so a
+reachable clue room could be discarded for an unrelated offer. It now scores 4
+when the clue room has a known route, and the visit to that clue room scores 6
+when the same quest has an answer objective. Gate covers both. A focused
+DeepSeek run did not exercise the path: it accepted other quests or explored
+instead of The True Word, so quest selection, not clue scoring, is the next
+limit.
+
 ## Unified harness evidence
 
 The first 200-turn DeepSeek run on the unified profile/core visited **56 rooms**,
