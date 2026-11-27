@@ -539,6 +539,15 @@ Rehearsed 2026-11-16:
   speaking, opened the Twin Door with one hidden partner and took the crown.
   Gate covers the death penalty, level gates, twin door, hide visibility and
   prompt (MB-286/287/288);
+- v0.91.86 (unified harness evidence) records the first full 200-turn
+  DeepSeek run on the single profile and shared controller. It visited **56
+  rooms**, completed **5 quests**, produced 200 plans / 200 lessons, had 9
+  blocked attempts, 1 attack and 0 deaths, finishing at level 3 / 463 XP with a
+  practice sword and grey cloak. The run reached the Arcanum's upper halls, the
+  Salt Stairs, the Moonlit Gate, the Memory Garden and the Root Road, and spent
+  only 13 turns in the Atrium. This is the best recorded DeepSeek reach so far
+  and shows no regression from the profile/core consolidation. World unchanged
+  at 254 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects (MB-354);
 - v0.91.85 (CLI on the shared core) rebases `runtime/agent.mjs` onto
   `runtime/web/agent-core.mjs`. The CLI keeps only its WebSocket transport and
   optional OpenCode JSON adapter; prompt construction, memory/Mind, planner,

@@ -1,6 +1,6 @@
 # Next work
 
-Baseline: **v0.91.85**. The world has 254 rooms, 17 zones, 25 quests, 114 mobiles
+Baseline: **v0.91.86**. The world has 254 rooms, 17 zones, 25 quests, 114 mobiles
 and 263 objects. The run has a recorded win condition: level 10, all 25 quests
 and all 25 hidden ways, with the permanent Worldbreaker title. R4 memory, command grounding, scorecards
 and the public stats surface are live; signups are open. Every AI key is
@@ -118,6 +118,7 @@ memory or prompt system.
 | v0.91.83 | Shared `agent-core.mjs` turn controller; scorecard migrated; browser WebSocket/UI loop migration remains | **done** (MB-348) |
 | v0.91.84 | Browser AI moved onto `agent-core.mjs`; gate checks the import and calls; legacy `runtime/agent.mjs` marked separate | **done** (MB-350) |
 | v0.91.85 | CLI rebased onto `agent-core.mjs`; browser and CLI smokes pass with a mock provider; all supported agents use one controller | **done** (MB-352) |
+| v0.91.86 | Unified harness evidence: 200-turn DeepSeek run 56 rooms / 5 quests / 0 deaths, best recorded reach | **done** (MB-354) |
 | backlog | Longer DeepSeek/Groq evidence; moderator/immortal decision; larger PvP sample; federation rework | optional |
 
 ## What is next

@@ -162,6 +162,15 @@ The Mind now stores the model's `NOTE` line (up to 12 notes) and prints `NOTES`
 back each turn; the browser notebook still records the same note for the human.
 This is the model's own durable context, not just a two-turn transcript.
 
+## Unified harness evidence
+
+The first 200-turn DeepSeek run on the unified profile/core visited **56 rooms**,
+completed **5 quests**, produced 200 plans / 200 lessons, made 1 attack, had 9
+blocked attempts and 0 deaths, finishing at level 3 / 463 XP. It reached the
+Arcanum's upper halls, the Salt Stairs, the Moonlit Gate, the Memory Garden and
+the Root Road, spending only 13 turns in the Atrium. This is the best recorded
+DeepSeek reach and shows no regression from the consolidation.
+
 ## All agents on one core
 
 The browser, the CLI (`runtime/agent.mjs`) and `tools/agent-score.mjs` now use
