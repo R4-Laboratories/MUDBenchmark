@@ -20,11 +20,10 @@ import { loadChannels } from "../runtime/channels.mjs";
 import { loadLevels } from "../runtime/levels.mjs";
 import { loadQuests } from "../runtime/quests.mjs";
 import { hashPassword } from "../runtime/accounts.mjs";
-import { buildSystemPrompt, buildUserPrompt, buildActionMenu, parseBrain, coachCommand, coachAction, coachFallbackDue, requestFor, replyFrom } from "../runtime/web/ai.mjs";
+import { requestFor, replyFrom } from "../runtime/web/ai.mjs";
 import { agentProfile } from "../runtime/web/agent-profile.mjs";
-import { emptyMind, updateMind, mindPrompt } from "../runtime/web/mind.mjs";
-import { focusFor, focusPrompt, focusGuard } from "../runtime/web/planner.mjs";
-import { emptyMemory, rememberResult, memoryPrompt, loopWarning, breakLoop, shouldBreakLoop, seedMapFromLlms } from "../runtime/web/memory.mjs";
+import { createAgentCore, beginTurn, decideTurn, recordTurn } from "../runtime/web/agent-core.mjs";
+import { seedMapFromLlms } from "../runtime/web/memory.mjs";
 
 const args = new Map(process.argv.slice(2).map((arg) => {
   const [key, value = "1"] = arg.replace(/^--/, "").split("=");
@@ -155,25 +154,9 @@ const ask = async (system, user) => {
 
 const weak = provider === "ollama" || /qwen|tiny|small|3b|1\.5b|0\.5b|phi|gemma/i.test(model);
 let ai;
-const mind = emptyMind();
-const memory = emptyMemory();
+const core = createAgentCore({ name, goal, weak, strict: false, fast: true });
 let observation = "";
-let lastCommand = null;
-let lastParsed = null;
-let lastValidation = null;
-let lastCoach = null;
-let commandRoom = null;
-let tick = 0;
-let coachRetries = 0;
-const blockedCounts = new Map();
-let focusDetours = 0;
-let focusKey = "";
-let recent = [];
-let progressMark = "";
-let stallTurns = 0;
-let frontierTurns = 0;
-let lastPlan = "";
-const transcript = [];
+const transcript = core.transcript;
 
 try {
   await until(() => fetch(`http://127.0.0.1:${webPort}/health`).then((response) => response.ok), "server");
@@ -182,89 +165,34 @@ try {
   await ai.expect(`[${world.rooms[startRoom].name}]`);
   await wait(300);
   const llms = await fetch(`http://127.0.0.1:${webPort}/llms.txt`).then((response) => response.text());
-  seedMapFromLlms(memory, llms);
+  seedMapFromLlms(core.memory, llms);
   const initial = ai.state()?.self ?? null;
 
   for (let turn = 1; turn <= turns; turn += 1) {
     const stateNow = ai.state();
     if (!stateNow) { await wait(300); continue; }
-    if (lastCommand && commandRoom) {
-      rememberResult(memory, { room: commandRoom, command: lastCommand, observation, tick, at: Date.now(), exits: stateNow.room?.exits ?? [] });
-      updateMind(mind, { state: stateNow, observation, command: lastCommand, parsed: lastParsed, validation: lastValidation, coach: lastCoach, room: commandRoom, tick });
-    }
-    const currentRoom = ai.room() || stateNow.room?.name;
-    const exitMatch = observation.match(/^Exits:\s*(.+)$/m);
-    const exitDirs = exitMatch
-      ? exitMatch[1].split(/,\s*/).map((part) => part.trim().split(/\s+/)[0].replace(/[^a-z]/gi, "")).filter(Boolean)
-      : (stateNow.room?.exits ?? []).map((exit) => (typeof exit === "string" ? exit : exit?.dir));
-    const promptState = { ...stateNow, room: { ...(stateNow.room ?? {}), name: currentRoom, exits: exitDirs.map((dir) => ({ dir, room: null })), text: observation } };
-    const mark = `${Object.keys(memory.rooms).length}|${promptState.self?.quests?.completed ?? 0}|${promptState.self?.xp ?? 0}|${promptState.self?.level ?? 1}`;
-    if (progressMark === mark) stallTurns += 1;
-    else { progressMark = mark; stallTurns = 0; }
-    const planRepeated = Boolean(mind.plan && lastPlan === mind.plan);
-    lastPlan = mind.plan;
-    let preferExplore = weak && (stallTurns >= 12 || (stallTurns >= 6 && planRepeated));
-    if (preferExplore && frontierTurns >= 8) {
-      preferExplore = false;
-      stallTurns = 0;
-      frontierTurns = 0;
-    } else if (preferExplore) {
-      frontierTurns += 1;
-    } else {
-      frontierTurns = 0;
-    }
-    const focus = focusFor({ state: promptState, memory, mind, preferExplore });
-    const actions = [...new Set([...(focus.candidates ?? []), ...buildActionMenu(promptState)])].slice(0, 48);
-    const system = buildSystemPrompt({ name, goal, fast: true, deliberate: turn === 1 || turn % 5 === 0 });
-    const user = buildUserPrompt({
-      turn, observation, director: [], state: promptState, actions,
-      memory: memoryPrompt(memory, { room: currentRoom, exits: stateNow.room?.exits ?? [], query: observation }),
-      mind: mindPrompt(mind, { state: promptState, room: currentRoom }),
-      focus: focusPrompt(focus), fast: true,
+    const room = ai.room() || stateNow.room?.name;
+    const turnData = beginTurn(core, { state: stateNow, observation, room, turn });
+    const reply = await ask(turnData.system, turnData.user);
+    const decision = decideTurn(core, {
+      reply: reply.text, state: stateNow, promptState: turnData.promptState,
+      focus: turnData.focus, room: turnData.currentRoom, turn,
+      preferExplore: turnData.preferExplore,
     });
-    const reply = await ask(system, user);
-    const parsed = parseBrain(reply.text);
-    if (shouldBreakLoop(memory, { room: currentRoom, command: parsed.command, recent }) || mind.stuck?.looping) {
-      const forced = breakLoop(recent, stateNow.room?.exits ?? [], memory);
-      if (forced && forced !== parsed.command) { parsed.command = forced; parsed.thought = `Loop broken: ${forced}.`; }
-    }
-    const coach = coachCommand(parsed.command, promptState, mind);
-    const invalidAttempt = coach.blocked || !coach.validation.ok;
-    if (invalidAttempt) blockedCounts.set(parsed.command, (blockedCounts.get(parsed.command) ?? 0) + 1);
-    else blockedCounts.delete(parsed.command);
-    let command = parsed.command;
-    let sent = true;
-    if (coach.blocked && (blockedCounts.get(parsed.command) ?? 0) < 2 && coachRetries < 1) {
-      coachRetries += 1;
-      sent = false;
-      observation = `COMMAND NOT SENT: ${coach.feedback}`;
-      lastCommand = parsed.command; lastParsed = parsed; lastValidation = coach.validation; lastCoach = coach; commandRoom = currentRoom;
-      transcript.push({ turn, plan: parsed.plan, lesson: parsed.lesson, command: parsed.command, blocked: true, coach: coach.feedback, observation, room: currentRoom });
+    if (decision.blocked) {
+      observation = decision.observation;
+      transcript.push({ turn, plan: decision.parsed.plan, lesson: decision.parsed.lesson, command: decision.command, blocked: true, coach: decision.coach.feedback, observation, room: turnData.currentRoom });
+      console.log(`turn ${turn}: BLOCKED ${decision.command} — ${decision.coach.feedback}`);
       await wait(200);
       continue;
     }
-    coachRetries = 0;
-    if (coachFallbackDue({ blocked: coach.blocked, valid: coach.validation.ok, count: blockedCounts.get(parsed.command) ?? 0 })) {
-      command = coachAction(focus, promptState, mind, coach.repaired);
-      console.log(`turn ${turn}: COACH FALLBACK ${command}`);
-    } else if (coach.blocked) {
-      command = coachAction(focus, promptState, mind, coach.repaired);
-      console.log(`turn ${turn}: COACH FALLBACK ${command}`);
-    } else if (!coach.validation.ok) command = coach.repaired || "look";
-    const fkey = `${focus.kind}:${focus.label}:${focus.target ?? ""}`;
-    if (focusKey !== fkey) { focusKey = fkey; focusDetours = 0; }
-    const focusLock = focusGuard({ focus, command, detours: focusDetours, state: promptState });
-    focusDetours = focusLock.detours;
-    if (focusLock.forced) command = focusLock.command;
-    lastCommand = command; lastParsed = parsed; lastValidation = coach.validation; lastCoach = coach; commandRoom = currentRoom;
-    recent = [...recent, command].slice(-12);
     const before = ai.text().length;
-    ai.ws.send(`${command}\n`);
-    await wait(provider === "ollama" ? 700 : 1400);
+    ai.ws.send(`${decision.command}\n`);
+    await wait(provider === "ollama" || provider === "bonsai" ? 900 : 1400);
     observation = ai.text().slice(before).replace(/#(?:state|tick|characters) .*\r?\n/g, "").trim().slice(0, 1500);
-    tick = ai.state()?.tick ?? tick;
-    transcript.push({ turn, plan: parsed.plan, lesson: parsed.lesson, command, blocked: false, coach: coach.feedback || null, focusForced: focusLock.forced, observation, room: currentRoom, preferExplore });
-    if (turn % 20 === 0) console.log(`turn ${turn}: ${currentRoom} · ${command}`);
+    const tick = ai.state()?.tick ?? 0;
+    recordTurn(core, { command: decision.command, parsed: decision.parsed, coach: decision.coach, observation, room: turnData.currentRoom, tick, focusForced: decision.focusForced, preferExplore: decision.preferExplore, turn });
+    if (turn % 20 === 0) console.log(`turn ${turn}: ${turnData.currentRoom} · ${decision.command}`);
   }
   const final = ai.state()?.self ?? null;
   const sent = transcript.filter((entry) => !entry.blocked);
@@ -296,7 +224,7 @@ try {
     attacks: sent.filter((entry) => /^attack\b/i.test(entry.command)).length,
     focusForced: sent.filter((entry) => entry.focusForced).length,
     preferExplore: sent.filter((entry) => entry.preferExplore).length,
-    coachReasons: reasons, mindLessons: mind.lessons ?? [], mindNotes: mind.notes ?? [],
+    coachReasons: reasons, mindLessons: core.mind.lessons ?? [], mindNotes: core.mind.notes ?? [],
     transcript,
   };
   writeFileSync(out, JSON.stringify(scorecard, null, 2));
