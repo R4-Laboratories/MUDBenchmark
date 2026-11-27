@@ -1,6 +1,6 @@
 # Next work
 
-Baseline: **v0.91.89**. The world has 254 rooms, 17 zones, 25 quests, 114 mobiles
+Baseline: **v0.91.90**. The world has 254 rooms, 17 zones, 25 quests, 114 mobiles
 and 263 objects. The run has a recorded win condition: level 10, all 25 quests
 and all 25 hidden ways, with the permanent Worldbreaker title. R4 memory, command grounding, scorecards
 and the public stats surface are live; signups are open. Every AI key is
@@ -122,6 +122,7 @@ memory or prompt system.
 | v0.91.87 | Answer clue scoring: unknown answer routes to its clue room and the clue visit outranks an offer; focused runs still did not complete the word, so quest selection remains the gap | **done** (MB-356) |
 | v0.91.88 | Quest commitment: reachable active quest outranks offers until done; command-room exits fix; 200-turn DeepSeek 9 quests / 54 rooms, word at turn 42 | **done** (MB-358) |
 | v0.91.89 | Quest targets that move, combat judgment and safe hunts; 100-XP High Walk bridge; 200-turn DeepSeek reaches level 4 / 790 XP with 9 quests + 2 active level-4 quests | **done** (MB-360) |
+| v0.91.90 | Recovery focus: eat carried food, buy stocked food at the inn, or take free bread; never eat active quest objects; 200-turn DeepSeek level 4 / 811 XP with 9 quests + 2 active level-4 quests | **done** (MB-362) |
 | backlog | Longer DeepSeek/Groq evidence; moderator/immortal decision; larger PvP sample; federation rework | optional |
 
 ## What is next

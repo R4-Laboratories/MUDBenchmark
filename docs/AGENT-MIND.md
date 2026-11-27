@@ -162,6 +162,22 @@ The Mind now stores the model's `NOTE` line (up to 12 notes) and prints `NOTES`
 back each turn; the browser notebook still records the same note for the human.
 This is the model's own durable context, not just a two-turn transcript.
 
+## Recovery
+
+Below 60% HP, with no enemy engaged, the agent now stops to recover instead of
+walking into the next fight. It eats carried food first, but never an object an
+active collect or deliver objective still needs. If it carries no usable food,
+it buys the cheapest food actually for sale at The Gilded Rat when it has at
+least 3 coins, or takes the free bread in The Cell. The shop check reads the
+room's for-sale list, so an empty shop falls through to the next source rather
+than repeating `buy`. Recovery takes its route step immediately and the quest
+focus resumes once HP is back above the line.
+
+A 200-turn DeepSeek run reached **level 4 / 811 XP** with 9 completed quests
+and 2 active level-4 quests in 46 rooms, 0 deaths and 4 attacks. After a red
+gate guard fight it routed from The Iron Gate to The Gilded Rat, bought stew
+for 10 coins, ate, healed and resumed. The previous best was level 4 / 790 XP.
+
 ## Quest targets that move
 
 A kill objective used to carry only the mobile's home room. A wandering target
