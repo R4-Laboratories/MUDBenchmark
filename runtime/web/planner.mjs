@@ -8,7 +8,7 @@
 
 import { frontier, pathTo } from "./memory.mjs";
 
-const WEAPON = /sword|axe|mace|dagger|spear|hammer|staff|bow|knife|pick|blade|club/i;
+const WEAPON = /sword|axe|mace|dagger|spear|hammer|staff|\bbow\b|knife|pick|blade|club/i;
 const ARMOR = /mail|plate|cloak|shield|helm|boots|gloves|bracers|apron|circlet|robe|hood|jerkin|cuirass|hauberk|mantle|charm|relic/i;
 
 const unique = (values) => [...new Set((values ?? []).filter(Boolean))];
@@ -67,7 +67,7 @@ const offerScore = (quest, { memory, from } = {}) => {
   return routeFor(memory, from, quest.giverRoomName).length ? 4 : 1;
 };
 
-export function focusFor({ state = null, memory = null, mind = null, preferExplore = false } = {}) {
+export function focusFor({ state = null, memory = null, mind = null, preferExplore = false, previousFocus = null } = {}) {
   const self = state?.self ?? {};
   const room = state?.room ?? {};
   const from = room.name ?? null;
@@ -161,18 +161,23 @@ export function focusFor({ state = null, memory = null, mind = null, preferExplo
   const activeOptions = (self.active_quests ?? []).map((quest) => {
     const objective = quest.objective_details?.find((entry) => !entry.done);
     return { quest, objective, score: objectiveScore(objective, { state, memory, from, mind, quest }) };
-  }).filter((entry) => entry.objective).sort((a, b) => b.score - a.score);
-  const activeEntry = activeOptions[0] ?? null;
+  }).filter((entry) => entry.objective).sort((a, b) => b.score - a.score || (a.quest.level ?? 1) - (b.quest.level ?? 1));
+  const reachable = (entry) => Boolean(entry?.objective) && entry.score > 1;
+  const committed = previousFocus?.kind === "quest" && previousFocus.questId
+    ? activeOptions.find((entry) => entry.quest.id === previousFocus.questId && reachable(entry)) ?? null
+    : null;
+  const activeEntry = committed ?? activeOptions[0] ?? null;
   const active = activeEntry?.quest ?? null;
   const objective = activeEntry?.objective ?? null;
   const answerHere = objective?.kind === "answer"
     && (from === objective.answerRoomName || (!mind?.knownWord && from === objective.clueRoomName));
-  const objectiveHere = objective ? (objective.kind === "answer" ? answerHere : objectiveScore(objective, { state, memory, from, mind }) >= 5) : false;
+  const objectiveHere = objective ? (objective.kind === "answer" ? answerHere : objectiveScore(objective, { state, memory, from, mind, quest: active }) >= 5) : false;
   const preferExploreNow = Boolean(preferExplore && active && objective && !objectiveHere);
+  const activeReachable = reachable(activeEntry) && !preferExploreNow;
   const availableOptions = [...(self.available_quests ?? [])].map((quest) => ({ quest, score: offerScore(quest, { memory, from }) }))
     .sort((a, b) => b.score - a.score || (a.quest.level ?? 1) - (b.quest.level ?? 1));
   const bestOffer = availableOptions[0] ?? null;
-  if ((!activeEntry || activeEntry.score <= 1 || objective?.kind === "answer") && bestOffer
+  if (!activeReachable && bestOffer
     && bestOffer.score > (activeEntry?.score ?? 0) && !(preferExploreNow && bestOffer.score < 5)) {
     const target = bestOffer.quest.giverRoomName ?? from;
     const here = target === from;
@@ -183,7 +188,6 @@ export function focusFor({ state = null, memory = null, mind = null, preferExplo
       candidates: unique([here ? `quest accept ${bestOffer.quest.id}` : (routeFor(memory, from, target)[0] ?? "look"), "quests", "look"]),
     }, memory, from, target);
   }
-  const activeReachable = active && objective && !preferExploreNow && (activeEntry.score > 1 || objective.kind === "answer");
   if (activeReachable) {
     const candidates = [];
     let target = from;
@@ -199,7 +203,10 @@ export function focusFor({ state = null, memory = null, mind = null, preferExplo
       const objectName = objective.objectName ?? objective.object;
       const carried = (self.inventory_names ?? []).some((name) => name.toLowerCase().includes(String(objectName ?? "").replace(/^the /, "")));
       target = carried ? from : (objective.objectRoomName ?? from);
-      candidates.push(carried ? "inventory" : `take ${objectName}`, routeFor(memory, from, target)[0] ?? "look", "look");
+      if (carried) candidates.push("inventory");
+      else if (objective.objectRoomName === from) candidates.push(`take ${objectName}`);
+      else candidates.push(routeFor(memory, from, target)[0] ?? "look");
+      candidates.push("look");
     } else if (objective.kind === "deliver") {
       const objectName = objective.objectName ?? objective.object;
       const npcName = objective.npcName ?? objective.npc;
@@ -236,6 +243,7 @@ export function focusFor({ state = null, memory = null, mind = null, preferExplo
     }
     return withRoute({
       kind: "quest",
+      questId: active.id,
       label: `${active.name}: ${objective.text}`,
       reason: "next unfinished quest objective",
       candidates: unique([...candidates, "quests", "score"]),
@@ -284,7 +292,8 @@ export function focusGuard({ focus = null, command = "", detours = 0, state = nu
     if (exits.length && !exits.includes(candidate)) return { command, detours: 0, forced: false };
   }
   if (String(command).trim() === candidate) return { command, detours: 0, forced: false };
-  if (strict) return { command: candidate, detours: 0, forced: true };
+  const concrete = !["look", "inventory", "quests", "score", "map"].includes(candidate);
+  if (strict || (["quest", "quest offer"].includes(focus.kind) && concrete)) return { command: candidate, detours: 0, forced: true };
   const next = (Number(detours) || 0) + 1;
   if (next < 2) return { command, detours: next, forced: false };
   return { command: candidate, detours: 0, forced: true };

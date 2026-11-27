@@ -375,7 +375,7 @@ const TARGET_VERBS = new Set([
   "ignore", "ign", "mute", "unignore", "unign", "unmute", "title", "recall", "remember", "mem",
 ]);
 
-const WEAPON = /sword|axe|mace|dagger|spear|hammer|staff|bow|knife|pick|blade|club/i;
+const WEAPON = /sword|axe|mace|dagger|spear|hammer|staff|\bbow\b|knife|pick|blade|club/i;
 const ARMOR = /mail|plate|cloak|shield|helm|boots|gloves|bracers|apron|circlet|robe|hood|jerkin|cuirass|hauberk|mantle|charm|relic/i;
 
 const wordsOf = (value) => String(value ?? "").toLowerCase().split(/[^a-z0-9]+/).filter((word) => word.length > 1);
@@ -596,7 +596,7 @@ export function coachCommand(command, state = null, mind = null) {
         const carried = inventory.find((name) => nameIsIn(name, words));
         if (!carried) return piece.trim();
         if (carried === state?.self?.wielding || carried === mind?.gear?.wielding || (state?.self?.worn ?? []).includes(carried) || (mind?.gear?.worn ?? []).includes(carried)) return null;
-        if (/sword|axe|mace|dagger|spear|hammer|staff|bow|knife|pick|blade|club/i.test(carried)) return `wield ${carried}`;
+        if (/sword|axe|mace|dagger|spear|hammer|staff|\bbow\b|knife|pick|blade|club/i.test(carried)) return `wield ${carried}`;
         if (/mail|plate|cloak|shield|helm|boots|gloves|bracers|apron|circlet|robe|hood|jerkin|cuirass|hauberk|mantle|charm|relic/i.test(carried)) return `wear ${carried}`;
         return null;
       }).filter(Boolean);
@@ -645,7 +645,7 @@ export function coachCommand(command, state = null, mind = null) {
           feedback: `You already have ${carried} equipped. Check inventory or choose another action.`,
         };
       }
-      if (/sword|axe|mace|dagger|spear|hammer|staff|bow|knife|pick|blade|club/i.test(carried)) {
+      if (/sword|axe|mace|dagger|spear|hammer|staff|\bbow\b|knife|pick|blade|club/i.test(carried)) {
         return {
           validation: { ok: false, reason: "already carried" },
           blocked: true,
@@ -781,7 +781,7 @@ export function buildUserPrompt({ turn = 1, observation = "", director = [], sta
     ? `SOCIAL: players ${players.length ? players.join(", ") : "none"} · NPCs ${npcs.length ? npcs.join(", ") : "none"}${state.self?.party ? ` · party ${state.self.party.members.join(", ")}` : ""}${state.self?.guild ? ` · guild ${state.self.guild}` : ""}`
     : "";
   const gear = state?.self
-    ? `GEAR: wielding ${state.self.wielding || "nothing"} · worn ${(state.self.worn ?? []).join(", ") || "nothing"}${state.self.inventory_names?.some((name) => /sword|axe|mace|dagger|spear|hammer|staff|bow|knife|pick|blade|club/i.test(name)) ? ` · weapons in pack` : ""}`
+    ? `GEAR: wielding ${state.self.wielding || "nothing"} · worn ${(state.self.worn ?? []).join(", ") || "nothing"}${state.self.inventory_names?.some((name) => /sword|axe|mace|dagger|spear|hammer|staff|\bbow\b|knife|pick|blade|club/i.test(name)) ? ` · weapons in pack` : ""}`
     : "";
   const lock = state?.room?.minLevel
     ? `LOCK: ${state.room.name} requires level ${state.room.minLevel}.`
@@ -800,13 +800,13 @@ export function buildUserPrompt({ turn = 1, observation = "", director = [], sta
   if (enemies.length) {
     next = "NEXT: use a technique, eat/drink, cast mend, or flee; do not repeat attack.";
   } else if (state?.self) {
-    const weapons = (state.self.inventory_names ?? []).filter((name) => /sword|axe|mace|dagger|spear|hammer|staff|bow|knife|pick|blade|club/i.test(name) && name !== state.self.wielding);
+    const weapons = (state.self.inventory_names ?? []).filter((name) => /sword|axe|mace|dagger|spear|hammer|staff|\bbow\b|knife|pick|blade|club/i.test(name) && name !== state.self.wielding);
     const armor = (state.self.inventory_names ?? []).filter((name) => /mail|plate|cloak|shield|helm|boots|gloves|bracers|apron|circlet|robe|hood|jerkin|cuirass|hauberk|mantle|charm|relic/i.test(name) && !(state.self.worn ?? []).includes(name));
     const active = (state.self.active_quests ?? [])[0];
     const objective = active?.objectives?.find((text) => /^\[ \]/.test(text));
     const available = (state.self.available_quests ?? [])[0];
     const roomGear = (state.room?.objects ?? []).filter((object) => object.takeable
-      && /sword|axe|mace|dagger|spear|hammer|staff|bow|knife|pick|blade|club|mail|plate|cloak|shield|helm|boots|gloves|bracers|apron|circlet|robe|hood|jerkin|cuirass|hauberk|mantle|charm|relic/i.test(object.name));
+      && /sword|axe|mace|dagger|spear|hammer|staff|\bbow\b|knife|pick|blade|club|mail|plate|cloak|shield|helm|boots|gloves|bracers|apron|circlet|robe|hood|jerkin|cuirass|hauberk|mantle|charm|relic/i.test(object.name));
     if (weapons.length || armor.length) {
       next = `NEXT: ${weapons.length ? `wield ${weapons[0]}` : ""}${weapons.length && armor.length ? "; " : ""}${armor.length ? `wear ${armor[0]}` : ""} before exploring.`;
     } else if (roomGear.length) {

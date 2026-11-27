@@ -25,6 +25,7 @@ export function createAgentCore({
     name, goal, memory, mind, weak, strict, fast, deliberateEvery,
     focusKey: "", focusDetours: 0, coachRetries: 0, blockedCounts: new Map(),
     progressMark: "", stallTurns: 0, frontierTurns: 0, lastPlan: "",
+    questFocus: null,
     recent: [], lastCommand: null, lastParsed: null, lastValidation: null,
     lastCoach: null, commandRoom: null, tick: 0, transcript: [],
   };
@@ -40,7 +41,7 @@ const exitsFrom = (observation, state) => {
 /** Fold the previous result into memory/mind and build this turn's prompt. */
 export function beginTurn(core, { state = null, observation = "", room = null, turn = 1, director = [], r4 = "", notebook = "", note = "" } = {}) {
   if (core.lastCommand && core.commandRoom) {
-    rememberResult(core.memory, { room: core.commandRoom, command: core.lastCommand, observation, tick: core.tick, at: Date.now(), exits: state?.room?.exits ?? [] });
+    rememberResult(core.memory, { room: core.commandRoom, command: core.lastCommand, observation, tick: core.tick, at: Date.now(), exits: core.commandExits ?? [] });
     updateMind(core.mind, { state, observation, command: core.lastCommand, parsed: core.lastParsed, validation: core.lastValidation, coach: core.lastCoach, room: core.commandRoom, tick: core.tick });
   }
   const currentRoom = roomFrom(state, room);
@@ -58,7 +59,8 @@ export function beginTurn(core, { state = null, observation = "", room = null, t
     core.frontierTurns = 0;
   } else if (preferExplore) core.frontierTurns += 1;
   else core.frontierTurns = 0;
-  const focus = focusFor({ state: promptState, memory: core.memory, mind: core.mind, preferExplore });
+  const focus = focusFor({ state: promptState, memory: core.memory, mind: core.mind, preferExplore, previousFocus: core.questFocus });
+  if (focus.kind === "quest") core.questFocus = focus;
   const actions = [...new Set([...(focus.candidates ?? []), ...buildActionMenu(promptState)])].slice(0, 48);
   const deliberate = turn === 1 || turn % core.deliberateEvery === 0;
   const memoryText = memoryPrompt(core.memory, { room: currentRoom, exits: state?.room?.exits ?? [], query: observation });
@@ -90,6 +92,7 @@ export function decideTurn(core, { reply = "", state = null, promptState = null,
     core.lastValidation = coach.validation;
     core.lastCoach = coach;
     core.commandRoom = room ?? promptState?.room?.name ?? null;
+    core.commandExits = state?.room?.exits ?? [];
     return { blocked: true, command: parsed.command, parsed, coach, observation: `COMMAND NOT SENT: ${coach.feedback}`, focusForced: false };
   }
   core.coachRetries = 0;
@@ -111,12 +114,13 @@ export function decideTurn(core, { reply = "", state = null, promptState = null,
   core.lastValidation = coach.validation;
   core.lastCoach = coach;
   core.commandRoom = room ?? promptState?.room?.name ?? null;
+  core.commandExits = state?.room?.exits ?? [];
   core.recent = [...core.recent, command].slice(-12);
   return { blocked: false, command, parsed, coach, focusForced: lock.forced, preferExplore };
 }
 
 /** Record the observation produced by the command just sent. */
-export function recordTurn(core, { command = null, parsed = null, coach = null, observation = "", room = null, tick = 0, focusForced = false, preferExplore = false, turn = 0 } = {}) {
+export function recordTurn(core, { command = null, parsed = null, coach = null, observation = "", room = null, tick = 0, focusForced = false, preferExplore = false, turn = 0, focus = null, activeQuests = [] } = {}) {
   if (command) {
     core.lastCommand = command;
     core.lastParsed = parsed;
@@ -125,12 +129,18 @@ export function recordTurn(core, { command = null, parsed = null, coach = null, 
     core.commandRoom = room;
     core.tick = tick;
   }
-  core.transcript.push({ turn, plan: parsed?.plan ?? "", lesson: parsed?.lesson ?? "", command, blocked: false, coach: coach?.feedback || null, focusForced, observation, room, preferExplore });
+  core.transcript.push({
+    turn, plan: parsed?.plan ?? "", lesson: parsed?.lesson ?? "", command, blocked: false,
+    coach: coach?.feedback || null, focusForced, observation, room, preferExplore,
+    proposed: parsed?.command ?? null,
+    focus: focus ? { kind: focus.kind, label: focus.label, target: focus.target ?? null, route: focus.route ?? [] } : null,
+    activeQuests: (activeQuests ?? []).map((quest) => ({ id: quest.id, name: quest.name })),
+  });
   return core.transcript.at(-1);
 }
 
 export function observeTurn(core, { state = null, observation = "", room = null, tick = 0 } = {}) {
   if (!core.lastCommand || !core.commandRoom) return;
-  rememberResult(core.memory, { room: core.commandRoom, command: core.lastCommand, observation, tick, at: Date.now(), exits: state?.room?.exits ?? [] });
+  rememberResult(core.memory, { room: core.commandRoom, command: core.lastCommand, observation, tick, at: Date.now(), exits: core.commandExits ?? [] });
   updateMind(core.mind, { state, observation, command: core.lastCommand, parsed: core.lastParsed, validation: core.lastValidation, coach: core.lastCoach, room: core.commandRoom, tick });
 }

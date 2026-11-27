@@ -1,6 +1,6 @@
 # Next work
 
-Baseline: **v0.91.87**. The world has 254 rooms, 17 zones, 25 quests, 114 mobiles
+Baseline: **v0.91.88**. The world has 254 rooms, 17 zones, 25 quests, 114 mobiles
 and 263 objects. The run has a recorded win condition: level 10, all 25 quests
 and all 25 hidden ways, with the permanent Worldbreaker title. R4 memory, command grounding, scorecards
 and the public stats surface are live; signups are open. Every AI key is
@@ -120,6 +120,7 @@ memory or prompt system.
 | v0.91.85 | CLI rebased onto `agent-core.mjs`; browser and CLI smokes pass with a mock provider; all supported agents use one controller | **done** (MB-352) |
 | v0.91.86 | Unified harness evidence: 200-turn DeepSeek run 56 rooms / 5 quests / 0 deaths, best recorded reach | **done** (MB-354) |
 | v0.91.87 | Answer clue scoring: unknown answer routes to its clue room and the clue visit outranks an offer; focused runs still did not complete the word, so quest selection remains the gap | **done** (MB-356) |
+| v0.91.88 | Quest commitment: reachable active quest outranks offers until done; command-room exits fix; 200-turn DeepSeek 9 quests / 54 rooms, word at turn 42 | **done** (MB-358) |
 | backlog | Longer DeepSeek/Groq evidence; moderator/immortal decision; larger PvP sample; federation rework | optional |
 
 ## What is next

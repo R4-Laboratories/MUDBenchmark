@@ -181,7 +181,7 @@ try {
     });
     if (decision.blocked) {
       observation = decision.observation;
-      transcript.push({ turn, plan: decision.parsed.plan, lesson: decision.parsed.lesson, command: decision.command, blocked: true, coach: decision.coach.feedback, observation, room: turnData.currentRoom });
+      transcript.push({ turn, plan: decision.parsed.plan, lesson: decision.parsed.lesson, command: decision.command, blocked: true, coach: decision.coach.feedback, observation, room: turnData.currentRoom, proposed: decision.parsed.command, focus: turnData.focus ? { kind: turnData.focus.kind, label: turnData.focus.label, target: turnData.focus.target ?? null, route: turnData.focus.route ?? [] } : null, activeQuests: (turnData.promptState?.self?.active_quests ?? []).map((quest) => ({ id: quest.id, name: quest.name })) });
       console.log(`turn ${turn}: BLOCKED ${decision.command} — ${decision.coach.feedback}`);
       await wait(200);
       continue;
@@ -191,7 +191,7 @@ try {
     await wait(provider === "ollama" || provider === "bonsai" ? 900 : 1400);
     observation = ai.text().slice(before).replace(/#(?:state|tick|characters) .*\r?\n/g, "").trim().slice(0, 1500);
     const tick = ai.state()?.tick ?? 0;
-    recordTurn(core, { command: decision.command, parsed: decision.parsed, coach: decision.coach, observation, room: turnData.currentRoom, tick, focusForced: decision.focusForced, preferExplore: decision.preferExplore, turn });
+    recordTurn(core, { command: decision.command, parsed: decision.parsed, coach: decision.coach, observation, room: turnData.currentRoom, tick, focusForced: decision.focusForced, preferExplore: decision.preferExplore, turn, focus: turnData.focus, activeQuests: turnData.promptState?.self?.active_quests });
     if (turn % 20 === 0) console.log(`turn ${turn}: ${turnData.currentRoom} · ${decision.command}`);
   }
   const final = ai.state()?.self ?? null;
