@@ -2139,6 +2139,12 @@
       "level": "build",
       "statement": "v0.91.85 rebases runtime/agent.mjs onto runtime/web/agent-core.mjs. The CLI keeps only WebSocket login and the optional OpenCode JSON adapter; prompt construction, memory/Mind, planner, coach, fallback, focus lock and transcript are the shared core. The browser and tools/agent-score.mjs already use it, so all supported agents now use one controller. AGENT_OBJECTIVES and AGENT_WAYPOINTS are goal hints to the shared planner rather than a second route engine. A headless Chrome smoke sent three commands through the browser UI (north, south, east); a CLI smoke sent four commands through runtime/agent.mjs (north, south, east, look). Both used a mock provider. World unchanged at 254 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects. Gate covers the CLI core wiring, PvP contract and every prior check.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-353",
+      "level": "some-true",
+      "statement": "Production v0.91.85 rebases runtime/agent.mjs onto runtime/web/agent-core.mjs. The browser, CLI and tools/agent-score.mjs now use one controller; the CLI keeps only WebSocket login and the optional OpenCode JSON adapter. /, /planner.mjs, /mind.mjs, /ai.mjs, /agent-profile.mjs and /agent-core.mjs are 200; /world reports 254 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects. A headless Chrome smoke sent three commands through the browser UI (north, south, east); a CLI smoke sent four commands through runtime/agent.mjs (north, south, east, look). Both used a mock provider. Objective and waypoint environment variables are goal hints to the shared planner. Main Gate 45937344036 green, publish 45938312062, release v0.91.85. Federation remains disabled (403). The 4090 is idle at 4 MiB, 0%.",
+      "authority": "GitHub PR #101 merge 00445b4 2026-11-26; main Gate 45937344036; publish 45938312062; release v0.91.85; wick deploy, /world, /, /planner.mjs, /mind.mjs, /ai.mjs, /agent-profile.mjs, /agent-core.mjs, /federation/status 403; nvidia-smi 4 MiB 0%; local /tmp/browser-agent-smoke.log and /tmp/agent-cli-smoke2.log; tools/gate.mjs"
     }
   ]
 }
