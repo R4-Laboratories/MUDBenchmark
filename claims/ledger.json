@@ -2151,6 +2151,12 @@
       "level": "build",
       "statement": "v0.91.86 records the first full 200-turn DeepSeek run on the unified profile and shared controller. It visited 56 rooms, completed 5 quests, produced 200 plans / 200 lessons, had 9 blocked attempts, 1 attack and 0 deaths, finishing at level 3 / 463 XP with a practice sword and grey cloak. It reached the Arcanum's upper halls, the Salt Stairs, the Moonlit Gate, the Memory Garden and the Root Road, and spent 13 turns in the Atrium. This is the best recorded DeepSeek reach and shows no regression from the profile/core consolidation. World unchanged at 254 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects. Evidence from tools/agent-score.mjs and /tmp/unified-deepseek-200.json.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-355",
+      "level": "some-true",
+      "statement": "Production v0.91.86 records the first full 200-turn DeepSeek run on the unified profile and shared controller. /, /planner.mjs, /mind.mjs, /ai.mjs, /agent-profile.mjs and /agent-core.mjs are 200; /world reports 254 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects. The run visited 56 rooms, completed 5 quests, produced 200 plans / 200 lessons, made 1 attack, had 9 blocked attempts and 0 deaths, finishing at level 3 / 463 XP with a practice sword and grey cloak. It reached the Arcanum's upper halls, the Salt Stairs, the Moonlit Gate, the Memory Garden and the Root Road, spending 13 turns in the Atrium. Main Gate 45943902116 green, publish 45944765246, release v0.91.86. Federation remains disabled (403). The 4090 is training at 2122 MiB / 79%.",
+      "authority": "GitHub PR #102 merge c3976e7 2026-11-27; main Gate 45943902116; publish 45944765246; release v0.91.86; wick deploy, /world, /, /planner.mjs, /mind.mjs, /ai.mjs, /agent-profile.mjs, /agent-core.mjs, /federation/status 403; nvidia-smi 2122 MiB 79%; local /tmp/unified-deepseek-200.json; tools/agent-score.mjs; tools/gate.mjs"
     }
   ]
 }
