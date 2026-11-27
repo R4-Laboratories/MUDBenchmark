@@ -2163,6 +2163,12 @@
       "level": "build",
       "statement": "v0.91.87 fixes answer clue scoring. An active answer objective used to score 1 until the Mind knew the word, so a reachable clue room could be discarded for an unrelated offer. It now scores 4 when the clue room has a known route, and the visit to that clue room scores 6 when the same quest has an answer objective. Gate covers both. A focused 80-turn DeepSeek run and a later 200-turn run did not complete The True Word: the model accepted other quests or explored elsewhere, so this is a planner correctness fix, not a model scorecard gain. World unchanged at 254 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-357",
+      "level": "some-true",
+      "statement": "Production v0.91.87 serves answer clue scoring. /, /planner.mjs, /mind.mjs, /ai.mjs, /agent-profile.mjs and /agent-core.mjs are 200; /world reports 254 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects. An unknown answer objective now scores 4 when its clue room has a known route, and the visit to that clue room scores 6 when the same quest has an answer objective; Gate covers both. A focused 80-turn and a 200-turn DeepSeek run did not complete The True Word, so this is a planner correctness fix, not a model scorecard gain. Main Gate 45949132054 green, publish 45949948960, release v0.91.87. Federation remains disabled (403). The 4090 is training at 2065 MiB / 100%.",
+      "authority": "GitHub PR #103 merge b357627 2026-11-27; main Gate 45949132054; publish 45949948960; release v0.91.87; wick deploy, /world, /, /planner.mjs, /mind.mjs, /ai.mjs, /agent-profile.mjs, /agent-core.mjs, /federation/status 403; nvidia-smi 2065 MiB 100%; local /tmp/word-focus-80.json and /tmp/answer-clue-200.json; tools/gate.mjs"
     }
   ]
 }
