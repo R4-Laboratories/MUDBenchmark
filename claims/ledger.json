@@ -2103,6 +2103,12 @@
       "level": "build",
       "statement": "v0.91.82 collapses the Bonsai and DeepSeek request profiles into one default in runtime/web/agent-profile.mjs: 1200 output tokens, temperature 0.3 and reasoning_effort medium for every OpenAI-compatible provider. The Bonsai and DeepSeek branches are removed from requestFor; the default applies to Groq, DeepSeek, Bonsai, OpenAI and custom endpoints, while Ollama native think and Anthropic wire shape remain transport adapters. tools/agent-score.mjs calls the same requestFor and replyFrom as the browser instead of duplicating provider branches. A 20-turn DeepSeek smoke completed 1 quest with 20 plans / 20 lessons and 0 deaths. The 4090 remains free for training; Bonsai was not rerun. World unchanged at 254 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects. Gate covers the default profile and every prior check. The turn-loop extraction remains the next structural step.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-347",
+      "level": "some-true",
+      "statement": "Production v0.91.82 serves one default agent profile. /, /planner.mjs, /mind.mjs, /ai.mjs and /agent-profile.mjs are 200; /world reports 254 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects. The default is 1200 output tokens, temperature 0.3 and reasoning_effort medium for every OpenAI-compatible provider; Bonsai and DeepSeek request branches are removed, while Ollama native think and Anthropic message shape remain transport adapters. tools/agent-score.mjs uses the same requestFor/replyFrom path as the browser. A 20-turn DeepSeek smoke completed 1 quest with 20 plans / 20 lessons and 0 deaths. The 4090 is free for training; nvidia-smi reported 100% utilization with 1132 MiB at deploy time and the Bonsai server is stopped. Main Gate 45919390430 green, publish 45920144026, release v0.91.82. Federation remains disabled (403). The turn-loop extraction remains the next structural step.",
+      "authority": "GitHub PR #98 merge fdc7b5a 2026-11-26; main Gate 45919390430; publish 45920144026; release v0.91.82; wick deploy, /world, /, /planner.mjs, /mind.mjs, /ai.mjs, /agent-profile.mjs, /federation/status 403; nvidia-smi 1132 MiB 100%; local /tmp/default-profile-20.json; tools/gate.mjs"
     }
   ]
 }
