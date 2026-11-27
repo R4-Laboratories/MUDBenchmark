@@ -157,7 +157,7 @@
         }
       ],
       "rewards": {
-        "xp": 60
+        "xp": 100
       },
       "complete": "The owl blinks once, slowly.",
       "requires": [

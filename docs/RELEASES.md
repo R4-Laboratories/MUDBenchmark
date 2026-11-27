@@ -539,6 +539,25 @@ Rehearsed 2026-11-16:
   speaking, opened the Twin Door with one hidden partner and took the crown.
   Gate covers the death penalty, level gates, twin door, hide visibility and
   prompt (MB-286/287/288);
+- v0.91.89 (quest targets, combat judgment and the level-4 bridge) makes a
+  quest kill target follow the mobile's live room instead of its home room; the
+  planner follows a moved target and searches or waits when it is at the
+  target's room but the mobile has stepped out. The roof rat is now a sentinel
+  and can no longer take refuge in the Shrine or Chancel, where attacks are
+  refused. Combat focus refuses movement out of a fight, waits instead of
+  fleeing a winnable fight, and keeps flee only when the fight is unsafe. The
+  agent remembers aggressive mobiles with level, HP and damage, hunts only
+  mobiles its current HP, damage and armour can beat when no quest is reachable,
+  and forgets a room once it is clear. The level-3 High Walk quest now pays 100
+  XP (was 60), bridging the 700-XP level-4 threshold. Evidence: a 200-turn
+  DeepSeek run reached **level 4 / 790 XP** with **9 completed quests and 2
+  active level-4 quests** (What the Mirror Keeps and The Salt Rose) in 41 rooms,
+  with 0 deaths and 9 attacks; it fled a red kennel hound twice and still
+  leveled. The previous best was level 3 / 640 XP. Gate covers live-target
+  routing, search/wait, the sentinel roof rat, combat movement and flee
+  judgment, safe and unsafe hunts, stale hunt removal and the 100-XP bridge.
+  World unchanged at 254 rooms / 17 zones / 25 quests / 114 mobiles / 263
+  objects (MB-360);
 - v0.91.88 (quest commitment) makes an accepted quest the plan until it is
   completed. A reachable active objective now outranks every new offer, the
   planner keeps the committed quest across equipment and combat turns, and a

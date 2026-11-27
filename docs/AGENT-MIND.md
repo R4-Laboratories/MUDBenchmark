@@ -162,6 +162,38 @@ The Mind now stores the model's `NOTE` line (up to 12 notes) and prints `NOTES`
 back each turn; the browser notebook still records the same note for the human.
 This is the model's own durable context, not just a two-turn transcript.
 
+## Quest targets that move
+
+A kill objective used to carry only the mobile's home room. A wandering target
+could leave, and the planner would either keep walking to an empty home room or
+drop the quest for exploration. `objective_details` now carries the mobile's
+live room as well as its home, so the planner follows the target. If it reaches
+the room but the mobile has stepped out, the focus offers `search`, `wait` and
+`look` instead of leaving. The roof rat is a sentinel, so it can no longer hide
+in the Shrine or Chancel, where the server refuses attacks.
+
+## Combat judgment and safe hunts
+
+When a fight starts, the focus guard now refuses movement out of combat. It
+also removes `flee` from a fight the agent can win: the enemy's HP must be no
+more than the agent's, and the agent must be above 35% HP. `wait` is an explicit
+candidate so rounds can resolve. A losing fight keeps `flee`.
+
+The memory records aggressive mobiles with their room, level, HP and damage.
+When no quest is reachable and the agent is below the next level, the planner
+routes to the nearest mobile its current HP, damage and armour can beat. A
+cleared room drops its hunt entry. This is a fallback, not a replacement for
+quests; Gate covers both the safe and unsafe cases.
+
+## The level-4 bridge
+
+The High Walk is the last level-3 quest. At 60 XP it left a run at 665-686 XP
+against the 700-XP level-4 threshold, so the agent had no level-4 quest to
+accept and explored instead. It now pays 100 XP. A 200-turn DeepSeek run
+reached **level 4 / 790 XP**, completed 9 quests and held 2 active level-4
+quests (What the Mirror Keeps and The Salt Rose), with 0 deaths. It still fled a
+red kennel hound twice for 178 XP, which is the next survival gap.
+
 ## Quest commitment
 
 An accepted quest now stays the plan until it is completed. The planner keeps
