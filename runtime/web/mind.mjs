@@ -30,7 +30,7 @@ export const emptyMind = () => ({
 });
 
 const clean = (text, max = 240) => String(text ?? "").replace(/\s+/g, " ").trim().slice(0, max);
-const WEAPON = /sword|axe|mace|dagger|spear|hammer|staff|bow|knife|pick|blade|club/i;
+const WEAPON = /sword|axe|mace|dagger|spear|hammer|staff|\bbow\b|knife|pick|blade|club/i;
 const ARMOR = /mail|plate|cloak|shield|helm|boots|gloves|bracers|apron|circlet|robe|hood|jerkin|cuirass|hauberk|mantle|charm|relic/i;
 
 export function addNote(mind, text) {

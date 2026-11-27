@@ -539,6 +539,23 @@ Rehearsed 2026-11-16:
   speaking, opened the Twin Door with one hidden partner and took the crown.
   Gate covers the death penalty, level gates, twin door, hide visibility and
   prompt (MB-286/287/288);
+- v0.91.88 (quest commitment) makes an accepted quest the plan until it is
+  completed. A reachable active objective now outranks every new offer, the
+  planner keeps the committed quest across equipment and combat turns, and a
+  completed quest releases it. A quest route or a route to a quest giver takes
+  its first concrete step immediately; exploration keeps the two-detour lock, so
+  this is not the strict-focus experiment. The core also stores the exits of the
+  room where a command was issued instead of the room it moved into, which had
+  been overwriting the seeded route graph; room-giver quests such as the shrine
+  now resolve a giver room, and `bow` no longer matches `bowl`. Evidence: a
+  200-turn DeepSeek run completed **9 quests** in 54 rooms with 0 deaths and 640
+  XP, completing The True Word at turn 42; an 80-turn run with the word as its
+  goal completed **8 quests** and the word at turn 42. The previous best was 5
+  quests in 56 rooms. Gate covers the committed quest, its release on
+  completion, the immediate quest/offer step, lax exploration, command-room
+  exits, room-giver offers, the bowl/bow split and a collect route. World
+  unchanged at 254 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects
+  (MB-358);
 - v0.91.87 (answer clue scoring) stops an unknown answer objective from being
   discarded as unanswerable. If the Mind has no word yet, the objective now
   scores 4 when its clue room has a known route; the visit to that clue room

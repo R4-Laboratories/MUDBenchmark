@@ -2169,6 +2169,12 @@
       "level": "some-true",
       "statement": "Production v0.91.87 serves answer clue scoring. /, /planner.mjs, /mind.mjs, /ai.mjs, /agent-profile.mjs and /agent-core.mjs are 200; /world reports 254 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects. An unknown answer objective now scores 4 when its clue room has a known route, and the visit to that clue room scores 6 when the same quest has an answer objective; Gate covers both. A focused 80-turn and a 200-turn DeepSeek run did not complete The True Word, so this is a planner correctness fix, not a model scorecard gain. Main Gate 45949132054 green, publish 45949948960, release v0.91.87. Federation remains disabled (403). The 4090 is training at 2065 MiB / 100%.",
       "authority": "GitHub PR #103 merge b357627 2026-11-27; main Gate 45949132054; publish 45949948960; release v0.91.87; wick deploy, /world, /, /planner.mjs, /mind.mjs, /ai.mjs, /agent-profile.mjs, /agent-core.mjs, /federation/status 403; nvidia-smi 2065 MiB 100%; local /tmp/word-focus-80.json and /tmp/answer-clue-200.json; tools/gate.mjs"
+    },
+    {
+      "id": "MB-358",
+      "level": "build",
+      "statement": "v0.91.88 makes an accepted quest the agent's plan until completed. A reachable active objective outranks every new offer, the committed quest survives equipment and combat turns, and completion releases it. Quest and quest-offer routes take their first concrete step immediately while exploration keeps the two-detour lock. The agent core now stores the command room's exits, fixing a route-graph corruption where the next room's exits overwrote the seeded map; room-giver quests resolve a giver room, and bow no longer matches bowl. Evidence: a 200-turn DeepSeek run visited 54 rooms, completed 9 quests, made 6 blocked attempts, 3 attacks and 0 deaths, and finished at 640 XP with The True Word completed at turn 42; an 80-turn word-goal run completed 8 quests with the word at turn 42. The previous best was 5 quests in 56 rooms. Gate covers the committed quest, release on completion, immediate quest/offer step, lax exploration, command-room exits, room-giver offers, the bowl/bow split and a collect route. World unchanged at 254 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

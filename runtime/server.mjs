@@ -86,6 +86,11 @@ function questOfferedTo(quest, actor, guilds = {}) {
 const DECOY_MODE = process.env.DECOY_MODE ?? "single";
 const loaded = loadWorld({ mode: DECOY_MODE, path: process.env.WORLD_PATH ?? undefined });
 const ROOMS = loaded.rooms;
+const ROOM_BY_NAME = new Map();
+for (const room of Object.values(ROOMS)) {
+  const key = String(room.name ?? "").toLowerCase().replace(/^the /, "").trim();
+  if (key && !ROOM_BY_NAME.has(key)) ROOM_BY_NAME.set(key, room);
+}
 if (loaded.errors.length > 0) {
   for (const problem of loaded.errors) console.error(`world: ${problem}`);
   process.exit(1);
@@ -1219,7 +1224,8 @@ function selfState(actor) {
         .map((quest) => {
         const giver = String(quest.giver ?? "").toLowerCase().replace(/^the /, "");
         const npc = giver ? state.npcs.find((candidate) => candidate.name.toLowerCase().includes(giver) || giver.includes(candidate.name.toLowerCase().replace(/^the /, ""))) : null;
-        return { id: quest.id, name: quest.name, level: quest.level, giver: quest.giver ?? null, giverRoom: npc?.home ?? null, giverRoomName: npc?.home ? (ROOMS[npc.home]?.name ?? null) : null };
+        const giverRoomName = npc?.home ? (ROOMS[npc.home]?.name ?? null) : (ROOM_BY_NAME.get(giver)?.name ?? null);
+        return { id: quest.id, name: quest.name, level: quest.level, giver: quest.giver ?? null, giverRoom: npc?.home ?? null, giverRoomName };
       }).slice(0, 8)
       : [],
     room: room ? {

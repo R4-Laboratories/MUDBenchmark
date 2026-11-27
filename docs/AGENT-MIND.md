@@ -162,6 +162,34 @@ The Mind now stores the model's `NOTE` line (up to 12 notes) and prints `NOTES`
 back each turn; the browser notebook still records the same note for the human.
 This is the model's own durable context, not just a two-turn transcript.
 
+## Quest commitment
+
+An accepted quest now stays the plan until it is completed. The planner keeps
+the committed quest across equipment and combat turns, lets a reachable active
+objective outrank every new offer, and releases the commitment when the quest
+leaves the active list. If no active quest is reachable, an offer may still win.
+
+A quest route, or the route to a quest giver, takes its first concrete step
+immediately instead of waiting for two detours. Exploration keeps the ordinary
+two-detour lock, so this is not the strict-focus experiment that oscillated on
+qwen: the immediate lock applies only to `quest` and `quest offer`, and only to
+a concrete candidate (a direction, `take`, `attack`, `talk`, `deliver`,
+`answer` or `examine`), never to `look`, `inventory`, `quests`, `score` or
+`map`.
+
+The core also remembers the exits of the room where a command was issued. It
+previously recorded the exits of the room the player moved into, which
+overwrote the seeded route graph with the next room's doors; routes then led
+through doors that did not exist and the lock oscillated. Quest offers from a
+room giver (the shrine) now resolve their giver room, and `bow` is matched as a
+weapon without also matching `bowl`.
+
+Evidence: a 200-turn DeepSeek run completed **9 quests** in 54 rooms with 0
+deaths, 6 blocked attempts and 640 XP, completing The True Word at turn 42. An
+80-turn run whose goal was the word completed **8 quests** and the word at turn
+42. The previous best was 5 quests in 56 rooms. The scorecard transcript now
+records each turn's focus, proposed command and active quests.
+
 ## Answer clue scoring
 
 An active answer objective used to score 1 until the Mind knew the word, so a
@@ -169,8 +197,8 @@ reachable clue room could be discarded for an unrelated offer. It now scores 4
 when the clue room has a known route, and the visit to that clue room scores 6
 when the same quest has an answer objective. Gate covers both. A focused
 DeepSeek run did not exercise the path: it accepted other quests or explored
-instead of The True Word, so quest selection, not clue scoring, is the next
-limit.
+instead of The True Word. That made quest selection the next target; v0.91.88
+addresses it.
 
 ## Unified harness evidence
 
@@ -276,7 +304,8 @@ An opt-in Strict focus checkbox forces the planner route immediately instead of
 waiting for two detours. On qwen2.5:3b it oscillated between the Gilded Rat and
 Market Square for 68 forced moves: 21 rooms, 0 quests, 0 deaths. It remains an
 off-by-default experiment for human testing; the standard two-detour lock is
-the safer default.
+the safer default for exploration. v0.91.88's immediate lock is narrower: it
+applies only to a committed quest or a quest offer, not to exploration.
 
 ## Six-line contract
 
