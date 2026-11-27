@@ -20,7 +20,8 @@ import { loadChannels } from "../runtime/channels.mjs";
 import { loadLevels } from "../runtime/levels.mjs";
 import { loadQuests } from "../runtime/quests.mjs";
 import { hashPassword } from "../runtime/accounts.mjs";
-import { buildSystemPrompt, buildUserPrompt, buildActionMenu, parseBrain, coachCommand, coachAction, coachFallbackDue } from "../runtime/web/ai.mjs";
+import { buildSystemPrompt, buildUserPrompt, buildActionMenu, parseBrain, coachCommand, coachAction, coachFallbackDue, requestFor, replyFrom } from "../runtime/web/ai.mjs";
+import { agentProfile } from "../runtime/web/agent-profile.mjs";
 import { emptyMind, updateMind, mindPrompt } from "../runtime/web/mind.mjs";
 import { focusFor, focusPrompt, focusGuard } from "../runtime/web/planner.mjs";
 import { emptyMemory, rememberResult, memoryPrompt, loopWarning, breakLoop, shouldBreakLoop, seedMapFromLlms } from "../runtime/web/memory.mjs";
@@ -30,7 +31,7 @@ const args = new Map(process.argv.slice(2).map((arg) => {
   return [key, value];
 }));
 const provider = args.get("provider") ?? "ollama";
-const base = args.get("base") ?? (provider === "bonsai" ? "http://127.0.0.1:8085/v1" : "http://127.0.0.1:11434/v1");
+const base = args.get("base") ?? (provider === "deepseek" ? "https://api.deepseek.com/v1" : provider === "bonsai" ? "http://127.0.0.1:8085/v1" : "http://127.0.0.1:11434/v1");
 const model = args.get("model") ?? (provider === "deepseek" ? "deepseek-flash" : "qwen2.5:3b");
 const turns = Math.max(1, Number(args.get("turns") ?? 200));
 const startRoom = Number(args.get("start") ?? 1);
@@ -139,47 +140,17 @@ const connect = async () => {
 
 const ask = async (system, user) => {
   const started = Date.now();
-  if (provider === "ollama") {
-    const response = await fetch("http://127.0.0.1:11434/v1/chat/completions", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ model, messages: [{ role: "system", content: system }, { role: "user", content: user }], temperature: 0.2, max_tokens: 900 }),
-      signal: AbortSignal.timeout(180000),
-    });
-    if (!response.ok) throw new Error(`ollama ${response.status}`);
-    const body = await response.json();
-    return { text: body.choices?.[0]?.message?.content ?? "", latency: Date.now() - started };
-  }
-  if (provider === "bonsai" || provider === "openai") {
-    const response = await fetch(`${base.replace(/\/$/, "")}/chat/completions`, {
-      method: "POST",
-      headers: { "content-type": "application/json", ...(key ? { authorization: `Bearer ${key}` } : {}) },
-      body: JSON.stringify({
-        model,
-        messages: [{ role: "system", content: system }, { role: "user", content: user }],
-        temperature: 0.7,
-        max_tokens: 1200,
-        ...(provider === "bonsai" ? { reasoning_effort: "medium" } : {}),
-      }),
-      signal: AbortSignal.timeout(300000),
-    });
-    if (!response.ok) throw new Error(`${provider} ${response.status} ${(await response.text()).slice(0, 200)}`);
-    const body = await response.json();
-    return { text: body.choices?.[0]?.message?.content ?? "", latency: Date.now() - started };
-  }
-  if (provider === "deepseek") {
-    if (!key) throw new Error("DEEPSEEK_KEY is not set");
-    const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
-      method: "POST",
-      headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
-      body: JSON.stringify({ model, messages: [{ role: "system", content: system }, { role: "user", content: user }], temperature: 0.3, max_tokens: 900, reasoning_effort: "low" }),
-      signal: AbortSignal.timeout(180000),
-    });
-    if (!response.ok) throw new Error(`deepseek ${response.status} ${(await response.text()).slice(0, 200)}`);
-    const body = await response.json();
-    return { text: body.choices?.[0]?.message?.content ?? "", latency: Date.now() - started };
-  }
-  throw new Error(`unknown provider ${provider}`);
+  const profile = agentProfile({ fast: true, weak, reasoning: "medium" });
+  const request = requestFor(provider, { base, model, key, ...profile }, system, [{ role: "user", content: user }]);
+  const response = await fetch(request.url, {
+    method: "POST",
+    headers: request.headers,
+    body: JSON.stringify(request.body),
+    signal: AbortSignal.timeout(300000),
+  });
+  if (!response.ok) throw new Error(`${provider} ${response.status} ${(await response.text()).slice(0, 200)}`);
+  const body = await response.json();
+  return { text: replyFrom(provider, body).text, latency: Date.now() - started };
 };
 
 const weak = provider === "ollama" || /qwen|tiny|small|3b|1\.5b|0\.5b|phi|gemma/i.test(model);

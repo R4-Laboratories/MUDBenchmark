@@ -162,6 +162,20 @@ The Mind now stores the model's `NOTE` line (up to 12 notes) and prints `NOTES`
 back each turn; the browser notebook still records the same note for the human.
 This is the model's own durable context, not just a two-turn transcript.
 
+## One default profile
+
+`runtime/web/agent-profile.mjs` holds the single default: 1200 output tokens,
+temperature 0.3 and `reasoning_effort: medium`. Bonsai and DeepSeek no longer
+have separate request profiles; Groq, DeepSeek, Bonsai, OpenAI and custom
+OpenAI-compatible endpoints use the same profile. Ollama's native `think` flag
+and Anthropic's message shape remain transport adapters, not different brains.
+`tools/agent-score.mjs` now calls the same `requestFor`/`replyFrom` path as the
+browser instead of duplicating provider branches. The 4090 stays free for
+training; the 20-turn DeepSeek smoke completed 1 quest with 20 plans/lessons.
+
+The turn-loop extraction is still the next structural step; this release
+collapses the profiles, not yet the browser/scorecard orchestration.
+
 ## Invalid-target guard
 
 A blocked command fell back after two tries, but a target the room did not

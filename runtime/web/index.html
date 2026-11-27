@@ -1169,6 +1169,7 @@
   import { emptyMemory, rememberResult, memoryPrompt, loopWarning, breakLoop, shouldBreakLoop, seedMapFromLlms } from "/memory.mjs";
   import { emptyMind, addNote, updateMind, mindPrompt } from "/mind.mjs";
   import { focusFor, focusPrompt, focusGuard } from "/planner.mjs";
+  import { agentProfile } from "/agent-profile.mjs";
   import { assemble } from "/router.mjs";
   import { signIn as prismSignIn, reset as prismReset, load as loadSession, save as saveSession, personaSignIn, personaRetire, nextPersonaEpoch, createRecoveryKit, restoreRecoveryKit, characterHandoff, characterRevoke, characterTransfer, regionTravel, signChallenge } from "/prism-auth.mjs";
   import { randomCharacterName, uniqueCharacterName, chooseCharacter } from "/names.mjs";
@@ -2860,21 +2861,18 @@
     const key = aiKey.value.trim() || keyFor(base);
     const fast = aiFast.checked;
     const model = aiModel.value.trim();
-    // Progress-based quest/frontier arbitration is opt-in: the qwen
-    // validation did not improve quest completion, so it is not automatic.
-    const weak = aiWeak?.checked === true;
+    const profile = agentProfile({
+      fast,
+      weak: aiWeak?.checked === true,
+      strict: aiStrict?.checked === true,
+      reasoning: aiReasoning.value === "never" ? "none" : aiReasoning.value === "always" ? "high" : "medium",
+    });
     const config = {
       provider,
       base,
       model,
-      weak,
       key,
-      temperature: fast ? 0 : 0.7,
-      maxTokens: provider === "bonsai" ? 1200 : fast ? 200 : 500,
-      fast,
-      weak: aiWeak?.checked === true,
-      strict: aiStrict?.checked === true,
-      reasoning: aiReasoning.value,
+      ...profile,
       goal: aiGoal.value,
     };
     if (!config.base || !config.model) {

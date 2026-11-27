@@ -6,6 +6,8 @@
 // The game server never sees a provider key. The key lives in the browser's
 // localStorage and goes only to the provider's own endpoint.
 
+import { DEFAULT_AGENT_PROFILE } from "./agent-profile.mjs";
+
 export const PROVIDERS = {
   groq: {
     label: "Groq (free key, fast)",
@@ -944,16 +946,7 @@ export function trimHistory(messages, pairs = 8) {
 
 const ollamaThinks = (model) => /qwen3|deepseek-r1|deepseek-v3|magistral|gpt-oss|gemma3|phi4-reasoning|granite3\.3/i.test(String(model ?? ""));
 
-const reasoningEffortFor = (model) => {
-  const name = String(model ?? "").toLowerCase();
-  // DeepSeek V4.1 Flash can spend the whole fast-turn budget on reasoning and
-  // return an empty content field. Force thinking off on direct turns; the
-  // deliberate turn may use "low".
-  if (/deepseek/.test(name)) return "none";
-  if (/gemini-2\.5/.test(name)) return "none";
-  if (/gemini-[34]|gpt-5|(^|[-/])o[134]/.test(name)) return "minimal";
-  return null;
-};
+
 
 export function requestFor(provider, config, system, messages) {
   const base = normalizeBase(config.base || "");
@@ -972,8 +965,8 @@ export function requestFor(provider, config, system, messages) {
         think: Boolean(config.deliberate && ollamaThinks(config.model)),
         keep_alive: -1,
         options: {
-          temperature: config.temperature ?? 0,
-          num_predict: config.maxTokens ?? 120,
+          temperature: config.temperature ?? DEFAULT_AGENT_PROFILE.temperature,
+          num_predict: config.maxTokens ?? DEFAULT_AGENT_PROFILE.maxTokens,
         },
       },
     };
@@ -989,8 +982,8 @@ export function requestFor(provider, config, system, messages) {
       },
       body: {
         model: config.model,
-        max_tokens: config.maxTokens ?? 400,
-        temperature: config.temperature ?? 0.7,
+        max_tokens: config.maxTokens ?? DEFAULT_AGENT_PROFILE.maxTokens,
+        temperature: config.temperature ?? DEFAULT_AGENT_PROFILE.temperature,
         system,
         messages: messages.map(({ role, content }) => ({ role, content })),
       },
@@ -1006,16 +999,11 @@ export function requestFor(provider, config, system, messages) {
       },
     };
   }
-  const reasoning = config.deliberate
-    ? (reasoningEffortFor(config.model) ? "low" : null)
-    : (config.fast ? reasoningEffortFor(config.model) : null);
+  const profile = { ...DEFAULT_AGENT_PROFILE, ...(config.profile ?? {}) };
   const reasoningModel = /gpt-5|(^|[-/])o[134]/i.test(String(config.model ?? ""));
-  // DeepSeek needs headroom even when thinking is off; a 120-token fast cap
-  // can still end before the three labelled lines. The unused budget is free.
-  const bonsai = provider === "bonsai" || /bonsai/i.test(String(config.model ?? ""));
-  const maxTokens = provider === "deepseek"
-    ? Math.max(config.deliberate ? 600 : 300, Number(config.maxTokens) || 0)
-    : (bonsai ? Math.max(1200, Number(config.maxTokens) || 0) : (config.maxTokens ?? 400));
+  const maxTokens = Number(config.maxTokens) || profile.maxTokens;
+  const temperature = config.temperature ?? profile.temperature;
+  const reasoning = config.reasoning ?? profile.reasoning;
   return {
     url: `${base}/chat/completions`,
     headers: {
@@ -1025,11 +1013,9 @@ export function requestFor(provider, config, system, messages) {
     body: {
       model: config.model,
       messages: [{ role: "system", content: system }, ...messages],
-      ...(reasoningModel ? {} : { temperature: config.temperature ?? 0.7 }),
-      ...(reasoningModel
-        ? { max_completion_tokens: config.deliberate ? 800 : 300 }
-        : { max_tokens: maxTokens }),
-      ...(bonsai ? { reasoning_effort: "medium" } : reasoning ? { reasoning_effort: reasoning } : {}),
+      ...(reasoningModel ? { max_completion_tokens: maxTokens } : { max_tokens: maxTokens }),
+      ...(reasoningModel ? {} : { temperature }),
+      ...(reasoning && reasoning !== "auto" ? { reasoning_effort: reasoning } : {}),
     },
   };
 }
