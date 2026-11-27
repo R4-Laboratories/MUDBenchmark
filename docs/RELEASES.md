@@ -539,6 +539,17 @@ Rehearsed 2026-11-16:
   speaking, opened the Twin Door with one hidden partner and took the crown.
   Gate covers the death penalty, level gates, twin door, hide visibility and
   prompt (MB-286/287/288);
+- v0.91.82 (one default profile) collapses the Bonsai and DeepSeek request
+  profiles into `runtime/web/agent-profile.mjs`: 1200 output tokens, temperature
+  0.3 and `reasoning_effort: medium` for every OpenAI-compatible provider. The
+  Bonsai and DeepSeek branches are gone from `requestFor`; the default applies
+  to Groq, DeepSeek, Bonsai, OpenAI and custom endpoints, while Ollama's native
+  think flag and Anthropic's wire shape remain transport adapters.
+  `tools/agent-score.mjs` now calls the same `requestFor` and `replyFrom` as the
+  browser instead of duplicating provider branches. A 20-turn DeepSeek smoke
+  completed 1 quest with 20 plans / 20 lessons and 0 deaths. The 4090 remains
+  free for training; Bonsai was not rerun. World unchanged at 254 rooms / 17
+  zones / 25 quests / 114 mobiles / 263 objects (MB-346);
 - v0.91.81 (invalid-target guard) makes a repeated unreachable target fall back
   after three attempts, while a blocked command still falls back after two.
   A new `coachFallbackDue` helper is shared by the browser and
