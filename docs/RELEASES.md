@@ -539,6 +539,14 @@ Rehearsed 2026-11-16:
   speaking, opened the Twin Door with one hidden partner and took the crown.
   Gate covers the death penalty, level gates, twin door, hide visibility and
   prompt (MB-286/287/288);
+- v0.91.87 (answer clue scoring) stops an unknown answer objective from being
+  discarded as unanswerable. If the Mind has no word yet, the objective now
+  scores 4 when its clue room has a known route; the visit to that clue room
+  scores 6 when the same quest has an answer objective. Gate covers both. A
+  focused 80-turn DeepSeek run and a later 200-turn run did not complete The
+  True Word: the model accepted other quests or explored elsewhere, so this is a
+  planner correctness fix, not a demonstrated model gain. World unchanged at
+  254 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects (MB-356);
 - v0.91.86 (unified harness evidence) records the first full 200-turn
   DeepSeek run on the single profile and shared controller. It visited **56
   rooms**, completed **5 quests**, produced 200 plans / 200 lessons, had 9

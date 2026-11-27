@@ -25,7 +25,7 @@ const withRoute = (focus, memory, from, target) => {
   return { ...focus, target: target ?? null, route, routeText: route.length ? `${route[0]} (${route.length} move${route.length === 1 ? "" : "s"} to ${target})` : target && target !== from ? `no known route to ${target}; explore` : target === from ? "you are here" : "" };
 };
 
-const objectiveScore = (objective, { state, memory, from, mind } = {}) => {
+const objectiveScore = (objective, { state, memory, from, mind, quest } = {}) => {
   const room = state?.room ?? {};
   const self = state?.self ?? {};
   if (!objective || objective.done) return 0;
@@ -33,6 +33,8 @@ const objectiveScore = (objective, { state, memory, from, mind } = {}) => {
   const held = (name) => (self.inventory_names ?? []).some((entry) => entry.toLowerCase().includes(String(name ?? "").replace(/^the /, "")));
   if (objective.kind === "visit") {
     if (objective.roomName === from) return 5;
+    const clue = (quest?.objective_details ?? []).find((entry) => entry.kind === "answer")?.clueRoomName;
+    if (clue && objective.roomName === clue && routeFor(memory, from, clue).length) return 6;
     return routeFor(memory, from, objective.roomName).length ? 4 : 1;
   }
   if (objective.kind === "kill") {
@@ -52,7 +54,11 @@ const objectiveScore = (objective, { state, memory, from, mind } = {}) => {
     if (npcHere(objective.npcName ?? objective.npc)) return 5;
     return routeFor(memory, from, objective.npcRoomName).length ? 4 : 1;
   }
-  if (objective.kind === "answer") return mind?.knownWord ? 6 : 1;
+  if (objective.kind === "answer") {
+    if (mind?.knownWord) return 6;
+    if (objective.clueRoomName === from) return 5;
+    return routeFor(memory, from, objective.clueRoomName).length ? 4 : 1;
+  }
   return 1;
 };
 
@@ -154,7 +160,7 @@ export function focusFor({ state = null, memory = null, mind = null, preferExplo
 
   const activeOptions = (self.active_quests ?? []).map((quest) => {
     const objective = quest.objective_details?.find((entry) => !entry.done);
-    return { quest, objective, score: objectiveScore(objective, { state, memory, from, mind }) };
+    return { quest, objective, score: objectiveScore(objective, { state, memory, from, mind, quest }) };
   }).filter((entry) => entry.objective).sort((a, b) => b.score - a.score);
   const activeEntry = activeOptions[0] ?? null;
   const active = activeEntry?.quest ?? null;
