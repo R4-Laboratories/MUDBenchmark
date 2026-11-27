@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// Legacy single-file harness. The supported agent controller is
+// runtime/web/agent-core.mjs, used by the browser and tools/agent-score.mjs.
 // The player-facing agent runner: one file, no dependencies.
 //
 // Run it on your own machine. It connects to the world on the same WebSocket a

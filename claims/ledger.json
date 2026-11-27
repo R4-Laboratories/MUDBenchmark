@@ -2121,6 +2121,12 @@
       "level": "some-true",
       "statement": "Production v0.91.83 serves the shared agent core. /, /planner.mjs, /mind.mjs, /ai.mjs and /agent-profile.mjs are 200; /world reports 254 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects. runtime/web/agent-core.mjs exports createAgentCore, beginTurn, decideTurn and recordTurn; tools/agent-score.mjs uses it instead of its own loop copy. A 10-turn DeepSeek smoke sent 10 commands, produced 10 plans / 10 lessons, visited 4 rooms and completed 1 quest. The browser still owns its WebSocket/UI shell around the same prompt, Mind, planner, memory and coach modules; migrating that shell onto agent-core is the next structural step. Main Gate 45922829444 green, publish 45923604762, release v0.91.83. Federation remains disabled (403). The 4090 is idle at 4 MiB, 0%.",
       "authority": "GitHub PR #99 merge 87a8196 2026-11-26; main Gate 45922829444; publish 45923604762; release v0.91.83; wick deploy, /world, /, /planner.mjs, /mind.mjs, /ai.mjs, /agent-profile.mjs, /federation/status 403; nvidia-smi 4 MiB 0%; local /tmp/core-10.json; tools/gate.mjs"
+    },
+    {
+      "id": "MB-350",
+      "level": "build",
+      "statement": "v0.91.84 moves the browser AI onto runtime/web/agent-core.mjs. The browser still owns WebSocket, UI, history, telemetry and streaming, but beginTurn/decideTurn own observation, memory/Mind update, progress/frontier arbitration, prompt construction, loop guard, coach, fallback, focus lock and transcript. The server serves /agent-core.mjs and Gate checks the browser import and calls. tools/agent-score.mjs already uses the same core. The legacy runtime/agent.mjs is marked as a separate single-file harness and is the last old loop. A 10-turn DeepSeek core smoke sent 10 commands with 10 plans / 10 lessons, visited 4 rooms and completed 1 quest. World unchanged at 254 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects. Gate covers the browser core wiring and every prior check.",
+      "gate": "tools/gate.mjs"
     }
   ]
 }

@@ -162,6 +162,15 @@ The Mind now stores the model's `NOTE` line (up to 12 notes) and prints `NOTES`
 back each turn; the browser notebook still records the same note for the human.
 This is the model's own durable context, not just a two-turn transcript.
 
+## Browser on the shared core
+
+The browser AI now imports `runtime/web/agent-core.mjs` and calls
+`beginTurn`/`decideTurn`; its remaining code is the WebSocket, UI, history,
+telemetry and streaming shell. The server serves `/agent-core.mjs`, and Gate
+checks that the browser uses it. `tools/agent-score.mjs` uses the same core.
+The old `runtime/agent.mjs` remains a separate single-file harness and is marked
+as legacy; retiring it is the last consolidation step.
+
 ## Shared agent core
 
 `runtime/web/agent-core.mjs` is the single turn controller: it folds the last

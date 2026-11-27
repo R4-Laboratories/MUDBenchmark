@@ -60,14 +60,16 @@ export function beginTurn(core, { state = null, observation = "", room = null, t
   else core.frontierTurns = 0;
   const focus = focusFor({ state: promptState, memory: core.memory, mind: core.mind, preferExplore });
   const actions = [...new Set([...(focus.candidates ?? []), ...buildActionMenu(promptState)])].slice(0, 48);
-  const system = buildSystemPrompt({ name: core.name, goal: core.goal, fast: core.fast, deliberate: turn === 1 || turn % core.deliberateEvery === 0 });
+  const deliberate = turn === 1 || turn % core.deliberateEvery === 0;
+  const memoryText = memoryPrompt(core.memory, { room: currentRoom, exits: state?.room?.exits ?? [], query: observation });
+  const mindText = mindPrompt(core.mind, { state: promptState, room: currentRoom });
+  const focusText = focusPrompt(focus);
+  const system = buildSystemPrompt({ name: core.name, goal: core.goal, fast: core.fast, deliberate });
   const user = buildUserPrompt({
     turn, observation, director, state: promptState, actions,
-    memory: memoryPrompt(core.memory, { room: currentRoom, exits: state?.room?.exits ?? [], query: observation }),
-    mind: mindPrompt(core.mind, { state: promptState, room: currentRoom }),
-    focus: focusPrompt(focus), fast: core.fast, r4, notebook, note,
+    memory: memoryText, mind: mindText, focus: focusText, fast: core.fast, r4, notebook, note,
   });
-  return { promptState, currentRoom, exits, focus, actions, system, user, preferExplore };
+  return { promptState, currentRoom, exits, focus, actions, system, user, preferExplore, deliberate, memoryText, mindText, focusText };
 }
 
 /** Parse a reply, run loop/coach/focus control, and return the command to send. */
