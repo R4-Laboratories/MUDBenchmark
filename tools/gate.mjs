@@ -1965,6 +1965,7 @@ let controls = { ok: true, why: [] };
   const pvpAgentsSource = readFileSync(join(root, "tools/pvp-agents.mjs"), "utf8");
   const pvpSessionSource = readFileSync(join(root, "tools/pvp-session.mjs"), "utf8");
   check(/duel <name>, duel accept/.test(agentSource) && /"duel"/.test(agentSource) && /AGENT_SCENARIO/.test(agentSource), "the CLI agent is missing the PvP contract");
+  check(/from "\.\/web\/agent-core.mjs"/.test(agentSource) && /beginTurn\(core/.test(agentSource) && /decideTurn\(core/.test(agentSource), "the CLI agent is not rebased on the shared core");
   check(/duel <name>/.test(aiSource) && /room\.actors/.test(aiSource) && /duel \$\{actor\}/.test(aiSource), "the browser AI is missing PvP actions");
   check(/actors: actor\?\.key \? state\.actors\.filter/.test(serverSource), "the room state does not expose other actors");
   check(/AGENT_SCENARIO: "pvp"/.test(pvpAgentsSource) && /duel/.test(pvpAgentsSource), "the two-agent PvP runner is missing");

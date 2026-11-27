@@ -1,5 +1,10 @@
 # Connecting an LLM
 
+The browser, the CLI (`runtime/agent.mjs`) and `tools/agent-score.mjs` all use
+the same `runtime/web/agent-core.mjs` controller. An `AGENT_OBJECTIVES` or
+`AGENT_WAYPOINTS` entry is now a goal hint to that planner, not a second prompt
+or route engine.
+
 The agent harness is a player. It connects to the same WebSocket, logs in with
 the same account, receives the same room text and is bound by the same 250 ms
 input allowance. It gets no privileged view and no special commands.

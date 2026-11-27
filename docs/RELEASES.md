@@ -539,6 +539,16 @@ Rehearsed 2026-11-16:
   speaking, opened the Twin Door with one hidden partner and took the crown.
   Gate covers the death penalty, level gates, twin door, hide visibility and
   prompt (MB-286/287/288);
+- v0.91.85 (CLI on the shared core) rebases `runtime/agent.mjs` onto
+  `runtime/web/agent-core.mjs`. The CLI keeps only its WebSocket transport and
+  optional OpenCode JSON adapter; prompt construction, memory/Mind, planner,
+  coach, fallback, focus lock and transcript are the shared core. The browser
+  and `tools/agent-score.mjs` already use it. A headless Chrome smoke sent three
+  commands through the browser UI (north, south, east); a CLI smoke sent four
+  commands through `runtime/agent.mjs` (north, south, east, look). Both used a
+  mock provider. The old `AGENT_OBJECTIVES`/`AGENT_WAYPOINTS` values now feed the
+  shared goal/planner rather than a second route engine. World unchanged at 254
+  rooms / 17 zones / 25 quests / 114 mobiles / 263 objects (MB-352);
 - v0.91.84 (browser on the shared core) moves the browser AI onto
   `runtime/web/agent-core.mjs`. The browser still owns its WebSocket, UI,
   history, telemetry and streaming shell, but the controller now owns the
