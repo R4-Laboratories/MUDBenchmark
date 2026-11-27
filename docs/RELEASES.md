@@ -539,6 +539,18 @@ Rehearsed 2026-11-16:
   speaking, opened the Twin Door with one hidden partner and took the crown.
   Gate covers the death penalty, level gates, twin door, hide visibility and
   prompt (MB-286/287/288);
+- v0.91.84 (browser on the shared core) moves the browser AI onto
+  `runtime/web/agent-core.mjs`. The browser still owns its WebSocket, UI,
+  history, telemetry and streaming shell, but the controller now owns the
+  observation, memory/Mind update, progress and frontier arbitration, prompt
+  construction, loop guard, coach, fallback, focus lock and transcript. The
+  server serves `/agent-core.mjs`; Gate checks that the browser imports it and
+  calls `beginTurn`/`decideTurn`. `tools/agent-score.mjs` already uses the same
+  core. The legacy `runtime/agent.mjs` is marked as a separate single-file
+  harness and remains the only old loop. A 10-turn DeepSeek core smoke sent 10
+  commands with 10 plans / 10 lessons, visited 4 rooms and completed 1 quest.
+  World unchanged at 254 rooms / 17 zones / 25 quests / 114 mobiles / 263
+  objects (MB-350);
 - v0.91.83 (shared agent core) extracts the turn controller into
   `runtime/web/agent-core.mjs`: `createAgentCore`, `beginTurn`, `decideTurn` and
   `recordTurn` now own the observation, memory/mind update, progress, focus,

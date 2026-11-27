@@ -1,6 +1,6 @@
 # Next work
 
-Baseline: **v0.91.83**. The world has 254 rooms, 17 zones, 25 quests, 114 mobiles
+Baseline: **v0.91.84**. The world has 254 rooms, 17 zones, 25 quests, 114 mobiles
 and 263 objects. The run has a recorded win condition: level 10, all 25 quests
 and all 25 hidden ways, with the permanent Worldbreaker title. R4 memory, command grounding, scorecards
 and the public stats surface are live; signups are open. Every AI key is
@@ -116,6 +116,7 @@ memory or prompt system.
 | v0.91.81 | Invalid-target guard after three tries; Bonsai 200 turns 55 rooms/1 quest, no bread retry loop; GPU returned to training | **done** (MB-344) |
 | v0.91.82 | One default agent profile: 1200 tokens, 0.3 temperature, medium reasoning; Bonsai/DeepSeek request branches removed; scorecard uses the browser request path | **done** (MB-346) |
 | v0.91.83 | Shared `agent-core.mjs` turn controller; scorecard migrated; browser WebSocket/UI loop migration remains | **done** (MB-348) |
+| v0.91.84 | Browser AI moved onto `agent-core.mjs`; gate checks the import and calls; legacy `runtime/agent.mjs` marked separate | **done** (MB-350) |
 | backlog | Longer DeepSeek/Groq evidence; moderator/immortal decision; larger PvP sample; federation rework | optional |
 
 ## What is next
