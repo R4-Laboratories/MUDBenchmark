@@ -17,13 +17,14 @@ on:
 
 permissions:
   contents: read
+  packages: read
 
 concurrency:
   group: gate-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  SDK: ghcr.io/uor-foundation/prismpm-sdk@sha256:d6c263a733a6bc36e0458c3f5b9a1f5ea9c14dfbe8c257d3f650a960b5fe633c
+  SDK: ghcr.io/r4-laboratories/prismpm-sdk@sha256:d6c263a733a6bc36e0458c3f5b9a1f5ea9c14dfbe8c257d3f650a960b5fe633c
 
 jobs:
   ratchet:
@@ -62,6 +63,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       # The SDK image runs as uid 1000; the runner's checkout belongs to uid 1001,
       # so the build roots have to be created and opened up first.

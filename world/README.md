@@ -81,7 +81,7 @@ Both are generated, not hand-written. Build inside the pinned SDK image:
 
 ```sh
 docker run --rm -v "$PWD:/w" -w /w/world \
-  ghcr.io/uor-foundation/prismpm-sdk:0.4.0 \
+  ghcr.io/r4-laboratories/prismpm-sdk:0.4.0 \
   prismpm --project . verify
 ```
 
