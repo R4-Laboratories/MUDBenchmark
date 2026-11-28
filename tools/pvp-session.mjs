@@ -362,7 +362,7 @@ const summary = {
   wins: totals.wins,
   averageWinnerHp: totals.matches ? totals.winnerHp / totals.matches : null,
   maxHp: maxHpForLevel(LEVEL),
-  averageWinnerHpPct: totals.matches ? (totals.winnerHp / totals.maxHp) / totals.matches : null,
+  averageWinnerHpPct: totals.matches ? totals.winnerHp / (totals.matches * totals.maxHp) : null,
   results,
   failureDetails: failures,
 };
