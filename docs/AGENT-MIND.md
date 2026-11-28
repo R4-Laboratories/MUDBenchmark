@@ -162,6 +162,19 @@ The Mind now stores the model's `NOTE` line (up to 12 notes) and prints `NOTES`
 back each turn; the browser notebook still records the same note for the human.
 This is the model's own durable context, not just a two-turn transcript.
 
+## Full pack
+
+When a take or collect would exceed the 20-item pack, the agent drops the
+lowest-value carried item that no active collect or deliver objective needs,
+then takes the quest item. The pack focus takes its step immediately. Gate
+covers the full-pack drop, the take after making room and the guard.
+
+A 450-turn DeepSeek run completed **13 quests**, including **Three Parts of a
+Sigil** at turn 280 (accepted at 259), at **level 5 / 1651 XP**, with 0 deaths,
+48 rooms and 9 attacks. The Drowned Ledger completed at 135 and The Salt Rose
+at 208. The run then looped exploring The Quiet Door and The Last Lantern;
+that frontier oscillation is the next exploration limit.
+
 ## Keyed doors and the level-5 bridge
 
 Quest preparation can now take a key and use it on a room action. The Drowned
