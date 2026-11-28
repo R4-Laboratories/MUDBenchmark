@@ -213,6 +213,16 @@
       "complete": "The shard is cold and your reflection is still missing.",
       "requires": [
         "roof"
+      ],
+      "prereqs": [
+        {
+          "kind": "search",
+          "room": 40,
+          "reveals": 41,
+          "text": "Search the High Walk for the stair of water",
+          "via": 39,
+          "exit": "east"
+        }
       ]
     },
     {
@@ -582,7 +592,105 @@
         "coins": 30
       },
       "complete": "The lighthouse keeper takes the stone and reads the log. The Salt Rose is at rest.",
-      "requires": []
+      "requires": [],
+      "prereqs": [
+        {
+          "kind": "buy",
+          "room": 31,
+          "object": "mistfall-ferry-token",
+          "name": "a mistfall ferry token",
+          "price": 10,
+          "text": "Buy a mistfall ferry token at the Docks"
+        },
+        {
+          "kind": "buy",
+          "room": 10,
+          "roomName": "The Gilded Rat",
+          "object": "stew",
+          "name": "a bowl of stew",
+          "price": 10,
+          "text": "Buy food at the Gilded Rat"
+        },
+        {
+          "kind": "buy",
+          "room": 10,
+          "roomName": "The Gilded Rat",
+          "object": "ale",
+          "name": "a tankard of ale",
+          "price": 10,
+          "optional": true,
+          "text": "Buy ale at the Gilded Rat"
+        },
+        {
+          "kind": "buy",
+          "room": 31,
+          "object": "mistfall-storm-lantern",
+          "name": "a storm lantern",
+          "price": 10,
+          "text": "Buy a storm lantern at the Docks",
+          "optional": true
+        },
+        {
+          "kind": "light",
+          "object": "mistfall-storm-lantern",
+          "name": "a storm lantern",
+          "text": "Light the storm lantern",
+          "optional": true
+        },
+        {
+          "kind": "action",
+          "room": 30,
+          "verb": "board",
+          "target": "ferry",
+          "afterRoom": 182,
+          "text": "Board the ferry at the Harbor Quay",
+          "zone": "mistfall"
+        },
+        {
+          "kind": "route",
+          "from": 184,
+          "to": 188,
+          "steps": [
+            "north",
+            "west",
+            "west",
+            "south"
+          ],
+          "text": "The hold doors: north, west, west, south",
+          "when": 0,
+          "rooms": [
+            "The Wreck of the Salt Rose",
+            "The Hold",
+            "The Hold",
+            "The Hold",
+            "The Captain's Cabin"
+          ]
+        },
+        {
+          "kind": "route",
+          "from": 188,
+          "to": 191,
+          "steps": [
+            "north",
+            "east",
+            "east",
+            "south",
+            "east",
+            "east"
+          ],
+          "when": 2,
+          "text": "The hold doors back: north, east, east, south, east, east",
+          "rooms": [
+            "The Captain's Cabin",
+            "The Hold",
+            "The Hold",
+            "The Hold",
+            "The Wreck of the Salt Rose",
+            "The Cave Mouth",
+            "The Drowned Cave"
+          ]
+        }
+      ]
     },
     {
       "id": "deepdelve",

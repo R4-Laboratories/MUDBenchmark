@@ -25,7 +25,7 @@ export function createAgentCore({
     name, goal, memory, mind, weak, strict, fast, deliberateEvery,
     focusKey: "", focusDetours: 0, coachRetries: 0, blockedCounts: new Map(),
     progressMark: "", stallTurns: 0, frontierTurns: 0, lastPlan: "",
-    questFocus: null,
+    questFocus: null, prepFocus: null,
     recent: [], lastCommand: null, lastParsed: null, lastValidation: null,
     lastCoach: null, commandRoom: null, tick: 0, transcript: [],
   };
@@ -60,8 +60,10 @@ export function beginTurn(core, { state = null, observation = "", room = null, t
     core.frontierTurns = 0;
   } else if (preferExplore) core.frontierTurns += 1;
   else core.frontierTurns = 0;
-  const focus = focusFor({ state: promptState, memory: core.memory, mind: core.mind, preferExplore, previousFocus: core.questFocus });
+  const focus = focusFor({ state: promptState, memory: core.memory, mind: core.mind, preferExplore, previousFocus: core.questFocus, previousPrep: core.prepFocus, lastCommand: core.lastCommand });
   if (focus.kind === "quest") core.questFocus = focus;
+  if (focus.kind === "prep") core.prepFocus = focus;
+  else if (focus.kind === "quest" && focus.questId !== core.prepFocus?.questId) core.prepFocus = null;
   const actions = [...new Set([...(focus.candidates ?? []), ...buildActionMenu(promptState)])].slice(0, 48);
   const deliberate = turn === 1 || turn % core.deliberateEvery === 0;
   const memoryText = memoryPrompt(core.memory, { room: currentRoom, exits: state?.room?.exits ?? [], query: observation });
