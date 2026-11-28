@@ -243,7 +243,13 @@ let webAI = { ok: true, why: [] };
   const routeMemory = { rooms: { A: { exits: { north: "B" } }, B: { exits: { south: "A" } } }, map: { A: { north: "B" }, B: { south: "A" } } };
   const focusGear = focusFor({ state: { self: { inventory_names: ["a short sword"], worn: [], wielding: null, enemies: [] }, room: { name: "A", objects: [], exits: [], npcs: [] } }, memory: routeMemory });
   check(focusGear.kind === "equip" && focusGear.candidates.includes("wield a short sword"), "the focus planner did not prioritize carried gear");
+  const equipGuard = focusGuard({ focus: focusGear, command: "wield a wooden club", detours: 0, state: { room: { exits: [] } } });
+  check(equipGuard.forced && equipGuard.command === "wield a short sword", "the equip focus let the agent swap to worse gear");
   const stewFocus = focusFor({ state: { self: { inventory_names: [], worn: [], wielding: null, enemies: [], active_quests: [], available_quests: [] }, room: { name: "The Gilded Rat", objects: [{ name: "a bowl of stew", takeable: true, damage: 0, armor: 0, slot: null }], exits: [], npcs: [] } }, memory: routeMemory });
+  const roomGearFocus = focusFor({ state: { self: { inventory_items: [{ name: "a wooden club", damage: 1, armor: 0, slot: "mainhand" }], inventory_names: ["a wooden club"], worn: [], wielding: "a wooden club", enemies: [], active_quests: [], available_quests: [] }, room: { name: "The Hold", objects: [{ name: "a sailor's knife", takeable: true, damage: 4, armor: 0, slot: "mainhand" }, { name: "a mirror shield", takeable: true, damage: 0, armor: 2, slot: "offhand" }], exits: [], npcs: [] } }, memory: routeMemory });
+  check(roomGearFocus.kind === "take" && /sailor's knife/.test(roomGearFocus.label), "room gear ignored a better weapon when the pack had stats");
+  const takeGuard = focusGuard({ focus: roomGearFocus, command: "wield a wooden club", detours: 0, state: { room: { exits: [] } } });
+  check(takeGuard.forced && /sailor's knife/.test(takeGuard.command), "the take focus let a better weapon stay on the floor");
   const bowFocus = focusFor({ state: { self: { inventory_names: [], worn: [], wielding: null, enemies: [], active_quests: [], available_quests: [] }, room: { name: "A", objects: [{ name: "a short bow", takeable: true, damage: 4, armor: 0, slot: "mainhand" }], exits: [], npcs: [] } }, memory: routeMemory });
   check(stewFocus.kind !== "take", "a bowl of stew was classified as a weapon");
   check(bowFocus.kind === "take" && /bow/.test(bowFocus.label), "a short bow was not classified as a weapon");
@@ -290,6 +296,8 @@ let webAI = { ok: true, why: [] };
   const stewState = { ...questBreadState, self: { ...questBreadState.self, inventory_names: ["a loaf of bread", "a bowl of stew"] } };
   const eatStew = focusFor({ state: stewState, memory: routeMemory, mind: emptyMind() });
   const healthyFocus = focusFor({ state: { ...hurtState, self: { ...hurtState.self, hp: 35 } }, memory: routeMemory, mind: emptyMind() });
+  const zoneQuest = { self: { ...hurtState.self, hp: 8, inventory_names: [], coins: 10, active_quests: [{ id: "salt-rose", name: "The Salt Rose", objective_details: [{ kind: "kill", text: "Defeat the tide guardian", npcRoomName: "The Drowned Cave", npcRoomZone: "mistfall", done: false }] }] }, room: { name: "The Drowned Cave", zone: "mistfall", objects: [], exits: [{ dir: "west", room: "The Cave Mouth" }], npcs: [] } };
+  const zoneRecover = focusFor({ state: zoneQuest, memory: routeMemory, mind: emptyMind() });
   const recoverGuard = focusGuard({ focus: recoverFood, command: "north", detours: 0, state: { room: { exits: [{ dir: "north" }] } } });
   check(recoverFood.kind === "recover" && recoverFood.candidates[0] === "eat a loaf of bread", "low HP did not eat carried food");
   check(recoverInn.kind === "recover" && recoverInn.candidates[0] === "west" && /Gilded Rat/.test(recoverInn.label), "low HP without food did not route to the inn");
@@ -301,6 +309,55 @@ let webAI = { ok: true, why: [] };
   check(eatStew.kind === "recover" && eatStew.candidates[0] === "eat a bowl of stew", "recovery did not prefer non-quest food");
   check(healthyFocus.kind !== "recover", "a healthy agent stopped to recover");
   check(recoverGuard.forced && recoverGuard.command === "eat a loaf of bread", "recovery did not override a detour");
+  check(zoneRecover.kind !== "recover", "recovery left an active quest zone");
+  const mirrorQuest = { id: "mirror", name: "What the Mirror Keeps", level: 4, objective_details: [{ kind: "visit", text: "Enter the Mirror Pool", roomName: "The Mirror Pool", done: false }], prereqs: [{ kind: "search", room: 40, roomName: "The High Walk", reveals: 41, revealsName: "The Mirror Pool", text: "Search the High Walk for the stair of water" }] };
+  const mirrorSelf = { level: 4, xp: 800, next_xp: 1500, hp: 35, max_hp: 35, damage: 4, armor: 2, coins: 20, inventory_names: [], worn: [], wielding: "a short sword", enemies: [], active_quests: [mirrorQuest], available_quests: [] };
+  const mirrorAway = focusFor({ state: { self: mirrorSelf, room: { name: "The Aviary", objects: [], exits: [{ dir: "north", room: "The High Walk" }], npcs: [] } }, memory: { rooms: { "The Aviary": {}, "The High Walk": {} }, map: { "The Aviary": { north: "The High Walk" }, "The High Walk": {} } }, mind: emptyMind() });
+  const mirrorHere = focusFor({ state: { self: mirrorSelf, room: { name: "The High Walk", objects: [], exits: [{ dir: "down", room: "The Mirror Pool" }], npcs: [] } }, memory: { rooms: { "The High Walk": {} }, map: { "The High Walk": {} } }, mind: emptyMind() });
+  const mirrorFound = focusFor({ state: { self: mirrorSelf, room: { name: "The High Walk", objects: [], exits: [{ dir: "down", room: "The Mirror Pool" }], npcs: [] } }, memory: { rooms: { "The High Walk": {}, "The Mirror Pool": {} }, map: { "The High Walk": { down: "The Mirror Pool" }, "The Mirror Pool": {} } }, mind: emptyMind() });
+  check(mirrorAway.kind === "prep" && mirrorAway.candidates[0] === "north", "the mirror quest did not route to the search room");
+  check(mirrorHere.kind === "prep" && mirrorHere.candidates[0] === "search", "the mirror quest did not search the High Walk");
+  check(mirrorFound.kind === "quest" && mirrorFound.candidates[0] === "down", "the revealed mirror stair was not used");
+  const saltQuest = { id: "salt-rose", name: "The Salt Rose", level: 4, objective_details: [{ kind: "visit", text: "Enter the captain's cabin", roomName: "The Captain's Cabin", done: false }], prereqs: [
+    { kind: "buy", room: 31, roomName: "The Docks", object: "mistfall-ferry-token", name: "a mistfall ferry token", price: 5, text: "Buy a mistfall ferry token at the Docks" },
+    { kind: "buy", room: 31, roomName: "The Docks", object: "mistfall-storm-lantern", name: "a storm lantern", price: 7, text: "Buy a storm lantern at the Docks" },
+    { kind: "light", object: "mistfall-storm-lantern", name: "a storm lantern", text: "Light the storm lantern" },
+    { kind: "action", room: 30, roomName: "The Harbor Quay", verb: "board", target: "ferry", afterRoom: 182, afterRoomName: "The Mistfall Landing", zone: "mistfall", text: "Board the ferry at the Harbor Quay" },
+    { kind: "route", from: 184, fromName: "The Wreck of the Salt Rose", to: 188, toName: "The Captain's Cabin", steps: ["north", "west", "west", "south"], text: "The hold doors: north, west, west, south" },
+  ] };
+  const saltSelf = { ...mirrorSelf, active_quests: [saltQuest] };
+  const saltAway = focusFor({ state: { self: saltSelf, room: { name: "The Lighthouse", objects: [], exits: [{ dir: "south", room: "The Docks" }], npcs: [] } }, memory: { rooms: { "The Lighthouse": {}, "The Docks": {} }, map: { "The Lighthouse": { south: "The Docks" }, "The Docks": { north: "The Lighthouse" } } }, mind: emptyMind() });
+  const saltBuy = focusFor({ state: { self: saltSelf, room: { name: "The Docks", objects: [{ name: "a mistfall ferry token", forSale: true, price: 5 }, { name: "a storm lantern", forSale: true, price: 7 }], exits: [], npcs: [] } }, memory: { rooms: { "The Docks": {} }, map: { "The Docks": {} } }, mind: emptyMind() });
+  const saltLantern = focusFor({ state: { self: { ...saltSelf, inventory_names: ["a mistfall ferry token"] }, room: { name: "The Docks", objects: [{ name: "a storm lantern", forSale: true, price: 7 }], exits: [], npcs: [] } }, memory: { rooms: { "The Docks": {} }, map: { "The Docks": {} } }, mind: emptyMind() });
+  const saltLight = focusFor({ state: { self: { ...saltSelf, inventory_names: ["a mistfall ferry token", "a storm lantern"], light: false }, room: { name: "The Docks", objects: [], exits: [{ dir: "west", room: "The Harbor Quay" }], npcs: [] } }, memory: { rooms: { "The Docks": {}, "The Harbor Quay": {} }, map: { "The Docks": { west: "The Harbor Quay" }, "The Harbor Quay": { east: "The Docks" } } }, mind: emptyMind() });
+  const saltBoard = focusFor({ state: { self: { ...saltSelf, inventory_names: ["a mistfall ferry token", "a storm lantern"], light: true }, room: { name: "The Docks", objects: [], exits: [{ dir: "west", room: "The Harbor Quay" }], npcs: [] } }, memory: { rooms: { "The Docks": {}, "The Harbor Quay": {} }, map: { "The Docks": { west: "The Harbor Quay" }, "The Harbor Quay": { east: "The Docks" } } }, mind: emptyMind() });
+  const saltFerry = focusFor({ state: { self: { ...saltSelf, inventory_names: ["a mistfall ferry token", "a storm lantern"], light: true }, room: { name: "The Harbor Quay", objects: [], exits: [], npcs: [] } }, memory: { rooms: { "The Harbor Quay": {} }, map: { "The Harbor Quay": {} } }, mind: emptyMind() });
+  const saltIslandMemory = { rooms: { "The Mistfall Landing": {}, "The Black Beach": {}, "The Wreck of the Salt Rose": {}, "The Hold": {} }, map: { "The Mistfall Landing": { north: "The Black Beach" }, "The Black Beach": { north: "The Wreck of the Salt Rose" }, "The Wreck of the Salt Rose": { north: "The Hold" }, "The Hold": { west: "The Hold" }, "The Captain's Cabin": {} } };
+  const saltRouteStart = focusFor({ state: { self: { ...saltSelf, inventory_names: ["a storm lantern"], light: true }, room: { name: "The Mistfall Landing", zone: "mistfall", objects: [], exits: [{ dir: "north", room: "The Black Beach" }], npcs: [] } }, memory: saltIslandMemory, mind: emptyMind() });
+  const saltRoute1 = focusFor({ state: { self: { ...saltSelf, inventory_names: ["a storm lantern"], light: true }, room: { name: "The Wreck of the Salt Rose", zone: "mistfall", objects: [], exits: [{ dir: "north", room: "The Hold" }], npcs: [] } }, memory: saltIslandMemory, mind: emptyMind() });
+  const saltRoute2 = focusFor({ state: { self: { ...saltSelf, inventory_names: ["a storm lantern"], light: true }, room: { name: "The Hold", zone: "mistfall", objects: [], exits: [{ dir: "west", room: "The Hold" }], npcs: [] } }, memory: saltIslandMemory, mind: emptyMind(), previousPrep: saltRoute1, lastCommand: "north" });
+  const saltRoute3 = focusFor({ state: { self: { ...saltSelf, inventory_names: ["a storm lantern"], light: true }, room: { name: "The Hold", zone: "mistfall", objects: [], exits: [{ dir: "west", room: "The Hold" }], npcs: [] } }, memory: saltIslandMemory, mind: emptyMind(), previousPrep: saltRoute2, lastCommand: "west" });
+  const saltRoute4 = focusFor({ state: { self: { ...saltSelf, inventory_names: ["a storm lantern"], light: true }, room: { name: "The Hold", zone: "mistfall", objects: [], exits: [{ dir: "south", room: "The Captain's Cabin" }], npcs: [] } }, memory: saltIslandMemory, mind: emptyMind(), previousPrep: saltRoute3, lastCommand: "west" });
+  const saltRouteDone = focusFor({ state: { self: { ...saltSelf, inventory_names: ["a storm lantern"], light: true }, room: { name: "The Captain's Cabin", zone: "mistfall", objects: [], exits: [{ dir: "north", room: "The Hold" }], npcs: [] } }, memory: { ...saltIslandMemory, rooms: { ...saltIslandMemory.rooms, "The Captain's Cabin": {} } }, mind: emptyMind(), previousPrep: saltRoute4, lastCommand: "south" });
+  const saltBroke = focusFor({ state: { self: { ...saltSelf, coins: 0 }, room: { name: "The Docks", objects: [{ name: "a mistfall ferry token", forSale: true, price: 5 }], exits: [], npcs: [] } }, memory: { rooms: { "The Docks": {} }, map: { "The Docks": {} } }, mind: emptyMind() });
+  const prepGuard = focusGuard({ focus: saltBuy, command: "look", detours: 0, state: { room: { exits: [] } } });
+  check(saltAway.kind === "prep" && saltAway.candidates[0] === "south" && /ferry token/.test(saltAway.label), "the salt quest did not route to the token shop");
+  check(saltBuy.kind === "prep" && saltBuy.candidates[0] === "buy a mistfall ferry token", "the salt quest did not buy the ferry token");
+  check(saltLantern.kind === "prep" && saltLantern.candidates[0] === "buy a storm lantern", "the salt quest did not buy the lantern");
+  check(saltLight.kind === "prep" && saltLight.candidates[0] === "light a storm lantern", "the salt quest did not light the lantern");
+  check(saltBoard.kind === "prep" && saltBoard.candidates[0] === "west" && /board ferry/.test(saltBoard.label), "the salt quest did not route to the ferry");
+  check(saltFerry.kind === "prep" && saltFerry.candidates[0] === "board ferry", "the salt quest did not board the ferry");
+  check(saltRouteStart.kind === "prep" && saltRouteStart.candidates[0] === "north" && /reach The Wreck/.test(saltRouteStart.label), "the salt quest did not head for the hold route");
+  check(saltRoute1.kind === "prep" && saltRoute1.candidates[0] === "north" && /1\/4/.test(saltRoute1.label), "the hold route did not start north");
+  check(saltRoute2.kind === "prep" && saltRoute2.candidates[0] === "west" && /2\/4/.test(saltRoute2.label), "the hold route missed the first west");
+  check(saltRoute3.kind === "prep" && saltRoute3.candidates[0] === "west" && /3\/4/.test(saltRoute3.label), "the hold route missed the second west");
+  check(saltRoute4.kind === "prep" && saltRoute4.candidates[0] === "south" && /4\/4/.test(saltRoute4.label), "the hold route missed the final south");
+  check(saltRouteDone.kind === "quest", "the completed hold route did not resume the quest");
+  const saltReturnQuest = { ...saltQuest, prereqs: [...saltQuest.prereqs, { kind: "route", from: 188, fromName: "The Captain's Cabin", to: 191, toName: "The Drowned Cave", steps: ["north", "east", "east", "south", "east", "east"], when: 2, text: "The hold doors back: north, east, east, south, east, east" }], objective_details: [{ kind: "visit", done: true }, { kind: "collect", done: true }, { kind: "kill", text: "Defeat the tide guardian", npcName: "a tide guardian", npcRoomName: "The Drowned Cave", done: false }, { kind: "deliver", done: false }] };
+  const saltReturn = focusFor({ state: { self: { ...saltSelf, active_quests: [saltReturnQuest] }, room: { name: "The Captain's Cabin", zone: "mistfall", objects: [], exits: [{ dir: "north", room: "The Hold" }], npcs: [] } }, memory: { ...saltIslandMemory, rooms: { ...saltIslandMemory.rooms, "The Captain's Cabin": {} } }, mind: emptyMind() });
+  check(saltReturn.kind === "prep" && saltReturn.candidates[0] === "north" && /1\/6/.test(saltReturn.label), "the return hold route did not start");
+  check(saltBroke.kind !== "prep", "a broke agent looped on an unaffordable ferry token");
+  check(prepGuard.forced && prepGuard.command === "buy a mistfall ferry token", "quest preparation did not take its concrete step");
   const combatGuard = focusGuard({ focus: { kind: "combat", label: "survive a rat", candidates: ["technique bash", "flee"] }, command: "west", detours: 0, state: { room: { exits: [{ dir: "west" }] } } });
   const combatFlee = focusGuard({ focus: { kind: "combat", label: "survive a rat", candidates: ["technique bash", "flee"] }, command: "flee", detours: 0, state: { room: { exits: [{ dir: "west" }] } } });
   check(combatGuard.forced && combatGuard.command === "technique bash", "a combat focus let the agent walk away from the fight");
@@ -3854,6 +3911,18 @@ let quests = { ok: true, why: [] };
   const check = (condition, why) => { if (!condition) { quests.ok = false; quests.why.push(why); } };
   check(questTable.quests.length === 25, `the live quest count is ${questTable.quests.length}, not 25`);
   check(questTable.quests.find((quest) => quest.id === "roof")?.rewards?.xp === 100, "the level-3 roof quest no longer bridges to level 4");
+  const mirrorLive = questTable.quests.find((quest) => quest.id === "mirror");
+  const saltLive = questTable.quests.find((quest) => quest.id === "salt-rose");
+  check(mirrorLive?.prereqs?.[0]?.kind === "search" && mirrorLive.prereqs[0].reveals === 41, "the mirror quest lost its High Walk search");
+  check(saltLive?.prereqs?.length === 8 && saltLive.prereqs[0].object === "mistfall-ferry-token" && saltLive.prereqs[1].object === "stew" && saltLive.prereqs[2].object === "ale" && saltLive.prereqs[5].verb === "board" && saltLive.prereqs[6].kind === "route" && saltLive.prereqs[7].when === 2, "the salt quest lost its ferry preparation");
+  for (const quest of questTable.quests) {
+    for (const pre of quest.prereqs ?? []) {
+      if (pre.room && !world.rooms[pre.room]) check(false, `${quest.id} prereq room ${pre.room} does not exist`);
+      if (pre.afterRoom && !world.rooms[pre.afterRoom]) check(false, `${quest.id} prereq afterRoom ${pre.afterRoom} does not exist`);
+      if (pre.reveals && !world.rooms[pre.reveals]) check(false, `${quest.id} prereq reveals ${pre.reveals} does not exist`);
+      if (pre.object && !world.objects.some((object) => object.id === pre.object)) check(false, `${quest.id} prereq object ${pre.object} does not exist`);
+    }
+  }
   check(archive.quests.length === 41 && archive.errors.length === 0, "the retired quest archive is not 41 valid definitions");
   const liveIds = new Set(questTable.quests.map((quest) => quest.id));
   const archiveIds = new Set(archive.quests.map((quest) => quest.id));

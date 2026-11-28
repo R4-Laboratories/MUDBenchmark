@@ -539,6 +539,23 @@ Rehearsed 2026-11-16:
   speaking, opened the Twin Door with one hidden partner and took the crown.
   Gate covers the death penalty, level gates, twin door, hide visibility and
   prompt (MB-286/287/288);
+- v0.91.91 (quest preparation) lets a quest carry ordered preparation steps the
+  planner runs before its objectives: buy an item, light a light source, search
+  a room for a secret way, use a room action, or follow a manual route. The
+  Mirror quest searches the High Walk through The Aviary and takes the hidden
+  stair; The Salt Rose buys the ferry token and food, boards at the Harbor Quay,
+  follows the hold order north/west/west/south, and returns by
+  north/east/east/south/east/east. Preparation reads shop stock and coins, skips
+  optional steps it cannot complete, never detours for an optional item, and
+  never leaves a zone that still holds an active objective to find food. Room
+  objects now expose damage, armour and slot, so a better weapon or shield on
+  the floor is taken; the equip and take focuses take their step immediately.
+  Evidence: a 300-turn DeepSeek run completed **11 quests**, including What the
+  Mirror Keeps and The Salt Rose, at level 4 / **1057 XP**, with 0 deaths, 30
+  rooms and 4 attacks. It fled the tide guardian once for 84 XP, returned, took
+  the tide-stone and delivered. The previous best was 10 completed quests.
+  World unchanged at 254 rooms / 17 zones / 25 quests / 114 mobiles / 263
+  objects (MB-364);
 - v0.91.90 (recovery) adds a `recover` focus for the gap between fights. When
   HP is below 60% and no enemy is engaged, the agent eats carried food (never an
   object an active collect or deliver objective still needs), or buys the

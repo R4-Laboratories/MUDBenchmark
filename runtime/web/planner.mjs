@@ -87,7 +87,140 @@ const questObjects = (self) => new Set((self?.active_quests ?? []).flatMap((ques
   .filter(Boolean)));
 const isQuestObject = (name, objects) => [...objects].some((object) => object && String(name).toLowerCase().includes(object));
 
-export function focusFor({ state = null, memory = null, mind = null, preferExplore = false, previousFocus = null } = {}) {
+const hasItem = (self, name) => {
+  const wanted = String(name ?? "").toLowerCase().replace(/^the /, "").trim();
+  if (!wanted) return false;
+  return [...(self?.inventory_names ?? []), ...(self?.worn ?? [])]
+    .some((entry) => String(entry).toLowerCase().replace(/^the /, "").includes(wanted));
+};
+
+const questPrepMet = (pre, { self = {}, memory = null, from = null, zone = null } = {}) => {
+  if (!pre) return true;
+  if (pre.kind === "buy") return hasItem(self, pre.name) || hasItem(self, pre.object);
+  if (pre.kind === "light") return Boolean(self.light);
+  if (pre.kind === "search") {
+    const exits = memory?.map?.[pre.roomName] ?? {};
+    return Boolean(pre.revealsName && (Object.values(exits).includes(pre.revealsName) || memory?.rooms?.[pre.revealsName]));
+  }
+  if (pre.kind === "action") {
+    if (pre.afterRoomName && (from === pre.afterRoomName || memory?.rooms?.[pre.afterRoomName])) return true;
+    const exits = memory?.map?.[pre.roomName] ?? {};
+    return Boolean(pre.revealsName && Object.values(exits).includes(pre.revealsName));
+  }
+  if (pre.kind === "route") {
+    const to = pre.toName ?? pre.to;
+    return Boolean(to && (from === to || memory?.rooms?.[to]));
+  }
+  return true;
+};
+
+const nextQuestPrep = (quest, ctx = {}) => {
+  const prereqs = quest?.prereqs ?? [];
+  if (!prereqs.length) return null;
+  const objectiveIndex = (quest.objective_details ?? []).findIndex((objective) => !objective.done);
+  const actionDone = prereqs.find((pre) => pre.kind === "action" && questPrepMet(pre, ctx));
+  const cutoff = actionDone ? prereqs.indexOf(actionDone) : -1;
+  for (let index = 0; index < prereqs.length; index += 1) {
+    if (index <= cutoff) continue;
+    const pre = prereqs[index];
+    if (pre.when !== undefined && pre.when !== objectiveIndex) continue;
+    if (!questPrepMet(pre, ctx)) {
+      if (pre.optional) {
+        if (pre.roomName && ctx.from !== pre.roomName) continue;
+        if (!questPrepFocus(pre, quest, ctx)) continue;
+      }
+      return pre;
+    }
+  }
+  return null;
+};
+
+const questPrepFocus = (pre, quest, { self = {}, memory = null, from = null, room = {}, previousPrep = null, lastCommand = null } = {}) => {
+  if (!pre || !quest) return null;
+  const reason = pre.text ?? `${quest.name} needs this first`;
+  if (pre.kind === "buy") {
+    const here = from === pre.roomName;
+    if (here) {
+      const item = (room.objects ?? []).find((object) => object?.forSale
+        && (object.name === pre.name || object.name === pre.object || String(object.name).toLowerCase().includes(String(pre.name ?? "").toLowerCase().replace(/^the /, ""))));
+      if (!item || (self.coins ?? 0) < (item.price ?? pre.price ?? 0)) return null;
+      return withRoute({ kind: "prep", questId: quest.id, label: `buy ${item.name} — ${reason}`, reason, candidates: unique([`buy ${item.name}`, "list", "score"]) }, memory, from, from);
+    }
+    const path = routeFor(memory, from, pre.roomName);
+    if (!path.length) return null;
+    return withRoute({ kind: "prep", questId: quest.id, label: `buy ${pre.name} at ${pre.roomName}`, reason, candidates: unique([path[0], "quests", "look"]) }, memory, from, pre.roomName);
+  }
+  if (pre.kind === "light") {
+    if (!hasItem(self, pre.name)) return null;
+    return withRoute({ kind: "prep", questId: quest.id, label: `light ${pre.name}`, reason, candidates: unique([`light ${pre.name}`, "score"]) }, memory, from, from);
+  }
+  if (pre.kind === "search") {
+    const here = Number.isFinite(room.id) && Number.isFinite(pre.room) ? Number(room.id) === Number(pre.room) : from === pre.roomName;
+    if (here) return withRoute({ kind: "prep", questId: quest.id, label: `search ${pre.roomName} for ${pre.revealsName}`, reason, candidates: unique(["search", "look", "quests"]) }, memory, from, from);
+    if (pre.viaName && from !== pre.viaName) {
+      const viaPath = routeFor(memory, from, pre.viaName);
+      if (!viaPath.length) return null;
+      return withRoute({ kind: "prep", questId: quest.id, label: `reach ${pre.viaName} for ${pre.roomName}`, reason, candidates: unique([viaPath[0], "quests", "look"]) }, memory, from, pre.viaName);
+    }
+    if (pre.viaName && pre.exit) {
+      return withRoute({ kind: "prep", questId: quest.id, label: `${pre.exit} to ${pre.roomName}`, reason, candidates: unique([pre.exit, "look", "quests"]) }, memory, from, pre.roomName);
+    }
+    const path = routeFor(memory, from, pre.roomName);
+    if (!path.length) return null;
+    return withRoute({ kind: "prep", questId: quest.id, label: `search ${pre.roomName} for ${pre.revealsName}`, reason, candidates: unique([path[0], "quests", "look"]) }, memory, from, pre.roomName);
+  }
+  if (pre.kind === "action") {
+    const command = `${pre.verb} ${pre.target}`;
+    const here = from === pre.roomName;
+    if (here) return withRoute({ kind: "prep", questId: quest.id, label: command, reason, candidates: unique([command, "look"]) }, memory, from, from);
+    const path = routeFor(memory, from, pre.roomName);
+    if (!path.length) return null;
+    return withRoute({ kind: "prep", questId: quest.id, label: command, reason, candidates: unique([path[0], "quests", "look"]) }, memory, from, pre.roomName);
+  }
+  if (pre.kind === "route") {
+    const to = pre.toName ?? pre.to;
+    const start = pre.fromName ?? pre.from;
+    if (!to || from === to || memory?.rooms?.[to]) return null;
+    const steps = pre.steps ?? [];
+    if (!steps.length) return null;
+    const names = pre.rooms ?? [];
+    const onRoute = previousPrep?.routeSteps?.join("|") === steps.join("|") && previousPrep.routeTo === to;
+    if (!onRoute && start && from !== start) {
+      const path = routeFor(memory, from, start);
+      if (!path.length) return null;
+      return withRoute({ kind: "prep", questId: quest.id, label: `reach ${start} for the hold route`, reason, candidates: unique([path[0], "quests", "look"]) }, memory, from, start);
+    }
+    let index = 0;
+    if (onRoute) {
+      index = previousPrep.routeIndex ?? 0;
+      if (lastCommand === steps[index]) index += 1;
+    } else if (from === start) index = 0;
+    if (names.length && from !== names[Math.min(index, names.length - 1)]) {
+      const path = routeFor(memory, from, names[0]);
+      if (!path.length) return null;
+      return withRoute({ kind: "prep", questId: quest.id, label: `return to ${names[0]} for the hold route`, reason, candidates: unique([path[0], "quests", "look"]) }, memory, from, names[0]);
+    }
+    const step = steps[index];
+    if (!step) return null;
+    return {
+      kind: "prep",
+      questId: quest.id,
+      label: `${pre.text ?? "follow the route"} — ${step} (${index + 1}/${steps.length})`,
+      reason: pre.text ?? `route to ${to}`,
+      candidates: unique([step, "look"]),
+      route: [step],
+      routeText: `${step} (${index + 1}/${steps.length} to ${to})`,
+      target: to,
+      routeSteps: steps,
+      routeIndex: index,
+      routeFrom: pre.fromName ?? pre.from,
+      routeTo: to,
+    };
+  }
+  return null;
+};
+
+export function focusFor({ state = null, memory = null, mind = null, preferExplore = false, previousFocus = null, previousPrep = null, lastCommand = null } = {}) {
   const self = state?.self ?? {};
   const room = state?.room ?? {};
   const from = room.name ?? null;
@@ -131,30 +264,43 @@ export function focusFor({ state = null, memory = null, mind = null, preferExplo
         candidates: unique([`${verb} ${food}`, "score", "inventory"]),
       }, memory, from, from);
     }
-    const inn = "The Gilded Rat";
-    const innPath = routeFor(memory, from, inn);
-    const here = from === inn;
-    const innFood = (room.objects ?? []).find((object) => object?.forSale && FOOD.test(object.name));
-    if ((self.coins ?? 0) >= 3 && (here ? innFood : innPath.length)) {
+    const roomFood = (room.objects ?? []).find((object) => object?.takeable && !object.forSale && FOOD.test(object.name) && !isQuestObject(object.name, protectedObjects));
+    if (roomFood) {
       return withRoute({
         kind: "recover",
-        label: here ? `buy ${innFood.name}` : `buy food at ${inn}`,
-        reason: `HP ${hp}/${maxHp}; no food carried`,
-        candidates: unique([here ? `buy ${innFood.name}` : innPath[0], "list", "score"]),
-      }, memory, from, inn);
+        label: `take ${roomFood.name}`,
+        reason: `HP ${hp}/${maxHp}; food is on the floor`,
+        candidates: unique([`take ${roomFood.name}`, "score", "inventory"]),
+      }, memory, from, from);
     }
-    const cell = "The Cell";
-    const cellPath = routeFor(memory, from, cell);
-    const breadNeeded = [...protectedObjects].some((object) => object.includes("bread") || "a loaf of bread".includes(object));
-    const cellHere = from === cell;
-    const cellFood = (room.objects ?? []).find((object) => object?.takeable && FOOD.test(object.name));
-    if (!breadNeeded && (cellHere ? cellFood : cellPath.length)) {
-      return withRoute({
-        kind: "recover",
-        label: cellHere ? `take ${cellFood.name}` : `find bread in ${cell}`,
-        reason: `HP ${hp}/${maxHp}; no food carried`,
-        candidates: unique([cellHere ? `take ${cellFood.name}` : cellPath[0], "look", "inventory"]),
-      }, memory, from, cell);
+    const questZone = Boolean(room.zone) && (self.active_quests ?? []).some((quest) => (quest.objective_details ?? [])
+      .some((objective) => !objective.done && [objective.roomZone, objective.npcRoomZone, objective.objectRoomZone].includes(room.zone)));
+    if (!questZone) {
+      const inn = "The Gilded Rat";
+      const innPath = routeFor(memory, from, inn);
+      const here = from === inn;
+      const innFood = (room.objects ?? []).find((object) => object?.forSale && FOOD.test(object.name));
+      if ((self.coins ?? 0) >= 3 && (here ? innFood : innPath.length)) {
+        return withRoute({
+          kind: "recover",
+          label: here ? `buy ${innFood.name}` : `buy food at ${inn}`,
+          reason: `HP ${hp}/${maxHp}; no food carried`,
+          candidates: unique([here ? `buy ${innFood.name}` : innPath[0], "list", "score"]),
+        }, memory, from, inn);
+      }
+      const cell = "The Cell";
+      const cellPath = routeFor(memory, from, cell);
+      const breadNeeded = [...protectedObjects].some((object) => object.includes("bread") || "a loaf of bread".includes(object));
+      const cellHere = from === cell;
+      const cellFood = (room.objects ?? []).find((object) => object?.takeable && FOOD.test(object.name));
+      if (!breadNeeded && (cellHere ? cellFood : cellPath.length)) {
+        return withRoute({
+          kind: "recover",
+          label: cellHere ? `take ${cellFood.name}` : `find bread in ${cell}`,
+          reason: `HP ${hp}/${maxHp}; no food carried`,
+          candidates: unique([cellHere ? `take ${cellFood.name}` : cellPath[0], "look", "inventory"]),
+        }, memory, from, cell);
+      }
     }
   }
 
@@ -226,13 +372,15 @@ export function focusFor({ state = null, memory = null, mind = null, preferExplo
     }, memory, from, from);
   }
 
+  const prepCtx = { self, memory, from, room, zone: room.zone ?? null, previousPrep, lastCommand };
+  const prepFor = (entry) => entry?.quest ? questPrepFocus(nextQuestPrep(entry.quest, prepCtx), entry.quest, prepCtx) : null;
   const activeOptions = (self.active_quests ?? []).map((quest) => {
     const objective = quest.objective_details?.find((entry) => !entry.done);
     return { quest, objective, score: objectiveScore(objective, { state, memory, from, mind, quest }) };
   }).filter((entry) => entry.objective).sort((a, b) => b.score - a.score || (a.quest.level ?? 1) - (b.quest.level ?? 1));
   const reachable = (entry) => Boolean(entry?.objective) && entry.score > 1;
   const committed = previousFocus?.kind === "quest" && previousFocus.questId
-    ? activeOptions.find((entry) => entry.quest.id === previousFocus.questId && reachable(entry)) ?? null
+    ? activeOptions.find((entry) => entry.quest.id === previousFocus.questId && (reachable(entry) || Boolean(prepFor(entry)))) ?? null
     : null;
   const activeEntry = committed ?? activeOptions[0] ?? null;
   const active = activeEntry?.quest ?? null;
@@ -241,7 +389,8 @@ export function focusFor({ state = null, memory = null, mind = null, preferExplo
     && (from === objective.answerRoomName || (!mind?.knownWord && from === objective.clueRoomName));
   const objectiveHere = objective ? (objective.kind === "answer" ? answerHere : objectiveScore(objective, { state, memory, from, mind, quest: active }) >= 5) : false;
   const preferExploreNow = Boolean(preferExplore && active && objective && !objectiveHere);
-  const activeReachable = reachable(activeEntry) && !preferExploreNow;
+  const activePrepFocus = prepFor(activeEntry);
+  const activeReachable = (reachable(activeEntry) || Boolean(activePrepFocus)) && !preferExploreNow;
   const availableOptions = [...(self.available_quests ?? [])].map((quest) => ({ quest, score: offerScore(quest, { memory, from }) }))
     .sort((a, b) => b.score - a.score || (a.quest.level ?? 1) - (b.quest.level ?? 1));
   const bestOffer = availableOptions[0] ?? null;
@@ -256,6 +405,7 @@ export function focusFor({ state = null, memory = null, mind = null, preferExplo
       candidates: unique([here ? `quest accept ${bestOffer.quest.id}` : (routeFor(memory, from, target)[0] ?? "look"), "quests", "look"]),
     }, memory, from, target);
   }
+  if (activePrepFocus) return activePrepFocus;
   if (activeReachable) {
     const candidates = [];
     let target = from;
@@ -375,7 +525,7 @@ export function focusFor({ state = null, memory = null, mind = null, preferExplo
 
 /** A bounded objective lock: two unrelated commands in a row yield to the focus. */
 export function focusGuard({ focus = null, command = "", detours = 0, state = null, strict = false } = {}) {
-  if (!focus || !["quest", "quest offer", "group action", "party", "explore", "hunt", "combat", "recover"].includes(focus.kind)) {
+  if (!focus || !["quest", "quest offer", "group action", "party", "explore", "hunt", "combat", "recover", "prep", "equip", "take"].includes(focus.kind)) {
     return { command, detours: 0, forced: false };
   }
   const candidate = focus.route?.[0] ?? (focus.candidates ?? [])[0];
@@ -396,7 +546,7 @@ export function focusGuard({ focus = null, command = "", detours = 0, state = nu
     }
   }
   const concrete = !["look", "inventory", "quests", "score", "map"].includes(candidate);
-  if (strict || (["quest", "quest offer", "hunt", "recover"].includes(focus.kind) && concrete)) return { command: candidate, detours: 0, forced: true };
+  if (strict || (["quest", "quest offer", "hunt", "recover", "prep", "equip", "take"].includes(focus.kind) && concrete)) return { command: candidate, detours: 0, forced: true };
   const next = (Number(detours) || 0) + 1;
   if (next < 2) return { command, detours: next, forced: false };
   return { command: candidate, detours: 0, forced: true };

@@ -162,6 +162,33 @@ The Mind now stores the model's `NOTE` line (up to 12 notes) and prints `NOTES`
 back each turn; the browser notebook still records the same note for the human.
 This is the model's own durable context, not just a two-turn transcript.
 
+## Quest preparation
+
+A quest can now carry ordered `prereqs` for the planner. Each step is one of
+`buy` (route to the seller, read the for-sale list, pay), `light` (light a
+carried lantern), `search` (search the room for a secret way), `action` (use a
+room action such as `board ferry`), or `route` (a manual step list for a maze).
+The planner checks stock and coins, skips optional steps it cannot complete,
+does not detour from a distance for an optional item, and keeps its route index
+across turns. Optional steps are agent guidance; the quest engine does not gate
+on them.
+
+The Mirror quest now routes to The High Walk through The Aviary, searches once,
+and takes the hidden stair to The Mirror Pool. The Salt Rose buys a ferry token
+and food, boards at the Harbor Quay, follows the hold order
+north/west/west/south to the captain's cabin, then north/east/east/south/east/east
+to the guardian. Recovery will not leave a zone that still holds an active
+objective; on the island it eats carried food or keeps questing instead of
+sailing back for the inn. Room objects expose damage, armour and slot, so the
+sailor's knife, mirror shield and tarred cloak are taken during the route, and
+the equip and take focuses take their step immediately.
+
+Evidence: a 300-turn DeepSeek run completed **11 quests**, including What the
+Mirror Keeps and The Salt Rose, at level 4 / **1057 XP**, with 0 deaths, 30
+rooms and 4 attacks. It fled the tide guardian once for 84 XP, returned, took
+the tide-stone and delivered. The remaining active quest was The Drowned
+Ledger.
+
 ## Recovery
 
 Below 60% HP, with no enemy engaged, the agent now stops to recover instead of

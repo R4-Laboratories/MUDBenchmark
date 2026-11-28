@@ -1072,6 +1072,9 @@ function selfState(actor) {
     ? state.objects.filter((object) => object.room === actor.room && !object.eaten).map((object) => ({
         name: object.name,
         takeable: (object.flags ?? []).includes("takeable"),
+        damage: Number.isInteger(object.damage) ? object.damage : 0,
+        armor: Number.isInteger(object.armor) ? object.armor : 0,
+        slot: object.slot ?? null,
         container: (object.flags ?? []).includes("container"),
         open: object.open === true,
         forSale: object.forSale === true,
@@ -1129,9 +1132,21 @@ function selfState(actor) {
             done: objectiveDone(objective, entry.progress, actor, state.objects),
             answerRoomName: objective.kind === "answer" ? (ROOMS[SHRINE]?.name ?? null) : null,
             clueRoomName: objective.kind === "answer" ? (ROOMS[VAULT]?.name ?? null) : null,
+            roomZone: objective.room ? (ROOMS[objective.room]?.zone ?? null) : null,
+            npcRoomZone: npc?.room ? (ROOMS[npc.room]?.zone ?? null) : null,
+            objectRoomZone: object?.room ? (ROOMS[object.room]?.zone ?? null) : null,
           };
         });
-        return { id: quest.id, name: quest.name, level: quest.level, giver: quest.giver ?? null, objectives: questLines(quest, entry.progress, actor, state.objects), objective_details: objectiveDetails };
+        const prereqs = (quest.prereqs ?? []).map((pre) => ({
+          ...pre,
+          roomName: pre.room ? (ROOMS[pre.room]?.name ?? null) : null,
+          afterRoomName: pre.afterRoom ? (ROOMS[pre.afterRoom]?.name ?? null) : null,
+          revealsName: pre.reveals ? (ROOMS[pre.reveals]?.name ?? null) : null,
+          fromName: pre.from ? (ROOMS[pre.from]?.name ?? null) : null,
+          toName: pre.to ? (ROOMS[pre.to]?.name ?? null) : null,
+          viaName: pre.via ? (ROOMS[pre.via]?.name ?? null) : null,
+        }));
+        return { id: quest.id, name: quest.name, level: quest.level, giver: quest.giver ?? null, objectives: questLines(quest, entry.progress, actor, state.objects), objective_details: objectiveDetails, prereqs };
       }).filter(Boolean)
     : [];
   const enemies = [];
@@ -1234,6 +1249,7 @@ function selfState(actor) {
       }).slice(0, 8)
       : [],
     room: room ? {
+      id: actor?.room ?? null,
       name: room.name,
       safe: room.safe === true,
       zone: room.zone ?? null,
