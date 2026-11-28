@@ -539,6 +539,22 @@ Rehearsed 2026-11-16:
   speaking, opened the Twin Door with one hidden partner and took the crown.
   Gate covers the death penalty, level gates, twin door, hide visibility and
   prompt (MB-286/287/288);
+- v0.91.92 (id-aware route graph) keys the route graph by room identity, not
+  only by name. Unique rooms keep their name; duplicate names use `name#id`
+  (The Hold#185, The High Walk#40, The Vault#4). The server sends room and exit
+  keys, the llms table seeds by id, memory stores keys with display names, and
+  quest objectives carry roomKey, npcRoomKey and objectRoomKey. The prompt still
+  shows display names. The Salt Rose no longer needs its manual hold-route hint:
+  the ordinary path finds The Wreck → The Hold#185 → The Hold#186 → The
+  Hold#187 → The Captain's Cabin, and the return route to the guardian.
+  Evidence: a 300-turn DeepSeek run completed **11 quests**, including What the
+  Mirror Keeps and The Salt Rose, at level 4 / **1164 XP**, with 0 deaths, 41
+  rooms and 7 attacks. The Salt Rose completed at turn 174, fifteen turns earlier
+  than the manual route; the agent fled only the warden once (-117 XP). The
+  Drowned Ledger remains active. Gate covers duplicate-name seeding, keyed
+  memory, duplicate objective routing, prompt display and every prior check.
+  World unchanged at 254 rooms / 17 zones / 25 quests / 114 mobiles / 263
+  objects (MB-366);
 - v0.91.91 (quest preparation) lets a quest carry ordered preparation steps the
   planner runs before its objectives: buy an item, light a light source, search
   a room for a secret way, use a room action, or follow a manual route. The

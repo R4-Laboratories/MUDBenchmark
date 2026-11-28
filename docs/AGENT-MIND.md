@@ -162,6 +162,27 @@ The Mind now stores the model's `NOTE` line (up to 12 notes) and prints `NOTES`
 back each turn; the browser notebook still records the same note for the human.
 This is the model's own durable context, not just a two-turn transcript.
 
+## Duplicate room names
+
+The route graph is now keyed by room identity, not only by name. A unique room
+keeps its name; a duplicated name becomes `name#id`, for example
+`The Hold#185`, `The High Walk#40` and `The Vault#4`. The server sends a `key`
+on the room and on every exit, the `/llms.txt` table seeds routes by id, and
+memory stores the key with the display name. Quest objectives carry
+`roomKey`, `npcRoomKey` and `objectRoomKey`; the planner routes by key and shows
+the display name in the prompt, focus and route text.
+
+The Salt Rose no longer uses its manual hold-route hint. The ordinary path
+finds The Wreck → The Hold#185 → The Hold#186 → The Hold#187 → The Captain's
+Cabin, then the return route to the guardian. The manual route feature remains
+for future mazes, but the duplicate holds no longer need it.
+
+Evidence: a 300-turn DeepSeek run completed **11 quests**, including What the
+Mirror Keeps and The Salt Rose, at level 4 / **1164 XP**, with 0 deaths, 41 rooms
+and 7 attacks. The Salt Rose completed at turn 174, fifteen turns earlier than
+the manual route; the agent fled only the warden once (-117 XP). The Drowned
+Ledger remains active.
+
 ## Quest preparation
 
 A quest can now carry ordered `prereqs` for the planner. Each step is one of

@@ -135,6 +135,9 @@ export const emptyMemory = () => ({
   updated: null,
 });
 
+/** A room key is the display name unless the name is duplicated, then name#id. */
+export const displayRoom = (key) => String(key ?? "").replace(/#\d+$/, "");
+
 const hash = (text) => {
   let value = 2166136261;
   const source = String(text ?? "");
@@ -154,17 +157,19 @@ const trimRoom = (room) => {
 };
 
 /** Record a room visit, its exits and its place in the recent route. */
-export function noteRoom(memory, room, exits = []) {
+export function noteRoom(memory, room, exits = [], name = null) {
   if (!memory || !room) return memory;
   const entry = memory.rooms[room] ?? (memory.rooms[room] = {
+    name: name ?? displayRoom(room),
     visits: 0,
     firstTick: 0,
     lastTick: 0,
     commands: {},
   });
+  if (name) entry.name ??= name;
   for (const exit of Array.isArray(exits) ? exits : []) {
     const dir = typeof exit === "string" ? exit : exit?.dir;
-    const target = typeof exit === "string" ? null : exit?.room ?? null;
+    const target = typeof exit === "string" ? null : exit?.key ?? exit?.room ?? null;
     if (!dir) continue;
     entry.exits ??= {};
     entry.exits[dir] = target;
@@ -185,7 +190,7 @@ export function noteRoom(memory, room, exits = []) {
 }
 
 /** Remember aggressive mobiles and the room where they were last seen. */
-export function noteHunts(memory, room, npcs = []) {
+export function noteHunts(memory, room, npcs = [], roomName = null) {
   if (!memory || !room) return memory;
   memory.hunts ??= [];
   const seen = new Set();
@@ -194,6 +199,7 @@ export function noteHunts(memory, room, npcs = []) {
     seen.add(npc.name);
     const next = {
       room,
+      roomName: roomName ?? displayRoom(room),
       name: npc.name,
       level: Number.isFinite(npc.level) ? npc.level : 1,
       hp: Number.isFinite(npc.hp) ? npc.hp : null,
@@ -235,7 +241,10 @@ export function seedMapFromLlms(memory, text) {
     .map((line) => line.split("|").map((part) => part.trim()))
     .filter((parts) => parts.length >= 7 && /^\d+$/.test(parts[1]) && parts[2]);
   if (!rows.length) return memory;
-  const byId = new Map(rows.map((parts) => [parts[1], parts[2]]));
+  const counts = new Map();
+  for (const parts of rows) counts.set(parts[2], (counts.get(parts[2]) ?? 0) + 1);
+  const keyFor = (id, name) => (counts.get(name) > 1 ? `${name}#${id}` : name);
+  const byId = new Map(rows.map((parts) => [parts[1], keyFor(parts[1], parts[2])]));
   const exits = {};
   for (const parts of rows) {
     const out = {};
@@ -243,7 +252,7 @@ export function seedMapFromLlms(memory, text) {
       const target = byId.get(match[2]);
       if (target) out[match[1]] = target;
     }
-    if (Object.keys(out).length) exits[parts[2]] = out;
+    if (Object.keys(out).length) exits[keyFor(parts[1], parts[2])] = out;
   }
   memory.map = { ...(memory.map ?? {}), ...exits };
   memory.seeded = true;
@@ -251,9 +260,9 @@ export function seedMapFromLlms(memory, text) {
 }
 
 /** Record the result of the command issued in `room` on the previous turn. */
-export function rememberResult(memory, { room, command, observation, tick = 0, at = Date.now(), exits = [] } = {}) {
+export function rememberResult(memory, { room, name = null, command, observation, tick = 0, at = Date.now(), exits = [] } = {}) {
   if (!memory || !room || !command) return memory;
-  const entry = noteRoom(memory, room, exits).rooms[room];
+  const entry = noteRoom(memory, room, exits, name).rooms[room];
   entry.lastTick = tick;
   memory.updated = at;
   entry.commands ??= {};
@@ -291,10 +300,11 @@ export function rememberResult(memory, { room, command, observation, tick = 0, a
 }
 
 /** The small block injected into the model prompt. */
-export function memoryPrompt(memory, { room = null, exits = [], limit = 8, query = "" } = {}) {
+export function memoryPrompt(memory, { room = null, key = null, exits = [], limit = 8, query = "" } = {}) {
   if (!memory) return "";
   const lines = [];
-  const current = room ? memory.rooms[room] : null;
+  const currentKey = key ?? room;
+  const current = currentKey ? memory.rooms[currentKey] : null;
   if (room && current) {
     lines.push(`Current room: ${room}, seen ${current.visits} time${current.visits === 1 ? "" : "s"}.`);
     const tried = Object.entries(current.commands)
@@ -307,9 +317,9 @@ export function memoryPrompt(memory, { room = null, exits = [], limit = 8, query
   }
   const voices = (memory.social ?? []).slice(-4);
   if (voices.length) {
-    lines.push(`Voices: ${voices.map((entry) => `${entry.speaker}${entry.room ? ` (${entry.room})` : ""}: "${entry.text}"`).join(" | ")}`);
+    lines.push(`Voices: ${voices.map((entry) => `${entry.speaker}${entry.room ? ` (${displayRoom(entry.room)})` : ""}: "${entry.text}"`).join(" | ")}`);
   }
-  const known = retrieveNotes(memory, query, room, 3);
+  const known = retrieveNotes(memory, query, currentKey, 3);
   if (known.length) {
     lines.push(`Known: ${known.map((note) => note.text).join(" | ")}`);
   }
@@ -319,16 +329,16 @@ export function memoryPrompt(memory, { room = null, exits = [], limit = 8, query
     const recent = Object.entries(memory.rooms)
       .sort((a, b) => (b[1].lastTick ?? 0) - (a[1].lastTick ?? 0))
       .slice(0, 6)
-      .map(([name]) => name);
+      .map(([entryKey, entry]) => entry.name ?? displayRoom(entryKey));
     lines.push(`Rooms seen: ${names.length} of ${knownRooms || "?"} known.${recent.length ? ` Recent: ${recent.join(", ")}.` : ""}`);
-    const ahead = frontier(memory, room);
-    if (ahead) lines.push(`FRONTIER: ${ahead.target} (${ahead.path.length} move${ahead.path.length === 1 ? "" : "s"} from here).`);
+    const ahead = frontier(memory, currentKey);
+    if (ahead) lines.push(`FRONTIER: ${displayRoom(ahead.target)} (${ahead.path.length} move${ahead.path.length === 1 ? "" : "s"} from here).`);
   }
   const route = (memory.trail ?? []).slice(-6);
-  if (route.length) lines.push(`Route: ${route.join(" → ")}.`);
+  if (route.length) lines.push(`Route: ${route.map((entry) => memory.rooms[entry]?.name ?? displayRoom(entry)).join(" → ")}.`);
   const unexplored = (Array.isArray(exits) ? exits : [])
-    .filter((exit) => exit?.room && !memory.rooms[exit.room])
-    .map((exit) => `${exit.dir} → ${exit.room}`);
+    .filter((exit) => (exit?.key ?? exit?.room) && !memory.rooms[exit?.key ?? exit?.room])
+    .map((exit) => `${exit.dir} → ${exit.room ?? displayRoom(exit.key)}`);
   if (unexplored.length) lines.push(`Unexplored exits: ${unexplored.join(", ")}.`);
   const stale = current ? Object.entries(current.commands).filter(([, entry]) => (entry.stale ?? 0) > 0) : [];
   if (stale.length) {
@@ -451,7 +461,7 @@ export function breakLoop(recent = [], exits = [], memory = null) {
   const last = list.at(-1) ?? "";
   if (/^(attack|cast|flee|say|tell|global|talk|drop|give|buy|sell|train|study|recite)\b/i.test(last)) return null;
   const doors = (Array.isArray(exits) ? exits : [])
-    .map((exit) => (typeof exit === "string" ? { dir: exit, room: null } : { dir: exit?.dir, room: exit?.room ?? null }))
+    .map((exit) => (typeof exit === "string" ? { dir: exit, room: null } : { dir: exit?.dir, room: exit?.key ?? exit?.room ?? null }))
     .filter((exit) => exit.dir);
   const ahead = memory ? frontier(memory, memory.lastRoom) : null;
   if (ahead?.path?.length) return ahead.path[0];
