@@ -122,6 +122,8 @@ const indexSocial = (memory, { text, room, tick }) => {
   if (memory.social.length > 20) memory.social.splice(0, memory.social.length - 20);
 };
 
+const FOOD = /bread|stew|herb|ration|meat|apple|cheese|soup|loaf|berry|fish|biscuit|moonwater|starwater|\bale\b|water/i;
+
 export const emptyMemory = () => ({
   version: VERSION,
   rooms: {},
@@ -132,6 +134,7 @@ export const emptyMemory = () => ({
   trail: [],
   map: {},
   hunts: [],
+  foods: [],
   updated: null,
 });
 
@@ -186,6 +189,24 @@ export function noteRoom(memory, room, exits = [], name = null) {
     memory.trail.push(room);
     if (memory.trail.length > 60) memory.trail.splice(0, memory.trail.length - 60);
   }
+  return memory;
+}
+
+/** Remember free food on the floor and the room where it was seen. */
+export function noteFoods(memory, room, objects = [], roomName = null) {
+  if (!memory || !room) return memory;
+  memory.foods ??= [];
+  const seen = new Set();
+  for (const object of Array.isArray(objects) ? objects : []) {
+    if (!object?.takeable || object.forSale || !FOOD.test(object.name)) continue;
+    seen.add(object.name);
+    const entry = memory.foods.find((food) => food.room === room && food.name === object.name);
+    const next = { room, roomName: roomName ?? displayRoom(room), name: object.name, seenAt: Date.now() };
+    if (entry) Object.assign(entry, next);
+    else memory.foods.push(next);
+  }
+  memory.foods = memory.foods.filter((food) => food.room !== room || seen.has(food.name));
+  if (memory.foods.length > 16) memory.foods.splice(0, memory.foods.length - 16);
   return memory;
 }
 

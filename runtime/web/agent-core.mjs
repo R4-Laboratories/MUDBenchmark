@@ -5,7 +5,7 @@
 // their own prompt, planner, memory or coach.
 
 import { emptyMind, updateMind, mindPrompt } from "./mind.mjs";
-import { emptyMemory, rememberResult, memoryPrompt, breakLoop, shouldBreakLoop, noteHunts } from "./memory.mjs";
+import { emptyMemory, rememberResult, memoryPrompt, breakLoop, shouldBreakLoop, noteHunts, noteFoods } from "./memory.mjs";
 import { focusFor, focusPrompt, focusGuard } from "./planner.mjs";
 import { buildSystemPrompt, buildUserPrompt, buildActionMenu, parseBrain, coachCommand, coachAction, coachFallbackDue } from "./ai.mjs";
 
@@ -25,7 +25,7 @@ export function createAgentCore({
     name, goal, memory, mind, weak, strict, fast, deliberateEvery,
     focusKey: "", focusDetours: 0, coachRetries: 0, blockedCounts: new Map(),
     progressMark: "", stallTurns: 0, frontierTurns: 0, lastPlan: "",
-    questFocus: null, prepFocus: null,
+    questFocus: null, prepFocus: null, foodEmpty: new Set(),
     recent: [], lastCommand: null, lastParsed: null, lastValidation: null,
     lastCoach: null, commandRoom: null, commandRoomKey: null, tick: 0, transcript: [],
   };
@@ -49,6 +49,7 @@ export function beginTurn(core, { state = null, observation = "", room = null, t
   const exits = exitsFrom(observation, state);
   const promptState = { ...(state ?? {}), room: { ...(state?.room ?? {}), name: currentRoom, key: currentRoomKey, exits: exits.map((dir) => ({ dir, room: null, key: null })), text: observation } };
   noteHunts(core.memory, currentRoomKey, promptState.room.npcs, currentRoom);
+  noteFoods(core.memory, currentRoomKey, promptState.room.objects, currentRoom);
   const mark = `${Object.keys(core.memory.rooms).length}|${promptState.self?.quests?.completed ?? 0}|${promptState.self?.xp ?? 0}|${promptState.self?.level ?? 1}`;
   if (core.progressMark === mark) core.stallTurns += 1;
   else { core.progressMark = mark; core.stallTurns = 0; }
@@ -61,7 +62,7 @@ export function beginTurn(core, { state = null, observation = "", room = null, t
     core.frontierTurns = 0;
   } else if (preferExplore) core.frontierTurns += 1;
   else core.frontierTurns = 0;
-  const focus = focusFor({ state: promptState, memory: core.memory, mind: core.mind, preferExplore, previousFocus: core.questFocus, previousPrep: core.prepFocus, lastCommand: core.lastCommand });
+  const focus = focusFor({ state: promptState, memory: core.memory, mind: core.mind, preferExplore, previousFocus: core.questFocus, previousPrep: core.prepFocus, lastCommand: core.lastCommand, foodEmpty: core.foodEmpty });
   if (focus.kind === "quest") core.questFocus = focus;
   if (focus.kind === "prep") core.prepFocus = focus;
   else if (focus.kind === "quest" && focus.questId !== core.prepFocus?.questId) core.prepFocus = null;

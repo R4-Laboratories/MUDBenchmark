@@ -113,7 +113,9 @@ const questPrepMet = (pre, { self = {}, memory = null, from = null, zone = null 
     const exits = memory?.map?.[roomKey] ?? {};
     return Boolean(reveals && (Object.values(exits).includes(reveals) || memory?.rooms?.[reveals]));
   }
+  if (pre.kind === "take") return hasItem(self, pre.name) || hasItem(self, pre.object);
   if (pre.kind === "action") {
+    if (pre.item && !hasItem(self, pre.name ?? pre.item)) return false;
     const after = pre.afterRoomKey ?? pre.afterRoomName;
     if (after && (from === after || memory?.rooms?.[after])) return true;
     const roomKey = pre.roomKey ?? pre.roomName;
@@ -186,7 +188,20 @@ const questPrepFocus = (pre, quest, { self = {}, memory = null, from = null, roo
     if (!path.length) return null;
     return withRoute({ kind: "prep", questId: quest.id, label: `search ${pre.roomName} for ${pre.revealsName}`, reason, candidates: unique([path[0], "quests", "look"]) }, memory, from, roomKey);
   }
+  if (pre.kind === "take") {
+    const roomKey = pre.roomKey ?? pre.roomName;
+    const here = from === roomKey;
+    if (here) {
+      const item = (room.objects ?? []).find((object) => object?.takeable && (object.name === pre.name || object.name === pre.object || String(object.name).toLowerCase().includes(String(pre.name ?? "").toLowerCase().replace(/^the /, ""))));
+      if (!item) return null;
+      return withRoute({ kind: "prep", questId: quest.id, label: `take ${item.name} — ${reason}`, reason, candidates: unique([`take ${item.name}`, "look", "inventory"]) }, memory, from, from);
+    }
+    const path = routeFor(memory, from, roomKey);
+    if (!path.length) return null;
+    return withRoute({ kind: "prep", questId: quest.id, label: `take ${pre.name} at ${pre.roomName}`, reason, candidates: unique([path[0], "quests", "look"]) }, memory, from, roomKey);
+  }
   if (pre.kind === "action") {
+    if (pre.item && !hasItem(self, pre.name ?? pre.item)) return null;
     const command = `${pre.verb} ${pre.target}`;
     const roomKey = pre.roomKey ?? pre.roomName;
     const here = from === roomKey;
@@ -238,7 +253,7 @@ const questPrepFocus = (pre, quest, { self = {}, memory = null, from = null, roo
   return null;
 };
 
-export function focusFor({ state = null, memory = null, mind = null, preferExplore = false, previousFocus = null, previousPrep = null, lastCommand = null } = {}) {
+export function focusFor({ state = null, memory = null, mind = null, preferExplore = false, previousFocus = null, previousPrep = null, lastCommand = null, foodEmpty = null } = {}) {
   const self = state?.self ?? {};
   const room = state?.room ?? {};
   const from = room.key ?? room.name ?? null;
@@ -294,12 +309,27 @@ export function focusFor({ state = null, memory = null, mind = null, preferExplo
     }
     const questZone = Boolean(room.zone) && (self.active_quests ?? []).some((quest) => (quest.objective_details ?? [])
       .some((objective) => !objective.done && [objective.roomZone, objective.npcRoomZone, objective.objectRoomZone].includes(room.zone)));
+    const foodAhead = (memory?.foods ?? [])
+      .filter((food) => food?.room && food.room !== from && !isQuestObject(food.name, protectedObjects))
+      .map((food) => ({ food, path: routeFor(memory, from, food.room) }))
+      .filter((entry) => entry.path.length)
+      .sort((a, b) => a.path.length - b.path.length)[0] ?? null;
+    if (foodAhead) {
+      return withRoute({
+        kind: "recover",
+        label: `take ${foodAhead.food.name} in ${foodAhead.food.roomName ?? displayRoom(foodAhead.food.room)}`,
+        reason: `HP ${hp}/${maxHp}; food was seen there`,
+        candidates: unique([foodAhead.path[0], "look", "inventory"]),
+      }, memory, from, foodAhead.food.room);
+    }
     if (!questZone) {
       const inn = "The Gilded Rat";
       const innPath = routeFor(memory, from, inn);
       const here = from === inn;
       const innFood = (room.objects ?? []).find((object) => object?.forSale && FOOD.test(object.name));
-      if ((self.coins ?? 0) >= 3 && (here ? innFood : innPath.length)) {
+      if (here && innFood) foodEmpty?.delete(inn);
+      if (here && !innFood) foodEmpty?.add(inn);
+      if (!foodEmpty?.has(inn) && (self.coins ?? 0) >= 3 && (here ? innFood : innPath.length)) {
         return withRoute({
           kind: "recover",
           label: here ? `buy ${innFood.name}` : `buy food at ${inn}`,
@@ -312,7 +342,9 @@ export function focusFor({ state = null, memory = null, mind = null, preferExplo
       const breadNeeded = [...protectedObjects].some((object) => object.includes("bread") || "a loaf of bread".includes(object));
       const cellHere = from === cell;
       const cellFood = (room.objects ?? []).find((object) => object?.takeable && FOOD.test(object.name));
-      if (!breadNeeded && (cellHere ? cellFood : cellPath.length)) {
+      if (cellHere && cellFood) foodEmpty?.delete(cell);
+      if (cellHere && !cellFood) foodEmpty?.add(cell);
+      if (!foodEmpty?.has(cell) && !breadNeeded && (cellHere ? cellFood : cellPath.length)) {
         return withRoute({
           kind: "recover",
           label: cellHere ? `take ${cellFood.name}` : `find bread in ${cell}`,
@@ -344,7 +376,7 @@ export function focusFor({ state = null, memory = null, mind = null, preferExplo
     }, memory, from, from);
   }
 
-  const roomGear = (room.objects ?? []).filter((object) => object.takeable
+  const roomGear = (room.objects ?? []).filter((object) => object.takeable && !object.forSale
     && ((WEAPON.test(object.name) && (!hasStats || (object.damage ?? 0) > mainDamage))
       || (ARMOR.test(object.name) && (!hasStats || (object.armor ?? 0) > (self.equipment?.[object.slot]?.armor ?? 0)))));
   if (roomGear.length) {
@@ -455,7 +487,8 @@ export function focusFor({ state = null, memory = null, mind = null, preferExplo
       if (held && here) candidates.push(`deliver ${objectName} to ${npcName}`);
       else if (!held && (objective.objectRoomKey ?? objective.objectRoomName)) {
         target = objective.objectRoomKey ?? objective.objectRoomName;
-        candidates.push(routeFor(memory, from, target)[0] ?? "look", `take ${objectName}`);
+        if (target === from) candidates.push(`take ${objectName}`);
+        else candidates.push(routeFor(memory, from, target)[0] ?? "look", `take ${objectName}`);
       } else candidates.push(routeFor(memory, from, target)[0] ?? "look", "look");
       candidates.push(`quest ${active.id}`);
     } else if (objective.kind === "talk") {
