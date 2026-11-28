@@ -71,21 +71,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: List GHCR packages
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh api "/orgs/R4-Laboratories/packages?package_type=container" --paginate | jq -r '.[].name' || true
-          gh api "/orgs/R4-Laboratories/packages/container/prismpm-sdk/versions" --paginate | jq -r '.[].metadata.container.tags[]?' || true
-
-      - name: Resolve the SDK image
-        id: sdk
-        run: |
-          docker pull ghcr.io/r4-laboratories/prismpm-sdk:latest
-          image=$(docker image inspect ghcr.io/r4-laboratories/prismpm-sdk:latest --format '{{index .RepoDigests 0}}')
-          echo "image=$image" >> "$GITHUB_OUTPUT"
-          echo "resolved $image"
-
       # The SDK image runs as uid 1000; the runner's checkout belongs to uid 1001,
       # so the build roots have to be created and opened up first.
       - name: Make the workspace writable by the container user
@@ -95,11 +80,11 @@ jobs:
 
       - name: Verify the model in the pinned SDK
         run: |
-          docker run --rm -v "$PWD:/w" -w /w/world "${{ steps.sdk.outputs.image }}" prismpm --project . verify
+          docker run --rm -v "$PWD:/w" -w /w/world "$SDK" prismpm --project . verify
 
       - name: Build the holo
         run: |
-          docker run --rm -v "$PWD:/w" -w /w/world "${{ steps.sdk.outputs.image }}" prismpm --project . build
+          docker run --rm -v "$PWD:/w" -w /w/world "$SDK" prismpm --project . build
 
       - name: Replay every acceptance vector through the built guest
         run: |
