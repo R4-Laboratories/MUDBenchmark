@@ -6,7 +6,7 @@
 // unfinished quest objective, accept a quest, or explore. It does not execute
 // anything; the model still chooses the command.
 
-import { frontier, pathTo } from "./memory.mjs";
+import { frontier, pathTo, displayRoom } from "./memory.mjs";
 
 const WEAPON = /sword|axe|mace|dagger|spear|hammer|staff|\bbow\b|knife|pick|blade|club/i;
 const ARMOR = /mail|plate|cloak|shield|helm|boots|gloves|bracers|apron|circlet|robe|hood|jerkin|cuirass|hauberk|mantle|charm|relic/i;
@@ -23,7 +23,8 @@ const routeFor = (memory, from, to) => {
 
 const withRoute = (focus, memory, from, target) => {
   const route = routeFor(memory, from, target);
-  return { ...focus, target: target ?? null, route, routeText: route.length ? `${route[0]} (${route.length} move${route.length === 1 ? "" : "s"} to ${target})` : target && target !== from ? `no known route to ${target}; explore` : target === from ? "you are here" : "" };
+  const targetName = displayRoom(target);
+  return { ...focus, target: target ?? null, route, routeText: route.length ? `${route[0]} (${route.length} move${route.length === 1 ? "" : "s"} to ${targetName})` : target && target !== from ? `no known route to ${targetName}; explore` : target === from ? "you are here" : "" };
 };
 
 const objectiveScore = (objective, { state, memory, from, mind, quest } = {}) => {
@@ -33,40 +34,48 @@ const objectiveScore = (objective, { state, memory, from, mind, quest } = {}) =>
   const npcHere = (name) => names(room.npcs).some((entry) => entry.toLowerCase().includes(String(name ?? "").replace(/^the /, "")));
   const held = (name) => (self.inventory_names ?? []).some((entry) => entry.toLowerCase().includes(String(name ?? "").replace(/^the /, "")));
   if (objective.kind === "visit") {
-    if (objective.roomName === from) return 5;
-    const clue = (quest?.objective_details ?? []).find((entry) => entry.kind === "answer")?.clueRoomName;
-    if (clue && objective.roomName === clue && routeFor(memory, from, clue).length) return 6;
-    return routeFor(memory, from, objective.roomName).length ? 4 : 1;
+    const target = objective.roomKey ?? objective.roomName;
+    if (target === from) return 5;
+    const clue = (quest?.objective_details ?? []).find((entry) => entry.kind === "answer")?.clueRoomKey
+      ?? (quest?.objective_details ?? []).find((entry) => entry.kind === "answer")?.clueRoomName;
+    if (clue && target === clue && routeFor(memory, from, clue).length) return 6;
+    return routeFor(memory, from, target).length ? 4 : 1;
   }
   if (objective.kind === "kill") {
+    const target = objective.npcRoomKey ?? objective.npcRoomName;
     if (npcHere(objective.npcName ?? objective.npc)) return 5;
-    if (objective.npcRoomName === from) return 3;
-    return routeFor(memory, from, objective.npcRoomName).length ? 4 : 1;
+    if (target === from) return 3;
+    return routeFor(memory, from, target).length ? 4 : 1;
   }
   if (objective.kind === "collect") {
+    const target = objective.objectRoomKey ?? objective.objectRoomName;
     if (held(objective.objectName ?? objective.object)) return 5;
-    if (objective.objectRoomName === from) return 5;
-    return routeFor(memory, from, objective.objectRoomName).length ? 4 : 1;
+    if (target === from) return 5;
+    return routeFor(memory, from, target).length ? 4 : 1;
   }
   if (objective.kind === "deliver") {
+    const target = objective.npcRoomKey ?? objective.objectRoomKey ?? objective.npcRoomName ?? objective.objectRoomName;
     if (held(objective.objectName ?? objective.object) && npcHere(objective.npcName ?? objective.npc)) return 5;
-    return routeFor(memory, from, objective.npcRoomName ?? objective.objectRoomName).length ? 4 : 1;
+    return routeFor(memory, from, target).length ? 4 : 1;
   }
   if (objective.kind === "talk") {
+    const target = objective.npcRoomKey ?? objective.npcRoomName;
     if (npcHere(objective.npcName ?? objective.npc)) return 5;
-    return routeFor(memory, from, objective.npcRoomName).length ? 4 : 1;
+    return routeFor(memory, from, target).length ? 4 : 1;
   }
   if (objective.kind === "answer") {
+    const clue = objective.clueRoomKey ?? objective.clueRoomName;
     if (mind?.knownWord) return 6;
-    if (objective.clueRoomName === from) return 5;
-    return routeFor(memory, from, objective.clueRoomName).length ? 4 : 1;
+    if (clue === from) return 5;
+    return routeFor(memory, from, clue).length ? 4 : 1;
   }
   return 1;
 };
 
 const offerScore = (quest, { memory, from } = {}) => {
-  if (quest.giverRoomName === from) return 5;
-  return routeFor(memory, from, quest.giverRoomName).length ? 4 : 1;
+  const target = quest.giverRoomKey ?? quest.giverRoomName;
+  if (target === from) return 5;
+  return routeFor(memory, from, target).length ? 4 : 1;
 };
 
 const huntRounds = (hunt, self) => Math.max(1, Math.ceil((hunt?.maxHp ?? hunt?.hp ?? 1) / Math.max(1, self?.damage ?? 1)));
@@ -99,16 +108,21 @@ const questPrepMet = (pre, { self = {}, memory = null, from = null, zone = null 
   if (pre.kind === "buy") return hasItem(self, pre.name) || hasItem(self, pre.object);
   if (pre.kind === "light") return Boolean(self.light);
   if (pre.kind === "search") {
-    const exits = memory?.map?.[pre.roomName] ?? {};
-    return Boolean(pre.revealsName && (Object.values(exits).includes(pre.revealsName) || memory?.rooms?.[pre.revealsName]));
+    const roomKey = pre.roomKey ?? pre.roomName;
+    const reveals = pre.revealsKey ?? pre.revealsName;
+    const exits = memory?.map?.[roomKey] ?? {};
+    return Boolean(reveals && (Object.values(exits).includes(reveals) || memory?.rooms?.[reveals]));
   }
   if (pre.kind === "action") {
-    if (pre.afterRoomName && (from === pre.afterRoomName || memory?.rooms?.[pre.afterRoomName])) return true;
-    const exits = memory?.map?.[pre.roomName] ?? {};
-    return Boolean(pre.revealsName && Object.values(exits).includes(pre.revealsName));
+    const after = pre.afterRoomKey ?? pre.afterRoomName;
+    if (after && (from === after || memory?.rooms?.[after])) return true;
+    const roomKey = pre.roomKey ?? pre.roomName;
+    const reveals = pre.revealsKey ?? pre.revealsName;
+    const exits = memory?.map?.[roomKey] ?? {};
+    return Boolean(reveals && Object.values(exits).includes(reveals));
   }
   if (pre.kind === "route") {
-    const to = pre.toName ?? pre.to;
+    const to = pre.toKey ?? pre.toName ?? pre.to;
     return Boolean(to && (from === to || memory?.rooms?.[to]));
   }
   return true;
@@ -139,66 +153,70 @@ const questPrepFocus = (pre, quest, { self = {}, memory = null, from = null, roo
   if (!pre || !quest) return null;
   const reason = pre.text ?? `${quest.name} needs this first`;
   if (pre.kind === "buy") {
-    const here = from === pre.roomName;
+    const roomKey = pre.roomKey ?? pre.roomName;
+    const here = from === roomKey;
     if (here) {
       const item = (room.objects ?? []).find((object) => object?.forSale
         && (object.name === pre.name || object.name === pre.object || String(object.name).toLowerCase().includes(String(pre.name ?? "").toLowerCase().replace(/^the /, ""))));
       if (!item || (self.coins ?? 0) < (item.price ?? pre.price ?? 0)) return null;
       return withRoute({ kind: "prep", questId: quest.id, label: `buy ${item.name} — ${reason}`, reason, candidates: unique([`buy ${item.name}`, "list", "score"]) }, memory, from, from);
     }
-    const path = routeFor(memory, from, pre.roomName);
+    const path = routeFor(memory, from, roomKey);
     if (!path.length) return null;
-    return withRoute({ kind: "prep", questId: quest.id, label: `buy ${pre.name} at ${pre.roomName}`, reason, candidates: unique([path[0], "quests", "look"]) }, memory, from, pre.roomName);
+    return withRoute({ kind: "prep", questId: quest.id, label: `buy ${pre.name} at ${roomKey}`, reason, candidates: unique([path[0], "quests", "look"]) }, memory, from, roomKey);
   }
   if (pre.kind === "light") {
     if (!hasItem(self, pre.name)) return null;
     return withRoute({ kind: "prep", questId: quest.id, label: `light ${pre.name}`, reason, candidates: unique([`light ${pre.name}`, "score"]) }, memory, from, from);
   }
   if (pre.kind === "search") {
-    const here = Number.isFinite(room.id) && Number.isFinite(pre.room) ? Number(room.id) === Number(pre.room) : from === pre.roomName;
+    const roomKey = pre.roomKey ?? pre.roomName;
+    const viaKey = pre.viaKey ?? pre.viaName;
+    const here = Number.isFinite(room.id) && Number.isFinite(pre.room) ? Number(room.id) === Number(pre.room) : from === roomKey;
     if (here) return withRoute({ kind: "prep", questId: quest.id, label: `search ${pre.roomName} for ${pre.revealsName}`, reason, candidates: unique(["search", "look", "quests"]) }, memory, from, from);
-    if (pre.viaName && from !== pre.viaName) {
-      const viaPath = routeFor(memory, from, pre.viaName);
+    if (viaKey && from !== viaKey) {
+      const viaPath = routeFor(memory, from, viaKey);
       if (!viaPath.length) return null;
-      return withRoute({ kind: "prep", questId: quest.id, label: `reach ${pre.viaName} for ${pre.roomName}`, reason, candidates: unique([viaPath[0], "quests", "look"]) }, memory, from, pre.viaName);
+      return withRoute({ kind: "prep", questId: quest.id, label: `reach ${pre.viaName} for ${pre.roomName}`, reason, candidates: unique([viaPath[0], "quests", "look"]) }, memory, from, viaKey);
     }
-    if (pre.viaName && pre.exit) {
+    if (viaKey && pre.exit) {
       return withRoute({ kind: "prep", questId: quest.id, label: `${pre.exit} to ${pre.roomName}`, reason, candidates: unique([pre.exit, "look", "quests"]) }, memory, from, pre.roomName);
     }
-    const path = routeFor(memory, from, pre.roomName);
+    const path = routeFor(memory, from, roomKey);
     if (!path.length) return null;
-    return withRoute({ kind: "prep", questId: quest.id, label: `search ${pre.roomName} for ${pre.revealsName}`, reason, candidates: unique([path[0], "quests", "look"]) }, memory, from, pre.roomName);
+    return withRoute({ kind: "prep", questId: quest.id, label: `search ${pre.roomName} for ${pre.revealsName}`, reason, candidates: unique([path[0], "quests", "look"]) }, memory, from, roomKey);
   }
   if (pre.kind === "action") {
     const command = `${pre.verb} ${pre.target}`;
-    const here = from === pre.roomName;
+    const roomKey = pre.roomKey ?? pre.roomName;
+    const here = from === roomKey;
     if (here) return withRoute({ kind: "prep", questId: quest.id, label: command, reason, candidates: unique([command, "look"]) }, memory, from, from);
-    const path = routeFor(memory, from, pre.roomName);
+    const path = routeFor(memory, from, roomKey);
     if (!path.length) return null;
-    return withRoute({ kind: "prep", questId: quest.id, label: command, reason, candidates: unique([path[0], "quests", "look"]) }, memory, from, pre.roomName);
+    return withRoute({ kind: "prep", questId: quest.id, label: command, reason, candidates: unique([path[0], "quests", "look"]) }, memory, from, roomKey);
   }
   if (pre.kind === "route") {
-    const to = pre.toName ?? pre.to;
-    const start = pre.fromName ?? pre.from;
+    const to = pre.toKey ?? pre.toName ?? pre.to;
+    const start = pre.fromKey ?? pre.fromName ?? pre.from;
     if (!to || from === to || memory?.rooms?.[to]) return null;
     const steps = pre.steps ?? [];
     if (!steps.length) return null;
-    const names = pre.rooms ?? [];
+    const keys = pre.roomKeys?.length ? pre.roomKeys : (pre.rooms ?? []);
     const onRoute = previousPrep?.routeSteps?.join("|") === steps.join("|") && previousPrep.routeTo === to;
     if (!onRoute && start && from !== start) {
       const path = routeFor(memory, from, start);
       if (!path.length) return null;
-      return withRoute({ kind: "prep", questId: quest.id, label: `reach ${start} for the hold route`, reason, candidates: unique([path[0], "quests", "look"]) }, memory, from, start);
+      return withRoute({ kind: "prep", questId: quest.id, label: `reach ${pre.fromName ?? displayRoom(start)} for the hold route`, reason, candidates: unique([path[0], "quests", "look"]) }, memory, from, start);
     }
     let index = 0;
     if (onRoute) {
       index = previousPrep.routeIndex ?? 0;
       if (lastCommand === steps[index]) index += 1;
     } else if (from === start) index = 0;
-    if (names.length && from !== names[Math.min(index, names.length - 1)]) {
-      const path = routeFor(memory, from, names[0]);
+    if (keys.length && from !== keys[Math.min(index, keys.length - 1)]) {
+      const path = routeFor(memory, from, keys[0]);
       if (!path.length) return null;
-      return withRoute({ kind: "prep", questId: quest.id, label: `return to ${names[0]} for the hold route`, reason, candidates: unique([path[0], "quests", "look"]) }, memory, from, names[0]);
+      return withRoute({ kind: "prep", questId: quest.id, label: `return to ${pre.fromName ?? displayRoom(keys[0])} for the hold route`, reason, candidates: unique([path[0], "quests", "look"]) }, memory, from, keys[0]);
     }
     const step = steps[index];
     if (!step) return null;
@@ -209,7 +227,7 @@ const questPrepFocus = (pre, quest, { self = {}, memory = null, from = null, roo
       reason: pre.text ?? `route to ${to}`,
       candidates: unique([step, "look"]),
       route: [step],
-      routeText: `${step} (${index + 1}/${steps.length} to ${to})`,
+      routeText: `${step} (${index + 1}/${steps.length} to ${displayRoom(to)})`,
       target: to,
       routeSteps: steps,
       routeIndex: index,
@@ -223,7 +241,8 @@ const questPrepFocus = (pre, quest, { self = {}, memory = null, from = null, roo
 export function focusFor({ state = null, memory = null, mind = null, preferExplore = false, previousFocus = null, previousPrep = null, lastCommand = null } = {}) {
   const self = state?.self ?? {};
   const room = state?.room ?? {};
-  const from = room.name ?? null;
+  const from = room.key ?? room.name ?? null;
+  const fromName = room.name ?? displayRoom(from);
   const enemies = self.enemies ?? [];
   if (enemies.length) {
     const enemy = enemies[0];
@@ -386,7 +405,7 @@ export function focusFor({ state = null, memory = null, mind = null, preferExplo
   const active = activeEntry?.quest ?? null;
   const objective = activeEntry?.objective ?? null;
   const answerHere = objective?.kind === "answer"
-    && (from === objective.answerRoomName || (!mind?.knownWord && from === objective.clueRoomName));
+    && (from === (objective.answerRoomKey ?? objective.answerRoomName) || (!mind?.knownWord && from === (objective.clueRoomKey ?? objective.clueRoomName)));
   const objectiveHere = objective ? (objective.kind === "answer" ? answerHere : objectiveScore(objective, { state, memory, from, mind, quest: active }) >= 5) : false;
   const preferExploreNow = Boolean(preferExplore && active && objective && !objectiveHere);
   const activePrepFocus = prepFor(activeEntry);
@@ -396,7 +415,7 @@ export function focusFor({ state = null, memory = null, mind = null, preferExplo
   const bestOffer = availableOptions[0] ?? null;
   if (!activeReachable && bestOffer
     && bestOffer.score > (activeEntry?.score ?? 0) && !(preferExploreNow && bestOffer.score < 5)) {
-    const target = bestOffer.quest.giverRoomName ?? from;
+    const target = bestOffer.quest.giverRoomKey ?? bestOffer.quest.giverRoomName ?? from;
     const here = target === from;
     return withRoute({
       kind: "quest offer",
@@ -410,10 +429,10 @@ export function focusFor({ state = null, memory = null, mind = null, preferExplo
     const candidates = [];
     let target = from;
     if (objective.kind === "visit") {
-      target = objective.roomName ?? from;
+      target = objective.roomKey ?? objective.roomName ?? from;
       candidates.push(routeFor(memory, from, target)[0] ?? "look", "look", `quest ${active.id}`);
     } else if (objective.kind === "kill") {
-      target = objective.npcRoomName ?? from;
+      target = objective.npcRoomKey ?? objective.npcRoomName ?? from;
       const npcName = objective.npcName ?? objective.npc;
       const here = names(room.npcs).some((name) => name.toLowerCase().includes(String(npcName ?? "").replace(/^the /, "")));
       if (here) candidates.push(`attack ${npcName}`);
@@ -422,32 +441,32 @@ export function focusFor({ state = null, memory = null, mind = null, preferExplo
     } else if (objective.kind === "collect") {
       const objectName = objective.objectName ?? objective.object;
       const carried = (self.inventory_names ?? []).some((name) => name.toLowerCase().includes(String(objectName ?? "").replace(/^the /, "")));
-      target = carried ? from : (objective.objectRoomName ?? from);
+      target = carried ? from : (objective.objectRoomKey ?? objective.objectRoomName ?? from);
       if (carried) candidates.push("inventory");
-      else if (objective.objectRoomName === from) candidates.push(`take ${objectName}`);
+      else if (target === from) candidates.push(`take ${objectName}`);
       else candidates.push(routeFor(memory, from, target)[0] ?? "look");
       candidates.push("look");
     } else if (objective.kind === "deliver") {
       const objectName = objective.objectName ?? objective.object;
       const npcName = objective.npcName ?? objective.npc;
       const held = (self.inventory_names ?? []).some((name) => name.toLowerCase().includes(String(objectName ?? "").replace(/^the /, "")));
-      target = objective.npcRoomName ?? from;
+      target = objective.npcRoomKey ?? objective.npcRoomName ?? from;
       const here = names(room.npcs).some((name) => name.toLowerCase().includes(String(npcName ?? "").replace(/^the /, "")));
       if (held && here) candidates.push(`deliver ${objectName} to ${npcName}`);
-      else if (!held && objective.objectRoomName) {
-        target = objective.objectRoomName;
+      else if (!held && (objective.objectRoomKey ?? objective.objectRoomName)) {
+        target = objective.objectRoomKey ?? objective.objectRoomName;
         candidates.push(routeFor(memory, from, target)[0] ?? "look", `take ${objectName}`);
       } else candidates.push(routeFor(memory, from, target)[0] ?? "look", "look");
       candidates.push(`quest ${active.id}`);
     } else if (objective.kind === "talk") {
-      target = objective.npcRoomName ?? from;
+      target = objective.npcRoomKey ?? objective.npcRoomName ?? from;
       const npcName = objective.npcName ?? objective.npc;
       const here = names(room.npcs).some((name) => name.toLowerCase().includes(String(npcName ?? "").replace(/^the /, "")));
       candidates.push(here ? `talk ${npcName}` : (routeFor(memory, from, target)[0] ?? "look"), "look");
     } else if (objective.kind === "answer") {
       const word = mind?.knownWord ?? null;
-      const answerRoom = objective.answerRoomName ?? null;
-      const clueRoom = objective.clueRoomName ?? null;
+      const answerRoom = objective.answerRoomKey ?? objective.answerRoomName ?? null;
+      const clueRoom = objective.clueRoomKey ?? objective.clueRoomName ?? null;
       target = word ? (answerRoom ?? from) : (clueRoom ?? from);
       if (word && from === answerRoom) {
         candidates.push(`answer ${word}`);
@@ -458,7 +477,7 @@ export function focusFor({ state = null, memory = null, mind = null, preferExplo
       }
       candidates.push("quests", "look");
     } else {
-      target = objective.roomName ?? from;
+      target = objective.roomKey ?? objective.roomName ?? from;
       candidates.push(routeFor(memory, from, target)[0] ?? "look", "quests", "look");
     }
     return withRoute({
@@ -489,7 +508,7 @@ export function focusFor({ state = null, memory = null, mind = null, preferExplo
   if (needsXp && huntAhead) {
     return withRoute({
       kind: "hunt",
-      label: `hunt ${huntAhead.hunt.name} in ${huntAhead.hunt.room}`,
+      label: `hunt ${huntAhead.hunt.name} in ${huntAhead.hunt.roomName ?? displayRoom(huntAhead.hunt.room)}`,
       reason: `no quest is reachable; ${huntAhead.hunt.name} is ${huntAhead.path.length} move${huntAhead.path.length === 1 ? "" : "s"} away`,
       candidates: unique([huntAhead.path[0], `consider ${huntAhead.hunt.name}`, "quests", "look"]),
     }, memory, from, huntAhead.hunt.room);
@@ -500,7 +519,7 @@ export function focusFor({ state = null, memory = null, mind = null, preferExplo
     const exit = ahead.path[0];
     return withRoute({
       kind: "explore",
-      label: `explore ${ahead.target}`,
+      label: `explore ${displayRoom(ahead.target)}`,
       reason: `nearest unvisited room; ${Object.keys(memory?.rooms ?? {}).length} rooms seen`,
       candidates: unique([exit, "look", "map", "quests", "search"]),
     }, memory, from, ahead.target);

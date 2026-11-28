@@ -255,6 +255,10 @@ let webAI = { ok: true, why: [] };
   check(bowFocus.kind === "take" && /bow/.test(bowFocus.label), "a short bow was not classified as a weapon");
   const focusQuest = focusFor({ state: { self: { inventory_names: [], worn: [], wielding: null, enemies: [], active_quests: [{ id: "q", name: "The Salt Rose", objective_details: [{ kind: "visit", text: "Enter the cabin", roomName: "B", done: false }] }], available_quests: [] }, room: { name: "A", objects: [], exits: [{ dir: "north", room: "B" }], npcs: [] } }, memory: routeMemory });
   check(focusQuest.kind === "quest" && focusQuest.candidates[0] === "north" && /1 move/.test(focusQuest.routeText), "the focus planner did not route the next quest objective");
+  const dupQuestState = { self: { inventory_names: [], worn: [], wielding: null, enemies: [], active_quests: [{ id: "q", name: "Q", objective_details: [{ kind: "visit", text: "Enter the last hold", roomName: "The Hold", roomKey: "The Hold#187", done: false }] }], available_quests: [] }, room: { name: "The Wreck of the Salt Rose", key: "The Wreck of the Salt Rose", exits: [{ dir: "north", room: "The Hold", key: "The Hold#185" }], objects: [], npcs: [] } };
+  const dupQuestMemory = { rooms: { "The Wreck of the Salt Rose": {}, "The Hold#185": {}, "The Hold#186": {}, "The Hold#187": {} }, map: { "The Wreck of the Salt Rose": { north: "The Hold#185" }, "The Hold#185": { west: "The Hold#186" }, "The Hold#186": { west: "The Hold#187" }, "The Hold#187": {} } };
+  const dupFocus = focusFor({ state: dupQuestState, memory: dupQuestMemory, mind: emptyMind() });
+  check(dupFocus.kind === "quest" && dupFocus.route.join(",") === "north,west,west", "a duplicate-name objective did not route through its room key");
   const collectAway = focusFor({ state: { self: { inventory_names: [], worn: [], wielding: null, enemies: [], active_quests: [{ id: "pearl", name: "Pearl", objective_details: [{ kind: "collect", text: "Take the pearl", objectName: "a salt pearl", objectRoomName: "B", done: false }] }], available_quests: [] }, room: { name: "A", objects: [], exits: [{ dir: "north", room: "B" }], npcs: [] } }, memory: routeMemory });
   check(collectAway.kind === "quest" && collectAway.candidates[0] === "north", "a collect objective took an absent object before routing");
   const wanderingQuest = { self: { inventory_names: [], worn: [], wielding: null, enemies: [], active_quests: [{ id: "roof", name: "The High Walk", objective_details: [{ kind: "kill", text: "Kill a rat", npcName: "a rat", npcRoomName: "The Corridor", npcHomeName: "The Corridor", done: false }] }], available_quests: [] }, room: { name: "The Corridor", objects: [], exits: [{ dir: "south", room: "The Atrium" }], npcs: [] } };
@@ -646,6 +650,14 @@ let aiMemory = { ok: true, why: [] };
   const llmsSeeded = emptyMemory();
   seedMapFromLlms(llmsSeeded, "| 1 | The Atrium | temple | no | north 2, east 3 |\n| 2 | The Corridor | temple | no | south 1, east 4 |\n| 4 | The Vault | temple | no | west 2 |");
   check(pathTo(llmsSeeded, "The Atrium", "The Vault").join(",") === "north,east", "the llms room table did not seed the route graph");
+  const dupSeeded = emptyMemory();
+  seedMapFromLlms(dupSeeded, "| 184 | The Wreck of the Salt Rose | mistfall | no | north 185 |\n| 185 | The Hold | mistfall | no | south 184, west 186 |\n| 186 | The Hold | mistfall | no | east 185, west 187 |\n| 187 | The Hold | mistfall | no | east 186, south 188 |\n| 188 | The Captain's Cabin | mistfall | no | north 187 |");
+  check(dupSeeded.map["The Hold#185"]?.west === "The Hold#186" && dupSeeded.map["The Hold#186"]?.west === "The Hold#187" && dupSeeded.map["The Hold#187"]?.south === "The Captain's Cabin", "duplicate room names collapsed instead of keying by id");
+  check(pathTo(dupSeeded, "The Wreck of the Salt Rose", "The Captain's Cabin").join(",") === "north,west,west,south", "the duplicate-name hold route was not four steps");
+  const keyedMemory = emptyMemory();
+  rememberResult(keyedMemory, { room: "The Hold#185", name: "The Hold", command: "west", observation: "[The Hold]\nA low hold of tarred beams.", exits: [{ dir: "west", room: "The Hold", key: "The Hold#186" }] });
+  check(keyedMemory.map["The Hold#185"]?.west === "The Hold#186" && keyedMemory.rooms["The Hold#185"]?.name === "The Hold", "the keyed room memory lost its display name or target key");
+  check(!memoryPrompt(keyedMemory, { room: "The Hold", key: "The Hold#185" }).includes("#185"), "the memory prompt leaked a room key");
   const seeded = emptyMemory();
   seedMap(seeded, [
     { name: "Market Square", exits: [{ dir: "west", room: "The Gilded Rat" }, { dir: "north", room: "The Atrium" }] },
@@ -3914,7 +3926,7 @@ let quests = { ok: true, why: [] };
   const mirrorLive = questTable.quests.find((quest) => quest.id === "mirror");
   const saltLive = questTable.quests.find((quest) => quest.id === "salt-rose");
   check(mirrorLive?.prereqs?.[0]?.kind === "search" && mirrorLive.prereqs[0].reveals === 41, "the mirror quest lost its High Walk search");
-  check(saltLive?.prereqs?.length === 8 && saltLive.prereqs[0].object === "mistfall-ferry-token" && saltLive.prereqs[1].object === "stew" && saltLive.prereqs[2].object === "ale" && saltLive.prereqs[5].verb === "board" && saltLive.prereqs[6].kind === "route" && saltLive.prereqs[7].when === 2, "the salt quest lost its ferry preparation");
+  check(saltLive?.prereqs?.length === 6 && saltLive.prereqs[0].object === "mistfall-ferry-token" && saltLive.prereqs[1].object === "stew" && saltLive.prereqs[2].object === "ale" && saltLive.prereqs[5].verb === "board", "the salt quest lost its ferry preparation");
   for (const quest of questTable.quests) {
     for (const pre of quest.prereqs ?? []) {
       if (pre.room && !world.rooms[pre.room]) check(false, `${quest.id} prereq room ${pre.room} does not exist`);

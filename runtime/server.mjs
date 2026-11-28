@@ -87,10 +87,17 @@ const DECOY_MODE = process.env.DECOY_MODE ?? "single";
 const loaded = loadWorld({ mode: DECOY_MODE, path: process.env.WORLD_PATH ?? undefined });
 const ROOMS = loaded.rooms;
 const ROOM_BY_NAME = new Map();
-for (const room of Object.values(ROOMS)) {
+const ROOM_NAME_COUNTS = new Map();
+for (const [id, room] of Object.entries(ROOMS)) {
   const key = String(room.name ?? "").toLowerCase().replace(/^the /, "").trim();
-  if (key && !ROOM_BY_NAME.has(key)) ROOM_BY_NAME.set(key, room);
+  if (key && !ROOM_BY_NAME.has(key)) ROOM_BY_NAME.set(key, { room, id });
+  ROOM_NAME_COUNTS.set(room.name, (ROOM_NAME_COUNTS.get(room.name) ?? 0) + 1);
 }
+const ROOM_KEYS = new Map();
+for (const [id, room] of Object.entries(ROOMS)) {
+  ROOM_KEYS.set(String(id), ROOM_NAME_COUNTS.get(room.name) > 1 ? `${room.name}#${id}` : room.name);
+}
+const keyOf = (id) => (id === null || id === undefined ? null : ROOM_KEYS.get(String(id)) ?? ROOMS[id]?.name ?? String(id));
 if (loaded.errors.length > 0) {
   for (const problem of loaded.errors) console.error(`world: ${problem}`);
   process.exit(1);
@@ -1062,10 +1069,10 @@ function selfState(actor) {
   const foundHere = actor?.key
     ? (actor.found ?? []).filter((entry) => entry.startsWith(`${actor.room}:`)).map((entry) => entry.split(":")[1])
     : [];
-  const exits = room ? Object.entries(room.exits ?? {}).map(([dir, to]) => ({ dir, room: ROOMS[to]?.name ?? String(to) })) : [];
+  const exits = room ? Object.entries(room.exits ?? {}).map(([dir, to]) => ({ dir, room: ROOMS[to]?.name ?? String(to), key: keyOf(to) })) : [];
   for (const dir of foundHere) {
     if (!exits.some((entry) => entry.dir === dir) && room?.secretExits?.[dir]) {
-      exits.push({ dir, room: ROOMS[room.secretExits[dir]]?.name ?? String(room.secretExits[dir]) });
+      exits.push({ dir, room: ROOMS[room.secretExits[dir]]?.name ?? String(room.secretExits[dir]), key: keyOf(room.secretExits[dir]) });
     }
   }
   const objectsHere = actor?.key
@@ -1120,18 +1127,24 @@ function selfState(actor) {
             text: objective.text ?? objective.kind,
             room: objective.room ?? null,
             roomName: objective.room ? (ROOMS[objective.room]?.name ?? null) : null,
+            roomKey: keyOf(objective.room),
             npc: objective.npc ?? null,
             npcName: npc?.name ?? null,
             npcRoom: npc?.room ?? npc?.home ?? null,
             npcRoomName: npc ? (ROOMS[npc.room ?? npc.home]?.name ?? null) : null,
+            npcRoomKey: npc ? keyOf(npc.room ?? npc.home) : null,
             npcHomeName: npc?.home ? (ROOMS[npc.home]?.name ?? null) : null,
+            npcHomeKey: npc?.home ? keyOf(npc.home) : null,
             object: objective.object ?? null,
             objectName: object?.name ?? null,
             objectRoom: object?.room ?? object?.home ?? null,
             objectRoomName: object?.room ? (ROOMS[object.room]?.name ?? null) : object?.home ? (ROOMS[object.home]?.name ?? null) : null,
+            objectRoomKey: object ? keyOf(object.room ?? object.home) : null,
             done: objectiveDone(objective, entry.progress, actor, state.objects),
             answerRoomName: objective.kind === "answer" ? (ROOMS[SHRINE]?.name ?? null) : null,
             clueRoomName: objective.kind === "answer" ? (ROOMS[VAULT]?.name ?? null) : null,
+            answerRoomKey: objective.kind === "answer" ? keyOf(SHRINE) : null,
+            clueRoomKey: objective.kind === "answer" ? keyOf(VAULT) : null,
             roomZone: objective.room ? (ROOMS[objective.room]?.zone ?? null) : null,
             npcRoomZone: npc?.room ? (ROOMS[npc.room]?.zone ?? null) : null,
             objectRoomZone: object?.room ? (ROOMS[object.room]?.zone ?? null) : null,
@@ -1140,11 +1153,18 @@ function selfState(actor) {
         const prereqs = (quest.prereqs ?? []).map((pre) => ({
           ...pre,
           roomName: pre.room ? (ROOMS[pre.room]?.name ?? null) : null,
+          roomKey: keyOf(pre.room),
           afterRoomName: pre.afterRoom ? (ROOMS[pre.afterRoom]?.name ?? null) : null,
+          afterRoomKey: keyOf(pre.afterRoom),
           revealsName: pre.reveals ? (ROOMS[pre.reveals]?.name ?? null) : null,
+          revealsKey: keyOf(pre.reveals),
           fromName: pre.from ? (ROOMS[pre.from]?.name ?? null) : null,
+          fromKey: keyOf(pre.from),
           toName: pre.to ? (ROOMS[pre.to]?.name ?? null) : null,
+          toKey: keyOf(pre.to),
           viaName: pre.via ? (ROOMS[pre.via]?.name ?? null) : null,
+          viaKey: keyOf(pre.via),
+          roomKeys: (pre.roomIds ?? []).map((id) => keyOf(id)),
         }));
         return { id: quest.id, name: quest.name, level: quest.level, giver: quest.giver ?? null, objectives: questLines(quest, entry.progress, actor, state.objects), objective_details: objectiveDetails, prereqs };
       }).filter(Boolean)
@@ -1244,12 +1264,15 @@ function selfState(actor) {
         .map((quest) => {
         const giver = String(quest.giver ?? "").toLowerCase().replace(/^the /, "");
         const npc = giver ? state.npcs.find((candidate) => candidate.name.toLowerCase().includes(giver) || giver.includes(candidate.name.toLowerCase().replace(/^the /, ""))) : null;
-        const giverRoomName = npc?.home ? (ROOMS[npc.home]?.name ?? null) : (ROOM_BY_NAME.get(giver)?.name ?? null);
-        return { id: quest.id, name: quest.name, level: quest.level, giver: quest.giver ?? null, giverRoom: npc?.home ?? null, giverRoomName };
+        const namedRoom = ROOM_BY_NAME.get(giver);
+        const giverRoomName = npc?.home ? (ROOMS[npc.home]?.name ?? null) : (namedRoom?.room?.name ?? null);
+        const giverRoomKey = npc?.home ? keyOf(npc.home) : (namedRoom?.id ? keyOf(namedRoom.id) : null);
+        return { id: quest.id, name: quest.name, level: quest.level, giver: quest.giver ?? null, giverRoom: npc?.home ?? namedRoom?.id ?? null, giverRoomName, giverRoomKey };
       }).slice(0, 8)
       : [],
     room: room ? {
       id: actor?.room ?? null,
+      key: keyOf(actor?.room),
       name: room.name,
       safe: room.safe === true,
       zone: room.zone ?? null,

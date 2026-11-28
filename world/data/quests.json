@@ -645,50 +645,6 @@
           "afterRoom": 182,
           "text": "Board the ferry at the Harbor Quay",
           "zone": "mistfall"
-        },
-        {
-          "kind": "route",
-          "from": 184,
-          "to": 188,
-          "steps": [
-            "north",
-            "west",
-            "west",
-            "south"
-          ],
-          "text": "The hold doors: north, west, west, south",
-          "when": 0,
-          "rooms": [
-            "The Wreck of the Salt Rose",
-            "The Hold",
-            "The Hold",
-            "The Hold",
-            "The Captain's Cabin"
-          ]
-        },
-        {
-          "kind": "route",
-          "from": 188,
-          "to": 191,
-          "steps": [
-            "north",
-            "east",
-            "east",
-            "south",
-            "east",
-            "east"
-          ],
-          "when": 2,
-          "text": "The hold doors back: north, east, east, south, east, east",
-          "rooms": [
-            "The Captain's Cabin",
-            "The Hold",
-            "The Hold",
-            "The Hold",
-            "The Wreck of the Salt Rose",
-            "The Cave Mouth",
-            "The Drowned Cave"
-          ]
         }
       ]
     },
