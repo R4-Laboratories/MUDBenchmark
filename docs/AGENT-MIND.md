@@ -162,6 +162,25 @@ The Mind now stores the model's `NOTE` line (up to 12 notes) and prints `NOTES`
 back each turn; the browser notebook still records the same note for the human.
 This is the model's own durable context, not just a two-turn transcript.
 
+## Keyed doors and the level-5 bridge
+
+Quest preparation can now take a key and use it on a room action. The Drowned
+Ledger takes the warden's ward key at The Wardstone, unlocks the Deep Door, and
+then the ordinary route reaches the Drowned Library. The planner takes the
+tide-stone before routing to the lighthouse, and it ignores shop gear on the
+floor. Recovery remembers free floor food, so a low-HP agent does not alternate
+between an empty inn and an empty Cell.
+
+The level-5 threshold moved from 1,500 to 1,300 XP. A character with the twelve
+early quests sat at 1,282-1,316 with no level-5 quest to accept; 1,300 lets a
+small hunt cross the line. The level-6 threshold remains 3,000.
+
+Evidence: a 300-turn DeepSeek run reached **level 5 / 1,308 XP** with **12
+completed quests**, 0 deaths and 49 rooms. The Drowned Ledger completed at 139
+and The Salt Rose at 214; the agent accepted **Three Parts of a Sigil** at the
+Mages' Guild on turn 293 and began the first sigil route. The next limit is the
+undervault sigil route and the level-6 gate.
+
 ## Duplicate room names
 
 The route graph is now keyed by room identity, not only by name. A unique room

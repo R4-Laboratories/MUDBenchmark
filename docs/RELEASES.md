@@ -539,6 +539,28 @@ Rehearsed 2026-11-16:
   speaking, opened the Twin Door with one hidden partner and took the crown.
   Gate covers the death penalty, level gates, twin door, hide visibility and
   prompt (MB-286/287/288);
+- v0.91.94 (the level-5 chain) makes The Drowned Ledger executable. Preparation
+  can now take a key and use it on a room action: the quest takes the warden's
+  ward key, unlocks the Deep Door, and the ordinary route reaches the Drowned
+  Library. The planner also takes the tide-stone before routing to the
+  lighthouse, ignores shop gear on the floor, and remembers free food so a
+  recovery does not alternate between an empty inn and an empty Cell. The
+  level-5 threshold moves from 1,500 to 1,300 XP, because a character with the
+  twelve early quests sat at 1,282-1,316 with no level-5 quest to accept. A
+  300-turn DeepSeek run reached **level 5 / 1,308 XP** with **12 completed
+  quests**, 0 deaths and 49 rooms, and accepted **Three Parts of a Sigil** at
+  the Mages' Guild on turn 293. The ledger completed at 139 and The Salt Rose at
+  214. The level-6 threshold remains 3,000. World unchanged at 254 rooms / 17
+  zones / 25 quests / 114 mobiles / 263 objects (MB-370);
+- v0.91.93 (larger PvP sample) records 140 live random-tick matches: 60 level-5
+  mirror, 40 level-10 mirror and 40 level-10 dawn/ember with swapped kits. Hit
+  rates are 48.50%, 42.96% and 43.29%, matching `57 - armour`; average damage is
+  5.52, 10.33 and 10.34. Win rates are near even (29/31, 22/18, 20/20), so the
+  earlier level-5 pvp-b and level-10 pvp-a leans are sampling noise. Zero
+  failures, every match ended in a death, and no balance value changed. The PvP
+  report summary now divides average winner HP by matches and maximum HP. The
+  federation test remains 3/3 and the automated accessibility audit passes.
+  Claim MB-368;
 - v0.91.92 (id-aware route graph) keys the route graph by room identity, not
   only by name. Unique rooms keep their name; duplicate names use `name#id`
   (The Hold#185, The High Walk#40, The Vault#4). The server sends room and exit

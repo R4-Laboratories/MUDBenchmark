@@ -251,6 +251,25 @@
       "complete": "The page is wet, but the names are still legible.",
       "requires": [
         "mirror"
+      ],
+      "prereqs": [
+        {
+          "kind": "take",
+          "room": 43,
+          "object": "ward-key",
+          "name": "a ward key",
+          "text": "Take the warden's ward key"
+        },
+        {
+          "kind": "action",
+          "room": 44,
+          "verb": "unlock",
+          "target": "door",
+          "item": "ward-key",
+          "reveals": 46,
+          "text": "Unlock the deep door",
+          "name": "a ward key"
+        }
       ]
     },
     {
@@ -609,7 +628,8 @@
           "object": "stew",
           "name": "a bowl of stew",
           "price": 10,
-          "text": "Buy food at the Gilded Rat"
+          "text": "Buy food at the Gilded Rat",
+          "optional": true
         },
         {
           "kind": "buy",

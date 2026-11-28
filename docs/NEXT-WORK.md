@@ -1,6 +1,6 @@
 # Next work
 
-Baseline: **v0.91.92**. The world has 254 rooms, 17 zones, 25 quests, 114 mobiles
+Baseline: **v0.91.94**. The world has 254 rooms, 17 zones, 25 quests, 114 mobiles
 and 263 objects. The run has a recorded win condition: level 10, all 25 quests
 and all 25 hidden ways, with the permanent Worldbreaker title. R4 memory, command grounding, scorecards
 and the public stats surface are live; signups are open. Every AI key is
@@ -125,6 +125,8 @@ memory or prompt system.
 | v0.91.90 | Recovery focus: eat carried food, buy stocked food at the inn, or take free bread; never eat active quest objects; 200-turn DeepSeek level 4 / 811 XP with 9 quests + 2 active level-4 quests | **done** (MB-362) |
 | v0.91.91 | Quest preparation: buy, light, search, room action and manual hold routes; Mirror and Salt Rose completed; 300-turn DeepSeek 11 quests / level 4 / 1057 XP / 0 deaths | **done** (MB-364) |
 | v0.91.92 | Id-aware route graph: room and exit keys, duplicate names use `name#id`; the Salt Rose routes naturally; 300-turn DeepSeek 11 quests / level 4 / 1164 XP / 0 deaths | **done** (MB-366) |
+| v0.91.93 | Larger independent PvP sample: 140 matches, hit rates match `57 - armour`, win rates near even; no balance change | **done** (MB-368) |
+| v0.91.94 | Level-5 chain: ledger key/door preparation, food memory, deliver take, shop-gear guard, level-5 threshold 1,300; 300-turn DeepSeek level 5 / 1,308 XP with Three Parts of a Sigil accepted | **done** (MB-370) |
 | backlog | Longer DeepSeek/Groq evidence; moderator/immortal decision; larger PvP sample; federation rework | optional |
 
 ## What is next
