@@ -2259,6 +2259,12 @@
       "level": "build",
       "statement": "v0.91.95 adds a pack focus: when a take or collect would exceed the 20-item pack, the agent drops the lowest-value carried item that no active collect or deliver objective needs, then takes the quest item. The pack focus takes its step immediately. Gate covers the full-pack drop, the take after making room and the guard. A 450-turn DeepSeek run completed 13 quests, including Three Parts of a Sigil at turn 280 (accepted at 259), at level 5 / 1651 XP, with 0 deaths, 48 rooms and 9 attacks. The Drowned Ledger completed at turn 135 and The Salt Rose at 208. The run then looped exploring The Quiet Door and The Last Lantern; that frontier oscillation is the next exploration limit. World unchanged at 254 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects.",
       "gate": "tools/gate.mjs"
+    },
+    {
+      "id": "MB-373",
+      "level": "some-true",
+      "statement": "Production v0.91.95 serves the pack focus. /, /planner.mjs, /mind.mjs, /ai.mjs, /agent-profile.mjs and /agent-core.mjs are 200; /world reports 254 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects; /federation/status is 403. When a take or collect would exceed the 20-item pack, the agent drops the lowest-value carried item that no active collect or deliver objective needs, then takes the quest item; the pack step is immediate. A 450-turn DeepSeek run completed 13 quests, including Three Parts of a Sigil at turn 280 (accepted at 259), at level 5 / 1651 XP, with 0 deaths, 48 rooms and 9 attacks. The Drowned Ledger completed at turn 135 and The Salt Rose at 208. The run then looped exploring The Quiet Door and The Last Lantern; that frontier oscillation is the next exploration limit. Main Gate 46123172599 green, publish 46123929630, release v0.91.95. The 4090 is training at 1393 MiB / 69%.",
+      "authority": "GitHub PR #111 merge a5aa9ec 2026-11-28; main Gate 46123172599; publish 46123929630; release v0.91.95; wick deploy, /world, /, /planner.mjs, /mind.mjs, /ai.mjs, /agent-profile.mjs, /agent-core.mjs, /federation/status 403; nvidia-smi 1393 MiB 69%; local /tmp/sigils-450b.json; tools/agent-score.mjs; tools/gate.mjs"
     }
   ]
 }
