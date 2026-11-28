@@ -96,6 +96,16 @@ const questObjects = (self) => new Set((self?.active_quests ?? []).flatMap((ques
   .filter(Boolean)));
 const isQuestObject = (name, objects) => [...objects].some((object) => object && String(name).toLowerCase().includes(object));
 
+/** The lowest-value carried item that is not needed by an active quest. */
+const packDrop = (self) => {
+  if (!Number.isFinite(self?.inventory) || self.inventory < 20) return null;
+  const protectedObjects = questObjects(self);
+  return (self.inventory_items ?? [])
+    .filter((item) => item?.name && item.name !== self.wielding && !(self.worn ?? []).includes(item.name)
+      && !isQuestObject(item.name, protectedObjects))
+    .sort((a, b) => (a.value ?? 0) - (b.value ?? 0))[0] ?? null;
+};
+
 const hasItem = (self, name) => {
   const wanted = String(name ?? "").toLowerCase().replace(/^the /, "").trim();
   if (!wanted) return false;
@@ -194,6 +204,8 @@ const questPrepFocus = (pre, quest, { self = {}, memory = null, from = null, roo
     if (here) {
       const item = (room.objects ?? []).find((object) => object?.takeable && (object.name === pre.name || object.name === pre.object || String(object.name).toLowerCase().includes(String(pre.name ?? "").toLowerCase().replace(/^the /, ""))));
       if (!item) return null;
+      const drop = packDrop(self);
+      if (drop) return withRoute({ kind: "pack", label: `drop ${drop.name}`, reason: "pack full; make room for the quest item", candidates: unique([`drop ${drop.name}`, "inventory"]) }, memory, from, from);
       return withRoute({ kind: "prep", questId: quest.id, label: `take ${item.name} — ${reason}`, reason, candidates: unique([`take ${item.name}`, "look", "inventory"]) }, memory, from, from);
     }
     const path = routeFor(memory, from, roomKey);
@@ -380,6 +392,8 @@ export function focusFor({ state = null, memory = null, mind = null, preferExplo
     && ((WEAPON.test(object.name) && (!hasStats || (object.damage ?? 0) > mainDamage))
       || (ARMOR.test(object.name) && (!hasStats || (object.armor ?? 0) > (self.equipment?.[object.slot]?.armor ?? 0)))));
   if (roomGear.length) {
+    const drop = packDrop(self);
+    if (drop) return withRoute({ kind: "pack", label: `drop ${drop.name}`, reason: "pack full; make room for better gear", candidates: unique([`drop ${drop.name}`, "inventory"]) }, memory, from, from);
     return withRoute({
       kind: "take",
       label: `take ${roomGear[0].name}`,
@@ -475,8 +489,11 @@ export function focusFor({ state = null, memory = null, mind = null, preferExplo
       const carried = (self.inventory_names ?? []).some((name) => name.toLowerCase().includes(String(objectName ?? "").replace(/^the /, "")));
       target = carried ? from : (objective.objectRoomKey ?? objective.objectRoomName ?? from);
       if (carried) candidates.push("inventory");
-      else if (target === from) candidates.push(`take ${objectName}`);
-      else candidates.push(routeFor(memory, from, target)[0] ?? "look");
+      else if (target === from) {
+        const drop = packDrop(self);
+        if (drop) return withRoute({ kind: "pack", label: `drop ${drop.name}`, reason: "pack full; make room for the quest item", candidates: unique([`drop ${drop.name}`, "inventory"]) }, memory, from, from);
+        candidates.push(`take ${objectName}`);
+      } else candidates.push(routeFor(memory, from, target)[0] ?? "look");
       candidates.push("look");
     } else if (objective.kind === "deliver") {
       const objectName = objective.objectName ?? objective.object;
@@ -577,7 +594,7 @@ export function focusFor({ state = null, memory = null, mind = null, preferExplo
 
 /** A bounded objective lock: two unrelated commands in a row yield to the focus. */
 export function focusGuard({ focus = null, command = "", detours = 0, state = null, strict = false } = {}) {
-  if (!focus || !["quest", "quest offer", "group action", "party", "explore", "hunt", "combat", "recover", "prep", "equip", "take"].includes(focus.kind)) {
+  if (!focus || !["quest", "quest offer", "group action", "party", "explore", "hunt", "combat", "recover", "prep", "equip", "take", "pack"].includes(focus.kind)) {
     return { command, detours: 0, forced: false };
   }
   const candidate = focus.route?.[0] ?? (focus.candidates ?? [])[0];
@@ -598,7 +615,7 @@ export function focusGuard({ focus = null, command = "", detours = 0, state = nu
     }
   }
   const concrete = !["look", "inventory", "quests", "score", "map"].includes(candidate);
-  if (strict || (["quest", "quest offer", "hunt", "recover", "prep", "equip", "take"].includes(focus.kind) && concrete)) return { command: candidate, detours: 0, forced: true };
+  if (strict || (["quest", "quest offer", "hunt", "recover", "prep", "equip", "take", "pack"].includes(focus.kind) && concrete)) return { command: candidate, detours: 0, forced: true };
   const next = (Number(detours) || 0) + 1;
   if (next < 2) return { command, detours: next, forced: false };
   return { command: candidate, detours: 0, forced: true };

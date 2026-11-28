@@ -539,6 +539,17 @@ Rehearsed 2026-11-16:
   speaking, opened the Twin Door with one hidden partner and took the crown.
   Gate covers the death penalty, level gates, twin door, hide visibility and
   prompt (MB-286/287/288);
+- v0.91.95 (sigils and the full pack) adds a pack focus: when a take or collect
+  would exceed the 20-item pack, the agent drops the lowest-value carried item
+  that no active quest needs, then takes the quest item. Gate covers the
+  full-pack drop, the take after making room and the immediate pack step. A
+  450-turn DeepSeek run completed **13 quests**, including **Three Parts of a
+  Sigil** at turn 280 (accepted at 259), at **level 5 / 1651 XP**, with 0
+  deaths, 48 rooms and 9 attacks. The Drowned Ledger completed at 135 and The
+  Salt Rose at 208. The run then looped exploring The Quiet Door and The Last
+  Lantern; that frontier oscillation is the next exploration limit. World
+  unchanged at 254 rooms / 17 zones / 25 quests / 114 mobiles / 263 objects
+  (MB-372);
 - v0.91.94 (the level-5 chain) makes The Drowned Ledger executable. Preparation
   can now take a key and use it on a room action: the quest takes the warden's
   ward key, unlocks the Deep Door, and the ordinary route reaches the Drowned
