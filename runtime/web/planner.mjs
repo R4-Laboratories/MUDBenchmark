@@ -11,6 +11,7 @@ import { frontier, pathTo, displayRoom } from "./memory.mjs";
 const WEAPON = /sword|axe|mace|dagger|spear|hammer|staff|\bbow\b|knife|pick|blade|club/i;
 const ARMOR = /mail|plate|cloak|shield|helm|boots|gloves|bracers|apron|circlet|robe|hood|jerkin|cuirass|hauberk|mantle|charm|relic/i;
 const FOOD = /bread|stew|herb|ration|meat|apple|cheese|soup|loaf|berry|fish|biscuit|moonwater|starwater|\bale\b|water/i;
+const LIGHT = /lantern|torch|candle|lamp/i;
 
 const unique = (values) => [...new Set((values ?? []).filter(Boolean))];
 const roomName = (state) => state?.room?.name ?? null;
@@ -98,7 +99,8 @@ const isQuestObject = (name, objects) => [...objects].some((object) => object &&
 
 /** The lowest-value carried item that is not needed by an active quest. */
 const packDrop = (self) => {
-  if (!Number.isFinite(self?.inventory) || self.inventory < 20) return null;
+  const carried = (Number.isFinite(self?.inventory) ? self.inventory : 0) + (self?.worn ?? []).length;
+  if (carried < 20) return null;
   const protectedObjects = questObjects(self);
   return (self.inventory_items ?? [])
     .filter((item) => item?.name && item.name !== self.wielding && !(self.worn ?? []).includes(item.name)
@@ -278,16 +280,22 @@ export function focusFor({ state = null, memory = null, mind = null, preferExplo
     const food = (self.inventory_names ?? []).find((name) => FOOD.test(name) && !isQuestObject(name, protectedObjects));
     const selfHp = Number.isFinite(self.hp) ? self.hp : null;
     const enemyHp = Number.isFinite(enemy.hp) ? enemy.hp : null;
+    const known = (memory?.hunts ?? []).find((hunt) => hunt.name === enemy.name);
+    const enemyDamage = known?.damage ?? 3;
+    const rounds = Math.ceil((enemyHp ?? 1) / Math.max(1, self.damage ?? 1));
+    const taken = rounds * Math.max(0, enemyDamage - (self.armor ?? 0));
     const canWin = selfHp !== null && enemyHp !== null
       && selfHp >= Math.max(8, (self.max_hp ?? 20) * 0.35)
-      && enemyHp <= selfHp;
+      && taken < selfHp * 0.5;
     const focus = {
       kind: "combat",
+      losing: !canWin,
       label: `survive ${enemy.name}`,
-      reason: canWin ? "this fight is winnable; see it through" : "attack already started the fight; rounds are automatic",
+      reason: canWin ? "this fight is winnable; see it through" : "this fight is not winnable at this HP; leave it",
       candidates: unique([
+        canWin ? null : "flee",
         technique ? `technique ${technique}` : null,
-        food ? `${/ale|water/i.test(food) ? "drink" : "eat"} ${food}` : null,
+        food ? `${/\bale\b|tankard/i.test(food) ? "drink" : "eat"} ${food}` : null,
         (self.spells ?? []).includes("mend") ? "cast mend" : null,
         "wait",
         canWin ? null : "flee",
@@ -302,7 +310,7 @@ export function focusFor({ state = null, memory = null, mind = null, preferExplo
     const protectedObjects = questObjects(self);
     const food = (self.inventory_names ?? []).find((name) => FOOD.test(name) && !isQuestObject(name, protectedObjects));
     if (food) {
-      const verb = /ale|water/i.test(food) ? "drink" : "eat";
+      const verb = /\bale\b|tankard/i.test(food) ? "drink" : "eat";
       return withRoute({
         kind: "recover",
         label: `${verb} ${food}`,
@@ -312,6 +320,8 @@ export function focusFor({ state = null, memory = null, mind = null, preferExplo
     }
     const roomFood = (room.objects ?? []).find((object) => object?.takeable && !object.forSale && FOOD.test(object.name) && !isQuestObject(object.name, protectedObjects));
     if (roomFood) {
+      const drop = packDrop(self);
+      if (drop) return withRoute({ kind: "pack", label: `drop ${drop.name}`, reason: "pack full; make room for food", candidates: unique([`drop ${drop.name}`, "inventory"]) }, memory, from, from);
       return withRoute({
         kind: "recover",
         label: `take ${roomFood.name}`,
@@ -389,7 +399,8 @@ export function focusFor({ state = null, memory = null, mind = null, preferExplo
   }
 
   const roomGear = (room.objects ?? []).filter((object) => object.takeable && !object.forSale
-    && ((WEAPON.test(object.name) && (!hasStats || (object.damage ?? 0) > mainDamage))
+    && (LIGHT.test(object.name)
+      || (WEAPON.test(object.name) && (!hasStats || (object.damage ?? 0) > mainDamage))
       || (ARMOR.test(object.name) && (!hasStats || (object.armor ?? 0) > (self.equipment?.[object.slot]?.armor ?? 0)))));
   if (roomGear.length) {
     const drop = packDrop(self);
@@ -504,8 +515,11 @@ export function focusFor({ state = null, memory = null, mind = null, preferExplo
       if (held && here) candidates.push(`deliver ${objectName} to ${npcName}`);
       else if (!held && (objective.objectRoomKey ?? objective.objectRoomName)) {
         target = objective.objectRoomKey ?? objective.objectRoomName;
-        if (target === from) candidates.push(`take ${objectName}`);
-        else candidates.push(routeFor(memory, from, target)[0] ?? "look", `take ${objectName}`);
+        if (target === from) {
+          const drop = packDrop(self);
+          if (drop) return withRoute({ kind: "pack", label: `drop ${drop.name}`, reason: "pack full; make room for the quest item", candidates: unique([`drop ${drop.name}`, "inventory"]) }, memory, from, from);
+          candidates.push(`take ${objectName}`);
+        } else candidates.push(routeFor(memory, from, target)[0] ?? "look", `take ${objectName}`);
       } else candidates.push(routeFor(memory, from, target)[0] ?? "look", "look");
       candidates.push(`quest ${active.id}`);
     } else if (objective.kind === "talk") {
@@ -564,7 +578,24 @@ export function focusFor({ state = null, memory = null, mind = null, preferExplo
     }, memory, from, huntAhead.hunt.room);
   }
 
-  const ahead = frontier(memory, from);
+  let ahead = frontier(memory, from);
+  const legal = new Set((room.exits ?? []).map((exit) => (typeof exit === "string" ? exit : exit?.dir)).filter(Boolean));
+  if (ahead && legal.size && ahead.path[0] && !legal.has(ahead.path[0])) {
+    const action = (room.actions ?? [])[0];
+    const command = action ? `${action.verb} ${action.target}` : null;
+    const tried = command ? (memory?.rooms?.[from]?.commands?.[command]?.count ?? 0) > 0 : false;
+    if (action && !tried) {
+      return withRoute({
+        kind: "action",
+        label: command,
+        reason: "the frontier lies behind this room action",
+        candidates: unique([command, "look", "quests"]),
+      }, memory, from, from);
+    }
+    const map = { ...(memory?.map ?? {}), [from]: { ...(memory?.map?.[from] ?? {}) } };
+    delete map[from][ahead.path[0]];
+    ahead = frontier({ ...memory, map }, from);
+  }
   if (ahead) {
     const exit = ahead.path[0];
     return withRoute({
@@ -593,8 +624,8 @@ export function focusFor({ state = null, memory = null, mind = null, preferExplo
 }
 
 /** A bounded objective lock: two unrelated commands in a row yield to the focus. */
-export function focusGuard({ focus = null, command = "", detours = 0, state = null, strict = false } = {}) {
-  if (!focus || !["quest", "quest offer", "group action", "party", "explore", "hunt", "combat", "recover", "prep", "equip", "take", "pack"].includes(focus.kind)) {
+export function focusGuard({ focus = null, command = "", detours = 0, state = null, strict = false, memory = null, distance = null } = {}) {
+  if (!focus || !["quest", "quest offer", "group action", "party", "explore", "hunt", "combat", "recover", "prep", "equip", "take", "pack", "action"].includes(focus.kind)) {
     return { command, detours: 0, forced: false };
   }
   const candidate = focus.route?.[0] ?? (focus.candidates ?? [])[0];
@@ -605,8 +636,20 @@ export function focusGuard({ focus = null, command = "", detours = 0, state = nu
     const exits = (state?.room?.exits ?? []).map((exit) => (typeof exit === "string" ? exit : exit?.dir)).filter(Boolean);
     if (exits.length && !exits.includes(candidate)) return { command, detours: 0, forced: false };
   }
+  if (focus.kind === "explore" && memory && Number.isFinite(distance) && focus.target) {
+    const direction = String(command).trim().toLowerCase();
+    const exit = (state?.room?.exits ?? []).find((entry) => (typeof entry === "string" ? entry : entry?.dir) === direction);
+    const target = exit?.key ?? exit?.room ?? null;
+    if (target) {
+      const next = pathTo(memory, target, focus.target).length;
+      if (next > distance) return { command: candidate, detours: 0, forced: true };
+    }
+  }
   if (String(command).trim() === candidate) return { command, detours: 0, forced: false };
   if (focus.kind === "combat") {
+    if (focus.losing && /^(technique|tech|attack|kill|hit|strike)\b/i.test(String(command).trim())) {
+      return { command: (focus.candidates ?? [])[0] ?? "flee", detours: 0, forced: true };
+    }
     if (/^flee\b/i.test(String(command).trim()) && !(focus.candidates ?? []).includes("flee")) {
       return { command: candidate, detours: 0, forced: true };
     }
@@ -615,7 +658,7 @@ export function focusGuard({ focus = null, command = "", detours = 0, state = nu
     }
   }
   const concrete = !["look", "inventory", "quests", "score", "map"].includes(candidate);
-  if (strict || (["quest", "quest offer", "hunt", "recover", "prep", "equip", "take", "pack"].includes(focus.kind) && concrete)) return { command: candidate, detours: 0, forced: true };
+  if (strict || (["quest", "quest offer", "hunt", "recover", "prep", "equip", "take", "pack", "action"].includes(focus.kind) && concrete)) return { command: candidate, detours: 0, forced: true };
   const next = (Number(detours) || 0) + 1;
   if (next < 2) return { command, detours: next, forced: false };
   return { command: candidate, detours: 0, forced: true };

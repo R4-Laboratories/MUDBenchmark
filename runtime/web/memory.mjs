@@ -300,7 +300,7 @@ export function rememberResult(memory, { room, name = null, command, observation
   // the stale edge so the frontier planner cannot route through it again.
   const direction = String(command).trim().toLowerCase().replace(/^go\s+/, "");
   if (/^(north|south|east|west|up|down|n|s|e|w|u|d)$/.test(direction)
-    && /no\s+(north|south|east|west|up|down)\s+exit|you can(?:'|no)t go|not that way/i.test(safeObservation)) {
+    && /no\s+(north|south|east|west|up|down)\s+exit|you can(?:'|no)t go|not that way|requires level|must be level|not high enough/i.test(safeObservation)) {
     const dir = direction.length === 1 ? { n: "north", s: "south", e: "east", w: "west", u: "up", d: "down" }[direction] : direction;
     if (memory.map?.[room]) delete memory.map[room][dir];
     if (entry.exits?.[dir]) delete entry.exits[dir];

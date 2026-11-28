@@ -162,6 +162,27 @@ The Mind now stores the model's `NOTE` line (up to 12 notes) and prints `NOTES`
 back each turn; the browser notebook still records the same note for the human.
 This is the model's own durable context, not just a two-turn transcript.
 
+## Frontier doors and level gates
+
+Explore now handles the frontier cases that used to loop. If the frontier lies
+behind an unavailable secret exit, the planner uses a room action when one is
+available; if the action is not available, it drops that edge and chooses
+another frontier. It also takes special lights, refuses a move that increases
+the route distance to the target, and forgets a level-gated edge after a
+"requires level" refusal.
+
+Pack handling now covers every take: recovery, collect, deliver and room-gear
+takes drop the lowest-value item that no active quest needs when the pack is
+full, and the pack count includes worn gear. Star water is eaten, not drunk, so
+it is consumed once. The inn stocks extra stew and ale, and level 6 is 2,000 XP
+(was 3,000).
+
+Evidence: the best clean run remains v0.91.95 at 13 quests / level 5 / 1,651 XP.
+The new 450- and 600-turn runs exposed and fixed the pack-full sigil and
+tide-stone loops, the star-water drink loop, the level-gated Reliquary loop and
+the Cliff Path/Signal Room route loop. No clean 600-turn run has reached level 6
+yet; the next limit is the XP and flee economy.
+
 ## Full pack
 
 When a take or collect would exceed the 20-item pack, the agent drops the
