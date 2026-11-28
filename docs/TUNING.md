@@ -309,6 +309,40 @@ candidate also matches the fixed-damage model's 50.0% prediction.
 dawn, which would overcorrect; no further value changed. `tools/pvp-session.mjs`
 accepts `--ticks`, `--world` and `--label` for future paired runs.
 
+### Larger independent PvP sample (v0.91.93)
+
+This is the largest independent live PvP sample so far: random world ticks,
+both login orders, both kit orientations, a fresh isolated server per match,
+and the real Ring `duel` -> `duel accept` -> `attack` flow. The 140 matches were
+run in parallel on 2026-11-27.
+
+```sh
+node tools/pvp-session.mjs --level=5 --matches=60 --random-tick=1 --label=large-2026-11-27
+node tools/pvp-session.mjs --level=10 --matches=40 --random-tick=1 --label=large-2026-11-27
+node tools/pvp-session.mjs --level=10 --matches=40 --matchup=dawn-ember --random-tick=1 --swap=1 --label=large-2026-11-27
+```
+
+| Matchup | Matches | Attacks | Hits | Hit rate (95% CI) | Avg damage | Rounds | Wins | Winner HP |
+| --- | ---: | ---: | ---: | --- | ---: | ---: | --- | ---: |
+| L5 mirror | 60 | 1,530 | 742 | **48.50%** (46.0–51.0) | **5.52** | **12.75** | A 29 / B 31 | 13.3 / 40 (33.3%) |
+| L10 mirror | 40 | 952 | 409 | **42.96%** (39.9–46.1) | **10.33** | **11.90** | A 22 / B 18 | 14.3 / 65 (22.0%) |
+| L10 dawn/ember (swap) | 40 | 954 | 413 | **43.29%** (40.2–46.5) | **10.34** | **11.93** | A 20 / B 20 | 13.3 / 65 (20.5%) |
+
+- No failures; every match ended in a death.
+- Hit rates match `57 - armour` (50% at L5, 44% at L10) and average damage
+  matches `1..4 + weapon`.
+- The L5 mirror is 29/31 (A 48.3%, CI 36.2–60.7); the L10 mirror is 22/18
+  (A 55.0%, CI 39.8–69.3); dawn/ember is 20/20 (A/B 50%, CI 35.2–64.8; with
+  `--swap=1`, dawn is pvp-b, so dawn and ember split 20/20).
+- The earlier L5 pvp-b and L10 pvp-a leans do not persist at this size, so they
+  are sampling noise rather than a balance signal.
+- No one-shot: the winner retained 20–33% of maximum HP on average.
+- No balance value changed. The fixed-damage model still puts both mirrors at
+  50.0% and dawn/ember at 50.0%.
+
+The report summary also divides average winner HP by matches and maximum HP;
+the raw per-match results were already correct.
+
 ## Decision
 
 No balance value changes before v0.91.34. **v0.91.34 makes the first
