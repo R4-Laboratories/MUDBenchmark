@@ -99,7 +99,7 @@ Reachability:
 Pinned build image, from `prismpm.lock`:
 
 ```
-ghcr.io/uor-foundation/prismpm-sdk-candidate@sha256:60226bc791d4c0e5613402a6be7e63f4963d3faf7f327befcf56fc0e41d0ce21
+ghcr.io/r4-laboratories/prismpm-sdk-candidate@sha256:60226bc791d4c0e5613402a6be7e63f4963d3faf7f327befcf56fc0e41d0ce21
 ```
 
 It is multi-arch (`linux/amd64`, `linux/arm64`) and carries `prismpm`,

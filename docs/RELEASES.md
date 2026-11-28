@@ -539,6 +539,20 @@ Rehearsed 2026-11-16:
   speaking, opened the Twin Door with one hidden partner and took the crown.
   Gate covers the death penalty, level gates, twin door, hide visibility and
   prompt (MB-286/287/288);
+- v0.91.96 (frontier doors, pack and the level-6 bridge) closes the remaining
+  frontier and pack loops. Explore uses a room action when the frontier is
+  behind an unavailable secret exit, takes special lights, refuses a move that
+  increases the distance to the target, and forgets a level-gated edge after a
+  "requires level" refusal. Recovery, collect, deliver and room-gear takes drop
+  the lowest-value item when the pack is full, counting worn gear; star water is
+  eaten, not drunk. The inn stocks extra stew and ale. Level 6 is 2,000 XP
+  (was 3,000). Evidence: the best clean run remains v0.91.95 at 13 quests /
+  level 5 / 1,651 XP. The new 450- and 600-turn runs exposed and fixed the
+  pack-full sigil and tide-stone loops, the star-water drink loop, the
+  level-gated Reliquary loop and the Cliff Path/Signal Room route loop, but no
+  clean 600-turn run has reached level 6 yet; the next limit is the XP and
+  flee economy. World is 254 rooms / 17 zones / 25 quests / 114 mobiles / 270
+  objects (MB-374);
 - v0.91.95 (sigils and the full pack) adds a pack focus: when a take or collect
   would exceed the 20-item pack, the agent drops the lowest-value carried item
   that no active quest needs, then takes the quest item. Gate covers the

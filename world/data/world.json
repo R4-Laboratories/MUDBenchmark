@@ -11034,6 +11034,111 @@
       ],
       "value": 45,
       "examine": "Old coins, green with salt. They are still heavy."
+    },
+    {
+      "id": "stew-2",
+      "name": "a bowl of stew",
+      "room": 10,
+      "flags": [
+        "takeable",
+        "food"
+      ],
+      "bites": 2,
+      "heal": 3,
+      "forSale": true,
+      "price": 3,
+      "value": 2,
+      "examine": "Root vegetables, pepper and something richer. It is hot."
+    },
+    {
+      "id": "stew-3",
+      "name": "a bowl of stew",
+      "room": 10,
+      "flags": [
+        "takeable",
+        "food"
+      ],
+      "bites": 2,
+      "heal": 3,
+      "forSale": true,
+      "price": 3,
+      "value": 2,
+      "examine": "Root vegetables, pepper and something richer. It is hot."
+    },
+    {
+      "id": "stew-4",
+      "name": "a bowl of stew",
+      "room": 10,
+      "flags": [
+        "takeable",
+        "food"
+      ],
+      "bites": 2,
+      "heal": 3,
+      "forSale": true,
+      "price": 3,
+      "value": 2,
+      "examine": "Root vegetables, pepper and something richer. It is hot."
+    },
+    {
+      "id": "stew-5",
+      "name": "a bowl of stew",
+      "room": 10,
+      "flags": [
+        "takeable",
+        "food"
+      ],
+      "bites": 2,
+      "heal": 3,
+      "forSale": true,
+      "price": 3,
+      "value": 2,
+      "examine": "Root vegetables, pepper and something richer. It is hot."
+    },
+    {
+      "id": "ale-2",
+      "name": "a tankard of ale",
+      "room": 10,
+      "flags": [
+        "takeable",
+        "drink"
+      ],
+      "value": 10,
+      "price": 10,
+      "forSale": true,
+      "heal": 5,
+      "bites": 2,
+      "examine": "A dark ale with a thin white head. The innkeeper charges ten coins and does not water it."
+    },
+    {
+      "id": "ale-3",
+      "name": "a tankard of ale",
+      "room": 10,
+      "flags": [
+        "takeable",
+        "drink"
+      ],
+      "value": 10,
+      "price": 10,
+      "forSale": true,
+      "heal": 5,
+      "bites": 2,
+      "examine": "A dark ale with a thin white head. The innkeeper charges ten coins and does not water it."
+    },
+    {
+      "id": "ale-4",
+      "name": "a tankard of ale",
+      "room": 10,
+      "flags": [
+        "takeable",
+        "drink"
+      ],
+      "value": 10,
+      "price": 10,
+      "forSale": true,
+      "heal": 5,
+      "bites": 2,
+      "examine": "A dark ale with a thin white head. The innkeeper charges ten coins and does not water it."
     }
   ],
   "climate": {

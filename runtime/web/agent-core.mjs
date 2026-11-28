@@ -5,7 +5,7 @@
 // their own prompt, planner, memory or coach.
 
 import { emptyMind, updateMind, mindPrompt } from "./mind.mjs";
-import { emptyMemory, rememberResult, memoryPrompt, breakLoop, shouldBreakLoop, noteHunts, noteFoods } from "./memory.mjs";
+import { emptyMemory, rememberResult, memoryPrompt, breakLoop, shouldBreakLoop, noteHunts, noteFoods, pathTo } from "./memory.mjs";
 import { focusFor, focusPrompt, focusGuard } from "./planner.mjs";
 import { buildSystemPrompt, buildUserPrompt, buildActionMenu, parseBrain, coachCommand, coachAction, coachFallbackDue } from "./ai.mjs";
 
@@ -47,7 +47,10 @@ export function beginTurn(core, { state = null, observation = "", room = null, t
   const currentRoom = roomFrom(state, room);
   const currentRoomKey = state?.room?.key ?? currentRoom;
   const exits = exitsFrom(observation, state);
-  const promptState = { ...(state ?? {}), room: { ...(state?.room ?? {}), name: currentRoom, key: currentRoomKey, exits: exits.map((dir) => ({ dir, room: null, key: null })), text: observation } };
+  const promptExits = (state?.room?.exits ?? []).map((exit) => (typeof exit === "string"
+    ? { dir: exit, room: null, key: null }
+    : { dir: exit?.dir, room: exit?.room ?? null, key: exit?.key ?? null })).filter((exit) => exit.dir);
+  const promptState = { ...(state ?? {}), room: { ...(state?.room ?? {}), name: currentRoom, key: currentRoomKey, exits: promptExits.length ? promptExits : exits.map((dir) => ({ dir, room: null, key: null })), text: observation } };
   noteHunts(core.memory, currentRoomKey, promptState.room.npcs, currentRoom);
   noteFoods(core.memory, currentRoomKey, promptState.room.objects, currentRoom);
   const mark = `${Object.keys(core.memory.rooms).length}|${promptState.self?.quests?.completed ?? 0}|${promptState.self?.xp ?? 0}|${promptState.self?.level ?? 1}`;
@@ -112,7 +115,8 @@ export function decideTurn(core, { reply = "", state = null, promptState = null,
   }
   const fkey = `${focus?.kind}:${focus?.label}:${focus?.target ?? ""}`;
   if (core.focusKey !== fkey) { core.focusKey = fkey; core.focusDetours = 0; }
-  const lock = focusGuard({ focus, command, detours: core.focusDetours, state: promptState, strict: core.strict });
+  const distance = focus?.kind === "explore" && focus?.target ? pathTo(core.memory, promptState?.room?.key ?? promptState?.room?.name, focus.target).length : null;
+  const lock = focusGuard({ focus, command, detours: core.focusDetours, state: promptState, strict: core.strict, memory: core.memory, distance });
   core.focusDetours = lock.detours;
   if (lock.forced) command = lock.command;
   core.lastCommand = command;

@@ -124,7 +124,7 @@ is the one it claims, because the format cannot carry the receipt.
 ```sh
 # world, holo and runtime on a host with the pinned SDK image
 docker run --rm -v "$PWD:/w" -w /w/world \
-  ghcr.io/uor-foundation/prismpm-sdk@sha256:d6c263a7... prismpm --project . build
+  ghcr.io/r4-laboratories/prismpm-sdk@sha256:d6c263a7... prismpm --project . build
 
 DECOY_MODE=corroborated node runtime/server.mjs        # one arm
 BRAIN=llm ROUTER_MODE=flat MAX_TURNS=10 \
